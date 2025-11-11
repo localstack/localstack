@@ -1,6 +1,7 @@
+from collections.abc import Iterable
 from datetime import datetime
 from enum import StrEnum
-from typing import IO, Dict, Iterable, List, Optional, TypedDict, Union
+from typing import IO, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -199,7 +200,7 @@ class LimitExceededException(ServiceException):
     code: str = "LimitExceededException"
     sender_fault: bool = False
     status_code: int = 429
-    retryAfterSeconds: Optional[String]
+    retryAfterSeconds: String | None
 
 
 class NotFoundException(ServiceException):
@@ -212,14 +213,14 @@ class ServiceUnavailableException(ServiceException):
     code: str = "ServiceUnavailableException"
     sender_fault: bool = False
     status_code: int = 503
-    retryAfterSeconds: Optional[String]
+    retryAfterSeconds: String | None
 
 
 class TooManyRequestsException(ServiceException):
     code: str = "TooManyRequestsException"
     sender_fault: bool = False
     status_code: int = 429
-    retryAfterSeconds: Optional[String]
+    retryAfterSeconds: String | None
 
 
 class UnauthorizedException(ServiceException):
@@ -229,194 +230,194 @@ class UnauthorizedException(ServiceException):
 
 
 class AccessLogSettings(TypedDict, total=False):
-    format: Optional[String]
-    destinationArn: Optional[String]
+    format: String | None
+    destinationArn: String | None
 
 
-ListOfString = List[String]
+ListOfString = list[String]
 
 
 class ThrottleSettings(TypedDict, total=False):
-    burstLimit: Optional[Integer]
-    rateLimit: Optional[Double]
+    burstLimit: Integer | None
+    rateLimit: Double | None
 
 
 class Account(TypedDict, total=False):
-    cloudwatchRoleArn: Optional[String]
-    throttleSettings: Optional[ThrottleSettings]
-    features: Optional[ListOfString]
-    apiKeyVersion: Optional[String]
+    cloudwatchRoleArn: String | None
+    throttleSettings: ThrottleSettings | None
+    features: ListOfString | None
+    apiKeyVersion: String | None
 
 
-MapOfStringToString = Dict[String, String]
+MapOfStringToString = dict[String, String]
 Timestamp = datetime
 
 
 class ApiKey(TypedDict, total=False):
-    id: Optional[String]
-    value: Optional[String]
-    name: Optional[String]
-    customerId: Optional[String]
-    description: Optional[String]
-    enabled: Optional[Boolean]
-    createdDate: Optional[Timestamp]
-    lastUpdatedDate: Optional[Timestamp]
-    stageKeys: Optional[ListOfString]
-    tags: Optional[MapOfStringToString]
+    id: String | None
+    value: String | None
+    name: String | None
+    customerId: String | None
+    description: String | None
+    enabled: Boolean | None
+    createdDate: Timestamp | None
+    lastUpdatedDate: Timestamp | None
+    stageKeys: ListOfString | None
+    tags: MapOfStringToString | None
 
 
 class ApiKeyIds(TypedDict, total=False):
-    ids: Optional[ListOfString]
-    warnings: Optional[ListOfString]
+    ids: ListOfString | None
+    warnings: ListOfString | None
 
 
-ListOfApiKey = List[ApiKey]
+ListOfApiKey = list[ApiKey]
 
 
 class ApiKeys(TypedDict, total=False):
-    warnings: Optional[ListOfString]
-    position: Optional[String]
-    items: Optional[ListOfApiKey]
+    warnings: ListOfString | None
+    position: String | None
+    items: ListOfApiKey | None
 
 
-MapOfApiStageThrottleSettings = Dict[String, ThrottleSettings]
+MapOfApiStageThrottleSettings = dict[String, ThrottleSettings]
 
 
 class ApiStage(TypedDict, total=False):
-    apiId: Optional[String]
-    stage: Optional[String]
-    throttle: Optional[MapOfApiStageThrottleSettings]
+    apiId: String | None
+    stage: String | None
+    throttle: MapOfApiStageThrottleSettings | None
 
 
-ListOfARNs = List[ProviderARN]
+ListOfARNs = list[ProviderARN]
 
 
 class Authorizer(TypedDict, total=False):
-    id: Optional[String]
-    name: Optional[String]
-    type: Optional[AuthorizerType]
-    providerARNs: Optional[ListOfARNs]
-    authType: Optional[String]
-    authorizerUri: Optional[String]
-    authorizerCredentials: Optional[String]
-    identitySource: Optional[String]
-    identityValidationExpression: Optional[String]
-    authorizerResultTtlInSeconds: Optional[NullableInteger]
+    id: String | None
+    name: String | None
+    type: AuthorizerType | None
+    providerARNs: ListOfARNs | None
+    authType: String | None
+    authorizerUri: String | None
+    authorizerCredentials: String | None
+    identitySource: String | None
+    identityValidationExpression: String | None
+    authorizerResultTtlInSeconds: NullableInteger | None
 
 
-ListOfAuthorizer = List[Authorizer]
+ListOfAuthorizer = list[Authorizer]
 
 
 class Authorizers(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfAuthorizer]
+    position: String | None
+    items: ListOfAuthorizer | None
 
 
 class BasePathMapping(TypedDict, total=False):
-    basePath: Optional[String]
-    restApiId: Optional[String]
-    stage: Optional[String]
+    basePath: String | None
+    restApiId: String | None
+    stage: String | None
 
 
-ListOfBasePathMapping = List[BasePathMapping]
+ListOfBasePathMapping = list[BasePathMapping]
 
 
 class BasePathMappings(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfBasePathMapping]
+    position: String | None
+    items: ListOfBasePathMapping | None
 
 
 Blob = bytes
 
 
 class CanarySettings(TypedDict, total=False):
-    percentTraffic: Optional[Double]
-    deploymentId: Optional[String]
-    stageVariableOverrides: Optional[MapOfStringToString]
-    useStageCache: Optional[Boolean]
+    percentTraffic: Double | None
+    deploymentId: String | None
+    stageVariableOverrides: MapOfStringToString | None
+    useStageCache: Boolean | None
 
 
 class ClientCertificate(TypedDict, total=False):
-    clientCertificateId: Optional[String]
-    description: Optional[String]
-    pemEncodedCertificate: Optional[String]
-    createdDate: Optional[Timestamp]
-    expirationDate: Optional[Timestamp]
-    tags: Optional[MapOfStringToString]
+    clientCertificateId: String | None
+    description: String | None
+    pemEncodedCertificate: String | None
+    createdDate: Timestamp | None
+    expirationDate: Timestamp | None
+    tags: MapOfStringToString | None
 
 
-ListOfClientCertificate = List[ClientCertificate]
+ListOfClientCertificate = list[ClientCertificate]
 
 
 class ClientCertificates(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfClientCertificate]
+    position: String | None
+    items: ListOfClientCertificate | None
 
 
 class StageKey(TypedDict, total=False):
-    restApiId: Optional[String]
-    stageName: Optional[String]
+    restApiId: String | None
+    stageName: String | None
 
 
-ListOfStageKeys = List[StageKey]
+ListOfStageKeys = list[StageKey]
 
 
 class CreateApiKeyRequest(ServiceRequest):
-    name: Optional[String]
-    description: Optional[String]
-    enabled: Optional[Boolean]
-    generateDistinctId: Optional[Boolean]
-    value: Optional[String]
-    stageKeys: Optional[ListOfStageKeys]
-    customerId: Optional[String]
-    tags: Optional[MapOfStringToString]
+    name: String | None
+    description: String | None
+    enabled: Boolean | None
+    generateDistinctId: Boolean | None
+    value: String | None
+    stageKeys: ListOfStageKeys | None
+    customerId: String | None
+    tags: MapOfStringToString | None
 
 
 class CreateAuthorizerRequest(TypedDict, total=False):
     restApiId: String
     name: String
     type: AuthorizerType
-    providerARNs: Optional[ListOfARNs]
-    authType: Optional[String]
-    authorizerUri: Optional[String]
-    authorizerCredentials: Optional[String]
-    identitySource: Optional[String]
-    identityValidationExpression: Optional[String]
-    authorizerResultTtlInSeconds: Optional[NullableInteger]
+    providerARNs: ListOfARNs | None
+    authType: String | None
+    authorizerUri: String | None
+    authorizerCredentials: String | None
+    identitySource: String | None
+    identityValidationExpression: String | None
+    authorizerResultTtlInSeconds: NullableInteger | None
 
 
 class CreateBasePathMappingRequest(ServiceRequest):
     domainName: String
-    domainNameId: Optional[String]
-    basePath: Optional[String]
+    domainNameId: String | None
+    basePath: String | None
     restApiId: String
-    stage: Optional[String]
+    stage: String | None
 
 
 class DeploymentCanarySettings(TypedDict, total=False):
-    percentTraffic: Optional[Double]
-    stageVariableOverrides: Optional[MapOfStringToString]
-    useStageCache: Optional[Boolean]
+    percentTraffic: Double | None
+    stageVariableOverrides: MapOfStringToString | None
+    useStageCache: Boolean | None
 
 
 class CreateDeploymentRequest(ServiceRequest):
     restApiId: String
-    stageName: Optional[String]
-    stageDescription: Optional[String]
-    description: Optional[String]
-    cacheClusterEnabled: Optional[NullableBoolean]
-    cacheClusterSize: Optional[CacheClusterSize]
-    variables: Optional[MapOfStringToString]
-    canarySettings: Optional[DeploymentCanarySettings]
-    tracingEnabled: Optional[NullableBoolean]
+    stageName: String | None
+    stageDescription: String | None
+    description: String | None
+    cacheClusterEnabled: NullableBoolean | None
+    cacheClusterSize: CacheClusterSize | None
+    variables: MapOfStringToString | None
+    canarySettings: DeploymentCanarySettings | None
+    tracingEnabled: NullableBoolean | None
 
 
 class DocumentationPartLocation(TypedDict, total=False):
     type: DocumentationPartType
-    path: Optional[String]
-    method: Optional[String]
-    statusCode: Optional[DocumentationPartLocationStatusCode]
-    name: Optional[String]
+    path: String | None
+    method: String | None
+    statusCode: DocumentationPartLocationStatusCode | None
+    name: String | None
 
 
 class CreateDocumentationPartRequest(ServiceRequest):
@@ -428,62 +429,62 @@ class CreateDocumentationPartRequest(ServiceRequest):
 class CreateDocumentationVersionRequest(ServiceRequest):
     restApiId: String
     documentationVersion: String
-    stageName: Optional[String]
-    description: Optional[String]
+    stageName: String | None
+    description: String | None
 
 
 class CreateDomainNameAccessAssociationRequest(ServiceRequest):
     domainNameArn: String
     accessAssociationSourceType: AccessAssociationSourceType
     accessAssociationSource: String
-    tags: Optional[MapOfStringToString]
+    tags: MapOfStringToString | None
 
 
 class MutualTlsAuthenticationInput(TypedDict, total=False):
-    truststoreUri: Optional[String]
-    truststoreVersion: Optional[String]
+    truststoreUri: String | None
+    truststoreVersion: String | None
 
 
-ListOfEndpointType = List[EndpointType]
+ListOfEndpointType = list[EndpointType]
 
 
 class EndpointConfiguration(TypedDict, total=False):
-    types: Optional[ListOfEndpointType]
-    ipAddressType: Optional[IpAddressType]
-    vpcEndpointIds: Optional[ListOfString]
+    types: ListOfEndpointType | None
+    ipAddressType: IpAddressType | None
+    vpcEndpointIds: ListOfString | None
 
 
 class CreateDomainNameRequest(ServiceRequest):
     domainName: String
-    certificateName: Optional[String]
-    certificateBody: Optional[String]
-    certificatePrivateKey: Optional[String]
-    certificateChain: Optional[String]
-    certificateArn: Optional[String]
-    regionalCertificateName: Optional[String]
-    regionalCertificateArn: Optional[String]
-    endpointConfiguration: Optional[EndpointConfiguration]
-    tags: Optional[MapOfStringToString]
-    securityPolicy: Optional[SecurityPolicy]
-    mutualTlsAuthentication: Optional[MutualTlsAuthenticationInput]
-    ownershipVerificationCertificateArn: Optional[String]
-    policy: Optional[String]
-    routingMode: Optional[RoutingMode]
+    certificateName: String | None
+    certificateBody: String | None
+    certificatePrivateKey: String | None
+    certificateChain: String | None
+    certificateArn: String | None
+    regionalCertificateName: String | None
+    regionalCertificateArn: String | None
+    endpointConfiguration: EndpointConfiguration | None
+    tags: MapOfStringToString | None
+    securityPolicy: SecurityPolicy | None
+    mutualTlsAuthentication: MutualTlsAuthenticationInput | None
+    ownershipVerificationCertificateArn: String | None
+    policy: String | None
+    routingMode: RoutingMode | None
 
 
 class CreateModelRequest(ServiceRequest):
     restApiId: String
     name: String
-    description: Optional[String]
-    schema: Optional[String]
+    description: String | None
+    schema: String | None
     contentType: String
 
 
 class CreateRequestValidatorRequest(ServiceRequest):
     restApiId: String
-    name: Optional[String]
-    validateRequestBody: Optional[Boolean]
-    validateRequestParameters: Optional[Boolean]
+    name: String | None
+    validateRequestBody: Boolean | None
+    validateRequestParameters: Boolean | None
 
 
 class CreateResourceRequest(ServiceRequest):
@@ -494,30 +495,30 @@ class CreateResourceRequest(ServiceRequest):
 
 class CreateRestApiRequest(ServiceRequest):
     name: String
-    description: Optional[String]
-    version: Optional[String]
-    cloneFrom: Optional[String]
-    binaryMediaTypes: Optional[ListOfString]
-    minimumCompressionSize: Optional[NullableInteger]
-    apiKeySource: Optional[ApiKeySourceType]
-    endpointConfiguration: Optional[EndpointConfiguration]
-    policy: Optional[String]
-    tags: Optional[MapOfStringToString]
-    disableExecuteApiEndpoint: Optional[Boolean]
+    description: String | None
+    version: String | None
+    cloneFrom: String | None
+    binaryMediaTypes: ListOfString | None
+    minimumCompressionSize: NullableInteger | None
+    apiKeySource: ApiKeySourceType | None
+    endpointConfiguration: EndpointConfiguration | None
+    policy: String | None
+    tags: MapOfStringToString | None
+    disableExecuteApiEndpoint: Boolean | None
 
 
 class CreateStageRequest(ServiceRequest):
     restApiId: String
     stageName: String
     deploymentId: String
-    description: Optional[String]
-    cacheClusterEnabled: Optional[Boolean]
-    cacheClusterSize: Optional[CacheClusterSize]
-    variables: Optional[MapOfStringToString]
-    documentationVersion: Optional[String]
-    canarySettings: Optional[CanarySettings]
-    tracingEnabled: Optional[Boolean]
-    tags: Optional[MapOfStringToString]
+    description: String | None
+    cacheClusterEnabled: Boolean | None
+    cacheClusterSize: CacheClusterSize | None
+    variables: MapOfStringToString | None
+    documentationVersion: String | None
+    canarySettings: CanarySettings | None
+    tracingEnabled: Boolean | None
+    tags: MapOfStringToString | None
 
 
 class CreateUsagePlanKeyRequest(ServiceRequest):
@@ -527,28 +528,28 @@ class CreateUsagePlanKeyRequest(ServiceRequest):
 
 
 class QuotaSettings(TypedDict, total=False):
-    limit: Optional[Integer]
-    offset: Optional[Integer]
-    period: Optional[QuotaPeriodType]
+    limit: Integer | None
+    offset: Integer | None
+    period: QuotaPeriodType | None
 
 
-ListOfApiStage = List[ApiStage]
+ListOfApiStage = list[ApiStage]
 
 
 class CreateUsagePlanRequest(ServiceRequest):
     name: String
-    description: Optional[String]
-    apiStages: Optional[ListOfApiStage]
-    throttle: Optional[ThrottleSettings]
-    quota: Optional[QuotaSettings]
-    tags: Optional[MapOfStringToString]
+    description: String | None
+    apiStages: ListOfApiStage | None
+    throttle: ThrottleSettings | None
+    quota: QuotaSettings | None
+    tags: MapOfStringToString | None
 
 
 class CreateVpcLinkRequest(ServiceRequest):
     name: String
-    description: Optional[String]
+    description: String | None
     targetArns: ListOfString
-    tags: Optional[MapOfStringToString]
+    tags: MapOfStringToString | None
 
 
 class DeleteApiKeyRequest(ServiceRequest):
@@ -562,7 +563,7 @@ class DeleteAuthorizerRequest(ServiceRequest):
 
 class DeleteBasePathMappingRequest(ServiceRequest):
     domainName: String
-    domainNameId: Optional[String]
+    domainNameId: String | None
     basePath: String
 
 
@@ -591,7 +592,7 @@ class DeleteDomainNameAccessAssociationRequest(ServiceRequest):
 
 class DeleteDomainNameRequest(ServiceRequest):
     domainName: String
-    domainNameId: Optional[String]
+    domainNameId: String | None
 
 
 class DeleteGatewayResponseRequest(ServiceRequest):
@@ -663,121 +664,121 @@ class DeleteVpcLinkRequest(ServiceRequest):
 
 
 class MethodSnapshot(TypedDict, total=False):
-    authorizationType: Optional[String]
-    apiKeyRequired: Optional[Boolean]
+    authorizationType: String | None
+    apiKeyRequired: Boolean | None
 
 
-MapOfMethodSnapshot = Dict[String, MethodSnapshot]
-PathToMapOfMethodSnapshot = Dict[String, MapOfMethodSnapshot]
+MapOfMethodSnapshot = dict[String, MethodSnapshot]
+PathToMapOfMethodSnapshot = dict[String, MapOfMethodSnapshot]
 
 
 class Deployment(TypedDict, total=False):
-    id: Optional[String]
-    description: Optional[String]
-    createdDate: Optional[Timestamp]
-    apiSummary: Optional[PathToMapOfMethodSnapshot]
+    id: String | None
+    description: String | None
+    createdDate: Timestamp | None
+    apiSummary: PathToMapOfMethodSnapshot | None
 
 
-ListOfDeployment = List[Deployment]
+ListOfDeployment = list[Deployment]
 
 
 class Deployments(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfDeployment]
+    position: String | None
+    items: ListOfDeployment | None
 
 
 class DocumentationPart(TypedDict, total=False):
-    id: Optional[String]
-    location: Optional[DocumentationPartLocation]
-    properties: Optional[String]
+    id: String | None
+    location: DocumentationPartLocation | None
+    properties: String | None
 
 
 class DocumentationPartIds(TypedDict, total=False):
-    ids: Optional[ListOfString]
-    warnings: Optional[ListOfString]
+    ids: ListOfString | None
+    warnings: ListOfString | None
 
 
-ListOfDocumentationPart = List[DocumentationPart]
+ListOfDocumentationPart = list[DocumentationPart]
 
 
 class DocumentationParts(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfDocumentationPart]
+    position: String | None
+    items: ListOfDocumentationPart | None
 
 
 class DocumentationVersion(TypedDict, total=False):
-    version: Optional[String]
-    createdDate: Optional[Timestamp]
-    description: Optional[String]
+    version: String | None
+    createdDate: Timestamp | None
+    description: String | None
 
 
-ListOfDocumentationVersion = List[DocumentationVersion]
+ListOfDocumentationVersion = list[DocumentationVersion]
 
 
 class DocumentationVersions(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfDocumentationVersion]
+    position: String | None
+    items: ListOfDocumentationVersion | None
 
 
 class MutualTlsAuthentication(TypedDict, total=False):
-    truststoreUri: Optional[String]
-    truststoreVersion: Optional[String]
-    truststoreWarnings: Optional[ListOfString]
+    truststoreUri: String | None
+    truststoreVersion: String | None
+    truststoreWarnings: ListOfString | None
 
 
 class DomainName(TypedDict, total=False):
-    domainName: Optional[String]
-    domainNameId: Optional[String]
-    domainNameArn: Optional[String]
-    certificateName: Optional[String]
-    certificateArn: Optional[String]
-    certificateUploadDate: Optional[Timestamp]
-    regionalDomainName: Optional[String]
-    regionalHostedZoneId: Optional[String]
-    regionalCertificateName: Optional[String]
-    regionalCertificateArn: Optional[String]
-    distributionDomainName: Optional[String]
-    distributionHostedZoneId: Optional[String]
-    endpointConfiguration: Optional[EndpointConfiguration]
-    domainNameStatus: Optional[DomainNameStatus]
-    domainNameStatusMessage: Optional[String]
-    securityPolicy: Optional[SecurityPolicy]
-    tags: Optional[MapOfStringToString]
-    mutualTlsAuthentication: Optional[MutualTlsAuthentication]
-    ownershipVerificationCertificateArn: Optional[String]
-    managementPolicy: Optional[String]
-    policy: Optional[String]
-    routingMode: Optional[RoutingMode]
+    domainName: String | None
+    domainNameId: String | None
+    domainNameArn: String | None
+    certificateName: String | None
+    certificateArn: String | None
+    certificateUploadDate: Timestamp | None
+    regionalDomainName: String | None
+    regionalHostedZoneId: String | None
+    regionalCertificateName: String | None
+    regionalCertificateArn: String | None
+    distributionDomainName: String | None
+    distributionHostedZoneId: String | None
+    endpointConfiguration: EndpointConfiguration | None
+    domainNameStatus: DomainNameStatus | None
+    domainNameStatusMessage: String | None
+    securityPolicy: SecurityPolicy | None
+    tags: MapOfStringToString | None
+    mutualTlsAuthentication: MutualTlsAuthentication | None
+    ownershipVerificationCertificateArn: String | None
+    managementPolicy: String | None
+    policy: String | None
+    routingMode: RoutingMode | None
 
 
 class DomainNameAccessAssociation(TypedDict, total=False):
-    domainNameAccessAssociationArn: Optional[String]
-    domainNameArn: Optional[String]
-    accessAssociationSourceType: Optional[AccessAssociationSourceType]
-    accessAssociationSource: Optional[String]
-    tags: Optional[MapOfStringToString]
+    domainNameAccessAssociationArn: String | None
+    domainNameArn: String | None
+    accessAssociationSourceType: AccessAssociationSourceType | None
+    accessAssociationSource: String | None
+    tags: MapOfStringToString | None
 
 
-ListOfDomainNameAccessAssociation = List[DomainNameAccessAssociation]
+ListOfDomainNameAccessAssociation = list[DomainNameAccessAssociation]
 
 
 class DomainNameAccessAssociations(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfDomainNameAccessAssociation]
+    position: String | None
+    items: ListOfDomainNameAccessAssociation | None
 
 
-ListOfDomainName = List[DomainName]
+ListOfDomainName = list[DomainName]
 
 
 class DomainNames(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfDomainName]
+    position: String | None
+    items: ListOfDomainName | None
 
 
 class ExportResponse(TypedDict, total=False):
-    body: Optional[Union[Blob, IO[Blob], Iterable[Blob]]]
-    contentType: Optional[String]
-    contentDisposition: Optional[String]
+    body: Blob | IO[Blob] | Iterable[Blob] | None
+    contentType: String | None
+    contentDisposition: String | None
 
 
 class FlushStageAuthorizersCacheRequest(ServiceRequest):
@@ -791,24 +792,24 @@ class FlushStageCacheRequest(ServiceRequest):
 
 
 class GatewayResponse(TypedDict, total=False):
-    responseType: Optional[GatewayResponseType]
-    statusCode: Optional[StatusCode]
-    responseParameters: Optional[MapOfStringToString]
-    responseTemplates: Optional[MapOfStringToString]
-    defaultResponse: Optional[Boolean]
+    responseType: GatewayResponseType | None
+    statusCode: StatusCode | None
+    responseParameters: MapOfStringToString | None
+    responseTemplates: MapOfStringToString | None
+    defaultResponse: Boolean | None
 
 
-ListOfGatewayResponse = List[GatewayResponse]
+ListOfGatewayResponse = list[GatewayResponse]
 
 
 class GatewayResponses(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfGatewayResponse]
+    position: String | None
+    items: ListOfGatewayResponse | None
 
 
 class GenerateClientCertificateRequest(ServiceRequest):
-    description: Optional[String]
-    tags: Optional[MapOfStringToString]
+    description: String | None
+    tags: MapOfStringToString | None
 
 
 class GetAccountRequest(ServiceRequest):
@@ -817,15 +818,15 @@ class GetAccountRequest(ServiceRequest):
 
 class GetApiKeyRequest(ServiceRequest):
     apiKey: String
-    includeValue: Optional[NullableBoolean]
+    includeValue: NullableBoolean | None
 
 
 class GetApiKeysRequest(ServiceRequest):
-    position: Optional[String]
-    limit: Optional[NullableInteger]
-    nameQuery: Optional[String]
-    customerId: Optional[String]
-    includeValues: Optional[NullableBoolean]
+    position: String | None
+    limit: NullableInteger | None
+    nameQuery: String | None
+    customerId: String | None
+    includeValues: NullableBoolean | None
 
 
 class GetAuthorizerRequest(ServiceRequest):
@@ -835,21 +836,21 @@ class GetAuthorizerRequest(ServiceRequest):
 
 class GetAuthorizersRequest(ServiceRequest):
     restApiId: String
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetBasePathMappingRequest(ServiceRequest):
     domainName: String
-    domainNameId: Optional[String]
+    domainNameId: String | None
     basePath: String
 
 
 class GetBasePathMappingsRequest(ServiceRequest):
     domainName: String
-    domainNameId: Optional[String]
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    domainNameId: String | None
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetClientCertificateRequest(ServiceRequest):
@@ -857,20 +858,20 @@ class GetClientCertificateRequest(ServiceRequest):
 
 
 class GetClientCertificatesRequest(ServiceRequest):
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetDeploymentRequest(ServiceRequest):
     restApiId: String
     deploymentId: String
-    embed: Optional[ListOfString]
+    embed: ListOfString | None
 
 
 class GetDeploymentsRequest(ServiceRequest):
     restApiId: String
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetDocumentationPartRequest(ServiceRequest):
@@ -880,12 +881,12 @@ class GetDocumentationPartRequest(ServiceRequest):
 
 class GetDocumentationPartsRequest(TypedDict, total=False):
     restApiId: String
-    type: Optional[DocumentationPartType]
-    nameQuery: Optional[String]
-    path: Optional[String]
-    position: Optional[String]
-    limit: Optional[NullableInteger]
-    locationStatus: Optional[LocationStatusType]
+    type: DocumentationPartType | None
+    nameQuery: String | None
+    path: String | None
+    position: String | None
+    limit: NullableInteger | None
+    locationStatus: LocationStatusType | None
 
 
 class GetDocumentationVersionRequest(ServiceRequest):
@@ -895,33 +896,33 @@ class GetDocumentationVersionRequest(ServiceRequest):
 
 class GetDocumentationVersionsRequest(ServiceRequest):
     restApiId: String
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetDomainNameAccessAssociationsRequest(ServiceRequest):
-    position: Optional[String]
-    limit: Optional[NullableInteger]
-    resourceOwner: Optional[ResourceOwner]
+    position: String | None
+    limit: NullableInteger | None
+    resourceOwner: ResourceOwner | None
 
 
 class GetDomainNameRequest(ServiceRequest):
     domainName: String
-    domainNameId: Optional[String]
+    domainNameId: String | None
 
 
 class GetDomainNamesRequest(ServiceRequest):
-    position: Optional[String]
-    limit: Optional[NullableInteger]
-    resourceOwner: Optional[ResourceOwner]
+    position: String | None
+    limit: NullableInteger | None
+    resourceOwner: ResourceOwner | None
 
 
 class GetExportRequest(ServiceRequest):
     restApiId: String
     stageName: String
     exportType: String
-    parameters: Optional[MapOfStringToString]
-    accepts: Optional[String]
+    parameters: MapOfStringToString | None
+    accepts: String | None
 
 
 class GetGatewayResponseRequest(ServiceRequest):
@@ -931,8 +932,8 @@ class GetGatewayResponseRequest(ServiceRequest):
 
 class GetGatewayResponsesRequest(ServiceRequest):
     restApiId: String
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetIntegrationRequest(ServiceRequest):
@@ -964,7 +965,7 @@ class GetMethodResponseRequest(ServiceRequest):
 class GetModelRequest(ServiceRequest):
     restApiId: String
     modelName: String
-    flatten: Optional[Boolean]
+    flatten: Boolean | None
 
 
 class GetModelTemplateRequest(ServiceRequest):
@@ -974,8 +975,8 @@ class GetModelTemplateRequest(ServiceRequest):
 
 class GetModelsRequest(ServiceRequest):
     restApiId: String
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetRequestValidatorRequest(ServiceRequest):
@@ -985,21 +986,21 @@ class GetRequestValidatorRequest(ServiceRequest):
 
 class GetRequestValidatorsRequest(ServiceRequest):
     restApiId: String
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetResourceRequest(ServiceRequest):
     restApiId: String
     resourceId: String
-    embed: Optional[ListOfString]
+    embed: ListOfString | None
 
 
 class GetResourcesRequest(ServiceRequest):
     restApiId: String
-    position: Optional[String]
-    limit: Optional[NullableInteger]
-    embed: Optional[ListOfString]
+    position: String | None
+    limit: NullableInteger | None
+    embed: ListOfString | None
 
 
 class GetRestApiRequest(ServiceRequest):
@@ -1007,15 +1008,15 @@ class GetRestApiRequest(ServiceRequest):
 
 
 class GetRestApisRequest(ServiceRequest):
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetSdkRequest(ServiceRequest):
     restApiId: String
     stageName: String
     sdkType: String
-    parameters: Optional[MapOfStringToString]
+    parameters: MapOfStringToString | None
 
 
 class GetSdkTypeRequest(ServiceRequest):
@@ -1023,8 +1024,8 @@ class GetSdkTypeRequest(ServiceRequest):
 
 
 class GetSdkTypesRequest(ServiceRequest):
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetStageRequest(ServiceRequest):
@@ -1034,13 +1035,13 @@ class GetStageRequest(ServiceRequest):
 
 class GetStagesRequest(ServiceRequest):
     restApiId: String
-    deploymentId: Optional[String]
+    deploymentId: String | None
 
 
 class GetTagsRequest(ServiceRequest):
     resourceArn: String
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetUsagePlanKeyRequest(ServiceRequest):
@@ -1050,9 +1051,9 @@ class GetUsagePlanKeyRequest(ServiceRequest):
 
 class GetUsagePlanKeysRequest(ServiceRequest):
     usagePlanId: String
-    position: Optional[String]
-    limit: Optional[NullableInteger]
-    nameQuery: Optional[String]
+    position: String | None
+    limit: NullableInteger | None
+    nameQuery: String | None
 
 
 class GetUsagePlanRequest(ServiceRequest):
@@ -1060,18 +1061,18 @@ class GetUsagePlanRequest(ServiceRequest):
 
 
 class GetUsagePlansRequest(ServiceRequest):
-    position: Optional[String]
-    keyId: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    keyId: String | None
+    limit: NullableInteger | None
 
 
 class GetUsageRequest(ServiceRequest):
     usagePlanId: String
-    keyId: Optional[String]
+    keyId: String | None
     startDate: String
     endDate: String
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class GetVpcLinkRequest(ServiceRequest):
@@ -1079,267 +1080,267 @@ class GetVpcLinkRequest(ServiceRequest):
 
 
 class GetVpcLinksRequest(ServiceRequest):
-    position: Optional[String]
-    limit: Optional[NullableInteger]
+    position: String | None
+    limit: NullableInteger | None
 
 
 class ImportApiKeysRequest(ServiceRequest):
     body: IO[Blob]
     format: ApiKeysFormat
-    failOnWarnings: Optional[Boolean]
+    failOnWarnings: Boolean | None
 
 
 class ImportDocumentationPartsRequest(ServiceRequest):
     body: IO[Blob]
     restApiId: String
-    mode: Optional[PutMode]
-    failOnWarnings: Optional[Boolean]
+    mode: PutMode | None
+    failOnWarnings: Boolean | None
 
 
 class ImportRestApiRequest(ServiceRequest):
     body: IO[Blob]
-    failOnWarnings: Optional[Boolean]
-    parameters: Optional[MapOfStringToString]
+    failOnWarnings: Boolean | None
+    parameters: MapOfStringToString | None
 
 
 class TlsConfig(TypedDict, total=False):
-    insecureSkipVerification: Optional[Boolean]
+    insecureSkipVerification: Boolean | None
 
 
 class IntegrationResponse(TypedDict, total=False):
-    statusCode: Optional[StatusCode]
-    selectionPattern: Optional[String]
-    responseParameters: Optional[MapOfStringToString]
-    responseTemplates: Optional[MapOfStringToString]
-    contentHandling: Optional[ContentHandlingStrategy]
+    statusCode: StatusCode | None
+    selectionPattern: String | None
+    responseParameters: MapOfStringToString | None
+    responseTemplates: MapOfStringToString | None
+    contentHandling: ContentHandlingStrategy | None
 
 
-MapOfIntegrationResponse = Dict[String, IntegrationResponse]
+MapOfIntegrationResponse = dict[String, IntegrationResponse]
 
 
 class Integration(TypedDict, total=False):
-    type: Optional[IntegrationType]
-    httpMethod: Optional[String]
-    uri: Optional[String]
-    connectionType: Optional[ConnectionType]
-    connectionId: Optional[String]
-    credentials: Optional[String]
-    requestParameters: Optional[MapOfStringToString]
-    requestTemplates: Optional[MapOfStringToString]
-    passthroughBehavior: Optional[String]
-    contentHandling: Optional[ContentHandlingStrategy]
-    timeoutInMillis: Optional[Integer]
-    cacheNamespace: Optional[String]
-    cacheKeyParameters: Optional[ListOfString]
-    integrationResponses: Optional[MapOfIntegrationResponse]
-    tlsConfig: Optional[TlsConfig]
+    type: IntegrationType | None
+    httpMethod: String | None
+    uri: String | None
+    connectionType: ConnectionType | None
+    connectionId: String | None
+    credentials: String | None
+    requestParameters: MapOfStringToString | None
+    requestTemplates: MapOfStringToString | None
+    passthroughBehavior: String | None
+    contentHandling: ContentHandlingStrategy | None
+    timeoutInMillis: Integer | None
+    cacheNamespace: String | None
+    cacheKeyParameters: ListOfString | None
+    integrationResponses: MapOfIntegrationResponse | None
+    tlsConfig: TlsConfig | None
 
 
 Long = int
-ListOfLong = List[Long]
+ListOfLong = list[Long]
 
 
 class Model(TypedDict, total=False):
-    id: Optional[String]
-    name: Optional[String]
-    description: Optional[String]
-    schema: Optional[String]
-    contentType: Optional[String]
+    id: String | None
+    name: String | None
+    description: String | None
+    schema: String | None
+    contentType: String | None
 
 
-ListOfModel = List[Model]
+ListOfModel = list[Model]
 PatchOperation = TypedDict(
     "PatchOperation",
     {
-        "op": Optional[Op],
-        "path": Optional[String],
-        "value": Optional[String],
-        "from": Optional[String],
+        "op": Op | None,
+        "path": String | None,
+        "value": String | None,
+        "from": String | None,
     },
     total=False,
 )
-ListOfPatchOperation = List[PatchOperation]
+ListOfPatchOperation = list[PatchOperation]
 
 
 class RequestValidator(TypedDict, total=False):
-    id: Optional[String]
-    name: Optional[String]
-    validateRequestBody: Optional[Boolean]
-    validateRequestParameters: Optional[Boolean]
+    id: String | None
+    name: String | None
+    validateRequestBody: Boolean | None
+    validateRequestParameters: Boolean | None
 
 
-ListOfRequestValidator = List[RequestValidator]
-MapOfStringToBoolean = Dict[String, NullableBoolean]
+ListOfRequestValidator = list[RequestValidator]
+MapOfStringToBoolean = dict[String, NullableBoolean]
 
 
 class MethodResponse(TypedDict, total=False):
-    statusCode: Optional[StatusCode]
-    responseParameters: Optional[MapOfStringToBoolean]
-    responseModels: Optional[MapOfStringToString]
+    statusCode: StatusCode | None
+    responseParameters: MapOfStringToBoolean | None
+    responseModels: MapOfStringToString | None
 
 
-MapOfMethodResponse = Dict[String, MethodResponse]
+MapOfMethodResponse = dict[String, MethodResponse]
 
 
 class Method(TypedDict, total=False):
-    httpMethod: Optional[String]
-    authorizationType: Optional[String]
-    authorizerId: Optional[String]
-    apiKeyRequired: Optional[NullableBoolean]
-    requestValidatorId: Optional[String]
-    operationName: Optional[String]
-    requestParameters: Optional[MapOfStringToBoolean]
-    requestModels: Optional[MapOfStringToString]
-    methodResponses: Optional[MapOfMethodResponse]
-    methodIntegration: Optional[Integration]
-    authorizationScopes: Optional[ListOfString]
+    httpMethod: String | None
+    authorizationType: String | None
+    authorizerId: String | None
+    apiKeyRequired: NullableBoolean | None
+    requestValidatorId: String | None
+    operationName: String | None
+    requestParameters: MapOfStringToBoolean | None
+    requestModels: MapOfStringToString | None
+    methodResponses: MapOfMethodResponse | None
+    methodIntegration: Integration | None
+    authorizationScopes: ListOfString | None
 
 
-MapOfMethod = Dict[String, Method]
+MapOfMethod = dict[String, Method]
 
 
 class Resource(TypedDict, total=False):
-    id: Optional[String]
-    parentId: Optional[String]
-    pathPart: Optional[String]
-    path: Optional[String]
-    resourceMethods: Optional[MapOfMethod]
+    id: String | None
+    parentId: String | None
+    pathPart: String | None
+    path: String | None
+    resourceMethods: MapOfMethod | None
 
 
-ListOfResource = List[Resource]
+ListOfResource = list[Resource]
 
 
 class RestApi(TypedDict, total=False):
-    id: Optional[String]
-    name: Optional[String]
-    description: Optional[String]
-    createdDate: Optional[Timestamp]
-    version: Optional[String]
-    warnings: Optional[ListOfString]
-    binaryMediaTypes: Optional[ListOfString]
-    minimumCompressionSize: Optional[NullableInteger]
-    apiKeySource: Optional[ApiKeySourceType]
-    endpointConfiguration: Optional[EndpointConfiguration]
-    policy: Optional[String]
-    tags: Optional[MapOfStringToString]
-    disableExecuteApiEndpoint: Optional[Boolean]
-    rootResourceId: Optional[String]
+    id: String | None
+    name: String | None
+    description: String | None
+    createdDate: Timestamp | None
+    version: String | None
+    warnings: ListOfString | None
+    binaryMediaTypes: ListOfString | None
+    minimumCompressionSize: NullableInteger | None
+    apiKeySource: ApiKeySourceType | None
+    endpointConfiguration: EndpointConfiguration | None
+    policy: String | None
+    tags: MapOfStringToString | None
+    disableExecuteApiEndpoint: Boolean | None
+    rootResourceId: String | None
 
 
-ListOfRestApi = List[RestApi]
+ListOfRestApi = list[RestApi]
 
 
 class SdkConfigurationProperty(TypedDict, total=False):
-    name: Optional[String]
-    friendlyName: Optional[String]
-    description: Optional[String]
-    required: Optional[Boolean]
-    defaultValue: Optional[String]
+    name: String | None
+    friendlyName: String | None
+    description: String | None
+    required: Boolean | None
+    defaultValue: String | None
 
 
-ListOfSdkConfigurationProperty = List[SdkConfigurationProperty]
+ListOfSdkConfigurationProperty = list[SdkConfigurationProperty]
 
 
 class SdkType(TypedDict, total=False):
-    id: Optional[String]
-    friendlyName: Optional[String]
-    description: Optional[String]
-    configurationProperties: Optional[ListOfSdkConfigurationProperty]
+    id: String | None
+    friendlyName: String | None
+    description: String | None
+    configurationProperties: ListOfSdkConfigurationProperty | None
 
 
-ListOfSdkType = List[SdkType]
+ListOfSdkType = list[SdkType]
 
 
 class MethodSetting(TypedDict, total=False):
-    metricsEnabled: Optional[Boolean]
-    loggingLevel: Optional[String]
-    dataTraceEnabled: Optional[Boolean]
-    throttlingBurstLimit: Optional[Integer]
-    throttlingRateLimit: Optional[Double]
-    cachingEnabled: Optional[Boolean]
-    cacheTtlInSeconds: Optional[Integer]
-    cacheDataEncrypted: Optional[Boolean]
-    requireAuthorizationForCacheControl: Optional[Boolean]
-    unauthorizedCacheControlHeaderStrategy: Optional[UnauthorizedCacheControlHeaderStrategy]
+    metricsEnabled: Boolean | None
+    loggingLevel: String | None
+    dataTraceEnabled: Boolean | None
+    throttlingBurstLimit: Integer | None
+    throttlingRateLimit: Double | None
+    cachingEnabled: Boolean | None
+    cacheTtlInSeconds: Integer | None
+    cacheDataEncrypted: Boolean | None
+    requireAuthorizationForCacheControl: Boolean | None
+    unauthorizedCacheControlHeaderStrategy: UnauthorizedCacheControlHeaderStrategy | None
 
 
-MapOfMethodSettings = Dict[String, MethodSetting]
+MapOfMethodSettings = dict[String, MethodSetting]
 
 
 class Stage(TypedDict, total=False):
-    deploymentId: Optional[String]
-    clientCertificateId: Optional[String]
-    stageName: Optional[String]
-    description: Optional[String]
-    cacheClusterEnabled: Optional[Boolean]
-    cacheClusterSize: Optional[CacheClusterSize]
-    cacheClusterStatus: Optional[CacheClusterStatus]
-    methodSettings: Optional[MapOfMethodSettings]
-    variables: Optional[MapOfStringToString]
-    documentationVersion: Optional[String]
-    accessLogSettings: Optional[AccessLogSettings]
-    canarySettings: Optional[CanarySettings]
-    tracingEnabled: Optional[Boolean]
-    webAclArn: Optional[String]
-    tags: Optional[MapOfStringToString]
-    createdDate: Optional[Timestamp]
-    lastUpdatedDate: Optional[Timestamp]
+    deploymentId: String | None
+    clientCertificateId: String | None
+    stageName: String | None
+    description: String | None
+    cacheClusterEnabled: Boolean | None
+    cacheClusterSize: CacheClusterSize | None
+    cacheClusterStatus: CacheClusterStatus | None
+    methodSettings: MapOfMethodSettings | None
+    variables: MapOfStringToString | None
+    documentationVersion: String | None
+    accessLogSettings: AccessLogSettings | None
+    canarySettings: CanarySettings | None
+    tracingEnabled: Boolean | None
+    webAclArn: String | None
+    tags: MapOfStringToString | None
+    createdDate: Timestamp | None
+    lastUpdatedDate: Timestamp | None
 
 
-ListOfStage = List[Stage]
-ListOfUsage = List[ListOfLong]
+ListOfStage = list[Stage]
+ListOfUsage = list[ListOfLong]
 
 
 class UsagePlan(TypedDict, total=False):
-    id: Optional[String]
-    name: Optional[String]
-    description: Optional[String]
-    apiStages: Optional[ListOfApiStage]
-    throttle: Optional[ThrottleSettings]
-    quota: Optional[QuotaSettings]
-    productCode: Optional[String]
-    tags: Optional[MapOfStringToString]
+    id: String | None
+    name: String | None
+    description: String | None
+    apiStages: ListOfApiStage | None
+    throttle: ThrottleSettings | None
+    quota: QuotaSettings | None
+    productCode: String | None
+    tags: MapOfStringToString | None
 
 
-ListOfUsagePlan = List[UsagePlan]
+ListOfUsagePlan = list[UsagePlan]
 
 
 class UsagePlanKey(TypedDict, total=False):
-    id: Optional[String]
-    type: Optional[String]
-    value: Optional[String]
-    name: Optional[String]
+    id: String | None
+    type: String | None
+    value: String | None
+    name: String | None
 
 
-ListOfUsagePlanKey = List[UsagePlanKey]
+ListOfUsagePlanKey = list[UsagePlanKey]
 
 
 class VpcLink(TypedDict, total=False):
-    id: Optional[String]
-    name: Optional[String]
-    description: Optional[String]
-    targetArns: Optional[ListOfString]
-    status: Optional[VpcLinkStatus]
-    statusMessage: Optional[String]
-    tags: Optional[MapOfStringToString]
+    id: String | None
+    name: String | None
+    description: String | None
+    targetArns: ListOfString | None
+    status: VpcLinkStatus | None
+    statusMessage: String | None
+    tags: MapOfStringToString | None
 
 
-ListOfVpcLink = List[VpcLink]
-MapOfKeyUsages = Dict[String, ListOfUsage]
-MapOfStringToList = Dict[String, ListOfString]
+ListOfVpcLink = list[VpcLink]
+MapOfKeyUsages = dict[String, ListOfUsage]
+MapOfStringToList = dict[String, ListOfString]
 
 
 class Models(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfModel]
+    position: String | None
+    items: ListOfModel | None
 
 
 class PutGatewayResponseRequest(ServiceRequest):
     restApiId: String
     responseType: GatewayResponseType
-    statusCode: Optional[StatusCode]
-    responseParameters: Optional[MapOfStringToString]
-    responseTemplates: Optional[MapOfStringToString]
+    statusCode: StatusCode | None
+    responseParameters: MapOfStringToString | None
+    responseTemplates: MapOfStringToString | None
 
 
 class PutIntegrationRequest(TypedDict, total=False):
@@ -1347,19 +1348,19 @@ class PutIntegrationRequest(TypedDict, total=False):
     resourceId: String
     httpMethod: String
     type: IntegrationType
-    integrationHttpMethod: Optional[String]
-    uri: Optional[String]
-    connectionType: Optional[ConnectionType]
-    connectionId: Optional[String]
-    credentials: Optional[String]
-    requestParameters: Optional[MapOfStringToString]
-    requestTemplates: Optional[MapOfStringToString]
-    passthroughBehavior: Optional[String]
-    cacheNamespace: Optional[String]
-    cacheKeyParameters: Optional[ListOfString]
-    contentHandling: Optional[ContentHandlingStrategy]
-    timeoutInMillis: Optional[NullableInteger]
-    tlsConfig: Optional[TlsConfig]
+    integrationHttpMethod: String | None
+    uri: String | None
+    connectionType: ConnectionType | None
+    connectionId: String | None
+    credentials: String | None
+    requestParameters: MapOfStringToString | None
+    requestTemplates: MapOfStringToString | None
+    passthroughBehavior: String | None
+    cacheNamespace: String | None
+    cacheKeyParameters: ListOfString | None
+    contentHandling: ContentHandlingStrategy | None
+    timeoutInMillis: NullableInteger | None
+    tlsConfig: TlsConfig | None
 
 
 class PutIntegrationResponseRequest(ServiceRequest):
@@ -1367,10 +1368,10 @@ class PutIntegrationResponseRequest(ServiceRequest):
     resourceId: String
     httpMethod: String
     statusCode: StatusCode
-    selectionPattern: Optional[String]
-    responseParameters: Optional[MapOfStringToString]
-    responseTemplates: Optional[MapOfStringToString]
-    contentHandling: Optional[ContentHandlingStrategy]
+    selectionPattern: String | None
+    responseParameters: MapOfStringToString | None
+    responseTemplates: MapOfStringToString | None
+    contentHandling: ContentHandlingStrategy | None
 
 
 class PutMethodRequest(ServiceRequest):
@@ -1378,13 +1379,13 @@ class PutMethodRequest(ServiceRequest):
     resourceId: String
     httpMethod: String
     authorizationType: String
-    authorizerId: Optional[String]
-    apiKeyRequired: Optional[Boolean]
-    operationName: Optional[String]
-    requestParameters: Optional[MapOfStringToBoolean]
-    requestModels: Optional[MapOfStringToString]
-    requestValidatorId: Optional[String]
-    authorizationScopes: Optional[ListOfString]
+    authorizerId: String | None
+    apiKeyRequired: Boolean | None
+    operationName: String | None
+    requestParameters: MapOfStringToBoolean | None
+    requestModels: MapOfStringToString | None
+    requestValidatorId: String | None
+    authorizationScopes: ListOfString | None
 
 
 class PutMethodResponseRequest(ServiceRequest):
@@ -1392,16 +1393,16 @@ class PutMethodResponseRequest(ServiceRequest):
     resourceId: String
     httpMethod: String
     statusCode: StatusCode
-    responseParameters: Optional[MapOfStringToBoolean]
-    responseModels: Optional[MapOfStringToString]
+    responseParameters: MapOfStringToBoolean | None
+    responseModels: MapOfStringToString | None
 
 
 class PutRestApiRequest(ServiceRequest):
     body: IO[Blob]
     restApiId: String
-    mode: Optional[PutMode]
-    failOnWarnings: Optional[Boolean]
-    parameters: Optional[MapOfStringToString]
+    mode: PutMode | None
+    failOnWarnings: Boolean | None
+    parameters: MapOfStringToString | None
 
 
 class RejectDomainNameAccessAssociationRequest(ServiceRequest):
@@ -1410,33 +1411,33 @@ class RejectDomainNameAccessAssociationRequest(ServiceRequest):
 
 
 class RequestValidators(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfRequestValidator]
+    position: String | None
+    items: ListOfRequestValidator | None
 
 
 class Resources(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfResource]
+    position: String | None
+    items: ListOfResource | None
 
 
 class RestApis(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfRestApi]
+    position: String | None
+    items: ListOfRestApi | None
 
 
 class SdkResponse(TypedDict, total=False):
-    body: Optional[Union[Blob, IO[Blob], Iterable[Blob]]]
-    contentType: Optional[String]
-    contentDisposition: Optional[String]
+    body: Blob | IO[Blob] | Iterable[Blob] | None
+    contentType: String | None
+    contentDisposition: String | None
 
 
 class SdkTypes(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfSdkType]
+    position: String | None
+    items: ListOfSdkType | None
 
 
 class Stages(TypedDict, total=False):
-    item: Optional[ListOfStage]
+    item: ListOfStage | None
 
 
 class TagResourceRequest(ServiceRequest):
@@ -1445,53 +1446,53 @@ class TagResourceRequest(ServiceRequest):
 
 
 class Tags(TypedDict, total=False):
-    tags: Optional[MapOfStringToString]
+    tags: MapOfStringToString | None
 
 
 class Template(TypedDict, total=False):
-    value: Optional[String]
+    value: String | None
 
 
 class TestInvokeAuthorizerRequest(ServiceRequest):
     restApiId: String
     authorizerId: String
-    headers: Optional[MapOfStringToString]
-    multiValueHeaders: Optional[MapOfStringToList]
-    pathWithQueryString: Optional[String]
-    body: Optional[String]
-    stageVariables: Optional[MapOfStringToString]
-    additionalContext: Optional[MapOfStringToString]
+    headers: MapOfStringToString | None
+    multiValueHeaders: MapOfStringToList | None
+    pathWithQueryString: String | None
+    body: String | None
+    stageVariables: MapOfStringToString | None
+    additionalContext: MapOfStringToString | None
 
 
 class TestInvokeAuthorizerResponse(TypedDict, total=False):
-    clientStatus: Optional[Integer]
-    log: Optional[String]
-    latency: Optional[Long]
-    principalId: Optional[String]
-    policy: Optional[String]
-    authorization: Optional[MapOfStringToList]
-    claims: Optional[MapOfStringToString]
+    clientStatus: Integer | None
+    log: String | None
+    latency: Long | None
+    principalId: String | None
+    policy: String | None
+    authorization: MapOfStringToList | None
+    claims: MapOfStringToString | None
 
 
 class TestInvokeMethodRequest(ServiceRequest):
     restApiId: String
     resourceId: String
     httpMethod: String
-    pathWithQueryString: Optional[String]
-    body: Optional[String]
-    headers: Optional[MapOfStringToString]
-    multiValueHeaders: Optional[MapOfStringToList]
-    clientCertificateId: Optional[String]
-    stageVariables: Optional[MapOfStringToString]
+    pathWithQueryString: String | None
+    body: String | None
+    headers: MapOfStringToString | None
+    multiValueHeaders: MapOfStringToList | None
+    clientCertificateId: String | None
+    stageVariables: MapOfStringToString | None
 
 
 class TestInvokeMethodResponse(TypedDict, total=False):
-    status: Optional[Integer]
-    body: Optional[String]
-    headers: Optional[MapOfStringToString]
-    multiValueHeaders: Optional[MapOfStringToList]
-    log: Optional[String]
-    latency: Optional[Long]
+    status: Integer | None
+    body: String | None
+    headers: MapOfStringToString | None
+    multiValueHeaders: MapOfStringToList | None
+    log: String | None
+    latency: Long | None
 
 
 class UntagResourceRequest(ServiceRequest):
@@ -1500,67 +1501,67 @@ class UntagResourceRequest(ServiceRequest):
 
 
 class UpdateAccountRequest(ServiceRequest):
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateApiKeyRequest(ServiceRequest):
     apiKey: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateAuthorizerRequest(ServiceRequest):
     restApiId: String
     authorizerId: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateBasePathMappingRequest(ServiceRequest):
     domainName: String
-    domainNameId: Optional[String]
+    domainNameId: String | None
     basePath: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateClientCertificateRequest(ServiceRequest):
     clientCertificateId: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateDeploymentRequest(ServiceRequest):
     restApiId: String
     deploymentId: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateDocumentationPartRequest(ServiceRequest):
     restApiId: String
     documentationPartId: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateDocumentationVersionRequest(ServiceRequest):
     restApiId: String
     documentationVersion: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateDomainNameRequest(ServiceRequest):
     domainName: String
-    domainNameId: Optional[String]
-    patchOperations: Optional[ListOfPatchOperation]
+    domainNameId: String | None
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateGatewayResponseRequest(ServiceRequest):
     restApiId: String
     responseType: GatewayResponseType
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateIntegrationRequest(ServiceRequest):
     restApiId: String
     resourceId: String
     httpMethod: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateIntegrationResponseRequest(ServiceRequest):
@@ -1568,14 +1569,14 @@ class UpdateIntegrationResponseRequest(ServiceRequest):
     resourceId: String
     httpMethod: String
     statusCode: StatusCode
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateMethodRequest(ServiceRequest):
     restApiId: String
     resourceId: String
     httpMethod: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateMethodResponseRequest(ServiceRequest):
@@ -1583,80 +1584,80 @@ class UpdateMethodResponseRequest(ServiceRequest):
     resourceId: String
     httpMethod: String
     statusCode: StatusCode
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateModelRequest(ServiceRequest):
     restApiId: String
     modelName: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateRequestValidatorRequest(ServiceRequest):
     restApiId: String
     requestValidatorId: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateResourceRequest(ServiceRequest):
     restApiId: String
     resourceId: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateRestApiRequest(ServiceRequest):
     restApiId: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateStageRequest(ServiceRequest):
     restApiId: String
     stageName: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateUsagePlanRequest(ServiceRequest):
     usagePlanId: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateUsageRequest(ServiceRequest):
     usagePlanId: String
     keyId: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class UpdateVpcLinkRequest(ServiceRequest):
     vpcLinkId: String
-    patchOperations: Optional[ListOfPatchOperation]
+    patchOperations: ListOfPatchOperation | None
 
 
 class Usage(TypedDict, total=False):
-    usagePlanId: Optional[String]
-    startDate: Optional[String]
-    endDate: Optional[String]
-    position: Optional[String]
-    items: Optional[MapOfKeyUsages]
+    usagePlanId: String | None
+    startDate: String | None
+    endDate: String | None
+    position: String | None
+    items: MapOfKeyUsages | None
 
 
 class UsagePlanKeys(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfUsagePlanKey]
+    position: String | None
+    items: ListOfUsagePlanKey | None
 
 
 class UsagePlans(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfUsagePlan]
+    position: String | None
+    items: ListOfUsagePlan | None
 
 
 class VpcLinks(TypedDict, total=False):
-    position: Optional[String]
-    items: Optional[ListOfVpcLink]
+    position: String | None
+    items: ListOfVpcLink | None
 
 
 class ApigatewayApi:
-    service = "apigateway"
-    version = "2015-07-09"
+    service: str = "apigateway"
+    version: str = "2015-07-09"
 
     @handler("CreateApiKey")
     def create_api_key(

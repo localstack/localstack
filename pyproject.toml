@@ -51,9 +51,9 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.40.64",
+    "boto3==1.40.69",
     # pinned / updated by ASF update action
-    "botocore==1.40.64",
+    "botocore==1.40.69",
     # transitive dependency of botocore, added to avoid specific version
     "awscrt>=0.13.14,!=0.27.1",
     "cbor2>=5.5.0",
@@ -81,7 +81,7 @@ base-runtime = [
 runtime = [
     "localstack-core[base-runtime]",
     # pinned / updated by ASF update action
-    "awscli==1.42.64",
+    "awscli==1.42.69",
     "airspeed-ext>=0.6.3",
     # antlr4-python3-runtime: exact pin because antlr4 runtime is tightly coupled to the generated parser code
     "antlr4-python3-runtime==4.13.2",
@@ -261,7 +261,6 @@ extend-safe-fixes = [
 # Since F401 (removing unused imports) is currently an unsafe fix, these imports cannot be automatically removed.
 # Therefore, we temporarily disable the rules below for __init__ files.
 [tool.ruff.lint.per-file-ignores]
-"localstack-core/localstack/**/__init__.py" = ["UP006", "UP007", "UP035", "UP045"]
 "tests/aws/services/lambda_/functions/**" = ["UP"]  # lambda tests parametrize the runtime
 
 [tool.ruff.lint.pyupgrade]

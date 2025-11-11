@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -132,23 +132,23 @@ class ValidationException(ServiceException):
     status_code: int = 400
 
 
-Subnets = List[Subnet]
-SecurityGroups = List[SecurityGroup]
+Subnets = list[Subnet]
+SecurityGroups = list[SecurityGroup]
 
 
 class AwsVpcConfiguration(TypedDict, total=False):
-    AssignPublicIp: Optional[AssignPublicIp]
-    SecurityGroups: Optional[SecurityGroups]
+    AssignPublicIp: AssignPublicIp | None
+    SecurityGroups: SecurityGroups | None
     Subnets: Subnets
 
 
 class CapacityProviderStrategyItem(TypedDict, total=False):
-    base: Optional[CapacityProviderStrategyItemBase]
+    base: CapacityProviderStrategyItemBase | None
     capacityProvider: CapacityProvider
-    weight: Optional[CapacityProviderStrategyItemWeight]
+    weight: CapacityProviderStrategyItemWeight | None
 
 
-CapacityProviderStrategy = List[CapacityProviderStrategyItem]
+CapacityProviderStrategy = list[CapacityProviderStrategyItem]
 
 
 class Tag(TypedDict, total=False):
@@ -156,13 +156,13 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class CreateScheduleGroupInput(ServiceRequest):
-    ClientToken: Optional[ClientToken]
+    ClientToken: ClientToken | None
     Name: ScheduleGroupName
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class CreateScheduleGroupOutput(TypedDict, total=False):
@@ -170,7 +170,7 @@ class CreateScheduleGroupOutput(TypedDict, total=False):
 
 
 class SqsParameters(TypedDict, total=False):
-    MessageGroupId: Optional[MessageGroupId]
+    MessageGroupId: MessageGroupId | None
 
 
 class SageMakerPipelineParameter(TypedDict, total=False):
@@ -178,16 +178,16 @@ class SageMakerPipelineParameter(TypedDict, total=False):
     Value: SageMakerPipelineParameterValue
 
 
-SageMakerPipelineParameterList = List[SageMakerPipelineParameter]
+SageMakerPipelineParameterList = list[SageMakerPipelineParameter]
 
 
 class SageMakerPipelineParameters(TypedDict, total=False):
-    PipelineParameterList: Optional[SageMakerPipelineParameterList]
+    PipelineParameterList: SageMakerPipelineParameterList | None
 
 
 class RetryPolicy(TypedDict, total=False):
-    MaximumEventAgeInSeconds: Optional[MaximumEventAgeInSeconds]
-    MaximumRetryAttempts: Optional[MaximumRetryAttempts]
+    MaximumEventAgeInSeconds: MaximumEventAgeInSeconds | None
+    MaximumRetryAttempts: MaximumRetryAttempts | None
 
 
 class KinesisParameters(TypedDict, total=False):
@@ -199,69 +199,69 @@ class EventBridgeParameters(TypedDict, total=False):
     Source: Source
 
 
-TagMap = Dict[TagKey, TagValue]
-Tags = List[TagMap]
+TagMap = dict[TagKey, TagValue]
+Tags = list[TagMap]
 
 
 class PlacementStrategy(TypedDict, total=False):
-    field: Optional[PlacementStrategyField]
-    type: Optional[PlacementStrategyType]
+    field: PlacementStrategyField | None
+    type: PlacementStrategyType | None
 
 
-PlacementStrategies = List[PlacementStrategy]
+PlacementStrategies = list[PlacementStrategy]
 
 
 class PlacementConstraint(TypedDict, total=False):
-    expression: Optional[PlacementConstraintExpression]
-    type: Optional[PlacementConstraintType]
+    expression: PlacementConstraintExpression | None
+    type: PlacementConstraintType | None
 
 
-PlacementConstraints = List[PlacementConstraint]
+PlacementConstraints = list[PlacementConstraint]
 
 
 class NetworkConfiguration(TypedDict, total=False):
-    awsvpcConfiguration: Optional[AwsVpcConfiguration]
+    awsvpcConfiguration: AwsVpcConfiguration | None
 
 
 class EcsParameters(TypedDict, total=False):
-    CapacityProviderStrategy: Optional[CapacityProviderStrategy]
-    EnableECSManagedTags: Optional[EnableECSManagedTags]
-    EnableExecuteCommand: Optional[EnableExecuteCommand]
-    Group: Optional[Group]
-    LaunchType: Optional[LaunchType]
-    NetworkConfiguration: Optional[NetworkConfiguration]
-    PlacementConstraints: Optional[PlacementConstraints]
-    PlacementStrategy: Optional[PlacementStrategies]
-    PlatformVersion: Optional[PlatformVersion]
-    PropagateTags: Optional[PropagateTags]
-    ReferenceId: Optional[ReferenceId]
-    Tags: Optional[Tags]
-    TaskCount: Optional[TaskCount]
+    CapacityProviderStrategy: CapacityProviderStrategy | None
+    EnableECSManagedTags: EnableECSManagedTags | None
+    EnableExecuteCommand: EnableExecuteCommand | None
+    Group: Group | None
+    LaunchType: LaunchType | None
+    NetworkConfiguration: NetworkConfiguration | None
+    PlacementConstraints: PlacementConstraints | None
+    PlacementStrategy: PlacementStrategies | None
+    PlatformVersion: PlatformVersion | None
+    PropagateTags: PropagateTags | None
+    ReferenceId: ReferenceId | None
+    Tags: Tags | None
+    TaskCount: TaskCount | None
     TaskDefinitionArn: TaskDefinitionArn
 
 
 class DeadLetterConfig(TypedDict, total=False):
-    Arn: Optional[DeadLetterConfigArnString]
+    Arn: DeadLetterConfigArnString | None
 
 
 class Target(TypedDict, total=False):
     Arn: TargetArn
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    EcsParameters: Optional[EcsParameters]
-    EventBridgeParameters: Optional[EventBridgeParameters]
-    Input: Optional[TargetInput]
-    KinesisParameters: Optional[KinesisParameters]
-    RetryPolicy: Optional[RetryPolicy]
+    DeadLetterConfig: DeadLetterConfig | None
+    EcsParameters: EcsParameters | None
+    EventBridgeParameters: EventBridgeParameters | None
+    Input: TargetInput | None
+    KinesisParameters: KinesisParameters | None
+    RetryPolicy: RetryPolicy | None
     RoleArn: RoleArn
-    SageMakerPipelineParameters: Optional[SageMakerPipelineParameters]
-    SqsParameters: Optional[SqsParameters]
+    SageMakerPipelineParameters: SageMakerPipelineParameters | None
+    SqsParameters: SqsParameters | None
 
 
 StartDate = datetime
 
 
 class FlexibleTimeWindow(TypedDict, total=False):
-    MaximumWindowInMinutes: Optional[MaximumWindowInMinutes]
+    MaximumWindowInMinutes: MaximumWindowInMinutes | None
     Mode: FlexibleTimeWindowMode
 
 
@@ -269,18 +269,18 @@ EndDate = datetime
 
 
 class CreateScheduleInput(ServiceRequest):
-    ActionAfterCompletion: Optional[ActionAfterCompletion]
-    ClientToken: Optional[ClientToken]
-    Description: Optional[Description]
-    EndDate: Optional[EndDate]
+    ActionAfterCompletion: ActionAfterCompletion | None
+    ClientToken: ClientToken | None
+    Description: Description | None
+    EndDate: EndDate | None
     FlexibleTimeWindow: FlexibleTimeWindow
-    GroupName: Optional[ScheduleGroupName]
-    KmsKeyArn: Optional[KmsKeyArn]
+    GroupName: ScheduleGroupName | None
+    KmsKeyArn: KmsKeyArn | None
     Name: Name
     ScheduleExpression: ScheduleExpression
-    ScheduleExpressionTimezone: Optional[ScheduleExpressionTimezone]
-    StartDate: Optional[StartDate]
-    State: Optional[ScheduleState]
+    ScheduleExpressionTimezone: ScheduleExpressionTimezone | None
+    StartDate: StartDate | None
+    State: ScheduleState | None
     Target: Target
 
 
@@ -292,7 +292,7 @@ CreationDate = datetime
 
 
 class DeleteScheduleGroupInput(ServiceRequest):
-    ClientToken: Optional[ClientToken]
+    ClientToken: ClientToken | None
     Name: ScheduleGroupName
 
 
@@ -301,8 +301,8 @@ class DeleteScheduleGroupOutput(TypedDict, total=False):
 
 
 class DeleteScheduleInput(ServiceRequest):
-    ClientToken: Optional[ClientToken]
-    GroupName: Optional[ScheduleGroupName]
+    ClientToken: ClientToken | None
+    GroupName: ScheduleGroupName | None
     Name: Name
 
 
@@ -318,64 +318,64 @@ LastModificationDate = datetime
 
 
 class GetScheduleGroupOutput(TypedDict, total=False):
-    Arn: Optional[ScheduleGroupArn]
-    CreationDate: Optional[CreationDate]
-    LastModificationDate: Optional[LastModificationDate]
-    Name: Optional[ScheduleGroupName]
-    State: Optional[ScheduleGroupState]
+    Arn: ScheduleGroupArn | None
+    CreationDate: CreationDate | None
+    LastModificationDate: LastModificationDate | None
+    Name: ScheduleGroupName | None
+    State: ScheduleGroupState | None
 
 
 class GetScheduleInput(ServiceRequest):
-    GroupName: Optional[ScheduleGroupName]
+    GroupName: ScheduleGroupName | None
     Name: Name
 
 
 class GetScheduleOutput(TypedDict, total=False):
-    ActionAfterCompletion: Optional[ActionAfterCompletion]
-    Arn: Optional[ScheduleArn]
-    CreationDate: Optional[CreationDate]
-    Description: Optional[Description]
-    EndDate: Optional[EndDate]
-    FlexibleTimeWindow: Optional[FlexibleTimeWindow]
-    GroupName: Optional[ScheduleGroupName]
-    KmsKeyArn: Optional[KmsKeyArn]
-    LastModificationDate: Optional[LastModificationDate]
-    Name: Optional[Name]
-    ScheduleExpression: Optional[ScheduleExpression]
-    ScheduleExpressionTimezone: Optional[ScheduleExpressionTimezone]
-    StartDate: Optional[StartDate]
-    State: Optional[ScheduleState]
-    Target: Optional[Target]
+    ActionAfterCompletion: ActionAfterCompletion | None
+    Arn: ScheduleArn | None
+    CreationDate: CreationDate | None
+    Description: Description | None
+    EndDate: EndDate | None
+    FlexibleTimeWindow: FlexibleTimeWindow | None
+    GroupName: ScheduleGroupName | None
+    KmsKeyArn: KmsKeyArn | None
+    LastModificationDate: LastModificationDate | None
+    Name: Name | None
+    ScheduleExpression: ScheduleExpression | None
+    ScheduleExpressionTimezone: ScheduleExpressionTimezone | None
+    StartDate: StartDate | None
+    State: ScheduleState | None
+    Target: Target | None
 
 
 class ListScheduleGroupsInput(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NamePrefix: Optional[ScheduleGroupNamePrefix]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NamePrefix: ScheduleGroupNamePrefix | None
+    NextToken: NextToken | None
 
 
 class ScheduleGroupSummary(TypedDict, total=False):
-    Arn: Optional[ScheduleGroupArn]
-    CreationDate: Optional[CreationDate]
-    LastModificationDate: Optional[LastModificationDate]
-    Name: Optional[ScheduleGroupName]
-    State: Optional[ScheduleGroupState]
+    Arn: ScheduleGroupArn | None
+    CreationDate: CreationDate | None
+    LastModificationDate: LastModificationDate | None
+    Name: ScheduleGroupName | None
+    State: ScheduleGroupState | None
 
 
-ScheduleGroupList = List[ScheduleGroupSummary]
+ScheduleGroupList = list[ScheduleGroupSummary]
 
 
 class ListScheduleGroupsOutput(TypedDict, total=False):
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
     ScheduleGroups: ScheduleGroupList
 
 
 class ListSchedulesInput(ServiceRequest):
-    GroupName: Optional[ScheduleGroupName]
-    MaxResults: Optional[MaxResults]
-    NamePrefix: Optional[NamePrefix]
-    NextToken: Optional[NextToken]
-    State: Optional[ScheduleState]
+    GroupName: ScheduleGroupName | None
+    MaxResults: MaxResults | None
+    NamePrefix: NamePrefix | None
+    NextToken: NextToken | None
+    State: ScheduleState | None
 
 
 class TargetSummary(TypedDict, total=False):
@@ -383,20 +383,20 @@ class TargetSummary(TypedDict, total=False):
 
 
 class ScheduleSummary(TypedDict, total=False):
-    Arn: Optional[ScheduleArn]
-    CreationDate: Optional[CreationDate]
-    GroupName: Optional[ScheduleGroupName]
-    LastModificationDate: Optional[LastModificationDate]
-    Name: Optional[Name]
-    State: Optional[ScheduleState]
-    Target: Optional[TargetSummary]
+    Arn: ScheduleArn | None
+    CreationDate: CreationDate | None
+    GroupName: ScheduleGroupName | None
+    LastModificationDate: LastModificationDate | None
+    Name: Name | None
+    State: ScheduleState | None
+    Target: TargetSummary | None
 
 
-ScheduleList = List[ScheduleSummary]
+ScheduleList = list[ScheduleSummary]
 
 
 class ListSchedulesOutput(TypedDict, total=False):
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
     Schedules: ScheduleList
 
 
@@ -405,10 +405,10 @@ class ListTagsForResourceInput(ServiceRequest):
 
 
 class ListTagsForResourceOutput(TypedDict, total=False):
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagResourceInput(ServiceRequest):
@@ -430,18 +430,18 @@ class UntagResourceOutput(TypedDict, total=False):
 
 
 class UpdateScheduleInput(ServiceRequest):
-    ActionAfterCompletion: Optional[ActionAfterCompletion]
-    ClientToken: Optional[ClientToken]
-    Description: Optional[Description]
-    EndDate: Optional[EndDate]
+    ActionAfterCompletion: ActionAfterCompletion | None
+    ClientToken: ClientToken | None
+    Description: Description | None
+    EndDate: EndDate | None
     FlexibleTimeWindow: FlexibleTimeWindow
-    GroupName: Optional[ScheduleGroupName]
-    KmsKeyArn: Optional[KmsKeyArn]
+    GroupName: ScheduleGroupName | None
+    KmsKeyArn: KmsKeyArn | None
     Name: Name
     ScheduleExpression: ScheduleExpression
-    ScheduleExpressionTimezone: Optional[ScheduleExpressionTimezone]
-    StartDate: Optional[StartDate]
-    State: Optional[ScheduleState]
+    ScheduleExpressionTimezone: ScheduleExpressionTimezone | None
+    StartDate: StartDate | None
+    State: ScheduleState | None
     Target: Target
 
 
@@ -450,8 +450,8 @@ class UpdateScheduleOutput(TypedDict, total=False):
 
 
 class SchedulerApi:
-    service = "scheduler"
-    version = "2021-06-30"
+    service: str = "scheduler"
+    version: str = "2021-06-30"
 
     @handler("CreateSchedule")
     def create_schedule(

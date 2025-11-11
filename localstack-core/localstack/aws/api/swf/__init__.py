@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -369,7 +369,7 @@ class ActivityTask(TypedDict, total=False):
     startedEventId: EventId
     workflowExecution: WorkflowExecution
     activityType: ActivityType
-    input: Optional[Data]
+    input: Data | None
 
 
 class ActivityTaskCancelRequestedEventAttributes(TypedDict, total=False):
@@ -378,21 +378,21 @@ class ActivityTaskCancelRequestedEventAttributes(TypedDict, total=False):
 
 
 class ActivityTaskCanceledEventAttributes(TypedDict, total=False):
-    details: Optional[Data]
+    details: Data | None
     scheduledEventId: EventId
     startedEventId: EventId
-    latestCancelRequestedEventId: Optional[EventId]
+    latestCancelRequestedEventId: EventId | None
 
 
 class ActivityTaskCompletedEventAttributes(TypedDict, total=False):
-    result: Optional[Data]
+    result: Data | None
     scheduledEventId: EventId
     startedEventId: EventId
 
 
 class ActivityTaskFailedEventAttributes(TypedDict, total=False):
-    reason: Optional[FailureReason]
-    details: Optional[Data]
+    reason: FailureReason | None
+    details: Data | None
     scheduledEventId: EventId
     startedEventId: EventId
 
@@ -404,19 +404,19 @@ class TaskList(TypedDict, total=False):
 class ActivityTaskScheduledEventAttributes(TypedDict, total=False):
     activityType: ActivityType
     activityId: ActivityId
-    input: Optional[Data]
-    control: Optional[Data]
-    scheduleToStartTimeout: Optional[DurationInSecondsOptional]
-    scheduleToCloseTimeout: Optional[DurationInSecondsOptional]
-    startToCloseTimeout: Optional[DurationInSecondsOptional]
+    input: Data | None
+    control: Data | None
+    scheduleToStartTimeout: DurationInSecondsOptional | None
+    scheduleToCloseTimeout: DurationInSecondsOptional | None
+    startToCloseTimeout: DurationInSecondsOptional | None
     taskList: TaskList
-    taskPriority: Optional[TaskPriority]
+    taskPriority: TaskPriority | None
     decisionTaskCompletedEventId: EventId
-    heartbeatTimeout: Optional[DurationInSecondsOptional]
+    heartbeatTimeout: DurationInSecondsOptional | None
 
 
 class ActivityTaskStartedEventAttributes(TypedDict, total=False):
-    identity: Optional[Identity]
+    identity: Identity | None
     scheduledEventId: EventId
 
 
@@ -428,16 +428,16 @@ class ActivityTaskTimedOutEventAttributes(TypedDict, total=False):
     timeoutType: ActivityTaskTimeoutType
     scheduledEventId: EventId
     startedEventId: EventId
-    details: Optional[LimitedData]
+    details: LimitedData | None
 
 
 class ActivityTypeConfiguration(TypedDict, total=False):
-    defaultTaskStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    defaultTaskHeartbeatTimeout: Optional[DurationInSecondsOptional]
-    defaultTaskList: Optional[TaskList]
-    defaultTaskPriority: Optional[TaskPriority]
-    defaultTaskScheduleToStartTimeout: Optional[DurationInSecondsOptional]
-    defaultTaskScheduleToCloseTimeout: Optional[DurationInSecondsOptional]
+    defaultTaskStartToCloseTimeout: DurationInSecondsOptional | None
+    defaultTaskHeartbeatTimeout: DurationInSecondsOptional | None
+    defaultTaskList: TaskList | None
+    defaultTaskPriority: TaskPriority | None
+    defaultTaskScheduleToStartTimeout: DurationInSecondsOptional | None
+    defaultTaskScheduleToCloseTimeout: DurationInSecondsOptional | None
 
 
 Timestamp = datetime
@@ -446,9 +446,9 @@ Timestamp = datetime
 class ActivityTypeInfo(TypedDict, total=False):
     activityType: ActivityType
     status: RegistrationStatus
-    description: Optional[Description]
+    description: Description | None
     creationDate: Timestamp
-    deprecationDate: Optional[Timestamp]
+    deprecationDate: Timestamp | None
 
 
 class ActivityTypeDetail(TypedDict, total=False):
@@ -456,12 +456,12 @@ class ActivityTypeDetail(TypedDict, total=False):
     configuration: ActivityTypeConfiguration
 
 
-ActivityTypeInfoList = List[ActivityTypeInfo]
+ActivityTypeInfoList = list[ActivityTypeInfo]
 
 
 class ActivityTypeInfos(TypedDict, total=False):
     typeInfos: ActivityTypeInfoList
-    nextPageToken: Optional[PageToken]
+    nextPageToken: PageToken | None
 
 
 class CancelTimerDecisionAttributes(TypedDict, total=False):
@@ -475,7 +475,7 @@ class CancelTimerFailedEventAttributes(TypedDict, total=False):
 
 
 class CancelWorkflowExecutionDecisionAttributes(TypedDict, total=False):
-    details: Optional[Data]
+    details: Data | None
 
 
 class CancelWorkflowExecutionFailedEventAttributes(TypedDict, total=False):
@@ -491,7 +491,7 @@ class WorkflowType(TypedDict, total=False):
 class ChildWorkflowExecutionCanceledEventAttributes(TypedDict, total=False):
     workflowExecution: WorkflowExecution
     workflowType: WorkflowType
-    details: Optional[Data]
+    details: Data | None
     initiatedEventId: EventId
     startedEventId: EventId
 
@@ -499,7 +499,7 @@ class ChildWorkflowExecutionCanceledEventAttributes(TypedDict, total=False):
 class ChildWorkflowExecutionCompletedEventAttributes(TypedDict, total=False):
     workflowExecution: WorkflowExecution
     workflowType: WorkflowType
-    result: Optional[Data]
+    result: Data | None
     initiatedEventId: EventId
     startedEventId: EventId
 
@@ -507,8 +507,8 @@ class ChildWorkflowExecutionCompletedEventAttributes(TypedDict, total=False):
 class ChildWorkflowExecutionFailedEventAttributes(TypedDict, total=False):
     workflowExecution: WorkflowExecution
     workflowType: WorkflowType
-    reason: Optional[FailureReason]
-    details: Optional[Data]
+    reason: FailureReason | None
+    details: Data | None
     initiatedEventId: EventId
     startedEventId: EventId
 
@@ -539,7 +539,7 @@ class CloseStatusFilter(TypedDict, total=False):
 
 
 class CompleteWorkflowExecutionDecisionAttributes(TypedDict, total=False):
-    result: Optional[Data]
+    result: Data | None
 
 
 class CompleteWorkflowExecutionFailedEventAttributes(TypedDict, total=False):
@@ -547,19 +547,19 @@ class CompleteWorkflowExecutionFailedEventAttributes(TypedDict, total=False):
     decisionTaskCompletedEventId: EventId
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class ContinueAsNewWorkflowExecutionDecisionAttributes(TypedDict, total=False):
-    input: Optional[Data]
-    executionStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    taskList: Optional[TaskList]
-    taskPriority: Optional[TaskPriority]
-    taskStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    childPolicy: Optional[ChildPolicy]
-    tagList: Optional[TagList]
-    workflowTypeVersion: Optional[Version]
-    lambdaRole: Optional[Arn]
+    input: Data | None
+    executionStartToCloseTimeout: DurationInSecondsOptional | None
+    taskList: TaskList | None
+    taskPriority: TaskPriority | None
+    taskStartToCloseTimeout: DurationInSecondsOptional | None
+    childPolicy: ChildPolicy | None
+    tagList: TagList | None
+    workflowTypeVersion: Version | None
+    lambdaRole: Arn | None
 
 
 class ContinueAsNewWorkflowExecutionFailedEventAttributes(TypedDict, total=False):
@@ -573,7 +573,7 @@ class TagFilter(TypedDict, total=False):
 
 class WorkflowTypeFilter(TypedDict, total=False):
     name: Name
-    version: Optional[VersionOptional]
+    version: VersionOptional | None
 
 
 class WorkflowExecutionFilter(TypedDict, total=False):
@@ -582,25 +582,25 @@ class WorkflowExecutionFilter(TypedDict, total=False):
 
 class ExecutionTimeFilter(TypedDict, total=False):
     oldestDate: Timestamp
-    latestDate: Optional[Timestamp]
+    latestDate: Timestamp | None
 
 
 class CountClosedWorkflowExecutionsInput(ServiceRequest):
     domain: DomainName
-    startTimeFilter: Optional[ExecutionTimeFilter]
-    closeTimeFilter: Optional[ExecutionTimeFilter]
-    executionFilter: Optional[WorkflowExecutionFilter]
-    typeFilter: Optional[WorkflowTypeFilter]
-    tagFilter: Optional[TagFilter]
-    closeStatusFilter: Optional[CloseStatusFilter]
+    startTimeFilter: ExecutionTimeFilter | None
+    closeTimeFilter: ExecutionTimeFilter | None
+    executionFilter: WorkflowExecutionFilter | None
+    typeFilter: WorkflowTypeFilter | None
+    tagFilter: TagFilter | None
+    closeStatusFilter: CloseStatusFilter | None
 
 
 class CountOpenWorkflowExecutionsInput(ServiceRequest):
     domain: DomainName
     startTimeFilter: ExecutionTimeFilter
-    typeFilter: Optional[WorkflowTypeFilter]
-    tagFilter: Optional[TagFilter]
-    executionFilter: Optional[WorkflowExecutionFilter]
+    typeFilter: WorkflowTypeFilter | None
+    tagFilter: TagFilter | None
+    executionFilter: WorkflowExecutionFilter | None
 
 
 class CountPendingActivityTasksInput(ServiceRequest):
@@ -616,53 +616,53 @@ class CountPendingDecisionTasksInput(ServiceRequest):
 class ScheduleLambdaFunctionDecisionAttributes(TypedDict, total=False):
     id: FunctionId
     name: FunctionName
-    control: Optional[Data]
-    input: Optional[FunctionInput]
-    startToCloseTimeout: Optional[DurationInSecondsOptional]
+    control: Data | None
+    input: FunctionInput | None
+    startToCloseTimeout: DurationInSecondsOptional | None
 
 
 class StartChildWorkflowExecutionDecisionAttributes(TypedDict, total=False):
     workflowType: WorkflowType
     workflowId: WorkflowId
-    control: Optional[Data]
-    input: Optional[Data]
-    executionStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    taskList: Optional[TaskList]
-    taskPriority: Optional[TaskPriority]
-    taskStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    childPolicy: Optional[ChildPolicy]
-    tagList: Optional[TagList]
-    lambdaRole: Optional[Arn]
+    control: Data | None
+    input: Data | None
+    executionStartToCloseTimeout: DurationInSecondsOptional | None
+    taskList: TaskList | None
+    taskPriority: TaskPriority | None
+    taskStartToCloseTimeout: DurationInSecondsOptional | None
+    childPolicy: ChildPolicy | None
+    tagList: TagList | None
+    lambdaRole: Arn | None
 
 
 class RequestCancelExternalWorkflowExecutionDecisionAttributes(TypedDict, total=False):
     workflowId: WorkflowId
-    runId: Optional[WorkflowRunIdOptional]
-    control: Optional[Data]
+    runId: WorkflowRunIdOptional | None
+    control: Data | None
 
 
 class SignalExternalWorkflowExecutionDecisionAttributes(TypedDict, total=False):
     workflowId: WorkflowId
-    runId: Optional[WorkflowRunIdOptional]
+    runId: WorkflowRunIdOptional | None
     signalName: SignalName
-    input: Optional[Data]
-    control: Optional[Data]
+    input: Data | None
+    control: Data | None
 
 
 class StartTimerDecisionAttributes(TypedDict, total=False):
     timerId: TimerId
-    control: Optional[Data]
+    control: Data | None
     startToFireTimeout: DurationInSeconds
 
 
 class RecordMarkerDecisionAttributes(TypedDict, total=False):
     markerName: MarkerName
-    details: Optional[Data]
+    details: Data | None
 
 
 class FailWorkflowExecutionDecisionAttributes(TypedDict, total=False):
-    reason: Optional[FailureReason]
-    details: Optional[Data]
+    reason: FailureReason | None
+    details: Data | None
 
 
 class RequestCancelActivityTaskDecisionAttributes(TypedDict, total=False):
@@ -672,52 +672,48 @@ class RequestCancelActivityTaskDecisionAttributes(TypedDict, total=False):
 class ScheduleActivityTaskDecisionAttributes(TypedDict, total=False):
     activityType: ActivityType
     activityId: ActivityId
-    control: Optional[Data]
-    input: Optional[Data]
-    scheduleToCloseTimeout: Optional[DurationInSecondsOptional]
-    taskList: Optional[TaskList]
-    taskPriority: Optional[TaskPriority]
-    scheduleToStartTimeout: Optional[DurationInSecondsOptional]
-    startToCloseTimeout: Optional[DurationInSecondsOptional]
-    heartbeatTimeout: Optional[DurationInSecondsOptional]
+    control: Data | None
+    input: Data | None
+    scheduleToCloseTimeout: DurationInSecondsOptional | None
+    taskList: TaskList | None
+    taskPriority: TaskPriority | None
+    scheduleToStartTimeout: DurationInSecondsOptional | None
+    startToCloseTimeout: DurationInSecondsOptional | None
+    heartbeatTimeout: DurationInSecondsOptional | None
 
 
 class Decision(TypedDict, total=False):
     decisionType: DecisionType
-    scheduleActivityTaskDecisionAttributes: Optional[ScheduleActivityTaskDecisionAttributes]
-    requestCancelActivityTaskDecisionAttributes: Optional[
-        RequestCancelActivityTaskDecisionAttributes
-    ]
-    completeWorkflowExecutionDecisionAttributes: Optional[
-        CompleteWorkflowExecutionDecisionAttributes
-    ]
-    failWorkflowExecutionDecisionAttributes: Optional[FailWorkflowExecutionDecisionAttributes]
-    cancelWorkflowExecutionDecisionAttributes: Optional[CancelWorkflowExecutionDecisionAttributes]
-    continueAsNewWorkflowExecutionDecisionAttributes: Optional[
-        ContinueAsNewWorkflowExecutionDecisionAttributes
-    ]
-    recordMarkerDecisionAttributes: Optional[RecordMarkerDecisionAttributes]
-    startTimerDecisionAttributes: Optional[StartTimerDecisionAttributes]
-    cancelTimerDecisionAttributes: Optional[CancelTimerDecisionAttributes]
-    signalExternalWorkflowExecutionDecisionAttributes: Optional[
-        SignalExternalWorkflowExecutionDecisionAttributes
-    ]
-    requestCancelExternalWorkflowExecutionDecisionAttributes: Optional[
-        RequestCancelExternalWorkflowExecutionDecisionAttributes
-    ]
-    startChildWorkflowExecutionDecisionAttributes: Optional[
-        StartChildWorkflowExecutionDecisionAttributes
-    ]
-    scheduleLambdaFunctionDecisionAttributes: Optional[ScheduleLambdaFunctionDecisionAttributes]
+    scheduleActivityTaskDecisionAttributes: ScheduleActivityTaskDecisionAttributes | None
+    requestCancelActivityTaskDecisionAttributes: RequestCancelActivityTaskDecisionAttributes | None
+    completeWorkflowExecutionDecisionAttributes: CompleteWorkflowExecutionDecisionAttributes | None
+    failWorkflowExecutionDecisionAttributes: FailWorkflowExecutionDecisionAttributes | None
+    cancelWorkflowExecutionDecisionAttributes: CancelWorkflowExecutionDecisionAttributes | None
+    continueAsNewWorkflowExecutionDecisionAttributes: (
+        ContinueAsNewWorkflowExecutionDecisionAttributes | None
+    )
+    recordMarkerDecisionAttributes: RecordMarkerDecisionAttributes | None
+    startTimerDecisionAttributes: StartTimerDecisionAttributes | None
+    cancelTimerDecisionAttributes: CancelTimerDecisionAttributes | None
+    signalExternalWorkflowExecutionDecisionAttributes: (
+        SignalExternalWorkflowExecutionDecisionAttributes | None
+    )
+    requestCancelExternalWorkflowExecutionDecisionAttributes: (
+        RequestCancelExternalWorkflowExecutionDecisionAttributes | None
+    )
+    startChildWorkflowExecutionDecisionAttributes: (
+        StartChildWorkflowExecutionDecisionAttributes | None
+    )
+    scheduleLambdaFunctionDecisionAttributes: ScheduleLambdaFunctionDecisionAttributes | None
 
 
-DecisionList = List[Decision]
+DecisionList = list[Decision]
 
 
 class StartLambdaFunctionFailedEventAttributes(TypedDict, total=False):
-    scheduledEventId: Optional[EventId]
-    cause: Optional[StartLambdaFunctionFailedCause]
-    message: Optional[CauseMessage]
+    scheduledEventId: EventId | None
+    cause: StartLambdaFunctionFailedCause | None
+    message: CauseMessage | None
 
 
 class ScheduleLambdaFunctionFailedEventAttributes(TypedDict, total=False):
@@ -730,20 +726,20 @@ class ScheduleLambdaFunctionFailedEventAttributes(TypedDict, total=False):
 class LambdaFunctionTimedOutEventAttributes(TypedDict, total=False):
     scheduledEventId: EventId
     startedEventId: EventId
-    timeoutType: Optional[LambdaFunctionTimeoutType]
+    timeoutType: LambdaFunctionTimeoutType | None
 
 
 class LambdaFunctionFailedEventAttributes(TypedDict, total=False):
     scheduledEventId: EventId
     startedEventId: EventId
-    reason: Optional[FailureReason]
-    details: Optional[Data]
+    reason: FailureReason | None
+    details: Data | None
 
 
 class LambdaFunctionCompletedEventAttributes(TypedDict, total=False):
     scheduledEventId: EventId
     startedEventId: EventId
-    result: Optional[Data]
+    result: Data | None
 
 
 class LambdaFunctionStartedEventAttributes(TypedDict, total=False):
@@ -753,9 +749,9 @@ class LambdaFunctionStartedEventAttributes(TypedDict, total=False):
 class LambdaFunctionScheduledEventAttributes(TypedDict, total=False):
     id: FunctionId
     name: FunctionName
-    control: Optional[Data]
-    input: Optional[FunctionInput]
-    startToCloseTimeout: Optional[DurationInSecondsOptional]
+    control: Data | None
+    input: FunctionInput | None
+    startToCloseTimeout: DurationInSecondsOptional | None
     decisionTaskCompletedEventId: EventId
 
 
@@ -765,7 +761,7 @@ class StartChildWorkflowExecutionFailedEventAttributes(TypedDict, total=False):
     workflowId: WorkflowId
     initiatedEventId: EventId
     decisionTaskCompletedEventId: EventId
-    control: Optional[Data]
+    control: Data | None
 
 
 class StartTimerFailedEventAttributes(TypedDict, total=False):
@@ -789,18 +785,18 @@ class ScheduleActivityTaskFailedEventAttributes(TypedDict, total=False):
 
 class RequestCancelExternalWorkflowExecutionFailedEventAttributes(TypedDict, total=False):
     workflowId: WorkflowId
-    runId: Optional[WorkflowRunIdOptional]
+    runId: WorkflowRunIdOptional | None
     cause: RequestCancelExternalWorkflowExecutionFailedCause
     initiatedEventId: EventId
     decisionTaskCompletedEventId: EventId
-    control: Optional[Data]
+    control: Data | None
 
 
 class RequestCancelExternalWorkflowExecutionInitiatedEventAttributes(TypedDict, total=False):
     workflowId: WorkflowId
-    runId: Optional[WorkflowRunIdOptional]
+    runId: WorkflowRunIdOptional | None
     decisionTaskCompletedEventId: EventId
-    control: Optional[Data]
+    control: Data | None
 
 
 class ExternalWorkflowExecutionCancelRequestedEventAttributes(TypedDict, total=False):
@@ -810,11 +806,11 @@ class ExternalWorkflowExecutionCancelRequestedEventAttributes(TypedDict, total=F
 
 class SignalExternalWorkflowExecutionFailedEventAttributes(TypedDict, total=False):
     workflowId: WorkflowId
-    runId: Optional[WorkflowRunIdOptional]
+    runId: WorkflowRunIdOptional | None
     cause: SignalExternalWorkflowExecutionFailedCause
     initiatedEventId: EventId
     decisionTaskCompletedEventId: EventId
-    control: Optional[Data]
+    control: Data | None
 
 
 class ExternalWorkflowExecutionSignaledEventAttributes(TypedDict, total=False):
@@ -824,26 +820,26 @@ class ExternalWorkflowExecutionSignaledEventAttributes(TypedDict, total=False):
 
 class SignalExternalWorkflowExecutionInitiatedEventAttributes(TypedDict, total=False):
     workflowId: WorkflowId
-    runId: Optional[WorkflowRunIdOptional]
+    runId: WorkflowRunIdOptional | None
     signalName: SignalName
-    input: Optional[Data]
+    input: Data | None
     decisionTaskCompletedEventId: EventId
-    control: Optional[Data]
+    control: Data | None
 
 
 class StartChildWorkflowExecutionInitiatedEventAttributes(TypedDict, total=False):
     workflowId: WorkflowId
     workflowType: WorkflowType
-    control: Optional[Data]
-    input: Optional[Data]
-    executionStartToCloseTimeout: Optional[DurationInSecondsOptional]
+    control: Data | None
+    input: Data | None
+    executionStartToCloseTimeout: DurationInSecondsOptional | None
     taskList: TaskList
-    taskPriority: Optional[TaskPriority]
+    taskPriority: TaskPriority | None
     decisionTaskCompletedEventId: EventId
     childPolicy: ChildPolicy
-    taskStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    tagList: Optional[TagList]
-    lambdaRole: Optional[Arn]
+    taskStartToCloseTimeout: DurationInSecondsOptional | None
+    tagList: TagList | None
+    lambdaRole: Arn | None
 
 
 class TimerCanceledEventAttributes(TypedDict, total=False):
@@ -859,7 +855,7 @@ class TimerFiredEventAttributes(TypedDict, total=False):
 
 class TimerStartedEventAttributes(TypedDict, total=False):
     timerId: TimerId
-    control: Optional[Data]
+    control: Data | None
     startToFireTimeout: DurationInSeconds
     decisionTaskCompletedEventId: EventId
 
@@ -872,15 +868,15 @@ class RecordMarkerFailedEventAttributes(TypedDict, total=False):
 
 class MarkerRecordedEventAttributes(TypedDict, total=False):
     markerName: MarkerName
-    details: Optional[Data]
+    details: Data | None
     decisionTaskCompletedEventId: EventId
 
 
 class WorkflowExecutionSignaledEventAttributes(TypedDict, total=False):
     signalName: SignalName
-    input: Optional[Data]
-    externalWorkflowExecution: Optional[WorkflowExecution]
-    externalInitiatedEventId: Optional[EventId]
+    input: Data | None
+    externalWorkflowExecution: WorkflowExecution | None
+    externalInitiatedEventId: EventId | None
 
 
 class DecisionTaskTimedOutEventAttributes(TypedDict, total=False):
@@ -890,54 +886,54 @@ class DecisionTaskTimedOutEventAttributes(TypedDict, total=False):
 
 
 class DecisionTaskCompletedEventAttributes(TypedDict, total=False):
-    executionContext: Optional[Data]
+    executionContext: Data | None
     scheduledEventId: EventId
     startedEventId: EventId
-    taskList: Optional[TaskList]
-    taskListScheduleToStartTimeout: Optional[DurationInSecondsOptional]
+    taskList: TaskList | None
+    taskListScheduleToStartTimeout: DurationInSecondsOptional | None
 
 
 class DecisionTaskStartedEventAttributes(TypedDict, total=False):
-    identity: Optional[Identity]
+    identity: Identity | None
     scheduledEventId: EventId
 
 
 class DecisionTaskScheduledEventAttributes(TypedDict, total=False):
     taskList: TaskList
-    taskPriority: Optional[TaskPriority]
-    startToCloseTimeout: Optional[DurationInSecondsOptional]
-    scheduleToStartTimeout: Optional[DurationInSecondsOptional]
+    taskPriority: TaskPriority | None
+    startToCloseTimeout: DurationInSecondsOptional | None
+    scheduleToStartTimeout: DurationInSecondsOptional | None
 
 
 class WorkflowExecutionCancelRequestedEventAttributes(TypedDict, total=False):
-    externalWorkflowExecution: Optional[WorkflowExecution]
-    externalInitiatedEventId: Optional[EventId]
-    cause: Optional[WorkflowExecutionCancelRequestedCause]
+    externalWorkflowExecution: WorkflowExecution | None
+    externalInitiatedEventId: EventId | None
+    cause: WorkflowExecutionCancelRequestedCause | None
 
 
 class WorkflowExecutionTerminatedEventAttributes(TypedDict, total=False):
-    reason: Optional[TerminateReason]
-    details: Optional[Data]
+    reason: TerminateReason | None
+    details: Data | None
     childPolicy: ChildPolicy
-    cause: Optional[WorkflowExecutionTerminatedCause]
+    cause: WorkflowExecutionTerminatedCause | None
 
 
 class WorkflowExecutionContinuedAsNewEventAttributes(TypedDict, total=False):
-    input: Optional[Data]
+    input: Data | None
     decisionTaskCompletedEventId: EventId
     newExecutionRunId: WorkflowRunId
-    executionStartToCloseTimeout: Optional[DurationInSecondsOptional]
+    executionStartToCloseTimeout: DurationInSecondsOptional | None
     taskList: TaskList
-    taskPriority: Optional[TaskPriority]
-    taskStartToCloseTimeout: Optional[DurationInSecondsOptional]
+    taskPriority: TaskPriority | None
+    taskStartToCloseTimeout: DurationInSecondsOptional | None
     childPolicy: ChildPolicy
-    tagList: Optional[TagList]
+    tagList: TagList | None
     workflowType: WorkflowType
-    lambdaRole: Optional[Arn]
+    lambdaRole: Arn | None
 
 
 class WorkflowExecutionCanceledEventAttributes(TypedDict, total=False):
-    details: Optional[Data]
+    details: Data | None
     decisionTaskCompletedEventId: EventId
 
 
@@ -952,134 +948,130 @@ class FailWorkflowExecutionFailedEventAttributes(TypedDict, total=False):
 
 
 class WorkflowExecutionFailedEventAttributes(TypedDict, total=False):
-    reason: Optional[FailureReason]
-    details: Optional[Data]
+    reason: FailureReason | None
+    details: Data | None
     decisionTaskCompletedEventId: EventId
 
 
 class WorkflowExecutionCompletedEventAttributes(TypedDict, total=False):
-    result: Optional[Data]
+    result: Data | None
     decisionTaskCompletedEventId: EventId
 
 
 class WorkflowExecutionStartedEventAttributes(TypedDict, total=False):
-    input: Optional[Data]
-    executionStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    taskStartToCloseTimeout: Optional[DurationInSecondsOptional]
+    input: Data | None
+    executionStartToCloseTimeout: DurationInSecondsOptional | None
+    taskStartToCloseTimeout: DurationInSecondsOptional | None
     childPolicy: ChildPolicy
     taskList: TaskList
-    taskPriority: Optional[TaskPriority]
+    taskPriority: TaskPriority | None
     workflowType: WorkflowType
-    tagList: Optional[TagList]
-    continuedExecutionRunId: Optional[WorkflowRunIdOptional]
-    parentWorkflowExecution: Optional[WorkflowExecution]
-    parentInitiatedEventId: Optional[EventId]
-    lambdaRole: Optional[Arn]
+    tagList: TagList | None
+    continuedExecutionRunId: WorkflowRunIdOptional | None
+    parentWorkflowExecution: WorkflowExecution | None
+    parentInitiatedEventId: EventId | None
+    lambdaRole: Arn | None
 
 
 class HistoryEvent(TypedDict, total=False):
     eventTimestamp: Timestamp
     eventType: EventType
     eventId: EventId
-    workflowExecutionStartedEventAttributes: Optional[WorkflowExecutionStartedEventAttributes]
-    workflowExecutionCompletedEventAttributes: Optional[WorkflowExecutionCompletedEventAttributes]
-    completeWorkflowExecutionFailedEventAttributes: Optional[
-        CompleteWorkflowExecutionFailedEventAttributes
-    ]
-    workflowExecutionFailedEventAttributes: Optional[WorkflowExecutionFailedEventAttributes]
-    failWorkflowExecutionFailedEventAttributes: Optional[FailWorkflowExecutionFailedEventAttributes]
-    workflowExecutionTimedOutEventAttributes: Optional[WorkflowExecutionTimedOutEventAttributes]
-    workflowExecutionCanceledEventAttributes: Optional[WorkflowExecutionCanceledEventAttributes]
-    cancelWorkflowExecutionFailedEventAttributes: Optional[
-        CancelWorkflowExecutionFailedEventAttributes
-    ]
-    workflowExecutionContinuedAsNewEventAttributes: Optional[
-        WorkflowExecutionContinuedAsNewEventAttributes
-    ]
-    continueAsNewWorkflowExecutionFailedEventAttributes: Optional[
-        ContinueAsNewWorkflowExecutionFailedEventAttributes
-    ]
-    workflowExecutionTerminatedEventAttributes: Optional[WorkflowExecutionTerminatedEventAttributes]
-    workflowExecutionCancelRequestedEventAttributes: Optional[
-        WorkflowExecutionCancelRequestedEventAttributes
-    ]
-    decisionTaskScheduledEventAttributes: Optional[DecisionTaskScheduledEventAttributes]
-    decisionTaskStartedEventAttributes: Optional[DecisionTaskStartedEventAttributes]
-    decisionTaskCompletedEventAttributes: Optional[DecisionTaskCompletedEventAttributes]
-    decisionTaskTimedOutEventAttributes: Optional[DecisionTaskTimedOutEventAttributes]
-    activityTaskScheduledEventAttributes: Optional[ActivityTaskScheduledEventAttributes]
-    activityTaskStartedEventAttributes: Optional[ActivityTaskStartedEventAttributes]
-    activityTaskCompletedEventAttributes: Optional[ActivityTaskCompletedEventAttributes]
-    activityTaskFailedEventAttributes: Optional[ActivityTaskFailedEventAttributes]
-    activityTaskTimedOutEventAttributes: Optional[ActivityTaskTimedOutEventAttributes]
-    activityTaskCanceledEventAttributes: Optional[ActivityTaskCanceledEventAttributes]
-    activityTaskCancelRequestedEventAttributes: Optional[ActivityTaskCancelRequestedEventAttributes]
-    workflowExecutionSignaledEventAttributes: Optional[WorkflowExecutionSignaledEventAttributes]
-    markerRecordedEventAttributes: Optional[MarkerRecordedEventAttributes]
-    recordMarkerFailedEventAttributes: Optional[RecordMarkerFailedEventAttributes]
-    timerStartedEventAttributes: Optional[TimerStartedEventAttributes]
-    timerFiredEventAttributes: Optional[TimerFiredEventAttributes]
-    timerCanceledEventAttributes: Optional[TimerCanceledEventAttributes]
-    startChildWorkflowExecutionInitiatedEventAttributes: Optional[
-        StartChildWorkflowExecutionInitiatedEventAttributes
-    ]
-    childWorkflowExecutionStartedEventAttributes: Optional[
-        ChildWorkflowExecutionStartedEventAttributes
-    ]
-    childWorkflowExecutionCompletedEventAttributes: Optional[
-        ChildWorkflowExecutionCompletedEventAttributes
-    ]
-    childWorkflowExecutionFailedEventAttributes: Optional[
-        ChildWorkflowExecutionFailedEventAttributes
-    ]
-    childWorkflowExecutionTimedOutEventAttributes: Optional[
-        ChildWorkflowExecutionTimedOutEventAttributes
-    ]
-    childWorkflowExecutionCanceledEventAttributes: Optional[
-        ChildWorkflowExecutionCanceledEventAttributes
-    ]
-    childWorkflowExecutionTerminatedEventAttributes: Optional[
-        ChildWorkflowExecutionTerminatedEventAttributes
-    ]
-    signalExternalWorkflowExecutionInitiatedEventAttributes: Optional[
-        SignalExternalWorkflowExecutionInitiatedEventAttributes
-    ]
-    externalWorkflowExecutionSignaledEventAttributes: Optional[
-        ExternalWorkflowExecutionSignaledEventAttributes
-    ]
-    signalExternalWorkflowExecutionFailedEventAttributes: Optional[
-        SignalExternalWorkflowExecutionFailedEventAttributes
-    ]
-    externalWorkflowExecutionCancelRequestedEventAttributes: Optional[
-        ExternalWorkflowExecutionCancelRequestedEventAttributes
-    ]
-    requestCancelExternalWorkflowExecutionInitiatedEventAttributes: Optional[
-        RequestCancelExternalWorkflowExecutionInitiatedEventAttributes
-    ]
-    requestCancelExternalWorkflowExecutionFailedEventAttributes: Optional[
-        RequestCancelExternalWorkflowExecutionFailedEventAttributes
-    ]
-    scheduleActivityTaskFailedEventAttributes: Optional[ScheduleActivityTaskFailedEventAttributes]
-    requestCancelActivityTaskFailedEventAttributes: Optional[
-        RequestCancelActivityTaskFailedEventAttributes
-    ]
-    startTimerFailedEventAttributes: Optional[StartTimerFailedEventAttributes]
-    cancelTimerFailedEventAttributes: Optional[CancelTimerFailedEventAttributes]
-    startChildWorkflowExecutionFailedEventAttributes: Optional[
-        StartChildWorkflowExecutionFailedEventAttributes
-    ]
-    lambdaFunctionScheduledEventAttributes: Optional[LambdaFunctionScheduledEventAttributes]
-    lambdaFunctionStartedEventAttributes: Optional[LambdaFunctionStartedEventAttributes]
-    lambdaFunctionCompletedEventAttributes: Optional[LambdaFunctionCompletedEventAttributes]
-    lambdaFunctionFailedEventAttributes: Optional[LambdaFunctionFailedEventAttributes]
-    lambdaFunctionTimedOutEventAttributes: Optional[LambdaFunctionTimedOutEventAttributes]
-    scheduleLambdaFunctionFailedEventAttributes: Optional[
-        ScheduleLambdaFunctionFailedEventAttributes
-    ]
-    startLambdaFunctionFailedEventAttributes: Optional[StartLambdaFunctionFailedEventAttributes]
+    workflowExecutionStartedEventAttributes: WorkflowExecutionStartedEventAttributes | None
+    workflowExecutionCompletedEventAttributes: WorkflowExecutionCompletedEventAttributes | None
+    completeWorkflowExecutionFailedEventAttributes: (
+        CompleteWorkflowExecutionFailedEventAttributes | None
+    )
+    workflowExecutionFailedEventAttributes: WorkflowExecutionFailedEventAttributes | None
+    failWorkflowExecutionFailedEventAttributes: FailWorkflowExecutionFailedEventAttributes | None
+    workflowExecutionTimedOutEventAttributes: WorkflowExecutionTimedOutEventAttributes | None
+    workflowExecutionCanceledEventAttributes: WorkflowExecutionCanceledEventAttributes | None
+    cancelWorkflowExecutionFailedEventAttributes: (
+        CancelWorkflowExecutionFailedEventAttributes | None
+    )
+    workflowExecutionContinuedAsNewEventAttributes: (
+        WorkflowExecutionContinuedAsNewEventAttributes | None
+    )
+    continueAsNewWorkflowExecutionFailedEventAttributes: (
+        ContinueAsNewWorkflowExecutionFailedEventAttributes | None
+    )
+    workflowExecutionTerminatedEventAttributes: WorkflowExecutionTerminatedEventAttributes | None
+    workflowExecutionCancelRequestedEventAttributes: (
+        WorkflowExecutionCancelRequestedEventAttributes | None
+    )
+    decisionTaskScheduledEventAttributes: DecisionTaskScheduledEventAttributes | None
+    decisionTaskStartedEventAttributes: DecisionTaskStartedEventAttributes | None
+    decisionTaskCompletedEventAttributes: DecisionTaskCompletedEventAttributes | None
+    decisionTaskTimedOutEventAttributes: DecisionTaskTimedOutEventAttributes | None
+    activityTaskScheduledEventAttributes: ActivityTaskScheduledEventAttributes | None
+    activityTaskStartedEventAttributes: ActivityTaskStartedEventAttributes | None
+    activityTaskCompletedEventAttributes: ActivityTaskCompletedEventAttributes | None
+    activityTaskFailedEventAttributes: ActivityTaskFailedEventAttributes | None
+    activityTaskTimedOutEventAttributes: ActivityTaskTimedOutEventAttributes | None
+    activityTaskCanceledEventAttributes: ActivityTaskCanceledEventAttributes | None
+    activityTaskCancelRequestedEventAttributes: ActivityTaskCancelRequestedEventAttributes | None
+    workflowExecutionSignaledEventAttributes: WorkflowExecutionSignaledEventAttributes | None
+    markerRecordedEventAttributes: MarkerRecordedEventAttributes | None
+    recordMarkerFailedEventAttributes: RecordMarkerFailedEventAttributes | None
+    timerStartedEventAttributes: TimerStartedEventAttributes | None
+    timerFiredEventAttributes: TimerFiredEventAttributes | None
+    timerCanceledEventAttributes: TimerCanceledEventAttributes | None
+    startChildWorkflowExecutionInitiatedEventAttributes: (
+        StartChildWorkflowExecutionInitiatedEventAttributes | None
+    )
+    childWorkflowExecutionStartedEventAttributes: (
+        ChildWorkflowExecutionStartedEventAttributes | None
+    )
+    childWorkflowExecutionCompletedEventAttributes: (
+        ChildWorkflowExecutionCompletedEventAttributes | None
+    )
+    childWorkflowExecutionFailedEventAttributes: ChildWorkflowExecutionFailedEventAttributes | None
+    childWorkflowExecutionTimedOutEventAttributes: (
+        ChildWorkflowExecutionTimedOutEventAttributes | None
+    )
+    childWorkflowExecutionCanceledEventAttributes: (
+        ChildWorkflowExecutionCanceledEventAttributes | None
+    )
+    childWorkflowExecutionTerminatedEventAttributes: (
+        ChildWorkflowExecutionTerminatedEventAttributes | None
+    )
+    signalExternalWorkflowExecutionInitiatedEventAttributes: (
+        SignalExternalWorkflowExecutionInitiatedEventAttributes | None
+    )
+    externalWorkflowExecutionSignaledEventAttributes: (
+        ExternalWorkflowExecutionSignaledEventAttributes | None
+    )
+    signalExternalWorkflowExecutionFailedEventAttributes: (
+        SignalExternalWorkflowExecutionFailedEventAttributes | None
+    )
+    externalWorkflowExecutionCancelRequestedEventAttributes: (
+        ExternalWorkflowExecutionCancelRequestedEventAttributes | None
+    )
+    requestCancelExternalWorkflowExecutionInitiatedEventAttributes: (
+        RequestCancelExternalWorkflowExecutionInitiatedEventAttributes | None
+    )
+    requestCancelExternalWorkflowExecutionFailedEventAttributes: (
+        RequestCancelExternalWorkflowExecutionFailedEventAttributes | None
+    )
+    scheduleActivityTaskFailedEventAttributes: ScheduleActivityTaskFailedEventAttributes | None
+    requestCancelActivityTaskFailedEventAttributes: (
+        RequestCancelActivityTaskFailedEventAttributes | None
+    )
+    startTimerFailedEventAttributes: StartTimerFailedEventAttributes | None
+    cancelTimerFailedEventAttributes: CancelTimerFailedEventAttributes | None
+    startChildWorkflowExecutionFailedEventAttributes: (
+        StartChildWorkflowExecutionFailedEventAttributes | None
+    )
+    lambdaFunctionScheduledEventAttributes: LambdaFunctionScheduledEventAttributes | None
+    lambdaFunctionStartedEventAttributes: LambdaFunctionStartedEventAttributes | None
+    lambdaFunctionCompletedEventAttributes: LambdaFunctionCompletedEventAttributes | None
+    lambdaFunctionFailedEventAttributes: LambdaFunctionFailedEventAttributes | None
+    lambdaFunctionTimedOutEventAttributes: LambdaFunctionTimedOutEventAttributes | None
+    scheduleLambdaFunctionFailedEventAttributes: ScheduleLambdaFunctionFailedEventAttributes | None
+    startLambdaFunctionFailedEventAttributes: StartLambdaFunctionFailedEventAttributes | None
 
 
-HistoryEventList = List[HistoryEvent]
+HistoryEventList = list[HistoryEvent]
 
 
 class DecisionTask(TypedDict, total=False):
@@ -1088,8 +1080,8 @@ class DecisionTask(TypedDict, total=False):
     workflowExecution: WorkflowExecution
     workflowType: WorkflowType
     events: HistoryEventList
-    nextPageToken: Optional[PageToken]
-    previousStartedEventId: Optional[EventId]
+    nextPageToken: PageToken | None
+    previousStartedEventId: EventId | None
 
 
 class DeleteActivityTypeInput(ServiceRequest):
@@ -1142,8 +1134,8 @@ class DomainConfiguration(TypedDict, total=False):
 class DomainInfo(TypedDict, total=False):
     name: DomainName
     status: RegistrationStatus
-    description: Optional[Description]
-    arn: Optional[Arn]
+    description: Description | None
+    arn: Arn | None
 
 
 class DomainDetail(TypedDict, total=False):
@@ -1151,65 +1143,65 @@ class DomainDetail(TypedDict, total=False):
     configuration: DomainConfiguration
 
 
-DomainInfoList = List[DomainInfo]
+DomainInfoList = list[DomainInfo]
 
 
 class DomainInfos(TypedDict, total=False):
     domainInfos: DomainInfoList
-    nextPageToken: Optional[PageToken]
+    nextPageToken: PageToken | None
 
 
 class GetWorkflowExecutionHistoryInput(ServiceRequest):
     domain: DomainName
     execution: WorkflowExecution
-    nextPageToken: Optional[PageToken]
-    maximumPageSize: Optional[PageSize]
-    reverseOrder: Optional[ReverseOrder]
+    nextPageToken: PageToken | None
+    maximumPageSize: PageSize | None
+    reverseOrder: ReverseOrder | None
 
 
 class History(TypedDict, total=False):
     events: HistoryEventList
-    nextPageToken: Optional[PageToken]
+    nextPageToken: PageToken | None
 
 
 class ListActivityTypesInput(ServiceRequest):
     domain: DomainName
-    name: Optional[Name]
+    name: Name | None
     registrationStatus: RegistrationStatus
-    nextPageToken: Optional[PageToken]
-    maximumPageSize: Optional[PageSize]
-    reverseOrder: Optional[ReverseOrder]
+    nextPageToken: PageToken | None
+    maximumPageSize: PageSize | None
+    reverseOrder: ReverseOrder | None
 
 
 class ListClosedWorkflowExecutionsInput(ServiceRequest):
     domain: DomainName
-    startTimeFilter: Optional[ExecutionTimeFilter]
-    closeTimeFilter: Optional[ExecutionTimeFilter]
-    executionFilter: Optional[WorkflowExecutionFilter]
-    closeStatusFilter: Optional[CloseStatusFilter]
-    typeFilter: Optional[WorkflowTypeFilter]
-    tagFilter: Optional[TagFilter]
-    nextPageToken: Optional[PageToken]
-    maximumPageSize: Optional[PageSize]
-    reverseOrder: Optional[ReverseOrder]
+    startTimeFilter: ExecutionTimeFilter | None
+    closeTimeFilter: ExecutionTimeFilter | None
+    executionFilter: WorkflowExecutionFilter | None
+    closeStatusFilter: CloseStatusFilter | None
+    typeFilter: WorkflowTypeFilter | None
+    tagFilter: TagFilter | None
+    nextPageToken: PageToken | None
+    maximumPageSize: PageSize | None
+    reverseOrder: ReverseOrder | None
 
 
 class ListDomainsInput(ServiceRequest):
-    nextPageToken: Optional[PageToken]
+    nextPageToken: PageToken | None
     registrationStatus: RegistrationStatus
-    maximumPageSize: Optional[PageSize]
-    reverseOrder: Optional[ReverseOrder]
+    maximumPageSize: PageSize | None
+    reverseOrder: ReverseOrder | None
 
 
 class ListOpenWorkflowExecutionsInput(ServiceRequest):
     domain: DomainName
     startTimeFilter: ExecutionTimeFilter
-    typeFilter: Optional[WorkflowTypeFilter]
-    tagFilter: Optional[TagFilter]
-    nextPageToken: Optional[PageToken]
-    maximumPageSize: Optional[PageSize]
-    reverseOrder: Optional[ReverseOrder]
-    executionFilter: Optional[WorkflowExecutionFilter]
+    typeFilter: WorkflowTypeFilter | None
+    tagFilter: TagFilter | None
+    nextPageToken: PageToken | None
+    maximumPageSize: PageSize | None
+    reverseOrder: ReverseOrder | None
+    executionFilter: WorkflowExecutionFilter | None
 
 
 class ListTagsForResourceInput(ServiceRequest):
@@ -1218,141 +1210,141 @@ class ListTagsForResourceInput(ServiceRequest):
 
 class ResourceTag(TypedDict, total=False):
     key: ResourceTagKey
-    value: Optional[ResourceTagValue]
+    value: ResourceTagValue | None
 
 
-ResourceTagList = List[ResourceTag]
+ResourceTagList = list[ResourceTag]
 
 
 class ListTagsForResourceOutput(TypedDict, total=False):
-    tags: Optional[ResourceTagList]
+    tags: ResourceTagList | None
 
 
 class ListWorkflowTypesInput(ServiceRequest):
     domain: DomainName
-    name: Optional[Name]
+    name: Name | None
     registrationStatus: RegistrationStatus
-    nextPageToken: Optional[PageToken]
-    maximumPageSize: Optional[PageSize]
-    reverseOrder: Optional[ReverseOrder]
+    nextPageToken: PageToken | None
+    maximumPageSize: PageSize | None
+    reverseOrder: ReverseOrder | None
 
 
 class PendingTaskCount(TypedDict, total=False):
     count: Count
-    truncated: Optional[Truncated]
+    truncated: Truncated | None
 
 
 class PollForActivityTaskInput(ServiceRequest):
     domain: DomainName
     taskList: TaskList
-    identity: Optional[Identity]
+    identity: Identity | None
 
 
 class PollForDecisionTaskInput(ServiceRequest):
     domain: DomainName
     taskList: TaskList
-    identity: Optional[Identity]
-    nextPageToken: Optional[PageToken]
-    maximumPageSize: Optional[PageSize]
-    reverseOrder: Optional[ReverseOrder]
-    startAtPreviousStartedEvent: Optional[StartAtPreviousStartedEvent]
+    identity: Identity | None
+    nextPageToken: PageToken | None
+    maximumPageSize: PageSize | None
+    reverseOrder: ReverseOrder | None
+    startAtPreviousStartedEvent: StartAtPreviousStartedEvent | None
 
 
 class RecordActivityTaskHeartbeatInput(ServiceRequest):
     taskToken: TaskToken
-    details: Optional[LimitedData]
+    details: LimitedData | None
 
 
 class RegisterActivityTypeInput(ServiceRequest):
     domain: DomainName
     name: Name
     version: Version
-    description: Optional[Description]
-    defaultTaskStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    defaultTaskHeartbeatTimeout: Optional[DurationInSecondsOptional]
-    defaultTaskList: Optional[TaskList]
-    defaultTaskPriority: Optional[TaskPriority]
-    defaultTaskScheduleToStartTimeout: Optional[DurationInSecondsOptional]
-    defaultTaskScheduleToCloseTimeout: Optional[DurationInSecondsOptional]
+    description: Description | None
+    defaultTaskStartToCloseTimeout: DurationInSecondsOptional | None
+    defaultTaskHeartbeatTimeout: DurationInSecondsOptional | None
+    defaultTaskList: TaskList | None
+    defaultTaskPriority: TaskPriority | None
+    defaultTaskScheduleToStartTimeout: DurationInSecondsOptional | None
+    defaultTaskScheduleToCloseTimeout: DurationInSecondsOptional | None
 
 
 class RegisterDomainInput(ServiceRequest):
     name: DomainName
-    description: Optional[Description]
+    description: Description | None
     workflowExecutionRetentionPeriodInDays: DurationInDays
-    tags: Optional[ResourceTagList]
+    tags: ResourceTagList | None
 
 
 class RegisterWorkflowTypeInput(ServiceRequest):
     domain: DomainName
     name: Name
     version: Version
-    description: Optional[Description]
-    defaultTaskStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    defaultExecutionStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    defaultTaskList: Optional[TaskList]
-    defaultTaskPriority: Optional[TaskPriority]
-    defaultChildPolicy: Optional[ChildPolicy]
-    defaultLambdaRole: Optional[Arn]
+    description: Description | None
+    defaultTaskStartToCloseTimeout: DurationInSecondsOptional | None
+    defaultExecutionStartToCloseTimeout: DurationInSecondsOptional | None
+    defaultTaskList: TaskList | None
+    defaultTaskPriority: TaskPriority | None
+    defaultChildPolicy: ChildPolicy | None
+    defaultLambdaRole: Arn | None
 
 
 class RequestCancelWorkflowExecutionInput(ServiceRequest):
     domain: DomainName
     workflowId: WorkflowId
-    runId: Optional[WorkflowRunIdOptional]
+    runId: WorkflowRunIdOptional | None
 
 
-ResourceTagKeyList = List[ResourceTagKey]
+ResourceTagKeyList = list[ResourceTagKey]
 
 
 class RespondActivityTaskCanceledInput(ServiceRequest):
     taskToken: TaskToken
-    details: Optional[Data]
+    details: Data | None
 
 
 class RespondActivityTaskCompletedInput(ServiceRequest):
     taskToken: TaskToken
-    result: Optional[Data]
+    result: Data | None
 
 
 class RespondActivityTaskFailedInput(ServiceRequest):
     taskToken: TaskToken
-    reason: Optional[FailureReason]
-    details: Optional[Data]
+    reason: FailureReason | None
+    details: Data | None
 
 
 class RespondDecisionTaskCompletedInput(ServiceRequest):
     taskToken: TaskToken
-    decisions: Optional[DecisionList]
-    executionContext: Optional[Data]
-    taskList: Optional[TaskList]
-    taskListScheduleToStartTimeout: Optional[DurationInSecondsOptional]
+    decisions: DecisionList | None
+    executionContext: Data | None
+    taskList: TaskList | None
+    taskListScheduleToStartTimeout: DurationInSecondsOptional | None
 
 
 class Run(TypedDict, total=False):
-    runId: Optional[WorkflowRunId]
+    runId: WorkflowRunId | None
 
 
 class SignalWorkflowExecutionInput(ServiceRequest):
     domain: DomainName
     workflowId: WorkflowId
-    runId: Optional[WorkflowRunIdOptional]
+    runId: WorkflowRunIdOptional | None
     signalName: SignalName
-    input: Optional[Data]
+    input: Data | None
 
 
 class StartWorkflowExecutionInput(ServiceRequest):
     domain: DomainName
     workflowId: WorkflowId
     workflowType: WorkflowType
-    taskList: Optional[TaskList]
-    taskPriority: Optional[TaskPriority]
-    input: Optional[Data]
-    executionStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    tagList: Optional[TagList]
-    taskStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    childPolicy: Optional[ChildPolicy]
-    lambdaRole: Optional[Arn]
+    taskList: TaskList | None
+    taskPriority: TaskPriority | None
+    input: Data | None
+    executionStartToCloseTimeout: DurationInSecondsOptional | None
+    tagList: TagList | None
+    taskStartToCloseTimeout: DurationInSecondsOptional | None
+    childPolicy: ChildPolicy | None
+    lambdaRole: Arn | None
 
 
 class TagResourceInput(ServiceRequest):
@@ -1363,10 +1355,10 @@ class TagResourceInput(ServiceRequest):
 class TerminateWorkflowExecutionInput(ServiceRequest):
     domain: DomainName
     workflowId: WorkflowId
-    runId: Optional[WorkflowRunIdOptional]
-    reason: Optional[TerminateReason]
-    details: Optional[Data]
-    childPolicy: Optional[ChildPolicy]
+    runId: WorkflowRunIdOptional | None
+    reason: TerminateReason | None
+    details: Data | None
+    childPolicy: ChildPolicy | None
 
 
 class UndeprecateActivityTypeInput(ServiceRequest):
@@ -1392,14 +1384,14 @@ class WorkflowExecutionConfiguration(TypedDict, total=False):
     taskStartToCloseTimeout: DurationInSeconds
     executionStartToCloseTimeout: DurationInSeconds
     taskList: TaskList
-    taskPriority: Optional[TaskPriority]
+    taskPriority: TaskPriority | None
     childPolicy: ChildPolicy
-    lambdaRole: Optional[Arn]
+    lambdaRole: Arn | None
 
 
 class WorkflowExecutionCount(TypedDict, total=False):
     count: Count
-    truncated: Optional[Truncated]
+    truncated: Truncated | None
 
 
 class WorkflowExecutionOpenCounts(TypedDict, total=False):
@@ -1407,52 +1399,52 @@ class WorkflowExecutionOpenCounts(TypedDict, total=False):
     openDecisionTasks: OpenDecisionTasksCount
     openTimers: Count
     openChildWorkflowExecutions: Count
-    openLambdaFunctions: Optional[Count]
+    openLambdaFunctions: Count | None
 
 
 class WorkflowExecutionInfo(TypedDict, total=False):
     execution: WorkflowExecution
     workflowType: WorkflowType
     startTimestamp: Timestamp
-    closeTimestamp: Optional[Timestamp]
+    closeTimestamp: Timestamp | None
     executionStatus: ExecutionStatus
-    closeStatus: Optional[CloseStatus]
-    parent: Optional[WorkflowExecution]
-    tagList: Optional[TagList]
-    cancelRequested: Optional[Canceled]
+    closeStatus: CloseStatus | None
+    parent: WorkflowExecution | None
+    tagList: TagList | None
+    cancelRequested: Canceled | None
 
 
 class WorkflowExecutionDetail(TypedDict, total=False):
     executionInfo: WorkflowExecutionInfo
     executionConfiguration: WorkflowExecutionConfiguration
     openCounts: WorkflowExecutionOpenCounts
-    latestActivityTaskTimestamp: Optional[Timestamp]
-    latestExecutionContext: Optional[Data]
+    latestActivityTaskTimestamp: Timestamp | None
+    latestExecutionContext: Data | None
 
 
-WorkflowExecutionInfoList = List[WorkflowExecutionInfo]
+WorkflowExecutionInfoList = list[WorkflowExecutionInfo]
 
 
 class WorkflowExecutionInfos(TypedDict, total=False):
     executionInfos: WorkflowExecutionInfoList
-    nextPageToken: Optional[PageToken]
+    nextPageToken: PageToken | None
 
 
 class WorkflowTypeConfiguration(TypedDict, total=False):
-    defaultTaskStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    defaultExecutionStartToCloseTimeout: Optional[DurationInSecondsOptional]
-    defaultTaskList: Optional[TaskList]
-    defaultTaskPriority: Optional[TaskPriority]
-    defaultChildPolicy: Optional[ChildPolicy]
-    defaultLambdaRole: Optional[Arn]
+    defaultTaskStartToCloseTimeout: DurationInSecondsOptional | None
+    defaultExecutionStartToCloseTimeout: DurationInSecondsOptional | None
+    defaultTaskList: TaskList | None
+    defaultTaskPriority: TaskPriority | None
+    defaultChildPolicy: ChildPolicy | None
+    defaultLambdaRole: Arn | None
 
 
 class WorkflowTypeInfo(TypedDict, total=False):
     workflowType: WorkflowType
     status: RegistrationStatus
-    description: Optional[Description]
+    description: Description | None
     creationDate: Timestamp
-    deprecationDate: Optional[Timestamp]
+    deprecationDate: Timestamp | None
 
 
 class WorkflowTypeDetail(TypedDict, total=False):
@@ -1460,17 +1452,17 @@ class WorkflowTypeDetail(TypedDict, total=False):
     configuration: WorkflowTypeConfiguration
 
 
-WorkflowTypeInfoList = List[WorkflowTypeInfo]
+WorkflowTypeInfoList = list[WorkflowTypeInfo]
 
 
 class WorkflowTypeInfos(TypedDict, total=False):
     typeInfos: WorkflowTypeInfoList
-    nextPageToken: Optional[PageToken]
+    nextPageToken: PageToken | None
 
 
 class SwfApi:
-    service = "swf"
-    version = "2012-01-25"
+    service: str = "swf"
+    version: str = "2012-01-25"
 
     @handler("CountClosedWorkflowExecutions")
     def count_closed_workflow_executions(

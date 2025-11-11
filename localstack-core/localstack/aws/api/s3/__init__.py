@@ -1,6 +1,7 @@
+from collections.abc import Iterable, Iterator
 from datetime import datetime
 from enum import StrEnum
-from typing import IO, Dict, Iterable, Iterator, List, Optional, TypedDict, Union
+from typing import IO, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -673,7 +674,7 @@ class BucketAlreadyOwnedByYou(ServiceException):
     code: str = "BucketAlreadyOwnedByYou"
     sender_fault: bool = False
     status_code: int = 409
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class EncryptionTypeMismatch(ServiceException):
@@ -692,8 +693,8 @@ class InvalidObjectState(ServiceException):
     code: str = "InvalidObjectState"
     sender_fault: bool = False
     status_code: int = 403
-    StorageClass: Optional[StorageClass]
-    AccessTier: Optional[IntelligentTieringAccessTier]
+    StorageClass: StorageClass | None
+    AccessTier: IntelligentTieringAccessTier | None
 
 
 class InvalidRequest(ServiceException):
@@ -712,23 +713,23 @@ class NoSuchBucket(ServiceException):
     code: str = "NoSuchBucket"
     sender_fault: bool = False
     status_code: int = 404
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class NoSuchKey(ServiceException):
     code: str = "NoSuchKey"
     sender_fault: bool = False
     status_code: int = 404
-    Key: Optional[ObjectKey]
-    DeleteMarker: Optional[DeleteMarker]
-    VersionId: Optional[ObjectVersionId]
+    Key: ObjectKey | None
+    DeleteMarker: DeleteMarker | None
+    VersionId: ObjectVersionId | None
 
 
 class NoSuchUpload(ServiceException):
     code: str = "NoSuchUpload"
     sender_fault: bool = False
     status_code: int = 404
-    UploadId: Optional[MultipartUploadId]
+    UploadId: MultipartUploadId | None
 
 
 class ObjectAlreadyInActiveTierError(ServiceException):
@@ -753,29 +754,29 @@ class NoSuchLifecycleConfiguration(ServiceException):
     code: str = "NoSuchLifecycleConfiguration"
     sender_fault: bool = False
     status_code: int = 404
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class InvalidBucketName(ServiceException):
     code: str = "InvalidBucketName"
     sender_fault: bool = False
     status_code: int = 400
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class NoSuchVersion(ServiceException):
     code: str = "NoSuchVersion"
     sender_fault: bool = False
     status_code: int = 404
-    VersionId: Optional[ObjectVersionId]
-    Key: Optional[ObjectKey]
+    VersionId: ObjectVersionId | None
+    Key: ObjectKey | None
 
 
 class PreconditionFailed(ServiceException):
     code: str = "PreconditionFailed"
     sender_fault: bool = False
     status_code: int = 412
-    Condition: Optional[IfCondition]
+    Condition: IfCondition | None
 
 
 ObjectSize = int
@@ -785,30 +786,30 @@ class InvalidRange(ServiceException):
     code: str = "InvalidRange"
     sender_fault: bool = False
     status_code: int = 416
-    ActualObjectSize: Optional[ObjectSize]
-    RangeRequested: Optional[ContentRange]
+    ActualObjectSize: ObjectSize | None
+    RangeRequested: ContentRange | None
 
 
 class InvalidArgument(ServiceException):
     code: str = "InvalidArgument"
     sender_fault: bool = False
     status_code: int = 400
-    ArgumentName: Optional[ArgumentName]
-    ArgumentValue: Optional[ArgumentValue]
-    HostId: Optional[HostId]
+    ArgumentName: ArgumentName | None
+    ArgumentValue: ArgumentValue | None
+    HostId: HostId | None
 
 
 class SignatureDoesNotMatch(ServiceException):
     code: str = "SignatureDoesNotMatch"
     sender_fault: bool = False
     status_code: int = 403
-    AWSAccessKeyId: Optional[AWSAccessKeyId]
-    CanonicalRequest: Optional[CanonicalRequest]
-    CanonicalRequestBytes: Optional[CanonicalRequestBytes]
-    HostId: Optional[HostId]
-    SignatureProvided: Optional[SignatureProvided]
-    StringToSign: Optional[StringToSign]
-    StringToSignBytes: Optional[StringToSignBytes]
+    AWSAccessKeyId: AWSAccessKeyId | None
+    CanonicalRequest: CanonicalRequest | None
+    CanonicalRequestBytes: CanonicalRequestBytes | None
+    HostId: HostId | None
+    SignatureProvided: SignatureProvided | None
+    StringToSign: StringToSign | None
+    StringToSignBytes: StringToSignBytes | None
 
 
 ServerTime = datetime
@@ -819,109 +820,109 @@ class AccessDenied(ServiceException):
     code: str = "AccessDenied"
     sender_fault: bool = False
     status_code: int = 403
-    Expires: Optional[Expires]
-    ServerTime: Optional[ServerTime]
-    X_Amz_Expires: Optional[X_Amz_Expires]
-    HostId: Optional[HostId]
-    HeadersNotSigned: Optional[HeadersNotSigned]
+    Expires: Expires | None
+    ServerTime: ServerTime | None
+    X_Amz_Expires: X_Amz_Expires | None
+    HostId: HostId | None
+    HeadersNotSigned: HeadersNotSigned | None
 
 
 class AuthorizationQueryParametersError(ServiceException):
     code: str = "AuthorizationQueryParametersError"
     sender_fault: bool = False
     status_code: int = 400
-    HostId: Optional[HostId]
+    HostId: HostId | None
 
 
 class NoSuchWebsiteConfiguration(ServiceException):
     code: str = "NoSuchWebsiteConfiguration"
     sender_fault: bool = False
     status_code: int = 404
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class ReplicationConfigurationNotFoundError(ServiceException):
     code: str = "ReplicationConfigurationNotFoundError"
     sender_fault: bool = False
     status_code: int = 404
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class BadRequest(ServiceException):
     code: str = "BadRequest"
     sender_fault: bool = False
     status_code: int = 400
-    HostId: Optional[HostId]
+    HostId: HostId | None
 
 
 class AccessForbidden(ServiceException):
     code: str = "AccessForbidden"
     sender_fault: bool = False
     status_code: int = 403
-    HostId: Optional[HostId]
-    Method: Optional[HttpMethod]
-    ResourceType: Optional[ResourceType]
+    HostId: HostId | None
+    Method: HttpMethod | None
+    ResourceType: ResourceType | None
 
 
 class NoSuchCORSConfiguration(ServiceException):
     code: str = "NoSuchCORSConfiguration"
     sender_fault: bool = False
     status_code: int = 404
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class MissingSecurityHeader(ServiceException):
     code: str = "MissingSecurityHeader"
     sender_fault: bool = False
     status_code: int = 400
-    MissingHeaderName: Optional[MissingHeaderName]
+    MissingHeaderName: MissingHeaderName | None
 
 
 class InvalidPartOrder(ServiceException):
     code: str = "InvalidPartOrder"
     sender_fault: bool = False
     status_code: int = 400
-    UploadId: Optional[MultipartUploadId]
+    UploadId: MultipartUploadId | None
 
 
 class InvalidStorageClass(ServiceException):
     code: str = "InvalidStorageClass"
     sender_fault: bool = False
     status_code: int = 400
-    StorageClassRequested: Optional[StorageClass]
+    StorageClassRequested: StorageClass | None
 
 
 class MethodNotAllowed(ServiceException):
     code: str = "MethodNotAllowed"
     sender_fault: bool = False
     status_code: int = 405
-    Method: Optional[HttpMethod]
-    ResourceType: Optional[ResourceType]
-    DeleteMarker: Optional[DeleteMarker]
-    VersionId: Optional[ObjectVersionId]
-    Allow: Optional[HttpMethod]
+    Method: HttpMethod | None
+    ResourceType: ResourceType | None
+    DeleteMarker: DeleteMarker | None
+    VersionId: ObjectVersionId | None
+    Allow: HttpMethod | None
 
 
 class CrossLocationLoggingProhibitted(ServiceException):
     code: str = "CrossLocationLoggingProhibitted"
     sender_fault: bool = False
     status_code: int = 403
-    TargetBucketLocation: Optional[BucketRegion]
-    SourceBucketLocation: Optional[BucketRegion]
+    TargetBucketLocation: BucketRegion | None
+    SourceBucketLocation: BucketRegion | None
 
 
 class InvalidTargetBucketForLogging(ServiceException):
     code: str = "InvalidTargetBucketForLogging"
     sender_fault: bool = False
     status_code: int = 400
-    TargetBucket: Optional[BucketName]
+    TargetBucket: BucketName | None
 
 
 class BucketNotEmpty(ServiceException):
     code: str = "BucketNotEmpty"
     sender_fault: bool = False
     status_code: int = 409
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 ProposedSize = int
@@ -932,152 +933,152 @@ class EntityTooSmall(ServiceException):
     code: str = "EntityTooSmall"
     sender_fault: bool = False
     status_code: int = 400
-    ETag: Optional[ETag]
-    MinSizeAllowed: Optional[MinSizeAllowed]
-    PartNumber: Optional[PartNumber]
-    ProposedSize: Optional[ProposedSize]
+    ETag: ETag | None
+    MinSizeAllowed: MinSizeAllowed | None
+    PartNumber: PartNumber | None
+    ProposedSize: ProposedSize | None
 
 
 class InvalidPart(ServiceException):
     code: str = "InvalidPart"
     sender_fault: bool = False
     status_code: int = 400
-    ETag: Optional[ETag]
-    UploadId: Optional[MultipartUploadId]
-    PartNumber: Optional[PartNumber]
+    ETag: ETag | None
+    UploadId: MultipartUploadId | None
+    PartNumber: PartNumber | None
 
 
 class NoSuchTagSet(ServiceException):
     code: str = "NoSuchTagSet"
     sender_fault: bool = False
     status_code: int = 404
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class InvalidTag(ServiceException):
     code: str = "InvalidTag"
     sender_fault: bool = False
     status_code: int = 400
-    TagKey: Optional[ObjectKey]
-    TagValue: Optional[Value]
+    TagKey: ObjectKey | None
+    TagValue: Value | None
 
 
 class ObjectLockConfigurationNotFoundError(ServiceException):
     code: str = "ObjectLockConfigurationNotFoundError"
     sender_fault: bool = False
     status_code: int = 404
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class InvalidPartNumber(ServiceException):
     code: str = "InvalidPartNumber"
     sender_fault: bool = False
     status_code: int = 416
-    PartNumberRequested: Optional[PartNumber]
-    ActualPartCount: Optional[PartNumber]
+    PartNumberRequested: PartNumber | None
+    ActualPartCount: PartNumber | None
 
 
 class OwnershipControlsNotFoundError(ServiceException):
     code: str = "OwnershipControlsNotFoundError"
     sender_fault: bool = False
     status_code: int = 404
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class NoSuchPublicAccessBlockConfiguration(ServiceException):
     code: str = "NoSuchPublicAccessBlockConfiguration"
     sender_fault: bool = False
     status_code: int = 404
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class NoSuchBucketPolicy(ServiceException):
     code: str = "NoSuchBucketPolicy"
     sender_fault: bool = False
     status_code: int = 404
-    BucketName: Optional[BucketName]
+    BucketName: BucketName | None
 
 
 class InvalidDigest(ServiceException):
     code: str = "InvalidDigest"
     sender_fault: bool = False
     status_code: int = 400
-    Content_MD5: Optional[ContentMD5]
+    Content_MD5: ContentMD5 | None
 
 
 class KeyTooLongError(ServiceException):
     code: str = "KeyTooLongError"
     sender_fault: bool = False
     status_code: int = 400
-    MaxSizeAllowed: Optional[KeyLength]
-    Size: Optional[KeyLength]
+    MaxSizeAllowed: KeyLength | None
+    Size: KeyLength | None
 
 
 class InvalidLocationConstraint(ServiceException):
     code: str = "InvalidLocationConstraint"
     sender_fault: bool = False
     status_code: int = 400
-    LocationConstraint: Optional[BucketRegion]
+    LocationConstraint: BucketRegion | None
 
 
 class EntityTooLarge(ServiceException):
     code: str = "EntityTooLarge"
     sender_fault: bool = False
     status_code: int = 400
-    MaxSizeAllowed: Optional[KeyLength]
-    HostId: Optional[HostId]
-    ProposedSize: Optional[ProposedSize]
+    MaxSizeAllowed: KeyLength | None
+    HostId: HostId | None
+    ProposedSize: ProposedSize | None
 
 
 class InvalidEncryptionAlgorithmError(ServiceException):
     code: str = "InvalidEncryptionAlgorithmError"
     sender_fault: bool = False
     status_code: int = 400
-    ArgumentName: Optional[ArgumentName]
-    ArgumentValue: Optional[ArgumentValue]
+    ArgumentName: ArgumentName | None
+    ArgumentValue: ArgumentValue | None
 
 
 class NotImplemented(ServiceException):
     code: str = "NotImplemented"
     sender_fault: bool = False
     status_code: int = 501
-    Header: Optional[Header]
-    additionalMessage: Optional[additionalMessage]
+    Header: Header | None
+    additionalMessage: additionalMessage | None
 
 
 class ConditionalRequestConflict(ServiceException):
     code: str = "ConditionalRequestConflict"
     sender_fault: bool = False
     status_code: int = 409
-    Condition: Optional[IfCondition]
-    Key: Optional[ObjectKey]
+    Condition: IfCondition | None
+    Key: ObjectKey | None
 
 
 class BadDigest(ServiceException):
     code: str = "BadDigest"
     sender_fault: bool = False
     status_code: int = 400
-    ExpectedDigest: Optional[ContentMD5]
-    CalculatedDigest: Optional[ContentMD5]
+    ExpectedDigest: ContentMD5 | None
+    CalculatedDigest: ContentMD5 | None
 
 
 class AuthorizationHeaderMalformed(ServiceException):
     code: str = "AuthorizationHeaderMalformed"
     sender_fault: bool = False
     status_code: int = 400
-    Region: Optional[BucketRegion]
-    HostId: Optional[HostId]
+    Region: BucketRegion | None
+    HostId: HostId | None
 
 
 AbortDate = datetime
 
 
 class AbortIncompleteMultipartUpload(TypedDict, total=False):
-    DaysAfterInitiation: Optional[DaysAfterInitiation]
+    DaysAfterInitiation: DaysAfterInitiation | None
 
 
 class AbortMultipartUploadOutput(TypedDict, total=False):
-    RequestCharged: Optional[RequestCharged]
+    RequestCharged: RequestCharged | None
 
 
 IfMatchInitiatedTime = datetime
@@ -1087,48 +1088,48 @@ class AbortMultipartUploadRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
     UploadId: MultipartUploadId
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
-    IfMatchInitiatedTime: Optional[IfMatchInitiatedTime]
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
+    IfMatchInitiatedTime: IfMatchInitiatedTime | None
 
 
 class AccelerateConfiguration(TypedDict, total=False):
-    Status: Optional[BucketAccelerateStatus]
+    Status: BucketAccelerateStatus | None
 
 
 class Owner(TypedDict, total=False):
-    DisplayName: Optional[DisplayName]
-    ID: Optional[ID]
+    DisplayName: DisplayName | None
+    ID: ID | None
 
 
 class Grantee(TypedDict, total=False):
-    DisplayName: Optional[DisplayName]
-    EmailAddress: Optional[EmailAddress]
-    ID: Optional[ID]
+    DisplayName: DisplayName | None
+    EmailAddress: EmailAddress | None
+    ID: ID | None
     Type: Type
-    URI: Optional[URI]
+    URI: URI | None
 
 
 class Grant(TypedDict, total=False):
-    Grantee: Optional[Grantee]
-    Permission: Optional[Permission]
+    Grantee: Grantee | None
+    Permission: Permission | None
 
 
-Grants = List[Grant]
+Grants = list[Grant]
 
 
 class AccessControlPolicy(TypedDict, total=False):
-    Grants: Optional[Grants]
-    Owner: Optional[Owner]
+    Grants: Grants | None
+    Owner: Owner | None
 
 
 class AccessControlTranslation(TypedDict, total=False):
     Owner: OwnerOverride
 
 
-AllowedHeaders = List[AllowedHeader]
-AllowedMethods = List[AllowedMethod]
-AllowedOrigins = List[AllowedOrigin]
+AllowedHeaders = list[AllowedHeader]
+AllowedMethods = list[AllowedMethod]
+AllowedOrigins = list[AllowedOrigin]
 
 
 class Tag(TypedDict, total=False):
@@ -1136,19 +1137,19 @@ class Tag(TypedDict, total=False):
     Value: Value
 
 
-TagSet = List[Tag]
+TagSet = list[Tag]
 
 
 class AnalyticsAndOperator(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tags: Optional[TagSet]
+    Prefix: Prefix | None
+    Tags: TagSet | None
 
 
 class AnalyticsS3BucketDestination(TypedDict, total=False):
     Format: AnalyticsS3ExportFileFormat
-    BucketAccountId: Optional[AccountId]
+    BucketAccountId: AccountId | None
     Bucket: BucketName
-    Prefix: Optional[Prefix]
+    Prefix: Prefix | None
 
 
 class AnalyticsExportDestination(TypedDict, total=False):
@@ -1161,98 +1162,98 @@ class StorageClassAnalysisDataExport(TypedDict, total=False):
 
 
 class StorageClassAnalysis(TypedDict, total=False):
-    DataExport: Optional[StorageClassAnalysisDataExport]
+    DataExport: StorageClassAnalysisDataExport | None
 
 
 class AnalyticsFilter(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tag: Optional[Tag]
-    And: Optional[AnalyticsAndOperator]
+    Prefix: Prefix | None
+    Tag: Tag | None
+    And: AnalyticsAndOperator | None
 
 
 class AnalyticsConfiguration(TypedDict, total=False):
     Id: AnalyticsId
-    Filter: Optional[AnalyticsFilter]
+    Filter: AnalyticsFilter | None
     StorageClassAnalysis: StorageClassAnalysis
 
 
-AnalyticsConfigurationList = List[AnalyticsConfiguration]
+AnalyticsConfigurationList = list[AnalyticsConfiguration]
 Body = bytes
 CreationDate = datetime
 
 
 class Bucket(TypedDict, total=False):
-    Name: Optional[BucketName]
-    CreationDate: Optional[CreationDate]
-    BucketRegion: Optional[BucketRegion]
-    BucketArn: Optional[S3RegionalOrS3ExpressBucketArnString]
+    Name: BucketName | None
+    CreationDate: CreationDate | None
+    BucketRegion: BucketRegion | None
+    BucketArn: S3RegionalOrS3ExpressBucketArnString | None
 
 
 class BucketInfo(TypedDict, total=False):
-    DataRedundancy: Optional[DataRedundancy]
-    Type: Optional[BucketType]
+    DataRedundancy: DataRedundancy | None
+    Type: BucketType | None
 
 
 class NoncurrentVersionExpiration(TypedDict, total=False):
-    NoncurrentDays: Optional[Days]
-    NewerNoncurrentVersions: Optional[VersionCount]
+    NoncurrentDays: Days | None
+    NewerNoncurrentVersions: VersionCount | None
 
 
 class NoncurrentVersionTransition(TypedDict, total=False):
-    NoncurrentDays: Optional[Days]
-    StorageClass: Optional[TransitionStorageClass]
-    NewerNoncurrentVersions: Optional[VersionCount]
+    NoncurrentDays: Days | None
+    StorageClass: TransitionStorageClass | None
+    NewerNoncurrentVersions: VersionCount | None
 
 
-NoncurrentVersionTransitionList = List[NoncurrentVersionTransition]
+NoncurrentVersionTransitionList = list[NoncurrentVersionTransition]
 Date = datetime
 
 
 class Transition(TypedDict, total=False):
-    Date: Optional[Date]
-    Days: Optional[Days]
-    StorageClass: Optional[TransitionStorageClass]
+    Date: Date | None
+    Days: Days | None
+    StorageClass: TransitionStorageClass | None
 
 
-TransitionList = List[Transition]
+TransitionList = list[Transition]
 ObjectSizeLessThanBytes = int
 ObjectSizeGreaterThanBytes = int
 
 
 class LifecycleRuleAndOperator(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tags: Optional[TagSet]
-    ObjectSizeGreaterThan: Optional[ObjectSizeGreaterThanBytes]
-    ObjectSizeLessThan: Optional[ObjectSizeLessThanBytes]
+    Prefix: Prefix | None
+    Tags: TagSet | None
+    ObjectSizeGreaterThan: ObjectSizeGreaterThanBytes | None
+    ObjectSizeLessThan: ObjectSizeLessThanBytes | None
 
 
 class LifecycleRuleFilter(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tag: Optional[Tag]
-    ObjectSizeGreaterThan: Optional[ObjectSizeGreaterThanBytes]
-    ObjectSizeLessThan: Optional[ObjectSizeLessThanBytes]
-    And: Optional[LifecycleRuleAndOperator]
+    Prefix: Prefix | None
+    Tag: Tag | None
+    ObjectSizeGreaterThan: ObjectSizeGreaterThanBytes | None
+    ObjectSizeLessThan: ObjectSizeLessThanBytes | None
+    And: LifecycleRuleAndOperator | None
 
 
 class LifecycleExpiration(TypedDict, total=False):
-    Date: Optional[Date]
-    Days: Optional[Days]
-    ExpiredObjectDeleteMarker: Optional[ExpiredObjectDeleteMarker]
+    Date: Date | None
+    Days: Days | None
+    ExpiredObjectDeleteMarker: ExpiredObjectDeleteMarker | None
 
 
 class LifecycleRule(TypedDict, total=False):
-    Expiration: Optional[LifecycleExpiration]
-    ID: Optional[ID]
-    Prefix: Optional[Prefix]
-    Filter: Optional[LifecycleRuleFilter]
+    Expiration: LifecycleExpiration | None
+    ID: ID | None
+    Prefix: Prefix | None
+    Filter: LifecycleRuleFilter | None
     Status: ExpirationStatus
-    Transitions: Optional[TransitionList]
-    NoncurrentVersionTransitions: Optional[NoncurrentVersionTransitionList]
-    NoncurrentVersionExpiration: Optional[NoncurrentVersionExpiration]
-    AbortIncompleteMultipartUpload: Optional[AbortIncompleteMultipartUpload]
+    Transitions: TransitionList | None
+    NoncurrentVersionTransitions: NoncurrentVersionTransitionList | None
+    NoncurrentVersionExpiration: NoncurrentVersionExpiration | None
+    AbortIncompleteMultipartUpload: AbortIncompleteMultipartUpload | None
 
 
-LifecycleRules = List[LifecycleRule]
+LifecycleRules = list[LifecycleRule]
 
 
 class BucketLifecycleConfiguration(TypedDict, total=False):
@@ -1260,7 +1261,7 @@ class BucketLifecycleConfiguration(TypedDict, total=False):
 
 
 class PartitionedPrefix(TypedDict, total=False):
-    PartitionDateSource: Optional[PartitionDateSource]
+    PartitionDateSource: PartitionDateSource | None
 
 
 class SimplePrefix(TypedDict, total=False):
@@ -1268,46 +1269,46 @@ class SimplePrefix(TypedDict, total=False):
 
 
 class TargetObjectKeyFormat(TypedDict, total=False):
-    SimplePrefix: Optional[SimplePrefix]
-    PartitionedPrefix: Optional[PartitionedPrefix]
+    SimplePrefix: SimplePrefix | None
+    PartitionedPrefix: PartitionedPrefix | None
 
 
 class TargetGrant(TypedDict, total=False):
-    Grantee: Optional[Grantee]
-    Permission: Optional[BucketLogsPermission]
+    Grantee: Grantee | None
+    Permission: BucketLogsPermission | None
 
 
-TargetGrants = List[TargetGrant]
+TargetGrants = list[TargetGrant]
 
 
 class LoggingEnabled(TypedDict, total=False):
     TargetBucket: TargetBucket
-    TargetGrants: Optional[TargetGrants]
+    TargetGrants: TargetGrants | None
     TargetPrefix: TargetPrefix
-    TargetObjectKeyFormat: Optional[TargetObjectKeyFormat]
+    TargetObjectKeyFormat: TargetObjectKeyFormat | None
 
 
 class BucketLoggingStatus(TypedDict, total=False):
-    LoggingEnabled: Optional[LoggingEnabled]
+    LoggingEnabled: LoggingEnabled | None
 
 
-Buckets = List[Bucket]
+Buckets = list[Bucket]
 BytesProcessed = int
 BytesReturned = int
 BytesScanned = int
-ExposeHeaders = List[ExposeHeader]
+ExposeHeaders = list[ExposeHeader]
 
 
 class CORSRule(TypedDict, total=False):
-    ID: Optional[ID]
-    AllowedHeaders: Optional[AllowedHeaders]
+    ID: ID | None
+    AllowedHeaders: AllowedHeaders | None
     AllowedMethods: AllowedMethods
     AllowedOrigins: AllowedOrigins
-    ExposeHeaders: Optional[ExposeHeaders]
-    MaxAgeSeconds: Optional[MaxAgeSeconds]
+    ExposeHeaders: ExposeHeaders | None
+    MaxAgeSeconds: MaxAgeSeconds | None
 
 
-CORSRules = List[CORSRule]
+CORSRules = list[CORSRule]
 
 
 class CORSConfiguration(TypedDict, total=False):
@@ -1315,114 +1316,114 @@ class CORSConfiguration(TypedDict, total=False):
 
 
 class CSVInput(TypedDict, total=False):
-    FileHeaderInfo: Optional[FileHeaderInfo]
-    Comments: Optional[Comments]
-    QuoteEscapeCharacter: Optional[QuoteEscapeCharacter]
-    RecordDelimiter: Optional[RecordDelimiter]
-    FieldDelimiter: Optional[FieldDelimiter]
-    QuoteCharacter: Optional[QuoteCharacter]
-    AllowQuotedRecordDelimiter: Optional[AllowQuotedRecordDelimiter]
+    FileHeaderInfo: FileHeaderInfo | None
+    Comments: Comments | None
+    QuoteEscapeCharacter: QuoteEscapeCharacter | None
+    RecordDelimiter: RecordDelimiter | None
+    FieldDelimiter: FieldDelimiter | None
+    QuoteCharacter: QuoteCharacter | None
+    AllowQuotedRecordDelimiter: AllowQuotedRecordDelimiter | None
 
 
 class CSVOutput(TypedDict, total=False):
-    QuoteFields: Optional[QuoteFields]
-    QuoteEscapeCharacter: Optional[QuoteEscapeCharacter]
-    RecordDelimiter: Optional[RecordDelimiter]
-    FieldDelimiter: Optional[FieldDelimiter]
-    QuoteCharacter: Optional[QuoteCharacter]
+    QuoteFields: QuoteFields | None
+    QuoteEscapeCharacter: QuoteEscapeCharacter | None
+    RecordDelimiter: RecordDelimiter | None
+    FieldDelimiter: FieldDelimiter | None
+    QuoteCharacter: QuoteCharacter | None
 
 
 class Checksum(TypedDict, total=False):
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    ChecksumType: Optional[ChecksumType]
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    ChecksumType: ChecksumType | None
 
 
-ChecksumAlgorithmList = List[ChecksumAlgorithm]
-EventList = List[Event]
+ChecksumAlgorithmList = list[ChecksumAlgorithm]
+EventList = list[Event]
 
 
 class CloudFunctionConfiguration(TypedDict, total=False):
-    Id: Optional[NotificationId]
-    Event: Optional[Event]
-    Events: Optional[EventList]
-    CloudFunction: Optional[CloudFunction]
-    InvocationRole: Optional[CloudFunctionInvocationRole]
+    Id: NotificationId | None
+    Event: Event | None
+    Events: EventList | None
+    CloudFunction: CloudFunction | None
+    InvocationRole: CloudFunctionInvocationRole | None
 
 
 class CommonPrefix(TypedDict, total=False):
-    Prefix: Optional[Prefix]
+    Prefix: Prefix | None
 
 
-CommonPrefixList = List[CommonPrefix]
+CommonPrefixList = list[CommonPrefix]
 
 
 class CompleteMultipartUploadOutput(TypedDict, total=False):
-    Location: Optional[Location]
-    Bucket: Optional[BucketName]
-    Key: Optional[ObjectKey]
-    Expiration: Optional[Expiration]
-    ETag: Optional[ETag]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    ChecksumType: Optional[ChecksumType]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    VersionId: Optional[ObjectVersionId]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    RequestCharged: Optional[RequestCharged]
+    Location: Location | None
+    Bucket: BucketName | None
+    Key: ObjectKey | None
+    Expiration: Expiration | None
+    ETag: ETag | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    ChecksumType: ChecksumType | None
+    ServerSideEncryption: ServerSideEncryption | None
+    VersionId: ObjectVersionId | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    RequestCharged: RequestCharged | None
 
 
 MpuObjectSize = int
 
 
 class CompletedPart(TypedDict, total=False):
-    ETag: Optional[ETag]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    PartNumber: Optional[PartNumber]
+    ETag: ETag | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    PartNumber: PartNumber | None
 
 
-CompletedPartList = List[CompletedPart]
+CompletedPartList = list[CompletedPart]
 
 
 class CompletedMultipartUpload(TypedDict, total=False):
-    Parts: Optional[CompletedPartList]
+    Parts: CompletedPartList | None
 
 
 class CompleteMultipartUploadRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    MultipartUpload: Optional[CompletedMultipartUpload]
+    MultipartUpload: CompletedMultipartUpload | None
     UploadId: MultipartUploadId
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    ChecksumType: Optional[ChecksumType]
-    MpuObjectSize: Optional[MpuObjectSize]
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
-    IfMatch: Optional[IfMatch]
-    IfNoneMatch: Optional[IfNoneMatch]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    ChecksumType: ChecksumType | None
+    MpuObjectSize: MpuObjectSize | None
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
+    IfMatch: IfMatch | None
+    IfNoneMatch: IfNoneMatch | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
 
 
 class Condition(TypedDict, total=False):
-    HttpErrorCodeReturnedEquals: Optional[HttpErrorCodeReturnedEquals]
-    KeyPrefixEquals: Optional[KeyPrefixEquals]
+    HttpErrorCodeReturnedEquals: HttpErrorCodeReturnedEquals | None
+    KeyPrefixEquals: KeyPrefixEquals | None
 
 
 ContentLength = int
@@ -1436,135 +1437,135 @@ LastModified = datetime
 
 
 class CopyObjectResult(TypedDict, total=False):
-    ETag: Optional[ETag]
-    LastModified: Optional[LastModified]
-    ChecksumType: Optional[ChecksumType]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
+    ETag: ETag | None
+    LastModified: LastModified | None
+    ChecksumType: ChecksumType | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
 
 
 class CopyObjectOutput(TypedDict, total=False):
-    CopyObjectResult: Optional[CopyObjectResult]
-    Expiration: Optional[Expiration]
-    CopySourceVersionId: Optional[CopySourceVersionId]
-    VersionId: Optional[ObjectVersionId]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    RequestCharged: Optional[RequestCharged]
+    CopyObjectResult: CopyObjectResult | None
+    Expiration: Expiration | None
+    CopySourceVersionId: CopySourceVersionId | None
+    VersionId: ObjectVersionId | None
+    ServerSideEncryption: ServerSideEncryption | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    SSEKMSEncryptionContext: SSEKMSEncryptionContext | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    RequestCharged: RequestCharged | None
 
 
 ObjectLockRetainUntilDate = datetime
-Metadata = Dict[MetadataKey, MetadataValue]
+Metadata = dict[MetadataKey, MetadataValue]
 CopySourceIfUnmodifiedSince = datetime
 CopySourceIfModifiedSince = datetime
 
 
 class CopyObjectRequest(ServiceRequest):
-    ACL: Optional[ObjectCannedACL]
+    ACL: ObjectCannedACL | None
     Bucket: BucketName
-    CacheControl: Optional[CacheControl]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ContentDisposition: Optional[ContentDisposition]
-    ContentEncoding: Optional[ContentEncoding]
-    ContentLanguage: Optional[ContentLanguage]
-    ContentType: Optional[ContentType]
+    CacheControl: CacheControl | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ContentDisposition: ContentDisposition | None
+    ContentEncoding: ContentEncoding | None
+    ContentLanguage: ContentLanguage | None
+    ContentType: ContentType | None
     CopySource: CopySource
-    CopySourceIfMatch: Optional[CopySourceIfMatch]
-    CopySourceIfModifiedSince: Optional[CopySourceIfModifiedSince]
-    CopySourceIfNoneMatch: Optional[CopySourceIfNoneMatch]
-    CopySourceIfUnmodifiedSince: Optional[CopySourceIfUnmodifiedSince]
-    Expires: Optional[Expires]
-    GrantFullControl: Optional[GrantFullControl]
-    GrantRead: Optional[GrantRead]
-    GrantReadACP: Optional[GrantReadACP]
-    GrantWriteACP: Optional[GrantWriteACP]
-    IfMatch: Optional[IfMatch]
-    IfNoneMatch: Optional[IfNoneMatch]
+    CopySourceIfMatch: CopySourceIfMatch | None
+    CopySourceIfModifiedSince: CopySourceIfModifiedSince | None
+    CopySourceIfNoneMatch: CopySourceIfNoneMatch | None
+    CopySourceIfUnmodifiedSince: CopySourceIfUnmodifiedSince | None
+    Expires: Expires | None
+    GrantFullControl: GrantFullControl | None
+    GrantRead: GrantRead | None
+    GrantReadACP: GrantReadACP | None
+    GrantWriteACP: GrantWriteACP | None
+    IfMatch: IfMatch | None
+    IfNoneMatch: IfNoneMatch | None
     Key: ObjectKey
-    Metadata: Optional[Metadata]
-    MetadataDirective: Optional[MetadataDirective]
-    TaggingDirective: Optional[TaggingDirective]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    StorageClass: Optional[StorageClass]
-    WebsiteRedirectLocation: Optional[WebsiteRedirectLocation]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    CopySourceSSECustomerAlgorithm: Optional[CopySourceSSECustomerAlgorithm]
-    CopySourceSSECustomerKey: Optional[CopySourceSSECustomerKey]
-    CopySourceSSECustomerKeyMD5: Optional[CopySourceSSECustomerKeyMD5]
-    RequestPayer: Optional[RequestPayer]
-    Tagging: Optional[TaggingHeader]
-    ObjectLockMode: Optional[ObjectLockMode]
-    ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
-    ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
-    ExpectedBucketOwner: Optional[AccountId]
-    ExpectedSourceBucketOwner: Optional[AccountId]
+    Metadata: Metadata | None
+    MetadataDirective: MetadataDirective | None
+    TaggingDirective: TaggingDirective | None
+    ServerSideEncryption: ServerSideEncryption | None
+    StorageClass: StorageClass | None
+    WebsiteRedirectLocation: WebsiteRedirectLocation | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    SSEKMSEncryptionContext: SSEKMSEncryptionContext | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    CopySourceSSECustomerAlgorithm: CopySourceSSECustomerAlgorithm | None
+    CopySourceSSECustomerKey: CopySourceSSECustomerKey | None
+    CopySourceSSECustomerKeyMD5: CopySourceSSECustomerKeyMD5 | None
+    RequestPayer: RequestPayer | None
+    Tagging: TaggingHeader | None
+    ObjectLockMode: ObjectLockMode | None
+    ObjectLockRetainUntilDate: ObjectLockRetainUntilDate | None
+    ObjectLockLegalHoldStatus: ObjectLockLegalHoldStatus | None
+    ExpectedBucketOwner: AccountId | None
+    ExpectedSourceBucketOwner: AccountId | None
 
 
 class CopyPartResult(TypedDict, total=False):
-    ETag: Optional[ETag]
-    LastModified: Optional[LastModified]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
+    ETag: ETag | None
+    LastModified: LastModified | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
 
 
 class LocationInfo(TypedDict, total=False):
-    Type: Optional[LocationType]
-    Name: Optional[LocationNameAsString]
+    Type: LocationType | None
+    Name: LocationNameAsString | None
 
 
 class CreateBucketConfiguration(TypedDict, total=False):
-    LocationConstraint: Optional[BucketLocationConstraint]
-    Location: Optional[LocationInfo]
-    Bucket: Optional[BucketInfo]
-    Tags: Optional[TagSet]
+    LocationConstraint: BucketLocationConstraint | None
+    Location: LocationInfo | None
+    Bucket: BucketInfo | None
+    Tags: TagSet | None
 
 
 class MetadataTableEncryptionConfiguration(TypedDict, total=False):
     SseAlgorithm: TableSseAlgorithm
-    KmsKeyArn: Optional[KmsKeyArn]
+    KmsKeyArn: KmsKeyArn | None
 
 
 class InventoryTableConfiguration(TypedDict, total=False):
     ConfigurationState: InventoryConfigurationState
-    EncryptionConfiguration: Optional[MetadataTableEncryptionConfiguration]
+    EncryptionConfiguration: MetadataTableEncryptionConfiguration | None
 
 
 class RecordExpiration(TypedDict, total=False):
     Expiration: ExpirationState
-    Days: Optional[RecordExpirationDays]
+    Days: RecordExpirationDays | None
 
 
 class JournalTableConfiguration(TypedDict, total=False):
     RecordExpiration: RecordExpiration
-    EncryptionConfiguration: Optional[MetadataTableEncryptionConfiguration]
+    EncryptionConfiguration: MetadataTableEncryptionConfiguration | None
 
 
 class MetadataConfiguration(TypedDict, total=False):
     JournalTableConfiguration: JournalTableConfiguration
-    InventoryTableConfiguration: Optional[InventoryTableConfiguration]
+    InventoryTableConfiguration: InventoryTableConfiguration | None
 
 
 class CreateBucketMetadataConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     MetadataConfiguration: MetadataConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class S3TablesDestination(TypedDict, total=False):
@@ -1578,79 +1579,79 @@ class MetadataTableConfiguration(TypedDict, total=False):
 
 class CreateBucketMetadataTableConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     MetadataTableConfiguration: MetadataTableConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class CreateBucketOutput(TypedDict, total=False):
-    Location: Optional[Location]
-    BucketArn: Optional[S3RegionalOrS3ExpressBucketArnString]
+    Location: Location | None
+    BucketArn: S3RegionalOrS3ExpressBucketArnString | None
 
 
 class CreateBucketRequest(ServiceRequest):
-    ACL: Optional[BucketCannedACL]
+    ACL: BucketCannedACL | None
     Bucket: BucketName
-    CreateBucketConfiguration: Optional[CreateBucketConfiguration]
-    GrantFullControl: Optional[GrantFullControl]
-    GrantRead: Optional[GrantRead]
-    GrantReadACP: Optional[GrantReadACP]
-    GrantWrite: Optional[GrantWrite]
-    GrantWriteACP: Optional[GrantWriteACP]
-    ObjectLockEnabledForBucket: Optional[ObjectLockEnabledForBucket]
-    ObjectOwnership: Optional[ObjectOwnership]
+    CreateBucketConfiguration: CreateBucketConfiguration | None
+    GrantFullControl: GrantFullControl | None
+    GrantRead: GrantRead | None
+    GrantReadACP: GrantReadACP | None
+    GrantWrite: GrantWrite | None
+    GrantWriteACP: GrantWriteACP | None
+    ObjectLockEnabledForBucket: ObjectLockEnabledForBucket | None
+    ObjectOwnership: ObjectOwnership | None
 
 
 class CreateMultipartUploadOutput(TypedDict, total=False):
-    AbortDate: Optional[AbortDate]
-    AbortRuleId: Optional[AbortRuleId]
-    Bucket: Optional[BucketName]
-    Key: Optional[ObjectKey]
-    UploadId: Optional[MultipartUploadId]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    RequestCharged: Optional[RequestCharged]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ChecksumType: Optional[ChecksumType]
+    AbortDate: AbortDate | None
+    AbortRuleId: AbortRuleId | None
+    Bucket: BucketName | None
+    Key: ObjectKey | None
+    UploadId: MultipartUploadId | None
+    ServerSideEncryption: ServerSideEncryption | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    SSEKMSEncryptionContext: SSEKMSEncryptionContext | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    RequestCharged: RequestCharged | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ChecksumType: ChecksumType | None
 
 
 class CreateMultipartUploadRequest(ServiceRequest):
-    ACL: Optional[ObjectCannedACL]
+    ACL: ObjectCannedACL | None
     Bucket: BucketName
-    CacheControl: Optional[CacheControl]
-    ContentDisposition: Optional[ContentDisposition]
-    ContentEncoding: Optional[ContentEncoding]
-    ContentLanguage: Optional[ContentLanguage]
-    ContentType: Optional[ContentType]
-    Expires: Optional[Expires]
-    GrantFullControl: Optional[GrantFullControl]
-    GrantRead: Optional[GrantRead]
-    GrantReadACP: Optional[GrantReadACP]
-    GrantWriteACP: Optional[GrantWriteACP]
+    CacheControl: CacheControl | None
+    ContentDisposition: ContentDisposition | None
+    ContentEncoding: ContentEncoding | None
+    ContentLanguage: ContentLanguage | None
+    ContentType: ContentType | None
+    Expires: Expires | None
+    GrantFullControl: GrantFullControl | None
+    GrantRead: GrantRead | None
+    GrantReadACP: GrantReadACP | None
+    GrantWriteACP: GrantWriteACP | None
     Key: ObjectKey
-    Metadata: Optional[Metadata]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    StorageClass: Optional[StorageClass]
-    WebsiteRedirectLocation: Optional[WebsiteRedirectLocation]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    RequestPayer: Optional[RequestPayer]
-    Tagging: Optional[TaggingHeader]
-    ObjectLockMode: Optional[ObjectLockMode]
-    ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
-    ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
-    ExpectedBucketOwner: Optional[AccountId]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ChecksumType: Optional[ChecksumType]
+    Metadata: Metadata | None
+    ServerSideEncryption: ServerSideEncryption | None
+    StorageClass: StorageClass | None
+    WebsiteRedirectLocation: WebsiteRedirectLocation | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    SSEKMSEncryptionContext: SSEKMSEncryptionContext | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    RequestPayer: RequestPayer | None
+    Tagging: TaggingHeader | None
+    ObjectLockMode: ObjectLockMode | None
+    ObjectLockRetainUntilDate: ObjectLockRetainUntilDate | None
+    ObjectLockLegalHoldStatus: ObjectLockLegalHoldStatus | None
+    ExpectedBucketOwner: AccountId | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ChecksumType: ChecksumType | None
 
 
 SessionExpiration = datetime
@@ -1664,26 +1665,26 @@ class SessionCredentials(TypedDict, total=False):
 
 
 class CreateSessionOutput(TypedDict, total=False):
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
+    ServerSideEncryption: ServerSideEncryption | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    SSEKMSEncryptionContext: SSEKMSEncryptionContext | None
+    BucketKeyEnabled: BucketKeyEnabled | None
     Credentials: SessionCredentials
 
 
 class CreateSessionRequest(ServiceRequest):
-    SessionMode: Optional[SessionMode]
+    SessionMode: SessionMode | None
     Bucket: BucketName
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
+    ServerSideEncryption: ServerSideEncryption | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    SSEKMSEncryptionContext: SSEKMSEncryptionContext | None
+    BucketKeyEnabled: BucketKeyEnabled | None
 
 
 class DefaultRetention(TypedDict, total=False):
-    Mode: Optional[ObjectLockRetentionMode]
-    Days: Optional[Days]
-    Years: Optional[Years]
+    Mode: ObjectLockRetentionMode | None
+    Days: Days | None
+    Years: Years | None
 
 
 Size = int
@@ -1692,118 +1693,118 @@ LastModifiedTime = datetime
 
 class ObjectIdentifier(TypedDict, total=False):
     Key: ObjectKey
-    VersionId: Optional[ObjectVersionId]
-    ETag: Optional[ETag]
-    LastModifiedTime: Optional[LastModifiedTime]
-    Size: Optional[Size]
+    VersionId: ObjectVersionId | None
+    ETag: ETag | None
+    LastModifiedTime: LastModifiedTime | None
+    Size: Size | None
 
 
-ObjectIdentifierList = List[ObjectIdentifier]
+ObjectIdentifierList = list[ObjectIdentifier]
 
 
 class Delete(TypedDict, total=False):
     Objects: ObjectIdentifierList
-    Quiet: Optional[Quiet]
+    Quiet: Quiet | None
 
 
 class DeleteBucketAnalyticsConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: AnalyticsId
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketCorsRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketEncryptionRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketIntelligentTieringConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: IntelligentTieringId
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketInventoryConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: InventoryId
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketLifecycleRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketMetadataConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketMetadataTableConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketMetricsConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: MetricsId
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketOwnershipControlsRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketPolicyRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketReplicationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketTaggingRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteBucketWebsiteRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class DeleteMarkerEntry(TypedDict, total=False):
-    Owner: Optional[Owner]
-    Key: Optional[ObjectKey]
-    VersionId: Optional[ObjectVersionId]
-    IsLatest: Optional[IsLatest]
-    LastModified: Optional[LastModified]
+    Owner: Owner | None
+    Key: ObjectKey | None
+    VersionId: ObjectVersionId | None
+    IsLatest: IsLatest | None
+    LastModified: LastModified | None
 
 
 class DeleteMarkerReplication(TypedDict, total=False):
-    Status: Optional[DeleteMarkerReplicationStatus]
+    Status: DeleteMarkerReplicationStatus | None
 
 
-DeleteMarkers = List[DeleteMarkerEntry]
+DeleteMarkers = list[DeleteMarkerEntry]
 
 
 class DeleteObjectOutput(TypedDict, total=False):
-    DeleteMarker: Optional[DeleteMarker]
-    VersionId: Optional[ObjectVersionId]
-    RequestCharged: Optional[RequestCharged]
+    DeleteMarker: DeleteMarker | None
+    VersionId: ObjectVersionId | None
+    RequestCharged: RequestCharged | None
 
 
 IfMatchSize = int
@@ -1813,75 +1814,75 @@ IfMatchLastModifiedTime = datetime
 class DeleteObjectRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    MFA: Optional[MFA]
-    VersionId: Optional[ObjectVersionId]
-    RequestPayer: Optional[RequestPayer]
-    BypassGovernanceRetention: Optional[BypassGovernanceRetention]
-    ExpectedBucketOwner: Optional[AccountId]
-    IfMatch: Optional[IfMatch]
-    IfMatchLastModifiedTime: Optional[IfMatchLastModifiedTime]
-    IfMatchSize: Optional[IfMatchSize]
+    MFA: MFA | None
+    VersionId: ObjectVersionId | None
+    RequestPayer: RequestPayer | None
+    BypassGovernanceRetention: BypassGovernanceRetention | None
+    ExpectedBucketOwner: AccountId | None
+    IfMatch: IfMatch | None
+    IfMatchLastModifiedTime: IfMatchLastModifiedTime | None
+    IfMatchSize: IfMatchSize | None
 
 
 class DeleteObjectTaggingOutput(TypedDict, total=False):
-    VersionId: Optional[ObjectVersionId]
+    VersionId: ObjectVersionId | None
 
 
 class DeleteObjectTaggingRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    VersionId: Optional[ObjectVersionId]
-    ExpectedBucketOwner: Optional[AccountId]
+    VersionId: ObjectVersionId | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class Error(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    VersionId: Optional[ObjectVersionId]
-    Code: Optional[Code]
-    Message: Optional[Message]
+    Key: ObjectKey | None
+    VersionId: ObjectVersionId | None
+    Code: Code | None
+    Message: Message | None
 
 
-Errors = List[Error]
+Errors = list[Error]
 
 
 class DeletedObject(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    VersionId: Optional[ObjectVersionId]
-    DeleteMarker: Optional[DeleteMarker]
-    DeleteMarkerVersionId: Optional[DeleteMarkerVersionId]
+    Key: ObjectKey | None
+    VersionId: ObjectVersionId | None
+    DeleteMarker: DeleteMarker | None
+    DeleteMarkerVersionId: DeleteMarkerVersionId | None
 
 
-DeletedObjects = List[DeletedObject]
+DeletedObjects = list[DeletedObject]
 
 
 class DeleteObjectsOutput(TypedDict, total=False):
-    Deleted: Optional[DeletedObjects]
-    RequestCharged: Optional[RequestCharged]
-    Errors: Optional[Errors]
+    Deleted: DeletedObjects | None
+    RequestCharged: RequestCharged | None
+    Errors: Errors | None
 
 
 class DeleteObjectsRequest(ServiceRequest):
     Bucket: BucketName
     Delete: Delete
-    MFA: Optional[MFA]
-    RequestPayer: Optional[RequestPayer]
-    BypassGovernanceRetention: Optional[BypassGovernanceRetention]
-    ExpectedBucketOwner: Optional[AccountId]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    MFA: MFA | None
+    RequestPayer: RequestPayer | None
+    BypassGovernanceRetention: BypassGovernanceRetention | None
+    ExpectedBucketOwner: AccountId | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
 
 
 class DeletePublicAccessBlockRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class ReplicationTimeValue(TypedDict, total=False):
-    Minutes: Optional[Minutes]
+    Minutes: Minutes | None
 
 
 class Metrics(TypedDict, total=False):
     Status: MetricsStatus
-    EventThreshold: Optional[ReplicationTimeValue]
+    EventThreshold: ReplicationTimeValue | None
 
 
 class ReplicationTime(TypedDict, total=False):
@@ -1890,29 +1891,29 @@ class ReplicationTime(TypedDict, total=False):
 
 
 class EncryptionConfiguration(TypedDict, total=False):
-    ReplicaKmsKeyID: Optional[ReplicaKmsKeyID]
+    ReplicaKmsKeyID: ReplicaKmsKeyID | None
 
 
 class Destination(TypedDict, total=False):
     Bucket: BucketName
-    Account: Optional[AccountId]
-    StorageClass: Optional[StorageClass]
-    AccessControlTranslation: Optional[AccessControlTranslation]
-    EncryptionConfiguration: Optional[EncryptionConfiguration]
-    ReplicationTime: Optional[ReplicationTime]
-    Metrics: Optional[Metrics]
+    Account: AccountId | None
+    StorageClass: StorageClass | None
+    AccessControlTranslation: AccessControlTranslation | None
+    EncryptionConfiguration: EncryptionConfiguration | None
+    ReplicationTime: ReplicationTime | None
+    Metrics: Metrics | None
 
 
 class DestinationResult(TypedDict, total=False):
-    TableBucketType: Optional[S3TablesBucketType]
-    TableBucketArn: Optional[S3TablesBucketArn]
-    TableNamespace: Optional[S3TablesNamespace]
+    TableBucketType: S3TablesBucketType | None
+    TableBucketArn: S3TablesBucketArn | None
+    TableNamespace: S3TablesNamespace | None
 
 
 class Encryption(TypedDict, total=False):
     EncryptionType: ServerSideEncryption
-    KMSKeyId: Optional[SSEKMSKeyId]
-    KMSContext: Optional[KMSContext]
+    KMSKeyId: SSEKMSKeyId | None
+    KMSContext: KMSContext | None
 
 
 End = int
@@ -1923,8 +1924,8 @@ class EndEvent(TypedDict, total=False):
 
 
 class ErrorDetails(TypedDict, total=False):
-    ErrorCode: Optional[ErrorCode]
-    ErrorMessage: Optional[ErrorMessage]
+    ErrorCode: ErrorCode | None
+    ErrorMessage: ErrorMessage | None
 
 
 class ErrorDocument(TypedDict, total=False):
@@ -1940,64 +1941,64 @@ class ExistingObjectReplication(TypedDict, total=False):
 
 
 class FilterRule(TypedDict, total=False):
-    Name: Optional[FilterRuleName]
-    Value: Optional[FilterRuleValue]
+    Name: FilterRuleName | None
+    Value: FilterRuleValue | None
 
 
-FilterRuleList = List[FilterRule]
+FilterRuleList = list[FilterRule]
 
 
 class GetBucketAccelerateConfigurationOutput(TypedDict, total=False):
-    Status: Optional[BucketAccelerateStatus]
-    RequestCharged: Optional[RequestCharged]
+    Status: BucketAccelerateStatus | None
+    RequestCharged: RequestCharged | None
 
 
 class GetBucketAccelerateConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
-    RequestPayer: Optional[RequestPayer]
+    ExpectedBucketOwner: AccountId | None
+    RequestPayer: RequestPayer | None
 
 
 class GetBucketAclOutput(TypedDict, total=False):
-    Owner: Optional[Owner]
-    Grants: Optional[Grants]
+    Owner: Owner | None
+    Grants: Grants | None
 
 
 class GetBucketAclRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetBucketAnalyticsConfigurationOutput(TypedDict, total=False):
-    AnalyticsConfiguration: Optional[AnalyticsConfiguration]
+    AnalyticsConfiguration: AnalyticsConfiguration | None
 
 
 class GetBucketAnalyticsConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: AnalyticsId
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetBucketCorsOutput(TypedDict, total=False):
-    CORSRules: Optional[CORSRules]
+    CORSRules: CORSRules | None
 
 
 class GetBucketCorsRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class ServerSideEncryptionByDefault(TypedDict, total=False):
     SSEAlgorithm: ServerSideEncryption
-    KMSMasterKeyID: Optional[SSEKMSKeyId]
+    KMSMasterKeyID: SSEKMSKeyId | None
 
 
 class ServerSideEncryptionRule(TypedDict, total=False):
-    ApplyServerSideEncryptionByDefault: Optional[ServerSideEncryptionByDefault]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
+    ApplyServerSideEncryptionByDefault: ServerSideEncryptionByDefault | None
+    BucketKeyEnabled: BucketKeyEnabled | None
 
 
-ServerSideEncryptionRules = List[ServerSideEncryptionRule]
+ServerSideEncryptionRules = list[ServerSideEncryptionRule]
 
 
 class ServerSideEncryptionConfiguration(TypedDict, total=False):
@@ -2005,12 +2006,12 @@ class ServerSideEncryptionConfiguration(TypedDict, total=False):
 
 
 class GetBucketEncryptionOutput(TypedDict, total=False):
-    ServerSideEncryptionConfiguration: Optional[ServerSideEncryptionConfiguration]
+    ServerSideEncryptionConfiguration: ServerSideEncryptionConfiguration | None
 
 
 class GetBucketEncryptionRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class Tiering(TypedDict, total=False):
@@ -2018,42 +2019,42 @@ class Tiering(TypedDict, total=False):
     AccessTier: IntelligentTieringAccessTier
 
 
-TieringList = List[Tiering]
+TieringList = list[Tiering]
 
 
 class IntelligentTieringAndOperator(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tags: Optional[TagSet]
+    Prefix: Prefix | None
+    Tags: TagSet | None
 
 
 class IntelligentTieringFilter(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tag: Optional[Tag]
-    And: Optional[IntelligentTieringAndOperator]
+    Prefix: Prefix | None
+    Tag: Tag | None
+    And: IntelligentTieringAndOperator | None
 
 
 class IntelligentTieringConfiguration(TypedDict, total=False):
     Id: IntelligentTieringId
-    Filter: Optional[IntelligentTieringFilter]
+    Filter: IntelligentTieringFilter | None
     Status: IntelligentTieringStatus
     Tierings: TieringList
 
 
 class GetBucketIntelligentTieringConfigurationOutput(TypedDict, total=False):
-    IntelligentTieringConfiguration: Optional[IntelligentTieringConfiguration]
+    IntelligentTieringConfiguration: IntelligentTieringConfiguration | None
 
 
 class GetBucketIntelligentTieringConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: IntelligentTieringId
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class InventorySchedule(TypedDict, total=False):
     Frequency: InventoryFrequency
 
 
-InventoryOptionalFields = List[InventoryOptionalField]
+InventoryOptionalFields = list[InventoryOptionalField]
 
 
 class InventoryFilter(TypedDict, total=False):
@@ -2069,16 +2070,16 @@ class SSES3(TypedDict, total=False):
 
 
 class InventoryEncryption(TypedDict, total=False):
-    SSES3: Optional[SSES3]
-    SSEKMS: Optional[SSEKMS]
+    SSES3: SSES3 | None
+    SSEKMS: SSEKMS | None
 
 
 class InventoryS3BucketDestination(TypedDict, total=False):
-    AccountId: Optional[AccountId]
+    AccountId: AccountId | None
     Bucket: BucketName
     Format: InventoryFormat
-    Prefix: Optional[Prefix]
-    Encryption: Optional[InventoryEncryption]
+    Prefix: Prefix | None
+    Encryption: InventoryEncryption | None
 
 
 class InventoryDestination(TypedDict, total=False):
@@ -2088,94 +2089,94 @@ class InventoryDestination(TypedDict, total=False):
 class InventoryConfiguration(TypedDict, total=False):
     Destination: InventoryDestination
     IsEnabled: IsEnabled
-    Filter: Optional[InventoryFilter]
+    Filter: InventoryFilter | None
     Id: InventoryId
     IncludedObjectVersions: InventoryIncludedObjectVersions
-    OptionalFields: Optional[InventoryOptionalFields]
+    OptionalFields: InventoryOptionalFields | None
     Schedule: InventorySchedule
 
 
 class GetBucketInventoryConfigurationOutput(TypedDict, total=False):
-    InventoryConfiguration: Optional[InventoryConfiguration]
+    InventoryConfiguration: InventoryConfiguration | None
 
 
 class GetBucketInventoryConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: InventoryId
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetBucketLifecycleConfigurationOutput(TypedDict, total=False):
-    Rules: Optional[LifecycleRules]
-    TransitionDefaultMinimumObjectSize: Optional[TransitionDefaultMinimumObjectSize]
+    Rules: LifecycleRules | None
+    TransitionDefaultMinimumObjectSize: TransitionDefaultMinimumObjectSize | None
 
 
 class GetBucketLifecycleConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class Rule(TypedDict, total=False):
-    Expiration: Optional[LifecycleExpiration]
-    ID: Optional[ID]
+    Expiration: LifecycleExpiration | None
+    ID: ID | None
     Prefix: Prefix
     Status: ExpirationStatus
-    Transition: Optional[Transition]
-    NoncurrentVersionTransition: Optional[NoncurrentVersionTransition]
-    NoncurrentVersionExpiration: Optional[NoncurrentVersionExpiration]
-    AbortIncompleteMultipartUpload: Optional[AbortIncompleteMultipartUpload]
+    Transition: Transition | None
+    NoncurrentVersionTransition: NoncurrentVersionTransition | None
+    NoncurrentVersionExpiration: NoncurrentVersionExpiration | None
+    AbortIncompleteMultipartUpload: AbortIncompleteMultipartUpload | None
 
 
-Rules = List[Rule]
+Rules = list[Rule]
 
 
 class GetBucketLifecycleOutput(TypedDict, total=False):
-    Rules: Optional[Rules]
+    Rules: Rules | None
 
 
 class GetBucketLifecycleRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetBucketLocationOutput(TypedDict, total=False):
-    LocationConstraint: Optional[BucketLocationConstraint]
+    LocationConstraint: BucketLocationConstraint | None
 
 
 class GetBucketLocationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetBucketLoggingOutput(TypedDict, total=False):
-    LoggingEnabled: Optional[LoggingEnabled]
+    LoggingEnabled: LoggingEnabled | None
 
 
 class GetBucketLoggingRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class InventoryTableConfigurationResult(TypedDict, total=False):
     ConfigurationState: InventoryConfigurationState
-    TableStatus: Optional[MetadataTableStatus]
-    Error: Optional[ErrorDetails]
-    TableName: Optional[S3TablesName]
-    TableArn: Optional[S3TablesArn]
+    TableStatus: MetadataTableStatus | None
+    Error: ErrorDetails | None
+    TableName: S3TablesName | None
+    TableArn: S3TablesArn | None
 
 
 class JournalTableConfigurationResult(TypedDict, total=False):
     TableStatus: MetadataTableStatus
-    Error: Optional[ErrorDetails]
+    Error: ErrorDetails | None
     TableName: S3TablesName
-    TableArn: Optional[S3TablesArn]
+    TableArn: S3TablesArn | None
     RecordExpiration: RecordExpiration
 
 
 class MetadataConfigurationResult(TypedDict, total=False):
     DestinationResult: DestinationResult
-    JournalTableConfigurationResult: Optional[JournalTableConfigurationResult]
-    InventoryTableConfigurationResult: Optional[InventoryTableConfigurationResult]
+    JournalTableConfigurationResult: JournalTableConfigurationResult | None
+    InventoryTableConfigurationResult: InventoryTableConfigurationResult | None
 
 
 class GetBucketMetadataConfigurationResult(TypedDict, total=False):
@@ -2183,12 +2184,12 @@ class GetBucketMetadataConfigurationResult(TypedDict, total=False):
 
 
 class GetBucketMetadataConfigurationOutput(TypedDict, total=False):
-    GetBucketMetadataConfigurationResult: Optional[GetBucketMetadataConfigurationResult]
+    GetBucketMetadataConfigurationResult: GetBucketMetadataConfigurationResult | None
 
 
 class GetBucketMetadataConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class S3TablesDestinationResult(TypedDict, total=False):
@@ -2205,56 +2206,56 @@ class MetadataTableConfigurationResult(TypedDict, total=False):
 class GetBucketMetadataTableConfigurationResult(TypedDict, total=False):
     MetadataTableConfigurationResult: MetadataTableConfigurationResult
     Status: MetadataTableStatus
-    Error: Optional[ErrorDetails]
+    Error: ErrorDetails | None
 
 
 class GetBucketMetadataTableConfigurationOutput(TypedDict, total=False):
-    GetBucketMetadataTableConfigurationResult: Optional[GetBucketMetadataTableConfigurationResult]
+    GetBucketMetadataTableConfigurationResult: GetBucketMetadataTableConfigurationResult | None
 
 
 class GetBucketMetadataTableConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class MetricsAndOperator(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tags: Optional[TagSet]
-    AccessPointArn: Optional[AccessPointArn]
+    Prefix: Prefix | None
+    Tags: TagSet | None
+    AccessPointArn: AccessPointArn | None
 
 
 class MetricsFilter(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tag: Optional[Tag]
-    AccessPointArn: Optional[AccessPointArn]
-    And: Optional[MetricsAndOperator]
+    Prefix: Prefix | None
+    Tag: Tag | None
+    AccessPointArn: AccessPointArn | None
+    And: MetricsAndOperator | None
 
 
 class MetricsConfiguration(TypedDict, total=False):
     Id: MetricsId
-    Filter: Optional[MetricsFilter]
+    Filter: MetricsFilter | None
 
 
 class GetBucketMetricsConfigurationOutput(TypedDict, total=False):
-    MetricsConfiguration: Optional[MetricsConfiguration]
+    MetricsConfiguration: MetricsConfiguration | None
 
 
 class GetBucketMetricsConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: MetricsId
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetBucketNotificationConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class OwnershipControlsRule(TypedDict, total=False):
     ObjectOwnership: ObjectOwnership
 
 
-OwnershipControlsRules = List[OwnershipControlsRule]
+OwnershipControlsRules = list[OwnershipControlsRule]
 
 
 class OwnershipControls(TypedDict, total=False):
@@ -2262,34 +2263,34 @@ class OwnershipControls(TypedDict, total=False):
 
 
 class GetBucketOwnershipControlsOutput(TypedDict, total=False):
-    OwnershipControls: Optional[OwnershipControls]
+    OwnershipControls: OwnershipControls | None
 
 
 class GetBucketOwnershipControlsRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetBucketPolicyOutput(TypedDict, total=False):
-    Policy: Optional[Policy]
+    Policy: Policy | None
 
 
 class GetBucketPolicyRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class PolicyStatus(TypedDict, total=False):
-    IsPublic: Optional[IsPublic]
+    IsPublic: IsPublic | None
 
 
 class GetBucketPolicyStatusOutput(TypedDict, total=False):
-    PolicyStatus: Optional[PolicyStatus]
+    PolicyStatus: PolicyStatus | None
 
 
 class GetBucketPolicyStatusRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class ReplicaModifications(TypedDict, total=False):
@@ -2301,34 +2302,34 @@ class SseKmsEncryptedObjects(TypedDict, total=False):
 
 
 class SourceSelectionCriteria(TypedDict, total=False):
-    SseKmsEncryptedObjects: Optional[SseKmsEncryptedObjects]
-    ReplicaModifications: Optional[ReplicaModifications]
+    SseKmsEncryptedObjects: SseKmsEncryptedObjects | None
+    ReplicaModifications: ReplicaModifications | None
 
 
 class ReplicationRuleAndOperator(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tags: Optional[TagSet]
+    Prefix: Prefix | None
+    Tags: TagSet | None
 
 
 class ReplicationRuleFilter(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tag: Optional[Tag]
-    And: Optional[ReplicationRuleAndOperator]
+    Prefix: Prefix | None
+    Tag: Tag | None
+    And: ReplicationRuleAndOperator | None
 
 
 class ReplicationRule(TypedDict, total=False):
-    ID: Optional[ID]
-    Priority: Optional[Priority]
-    Prefix: Optional[Prefix]
-    Filter: Optional[ReplicationRuleFilter]
+    ID: ID | None
+    Priority: Priority | None
+    Prefix: Prefix | None
+    Filter: ReplicationRuleFilter | None
     Status: ReplicationRuleStatus
-    SourceSelectionCriteria: Optional[SourceSelectionCriteria]
-    ExistingObjectReplication: Optional[ExistingObjectReplication]
+    SourceSelectionCriteria: SourceSelectionCriteria | None
+    ExistingObjectReplication: ExistingObjectReplication | None
     Destination: Destination
-    DeleteMarkerReplication: Optional[DeleteMarkerReplication]
+    DeleteMarkerReplication: DeleteMarkerReplication | None
 
 
-ReplicationRules = List[ReplicationRule]
+ReplicationRules = list[ReplicationRule]
 
 
 class ReplicationConfiguration(TypedDict, total=False):
@@ -2337,21 +2338,21 @@ class ReplicationConfiguration(TypedDict, total=False):
 
 
 class GetBucketReplicationOutput(TypedDict, total=False):
-    ReplicationConfiguration: Optional[ReplicationConfiguration]
+    ReplicationConfiguration: ReplicationConfiguration | None
 
 
 class GetBucketReplicationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetBucketRequestPaymentOutput(TypedDict, total=False):
-    Payer: Optional[Payer]
+    Payer: Payer | None
 
 
 class GetBucketRequestPaymentRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetBucketTaggingOutput(TypedDict, total=False):
@@ -2360,33 +2361,33 @@ class GetBucketTaggingOutput(TypedDict, total=False):
 
 class GetBucketTaggingRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetBucketVersioningOutput(TypedDict, total=False):
-    Status: Optional[BucketVersioningStatus]
-    MFADelete: Optional[MFADeleteStatus]
+    Status: BucketVersioningStatus | None
+    MFADelete: MFADeleteStatus | None
 
 
 class GetBucketVersioningRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class Redirect(TypedDict, total=False):
-    HostName: Optional[HostName]
-    HttpRedirectCode: Optional[HttpRedirectCode]
-    Protocol: Optional[Protocol]
-    ReplaceKeyPrefixWith: Optional[ReplaceKeyPrefixWith]
-    ReplaceKeyWith: Optional[ReplaceKeyWith]
+    HostName: HostName | None
+    HttpRedirectCode: HttpRedirectCode | None
+    Protocol: Protocol | None
+    ReplaceKeyPrefixWith: ReplaceKeyPrefixWith | None
+    ReplaceKeyWith: ReplaceKeyWith | None
 
 
 class RoutingRule(TypedDict, total=False):
-    Condition: Optional[Condition]
+    Condition: Condition | None
     Redirect: Redirect
 
 
-RoutingRules = List[RoutingRule]
+RoutingRules = list[RoutingRule]
 
 
 class IndexDocument(TypedDict, total=False):
@@ -2395,160 +2396,160 @@ class IndexDocument(TypedDict, total=False):
 
 class RedirectAllRequestsTo(TypedDict, total=False):
     HostName: HostName
-    Protocol: Optional[Protocol]
+    Protocol: Protocol | None
 
 
 class GetBucketWebsiteOutput(TypedDict, total=False):
-    RedirectAllRequestsTo: Optional[RedirectAllRequestsTo]
-    IndexDocument: Optional[IndexDocument]
-    ErrorDocument: Optional[ErrorDocument]
-    RoutingRules: Optional[RoutingRules]
+    RedirectAllRequestsTo: RedirectAllRequestsTo | None
+    IndexDocument: IndexDocument | None
+    ErrorDocument: ErrorDocument | None
+    RoutingRules: RoutingRules | None
 
 
 class GetBucketWebsiteRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetObjectAclOutput(TypedDict, total=False):
-    Owner: Optional[Owner]
-    Grants: Optional[Grants]
-    RequestCharged: Optional[RequestCharged]
+    Owner: Owner | None
+    Grants: Grants | None
+    RequestCharged: RequestCharged | None
 
 
 class GetObjectAclRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    VersionId: Optional[ObjectVersionId]
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
+    VersionId: ObjectVersionId | None
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class ObjectPart(TypedDict, total=False):
-    PartNumber: Optional[PartNumber]
-    Size: Optional[Size]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
+    PartNumber: PartNumber | None
+    Size: Size | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
 
 
-PartsList = List[ObjectPart]
+PartsList = list[ObjectPart]
 
 
 class GetObjectAttributesParts(TypedDict, total=False):
-    TotalPartsCount: Optional[PartsCount]
-    PartNumberMarker: Optional[PartNumberMarker]
-    NextPartNumberMarker: Optional[NextPartNumberMarker]
-    MaxParts: Optional[MaxParts]
-    IsTruncated: Optional[IsTruncated]
-    Parts: Optional[PartsList]
+    TotalPartsCount: PartsCount | None
+    PartNumberMarker: PartNumberMarker | None
+    NextPartNumberMarker: NextPartNumberMarker | None
+    MaxParts: MaxParts | None
+    IsTruncated: IsTruncated | None
+    Parts: PartsList | None
 
 
 class GetObjectAttributesOutput(TypedDict, total=False):
-    DeleteMarker: Optional[DeleteMarker]
-    LastModified: Optional[LastModified]
-    VersionId: Optional[ObjectVersionId]
-    RequestCharged: Optional[RequestCharged]
-    ETag: Optional[ETag]
-    Checksum: Optional[Checksum]
-    ObjectParts: Optional[GetObjectAttributesParts]
-    StorageClass: Optional[StorageClass]
-    ObjectSize: Optional[ObjectSize]
+    DeleteMarker: DeleteMarker | None
+    LastModified: LastModified | None
+    VersionId: ObjectVersionId | None
+    RequestCharged: RequestCharged | None
+    ETag: ETag | None
+    Checksum: Checksum | None
+    ObjectParts: GetObjectAttributesParts | None
+    StorageClass: StorageClass | None
+    ObjectSize: ObjectSize | None
 
 
-ObjectAttributesList = List[ObjectAttributes]
+ObjectAttributesList = list[ObjectAttributes]
 
 
 class GetObjectAttributesRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    VersionId: Optional[ObjectVersionId]
-    MaxParts: Optional[MaxParts]
-    PartNumberMarker: Optional[PartNumberMarker]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
+    VersionId: ObjectVersionId | None
+    MaxParts: MaxParts | None
+    PartNumberMarker: PartNumberMarker | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
     ObjectAttributes: ObjectAttributesList
 
 
 class ObjectLockLegalHold(TypedDict, total=False):
-    Status: Optional[ObjectLockLegalHoldStatus]
+    Status: ObjectLockLegalHoldStatus | None
 
 
 class GetObjectLegalHoldOutput(TypedDict, total=False):
-    LegalHold: Optional[ObjectLockLegalHold]
+    LegalHold: ObjectLockLegalHold | None
 
 
 class GetObjectLegalHoldRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    VersionId: Optional[ObjectVersionId]
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
+    VersionId: ObjectVersionId | None
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class ObjectLockRule(TypedDict, total=False):
-    DefaultRetention: Optional[DefaultRetention]
+    DefaultRetention: DefaultRetention | None
 
 
 class ObjectLockConfiguration(TypedDict, total=False):
-    ObjectLockEnabled: Optional[ObjectLockEnabled]
-    Rule: Optional[ObjectLockRule]
+    ObjectLockEnabled: ObjectLockEnabled | None
+    Rule: ObjectLockRule | None
 
 
 class GetObjectLockConfigurationOutput(TypedDict, total=False):
-    ObjectLockConfiguration: Optional[ObjectLockConfiguration]
+    ObjectLockConfiguration: ObjectLockConfiguration | None
 
 
 class GetObjectLockConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetObjectOutput(TypedDict, total=False):
-    Body: Optional[Union[Body, IO[Body], Iterable[Body]]]
-    DeleteMarker: Optional[DeleteMarker]
-    AcceptRanges: Optional[AcceptRanges]
-    Expiration: Optional[Expiration]
-    Restore: Optional[Restore]
-    LastModified: Optional[LastModified]
-    ContentLength: Optional[ContentLength]
-    ETag: Optional[ETag]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    ChecksumType: Optional[ChecksumType]
-    MissingMeta: Optional[MissingMeta]
-    VersionId: Optional[ObjectVersionId]
-    CacheControl: Optional[CacheControl]
-    ContentDisposition: Optional[ContentDisposition]
-    ContentEncoding: Optional[ContentEncoding]
-    ContentLanguage: Optional[ContentLanguage]
-    ContentRange: Optional[ContentRange]
-    ContentType: Optional[ContentType]
-    Expires: Optional[Expires]
-    WebsiteRedirectLocation: Optional[WebsiteRedirectLocation]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    Metadata: Optional[Metadata]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    StorageClass: Optional[StorageClass]
-    RequestCharged: Optional[RequestCharged]
-    ReplicationStatus: Optional[ReplicationStatus]
-    PartsCount: Optional[PartsCount]
-    TagCount: Optional[TagCount]
-    ObjectLockMode: Optional[ObjectLockMode]
-    ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
-    ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
-    StatusCode: Optional[GetObjectResponseStatusCode]
+    Body: Body | IO[Body] | Iterable[Body] | None
+    DeleteMarker: DeleteMarker | None
+    AcceptRanges: AcceptRanges | None
+    Expiration: Expiration | None
+    Restore: Restore | None
+    LastModified: LastModified | None
+    ContentLength: ContentLength | None
+    ETag: ETag | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    ChecksumType: ChecksumType | None
+    MissingMeta: MissingMeta | None
+    VersionId: ObjectVersionId | None
+    CacheControl: CacheControl | None
+    ContentDisposition: ContentDisposition | None
+    ContentEncoding: ContentEncoding | None
+    ContentLanguage: ContentLanguage | None
+    ContentRange: ContentRange | None
+    ContentType: ContentType | None
+    Expires: Expires | None
+    WebsiteRedirectLocation: WebsiteRedirectLocation | None
+    ServerSideEncryption: ServerSideEncryption | None
+    Metadata: Metadata | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    StorageClass: StorageClass | None
+    RequestCharged: RequestCharged | None
+    ReplicationStatus: ReplicationStatus | None
+    PartsCount: PartsCount | None
+    TagCount: TagCount | None
+    ObjectLockMode: ObjectLockMode | None
+    ObjectLockRetainUntilDate: ObjectLockRetainUntilDate | None
+    ObjectLockLegalHoldStatus: ObjectLockLegalHoldStatus | None
+    StatusCode: GetObjectResponseStatusCode | None
 
 
 ResponseExpires = datetime
@@ -2558,84 +2559,84 @@ IfModifiedSince = datetime
 
 class GetObjectRequest(ServiceRequest):
     Bucket: BucketName
-    IfMatch: Optional[IfMatch]
-    IfModifiedSince: Optional[IfModifiedSince]
-    IfNoneMatch: Optional[IfNoneMatch]
-    IfUnmodifiedSince: Optional[IfUnmodifiedSince]
+    IfMatch: IfMatch | None
+    IfModifiedSince: IfModifiedSince | None
+    IfNoneMatch: IfNoneMatch | None
+    IfUnmodifiedSince: IfUnmodifiedSince | None
     Key: ObjectKey
-    Range: Optional[Range]
-    ResponseCacheControl: Optional[ResponseCacheControl]
-    ResponseContentDisposition: Optional[ResponseContentDisposition]
-    ResponseContentEncoding: Optional[ResponseContentEncoding]
-    ResponseContentLanguage: Optional[ResponseContentLanguage]
-    ResponseContentType: Optional[ResponseContentType]
-    ResponseExpires: Optional[ResponseExpires]
-    VersionId: Optional[ObjectVersionId]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    RequestPayer: Optional[RequestPayer]
-    PartNumber: Optional[PartNumber]
-    ExpectedBucketOwner: Optional[AccountId]
-    ChecksumMode: Optional[ChecksumMode]
+    Range: Range | None
+    ResponseCacheControl: ResponseCacheControl | None
+    ResponseContentDisposition: ResponseContentDisposition | None
+    ResponseContentEncoding: ResponseContentEncoding | None
+    ResponseContentLanguage: ResponseContentLanguage | None
+    ResponseContentType: ResponseContentType | None
+    ResponseExpires: ResponseExpires | None
+    VersionId: ObjectVersionId | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    RequestPayer: RequestPayer | None
+    PartNumber: PartNumber | None
+    ExpectedBucketOwner: AccountId | None
+    ChecksumMode: ChecksumMode | None
 
 
 class ObjectLockRetention(TypedDict, total=False):
-    Mode: Optional[ObjectLockRetentionMode]
-    RetainUntilDate: Optional[Date]
+    Mode: ObjectLockRetentionMode | None
+    RetainUntilDate: Date | None
 
 
 class GetObjectRetentionOutput(TypedDict, total=False):
-    Retention: Optional[ObjectLockRetention]
+    Retention: ObjectLockRetention | None
 
 
 class GetObjectRetentionRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    VersionId: Optional[ObjectVersionId]
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
+    VersionId: ObjectVersionId | None
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class GetObjectTaggingOutput(TypedDict, total=False):
-    VersionId: Optional[ObjectVersionId]
+    VersionId: ObjectVersionId | None
     TagSet: TagSet
 
 
 class GetObjectTaggingRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    VersionId: Optional[ObjectVersionId]
-    ExpectedBucketOwner: Optional[AccountId]
-    RequestPayer: Optional[RequestPayer]
+    VersionId: ObjectVersionId | None
+    ExpectedBucketOwner: AccountId | None
+    RequestPayer: RequestPayer | None
 
 
 class GetObjectTorrentOutput(TypedDict, total=False):
-    Body: Optional[Union[Body, IO[Body], Iterable[Body]]]
-    RequestCharged: Optional[RequestCharged]
+    Body: Body | IO[Body] | Iterable[Body] | None
+    RequestCharged: RequestCharged | None
 
 
 class GetObjectTorrentRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class PublicAccessBlockConfiguration(TypedDict, total=False):
-    BlockPublicAcls: Optional[Setting]
-    IgnorePublicAcls: Optional[Setting]
-    BlockPublicPolicy: Optional[Setting]
-    RestrictPublicBuckets: Optional[Setting]
+    BlockPublicAcls: Setting | None
+    IgnorePublicAcls: Setting | None
+    BlockPublicPolicy: Setting | None
+    RestrictPublicBuckets: Setting | None
 
 
 class GetPublicAccessBlockOutput(TypedDict, total=False):
-    PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
+    PublicAccessBlockConfiguration: PublicAccessBlockConfiguration | None
 
 
 class GetPublicAccessBlockRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class GlacierJobParameters(TypedDict, total=False):
@@ -2643,87 +2644,87 @@ class GlacierJobParameters(TypedDict, total=False):
 
 
 class HeadBucketOutput(TypedDict, total=False):
-    BucketRegion: Optional[BucketRegion]
-    BucketContentType: Optional[BucketContentType]
+    BucketRegion: BucketRegion | None
+    BucketContentType: BucketContentType | None
 
 
 class HeadBucketRequest(ServiceRequest):
     Bucket: BucketName
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class HeadObjectOutput(TypedDict, total=False):
-    DeleteMarker: Optional[DeleteMarker]
-    AcceptRanges: Optional[AcceptRanges]
-    Expiration: Optional[Expiration]
-    Restore: Optional[Restore]
-    ArchiveStatus: Optional[ArchiveStatus]
-    LastModified: Optional[LastModified]
-    ContentLength: Optional[ContentLength]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    ChecksumType: Optional[ChecksumType]
-    ETag: Optional[ETag]
-    MissingMeta: Optional[MissingMeta]
-    VersionId: Optional[ObjectVersionId]
-    CacheControl: Optional[CacheControl]
-    ContentDisposition: Optional[ContentDisposition]
-    ContentEncoding: Optional[ContentEncoding]
-    ContentLanguage: Optional[ContentLanguage]
-    ContentType: Optional[ContentType]
-    ContentRange: Optional[ContentRange]
-    Expires: Optional[Expires]
-    WebsiteRedirectLocation: Optional[WebsiteRedirectLocation]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    Metadata: Optional[Metadata]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    StorageClass: Optional[StorageClass]
-    RequestCharged: Optional[RequestCharged]
-    ReplicationStatus: Optional[ReplicationStatus]
-    PartsCount: Optional[PartsCount]
-    TagCount: Optional[TagCount]
-    ObjectLockMode: Optional[ObjectLockMode]
-    ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
-    ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
-    StatusCode: Optional[GetObjectResponseStatusCode]
+    DeleteMarker: DeleteMarker | None
+    AcceptRanges: AcceptRanges | None
+    Expiration: Expiration | None
+    Restore: Restore | None
+    ArchiveStatus: ArchiveStatus | None
+    LastModified: LastModified | None
+    ContentLength: ContentLength | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    ChecksumType: ChecksumType | None
+    ETag: ETag | None
+    MissingMeta: MissingMeta | None
+    VersionId: ObjectVersionId | None
+    CacheControl: CacheControl | None
+    ContentDisposition: ContentDisposition | None
+    ContentEncoding: ContentEncoding | None
+    ContentLanguage: ContentLanguage | None
+    ContentType: ContentType | None
+    ContentRange: ContentRange | None
+    Expires: Expires | None
+    WebsiteRedirectLocation: WebsiteRedirectLocation | None
+    ServerSideEncryption: ServerSideEncryption | None
+    Metadata: Metadata | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    StorageClass: StorageClass | None
+    RequestCharged: RequestCharged | None
+    ReplicationStatus: ReplicationStatus | None
+    PartsCount: PartsCount | None
+    TagCount: TagCount | None
+    ObjectLockMode: ObjectLockMode | None
+    ObjectLockRetainUntilDate: ObjectLockRetainUntilDate | None
+    ObjectLockLegalHoldStatus: ObjectLockLegalHoldStatus | None
+    StatusCode: GetObjectResponseStatusCode | None
 
 
 class HeadObjectRequest(ServiceRequest):
     Bucket: BucketName
-    IfMatch: Optional[IfMatch]
-    IfModifiedSince: Optional[IfModifiedSince]
-    IfNoneMatch: Optional[IfNoneMatch]
-    IfUnmodifiedSince: Optional[IfUnmodifiedSince]
+    IfMatch: IfMatch | None
+    IfModifiedSince: IfModifiedSince | None
+    IfNoneMatch: IfNoneMatch | None
+    IfUnmodifiedSince: IfUnmodifiedSince | None
     Key: ObjectKey
-    Range: Optional[Range]
-    ResponseCacheControl: Optional[ResponseCacheControl]
-    ResponseContentDisposition: Optional[ResponseContentDisposition]
-    ResponseContentEncoding: Optional[ResponseContentEncoding]
-    ResponseContentLanguage: Optional[ResponseContentLanguage]
-    ResponseContentType: Optional[ResponseContentType]
-    ResponseExpires: Optional[ResponseExpires]
-    VersionId: Optional[ObjectVersionId]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    RequestPayer: Optional[RequestPayer]
-    PartNumber: Optional[PartNumber]
-    ExpectedBucketOwner: Optional[AccountId]
-    ChecksumMode: Optional[ChecksumMode]
+    Range: Range | None
+    ResponseCacheControl: ResponseCacheControl | None
+    ResponseContentDisposition: ResponseContentDisposition | None
+    ResponseContentEncoding: ResponseContentEncoding | None
+    ResponseContentLanguage: ResponseContentLanguage | None
+    ResponseContentType: ResponseContentType | None
+    ResponseExpires: ResponseExpires | None
+    VersionId: ObjectVersionId | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    RequestPayer: RequestPayer | None
+    PartNumber: PartNumber | None
+    ExpectedBucketOwner: AccountId | None
+    ChecksumMode: ChecksumMode | None
 
 
 Initiated = datetime
 
 
 class Initiator(TypedDict, total=False):
-    ID: Optional[ID]
-    DisplayName: Optional[DisplayName]
+    ID: ID | None
+    DisplayName: DisplayName | None
 
 
 class ParquetInput(TypedDict, total=False):
@@ -2731,27 +2732,27 @@ class ParquetInput(TypedDict, total=False):
 
 
 class JSONInput(TypedDict, total=False):
-    Type: Optional[JSONType]
+    Type: JSONType | None
 
 
 class InputSerialization(TypedDict, total=False):
-    CSV: Optional[CSVInput]
-    CompressionType: Optional[CompressionType]
-    JSON: Optional[JSONInput]
-    Parquet: Optional[ParquetInput]
+    CSV: CSVInput | None
+    CompressionType: CompressionType | None
+    JSON: JSONInput | None
+    Parquet: ParquetInput | None
 
 
-IntelligentTieringConfigurationList = List[IntelligentTieringConfiguration]
-InventoryConfigurationList = List[InventoryConfiguration]
+IntelligentTieringConfigurationList = list[IntelligentTieringConfiguration]
+InventoryConfigurationList = list[InventoryConfiguration]
 
 
 class InventoryTableConfigurationUpdates(TypedDict, total=False):
     ConfigurationState: InventoryConfigurationState
-    EncryptionConfiguration: Optional[MetadataTableEncryptionConfiguration]
+    EncryptionConfiguration: MetadataTableEncryptionConfiguration | None
 
 
 class JSONOutput(TypedDict, total=False):
-    RecordDelimiter: Optional[RecordDelimiter]
+    RecordDelimiter: RecordDelimiter | None
 
 
 class JournalTableConfigurationUpdates(TypedDict, total=False):
@@ -2759,21 +2760,21 @@ class JournalTableConfigurationUpdates(TypedDict, total=False):
 
 
 class S3KeyFilter(TypedDict, total=False):
-    FilterRules: Optional[FilterRuleList]
+    FilterRules: FilterRuleList | None
 
 
 class NotificationConfigurationFilter(TypedDict, total=False):
-    Key: Optional[S3KeyFilter]
+    Key: S3KeyFilter | None
 
 
 class LambdaFunctionConfiguration(TypedDict, total=False):
-    Id: Optional[NotificationId]
+    Id: NotificationId | None
     LambdaFunctionArn: LambdaFunctionArn
     Events: EventList
-    Filter: Optional[NotificationConfigurationFilter]
+    Filter: NotificationConfigurationFilter | None
 
 
-LambdaFunctionConfigurationList = List[LambdaFunctionConfiguration]
+LambdaFunctionConfigurationList = list[LambdaFunctionConfiguration]
 
 
 class LifecycleConfiguration(TypedDict, total=False):
@@ -2781,357 +2782,357 @@ class LifecycleConfiguration(TypedDict, total=False):
 
 
 class ListBucketAnalyticsConfigurationsOutput(TypedDict, total=False):
-    IsTruncated: Optional[IsTruncated]
-    ContinuationToken: Optional[Token]
-    NextContinuationToken: Optional[NextToken]
-    AnalyticsConfigurationList: Optional[AnalyticsConfigurationList]
+    IsTruncated: IsTruncated | None
+    ContinuationToken: Token | None
+    NextContinuationToken: NextToken | None
+    AnalyticsConfigurationList: AnalyticsConfigurationList | None
 
 
 class ListBucketAnalyticsConfigurationsRequest(ServiceRequest):
     Bucket: BucketName
-    ContinuationToken: Optional[Token]
-    ExpectedBucketOwner: Optional[AccountId]
+    ContinuationToken: Token | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class ListBucketIntelligentTieringConfigurationsOutput(TypedDict, total=False):
-    IsTruncated: Optional[IsTruncated]
-    ContinuationToken: Optional[Token]
-    NextContinuationToken: Optional[NextToken]
-    IntelligentTieringConfigurationList: Optional[IntelligentTieringConfigurationList]
+    IsTruncated: IsTruncated | None
+    ContinuationToken: Token | None
+    NextContinuationToken: NextToken | None
+    IntelligentTieringConfigurationList: IntelligentTieringConfigurationList | None
 
 
 class ListBucketIntelligentTieringConfigurationsRequest(ServiceRequest):
     Bucket: BucketName
-    ContinuationToken: Optional[Token]
-    ExpectedBucketOwner: Optional[AccountId]
+    ContinuationToken: Token | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class ListBucketInventoryConfigurationsOutput(TypedDict, total=False):
-    ContinuationToken: Optional[Token]
-    InventoryConfigurationList: Optional[InventoryConfigurationList]
-    IsTruncated: Optional[IsTruncated]
-    NextContinuationToken: Optional[NextToken]
+    ContinuationToken: Token | None
+    InventoryConfigurationList: InventoryConfigurationList | None
+    IsTruncated: IsTruncated | None
+    NextContinuationToken: NextToken | None
 
 
 class ListBucketInventoryConfigurationsRequest(ServiceRequest):
     Bucket: BucketName
-    ContinuationToken: Optional[Token]
-    ExpectedBucketOwner: Optional[AccountId]
+    ContinuationToken: Token | None
+    ExpectedBucketOwner: AccountId | None
 
 
-MetricsConfigurationList = List[MetricsConfiguration]
+MetricsConfigurationList = list[MetricsConfiguration]
 
 
 class ListBucketMetricsConfigurationsOutput(TypedDict, total=False):
-    IsTruncated: Optional[IsTruncated]
-    ContinuationToken: Optional[Token]
-    NextContinuationToken: Optional[NextToken]
-    MetricsConfigurationList: Optional[MetricsConfigurationList]
+    IsTruncated: IsTruncated | None
+    ContinuationToken: Token | None
+    NextContinuationToken: NextToken | None
+    MetricsConfigurationList: MetricsConfigurationList | None
 
 
 class ListBucketMetricsConfigurationsRequest(ServiceRequest):
     Bucket: BucketName
-    ContinuationToken: Optional[Token]
-    ExpectedBucketOwner: Optional[AccountId]
+    ContinuationToken: Token | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class ListBucketsOutput(TypedDict, total=False):
-    Owner: Optional[Owner]
-    ContinuationToken: Optional[NextToken]
-    Prefix: Optional[Prefix]
-    Buckets: Optional[Buckets]
+    Owner: Owner | None
+    ContinuationToken: NextToken | None
+    Prefix: Prefix | None
+    Buckets: Buckets | None
 
 
 class ListBucketsRequest(ServiceRequest):
-    MaxBuckets: Optional[MaxBuckets]
-    ContinuationToken: Optional[Token]
-    Prefix: Optional[Prefix]
-    BucketRegion: Optional[BucketRegion]
+    MaxBuckets: MaxBuckets | None
+    ContinuationToken: Token | None
+    Prefix: Prefix | None
+    BucketRegion: BucketRegion | None
 
 
 class ListDirectoryBucketsOutput(TypedDict, total=False):
-    Buckets: Optional[Buckets]
-    ContinuationToken: Optional[DirectoryBucketToken]
+    Buckets: Buckets | None
+    ContinuationToken: DirectoryBucketToken | None
 
 
 class ListDirectoryBucketsRequest(ServiceRequest):
-    ContinuationToken: Optional[DirectoryBucketToken]
-    MaxDirectoryBuckets: Optional[MaxDirectoryBuckets]
+    ContinuationToken: DirectoryBucketToken | None
+    MaxDirectoryBuckets: MaxDirectoryBuckets | None
 
 
 class MultipartUpload(TypedDict, total=False):
-    UploadId: Optional[MultipartUploadId]
-    Key: Optional[ObjectKey]
-    Initiated: Optional[Initiated]
-    StorageClass: Optional[StorageClass]
-    Owner: Optional[Owner]
-    Initiator: Optional[Initiator]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ChecksumType: Optional[ChecksumType]
+    UploadId: MultipartUploadId | None
+    Key: ObjectKey | None
+    Initiated: Initiated | None
+    StorageClass: StorageClass | None
+    Owner: Owner | None
+    Initiator: Initiator | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ChecksumType: ChecksumType | None
 
 
-MultipartUploadList = List[MultipartUpload]
+MultipartUploadList = list[MultipartUpload]
 
 
 class ListMultipartUploadsOutput(TypedDict, total=False):
-    Bucket: Optional[BucketName]
-    KeyMarker: Optional[KeyMarker]
-    UploadIdMarker: Optional[UploadIdMarker]
-    NextKeyMarker: Optional[NextKeyMarker]
-    Prefix: Optional[Prefix]
-    Delimiter: Optional[Delimiter]
-    NextUploadIdMarker: Optional[NextUploadIdMarker]
-    MaxUploads: Optional[MaxUploads]
-    IsTruncated: Optional[IsTruncated]
-    Uploads: Optional[MultipartUploadList]
-    CommonPrefixes: Optional[CommonPrefixList]
-    EncodingType: Optional[EncodingType]
-    RequestCharged: Optional[RequestCharged]
+    Bucket: BucketName | None
+    KeyMarker: KeyMarker | None
+    UploadIdMarker: UploadIdMarker | None
+    NextKeyMarker: NextKeyMarker | None
+    Prefix: Prefix | None
+    Delimiter: Delimiter | None
+    NextUploadIdMarker: NextUploadIdMarker | None
+    MaxUploads: MaxUploads | None
+    IsTruncated: IsTruncated | None
+    Uploads: MultipartUploadList | None
+    CommonPrefixes: CommonPrefixList | None
+    EncodingType: EncodingType | None
+    RequestCharged: RequestCharged | None
 
 
 class ListMultipartUploadsRequest(ServiceRequest):
     Bucket: BucketName
-    Delimiter: Optional[Delimiter]
-    EncodingType: Optional[EncodingType]
-    KeyMarker: Optional[KeyMarker]
-    MaxUploads: Optional[MaxUploads]
-    Prefix: Optional[Prefix]
-    UploadIdMarker: Optional[UploadIdMarker]
-    ExpectedBucketOwner: Optional[AccountId]
-    RequestPayer: Optional[RequestPayer]
+    Delimiter: Delimiter | None
+    EncodingType: EncodingType | None
+    KeyMarker: KeyMarker | None
+    MaxUploads: MaxUploads | None
+    Prefix: Prefix | None
+    UploadIdMarker: UploadIdMarker | None
+    ExpectedBucketOwner: AccountId | None
+    RequestPayer: RequestPayer | None
 
 
 RestoreExpiryDate = datetime
 
 
 class RestoreStatus(TypedDict, total=False):
-    IsRestoreInProgress: Optional[IsRestoreInProgress]
-    RestoreExpiryDate: Optional[RestoreExpiryDate]
+    IsRestoreInProgress: IsRestoreInProgress | None
+    RestoreExpiryDate: RestoreExpiryDate | None
 
 
 class ObjectVersion(TypedDict, total=False):
-    ETag: Optional[ETag]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithmList]
-    ChecksumType: Optional[ChecksumType]
-    Size: Optional[Size]
-    StorageClass: Optional[ObjectVersionStorageClass]
-    Key: Optional[ObjectKey]
-    VersionId: Optional[ObjectVersionId]
-    IsLatest: Optional[IsLatest]
-    LastModified: Optional[LastModified]
-    Owner: Optional[Owner]
-    RestoreStatus: Optional[RestoreStatus]
+    ETag: ETag | None
+    ChecksumAlgorithm: ChecksumAlgorithmList | None
+    ChecksumType: ChecksumType | None
+    Size: Size | None
+    StorageClass: ObjectVersionStorageClass | None
+    Key: ObjectKey | None
+    VersionId: ObjectVersionId | None
+    IsLatest: IsLatest | None
+    LastModified: LastModified | None
+    Owner: Owner | None
+    RestoreStatus: RestoreStatus | None
 
 
-ObjectVersionList = List[ObjectVersion]
+ObjectVersionList = list[ObjectVersion]
 
 
 class ListObjectVersionsOutput(TypedDict, total=False):
-    IsTruncated: Optional[IsTruncated]
-    KeyMarker: Optional[KeyMarker]
-    VersionIdMarker: Optional[VersionIdMarker]
-    NextKeyMarker: Optional[NextKeyMarker]
-    NextVersionIdMarker: Optional[NextVersionIdMarker]
-    DeleteMarkers: Optional[DeleteMarkers]
-    Name: Optional[BucketName]
-    Prefix: Optional[Prefix]
-    Delimiter: Optional[Delimiter]
-    MaxKeys: Optional[MaxKeys]
-    CommonPrefixes: Optional[CommonPrefixList]
-    EncodingType: Optional[EncodingType]
-    RequestCharged: Optional[RequestCharged]
-    Versions: Optional[ObjectVersionList]
+    IsTruncated: IsTruncated | None
+    KeyMarker: KeyMarker | None
+    VersionIdMarker: VersionIdMarker | None
+    NextKeyMarker: NextKeyMarker | None
+    NextVersionIdMarker: NextVersionIdMarker | None
+    DeleteMarkers: DeleteMarkers | None
+    Name: BucketName | None
+    Prefix: Prefix | None
+    Delimiter: Delimiter | None
+    MaxKeys: MaxKeys | None
+    CommonPrefixes: CommonPrefixList | None
+    EncodingType: EncodingType | None
+    RequestCharged: RequestCharged | None
+    Versions: ObjectVersionList | None
 
 
-OptionalObjectAttributesList = List[OptionalObjectAttributes]
+OptionalObjectAttributesList = list[OptionalObjectAttributes]
 
 
 class ListObjectVersionsRequest(ServiceRequest):
     Bucket: BucketName
-    Delimiter: Optional[Delimiter]
-    EncodingType: Optional[EncodingType]
-    KeyMarker: Optional[KeyMarker]
-    MaxKeys: Optional[MaxKeys]
-    Prefix: Optional[Prefix]
-    VersionIdMarker: Optional[VersionIdMarker]
-    ExpectedBucketOwner: Optional[AccountId]
-    RequestPayer: Optional[RequestPayer]
-    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
+    Delimiter: Delimiter | None
+    EncodingType: EncodingType | None
+    KeyMarker: KeyMarker | None
+    MaxKeys: MaxKeys | None
+    Prefix: Prefix | None
+    VersionIdMarker: VersionIdMarker | None
+    ExpectedBucketOwner: AccountId | None
+    RequestPayer: RequestPayer | None
+    OptionalObjectAttributes: OptionalObjectAttributesList | None
 
 
 class Object(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    LastModified: Optional[LastModified]
-    ETag: Optional[ETag]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithmList]
-    ChecksumType: Optional[ChecksumType]
-    Size: Optional[Size]
-    StorageClass: Optional[ObjectStorageClass]
-    Owner: Optional[Owner]
-    RestoreStatus: Optional[RestoreStatus]
+    Key: ObjectKey | None
+    LastModified: LastModified | None
+    ETag: ETag | None
+    ChecksumAlgorithm: ChecksumAlgorithmList | None
+    ChecksumType: ChecksumType | None
+    Size: Size | None
+    StorageClass: ObjectStorageClass | None
+    Owner: Owner | None
+    RestoreStatus: RestoreStatus | None
 
 
-ObjectList = List[Object]
+ObjectList = list[Object]
 
 
 class ListObjectsOutput(TypedDict, total=False):
-    IsTruncated: Optional[IsTruncated]
-    Marker: Optional[Marker]
-    NextMarker: Optional[NextMarker]
-    Name: Optional[BucketName]
-    Prefix: Optional[Prefix]
-    Delimiter: Optional[Delimiter]
-    MaxKeys: Optional[MaxKeys]
-    CommonPrefixes: Optional[CommonPrefixList]
-    EncodingType: Optional[EncodingType]
-    RequestCharged: Optional[RequestCharged]
-    BucketRegion: Optional[BucketRegion]
-    Contents: Optional[ObjectList]
+    IsTruncated: IsTruncated | None
+    Marker: Marker | None
+    NextMarker: NextMarker | None
+    Name: BucketName | None
+    Prefix: Prefix | None
+    Delimiter: Delimiter | None
+    MaxKeys: MaxKeys | None
+    CommonPrefixes: CommonPrefixList | None
+    EncodingType: EncodingType | None
+    RequestCharged: RequestCharged | None
+    BucketRegion: BucketRegion | None
+    Contents: ObjectList | None
 
 
 class ListObjectsRequest(ServiceRequest):
     Bucket: BucketName
-    Delimiter: Optional[Delimiter]
-    EncodingType: Optional[EncodingType]
-    Marker: Optional[Marker]
-    MaxKeys: Optional[MaxKeys]
-    Prefix: Optional[Prefix]
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
-    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
+    Delimiter: Delimiter | None
+    EncodingType: EncodingType | None
+    Marker: Marker | None
+    MaxKeys: MaxKeys | None
+    Prefix: Prefix | None
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
+    OptionalObjectAttributes: OptionalObjectAttributesList | None
 
 
 class ListObjectsV2Output(TypedDict, total=False):
-    IsTruncated: Optional[IsTruncated]
-    Name: Optional[BucketName]
-    Prefix: Optional[Prefix]
-    Delimiter: Optional[Delimiter]
-    MaxKeys: Optional[MaxKeys]
-    CommonPrefixes: Optional[CommonPrefixList]
-    EncodingType: Optional[EncodingType]
-    KeyCount: Optional[KeyCount]
-    ContinuationToken: Optional[Token]
-    NextContinuationToken: Optional[NextToken]
-    StartAfter: Optional[StartAfter]
-    RequestCharged: Optional[RequestCharged]
-    BucketRegion: Optional[BucketRegion]
-    Contents: Optional[ObjectList]
+    IsTruncated: IsTruncated | None
+    Name: BucketName | None
+    Prefix: Prefix | None
+    Delimiter: Delimiter | None
+    MaxKeys: MaxKeys | None
+    CommonPrefixes: CommonPrefixList | None
+    EncodingType: EncodingType | None
+    KeyCount: KeyCount | None
+    ContinuationToken: Token | None
+    NextContinuationToken: NextToken | None
+    StartAfter: StartAfter | None
+    RequestCharged: RequestCharged | None
+    BucketRegion: BucketRegion | None
+    Contents: ObjectList | None
 
 
 class ListObjectsV2Request(ServiceRequest):
     Bucket: BucketName
-    Delimiter: Optional[Delimiter]
-    EncodingType: Optional[EncodingType]
-    MaxKeys: Optional[MaxKeys]
-    Prefix: Optional[Prefix]
-    ContinuationToken: Optional[Token]
-    FetchOwner: Optional[FetchOwner]
-    StartAfter: Optional[StartAfter]
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
-    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
+    Delimiter: Delimiter | None
+    EncodingType: EncodingType | None
+    MaxKeys: MaxKeys | None
+    Prefix: Prefix | None
+    ContinuationToken: Token | None
+    FetchOwner: FetchOwner | None
+    StartAfter: StartAfter | None
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
+    OptionalObjectAttributes: OptionalObjectAttributesList | None
 
 
 class Part(TypedDict, total=False):
-    PartNumber: Optional[PartNumber]
-    LastModified: Optional[LastModified]
-    ETag: Optional[ETag]
-    Size: Optional[Size]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
+    PartNumber: PartNumber | None
+    LastModified: LastModified | None
+    ETag: ETag | None
+    Size: Size | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
 
 
-Parts = List[Part]
+Parts = list[Part]
 
 
 class ListPartsOutput(TypedDict, total=False):
-    AbortDate: Optional[AbortDate]
-    AbortRuleId: Optional[AbortRuleId]
-    Bucket: Optional[BucketName]
-    Key: Optional[ObjectKey]
-    UploadId: Optional[MultipartUploadId]
-    PartNumberMarker: Optional[PartNumberMarker]
-    NextPartNumberMarker: Optional[NextPartNumberMarker]
-    MaxParts: Optional[MaxParts]
-    IsTruncated: Optional[IsTruncated]
-    Parts: Optional[Parts]
-    Initiator: Optional[Initiator]
-    Owner: Optional[Owner]
-    StorageClass: Optional[StorageClass]
-    RequestCharged: Optional[RequestCharged]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ChecksumType: Optional[ChecksumType]
+    AbortDate: AbortDate | None
+    AbortRuleId: AbortRuleId | None
+    Bucket: BucketName | None
+    Key: ObjectKey | None
+    UploadId: MultipartUploadId | None
+    PartNumberMarker: PartNumberMarker | None
+    NextPartNumberMarker: NextPartNumberMarker | None
+    MaxParts: MaxParts | None
+    IsTruncated: IsTruncated | None
+    Parts: Parts | None
+    Initiator: Initiator | None
+    Owner: Owner | None
+    StorageClass: StorageClass | None
+    RequestCharged: RequestCharged | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ChecksumType: ChecksumType | None
 
 
 class ListPartsRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    MaxParts: Optional[MaxParts]
-    PartNumberMarker: Optional[PartNumberMarker]
+    MaxParts: MaxParts | None
+    PartNumberMarker: PartNumberMarker | None
     UploadId: MultipartUploadId
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
 
 
 class MetadataEntry(TypedDict, total=False):
-    Name: Optional[MetadataKey]
-    Value: Optional[MetadataValue]
+    Name: MetadataKey | None
+    Value: MetadataValue | None
 
 
 class QueueConfiguration(TypedDict, total=False):
-    Id: Optional[NotificationId]
+    Id: NotificationId | None
     QueueArn: QueueArn
     Events: EventList
-    Filter: Optional[NotificationConfigurationFilter]
+    Filter: NotificationConfigurationFilter | None
 
 
-QueueConfigurationList = List[QueueConfiguration]
+QueueConfigurationList = list[QueueConfiguration]
 
 
 class TopicConfiguration(TypedDict, total=False):
-    Id: Optional[NotificationId]
+    Id: NotificationId | None
     TopicArn: TopicArn
     Events: EventList
-    Filter: Optional[NotificationConfigurationFilter]
+    Filter: NotificationConfigurationFilter | None
 
 
-TopicConfigurationList = List[TopicConfiguration]
+TopicConfigurationList = list[TopicConfiguration]
 
 
 class NotificationConfiguration(TypedDict, total=False):
-    TopicConfigurations: Optional[TopicConfigurationList]
-    QueueConfigurations: Optional[QueueConfigurationList]
-    LambdaFunctionConfigurations: Optional[LambdaFunctionConfigurationList]
-    EventBridgeConfiguration: Optional[EventBridgeConfiguration]
+    TopicConfigurations: TopicConfigurationList | None
+    QueueConfigurations: QueueConfigurationList | None
+    LambdaFunctionConfigurations: LambdaFunctionConfigurationList | None
+    EventBridgeConfiguration: EventBridgeConfiguration | None
 
 
 class QueueConfigurationDeprecated(TypedDict, total=False):
-    Id: Optional[NotificationId]
-    Event: Optional[Event]
-    Events: Optional[EventList]
-    Queue: Optional[QueueArn]
+    Id: NotificationId | None
+    Event: Event | None
+    Events: EventList | None
+    Queue: QueueArn | None
 
 
 class TopicConfigurationDeprecated(TypedDict, total=False):
-    Id: Optional[NotificationId]
-    Events: Optional[EventList]
-    Event: Optional[Event]
-    Topic: Optional[TopicArn]
+    Id: NotificationId | None
+    Events: EventList | None
+    Event: Event | None
+    Topic: TopicArn | None
 
 
 class NotificationConfigurationDeprecated(TypedDict, total=False):
-    TopicConfiguration: Optional[TopicConfigurationDeprecated]
-    QueueConfiguration: Optional[QueueConfigurationDeprecated]
-    CloudFunctionConfiguration: Optional[CloudFunctionConfiguration]
+    TopicConfiguration: TopicConfigurationDeprecated | None
+    QueueConfiguration: QueueConfigurationDeprecated | None
+    CloudFunctionConfiguration: CloudFunctionConfiguration | None
 
 
-UserMetadata = List[MetadataEntry]
+UserMetadata = list[MetadataEntry]
 
 
 class Tagging(TypedDict, total=False):
@@ -3141,81 +3142,81 @@ class Tagging(TypedDict, total=False):
 class S3Location(TypedDict, total=False):
     BucketName: BucketName
     Prefix: LocationPrefix
-    Encryption: Optional[Encryption]
-    CannedACL: Optional[ObjectCannedACL]
-    AccessControlList: Optional[Grants]
-    Tagging: Optional[Tagging]
-    UserMetadata: Optional[UserMetadata]
-    StorageClass: Optional[StorageClass]
+    Encryption: Encryption | None
+    CannedACL: ObjectCannedACL | None
+    AccessControlList: Grants | None
+    Tagging: Tagging | None
+    UserMetadata: UserMetadata | None
+    StorageClass: StorageClass | None
 
 
 class OutputLocation(TypedDict, total=False):
-    S3: Optional[S3Location]
+    S3: S3Location | None
 
 
 class OutputSerialization(TypedDict, total=False):
-    CSV: Optional[CSVOutput]
-    JSON: Optional[JSONOutput]
+    CSV: CSVOutput | None
+    JSON: JSONOutput | None
 
 
 class Progress(TypedDict, total=False):
-    BytesScanned: Optional[BytesScanned]
-    BytesProcessed: Optional[BytesProcessed]
-    BytesReturned: Optional[BytesReturned]
+    BytesScanned: BytesScanned | None
+    BytesProcessed: BytesProcessed | None
+    BytesReturned: BytesReturned | None
 
 
 class ProgressEvent(TypedDict, total=False):
-    Details: Optional[Progress]
+    Details: Progress | None
 
 
 class PutBucketAccelerateConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     AccelerateConfiguration: AccelerateConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ExpectedBucketOwner: AccountId | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
 
 
 class PutBucketAclRequest(ServiceRequest):
-    ACL: Optional[BucketCannedACL]
-    AccessControlPolicy: Optional[AccessControlPolicy]
+    ACL: BucketCannedACL | None
+    AccessControlPolicy: AccessControlPolicy | None
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    GrantFullControl: Optional[GrantFullControl]
-    GrantRead: Optional[GrantRead]
-    GrantReadACP: Optional[GrantReadACP]
-    GrantWrite: Optional[GrantWrite]
-    GrantWriteACP: Optional[GrantWriteACP]
-    ExpectedBucketOwner: Optional[AccountId]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    GrantFullControl: GrantFullControl | None
+    GrantRead: GrantRead | None
+    GrantReadACP: GrantReadACP | None
+    GrantWrite: GrantWrite | None
+    GrantWriteACP: GrantWriteACP | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketAnalyticsConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: AnalyticsId
     AnalyticsConfiguration: AnalyticsConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketCorsRequest(ServiceRequest):
     Bucket: BucketName
     CORSConfiguration: CORSConfiguration
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ExpectedBucketOwner: Optional[AccountId]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketEncryptionRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     ServerSideEncryptionConfiguration: ServerSideEncryptionConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketIntelligentTieringConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: IntelligentTieringId
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
     IntelligentTieringConfiguration: IntelligentTieringConfiguration
 
 
@@ -3223,83 +3224,83 @@ class PutBucketInventoryConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: InventoryId
     InventoryConfiguration: InventoryConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketLifecycleConfigurationOutput(TypedDict, total=False):
-    TransitionDefaultMinimumObjectSize: Optional[TransitionDefaultMinimumObjectSize]
+    TransitionDefaultMinimumObjectSize: TransitionDefaultMinimumObjectSize | None
 
 
 class PutBucketLifecycleConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    LifecycleConfiguration: Optional[BucketLifecycleConfiguration]
-    ExpectedBucketOwner: Optional[AccountId]
-    TransitionDefaultMinimumObjectSize: Optional[TransitionDefaultMinimumObjectSize]
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    LifecycleConfiguration: BucketLifecycleConfiguration | None
+    ExpectedBucketOwner: AccountId | None
+    TransitionDefaultMinimumObjectSize: TransitionDefaultMinimumObjectSize | None
 
 
 class PutBucketLifecycleRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    LifecycleConfiguration: Optional[LifecycleConfiguration]
-    ExpectedBucketOwner: Optional[AccountId]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    LifecycleConfiguration: LifecycleConfiguration | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketLoggingRequest(ServiceRequest):
     Bucket: BucketName
     BucketLoggingStatus: BucketLoggingStatus
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ExpectedBucketOwner: Optional[AccountId]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketMetricsConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: MetricsId
     MetricsConfiguration: MetricsConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketNotificationConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     NotificationConfiguration: NotificationConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
-    SkipDestinationValidation: Optional[SkipValidation]
+    ExpectedBucketOwner: AccountId | None
+    SkipDestinationValidation: SkipValidation | None
 
 
 class PutBucketNotificationRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     NotificationConfiguration: NotificationConfigurationDeprecated
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketOwnershipControlsRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ExpectedBucketOwner: Optional[AccountId]
+    ContentMD5: ContentMD5 | None
+    ExpectedBucketOwner: AccountId | None
     OwnershipControls: OwnershipControls
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ChecksumAlgorithm: ChecksumAlgorithm | None
 
 
 class PutBucketPolicyRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ConfirmRemoveSelfBucketAccess: Optional[ConfirmRemoveSelfBucketAccess]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ConfirmRemoveSelfBucketAccess: ConfirmRemoveSelfBucketAccess | None
     Policy: Policy
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketReplicationRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     ReplicationConfiguration: ReplicationConfiguration
-    Token: Optional[ObjectLockToken]
-    ExpectedBucketOwner: Optional[AccountId]
+    Token: ObjectLockToken | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class RequestPaymentConfiguration(TypedDict, total=False):
@@ -3308,207 +3309,207 @@ class RequestPaymentConfiguration(TypedDict, total=False):
 
 class PutBucketRequestPaymentRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     RequestPaymentConfiguration: RequestPaymentConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutBucketTaggingRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     Tagging: Tagging
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class VersioningConfiguration(TypedDict, total=False):
-    MFADelete: Optional[MFADelete]
-    Status: Optional[BucketVersioningStatus]
+    MFADelete: MFADelete | None
+    Status: BucketVersioningStatus | None
 
 
 class PutBucketVersioningRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    MFA: Optional[MFA]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    MFA: MFA | None
     VersioningConfiguration: VersioningConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class WebsiteConfiguration(TypedDict, total=False):
-    ErrorDocument: Optional[ErrorDocument]
-    IndexDocument: Optional[IndexDocument]
-    RedirectAllRequestsTo: Optional[RedirectAllRequestsTo]
-    RoutingRules: Optional[RoutingRules]
+    ErrorDocument: ErrorDocument | None
+    IndexDocument: IndexDocument | None
+    RedirectAllRequestsTo: RedirectAllRequestsTo | None
+    RoutingRules: RoutingRules | None
 
 
 class PutBucketWebsiteRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     WebsiteConfiguration: WebsiteConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutObjectAclOutput(TypedDict, total=False):
-    RequestCharged: Optional[RequestCharged]
+    RequestCharged: RequestCharged | None
 
 
 class PutObjectAclRequest(ServiceRequest):
-    ACL: Optional[ObjectCannedACL]
-    AccessControlPolicy: Optional[AccessControlPolicy]
+    ACL: ObjectCannedACL | None
+    AccessControlPolicy: AccessControlPolicy | None
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    GrantFullControl: Optional[GrantFullControl]
-    GrantRead: Optional[GrantRead]
-    GrantReadACP: Optional[GrantReadACP]
-    GrantWrite: Optional[GrantWrite]
-    GrantWriteACP: Optional[GrantWriteACP]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    GrantFullControl: GrantFullControl | None
+    GrantRead: GrantRead | None
+    GrantReadACP: GrantReadACP | None
+    GrantWrite: GrantWrite | None
+    GrantWriteACP: GrantWriteACP | None
     Key: ObjectKey
-    RequestPayer: Optional[RequestPayer]
-    VersionId: Optional[ObjectVersionId]
-    ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: RequestPayer | None
+    VersionId: ObjectVersionId | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutObjectLegalHoldOutput(TypedDict, total=False):
-    RequestCharged: Optional[RequestCharged]
+    RequestCharged: RequestCharged | None
 
 
 class PutObjectLegalHoldRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    LegalHold: Optional[ObjectLockLegalHold]
-    RequestPayer: Optional[RequestPayer]
-    VersionId: Optional[ObjectVersionId]
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ExpectedBucketOwner: Optional[AccountId]
+    LegalHold: ObjectLockLegalHold | None
+    RequestPayer: RequestPayer | None
+    VersionId: ObjectVersionId | None
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutObjectLockConfigurationOutput(TypedDict, total=False):
-    RequestCharged: Optional[RequestCharged]
+    RequestCharged: RequestCharged | None
 
 
 class PutObjectLockConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ObjectLockConfiguration: Optional[ObjectLockConfiguration]
-    RequestPayer: Optional[RequestPayer]
-    Token: Optional[ObjectLockToken]
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ExpectedBucketOwner: Optional[AccountId]
+    ObjectLockConfiguration: ObjectLockConfiguration | None
+    RequestPayer: RequestPayer | None
+    Token: ObjectLockToken | None
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutObjectOutput(TypedDict, total=False):
-    Expiration: Optional[Expiration]
-    ETag: Optional[ETag]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    ChecksumType: Optional[ChecksumType]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    VersionId: Optional[ObjectVersionId]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    Size: Optional[Size]
-    RequestCharged: Optional[RequestCharged]
+    Expiration: Expiration | None
+    ETag: ETag | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    ChecksumType: ChecksumType | None
+    ServerSideEncryption: ServerSideEncryption | None
+    VersionId: ObjectVersionId | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    SSEKMSEncryptionContext: SSEKMSEncryptionContext | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    Size: Size | None
+    RequestCharged: RequestCharged | None
 
 
 WriteOffsetBytes = int
 
 
 class PutObjectRequest(ServiceRequest):
-    Body: Optional[IO[Body]]
-    ACL: Optional[ObjectCannedACL]
+    Body: IO[Body] | None
+    ACL: ObjectCannedACL | None
     Bucket: BucketName
-    CacheControl: Optional[CacheControl]
-    ContentDisposition: Optional[ContentDisposition]
-    ContentEncoding: Optional[ContentEncoding]
-    ContentLanguage: Optional[ContentLanguage]
-    ContentLength: Optional[ContentLength]
-    ContentMD5: Optional[ContentMD5]
-    ContentType: Optional[ContentType]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    Expires: Optional[Expires]
-    IfMatch: Optional[IfMatch]
-    IfNoneMatch: Optional[IfNoneMatch]
-    GrantFullControl: Optional[GrantFullControl]
-    GrantRead: Optional[GrantRead]
-    GrantReadACP: Optional[GrantReadACP]
-    GrantWriteACP: Optional[GrantWriteACP]
+    CacheControl: CacheControl | None
+    ContentDisposition: ContentDisposition | None
+    ContentEncoding: ContentEncoding | None
+    ContentLanguage: ContentLanguage | None
+    ContentLength: ContentLength | None
+    ContentMD5: ContentMD5 | None
+    ContentType: ContentType | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    Expires: Expires | None
+    IfMatch: IfMatch | None
+    IfNoneMatch: IfNoneMatch | None
+    GrantFullControl: GrantFullControl | None
+    GrantRead: GrantRead | None
+    GrantReadACP: GrantReadACP | None
+    GrantWriteACP: GrantWriteACP | None
     Key: ObjectKey
-    WriteOffsetBytes: Optional[WriteOffsetBytes]
-    Metadata: Optional[Metadata]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    StorageClass: Optional[StorageClass]
-    WebsiteRedirectLocation: Optional[WebsiteRedirectLocation]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    RequestPayer: Optional[RequestPayer]
-    Tagging: Optional[TaggingHeader]
-    ObjectLockMode: Optional[ObjectLockMode]
-    ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
-    ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
-    ExpectedBucketOwner: Optional[AccountId]
+    WriteOffsetBytes: WriteOffsetBytes | None
+    Metadata: Metadata | None
+    ServerSideEncryption: ServerSideEncryption | None
+    StorageClass: StorageClass | None
+    WebsiteRedirectLocation: WebsiteRedirectLocation | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    SSEKMSEncryptionContext: SSEKMSEncryptionContext | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    RequestPayer: RequestPayer | None
+    Tagging: TaggingHeader | None
+    ObjectLockMode: ObjectLockMode | None
+    ObjectLockRetainUntilDate: ObjectLockRetainUntilDate | None
+    ObjectLockLegalHoldStatus: ObjectLockLegalHoldStatus | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutObjectRetentionOutput(TypedDict, total=False):
-    RequestCharged: Optional[RequestCharged]
+    RequestCharged: RequestCharged | None
 
 
 class PutObjectRetentionRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    Retention: Optional[ObjectLockRetention]
-    RequestPayer: Optional[RequestPayer]
-    VersionId: Optional[ObjectVersionId]
-    BypassGovernanceRetention: Optional[BypassGovernanceRetention]
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ExpectedBucketOwner: Optional[AccountId]
+    Retention: ObjectLockRetention | None
+    RequestPayer: RequestPayer | None
+    VersionId: ObjectVersionId | None
+    BypassGovernanceRetention: BypassGovernanceRetention | None
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class PutObjectTaggingOutput(TypedDict, total=False):
-    VersionId: Optional[ObjectVersionId]
+    VersionId: ObjectVersionId | None
 
 
 class PutObjectTaggingRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    VersionId: Optional[ObjectVersionId]
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    VersionId: ObjectVersionId | None
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     Tagging: Tagging
-    ExpectedBucketOwner: Optional[AccountId]
-    RequestPayer: Optional[RequestPayer]
+    ExpectedBucketOwner: AccountId | None
+    RequestPayer: RequestPayer | None
 
 
 class PutPublicAccessBlockRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     PublicAccessBlockConfiguration: PublicAccessBlockConfiguration
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class RecordsEvent(TypedDict, total=False):
-    Payload: Optional[Body]
+    Payload: Body | None
 
 
 class RenameObjectOutput(TypedDict, total=False):
@@ -3523,25 +3524,25 @@ class RenameObjectRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
     RenameSource: RenameSource
-    DestinationIfMatch: Optional[IfMatch]
-    DestinationIfNoneMatch: Optional[IfNoneMatch]
-    DestinationIfModifiedSince: Optional[IfModifiedSince]
-    DestinationIfUnmodifiedSince: Optional[IfUnmodifiedSince]
-    SourceIfMatch: Optional[RenameSourceIfMatch]
-    SourceIfNoneMatch: Optional[RenameSourceIfNoneMatch]
-    SourceIfModifiedSince: Optional[RenameSourceIfModifiedSince]
-    SourceIfUnmodifiedSince: Optional[RenameSourceIfUnmodifiedSince]
-    ClientToken: Optional[ClientToken]
+    DestinationIfMatch: IfMatch | None
+    DestinationIfNoneMatch: IfNoneMatch | None
+    DestinationIfModifiedSince: IfModifiedSince | None
+    DestinationIfUnmodifiedSince: IfUnmodifiedSince | None
+    SourceIfMatch: RenameSourceIfMatch | None
+    SourceIfNoneMatch: RenameSourceIfNoneMatch | None
+    SourceIfModifiedSince: RenameSourceIfModifiedSince | None
+    SourceIfUnmodifiedSince: RenameSourceIfUnmodifiedSince | None
+    ClientToken: ClientToken | None
 
 
 class RequestProgress(TypedDict, total=False):
-    Enabled: Optional[EnableRequestProgress]
+    Enabled: EnableRequestProgress | None
 
 
 class RestoreObjectOutput(TypedDict, total=False):
-    RequestCharged: Optional[RequestCharged]
-    RestoreOutputPath: Optional[RestoreOutputPath]
-    StatusCode: Optional[RestoreObjectOutputStatusCode]
+    RequestCharged: RequestCharged | None
+    RestoreOutputPath: RestoreOutputPath | None
+    StatusCode: RestoreObjectOutputStatusCode | None
 
 
 class SelectParameters(TypedDict, total=False):
@@ -3552,49 +3553,49 @@ class SelectParameters(TypedDict, total=False):
 
 
 class RestoreRequest(TypedDict, total=False):
-    Days: Optional[Days]
-    GlacierJobParameters: Optional[GlacierJobParameters]
-    Type: Optional[RestoreRequestType]
-    Tier: Optional[Tier]
-    Description: Optional[Description]
-    SelectParameters: Optional[SelectParameters]
-    OutputLocation: Optional[OutputLocation]
+    Days: Days | None
+    GlacierJobParameters: GlacierJobParameters | None
+    Type: RestoreRequestType | None
+    Tier: Tier | None
+    Description: Description | None
+    SelectParameters: SelectParameters | None
+    OutputLocation: OutputLocation | None
 
 
 class RestoreObjectRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    VersionId: Optional[ObjectVersionId]
-    RestoreRequest: Optional[RestoreRequest]
-    RequestPayer: Optional[RequestPayer]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ExpectedBucketOwner: Optional[AccountId]
+    VersionId: ObjectVersionId | None
+    RestoreRequest: RestoreRequest | None
+    RequestPayer: RequestPayer | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ExpectedBucketOwner: AccountId | None
 
 
 Start = int
 
 
 class ScanRange(TypedDict, total=False):
-    Start: Optional[Start]
-    End: Optional[End]
+    Start: Start | None
+    End: End | None
 
 
 class Stats(TypedDict, total=False):
-    BytesScanned: Optional[BytesScanned]
-    BytesProcessed: Optional[BytesProcessed]
-    BytesReturned: Optional[BytesReturned]
+    BytesScanned: BytesScanned | None
+    BytesProcessed: BytesProcessed | None
+    BytesReturned: BytesReturned | None
 
 
 class StatsEvent(TypedDict, total=False):
-    Details: Optional[Stats]
+    Details: Stats | None
 
 
 class SelectObjectContentEventStream(TypedDict, total=False):
-    Records: Optional[RecordsEvent]
-    Stats: Optional[StatsEvent]
-    Progress: Optional[ProgressEvent]
-    Cont: Optional[ContinuationEvent]
-    End: Optional[EndEvent]
+    Records: RecordsEvent | None
+    Stats: StatsEvent | None
+    Progress: ProgressEvent | None
+    Cont: ContinuationEvent | None
+    End: EndEvent | None
 
 
 class SelectObjectContentOutput(TypedDict, total=False):
@@ -3604,180 +3605,180 @@ class SelectObjectContentOutput(TypedDict, total=False):
 class SelectObjectContentRequest(ServiceRequest):
     Bucket: BucketName
     Key: ObjectKey
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
     Expression: Expression
     ExpressionType: ExpressionType
-    RequestProgress: Optional[RequestProgress]
+    RequestProgress: RequestProgress | None
     InputSerialization: InputSerialization
     OutputSerialization: OutputSerialization
-    ScanRange: Optional[ScanRange]
-    ExpectedBucketOwner: Optional[AccountId]
+    ScanRange: ScanRange | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class UpdateBucketMetadataInventoryTableConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     InventoryTableConfiguration: InventoryTableConfigurationUpdates
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class UpdateBucketMetadataJournalTableConfigurationRequest(ServiceRequest):
     Bucket: BucketName
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
     JournalTableConfiguration: JournalTableConfigurationUpdates
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
 
 
 class UploadPartCopyOutput(TypedDict, total=False):
-    CopySourceVersionId: Optional[CopySourceVersionId]
-    CopyPartResult: Optional[CopyPartResult]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    RequestCharged: Optional[RequestCharged]
+    CopySourceVersionId: CopySourceVersionId | None
+    CopyPartResult: CopyPartResult | None
+    ServerSideEncryption: ServerSideEncryption | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    RequestCharged: RequestCharged | None
 
 
 class UploadPartCopyRequest(ServiceRequest):
     Bucket: BucketName
     CopySource: CopySource
-    CopySourceIfMatch: Optional[CopySourceIfMatch]
-    CopySourceIfModifiedSince: Optional[CopySourceIfModifiedSince]
-    CopySourceIfNoneMatch: Optional[CopySourceIfNoneMatch]
-    CopySourceIfUnmodifiedSince: Optional[CopySourceIfUnmodifiedSince]
-    CopySourceRange: Optional[CopySourceRange]
+    CopySourceIfMatch: CopySourceIfMatch | None
+    CopySourceIfModifiedSince: CopySourceIfModifiedSince | None
+    CopySourceIfNoneMatch: CopySourceIfNoneMatch | None
+    CopySourceIfUnmodifiedSince: CopySourceIfUnmodifiedSince | None
+    CopySourceRange: CopySourceRange | None
     Key: ObjectKey
     PartNumber: PartNumber
     UploadId: MultipartUploadId
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    CopySourceSSECustomerAlgorithm: Optional[CopySourceSSECustomerAlgorithm]
-    CopySourceSSECustomerKey: Optional[CopySourceSSECustomerKey]
-    CopySourceSSECustomerKeyMD5: Optional[CopySourceSSECustomerKeyMD5]
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
-    ExpectedSourceBucketOwner: Optional[AccountId]
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    CopySourceSSECustomerAlgorithm: CopySourceSSECustomerAlgorithm | None
+    CopySourceSSECustomerKey: CopySourceSSECustomerKey | None
+    CopySourceSSECustomerKeyMD5: CopySourceSSECustomerKeyMD5 | None
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
+    ExpectedSourceBucketOwner: AccountId | None
 
 
 class UploadPartOutput(TypedDict, total=False):
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    ETag: Optional[ETag]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    RequestCharged: Optional[RequestCharged]
+    ServerSideEncryption: ServerSideEncryption | None
+    ETag: ETag | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    RequestCharged: RequestCharged | None
 
 
 class UploadPartRequest(ServiceRequest):
-    Body: Optional[IO[Body]]
+    Body: IO[Body] | None
     Bucket: BucketName
-    ContentLength: Optional[ContentLength]
-    ContentMD5: Optional[ContentMD5]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
+    ContentLength: ContentLength | None
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
     Key: ObjectKey
     PartNumber: PartNumber
     UploadId: MultipartUploadId
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKey: Optional[SSECustomerKey]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    RequestPayer: Optional[RequestPayer]
-    ExpectedBucketOwner: Optional[AccountId]
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKey: SSECustomerKey | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class WriteGetObjectResponseRequest(ServiceRequest):
-    Body: Optional[IO[Body]]
+    Body: IO[Body] | None
     RequestRoute: RequestRoute
     RequestToken: RequestToken
-    StatusCode: Optional[GetObjectResponseStatusCode]
-    ErrorCode: Optional[ErrorCode]
-    ErrorMessage: Optional[ErrorMessage]
-    AcceptRanges: Optional[AcceptRanges]
-    CacheControl: Optional[CacheControl]
-    ContentDisposition: Optional[ContentDisposition]
-    ContentEncoding: Optional[ContentEncoding]
-    ContentLanguage: Optional[ContentLanguage]
-    ContentLength: Optional[ContentLength]
-    ContentRange: Optional[ContentRange]
-    ContentType: Optional[ContentType]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    DeleteMarker: Optional[DeleteMarker]
-    ETag: Optional[ETag]
-    Expires: Optional[Expires]
-    Expiration: Optional[Expiration]
-    LastModified: Optional[LastModified]
-    MissingMeta: Optional[MissingMeta]
-    Metadata: Optional[Metadata]
-    ObjectLockMode: Optional[ObjectLockMode]
-    ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
-    ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
-    PartsCount: Optional[PartsCount]
-    ReplicationStatus: Optional[ReplicationStatus]
-    RequestCharged: Optional[RequestCharged]
-    Restore: Optional[Restore]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    StorageClass: Optional[StorageClass]
-    TagCount: Optional[TagCount]
-    VersionId: Optional[ObjectVersionId]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
+    StatusCode: GetObjectResponseStatusCode | None
+    ErrorCode: ErrorCode | None
+    ErrorMessage: ErrorMessage | None
+    AcceptRanges: AcceptRanges | None
+    CacheControl: CacheControl | None
+    ContentDisposition: ContentDisposition | None
+    ContentEncoding: ContentEncoding | None
+    ContentLanguage: ContentLanguage | None
+    ContentLength: ContentLength | None
+    ContentRange: ContentRange | None
+    ContentType: ContentType | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    DeleteMarker: DeleteMarker | None
+    ETag: ETag | None
+    Expires: Expires | None
+    Expiration: Expiration | None
+    LastModified: LastModified | None
+    MissingMeta: MissingMeta | None
+    Metadata: Metadata | None
+    ObjectLockMode: ObjectLockMode | None
+    ObjectLockLegalHoldStatus: ObjectLockLegalHoldStatus | None
+    ObjectLockRetainUntilDate: ObjectLockRetainUntilDate | None
+    PartsCount: PartsCount | None
+    ReplicationStatus: ReplicationStatus | None
+    RequestCharged: RequestCharged | None
+    Restore: Restore | None
+    ServerSideEncryption: ServerSideEncryption | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    StorageClass: StorageClass | None
+    TagCount: TagCount | None
+    VersionId: ObjectVersionId | None
+    BucketKeyEnabled: BucketKeyEnabled | None
 
 
 class PostObjectRequest(ServiceRequest):
-    Body: Optional[IO[Body]]
+    Body: IO[Body] | None
     Bucket: BucketName
 
 
 class PostResponse(TypedDict, total=False):
-    StatusCode: Optional[GetObjectResponseStatusCode]
-    Location: Optional[Location]
-    LocationHeader: Optional[Location]
-    Bucket: Optional[BucketName]
-    Key: Optional[ObjectKey]
-    Expiration: Optional[Expiration]
-    ETag: Optional[ETag]
-    ETagHeader: Optional[ETag]
-    ChecksumCRC32: Optional[ChecksumCRC32]
-    ChecksumCRC32C: Optional[ChecksumCRC32C]
-    ChecksumCRC64NVME: Optional[ChecksumCRC64NVME]
-    ChecksumSHA1: Optional[ChecksumSHA1]
-    ChecksumSHA256: Optional[ChecksumSHA256]
-    ChecksumType: Optional[ChecksumType]
-    ServerSideEncryption: Optional[ServerSideEncryption]
-    VersionId: Optional[ObjectVersionId]
-    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
-    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
-    SSEKMSKeyId: Optional[SSEKMSKeyId]
-    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
-    BucketKeyEnabled: Optional[BucketKeyEnabled]
-    RequestCharged: Optional[RequestCharged]
+    StatusCode: GetObjectResponseStatusCode | None
+    Location: Location | None
+    LocationHeader: Location | None
+    Bucket: BucketName | None
+    Key: ObjectKey | None
+    Expiration: Expiration | None
+    ETag: ETag | None
+    ETagHeader: ETag | None
+    ChecksumCRC32: ChecksumCRC32 | None
+    ChecksumCRC32C: ChecksumCRC32C | None
+    ChecksumCRC64NVME: ChecksumCRC64NVME | None
+    ChecksumSHA1: ChecksumSHA1 | None
+    ChecksumSHA256: ChecksumSHA256 | None
+    ChecksumType: ChecksumType | None
+    ServerSideEncryption: ServerSideEncryption | None
+    VersionId: ObjectVersionId | None
+    SSECustomerAlgorithm: SSECustomerAlgorithm | None
+    SSECustomerKeyMD5: SSECustomerKeyMD5 | None
+    SSEKMSKeyId: SSEKMSKeyId | None
+    SSEKMSEncryptionContext: SSEKMSEncryptionContext | None
+    BucketKeyEnabled: BucketKeyEnabled | None
+    RequestCharged: RequestCharged | None
 
 
 class S3Api:
-    service = "s3"
-    version = "2006-03-01"
+    service: str = "s3"
+    version: str = "2006-03-01"
 
     @handler("AbortMultipartUpload")
     def abort_multipart_upload(

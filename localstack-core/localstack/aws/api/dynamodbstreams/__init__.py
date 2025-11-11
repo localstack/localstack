@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -87,52 +87,52 @@ class TrimmedDataAccessException(ServiceException):
 
 
 class AttributeValue(TypedDict, total=False):
-    S: Optional["StringAttributeValue"]
-    N: Optional["NumberAttributeValue"]
-    B: Optional["BinaryAttributeValue"]
-    SS: Optional["StringSetAttributeValue"]
-    NS: Optional["NumberSetAttributeValue"]
-    BS: Optional["BinarySetAttributeValue"]
-    M: Optional["MapAttributeValue"]
-    L: Optional["ListAttributeValue"]
-    NULL: Optional["NullAttributeValue"]
-    BOOL: Optional["BooleanAttributeValue"]
+    S: "StringAttributeValue | None"
+    N: "NumberAttributeValue | None"
+    B: "BinaryAttributeValue | None"
+    SS: "StringSetAttributeValue | None"
+    NS: "NumberSetAttributeValue | None"
+    BS: "BinarySetAttributeValue | None"
+    M: "MapAttributeValue | None"
+    L: "ListAttributeValue | None"
+    NULL: "NullAttributeValue | None"
+    BOOL: "BooleanAttributeValue | None"
 
 
-ListAttributeValue = List[AttributeValue]
-MapAttributeValue = Dict[AttributeName, AttributeValue]
+ListAttributeValue = list[AttributeValue]
+MapAttributeValue = dict[AttributeName, AttributeValue]
 BinaryAttributeValue = bytes
-BinarySetAttributeValue = List[BinaryAttributeValue]
-NumberSetAttributeValue = List[NumberAttributeValue]
-StringSetAttributeValue = List[StringAttributeValue]
-AttributeMap = Dict[AttributeName, AttributeValue]
+BinarySetAttributeValue = list[BinaryAttributeValue]
+NumberSetAttributeValue = list[NumberAttributeValue]
+StringSetAttributeValue = list[StringAttributeValue]
+AttributeMap = dict[AttributeName, AttributeValue]
 Date = datetime
 
 
 class ShardFilter(TypedDict, total=False):
-    Type: Optional[ShardFilterType]
-    ShardId: Optional[ShardId]
+    Type: ShardFilterType | None
+    ShardId: ShardId | None
 
 
 class DescribeStreamInput(ServiceRequest):
     StreamArn: StreamArn
-    Limit: Optional[PositiveIntegerObject]
-    ExclusiveStartShardId: Optional[ShardId]
-    ShardFilter: Optional[ShardFilter]
+    Limit: PositiveIntegerObject | None
+    ExclusiveStartShardId: ShardId | None
+    ShardFilter: ShardFilter | None
 
 
 class SequenceNumberRange(TypedDict, total=False):
-    StartingSequenceNumber: Optional[SequenceNumber]
-    EndingSequenceNumber: Optional[SequenceNumber]
+    StartingSequenceNumber: SequenceNumber | None
+    EndingSequenceNumber: SequenceNumber | None
 
 
 class Shard(TypedDict, total=False):
-    ShardId: Optional[ShardId]
-    SequenceNumberRange: Optional[SequenceNumberRange]
-    ParentShardId: Optional[ShardId]
+    ShardId: ShardId | None
+    SequenceNumberRange: SequenceNumberRange | None
+    ParentShardId: ShardId | None
 
 
-ShardDescriptionList = List[Shard]
+ShardDescriptionList = list[Shard]
 
 
 class KeySchemaElement(TypedDict, total=False):
@@ -140,100 +140,100 @@ class KeySchemaElement(TypedDict, total=False):
     KeyType: KeyType
 
 
-KeySchema = List[KeySchemaElement]
+KeySchema = list[KeySchemaElement]
 
 
 class StreamDescription(TypedDict, total=False):
-    StreamArn: Optional[StreamArn]
-    StreamLabel: Optional[String]
-    StreamStatus: Optional[StreamStatus]
-    StreamViewType: Optional[StreamViewType]
-    CreationRequestDateTime: Optional[Date]
-    TableName: Optional[TableName]
-    KeySchema: Optional[KeySchema]
-    Shards: Optional[ShardDescriptionList]
-    LastEvaluatedShardId: Optional[ShardId]
+    StreamArn: StreamArn | None
+    StreamLabel: String | None
+    StreamStatus: StreamStatus | None
+    StreamViewType: StreamViewType | None
+    CreationRequestDateTime: Date | None
+    TableName: TableName | None
+    KeySchema: KeySchema | None
+    Shards: ShardDescriptionList | None
+    LastEvaluatedShardId: ShardId | None
 
 
 class DescribeStreamOutput(TypedDict, total=False):
-    StreamDescription: Optional[StreamDescription]
+    StreamDescription: StreamDescription | None
 
 
 class GetRecordsInput(ServiceRequest):
     ShardIterator: ShardIterator
-    Limit: Optional[PositiveIntegerObject]
+    Limit: PositiveIntegerObject | None
 
 
 class Identity(TypedDict, total=False):
-    PrincipalId: Optional[String]
-    Type: Optional[String]
+    PrincipalId: String | None
+    Type: String | None
 
 
 PositiveLongObject = int
 
 
 class StreamRecord(TypedDict, total=False):
-    ApproximateCreationDateTime: Optional[Date]
-    Keys: Optional[AttributeMap]
-    NewImage: Optional[AttributeMap]
-    OldImage: Optional[AttributeMap]
-    SequenceNumber: Optional[SequenceNumber]
-    SizeBytes: Optional[PositiveLongObject]
-    StreamViewType: Optional[StreamViewType]
+    ApproximateCreationDateTime: Date | None
+    Keys: AttributeMap | None
+    NewImage: AttributeMap | None
+    OldImage: AttributeMap | None
+    SequenceNumber: SequenceNumber | None
+    SizeBytes: PositiveLongObject | None
+    StreamViewType: StreamViewType | None
 
 
 class Record(TypedDict, total=False):
-    eventID: Optional[String]
-    eventName: Optional[OperationType]
-    eventVersion: Optional[String]
-    eventSource: Optional[String]
-    awsRegion: Optional[String]
-    dynamodb: Optional[StreamRecord]
-    userIdentity: Optional[Identity]
+    eventID: String | None
+    eventName: OperationType | None
+    eventVersion: String | None
+    eventSource: String | None
+    awsRegion: String | None
+    dynamodb: StreamRecord | None
+    userIdentity: Identity | None
 
 
-RecordList = List[Record]
+RecordList = list[Record]
 
 
 class GetRecordsOutput(TypedDict, total=False):
-    Records: Optional[RecordList]
-    NextShardIterator: Optional[ShardIterator]
+    Records: RecordList | None
+    NextShardIterator: ShardIterator | None
 
 
 class GetShardIteratorInput(ServiceRequest):
     StreamArn: StreamArn
     ShardId: ShardId
     ShardIteratorType: ShardIteratorType
-    SequenceNumber: Optional[SequenceNumber]
+    SequenceNumber: SequenceNumber | None
 
 
 class GetShardIteratorOutput(TypedDict, total=False):
-    ShardIterator: Optional[ShardIterator]
+    ShardIterator: ShardIterator | None
 
 
 class ListStreamsInput(ServiceRequest):
-    TableName: Optional[TableName]
-    Limit: Optional[PositiveIntegerObject]
-    ExclusiveStartStreamArn: Optional[StreamArn]
+    TableName: TableName | None
+    Limit: PositiveIntegerObject | None
+    ExclusiveStartStreamArn: StreamArn | None
 
 
 class Stream(TypedDict, total=False):
-    StreamArn: Optional[StreamArn]
-    TableName: Optional[TableName]
-    StreamLabel: Optional[String]
+    StreamArn: StreamArn | None
+    TableName: TableName | None
+    StreamLabel: String | None
 
 
-StreamList = List[Stream]
+StreamList = list[Stream]
 
 
 class ListStreamsOutput(TypedDict, total=False):
-    Streams: Optional[StreamList]
-    LastEvaluatedStreamArn: Optional[StreamArn]
+    Streams: StreamList | None
+    LastEvaluatedStreamArn: StreamArn | None
 
 
 class DynamodbstreamsApi:
-    service = "dynamodbstreams"
-    version = "2012-08-10"
+    service: str = "dynamodbstreams"
+    version: str = "2012-08-10"
 
     @handler("DescribeStream")
     def describe_stream(

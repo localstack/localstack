@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -669,14 +669,14 @@ class ResourceNotFoundException(ServiceException):
 
 
 Long = int
-SlotList = List[Long]
+SlotList = list[Long]
 
 
 class SlotNotAvailableException(ServiceException):
     code: str = "SlotNotAvailableException"
     sender_fault: bool = False
     status_code: int = 409
-    SlotSuggestions: Optional[SlotList]
+    SlotSuggestions: SlotList | None
 
 
 class ValidationException(ServiceException):
@@ -686,26 +686,26 @@ class ValidationException(ServiceException):
 
 
 class S3VectorsEngine(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class NaturalLanguageQueryGenerationOptionsInput(TypedDict, total=False):
-    DesiredState: Optional[NaturalLanguageQueryGenerationDesiredState]
+    DesiredState: NaturalLanguageQueryGenerationDesiredState | None
 
 
 class AIMLOptionsInput(TypedDict, total=False):
-    NaturalLanguageQueryGenerationOptions: Optional[NaturalLanguageQueryGenerationOptionsInput]
-    S3VectorsEngine: Optional[S3VectorsEngine]
+    NaturalLanguageQueryGenerationOptions: NaturalLanguageQueryGenerationOptionsInput | None
+    S3VectorsEngine: S3VectorsEngine | None
 
 
 class NaturalLanguageQueryGenerationOptionsOutput(TypedDict, total=False):
-    DesiredState: Optional[NaturalLanguageQueryGenerationDesiredState]
-    CurrentState: Optional[NaturalLanguageQueryGenerationCurrentState]
+    DesiredState: NaturalLanguageQueryGenerationDesiredState | None
+    CurrentState: NaturalLanguageQueryGenerationCurrentState | None
 
 
 class AIMLOptionsOutput(TypedDict, total=False):
-    NaturalLanguageQueryGenerationOptions: Optional[NaturalLanguageQueryGenerationOptionsOutput]
-    S3VectorsEngine: Optional[S3VectorsEngine]
+    NaturalLanguageQueryGenerationOptions: NaturalLanguageQueryGenerationOptionsOutput | None
+    S3VectorsEngine: S3VectorsEngine | None
 
 
 UpdateTimestamp = datetime
@@ -714,20 +714,20 @@ UpdateTimestamp = datetime
 class OptionStatus(TypedDict, total=False):
     CreationDate: UpdateTimestamp
     UpdateDate: UpdateTimestamp
-    UpdateVersion: Optional[UIntValue]
+    UpdateVersion: UIntValue | None
     State: OptionState
-    PendingDeletion: Optional[Boolean]
+    PendingDeletion: Boolean | None
 
 
 class AIMLOptionsStatus(TypedDict, total=False):
-    Options: Optional[AIMLOptionsOutput]
-    Status: Optional[OptionStatus]
+    Options: AIMLOptionsOutput | None
+    Status: OptionStatus | None
 
 
 class AWSDomainInformation(TypedDict, total=False):
-    OwnerId: Optional[OwnerId]
+    OwnerId: OwnerId | None
     DomainName: DomainName
-    Region: Optional[Region]
+    Region: Region | None
 
 
 class AcceptInboundConnectionRequest(ServiceRequest):
@@ -735,24 +735,24 @@ class AcceptInboundConnectionRequest(ServiceRequest):
 
 
 class InboundConnectionStatus(TypedDict, total=False):
-    StatusCode: Optional[InboundConnectionStatusCode]
-    Message: Optional[ConnectionStatusMessage]
+    StatusCode: InboundConnectionStatusCode | None
+    Message: ConnectionStatusMessage | None
 
 
 class DomainInformationContainer(TypedDict, total=False):
-    AWSDomainInformation: Optional[AWSDomainInformation]
+    AWSDomainInformation: AWSDomainInformation | None
 
 
 class InboundConnection(TypedDict, total=False):
-    LocalDomainInfo: Optional[DomainInformationContainer]
-    RemoteDomainInfo: Optional[DomainInformationContainer]
-    ConnectionId: Optional[ConnectionId]
-    ConnectionStatus: Optional[InboundConnectionStatus]
-    ConnectionMode: Optional[ConnectionMode]
+    LocalDomainInfo: DomainInformationContainer | None
+    RemoteDomainInfo: DomainInformationContainer | None
+    ConnectionId: ConnectionId | None
+    ConnectionStatus: InboundConnectionStatus | None
+    ConnectionMode: ConnectionMode | None
 
 
 class AcceptInboundConnectionResponse(TypedDict, total=False):
-    Connection: Optional[InboundConnection]
+    Connection: InboundConnection | None
 
 
 class AccessPoliciesStatus(TypedDict, total=False):
@@ -761,22 +761,22 @@ class AccessPoliciesStatus(TypedDict, total=False):
 
 
 class S3GlueDataCatalog(TypedDict, total=False):
-    RoleArn: Optional[RoleArn]
+    RoleArn: RoleArn | None
 
 
 class DataSourceType(TypedDict, total=False):
-    S3GlueDataCatalog: Optional[S3GlueDataCatalog]
+    S3GlueDataCatalog: S3GlueDataCatalog | None
 
 
 class AddDataSourceRequest(ServiceRequest):
     DomainName: DomainName
     Name: DataSourceName
     DataSourceType: DataSourceType
-    Description: Optional[DataSourceDescription]
+    Description: DataSourceDescription | None
 
 
 class AddDataSourceResponse(TypedDict, total=False):
-    Message: Optional[String]
+    Message: String | None
 
 
 class Tag(TypedDict, total=False):
@@ -784,8 +784,8 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
-DirectQueryOpenSearchARNList = List[ARN]
+TagList = list[Tag]
+DirectQueryOpenSearchARNList = list[ARN]
 
 
 class SecurityLakeDirectQueryDataSource(TypedDict, total=False):
@@ -797,20 +797,20 @@ class CloudWatchDirectQueryDataSource(TypedDict, total=False):
 
 
 class DirectQueryDataSourceType(TypedDict, total=False):
-    CloudWatchLog: Optional[CloudWatchDirectQueryDataSource]
-    SecurityLake: Optional[SecurityLakeDirectQueryDataSource]
+    CloudWatchLog: CloudWatchDirectQueryDataSource | None
+    SecurityLake: SecurityLakeDirectQueryDataSource | None
 
 
 class AddDirectQueryDataSourceRequest(ServiceRequest):
     DataSourceName: DirectQueryDataSourceName
     DataSourceType: DirectQueryDataSourceType
-    Description: Optional[DirectQueryDataSourceDescription]
+    Description: DirectQueryDataSourceDescription | None
     OpenSearchArns: DirectQueryOpenSearchARNList
-    TagList: Optional[TagList]
+    TagList: TagList | None
 
 
 class AddDirectQueryDataSourceResponse(TypedDict, total=False):
-    DataSourceArn: Optional[String]
+    DataSourceArn: String | None
 
 
 class AddTagsRequest(ServiceRequest):
@@ -818,16 +818,16 @@ class AddTagsRequest(ServiceRequest):
     TagList: TagList
 
 
-LimitValueList = List[LimitValue]
+LimitValueList = list[LimitValue]
 
 
 class AdditionalLimit(TypedDict, total=False):
-    LimitName: Optional[LimitName]
-    LimitValues: Optional[LimitValueList]
+    LimitName: LimitName | None
+    LimitValues: LimitValueList | None
 
 
-AdditionalLimitList = List[AdditionalLimit]
-AdvancedOptions = Dict[String, String]
+AdditionalLimitList = list[AdditionalLimit]
+AdvancedOptions = dict[String, String]
 
 
 class AdvancedOptionsStatus(TypedDict, total=False):
@@ -839,16 +839,16 @@ DisableTimestamp = datetime
 
 
 class IAMFederationOptionsOutput(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    SubjectKey: Optional[IAMFederationSubjectKey]
-    RolesKey: Optional[IAMFederationRolesKey]
+    Enabled: Boolean | None
+    SubjectKey: IAMFederationSubjectKey | None
+    RolesKey: IAMFederationRolesKey | None
 
 
 class JWTOptionsOutput(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    SubjectKey: Optional[String]
-    RolesKey: Optional[String]
-    PublicKey: Optional[String]
+    Enabled: Boolean | None
+    SubjectKey: String | None
+    RolesKey: String | None
+    PublicKey: String | None
 
 
 class SAMLIdp(TypedDict, total=False):
@@ -857,60 +857,60 @@ class SAMLIdp(TypedDict, total=False):
 
 
 class SAMLOptionsOutput(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    Idp: Optional[SAMLIdp]
-    SubjectKey: Optional[String]
-    RolesKey: Optional[String]
-    SessionTimeoutMinutes: Optional[IntegerClass]
+    Enabled: Boolean | None
+    Idp: SAMLIdp | None
+    SubjectKey: String | None
+    RolesKey: String | None
+    SessionTimeoutMinutes: IntegerClass | None
 
 
 class AdvancedSecurityOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    InternalUserDatabaseEnabled: Optional[Boolean]
-    SAMLOptions: Optional[SAMLOptionsOutput]
-    JWTOptions: Optional[JWTOptionsOutput]
-    IAMFederationOptions: Optional[IAMFederationOptionsOutput]
-    AnonymousAuthDisableDate: Optional[DisableTimestamp]
-    AnonymousAuthEnabled: Optional[Boolean]
+    Enabled: Boolean | None
+    InternalUserDatabaseEnabled: Boolean | None
+    SAMLOptions: SAMLOptionsOutput | None
+    JWTOptions: JWTOptionsOutput | None
+    IAMFederationOptions: IAMFederationOptionsOutput | None
+    AnonymousAuthDisableDate: DisableTimestamp | None
+    AnonymousAuthEnabled: Boolean | None
 
 
 class IAMFederationOptionsInput(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    SubjectKey: Optional[IAMFederationSubjectKey]
-    RolesKey: Optional[IAMFederationRolesKey]
+    Enabled: Boolean | None
+    SubjectKey: IAMFederationSubjectKey | None
+    RolesKey: IAMFederationRolesKey | None
 
 
 class JWTOptionsInput(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    SubjectKey: Optional[SubjectKey]
-    RolesKey: Optional[RolesKey]
-    PublicKey: Optional[String]
+    Enabled: Boolean | None
+    SubjectKey: SubjectKey | None
+    RolesKey: RolesKey | None
+    PublicKey: String | None
 
 
 class SAMLOptionsInput(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    Idp: Optional[SAMLIdp]
-    MasterUserName: Optional[Username]
-    MasterBackendRole: Optional[BackendRole]
-    SubjectKey: Optional[String]
-    RolesKey: Optional[String]
-    SessionTimeoutMinutes: Optional[IntegerClass]
+    Enabled: Boolean | None
+    Idp: SAMLIdp | None
+    MasterUserName: Username | None
+    MasterBackendRole: BackendRole | None
+    SubjectKey: String | None
+    RolesKey: String | None
+    SessionTimeoutMinutes: IntegerClass | None
 
 
 class MasterUserOptions(TypedDict, total=False):
-    MasterUserARN: Optional[ARN]
-    MasterUserName: Optional[Username]
-    MasterUserPassword: Optional[Password]
+    MasterUserARN: ARN | None
+    MasterUserName: Username | None
+    MasterUserPassword: Password | None
 
 
 class AdvancedSecurityOptionsInput(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    InternalUserDatabaseEnabled: Optional[Boolean]
-    MasterUserOptions: Optional[MasterUserOptions]
-    SAMLOptions: Optional[SAMLOptionsInput]
-    JWTOptions: Optional[JWTOptionsInput]
-    IAMFederationOptions: Optional[IAMFederationOptionsInput]
-    AnonymousAuthEnabled: Optional[Boolean]
+    Enabled: Boolean | None
+    InternalUserDatabaseEnabled: Boolean | None
+    MasterUserOptions: MasterUserOptions | None
+    SAMLOptions: SAMLOptionsInput | None
+    JWTOptions: JWTOptionsInput | None
+    IAMFederationOptions: IAMFederationOptionsInput | None
+    AnonymousAuthEnabled: Boolean | None
 
 
 class AdvancedSecurityOptionsStatus(TypedDict, total=False):
@@ -919,80 +919,80 @@ class AdvancedSecurityOptionsStatus(TypedDict, total=False):
 
 
 class AppConfig(TypedDict, total=False):
-    key: Optional[AppConfigType]
-    value: Optional[AppConfigValue]
+    key: AppConfigType | None
+    value: AppConfigValue | None
 
 
-AppConfigs = List[AppConfig]
-ApplicationStatuses = List[ApplicationStatus]
+AppConfigs = list[AppConfig]
+ApplicationStatuses = list[ApplicationStatus]
 Timestamp = datetime
 
 
 class ApplicationSummary(TypedDict, total=False):
-    id: Optional[Id]
-    arn: Optional[ARN]
-    name: Optional[ApplicationName]
-    endpoint: Optional[String]
-    status: Optional[ApplicationStatus]
-    createdAt: Optional[Timestamp]
-    lastUpdatedAt: Optional[Timestamp]
+    id: Id | None
+    arn: ARN | None
+    name: ApplicationName | None
+    endpoint: String | None
+    status: ApplicationStatus | None
+    createdAt: Timestamp | None
+    lastUpdatedAt: Timestamp | None
 
 
-ApplicationSummaries = List[ApplicationSummary]
+ApplicationSummaries = list[ApplicationSummary]
 
 
 class KeyStoreAccessOption(TypedDict, total=False):
-    KeyAccessRoleArn: Optional[RoleArn]
+    KeyAccessRoleArn: RoleArn | None
     KeyStoreAccessEnabled: Boolean
 
 
 class PackageAssociationConfiguration(TypedDict, total=False):
-    KeyStoreAccessOption: Optional[KeyStoreAccessOption]
+    KeyStoreAccessOption: KeyStoreAccessOption | None
 
 
-PackageIDList = List[PackageID]
+PackageIDList = list[PackageID]
 
 
 class AssociatePackageRequest(ServiceRequest):
     PackageID: PackageID
     DomainName: DomainName
-    PrerequisitePackageIDList: Optional[PackageIDList]
-    AssociationConfiguration: Optional[PackageAssociationConfiguration]
+    PrerequisitePackageIDList: PackageIDList | None
+    AssociationConfiguration: PackageAssociationConfiguration | None
 
 
 class ErrorDetails(TypedDict, total=False):
-    ErrorType: Optional[ErrorType]
-    ErrorMessage: Optional[ErrorMessage]
+    ErrorType: ErrorType | None
+    ErrorMessage: ErrorMessage | None
 
 
 LastUpdated = datetime
 
 
 class DomainPackageDetails(TypedDict, total=False):
-    PackageID: Optional[PackageID]
-    PackageName: Optional[PackageName]
-    PackageType: Optional[PackageType]
-    LastUpdated: Optional[LastUpdated]
-    DomainName: Optional[DomainName]
-    DomainPackageStatus: Optional[DomainPackageStatus]
-    PackageVersion: Optional[PackageVersion]
-    PrerequisitePackageIDList: Optional[PackageIDList]
-    ReferencePath: Optional[ReferencePath]
-    ErrorDetails: Optional[ErrorDetails]
-    AssociationConfiguration: Optional[PackageAssociationConfiguration]
+    PackageID: PackageID | None
+    PackageName: PackageName | None
+    PackageType: PackageType | None
+    LastUpdated: LastUpdated | None
+    DomainName: DomainName | None
+    DomainPackageStatus: DomainPackageStatus | None
+    PackageVersion: PackageVersion | None
+    PrerequisitePackageIDList: PackageIDList | None
+    ReferencePath: ReferencePath | None
+    ErrorDetails: ErrorDetails | None
+    AssociationConfiguration: PackageAssociationConfiguration | None
 
 
 class AssociatePackageResponse(TypedDict, total=False):
-    DomainPackageDetails: Optional[DomainPackageDetails]
+    DomainPackageDetails: DomainPackageDetails | None
 
 
 class PackageDetailsForAssociation(TypedDict, total=False):
     PackageID: PackageID
-    PrerequisitePackageIDList: Optional[PackageIDList]
-    AssociationConfiguration: Optional[PackageAssociationConfiguration]
+    PrerequisitePackageIDList: PackageIDList | None
+    AssociationConfiguration: PackageAssociationConfiguration | None
 
 
-PackageDetailsForAssociationList = List[PackageDetailsForAssociation]
+PackageDetailsForAssociationList = list[PackageDetailsForAssociation]
 
 
 class AssociatePackagesRequest(ServiceRequest):
@@ -1000,134 +1000,134 @@ class AssociatePackagesRequest(ServiceRequest):
     DomainName: DomainName
 
 
-DomainPackageDetailsList = List[DomainPackageDetails]
+DomainPackageDetailsList = list[DomainPackageDetails]
 
 
 class AssociatePackagesResponse(TypedDict, total=False):
-    DomainPackageDetailsList: Optional[DomainPackageDetailsList]
+    DomainPackageDetailsList: DomainPackageDetailsList | None
 
 
 class AuthorizeVpcEndpointAccessRequest(ServiceRequest):
     DomainName: DomainName
-    Account: Optional[AWSAccount]
-    Service: Optional[AWSServicePrincipal]
+    Account: AWSAccount | None
+    Service: AWSServicePrincipal | None
 
 
 class AuthorizedPrincipal(TypedDict, total=False):
-    PrincipalType: Optional[PrincipalType]
-    Principal: Optional[String]
+    PrincipalType: PrincipalType | None
+    Principal: String | None
 
 
 class AuthorizeVpcEndpointAccessResponse(TypedDict, total=False):
     AuthorizedPrincipal: AuthorizedPrincipal
 
 
-AuthorizedPrincipalList = List[AuthorizedPrincipal]
+AuthorizedPrincipalList = list[AuthorizedPrincipal]
 AutoTuneDate = datetime
 
 
 class ScheduledAutoTuneDetails(TypedDict, total=False):
-    Date: Optional[AutoTuneDate]
-    ActionType: Optional[ScheduledAutoTuneActionType]
-    Action: Optional[ScheduledAutoTuneDescription]
-    Severity: Optional[ScheduledAutoTuneSeverityType]
+    Date: AutoTuneDate | None
+    ActionType: ScheduledAutoTuneActionType | None
+    Action: ScheduledAutoTuneDescription | None
+    Severity: ScheduledAutoTuneSeverityType | None
 
 
 class AutoTuneDetails(TypedDict, total=False):
-    ScheduledAutoTuneDetails: Optional[ScheduledAutoTuneDetails]
+    ScheduledAutoTuneDetails: ScheduledAutoTuneDetails | None
 
 
 class AutoTune(TypedDict, total=False):
-    AutoTuneType: Optional[AutoTuneType]
-    AutoTuneDetails: Optional[AutoTuneDetails]
+    AutoTuneType: AutoTuneType | None
+    AutoTuneDetails: AutoTuneDetails | None
 
 
-AutoTuneList = List[AutoTune]
+AutoTuneList = list[AutoTune]
 DurationValue = int
 
 
 class Duration(TypedDict, total=False):
-    Value: Optional[DurationValue]
-    Unit: Optional[TimeUnit]
+    Value: DurationValue | None
+    Unit: TimeUnit | None
 
 
 StartAt = datetime
 
 
 class AutoTuneMaintenanceSchedule(TypedDict, total=False):
-    StartAt: Optional[StartAt]
-    Duration: Optional[Duration]
-    CronExpressionForRecurrence: Optional[String]
+    StartAt: StartAt | None
+    Duration: Duration | None
+    CronExpressionForRecurrence: String | None
 
 
-AutoTuneMaintenanceScheduleList = List[AutoTuneMaintenanceSchedule]
+AutoTuneMaintenanceScheduleList = list[AutoTuneMaintenanceSchedule]
 
 
 class AutoTuneOptions(TypedDict, total=False):
-    DesiredState: Optional[AutoTuneDesiredState]
-    RollbackOnDisable: Optional[RollbackOnDisable]
-    MaintenanceSchedules: Optional[AutoTuneMaintenanceScheduleList]
-    UseOffPeakWindow: Optional[Boolean]
+    DesiredState: AutoTuneDesiredState | None
+    RollbackOnDisable: RollbackOnDisable | None
+    MaintenanceSchedules: AutoTuneMaintenanceScheduleList | None
+    UseOffPeakWindow: Boolean | None
 
 
 class AutoTuneOptionsInput(TypedDict, total=False):
-    DesiredState: Optional[AutoTuneDesiredState]
-    MaintenanceSchedules: Optional[AutoTuneMaintenanceScheduleList]
-    UseOffPeakWindow: Optional[Boolean]
+    DesiredState: AutoTuneDesiredState | None
+    MaintenanceSchedules: AutoTuneMaintenanceScheduleList | None
+    UseOffPeakWindow: Boolean | None
 
 
 class AutoTuneOptionsOutput(TypedDict, total=False):
-    State: Optional[AutoTuneState]
-    ErrorMessage: Optional[String]
-    UseOffPeakWindow: Optional[Boolean]
+    State: AutoTuneState | None
+    ErrorMessage: String | None
+    UseOffPeakWindow: Boolean | None
 
 
 class AutoTuneStatus(TypedDict, total=False):
     CreationDate: UpdateTimestamp
     UpdateDate: UpdateTimestamp
-    UpdateVersion: Optional[UIntValue]
+    UpdateVersion: UIntValue | None
     State: AutoTuneState
-    ErrorMessage: Optional[String]
-    PendingDeletion: Optional[Boolean]
+    ErrorMessage: String | None
+    PendingDeletion: Boolean | None
 
 
 class AutoTuneOptionsStatus(TypedDict, total=False):
-    Options: Optional[AutoTuneOptions]
-    Status: Optional[AutoTuneStatus]
+    Options: AutoTuneOptions | None
+    Status: AutoTuneStatus | None
 
 
 class AvailabilityZoneInfo(TypedDict, total=False):
-    AvailabilityZoneName: Optional[AvailabilityZone]
-    ZoneStatus: Optional[ZoneStatus]
-    ConfiguredDataNodeCount: Optional[NumberOfNodes]
-    AvailableDataNodeCount: Optional[NumberOfNodes]
-    TotalShards: Optional[NumberOfShards]
-    TotalUnAssignedShards: Optional[NumberOfShards]
+    AvailabilityZoneName: AvailabilityZone | None
+    ZoneStatus: ZoneStatus | None
+    ConfiguredDataNodeCount: NumberOfNodes | None
+    AvailableDataNodeCount: NumberOfNodes | None
+    TotalShards: NumberOfShards | None
+    TotalUnAssignedShards: NumberOfShards | None
 
 
-AvailabilityZoneInfoList = List[AvailabilityZoneInfo]
-AvailabilityZoneList = List[AvailabilityZone]
+AvailabilityZoneInfoList = list[AvailabilityZoneInfo]
+AvailabilityZoneList = list[AvailabilityZone]
 
 
 class CancelDomainConfigChangeRequest(ServiceRequest):
     DomainName: DomainName
-    DryRun: Optional[DryRun]
+    DryRun: DryRun | None
 
 
 class CancelledChangeProperty(TypedDict, total=False):
-    PropertyName: Optional[String]
-    CancelledValue: Optional[String]
-    ActiveValue: Optional[String]
+    PropertyName: String | None
+    CancelledValue: String | None
+    ActiveValue: String | None
 
 
-CancelledChangePropertyList = List[CancelledChangeProperty]
-GUIDList = List[GUID]
+CancelledChangePropertyList = list[CancelledChangeProperty]
+GUIDList = list[GUID]
 
 
 class CancelDomainConfigChangeResponse(TypedDict, total=False):
-    CancelledChangeIds: Optional[GUIDList]
-    CancelledChangeProperties: Optional[CancelledChangePropertyList]
-    DryRun: Optional[DryRun]
+    CancelledChangeIds: GUIDList | None
+    CancelledChangeProperties: CancelledChangePropertyList | None
+    DryRun: DryRun | None
 
 
 class CancelServiceSoftwareUpdateRequest(ServiceRequest):
@@ -1138,65 +1138,65 @@ DeploymentCloseDateTimeStamp = datetime
 
 
 class ServiceSoftwareOptions(TypedDict, total=False):
-    CurrentVersion: Optional[String]
-    NewVersion: Optional[String]
-    UpdateAvailable: Optional[Boolean]
-    Cancellable: Optional[Boolean]
-    UpdateStatus: Optional[DeploymentStatus]
-    Description: Optional[String]
-    AutomatedUpdateDate: Optional[DeploymentCloseDateTimeStamp]
-    OptionalDeployment: Optional[Boolean]
+    CurrentVersion: String | None
+    NewVersion: String | None
+    UpdateAvailable: Boolean | None
+    Cancellable: Boolean | None
+    UpdateStatus: DeploymentStatus | None
+    Description: String | None
+    AutomatedUpdateDate: DeploymentCloseDateTimeStamp | None
+    OptionalDeployment: Boolean | None
 
 
 class CancelServiceSoftwareUpdateResponse(TypedDict, total=False):
-    ServiceSoftwareOptions: Optional[ServiceSoftwareOptions]
+    ServiceSoftwareOptions: ServiceSoftwareOptions | None
 
 
 class ChangeProgressDetails(TypedDict, total=False):
-    ChangeId: Optional[GUID]
-    Message: Optional[Message]
-    ConfigChangeStatus: Optional[ConfigChangeStatus]
-    InitiatedBy: Optional[InitiatedBy]
-    StartTime: Optional[UpdateTimestamp]
-    LastUpdatedTime: Optional[UpdateTimestamp]
+    ChangeId: GUID | None
+    Message: Message | None
+    ConfigChangeStatus: ConfigChangeStatus | None
+    InitiatedBy: InitiatedBy | None
+    StartTime: UpdateTimestamp | None
+    LastUpdatedTime: UpdateTimestamp | None
 
 
 class ChangeProgressStage(TypedDict, total=False):
-    Name: Optional[ChangeProgressStageName]
-    Status: Optional[ChangeProgressStageStatus]
-    Description: Optional[Description]
-    LastUpdated: Optional[LastUpdated]
+    Name: ChangeProgressStageName | None
+    Status: ChangeProgressStageStatus | None
+    Description: Description | None
+    LastUpdated: LastUpdated | None
 
 
-ChangeProgressStageList = List[ChangeProgressStage]
-StringList = List[String]
+ChangeProgressStageList = list[ChangeProgressStage]
+StringList = list[String]
 
 
 class ChangeProgressStatusDetails(TypedDict, total=False):
-    ChangeId: Optional[GUID]
-    StartTime: Optional[UpdateTimestamp]
-    Status: Optional[OverallChangeStatus]
-    PendingProperties: Optional[StringList]
-    CompletedProperties: Optional[StringList]
-    TotalNumberOfStages: Optional[TotalNumberOfStages]
-    ChangeProgressStages: Optional[ChangeProgressStageList]
-    LastUpdatedTime: Optional[UpdateTimestamp]
-    ConfigChangeStatus: Optional[ConfigChangeStatus]
-    InitiatedBy: Optional[InitiatedBy]
+    ChangeId: GUID | None
+    StartTime: UpdateTimestamp | None
+    Status: OverallChangeStatus | None
+    PendingProperties: StringList | None
+    CompletedProperties: StringList | None
+    TotalNumberOfStages: TotalNumberOfStages | None
+    ChangeProgressStages: ChangeProgressStageList | None
+    LastUpdatedTime: UpdateTimestamp | None
+    ConfigChangeStatus: ConfigChangeStatus | None
+    InitiatedBy: InitiatedBy | None
 
 
 class NodeConfig(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    Type: Optional[OpenSearchPartitionInstanceType]
-    Count: Optional[IntegerClass]
+    Enabled: Boolean | None
+    Type: OpenSearchPartitionInstanceType | None
+    Count: IntegerClass | None
 
 
 class NodeOption(TypedDict, total=False):
-    NodeType: Optional[NodeOptionsNodeType]
-    NodeConfig: Optional[NodeConfig]
+    NodeType: NodeOptionsNodeType | None
+    NodeConfig: NodeConfig | None
 
 
-NodeOptionsList = List[NodeOption]
+NodeOptionsList = list[NodeOption]
 
 
 class ColdStorageOptions(TypedDict, total=False):
@@ -1204,23 +1204,23 @@ class ColdStorageOptions(TypedDict, total=False):
 
 
 class ZoneAwarenessConfig(TypedDict, total=False):
-    AvailabilityZoneCount: Optional[IntegerClass]
+    AvailabilityZoneCount: IntegerClass | None
 
 
 class ClusterConfig(TypedDict, total=False):
-    InstanceType: Optional[OpenSearchPartitionInstanceType]
-    InstanceCount: Optional[IntegerClass]
-    DedicatedMasterEnabled: Optional[Boolean]
-    ZoneAwarenessEnabled: Optional[Boolean]
-    ZoneAwarenessConfig: Optional[ZoneAwarenessConfig]
-    DedicatedMasterType: Optional[OpenSearchPartitionInstanceType]
-    DedicatedMasterCount: Optional[IntegerClass]
-    WarmEnabled: Optional[Boolean]
-    WarmType: Optional[OpenSearchWarmPartitionInstanceType]
-    WarmCount: Optional[IntegerClass]
-    ColdStorageOptions: Optional[ColdStorageOptions]
-    MultiAZWithStandbyEnabled: Optional[Boolean]
-    NodeOptions: Optional[NodeOptionsList]
+    InstanceType: OpenSearchPartitionInstanceType | None
+    InstanceCount: IntegerClass | None
+    DedicatedMasterEnabled: Boolean | None
+    ZoneAwarenessEnabled: Boolean | None
+    ZoneAwarenessConfig: ZoneAwarenessConfig | None
+    DedicatedMasterType: OpenSearchPartitionInstanceType | None
+    DedicatedMasterCount: IntegerClass | None
+    WarmEnabled: Boolean | None
+    WarmType: OpenSearchWarmPartitionInstanceType | None
+    WarmCount: IntegerClass | None
+    ColdStorageOptions: ColdStorageOptions | None
+    MultiAZWithStandbyEnabled: Boolean | None
+    NodeOptions: NodeOptionsList | None
 
 
 class ClusterConfigStatus(TypedDict, total=False):
@@ -1229,10 +1229,10 @@ class ClusterConfigStatus(TypedDict, total=False):
 
 
 class CognitoOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    UserPoolId: Optional[UserPoolId]
-    IdentityPoolId: Optional[IdentityPoolId]
-    RoleArn: Optional[RoleArn]
+    Enabled: Boolean | None
+    UserPoolId: UserPoolId | None
+    IdentityPoolId: IdentityPoolId | None
+    RoleArn: RoleArn | None
 
 
 class CognitoOptionsStatus(TypedDict, total=False):
@@ -1240,69 +1240,69 @@ class CognitoOptionsStatus(TypedDict, total=False):
     Status: OptionStatus
 
 
-VersionList = List[VersionString]
+VersionList = list[VersionString]
 
 
 class CompatibleVersionsMap(TypedDict, total=False):
-    SourceVersion: Optional[VersionString]
-    TargetVersions: Optional[VersionList]
+    SourceVersion: VersionString | None
+    TargetVersions: VersionList | None
 
 
-CompatibleVersionsList = List[CompatibleVersionsMap]
+CompatibleVersionsList = list[CompatibleVersionsMap]
 
 
 class CrossClusterSearchConnectionProperties(TypedDict, total=False):
-    SkipUnavailable: Optional[SkipUnavailableStatus]
+    SkipUnavailable: SkipUnavailableStatus | None
 
 
 class ConnectionProperties(TypedDict, total=False):
-    Endpoint: Optional[Endpoint]
-    CrossClusterSearch: Optional[CrossClusterSearchConnectionProperties]
+    Endpoint: Endpoint | None
+    CrossClusterSearch: CrossClusterSearchConnectionProperties | None
 
 
 class IamIdentityCenterOptionsInput(TypedDict, total=False):
-    enabled: Optional[Boolean]
-    iamIdentityCenterInstanceArn: Optional[ARN]
-    iamRoleForIdentityCenterApplicationArn: Optional[RoleArn]
+    enabled: Boolean | None
+    iamIdentityCenterInstanceArn: ARN | None
+    iamRoleForIdentityCenterApplicationArn: RoleArn | None
 
 
 class DataSource(TypedDict, total=False):
-    dataSourceArn: Optional[ARN]
-    dataSourceDescription: Optional[DataSourceDescription]
+    dataSourceArn: ARN | None
+    dataSourceDescription: DataSourceDescription | None
 
 
-DataSources = List[DataSource]
+DataSources = list[DataSource]
 
 
 class CreateApplicationRequest(ServiceRequest):
-    clientToken: Optional[ClientToken]
+    clientToken: ClientToken | None
     name: ApplicationName
-    dataSources: Optional[DataSources]
-    iamIdentityCenterOptions: Optional[IamIdentityCenterOptionsInput]
-    appConfigs: Optional[AppConfigs]
-    tagList: Optional[TagList]
+    dataSources: DataSources | None
+    iamIdentityCenterOptions: IamIdentityCenterOptionsInput | None
+    appConfigs: AppConfigs | None
+    tagList: TagList | None
 
 
 class IamIdentityCenterOptions(TypedDict, total=False):
-    enabled: Optional[Boolean]
-    iamIdentityCenterInstanceArn: Optional[ARN]
-    iamRoleForIdentityCenterApplicationArn: Optional[RoleArn]
-    iamIdentityCenterApplicationArn: Optional[ARN]
+    enabled: Boolean | None
+    iamIdentityCenterInstanceArn: ARN | None
+    iamRoleForIdentityCenterApplicationArn: RoleArn | None
+    iamIdentityCenterApplicationArn: ARN | None
 
 
 class CreateApplicationResponse(TypedDict, total=False):
-    id: Optional[Id]
-    name: Optional[ApplicationName]
-    arn: Optional[ARN]
-    dataSources: Optional[DataSources]
-    iamIdentityCenterOptions: Optional[IamIdentityCenterOptions]
-    appConfigs: Optional[AppConfigs]
-    tagList: Optional[TagList]
-    createdAt: Optional[Timestamp]
+    id: Id | None
+    name: ApplicationName | None
+    arn: ARN | None
+    dataSources: DataSources | None
+    iamIdentityCenterOptions: IamIdentityCenterOptions | None
+    appConfigs: AppConfigs | None
+    tagList: TagList | None
+    createdAt: Timestamp | None
 
 
 class SoftwareUpdateOptions(TypedDict, total=False):
-    AutoSoftwareUpdateEnabled: Optional[Boolean]
+    AutoSoftwareUpdateEnabled: Boolean | None
 
 
 StartTimeMinutes = int
@@ -1315,182 +1315,182 @@ class WindowStartTime(TypedDict, total=False):
 
 
 class OffPeakWindow(TypedDict, total=False):
-    WindowStartTime: Optional[WindowStartTime]
+    WindowStartTime: WindowStartTime | None
 
 
 class OffPeakWindowOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    OffPeakWindow: Optional[OffPeakWindow]
+    Enabled: Boolean | None
+    OffPeakWindow: OffPeakWindow | None
 
 
 class IdentityCenterOptionsInput(TypedDict, total=False):
-    EnabledAPIAccess: Optional[Boolean]
-    IdentityCenterInstanceARN: Optional[IdentityCenterInstanceARN]
-    SubjectKey: Optional[SubjectKeyIdCOption]
-    RolesKey: Optional[RolesKeyIdCOption]
+    EnabledAPIAccess: Boolean | None
+    IdentityCenterInstanceARN: IdentityCenterInstanceARN | None
+    SubjectKey: SubjectKeyIdCOption | None
+    RolesKey: RolesKeyIdCOption | None
 
 
 class DomainEndpointOptions(TypedDict, total=False):
-    EnforceHTTPS: Optional[Boolean]
-    TLSSecurityPolicy: Optional[TLSSecurityPolicy]
-    CustomEndpointEnabled: Optional[Boolean]
-    CustomEndpoint: Optional[DomainNameFqdn]
-    CustomEndpointCertificateArn: Optional[ARN]
+    EnforceHTTPS: Boolean | None
+    TLSSecurityPolicy: TLSSecurityPolicy | None
+    CustomEndpointEnabled: Boolean | None
+    CustomEndpoint: DomainNameFqdn | None
+    CustomEndpointCertificateArn: ARN | None
 
 
 class LogPublishingOption(TypedDict, total=False):
-    CloudWatchLogsLogGroupArn: Optional[CloudWatchLogsLogGroupArn]
-    Enabled: Optional[Boolean]
+    CloudWatchLogsLogGroupArn: CloudWatchLogsLogGroupArn | None
+    Enabled: Boolean | None
 
 
-LogPublishingOptions = Dict[LogType, LogPublishingOption]
+LogPublishingOptions = dict[LogType, LogPublishingOption]
 
 
 class NodeToNodeEncryptionOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class EncryptionAtRestOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    KmsKeyId: Optional[KmsKeyId]
+    Enabled: Boolean | None
+    KmsKeyId: KmsKeyId | None
 
 
 class VPCOptions(TypedDict, total=False):
-    SubnetIds: Optional[StringList]
-    SecurityGroupIds: Optional[StringList]
+    SubnetIds: StringList | None
+    SecurityGroupIds: StringList | None
 
 
 class SnapshotOptions(TypedDict, total=False):
-    AutomatedSnapshotStartHour: Optional[IntegerClass]
+    AutomatedSnapshotStartHour: IntegerClass | None
 
 
 class EBSOptions(TypedDict, total=False):
-    EBSEnabled: Optional[Boolean]
-    VolumeType: Optional[VolumeType]
-    VolumeSize: Optional[IntegerClass]
-    Iops: Optional[IntegerClass]
-    Throughput: Optional[IntegerClass]
+    EBSEnabled: Boolean | None
+    VolumeType: VolumeType | None
+    VolumeSize: IntegerClass | None
+    Iops: IntegerClass | None
+    Throughput: IntegerClass | None
 
 
 class CreateDomainRequest(ServiceRequest):
     DomainName: DomainName
-    EngineVersion: Optional[VersionString]
-    ClusterConfig: Optional[ClusterConfig]
-    EBSOptions: Optional[EBSOptions]
-    AccessPolicies: Optional[PolicyDocument]
-    IPAddressType: Optional[IPAddressType]
-    SnapshotOptions: Optional[SnapshotOptions]
-    VPCOptions: Optional[VPCOptions]
-    CognitoOptions: Optional[CognitoOptions]
-    EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions]
-    AdvancedOptions: Optional[AdvancedOptions]
-    LogPublishingOptions: Optional[LogPublishingOptions]
-    DomainEndpointOptions: Optional[DomainEndpointOptions]
-    AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
-    IdentityCenterOptions: Optional[IdentityCenterOptionsInput]
-    TagList: Optional[TagList]
-    AutoTuneOptions: Optional[AutoTuneOptionsInput]
-    OffPeakWindowOptions: Optional[OffPeakWindowOptions]
-    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
-    AIMLOptions: Optional[AIMLOptionsInput]
+    EngineVersion: VersionString | None
+    ClusterConfig: ClusterConfig | None
+    EBSOptions: EBSOptions | None
+    AccessPolicies: PolicyDocument | None
+    IPAddressType: IPAddressType | None
+    SnapshotOptions: SnapshotOptions | None
+    VPCOptions: VPCOptions | None
+    CognitoOptions: CognitoOptions | None
+    EncryptionAtRestOptions: EncryptionAtRestOptions | None
+    NodeToNodeEncryptionOptions: NodeToNodeEncryptionOptions | None
+    AdvancedOptions: AdvancedOptions | None
+    LogPublishingOptions: LogPublishingOptions | None
+    DomainEndpointOptions: DomainEndpointOptions | None
+    AdvancedSecurityOptions: AdvancedSecurityOptionsInput | None
+    IdentityCenterOptions: IdentityCenterOptionsInput | None
+    TagList: TagList | None
+    AutoTuneOptions: AutoTuneOptionsInput | None
+    OffPeakWindowOptions: OffPeakWindowOptions | None
+    SoftwareUpdateOptions: SoftwareUpdateOptions | None
+    AIMLOptions: AIMLOptionsInput | None
 
 
 class ModifyingProperties(TypedDict, total=False):
-    Name: Optional[String]
-    ActiveValue: Optional[String]
-    PendingValue: Optional[String]
-    ValueType: Optional[PropertyValueType]
+    Name: String | None
+    ActiveValue: String | None
+    PendingValue: String | None
+    ValueType: PropertyValueType | None
 
 
-ModifyingPropertiesList = List[ModifyingProperties]
+ModifyingPropertiesList = list[ModifyingProperties]
 
 
 class IdentityCenterOptions(TypedDict, total=False):
-    EnabledAPIAccess: Optional[Boolean]
-    IdentityCenterInstanceARN: Optional[IdentityCenterInstanceARN]
-    SubjectKey: Optional[SubjectKeyIdCOption]
-    RolesKey: Optional[RolesKeyIdCOption]
-    IdentityCenterApplicationARN: Optional[IdentityCenterApplicationARN]
-    IdentityStoreId: Optional[IdentityStoreId]
+    EnabledAPIAccess: Boolean | None
+    IdentityCenterInstanceARN: IdentityCenterInstanceARN | None
+    SubjectKey: SubjectKeyIdCOption | None
+    RolesKey: RolesKeyIdCOption | None
+    IdentityCenterApplicationARN: IdentityCenterApplicationARN | None
+    IdentityStoreId: IdentityStoreId | None
 
 
 class VPCDerivedInfo(TypedDict, total=False):
-    VPCId: Optional[String]
-    SubnetIds: Optional[StringList]
-    AvailabilityZones: Optional[StringList]
-    SecurityGroupIds: Optional[StringList]
+    VPCId: String | None
+    SubnetIds: StringList | None
+    AvailabilityZones: StringList | None
+    SecurityGroupIds: StringList | None
 
 
-EndpointsMap = Dict[String, ServiceUrl]
+EndpointsMap = dict[String, ServiceUrl]
 
 
 class DomainStatus(TypedDict, total=False):
     DomainId: DomainId
     DomainName: DomainName
     ARN: ARN
-    Created: Optional[Boolean]
-    Deleted: Optional[Boolean]
-    Endpoint: Optional[ServiceUrl]
-    EndpointV2: Optional[ServiceUrl]
-    Endpoints: Optional[EndpointsMap]
-    DomainEndpointV2HostedZoneId: Optional[HostedZoneId]
-    Processing: Optional[Boolean]
-    UpgradeProcessing: Optional[Boolean]
-    EngineVersion: Optional[VersionString]
+    Created: Boolean | None
+    Deleted: Boolean | None
+    Endpoint: ServiceUrl | None
+    EndpointV2: ServiceUrl | None
+    Endpoints: EndpointsMap | None
+    DomainEndpointV2HostedZoneId: HostedZoneId | None
+    Processing: Boolean | None
+    UpgradeProcessing: Boolean | None
+    EngineVersion: VersionString | None
     ClusterConfig: ClusterConfig
-    EBSOptions: Optional[EBSOptions]
-    AccessPolicies: Optional[PolicyDocument]
-    IPAddressType: Optional[IPAddressType]
-    SnapshotOptions: Optional[SnapshotOptions]
-    VPCOptions: Optional[VPCDerivedInfo]
-    CognitoOptions: Optional[CognitoOptions]
-    EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions]
-    AdvancedOptions: Optional[AdvancedOptions]
-    LogPublishingOptions: Optional[LogPublishingOptions]
-    ServiceSoftwareOptions: Optional[ServiceSoftwareOptions]
-    DomainEndpointOptions: Optional[DomainEndpointOptions]
-    AdvancedSecurityOptions: Optional[AdvancedSecurityOptions]
-    IdentityCenterOptions: Optional[IdentityCenterOptions]
-    AutoTuneOptions: Optional[AutoTuneOptionsOutput]
-    ChangeProgressDetails: Optional[ChangeProgressDetails]
-    OffPeakWindowOptions: Optional[OffPeakWindowOptions]
-    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
-    DomainProcessingStatus: Optional[DomainProcessingStatusType]
-    ModifyingProperties: Optional[ModifyingPropertiesList]
-    AIMLOptions: Optional[AIMLOptionsOutput]
+    EBSOptions: EBSOptions | None
+    AccessPolicies: PolicyDocument | None
+    IPAddressType: IPAddressType | None
+    SnapshotOptions: SnapshotOptions | None
+    VPCOptions: VPCDerivedInfo | None
+    CognitoOptions: CognitoOptions | None
+    EncryptionAtRestOptions: EncryptionAtRestOptions | None
+    NodeToNodeEncryptionOptions: NodeToNodeEncryptionOptions | None
+    AdvancedOptions: AdvancedOptions | None
+    LogPublishingOptions: LogPublishingOptions | None
+    ServiceSoftwareOptions: ServiceSoftwareOptions | None
+    DomainEndpointOptions: DomainEndpointOptions | None
+    AdvancedSecurityOptions: AdvancedSecurityOptions | None
+    IdentityCenterOptions: IdentityCenterOptions | None
+    AutoTuneOptions: AutoTuneOptionsOutput | None
+    ChangeProgressDetails: ChangeProgressDetails | None
+    OffPeakWindowOptions: OffPeakWindowOptions | None
+    SoftwareUpdateOptions: SoftwareUpdateOptions | None
+    DomainProcessingStatus: DomainProcessingStatusType | None
+    ModifyingProperties: ModifyingPropertiesList | None
+    AIMLOptions: AIMLOptionsOutput | None
 
 
 class CreateDomainResponse(TypedDict, total=False):
-    DomainStatus: Optional[DomainStatus]
+    DomainStatus: DomainStatus | None
 
 
 class CreateOutboundConnectionRequest(ServiceRequest):
     LocalDomainInfo: DomainInformationContainer
     RemoteDomainInfo: DomainInformationContainer
     ConnectionAlias: ConnectionAlias
-    ConnectionMode: Optional[ConnectionMode]
-    ConnectionProperties: Optional[ConnectionProperties]
+    ConnectionMode: ConnectionMode | None
+    ConnectionProperties: ConnectionProperties | None
 
 
 class OutboundConnectionStatus(TypedDict, total=False):
-    StatusCode: Optional[OutboundConnectionStatusCode]
-    Message: Optional[ConnectionStatusMessage]
+    StatusCode: OutboundConnectionStatusCode | None
+    Message: ConnectionStatusMessage | None
 
 
 class CreateOutboundConnectionResponse(TypedDict, total=False):
-    LocalDomainInfo: Optional[DomainInformationContainer]
-    RemoteDomainInfo: Optional[DomainInformationContainer]
-    ConnectionAlias: Optional[ConnectionAlias]
-    ConnectionStatus: Optional[OutboundConnectionStatus]
-    ConnectionId: Optional[ConnectionId]
-    ConnectionMode: Optional[ConnectionMode]
-    ConnectionProperties: Optional[ConnectionProperties]
+    LocalDomainInfo: DomainInformationContainer | None
+    RemoteDomainInfo: DomainInformationContainer | None
+    ConnectionAlias: ConnectionAlias | None
+    ConnectionStatus: OutboundConnectionStatus | None
+    ConnectionId: ConnectionId | None
+    ConnectionMode: ConnectionMode | None
+    ConnectionProperties: ConnectionProperties | None
 
 
 class PackageEncryptionOptions(TypedDict, total=False):
-    KmsKeyIdentifier: Optional[KmsKeyId]
+    KmsKeyIdentifier: KmsKeyId | None
     EncryptionEnabled: Boolean
 
 
@@ -1500,78 +1500,78 @@ class PackageVendingOptions(TypedDict, total=False):
 
 class PackageConfiguration(TypedDict, total=False):
     LicenseRequirement: RequirementLevel
-    LicenseFilepath: Optional[LicenseFilepath]
+    LicenseFilepath: LicenseFilepath | None
     ConfigurationRequirement: RequirementLevel
-    RequiresRestartForConfigurationUpdate: Optional[Boolean]
+    RequiresRestartForConfigurationUpdate: Boolean | None
 
 
 class PackageSource(TypedDict, total=False):
-    S3BucketName: Optional[S3BucketName]
-    S3Key: Optional[S3Key]
+    S3BucketName: S3BucketName | None
+    S3Key: S3Key | None
 
 
 class CreatePackageRequest(ServiceRequest):
     PackageName: PackageName
     PackageType: PackageType
-    PackageDescription: Optional[PackageDescription]
+    PackageDescription: PackageDescription | None
     PackageSource: PackageSource
-    PackageConfiguration: Optional[PackageConfiguration]
-    EngineVersion: Optional[EngineVersion]
-    PackageVendingOptions: Optional[PackageVendingOptions]
-    PackageEncryptionOptions: Optional[PackageEncryptionOptions]
+    PackageConfiguration: PackageConfiguration | None
+    EngineVersion: EngineVersion | None
+    PackageVendingOptions: PackageVendingOptions | None
+    PackageEncryptionOptions: PackageEncryptionOptions | None
 
 
-PackageUserList = List[PackageUser]
+PackageUserList = list[PackageUser]
 UncompressedPluginSizeInBytes = int
 
 
 class PluginProperties(TypedDict, total=False):
-    Name: Optional[PluginName]
-    Description: Optional[PluginDescription]
-    Version: Optional[PluginVersion]
-    ClassName: Optional[PluginClassName]
-    UncompressedSizeInBytes: Optional[UncompressedPluginSizeInBytes]
+    Name: PluginName | None
+    Description: PluginDescription | None
+    Version: PluginVersion | None
+    ClassName: PluginClassName | None
+    UncompressedSizeInBytes: UncompressedPluginSizeInBytes | None
 
 
 CreatedAt = datetime
 
 
 class PackageDetails(TypedDict, total=False):
-    PackageID: Optional[PackageID]
-    PackageName: Optional[PackageName]
-    PackageType: Optional[PackageType]
-    PackageDescription: Optional[PackageDescription]
-    PackageStatus: Optional[PackageStatus]
-    CreatedAt: Optional[CreatedAt]
-    LastUpdatedAt: Optional[LastUpdated]
-    AvailablePackageVersion: Optional[PackageVersion]
-    ErrorDetails: Optional[ErrorDetails]
-    EngineVersion: Optional[EngineVersion]
-    AvailablePluginProperties: Optional[PluginProperties]
-    AvailablePackageConfiguration: Optional[PackageConfiguration]
-    AllowListedUserList: Optional[PackageUserList]
-    PackageOwner: Optional[PackageOwner]
-    PackageVendingOptions: Optional[PackageVendingOptions]
-    PackageEncryptionOptions: Optional[PackageEncryptionOptions]
+    PackageID: PackageID | None
+    PackageName: PackageName | None
+    PackageType: PackageType | None
+    PackageDescription: PackageDescription | None
+    PackageStatus: PackageStatus | None
+    CreatedAt: CreatedAt | None
+    LastUpdatedAt: LastUpdated | None
+    AvailablePackageVersion: PackageVersion | None
+    ErrorDetails: ErrorDetails | None
+    EngineVersion: EngineVersion | None
+    AvailablePluginProperties: PluginProperties | None
+    AvailablePackageConfiguration: PackageConfiguration | None
+    AllowListedUserList: PackageUserList | None
+    PackageOwner: PackageOwner | None
+    PackageVendingOptions: PackageVendingOptions | None
+    PackageEncryptionOptions: PackageEncryptionOptions | None
 
 
 class CreatePackageResponse(TypedDict, total=False):
-    PackageDetails: Optional[PackageDetails]
+    PackageDetails: PackageDetails | None
 
 
 class CreateVpcEndpointRequest(ServiceRequest):
     DomainArn: DomainArn
     VpcOptions: VPCOptions
-    ClientToken: Optional[ClientToken]
+    ClientToken: ClientToken | None
 
 
 class VpcEndpoint(TypedDict, total=False):
-    VpcEndpointId: Optional[VpcEndpointId]
-    VpcEndpointOwner: Optional[AWSAccount]
-    DomainArn: Optional[DomainArn]
-    VpcOptions: Optional[VPCDerivedInfo]
-    Status: Optional[VpcEndpointStatus]
-    Endpoint: Optional[Endpoint]
+    VpcEndpointId: VpcEndpointId | None
+    VpcEndpointOwner: AWSAccount | None
+    DomainArn: DomainArn | None
+    VpcOptions: VPCDerivedInfo | None
+    Status: VpcEndpointStatus | None
+    Endpoint: Endpoint | None
 
 
 class CreateVpcEndpointResponse(TypedDict, total=False):
@@ -1579,13 +1579,13 @@ class CreateVpcEndpointResponse(TypedDict, total=False):
 
 
 class DataSourceDetails(TypedDict, total=False):
-    DataSourceType: Optional[DataSourceType]
-    Name: Optional[DataSourceName]
-    Description: Optional[DataSourceDescription]
-    Status: Optional[DataSourceStatus]
+    DataSourceType: DataSourceType | None
+    Name: DataSourceName | None
+    Description: DataSourceDescription | None
+    Status: DataSourceStatus | None
 
 
-DataSourceList = List[DataSourceDetails]
+DataSourceList = list[DataSourceDetails]
 
 
 class DeleteApplicationRequest(ServiceRequest):
@@ -1602,7 +1602,7 @@ class DeleteDataSourceRequest(ServiceRequest):
 
 
 class DeleteDataSourceResponse(TypedDict, total=False):
-    Message: Optional[String]
+    Message: String | None
 
 
 class DeleteDirectQueryDataSourceRequest(ServiceRequest):
@@ -1614,7 +1614,7 @@ class DeleteDomainRequest(ServiceRequest):
 
 
 class DeleteDomainResponse(TypedDict, total=False):
-    DomainStatus: Optional[DomainStatus]
+    DomainStatus: DomainStatus | None
 
 
 class DeleteInboundConnectionRequest(ServiceRequest):
@@ -1622,7 +1622,7 @@ class DeleteInboundConnectionRequest(ServiceRequest):
 
 
 class DeleteInboundConnectionResponse(TypedDict, total=False):
-    Connection: Optional[InboundConnection]
+    Connection: InboundConnection | None
 
 
 class DeleteOutboundConnectionRequest(ServiceRequest):
@@ -1630,17 +1630,17 @@ class DeleteOutboundConnectionRequest(ServiceRequest):
 
 
 class OutboundConnection(TypedDict, total=False):
-    LocalDomainInfo: Optional[DomainInformationContainer]
-    RemoteDomainInfo: Optional[DomainInformationContainer]
-    ConnectionId: Optional[ConnectionId]
-    ConnectionAlias: Optional[ConnectionAlias]
-    ConnectionStatus: Optional[OutboundConnectionStatus]
-    ConnectionMode: Optional[ConnectionMode]
-    ConnectionProperties: Optional[ConnectionProperties]
+    LocalDomainInfo: DomainInformationContainer | None
+    RemoteDomainInfo: DomainInformationContainer | None
+    ConnectionId: ConnectionId | None
+    ConnectionAlias: ConnectionAlias | None
+    ConnectionStatus: OutboundConnectionStatus | None
+    ConnectionMode: ConnectionMode | None
+    ConnectionProperties: ConnectionProperties | None
 
 
 class DeleteOutboundConnectionResponse(TypedDict, total=False):
-    Connection: Optional[OutboundConnection]
+    Connection: OutboundConnection | None
 
 
 class DeletePackageRequest(ServiceRequest):
@@ -1648,7 +1648,7 @@ class DeletePackageRequest(ServiceRequest):
 
 
 class DeletePackageResponse(TypedDict, total=False):
-    PackageDetails: Optional[PackageDetails]
+    PackageDetails: PackageDetails | None
 
 
 class DeleteVpcEndpointRequest(ServiceRequest):
@@ -1656,10 +1656,10 @@ class DeleteVpcEndpointRequest(ServiceRequest):
 
 
 class VpcEndpointSummary(TypedDict, total=False):
-    VpcEndpointId: Optional[VpcEndpointId]
-    VpcEndpointOwner: Optional[String]
-    DomainArn: Optional[DomainArn]
-    Status: Optional[VpcEndpointStatus]
+    VpcEndpointId: VpcEndpointId | None
+    VpcEndpointOwner: String | None
+    DomainArn: DomainArn | None
+    Status: VpcEndpointStatus | None
 
 
 class DeleteVpcEndpointResponse(TypedDict, total=False):
@@ -1668,22 +1668,22 @@ class DeleteVpcEndpointResponse(TypedDict, total=False):
 
 class DescribeDomainAutoTunesRequest(ServiceRequest):
     DomainName: DomainName
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class DescribeDomainAutoTunesResponse(TypedDict, total=False):
-    AutoTunes: Optional[AutoTuneList]
-    NextToken: Optional[NextToken]
+    AutoTunes: AutoTuneList | None
+    NextToken: NextToken | None
 
 
 class DescribeDomainChangeProgressRequest(ServiceRequest):
     DomainName: DomainName
-    ChangeId: Optional[GUID]
+    ChangeId: GUID | None
 
 
 class DescribeDomainChangeProgressResponse(TypedDict, total=False):
-    ChangeProgressStatus: Optional[ChangeProgressStatusDetails]
+    ChangeProgressStatus: ChangeProgressStatusDetails | None
 
 
 class DescribeDomainConfigRequest(ServiceRequest):
@@ -1691,13 +1691,13 @@ class DescribeDomainConfigRequest(ServiceRequest):
 
 
 class SoftwareUpdateOptionsStatus(TypedDict, total=False):
-    Options: Optional[SoftwareUpdateOptions]
-    Status: Optional[OptionStatus]
+    Options: SoftwareUpdateOptions | None
+    Status: OptionStatus | None
 
 
 class OffPeakWindowOptionsStatus(TypedDict, total=False):
-    Options: Optional[OffPeakWindowOptions]
-    Status: Optional[OptionStatus]
+    Options: OffPeakWindowOptions | None
+    Status: OptionStatus | None
 
 
 class IdentityCenterOptionsStatus(TypedDict, total=False):
@@ -1711,8 +1711,8 @@ class DomainEndpointOptionsStatus(TypedDict, total=False):
 
 
 class LogPublishingOptionsStatus(TypedDict, total=False):
-    Options: Optional[LogPublishingOptions]
-    Status: Optional[OptionStatus]
+    Options: LogPublishingOptions | None
+    Status: OptionStatus | None
 
 
 class NodeToNodeEncryptionOptionsStatus(TypedDict, total=False):
@@ -1751,27 +1751,27 @@ class VersionStatus(TypedDict, total=False):
 
 
 class DomainConfig(TypedDict, total=False):
-    EngineVersion: Optional[VersionStatus]
-    ClusterConfig: Optional[ClusterConfigStatus]
-    EBSOptions: Optional[EBSOptionsStatus]
-    AccessPolicies: Optional[AccessPoliciesStatus]
-    IPAddressType: Optional[IPAddressTypeStatus]
-    SnapshotOptions: Optional[SnapshotOptionsStatus]
-    VPCOptions: Optional[VPCDerivedInfoStatus]
-    CognitoOptions: Optional[CognitoOptionsStatus]
-    EncryptionAtRestOptions: Optional[EncryptionAtRestOptionsStatus]
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptionsStatus]
-    AdvancedOptions: Optional[AdvancedOptionsStatus]
-    LogPublishingOptions: Optional[LogPublishingOptionsStatus]
-    DomainEndpointOptions: Optional[DomainEndpointOptionsStatus]
-    AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsStatus]
-    IdentityCenterOptions: Optional[IdentityCenterOptionsStatus]
-    AutoTuneOptions: Optional[AutoTuneOptionsStatus]
-    ChangeProgressDetails: Optional[ChangeProgressDetails]
-    OffPeakWindowOptions: Optional[OffPeakWindowOptionsStatus]
-    SoftwareUpdateOptions: Optional[SoftwareUpdateOptionsStatus]
-    ModifyingProperties: Optional[ModifyingPropertiesList]
-    AIMLOptions: Optional[AIMLOptionsStatus]
+    EngineVersion: VersionStatus | None
+    ClusterConfig: ClusterConfigStatus | None
+    EBSOptions: EBSOptionsStatus | None
+    AccessPolicies: AccessPoliciesStatus | None
+    IPAddressType: IPAddressTypeStatus | None
+    SnapshotOptions: SnapshotOptionsStatus | None
+    VPCOptions: VPCDerivedInfoStatus | None
+    CognitoOptions: CognitoOptionsStatus | None
+    EncryptionAtRestOptions: EncryptionAtRestOptionsStatus | None
+    NodeToNodeEncryptionOptions: NodeToNodeEncryptionOptionsStatus | None
+    AdvancedOptions: AdvancedOptionsStatus | None
+    LogPublishingOptions: LogPublishingOptionsStatus | None
+    DomainEndpointOptions: DomainEndpointOptionsStatus | None
+    AdvancedSecurityOptions: AdvancedSecurityOptionsStatus | None
+    IdentityCenterOptions: IdentityCenterOptionsStatus | None
+    AutoTuneOptions: AutoTuneOptionsStatus | None
+    ChangeProgressDetails: ChangeProgressDetails | None
+    OffPeakWindowOptions: OffPeakWindowOptionsStatus | None
+    SoftwareUpdateOptions: SoftwareUpdateOptionsStatus | None
+    ModifyingProperties: ModifyingPropertiesList | None
+    AIMLOptions: AIMLOptionsStatus | None
 
 
 class DescribeDomainConfigResponse(TypedDict, total=False):
@@ -1783,26 +1783,26 @@ class DescribeDomainHealthRequest(ServiceRequest):
 
 
 class EnvironmentInfo(TypedDict, total=False):
-    AvailabilityZoneInformation: Optional[AvailabilityZoneInfoList]
+    AvailabilityZoneInformation: AvailabilityZoneInfoList | None
 
 
-EnvironmentInfoList = List[EnvironmentInfo]
+EnvironmentInfoList = list[EnvironmentInfo]
 
 
 class DescribeDomainHealthResponse(TypedDict, total=False):
-    DomainState: Optional[DomainState]
-    AvailabilityZoneCount: Optional[NumberOfAZs]
-    ActiveAvailabilityZoneCount: Optional[NumberOfAZs]
-    StandByAvailabilityZoneCount: Optional[NumberOfAZs]
-    DataNodeCount: Optional[NumberOfNodes]
-    DedicatedMaster: Optional[Boolean]
-    MasterEligibleNodeCount: Optional[NumberOfNodes]
-    WarmNodeCount: Optional[NumberOfNodes]
-    MasterNode: Optional[MasterNodeStatus]
-    ClusterHealth: Optional[DomainHealth]
-    TotalShards: Optional[NumberOfShards]
-    TotalUnAssignedShards: Optional[NumberOfShards]
-    EnvironmentInformation: Optional[EnvironmentInfoList]
+    DomainState: DomainState | None
+    AvailabilityZoneCount: NumberOfAZs | None
+    ActiveAvailabilityZoneCount: NumberOfAZs | None
+    StandByAvailabilityZoneCount: NumberOfAZs | None
+    DataNodeCount: NumberOfNodes | None
+    DedicatedMaster: Boolean | None
+    MasterEligibleNodeCount: NumberOfNodes | None
+    WarmNodeCount: NumberOfNodes | None
+    MasterNode: MasterNodeStatus | None
+    ClusterHealth: DomainHealth | None
+    TotalShards: NumberOfShards | None
+    TotalUnAssignedShards: NumberOfShards | None
+    EnvironmentInformation: EnvironmentInfoList | None
 
 
 class DescribeDomainNodesRequest(ServiceRequest):
@@ -1810,21 +1810,21 @@ class DescribeDomainNodesRequest(ServiceRequest):
 
 
 class DomainNodesStatus(TypedDict, total=False):
-    NodeId: Optional[NodeId]
-    NodeType: Optional[NodeType]
-    AvailabilityZone: Optional[AvailabilityZone]
-    InstanceType: Optional[OpenSearchPartitionInstanceType]
-    NodeStatus: Optional[NodeStatus]
-    StorageType: Optional[StorageTypeName]
-    StorageVolumeType: Optional[VolumeType]
-    StorageSize: Optional[VolumeSize]
+    NodeId: NodeId | None
+    NodeType: NodeType | None
+    AvailabilityZone: AvailabilityZone | None
+    InstanceType: OpenSearchPartitionInstanceType | None
+    NodeStatus: NodeStatus | None
+    StorageType: StorageTypeName | None
+    StorageVolumeType: VolumeType | None
+    StorageSize: VolumeSize | None
 
 
-DomainNodesStatusList = List[DomainNodesStatus]
+DomainNodesStatusList = list[DomainNodesStatus]
 
 
 class DescribeDomainNodesResponse(TypedDict, total=False):
-    DomainNodesStatusList: Optional[DomainNodesStatusList]
+    DomainNodesStatusList: DomainNodesStatusList | None
 
 
 class DescribeDomainRequest(ServiceRequest):
@@ -1835,14 +1835,14 @@ class DescribeDomainResponse(TypedDict, total=False):
     DomainStatus: DomainStatus
 
 
-DomainNameList = List[DomainName]
+DomainNameList = list[DomainName]
 
 
 class DescribeDomainsRequest(ServiceRequest):
     DomainNames: DomainNameList
 
 
-DomainStatusList = List[DomainStatus]
+DomainStatusList = list[DomainStatus]
 
 
 class DescribeDomainsResponse(TypedDict, total=False):
@@ -1851,21 +1851,21 @@ class DescribeDomainsResponse(TypedDict, total=False):
 
 class DescribeDryRunProgressRequest(ServiceRequest):
     DomainName: DomainName
-    DryRunId: Optional[GUID]
-    LoadDryRunConfig: Optional[Boolean]
+    DryRunId: GUID | None
+    LoadDryRunConfig: Boolean | None
 
 
 class DryRunResults(TypedDict, total=False):
-    DeploymentType: Optional[DeploymentType]
-    Message: Optional[Message]
+    DeploymentType: DeploymentType | None
+    Message: Message | None
 
 
 class ValidationFailure(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
+    Code: String | None
+    Message: String | None
 
 
-ValidationFailures = List[ValidationFailure]
+ValidationFailures = list[ValidationFailure]
 
 
 class DryRunProgressStatus(TypedDict, total=False):
@@ -1873,189 +1873,189 @@ class DryRunProgressStatus(TypedDict, total=False):
     DryRunStatus: String
     CreationDate: String
     UpdateDate: String
-    ValidationFailures: Optional[ValidationFailures]
+    ValidationFailures: ValidationFailures | None
 
 
 class DescribeDryRunProgressResponse(TypedDict, total=False):
-    DryRunProgressStatus: Optional[DryRunProgressStatus]
-    DryRunConfig: Optional[DomainStatus]
-    DryRunResults: Optional[DryRunResults]
+    DryRunProgressStatus: DryRunProgressStatus | None
+    DryRunConfig: DomainStatus | None
+    DryRunResults: DryRunResults | None
 
 
-ValueStringList = List[NonEmptyString]
+ValueStringList = list[NonEmptyString]
 
 
 class Filter(TypedDict, total=False):
-    Name: Optional[NonEmptyString]
-    Values: Optional[ValueStringList]
+    Name: NonEmptyString | None
+    Values: ValueStringList | None
 
 
-FilterList = List[Filter]
+FilterList = list[Filter]
 
 
 class DescribeInboundConnectionsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: FilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-InboundConnections = List[InboundConnection]
+InboundConnections = list[InboundConnection]
 
 
 class DescribeInboundConnectionsResponse(TypedDict, total=False):
-    Connections: Optional[InboundConnections]
-    NextToken: Optional[NextToken]
+    Connections: InboundConnections | None
+    NextToken: NextToken | None
 
 
 class DescribeInstanceTypeLimitsRequest(ServiceRequest):
-    DomainName: Optional[DomainName]
+    DomainName: DomainName | None
     InstanceType: OpenSearchPartitionInstanceType
     EngineVersion: VersionString
 
 
 class InstanceCountLimits(TypedDict, total=False):
-    MinimumInstanceCount: Optional[MinimumInstanceCount]
-    MaximumInstanceCount: Optional[MaximumInstanceCount]
+    MinimumInstanceCount: MinimumInstanceCount | None
+    MaximumInstanceCount: MaximumInstanceCount | None
 
 
 class InstanceLimits(TypedDict, total=False):
-    InstanceCountLimits: Optional[InstanceCountLimits]
+    InstanceCountLimits: InstanceCountLimits | None
 
 
 class StorageTypeLimit(TypedDict, total=False):
-    LimitName: Optional[LimitName]
-    LimitValues: Optional[LimitValueList]
+    LimitName: LimitName | None
+    LimitValues: LimitValueList | None
 
 
-StorageTypeLimitList = List[StorageTypeLimit]
+StorageTypeLimitList = list[StorageTypeLimit]
 
 
 class StorageType(TypedDict, total=False):
-    StorageTypeName: Optional[StorageTypeName]
-    StorageSubTypeName: Optional[StorageSubTypeName]
-    StorageTypeLimits: Optional[StorageTypeLimitList]
+    StorageTypeName: StorageTypeName | None
+    StorageSubTypeName: StorageSubTypeName | None
+    StorageTypeLimits: StorageTypeLimitList | None
 
 
-StorageTypeList = List[StorageType]
+StorageTypeList = list[StorageType]
 
 
 class Limits(TypedDict, total=False):
-    StorageTypes: Optional[StorageTypeList]
-    InstanceLimits: Optional[InstanceLimits]
-    AdditionalLimits: Optional[AdditionalLimitList]
+    StorageTypes: StorageTypeList | None
+    InstanceLimits: InstanceLimits | None
+    AdditionalLimits: AdditionalLimitList | None
 
 
-LimitsByRole = Dict[InstanceRole, Limits]
+LimitsByRole = dict[InstanceRole, Limits]
 
 
 class DescribeInstanceTypeLimitsResponse(TypedDict, total=False):
-    LimitsByRole: Optional[LimitsByRole]
+    LimitsByRole: LimitsByRole | None
 
 
 class DescribeOutboundConnectionsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: FilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-OutboundConnections = List[OutboundConnection]
+OutboundConnections = list[OutboundConnection]
 
 
 class DescribeOutboundConnectionsResponse(TypedDict, total=False):
-    Connections: Optional[OutboundConnections]
-    NextToken: Optional[NextToken]
+    Connections: OutboundConnections | None
+    NextToken: NextToken | None
 
 
-DescribePackagesFilterValues = List[DescribePackagesFilterValue]
+DescribePackagesFilterValues = list[DescribePackagesFilterValue]
 
 
 class DescribePackagesFilter(TypedDict, total=False):
-    Name: Optional[DescribePackagesFilterName]
-    Value: Optional[DescribePackagesFilterValues]
+    Name: DescribePackagesFilterName | None
+    Value: DescribePackagesFilterValues | None
 
 
-DescribePackagesFilterList = List[DescribePackagesFilter]
+DescribePackagesFilterList = list[DescribePackagesFilter]
 
 
 class DescribePackagesRequest(ServiceRequest):
-    Filters: Optional[DescribePackagesFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: DescribePackagesFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-PackageDetailsList = List[PackageDetails]
+PackageDetailsList = list[PackageDetails]
 
 
 class DescribePackagesResponse(TypedDict, total=False):
-    PackageDetailsList: Optional[PackageDetailsList]
-    NextToken: Optional[String]
+    PackageDetailsList: PackageDetailsList | None
+    NextToken: String | None
 
 
 class DescribeReservedInstanceOfferingsRequest(ServiceRequest):
-    ReservedInstanceOfferingId: Optional[GUID]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    ReservedInstanceOfferingId: GUID | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class RecurringCharge(TypedDict, total=False):
-    RecurringChargeAmount: Optional[Double]
-    RecurringChargeFrequency: Optional[String]
+    RecurringChargeAmount: Double | None
+    RecurringChargeFrequency: String | None
 
 
-RecurringChargeList = List[RecurringCharge]
+RecurringChargeList = list[RecurringCharge]
 
 
 class ReservedInstanceOffering(TypedDict, total=False):
-    ReservedInstanceOfferingId: Optional[GUID]
-    InstanceType: Optional[OpenSearchPartitionInstanceType]
-    Duration: Optional[Integer]
-    FixedPrice: Optional[Double]
-    UsagePrice: Optional[Double]
-    CurrencyCode: Optional[String]
-    PaymentOption: Optional[ReservedInstancePaymentOption]
-    RecurringCharges: Optional[RecurringChargeList]
+    ReservedInstanceOfferingId: GUID | None
+    InstanceType: OpenSearchPartitionInstanceType | None
+    Duration: Integer | None
+    FixedPrice: Double | None
+    UsagePrice: Double | None
+    CurrencyCode: String | None
+    PaymentOption: ReservedInstancePaymentOption | None
+    RecurringCharges: RecurringChargeList | None
 
 
-ReservedInstanceOfferingList = List[ReservedInstanceOffering]
+ReservedInstanceOfferingList = list[ReservedInstanceOffering]
 
 
 class DescribeReservedInstanceOfferingsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    ReservedInstanceOfferings: Optional[ReservedInstanceOfferingList]
+    NextToken: NextToken | None
+    ReservedInstanceOfferings: ReservedInstanceOfferingList | None
 
 
 class DescribeReservedInstancesRequest(ServiceRequest):
-    ReservedInstanceId: Optional[GUID]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    ReservedInstanceId: GUID | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ReservedInstance(TypedDict, total=False):
-    ReservationName: Optional[ReservationToken]
-    ReservedInstanceId: Optional[GUID]
-    BillingSubscriptionId: Optional[Long]
-    ReservedInstanceOfferingId: Optional[String]
-    InstanceType: Optional[OpenSearchPartitionInstanceType]
-    StartTime: Optional[UpdateTimestamp]
-    Duration: Optional[Integer]
-    FixedPrice: Optional[Double]
-    UsagePrice: Optional[Double]
-    CurrencyCode: Optional[String]
-    InstanceCount: Optional[Integer]
-    State: Optional[String]
-    PaymentOption: Optional[ReservedInstancePaymentOption]
-    RecurringCharges: Optional[RecurringChargeList]
+    ReservationName: ReservationToken | None
+    ReservedInstanceId: GUID | None
+    BillingSubscriptionId: Long | None
+    ReservedInstanceOfferingId: String | None
+    InstanceType: OpenSearchPartitionInstanceType | None
+    StartTime: UpdateTimestamp | None
+    Duration: Integer | None
+    FixedPrice: Double | None
+    UsagePrice: Double | None
+    CurrencyCode: String | None
+    InstanceCount: Integer | None
+    State: String | None
+    PaymentOption: ReservedInstancePaymentOption | None
+    RecurringCharges: RecurringChargeList | None
 
 
-ReservedInstanceList = List[ReservedInstance]
+ReservedInstanceList = list[ReservedInstance]
 
 
 class DescribeReservedInstancesResponse(TypedDict, total=False):
-    NextToken: Optional[String]
-    ReservedInstances: Optional[ReservedInstanceList]
+    NextToken: String | None
+    ReservedInstances: ReservedInstanceList | None
 
 
-VpcEndpointIdList = List[VpcEndpointId]
+VpcEndpointIdList = list[VpcEndpointId]
 
 
 class DescribeVpcEndpointsRequest(ServiceRequest):
@@ -2063,13 +2063,13 @@ class DescribeVpcEndpointsRequest(ServiceRequest):
 
 
 class VpcEndpointError(TypedDict, total=False):
-    VpcEndpointId: Optional[VpcEndpointId]
-    ErrorCode: Optional[VpcEndpointErrorCode]
-    ErrorMessage: Optional[String]
+    VpcEndpointId: VpcEndpointId | None
+    ErrorCode: VpcEndpointErrorCode | None
+    ErrorMessage: String | None
 
 
-VpcEndpointErrorList = List[VpcEndpointError]
-VpcEndpoints = List[VpcEndpoint]
+VpcEndpointErrorList = list[VpcEndpointError]
+VpcEndpoints = list[VpcEndpoint]
 
 
 class DescribeVpcEndpointsResponse(TypedDict, total=False):
@@ -2078,15 +2078,15 @@ class DescribeVpcEndpointsResponse(TypedDict, total=False):
 
 
 class DirectQueryDataSource(TypedDict, total=False):
-    DataSourceName: Optional[DirectQueryDataSourceName]
-    DataSourceType: Optional[DirectQueryDataSourceType]
-    Description: Optional[DirectQueryDataSourceDescription]
-    OpenSearchArns: Optional[DirectQueryOpenSearchARNList]
-    DataSourceArn: Optional[String]
-    TagList: Optional[TagList]
+    DataSourceName: DirectQueryDataSourceName | None
+    DataSourceType: DirectQueryDataSourceType | None
+    Description: DirectQueryDataSourceDescription | None
+    OpenSearchArns: DirectQueryOpenSearchARNList | None
+    DataSourceArn: String | None
+    TagList: TagList | None
 
 
-DirectQueryDataSourceList = List[DirectQueryDataSource]
+DirectQueryDataSourceList = list[DirectQueryDataSource]
 
 
 class DissociatePackageRequest(ServiceRequest):
@@ -2095,7 +2095,7 @@ class DissociatePackageRequest(ServiceRequest):
 
 
 class DissociatePackageResponse(TypedDict, total=False):
-    DomainPackageDetails: Optional[DomainPackageDetails]
+    DomainPackageDetails: DomainPackageDetails | None
 
 
 class DissociatePackagesRequest(ServiceRequest):
@@ -2104,29 +2104,29 @@ class DissociatePackagesRequest(ServiceRequest):
 
 
 class DissociatePackagesResponse(TypedDict, total=False):
-    DomainPackageDetailsList: Optional[DomainPackageDetailsList]
+    DomainPackageDetailsList: DomainPackageDetailsList | None
 
 
 class DomainInfo(TypedDict, total=False):
-    DomainName: Optional[DomainName]
-    EngineType: Optional[EngineType]
+    DomainName: DomainName | None
+    EngineType: EngineType | None
 
 
-DomainInfoList = List[DomainInfo]
+DomainInfoList = list[DomainInfo]
 
 
 class DomainMaintenanceDetails(TypedDict, total=False):
-    MaintenanceId: Optional[RequestId]
-    DomainName: Optional[DomainName]
-    Action: Optional[MaintenanceType]
-    NodeId: Optional[NodeId]
-    Status: Optional[MaintenanceStatus]
-    StatusMessage: Optional[MaintenanceStatusMessage]
-    CreatedAt: Optional[UpdateTimestamp]
-    UpdatedAt: Optional[UpdateTimestamp]
+    MaintenanceId: RequestId | None
+    DomainName: DomainName | None
+    Action: MaintenanceType | None
+    NodeId: NodeId | None
+    Status: MaintenanceStatus | None
+    StatusMessage: MaintenanceStatusMessage | None
+    CreatedAt: UpdateTimestamp | None
+    UpdatedAt: UpdateTimestamp | None
 
 
-DomainMaintenanceList = List[DomainMaintenanceDetails]
+DomainMaintenanceList = list[DomainMaintenanceDetails]
 
 
 class GetApplicationRequest(ServiceRequest):
@@ -2134,24 +2134,24 @@ class GetApplicationRequest(ServiceRequest):
 
 
 class GetApplicationResponse(TypedDict, total=False):
-    id: Optional[Id]
-    arn: Optional[ARN]
-    name: Optional[ApplicationName]
-    endpoint: Optional[String]
-    status: Optional[ApplicationStatus]
-    iamIdentityCenterOptions: Optional[IamIdentityCenterOptions]
-    dataSources: Optional[DataSources]
-    appConfigs: Optional[AppConfigs]
-    createdAt: Optional[Timestamp]
-    lastUpdatedAt: Optional[Timestamp]
+    id: Id | None
+    arn: ARN | None
+    name: ApplicationName | None
+    endpoint: String | None
+    status: ApplicationStatus | None
+    iamIdentityCenterOptions: IamIdentityCenterOptions | None
+    dataSources: DataSources | None
+    appConfigs: AppConfigs | None
+    createdAt: Timestamp | None
+    lastUpdatedAt: Timestamp | None
 
 
 class GetCompatibleVersionsRequest(ServiceRequest):
-    DomainName: Optional[DomainName]
+    DomainName: DomainName | None
 
 
 class GetCompatibleVersionsResponse(TypedDict, total=False):
-    CompatibleVersions: Optional[CompatibleVersionsList]
+    CompatibleVersions: CompatibleVersionsList | None
 
 
 class GetDataSourceRequest(ServiceRequest):
@@ -2160,10 +2160,18 @@ class GetDataSourceRequest(ServiceRequest):
 
 
 class GetDataSourceResponse(TypedDict, total=False):
-    DataSourceType: Optional[DataSourceType]
-    Name: Optional[DataSourceName]
-    Description: Optional[DataSourceDescription]
-    Status: Optional[DataSourceStatus]
+    DataSourceType: DataSourceType | None
+    Name: DataSourceName | None
+    Description: DataSourceDescription | None
+    Status: DataSourceStatus | None
+
+
+class GetDefaultApplicationSettingRequest(ServiceRequest):
+    pass
+
+
+class GetDefaultApplicationSettingResponse(TypedDict, total=False):
+    applicationArn: ARN | None
 
 
 class GetDirectQueryDataSourceRequest(ServiceRequest):
@@ -2171,11 +2179,11 @@ class GetDirectQueryDataSourceRequest(ServiceRequest):
 
 
 class GetDirectQueryDataSourceResponse(TypedDict, total=False):
-    DataSourceName: Optional[DirectQueryDataSourceName]
-    DataSourceType: Optional[DirectQueryDataSourceType]
-    Description: Optional[DirectQueryDataSourceDescription]
-    OpenSearchArns: Optional[DirectQueryOpenSearchARNList]
-    DataSourceArn: Optional[String]
+    DataSourceName: DirectQueryDataSourceName | None
+    DataSourceType: DirectQueryDataSourceType | None
+    Description: DirectQueryDataSourceDescription | None
+    OpenSearchArns: DirectQueryOpenSearchARNList | None
+    DataSourceArn: String | None
 
 
 class GetDomainMaintenanceStatusRequest(ServiceRequest):
@@ -2184,70 +2192,70 @@ class GetDomainMaintenanceStatusRequest(ServiceRequest):
 
 
 class GetDomainMaintenanceStatusResponse(TypedDict, total=False):
-    Status: Optional[MaintenanceStatus]
-    StatusMessage: Optional[MaintenanceStatusMessage]
-    NodeId: Optional[NodeId]
-    Action: Optional[MaintenanceType]
-    CreatedAt: Optional[UpdateTimestamp]
-    UpdatedAt: Optional[UpdateTimestamp]
+    Status: MaintenanceStatus | None
+    StatusMessage: MaintenanceStatusMessage | None
+    NodeId: NodeId | None
+    Action: MaintenanceType | None
+    CreatedAt: UpdateTimestamp | None
+    UpdatedAt: UpdateTimestamp | None
 
 
 class GetPackageVersionHistoryRequest(ServiceRequest):
     PackageID: PackageID
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class PackageVersionHistory(TypedDict, total=False):
-    PackageVersion: Optional[PackageVersion]
-    CommitMessage: Optional[CommitMessage]
-    CreatedAt: Optional[CreatedAt]
-    PluginProperties: Optional[PluginProperties]
-    PackageConfiguration: Optional[PackageConfiguration]
+    PackageVersion: PackageVersion | None
+    CommitMessage: CommitMessage | None
+    CreatedAt: CreatedAt | None
+    PluginProperties: PluginProperties | None
+    PackageConfiguration: PackageConfiguration | None
 
 
-PackageVersionHistoryList = List[PackageVersionHistory]
+PackageVersionHistoryList = list[PackageVersionHistory]
 
 
 class GetPackageVersionHistoryResponse(TypedDict, total=False):
-    PackageID: Optional[PackageID]
-    PackageVersionHistoryList: Optional[PackageVersionHistoryList]
-    NextToken: Optional[String]
+    PackageID: PackageID | None
+    PackageVersionHistoryList: PackageVersionHistoryList | None
+    NextToken: String | None
 
 
 class GetUpgradeHistoryRequest(ServiceRequest):
     DomainName: DomainName
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-Issues = List[Issue]
+Issues = list[Issue]
 
 
 class UpgradeStepItem(TypedDict, total=False):
-    UpgradeStep: Optional[UpgradeStep]
-    UpgradeStepStatus: Optional[UpgradeStatus]
-    Issues: Optional[Issues]
-    ProgressPercent: Optional[Double]
+    UpgradeStep: UpgradeStep | None
+    UpgradeStepStatus: UpgradeStatus | None
+    Issues: Issues | None
+    ProgressPercent: Double | None
 
 
-UpgradeStepsList = List[UpgradeStepItem]
+UpgradeStepsList = list[UpgradeStepItem]
 StartTimestamp = datetime
 
 
 class UpgradeHistory(TypedDict, total=False):
-    UpgradeName: Optional[UpgradeName]
-    StartTimestamp: Optional[StartTimestamp]
-    UpgradeStatus: Optional[UpgradeStatus]
-    StepsList: Optional[UpgradeStepsList]
+    UpgradeName: UpgradeName | None
+    StartTimestamp: StartTimestamp | None
+    UpgradeStatus: UpgradeStatus | None
+    StepsList: UpgradeStepsList | None
 
 
-UpgradeHistoryList = List[UpgradeHistory]
+UpgradeHistoryList = list[UpgradeHistory]
 
 
 class GetUpgradeHistoryResponse(TypedDict, total=False):
-    UpgradeHistories: Optional[UpgradeHistoryList]
-    NextToken: Optional[String]
+    UpgradeHistories: UpgradeHistoryList | None
+    NextToken: String | None
 
 
 class GetUpgradeStatusRequest(ServiceRequest):
@@ -2255,37 +2263,37 @@ class GetUpgradeStatusRequest(ServiceRequest):
 
 
 class GetUpgradeStatusResponse(TypedDict, total=False):
-    UpgradeStep: Optional[UpgradeStep]
-    StepStatus: Optional[UpgradeStatus]
-    UpgradeName: Optional[UpgradeName]
+    UpgradeStep: UpgradeStep | None
+    StepStatus: UpgradeStatus | None
+    UpgradeName: UpgradeName | None
 
 
-InstanceRoleList = List[InstanceRole]
+InstanceRoleList = list[InstanceRole]
 
 
 class InstanceTypeDetails(TypedDict, total=False):
-    InstanceType: Optional[OpenSearchPartitionInstanceType]
-    EncryptionEnabled: Optional[Boolean]
-    CognitoEnabled: Optional[Boolean]
-    AppLogsEnabled: Optional[Boolean]
-    AdvancedSecurityEnabled: Optional[Boolean]
-    WarmEnabled: Optional[Boolean]
-    InstanceRole: Optional[InstanceRoleList]
-    AvailabilityZones: Optional[AvailabilityZoneList]
+    InstanceType: OpenSearchPartitionInstanceType | None
+    EncryptionEnabled: Boolean | None
+    CognitoEnabled: Boolean | None
+    AppLogsEnabled: Boolean | None
+    AdvancedSecurityEnabled: Boolean | None
+    WarmEnabled: Boolean | None
+    InstanceRole: InstanceRoleList | None
+    AvailabilityZones: AvailabilityZoneList | None
 
 
-InstanceTypeDetailsList = List[InstanceTypeDetails]
+InstanceTypeDetailsList = list[InstanceTypeDetails]
 
 
 class ListApplicationsRequest(ServiceRequest):
-    nextToken: Optional[NextToken]
-    statuses: Optional[ApplicationStatuses]
-    maxResults: Optional[MaxResults]
+    nextToken: NextToken | None
+    statuses: ApplicationStatuses | None
+    maxResults: MaxResults | None
 
 
 class ListApplicationsResponse(TypedDict, total=False):
-    ApplicationSummaries: Optional[ApplicationSummaries]
-    nextToken: Optional[NextToken]
+    ApplicationSummaries: ApplicationSummaries | None
+    nextToken: NextToken | None
 
 
 class ListDataSourcesRequest(ServiceRequest):
@@ -2293,79 +2301,79 @@ class ListDataSourcesRequest(ServiceRequest):
 
 
 class ListDataSourcesResponse(TypedDict, total=False):
-    DataSources: Optional[DataSourceList]
+    DataSources: DataSourceList | None
 
 
 class ListDirectQueryDataSourcesRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListDirectQueryDataSourcesResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    DirectQueryDataSources: Optional[DirectQueryDataSourceList]
+    NextToken: NextToken | None
+    DirectQueryDataSources: DirectQueryDataSourceList | None
 
 
 class ListDomainMaintenancesRequest(ServiceRequest):
     DomainName: DomainName
-    Action: Optional[MaintenanceType]
-    Status: Optional[MaintenanceStatus]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Action: MaintenanceType | None
+    Status: MaintenanceStatus | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListDomainMaintenancesResponse(TypedDict, total=False):
-    DomainMaintenances: Optional[DomainMaintenanceList]
-    NextToken: Optional[NextToken]
+    DomainMaintenances: DomainMaintenanceList | None
+    NextToken: NextToken | None
 
 
 class ListDomainNamesRequest(ServiceRequest):
-    EngineType: Optional[EngineType]
+    EngineType: EngineType | None
 
 
 class ListDomainNamesResponse(TypedDict, total=False):
-    DomainNames: Optional[DomainInfoList]
+    DomainNames: DomainInfoList | None
 
 
 class ListDomainsForPackageRequest(ServiceRequest):
     PackageID: PackageID
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListDomainsForPackageResponse(TypedDict, total=False):
-    DomainPackageDetailsList: Optional[DomainPackageDetailsList]
-    NextToken: Optional[String]
+    DomainPackageDetailsList: DomainPackageDetailsList | None
+    NextToken: String | None
 
 
 class ListInstanceTypeDetailsRequest(ServiceRequest):
     EngineVersion: VersionString
-    DomainName: Optional[DomainName]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    RetrieveAZs: Optional[Boolean]
-    InstanceType: Optional[InstanceTypeString]
+    DomainName: DomainName | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    RetrieveAZs: Boolean | None
+    InstanceType: InstanceTypeString | None
 
 
 class ListInstanceTypeDetailsResponse(TypedDict, total=False):
-    InstanceTypeDetails: Optional[InstanceTypeDetailsList]
-    NextToken: Optional[NextToken]
+    InstanceTypeDetails: InstanceTypeDetailsList | None
+    NextToken: NextToken | None
 
 
 class ListPackagesForDomainRequest(ServiceRequest):
     DomainName: DomainName
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListPackagesForDomainResponse(TypedDict, total=False):
-    DomainPackageDetailsList: Optional[DomainPackageDetailsList]
-    NextToken: Optional[String]
+    DomainPackageDetailsList: DomainPackageDetailsList | None
+    NextToken: String | None
 
 
 class ListScheduledActionsRequest(ServiceRequest):
     DomainName: DomainName
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ScheduledAction(TypedDict, total=False):
@@ -2373,19 +2381,19 @@ class ScheduledAction(TypedDict, total=False):
     Type: ActionType
     Severity: ActionSeverity
     ScheduledTime: Long
-    Description: Optional[String]
-    ScheduledBy: Optional[ScheduledBy]
-    Status: Optional[ActionStatus]
-    Mandatory: Optional[Boolean]
-    Cancellable: Optional[Boolean]
+    Description: String | None
+    ScheduledBy: ScheduledBy | None
+    Status: ActionStatus | None
+    Mandatory: Boolean | None
+    Cancellable: Boolean | None
 
 
-ScheduledActionsList = List[ScheduledAction]
+ScheduledActionsList = list[ScheduledAction]
 
 
 class ListScheduledActionsResponse(TypedDict, total=False):
-    ScheduledActions: Optional[ScheduledActionsList]
-    NextToken: Optional[NextToken]
+    ScheduledActions: ScheduledActionsList | None
+    NextToken: NextToken | None
 
 
 class ListTagsRequest(ServiceRequest):
@@ -2393,22 +2401,22 @@ class ListTagsRequest(ServiceRequest):
 
 
 class ListTagsResponse(TypedDict, total=False):
-    TagList: Optional[TagList]
+    TagList: TagList | None
 
 
 class ListVersionsRequest(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListVersionsResponse(TypedDict, total=False):
-    Versions: Optional[VersionList]
-    NextToken: Optional[NextToken]
+    Versions: VersionList | None
+    NextToken: NextToken | None
 
 
 class ListVpcEndpointAccessRequest(ServiceRequest):
     DomainName: DomainName
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListVpcEndpointAccessResponse(TypedDict, total=False):
@@ -2418,10 +2426,10 @@ class ListVpcEndpointAccessResponse(TypedDict, total=False):
 
 class ListVpcEndpointsForDomainRequest(ServiceRequest):
     DomainName: DomainName
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
-VpcEndpointSummaryList = List[VpcEndpointSummary]
+VpcEndpointSummaryList = list[VpcEndpointSummary]
 
 
 class ListVpcEndpointsForDomainResponse(TypedDict, total=False):
@@ -2430,7 +2438,7 @@ class ListVpcEndpointsForDomainResponse(TypedDict, total=False):
 
 
 class ListVpcEndpointsRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListVpcEndpointsResponse(TypedDict, total=False):
@@ -2441,12 +2449,21 @@ class ListVpcEndpointsResponse(TypedDict, total=False):
 class PurchaseReservedInstanceOfferingRequest(ServiceRequest):
     ReservedInstanceOfferingId: GUID
     ReservationName: ReservationToken
-    InstanceCount: Optional[InstanceCount]
+    InstanceCount: InstanceCount | None
 
 
 class PurchaseReservedInstanceOfferingResponse(TypedDict, total=False):
-    ReservedInstanceId: Optional[GUID]
-    ReservationName: Optional[ReservationToken]
+    ReservedInstanceId: GUID | None
+    ReservationName: ReservationToken | None
+
+
+class PutDefaultApplicationSettingRequest(ServiceRequest):
+    applicationArn: ARN
+    setAsDefault: Boolean
+
+
+class PutDefaultApplicationSettingResponse(TypedDict, total=False):
+    applicationArn: ARN | None
 
 
 class RejectInboundConnectionRequest(ServiceRequest):
@@ -2454,7 +2471,7 @@ class RejectInboundConnectionRequest(ServiceRequest):
 
 
 class RejectInboundConnectionResponse(TypedDict, total=False):
-    Connection: Optional[InboundConnection]
+    Connection: InboundConnection | None
 
 
 class RemoveTagsRequest(ServiceRequest):
@@ -2464,8 +2481,8 @@ class RemoveTagsRequest(ServiceRequest):
 
 class RevokeVpcEndpointAccessRequest(ServiceRequest):
     DomainName: DomainName
-    Account: Optional[AWSAccount]
-    Service: Optional[AWSServicePrincipal]
+    Account: AWSAccount | None
+    Service: AWSServicePrincipal | None
 
 
 class RevokeVpcEndpointAccessResponse(TypedDict, total=False):
@@ -2475,104 +2492,104 @@ class RevokeVpcEndpointAccessResponse(TypedDict, total=False):
 class StartDomainMaintenanceRequest(ServiceRequest):
     DomainName: DomainName
     Action: MaintenanceType
-    NodeId: Optional[NodeId]
+    NodeId: NodeId | None
 
 
 class StartDomainMaintenanceResponse(TypedDict, total=False):
-    MaintenanceId: Optional[RequestId]
+    MaintenanceId: RequestId | None
 
 
 class StartServiceSoftwareUpdateRequest(ServiceRequest):
     DomainName: DomainName
-    ScheduleAt: Optional[ScheduleAt]
-    DesiredStartTime: Optional[Long]
+    ScheduleAt: ScheduleAt | None
+    DesiredStartTime: Long | None
 
 
 class StartServiceSoftwareUpdateResponse(TypedDict, total=False):
-    ServiceSoftwareOptions: Optional[ServiceSoftwareOptions]
+    ServiceSoftwareOptions: ServiceSoftwareOptions | None
 
 
 class UpdateApplicationRequest(ServiceRequest):
     id: Id
-    dataSources: Optional[DataSources]
-    appConfigs: Optional[AppConfigs]
+    dataSources: DataSources | None
+    appConfigs: AppConfigs | None
 
 
 class UpdateApplicationResponse(TypedDict, total=False):
-    id: Optional[Id]
-    name: Optional[ApplicationName]
-    arn: Optional[ARN]
-    dataSources: Optional[DataSources]
-    iamIdentityCenterOptions: Optional[IamIdentityCenterOptions]
-    appConfigs: Optional[AppConfigs]
-    createdAt: Optional[Timestamp]
-    lastUpdatedAt: Optional[Timestamp]
+    id: Id | None
+    name: ApplicationName | None
+    arn: ARN | None
+    dataSources: DataSources | None
+    iamIdentityCenterOptions: IamIdentityCenterOptions | None
+    appConfigs: AppConfigs | None
+    createdAt: Timestamp | None
+    lastUpdatedAt: Timestamp | None
 
 
 class UpdateDataSourceRequest(ServiceRequest):
     DomainName: DomainName
     Name: DataSourceName
     DataSourceType: DataSourceType
-    Description: Optional[DataSourceDescription]
-    Status: Optional[DataSourceStatus]
+    Description: DataSourceDescription | None
+    Status: DataSourceStatus | None
 
 
 class UpdateDataSourceResponse(TypedDict, total=False):
-    Message: Optional[String]
+    Message: String | None
 
 
 class UpdateDirectQueryDataSourceRequest(ServiceRequest):
     DataSourceName: DirectQueryDataSourceName
     DataSourceType: DirectQueryDataSourceType
-    Description: Optional[DirectQueryDataSourceDescription]
+    Description: DirectQueryDataSourceDescription | None
     OpenSearchArns: DirectQueryOpenSearchARNList
 
 
 class UpdateDirectQueryDataSourceResponse(TypedDict, total=False):
-    DataSourceArn: Optional[String]
+    DataSourceArn: String | None
 
 
 class UpdateDomainConfigRequest(ServiceRequest):
     DomainName: DomainName
-    ClusterConfig: Optional[ClusterConfig]
-    EBSOptions: Optional[EBSOptions]
-    SnapshotOptions: Optional[SnapshotOptions]
-    VPCOptions: Optional[VPCOptions]
-    CognitoOptions: Optional[CognitoOptions]
-    AdvancedOptions: Optional[AdvancedOptions]
-    AccessPolicies: Optional[PolicyDocument]
-    IPAddressType: Optional[IPAddressType]
-    LogPublishingOptions: Optional[LogPublishingOptions]
-    EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
-    DomainEndpointOptions: Optional[DomainEndpointOptions]
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions]
-    AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
-    IdentityCenterOptions: Optional[IdentityCenterOptionsInput]
-    AutoTuneOptions: Optional[AutoTuneOptions]
-    DryRun: Optional[DryRun]
-    DryRunMode: Optional[DryRunMode]
-    OffPeakWindowOptions: Optional[OffPeakWindowOptions]
-    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
-    AIMLOptions: Optional[AIMLOptionsInput]
+    ClusterConfig: ClusterConfig | None
+    EBSOptions: EBSOptions | None
+    SnapshotOptions: SnapshotOptions | None
+    VPCOptions: VPCOptions | None
+    CognitoOptions: CognitoOptions | None
+    AdvancedOptions: AdvancedOptions | None
+    AccessPolicies: PolicyDocument | None
+    IPAddressType: IPAddressType | None
+    LogPublishingOptions: LogPublishingOptions | None
+    EncryptionAtRestOptions: EncryptionAtRestOptions | None
+    DomainEndpointOptions: DomainEndpointOptions | None
+    NodeToNodeEncryptionOptions: NodeToNodeEncryptionOptions | None
+    AdvancedSecurityOptions: AdvancedSecurityOptionsInput | None
+    IdentityCenterOptions: IdentityCenterOptionsInput | None
+    AutoTuneOptions: AutoTuneOptions | None
+    DryRun: DryRun | None
+    DryRunMode: DryRunMode | None
+    OffPeakWindowOptions: OffPeakWindowOptions | None
+    SoftwareUpdateOptions: SoftwareUpdateOptions | None
+    AIMLOptions: AIMLOptionsInput | None
 
 
 class UpdateDomainConfigResponse(TypedDict, total=False):
     DomainConfig: DomainConfig
-    DryRunResults: Optional[DryRunResults]
-    DryRunProgressStatus: Optional[DryRunProgressStatus]
+    DryRunResults: DryRunResults | None
+    DryRunProgressStatus: DryRunProgressStatus | None
 
 
 class UpdatePackageRequest(ServiceRequest):
     PackageID: PackageID
     PackageSource: PackageSource
-    PackageDescription: Optional[PackageDescription]
-    CommitMessage: Optional[CommitMessage]
-    PackageConfiguration: Optional[PackageConfiguration]
-    PackageEncryptionOptions: Optional[PackageEncryptionOptions]
+    PackageDescription: PackageDescription | None
+    CommitMessage: CommitMessage | None
+    PackageConfiguration: PackageConfiguration | None
+    PackageEncryptionOptions: PackageEncryptionOptions | None
 
 
 class UpdatePackageResponse(TypedDict, total=False):
-    PackageDetails: Optional[PackageDetails]
+    PackageDetails: PackageDetails | None
 
 
 class UpdatePackageScopeRequest(ServiceRequest):
@@ -2582,9 +2599,9 @@ class UpdatePackageScopeRequest(ServiceRequest):
 
 
 class UpdatePackageScopeResponse(TypedDict, total=False):
-    PackageID: Optional[PackageID]
-    Operation: Optional[PackageScopeOperationEnum]
-    PackageUserList: Optional[PackageUserList]
+    PackageID: PackageID | None
+    Operation: PackageScopeOperationEnum | None
+    PackageUserList: PackageUserList | None
 
 
 class UpdateScheduledActionRequest(ServiceRequest):
@@ -2592,11 +2609,11 @@ class UpdateScheduledActionRequest(ServiceRequest):
     ActionID: String
     ActionType: ActionType
     ScheduleAt: ScheduleAt
-    DesiredStartTime: Optional[Long]
+    DesiredStartTime: Long | None
 
 
 class UpdateScheduledActionResponse(TypedDict, total=False):
-    ScheduledAction: Optional[ScheduledAction]
+    ScheduledAction: ScheduledAction | None
 
 
 class UpdateVpcEndpointRequest(ServiceRequest):
@@ -2611,22 +2628,22 @@ class UpdateVpcEndpointResponse(TypedDict, total=False):
 class UpgradeDomainRequest(ServiceRequest):
     DomainName: DomainName
     TargetVersion: VersionString
-    PerformCheckOnly: Optional[Boolean]
-    AdvancedOptions: Optional[AdvancedOptions]
+    PerformCheckOnly: Boolean | None
+    AdvancedOptions: AdvancedOptions | None
 
 
 class UpgradeDomainResponse(TypedDict, total=False):
-    UpgradeId: Optional[String]
-    DomainName: Optional[DomainName]
-    TargetVersion: Optional[VersionString]
-    PerformCheckOnly: Optional[Boolean]
-    AdvancedOptions: Optional[AdvancedOptions]
-    ChangeProgressDetails: Optional[ChangeProgressDetails]
+    UpgradeId: String | None
+    DomainName: DomainName | None
+    TargetVersion: VersionString | None
+    PerformCheckOnly: Boolean | None
+    AdvancedOptions: AdvancedOptions | None
+    ChangeProgressDetails: ChangeProgressDetails | None
 
 
 class OpensearchApi:
-    service = "opensearch"
-    version = "2021-01-01"
+    service: str = "opensearch"
+    version: str = "2021-01-01"
 
     @handler("AcceptInboundConnection")
     def accept_inbound_connection(
@@ -3009,6 +3026,12 @@ class OpensearchApi:
     ) -> GetDataSourceResponse:
         raise NotImplementedError
 
+    @handler("GetDefaultApplicationSetting")
+    def get_default_application_setting(
+        self, context: RequestContext, **kwargs
+    ) -> GetDefaultApplicationSettingResponse:
+        raise NotImplementedError
+
     @handler("GetDirectQueryDataSource")
     def get_direct_query_data_source(
         self, context: RequestContext, data_source_name: DirectQueryDataSourceName, **kwargs
@@ -3187,6 +3210,12 @@ class OpensearchApi:
         instance_count: InstanceCount | None = None,
         **kwargs,
     ) -> PurchaseReservedInstanceOfferingResponse:
+        raise NotImplementedError
+
+    @handler("PutDefaultApplicationSetting")
+    def put_default_application_setting(
+        self, context: RequestContext, application_arn: ARN, set_as_default: Boolean, **kwargs
+    ) -> PutDefaultApplicationSettingResponse:
         raise NotImplementedError
 
     @handler("RejectInboundConnection")

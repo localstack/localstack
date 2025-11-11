@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api import ServiceException as ServiceException
@@ -2577,6 +2577,19 @@ class InstanceType(StrEnum):
     m8a_48xlarge = "m8a.48xlarge"
     m8a_metal_24xl = "m8a.metal-24xl"
     m8a_metal_48xl = "m8a.metal-48xl"
+    trn2_3xlarge = "trn2.3xlarge"
+    r8a_medium = "r8a.medium"
+    r8a_large = "r8a.large"
+    r8a_xlarge = "r8a.xlarge"
+    r8a_2xlarge = "r8a.2xlarge"
+    r8a_4xlarge = "r8a.4xlarge"
+    r8a_8xlarge = "r8a.8xlarge"
+    r8a_12xlarge = "r8a.12xlarge"
+    r8a_16xlarge = "r8a.16xlarge"
+    r8a_24xlarge = "r8a.24xlarge"
+    r8a_48xlarge = "r8a.48xlarge"
+    r8a_metal_24xl = "r8a.metal-24xl"
+    r8a_metal_48xl = "r8a.metal-48xl"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -2844,6 +2857,10 @@ class IpamResourceType(StrEnum):
     public_ipv4_pool = "public-ipv4-pool"
     ipv6_pool = "ipv6-pool"
     eni = "eni"
+
+
+class IpamScopeExternalAuthorityType(StrEnum):
+    infoblox = "infoblox"
 
 
 class IpamScopeState(StrEnum):
@@ -4343,851 +4360,851 @@ class scope(StrEnum):
 
 
 class AcceleratorCount(TypedDict, total=False):
-    Min: Optional[Integer]
-    Max: Optional[Integer]
+    Min: Integer | None
+    Max: Integer | None
 
 
 class AcceleratorCountRequest(TypedDict, total=False):
-    Min: Optional[Integer]
-    Max: Optional[Integer]
+    Min: Integer | None
+    Max: Integer | None
 
 
-AcceleratorManufacturerSet = List[AcceleratorManufacturer]
-AcceleratorNameSet = List[AcceleratorName]
+AcceleratorManufacturerSet = list[AcceleratorManufacturer]
+AcceleratorNameSet = list[AcceleratorName]
 
 
 class AcceleratorTotalMemoryMiB(TypedDict, total=False):
-    Min: Optional[Integer]
-    Max: Optional[Integer]
+    Min: Integer | None
+    Max: Integer | None
 
 
 class AcceleratorTotalMemoryMiBRequest(TypedDict, total=False):
-    Min: Optional[Integer]
-    Max: Optional[Integer]
+    Min: Integer | None
+    Max: Integer | None
 
 
-AcceleratorTypeSet = List[AcceleratorType]
+AcceleratorTypeSet = list[AcceleratorType]
 
 
 class Tag(TypedDict, total=False):
-    Key: Optional[String]
-    Value: Optional[String]
+    Key: String | None
+    Value: String | None
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class TagSpecification(TypedDict, total=False):
-    ResourceType: Optional[ResourceType]
-    Tags: Optional[TagList]
+    ResourceType: ResourceType | None
+    Tags: TagList | None
 
 
-TagSpecificationList = List[TagSpecification]
+TagSpecificationList = list[TagSpecification]
 
 
 class AcceptAddressTransferRequest(ServiceRequest):
     Address: String
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 MillisecondDateTime = datetime
 
 
 class AddressTransfer(TypedDict, total=False):
-    PublicIp: Optional[String]
-    AllocationId: Optional[String]
-    TransferAccountId: Optional[String]
-    TransferOfferExpirationTimestamp: Optional[MillisecondDateTime]
-    TransferOfferAcceptedTimestamp: Optional[MillisecondDateTime]
-    AddressTransferStatus: Optional[AddressTransferStatus]
+    PublicIp: String | None
+    AllocationId: String | None
+    TransferAccountId: String | None
+    TransferOfferExpirationTimestamp: MillisecondDateTime | None
+    TransferOfferAcceptedTimestamp: MillisecondDateTime | None
+    AddressTransferStatus: AddressTransferStatus | None
 
 
 class AcceptAddressTransferResult(TypedDict, total=False):
-    AddressTransfer: Optional[AddressTransfer]
+    AddressTransfer: AddressTransfer | None
 
 
 class AcceptCapacityReservationBillingOwnershipRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     CapacityReservationId: CapacityReservationId
 
 
 class AcceptCapacityReservationBillingOwnershipResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class TargetConfigurationRequest(TypedDict, total=False):
-    InstanceCount: Optional[Integer]
+    InstanceCount: Integer | None
     OfferingId: ReservedInstancesOfferingId
 
 
-TargetConfigurationRequestSet = List[TargetConfigurationRequest]
-ReservedInstanceIdSet = List[ReservationId]
+TargetConfigurationRequestSet = list[TargetConfigurationRequest]
+ReservedInstanceIdSet = list[ReservationId]
 
 
 class AcceptReservedInstancesExchangeQuoteRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ReservedInstanceIds: ReservedInstanceIdSet
-    TargetConfigurations: Optional[TargetConfigurationRequestSet]
+    TargetConfigurations: TargetConfigurationRequestSet | None
 
 
 class AcceptReservedInstancesExchangeQuoteResult(TypedDict, total=False):
-    ExchangeId: Optional[String]
+    ExchangeId: String | None
 
 
-ValueStringList = List[String]
+ValueStringList = list[String]
 
 
 class AcceptTransitGatewayMulticastDomainAssociationsRequest(ServiceRequest):
-    TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    SubnetIds: Optional[ValueStringList]
-    DryRun: Optional[Boolean]
+    TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId | None
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    SubnetIds: ValueStringList | None
+    DryRun: Boolean | None
 
 
 class SubnetAssociation(TypedDict, total=False):
-    SubnetId: Optional[String]
-    State: Optional[TransitGatewayMulitcastDomainAssociationState]
+    SubnetId: String | None
+    State: TransitGatewayMulitcastDomainAssociationState | None
 
 
-SubnetAssociationList = List[SubnetAssociation]
+SubnetAssociationList = list[SubnetAssociation]
 
 
 class TransitGatewayMulticastDomainAssociations(TypedDict, total=False):
-    TransitGatewayMulticastDomainId: Optional[String]
-    TransitGatewayAttachmentId: Optional[String]
-    ResourceId: Optional[String]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
-    ResourceOwnerId: Optional[String]
-    Subnets: Optional[SubnetAssociationList]
+    TransitGatewayMulticastDomainId: String | None
+    TransitGatewayAttachmentId: String | None
+    ResourceId: String | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
+    ResourceOwnerId: String | None
+    Subnets: SubnetAssociationList | None
 
 
 class AcceptTransitGatewayMulticastDomainAssociationsResult(TypedDict, total=False):
-    Associations: Optional[TransitGatewayMulticastDomainAssociations]
+    Associations: TransitGatewayMulticastDomainAssociations | None
 
 
 class AcceptTransitGatewayPeeringAttachmentRequest(ServiceRequest):
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 DateTime = datetime
 
 
 class PeeringAttachmentStatus(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
+    Code: String | None
+    Message: String | None
 
 
 class TransitGatewayPeeringAttachmentOptions(TypedDict, total=False):
-    DynamicRouting: Optional[DynamicRoutingValue]
+    DynamicRouting: DynamicRoutingValue | None
 
 
 class PeeringTgwInfo(TypedDict, total=False):
-    TransitGatewayId: Optional[String]
-    CoreNetworkId: Optional[String]
-    OwnerId: Optional[String]
-    Region: Optional[String]
+    TransitGatewayId: String | None
+    CoreNetworkId: String | None
+    OwnerId: String | None
+    Region: String | None
 
 
 class TransitGatewayPeeringAttachment(TypedDict, total=False):
-    TransitGatewayAttachmentId: Optional[String]
-    AccepterTransitGatewayAttachmentId: Optional[String]
-    RequesterTgwInfo: Optional[PeeringTgwInfo]
-    AccepterTgwInfo: Optional[PeeringTgwInfo]
-    Options: Optional[TransitGatewayPeeringAttachmentOptions]
-    Status: Optional[PeeringAttachmentStatus]
-    State: Optional[TransitGatewayAttachmentState]
-    CreationTime: Optional[DateTime]
-    Tags: Optional[TagList]
+    TransitGatewayAttachmentId: String | None
+    AccepterTransitGatewayAttachmentId: String | None
+    RequesterTgwInfo: PeeringTgwInfo | None
+    AccepterTgwInfo: PeeringTgwInfo | None
+    Options: TransitGatewayPeeringAttachmentOptions | None
+    Status: PeeringAttachmentStatus | None
+    State: TransitGatewayAttachmentState | None
+    CreationTime: DateTime | None
+    Tags: TagList | None
 
 
 class AcceptTransitGatewayPeeringAttachmentResult(TypedDict, total=False):
-    TransitGatewayPeeringAttachment: Optional[TransitGatewayPeeringAttachment]
+    TransitGatewayPeeringAttachment: TransitGatewayPeeringAttachment | None
 
 
 class AcceptTransitGatewayVpcAttachmentRequest(ServiceRequest):
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class TransitGatewayVpcAttachmentOptions(TypedDict, total=False):
-    DnsSupport: Optional[DnsSupportValue]
-    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
-    Ipv6Support: Optional[Ipv6SupportValue]
-    ApplianceModeSupport: Optional[ApplianceModeSupportValue]
+    DnsSupport: DnsSupportValue | None
+    SecurityGroupReferencingSupport: SecurityGroupReferencingSupportValue | None
+    Ipv6Support: Ipv6SupportValue | None
+    ApplianceModeSupport: ApplianceModeSupportValue | None
 
 
 class TransitGatewayVpcAttachment(TypedDict, total=False):
-    TransitGatewayAttachmentId: Optional[String]
-    TransitGatewayId: Optional[String]
-    VpcId: Optional[String]
-    VpcOwnerId: Optional[String]
-    State: Optional[TransitGatewayAttachmentState]
-    SubnetIds: Optional[ValueStringList]
-    CreationTime: Optional[DateTime]
-    Options: Optional[TransitGatewayVpcAttachmentOptions]
-    Tags: Optional[TagList]
+    TransitGatewayAttachmentId: String | None
+    TransitGatewayId: String | None
+    VpcId: String | None
+    VpcOwnerId: String | None
+    State: TransitGatewayAttachmentState | None
+    SubnetIds: ValueStringList | None
+    CreationTime: DateTime | None
+    Options: TransitGatewayVpcAttachmentOptions | None
+    Tags: TagList | None
 
 
 class AcceptTransitGatewayVpcAttachmentResult(TypedDict, total=False):
-    TransitGatewayVpcAttachment: Optional[TransitGatewayVpcAttachment]
+    TransitGatewayVpcAttachment: TransitGatewayVpcAttachment | None
 
 
-VpcEndpointIdList = List[VpcEndpointId]
+VpcEndpointIdList = list[VpcEndpointId]
 
 
 class AcceptVpcEndpointConnectionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ServiceId: VpcEndpointServiceId
     VpcEndpointIds: VpcEndpointIdList
 
 
 class UnsuccessfulItemError(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
+    Code: String | None
+    Message: String | None
 
 
 class UnsuccessfulItem(TypedDict, total=False):
-    Error: Optional[UnsuccessfulItemError]
-    ResourceId: Optional[String]
+    Error: UnsuccessfulItemError | None
+    ResourceId: String | None
 
 
-UnsuccessfulItemSet = List[UnsuccessfulItem]
+UnsuccessfulItemSet = list[UnsuccessfulItem]
 
 
 class AcceptVpcEndpointConnectionsResult(TypedDict, total=False):
-    Unsuccessful: Optional[UnsuccessfulItemSet]
+    Unsuccessful: UnsuccessfulItemSet | None
 
 
 class AcceptVpcPeeringConnectionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     VpcPeeringConnectionId: VpcPeeringConnectionIdWithResolver
 
 
 class VpcPeeringConnectionStateReason(TypedDict, total=False):
-    Code: Optional[VpcPeeringConnectionStateReasonCode]
-    Message: Optional[String]
+    Code: VpcPeeringConnectionStateReasonCode | None
+    Message: String | None
 
 
 class VpcPeeringConnectionOptionsDescription(TypedDict, total=False):
-    AllowDnsResolutionFromRemoteVpc: Optional[Boolean]
-    AllowEgressFromLocalClassicLinkToRemoteVpc: Optional[Boolean]
-    AllowEgressFromLocalVpcToRemoteClassicLink: Optional[Boolean]
+    AllowDnsResolutionFromRemoteVpc: Boolean | None
+    AllowEgressFromLocalClassicLinkToRemoteVpc: Boolean | None
+    AllowEgressFromLocalVpcToRemoteClassicLink: Boolean | None
 
 
 class CidrBlock(TypedDict, total=False):
-    CidrBlock: Optional[String]
+    CidrBlock: String | None
 
 
-CidrBlockSet = List[CidrBlock]
+CidrBlockSet = list[CidrBlock]
 
 
 class Ipv6CidrBlock(TypedDict, total=False):
-    Ipv6CidrBlock: Optional[String]
+    Ipv6CidrBlock: String | None
 
 
-Ipv6CidrBlockSet = List[Ipv6CidrBlock]
+Ipv6CidrBlockSet = list[Ipv6CidrBlock]
 
 
 class VpcPeeringConnectionVpcInfo(TypedDict, total=False):
-    CidrBlock: Optional[String]
-    Ipv6CidrBlockSet: Optional[Ipv6CidrBlockSet]
-    CidrBlockSet: Optional[CidrBlockSet]
-    OwnerId: Optional[String]
-    PeeringOptions: Optional[VpcPeeringConnectionOptionsDescription]
-    VpcId: Optional[String]
-    Region: Optional[String]
+    CidrBlock: String | None
+    Ipv6CidrBlockSet: Ipv6CidrBlockSet | None
+    CidrBlockSet: CidrBlockSet | None
+    OwnerId: String | None
+    PeeringOptions: VpcPeeringConnectionOptionsDescription | None
+    VpcId: String | None
+    Region: String | None
 
 
 class VpcPeeringConnection(TypedDict, total=False):
-    AccepterVpcInfo: Optional[VpcPeeringConnectionVpcInfo]
-    ExpirationTime: Optional[DateTime]
-    RequesterVpcInfo: Optional[VpcPeeringConnectionVpcInfo]
-    Status: Optional[VpcPeeringConnectionStateReason]
-    Tags: Optional[TagList]
-    VpcPeeringConnectionId: Optional[String]
+    AccepterVpcInfo: VpcPeeringConnectionVpcInfo | None
+    ExpirationTime: DateTime | None
+    RequesterVpcInfo: VpcPeeringConnectionVpcInfo | None
+    Status: VpcPeeringConnectionStateReason | None
+    Tags: TagList | None
+    VpcPeeringConnectionId: String | None
 
 
 class AcceptVpcPeeringConnectionResult(TypedDict, total=False):
-    VpcPeeringConnection: Optional[VpcPeeringConnection]
+    VpcPeeringConnection: VpcPeeringConnection | None
 
 
 class PortRange(TypedDict, total=False):
-    From: Optional[Integer]
-    To: Optional[Integer]
+    From: Integer | None
+    To: Integer | None
 
 
-PortRangeList = List[PortRange]
+PortRangeList = list[PortRange]
 
 
 class FirewallStatefulRule(TypedDict, total=False):
-    RuleGroupArn: Optional[ResourceArn]
-    Sources: Optional[ValueStringList]
-    Destinations: Optional[ValueStringList]
-    SourcePorts: Optional[PortRangeList]
-    DestinationPorts: Optional[PortRangeList]
-    Protocol: Optional[String]
-    RuleAction: Optional[String]
-    Direction: Optional[String]
+    RuleGroupArn: ResourceArn | None
+    Sources: ValueStringList | None
+    Destinations: ValueStringList | None
+    SourcePorts: PortRangeList | None
+    DestinationPorts: PortRangeList | None
+    Protocol: String | None
+    RuleAction: String | None
+    Direction: String | None
 
 
-ProtocolIntList = List[ProtocolInt]
+ProtocolIntList = list[ProtocolInt]
 
 
 class FirewallStatelessRule(TypedDict, total=False):
-    RuleGroupArn: Optional[ResourceArn]
-    Sources: Optional[ValueStringList]
-    Destinations: Optional[ValueStringList]
-    SourcePorts: Optional[PortRangeList]
-    DestinationPorts: Optional[PortRangeList]
-    Protocols: Optional[ProtocolIntList]
-    RuleAction: Optional[String]
-    Priority: Optional[Priority]
+    RuleGroupArn: ResourceArn | None
+    Sources: ValueStringList | None
+    Destinations: ValueStringList | None
+    SourcePorts: PortRangeList | None
+    DestinationPorts: PortRangeList | None
+    Protocols: ProtocolIntList | None
+    RuleAction: String | None
+    Priority: Priority | None
 
 
 class AnalysisComponent(TypedDict, total=False):
-    Id: Optional[String]
-    Arn: Optional[String]
-    Name: Optional[String]
+    Id: String | None
+    Arn: String | None
+    Name: String | None
 
 
 class TransitGatewayRouteTableRoute(TypedDict, total=False):
-    DestinationCidr: Optional[String]
-    State: Optional[String]
-    RouteOrigin: Optional[String]
-    PrefixListId: Optional[String]
-    AttachmentId: Optional[String]
-    ResourceId: Optional[String]
-    ResourceType: Optional[String]
+    DestinationCidr: String | None
+    State: String | None
+    RouteOrigin: String | None
+    PrefixListId: String | None
+    AttachmentId: String | None
+    ResourceId: String | None
+    ResourceType: String | None
 
 
-AnalysisComponentList = List[AnalysisComponent]
+AnalysisComponentList = list[AnalysisComponent]
 
 
 class AnalysisSecurityGroupRule(TypedDict, total=False):
-    Cidr: Optional[String]
-    Direction: Optional[String]
-    SecurityGroupId: Optional[String]
-    PortRange: Optional[PortRange]
-    PrefixListId: Optional[String]
-    Protocol: Optional[String]
+    Cidr: String | None
+    Direction: String | None
+    SecurityGroupId: String | None
+    PortRange: PortRange | None
+    PrefixListId: String | None
+    Protocol: String | None
 
 
 class AnalysisRouteTableRoute(TypedDict, total=False):
-    DestinationCidr: Optional[String]
-    DestinationPrefixListId: Optional[String]
-    EgressOnlyInternetGatewayId: Optional[String]
-    GatewayId: Optional[String]
-    InstanceId: Optional[String]
-    NatGatewayId: Optional[String]
-    NetworkInterfaceId: Optional[String]
-    Origin: Optional[String]
-    TransitGatewayId: Optional[String]
-    VpcPeeringConnectionId: Optional[String]
-    State: Optional[String]
-    CarrierGatewayId: Optional[String]
-    CoreNetworkArn: Optional[ResourceArn]
-    LocalGatewayId: Optional[String]
+    DestinationCidr: String | None
+    DestinationPrefixListId: String | None
+    EgressOnlyInternetGatewayId: String | None
+    GatewayId: String | None
+    InstanceId: String | None
+    NatGatewayId: String | None
+    NetworkInterfaceId: String | None
+    Origin: String | None
+    TransitGatewayId: String | None
+    VpcPeeringConnectionId: String | None
+    State: String | None
+    CarrierGatewayId: String | None
+    CoreNetworkArn: ResourceArn | None
+    LocalGatewayId: String | None
 
 
-StringList = List[String]
+StringList = list[String]
 
 
 class AnalysisLoadBalancerTarget(TypedDict, total=False):
-    Address: Optional[IpAddress]
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    Instance: Optional[AnalysisComponent]
-    Port: Optional[Port]
+    Address: IpAddress | None
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    Instance: AnalysisComponent | None
+    Port: Port | None
 
 
 class AnalysisLoadBalancerListener(TypedDict, total=False):
-    LoadBalancerPort: Optional[Port]
-    InstancePort: Optional[Port]
+    LoadBalancerPort: Port | None
+    InstancePort: Port | None
 
 
-IpAddressList = List[IpAddress]
+IpAddressList = list[IpAddress]
 
 
 class AnalysisAclRule(TypedDict, total=False):
-    Cidr: Optional[String]
-    Egress: Optional[Boolean]
-    PortRange: Optional[PortRange]
-    Protocol: Optional[String]
-    RuleAction: Optional[String]
-    RuleNumber: Optional[Integer]
+    Cidr: String | None
+    Egress: Boolean | None
+    PortRange: PortRange | None
+    Protocol: String | None
+    RuleAction: String | None
+    RuleNumber: Integer | None
 
 
 class Explanation(TypedDict, total=False):
-    Acl: Optional[AnalysisComponent]
-    AclRule: Optional[AnalysisAclRule]
-    Address: Optional[IpAddress]
-    Addresses: Optional[IpAddressList]
-    AttachedTo: Optional[AnalysisComponent]
-    AvailabilityZones: Optional[ValueStringList]
-    AvailabilityZoneIds: Optional[ValueStringList]
-    Cidrs: Optional[ValueStringList]
-    Component: Optional[AnalysisComponent]
-    CustomerGateway: Optional[AnalysisComponent]
-    Destination: Optional[AnalysisComponent]
-    DestinationVpc: Optional[AnalysisComponent]
-    Direction: Optional[String]
-    ExplanationCode: Optional[String]
-    IngressRouteTable: Optional[AnalysisComponent]
-    InternetGateway: Optional[AnalysisComponent]
-    LoadBalancerArn: Optional[ResourceArn]
-    ClassicLoadBalancerListener: Optional[AnalysisLoadBalancerListener]
-    LoadBalancerListenerPort: Optional[Port]
-    LoadBalancerTarget: Optional[AnalysisLoadBalancerTarget]
-    LoadBalancerTargetGroup: Optional[AnalysisComponent]
-    LoadBalancerTargetGroups: Optional[AnalysisComponentList]
-    LoadBalancerTargetPort: Optional[Port]
-    ElasticLoadBalancerListener: Optional[AnalysisComponent]
-    MissingComponent: Optional[String]
-    NatGateway: Optional[AnalysisComponent]
-    NetworkInterface: Optional[AnalysisComponent]
-    PacketField: Optional[String]
-    VpcPeeringConnection: Optional[AnalysisComponent]
-    Port: Optional[Port]
-    PortRanges: Optional[PortRangeList]
-    PrefixList: Optional[AnalysisComponent]
-    Protocols: Optional[StringList]
-    RouteTableRoute: Optional[AnalysisRouteTableRoute]
-    RouteTable: Optional[AnalysisComponent]
-    SecurityGroup: Optional[AnalysisComponent]
-    SecurityGroupRule: Optional[AnalysisSecurityGroupRule]
-    SecurityGroups: Optional[AnalysisComponentList]
-    SourceVpc: Optional[AnalysisComponent]
-    State: Optional[String]
-    Subnet: Optional[AnalysisComponent]
-    SubnetRouteTable: Optional[AnalysisComponent]
-    Vpc: Optional[AnalysisComponent]
-    VpcEndpoint: Optional[AnalysisComponent]
-    VpnConnection: Optional[AnalysisComponent]
-    VpnGateway: Optional[AnalysisComponent]
-    TransitGateway: Optional[AnalysisComponent]
-    TransitGatewayRouteTable: Optional[AnalysisComponent]
-    TransitGatewayRouteTableRoute: Optional[TransitGatewayRouteTableRoute]
-    TransitGatewayAttachment: Optional[AnalysisComponent]
-    ComponentAccount: Optional[ComponentAccount]
-    ComponentRegion: Optional[ComponentRegion]
-    FirewallStatelessRule: Optional[FirewallStatelessRule]
-    FirewallStatefulRule: Optional[FirewallStatefulRule]
+    Acl: AnalysisComponent | None
+    AclRule: AnalysisAclRule | None
+    Address: IpAddress | None
+    Addresses: IpAddressList | None
+    AttachedTo: AnalysisComponent | None
+    AvailabilityZones: ValueStringList | None
+    AvailabilityZoneIds: ValueStringList | None
+    Cidrs: ValueStringList | None
+    Component: AnalysisComponent | None
+    CustomerGateway: AnalysisComponent | None
+    Destination: AnalysisComponent | None
+    DestinationVpc: AnalysisComponent | None
+    Direction: String | None
+    ExplanationCode: String | None
+    IngressRouteTable: AnalysisComponent | None
+    InternetGateway: AnalysisComponent | None
+    LoadBalancerArn: ResourceArn | None
+    ClassicLoadBalancerListener: AnalysisLoadBalancerListener | None
+    LoadBalancerListenerPort: Port | None
+    LoadBalancerTarget: AnalysisLoadBalancerTarget | None
+    LoadBalancerTargetGroup: AnalysisComponent | None
+    LoadBalancerTargetGroups: AnalysisComponentList | None
+    LoadBalancerTargetPort: Port | None
+    ElasticLoadBalancerListener: AnalysisComponent | None
+    MissingComponent: String | None
+    NatGateway: AnalysisComponent | None
+    NetworkInterface: AnalysisComponent | None
+    PacketField: String | None
+    VpcPeeringConnection: AnalysisComponent | None
+    Port: Port | None
+    PortRanges: PortRangeList | None
+    PrefixList: AnalysisComponent | None
+    Protocols: StringList | None
+    RouteTableRoute: AnalysisRouteTableRoute | None
+    RouteTable: AnalysisComponent | None
+    SecurityGroup: AnalysisComponent | None
+    SecurityGroupRule: AnalysisSecurityGroupRule | None
+    SecurityGroups: AnalysisComponentList | None
+    SourceVpc: AnalysisComponent | None
+    State: String | None
+    Subnet: AnalysisComponent | None
+    SubnetRouteTable: AnalysisComponent | None
+    Vpc: AnalysisComponent | None
+    VpcEndpoint: AnalysisComponent | None
+    VpnConnection: AnalysisComponent | None
+    VpnGateway: AnalysisComponent | None
+    TransitGateway: AnalysisComponent | None
+    TransitGatewayRouteTable: AnalysisComponent | None
+    TransitGatewayRouteTableRoute: TransitGatewayRouteTableRoute | None
+    TransitGatewayAttachment: AnalysisComponent | None
+    ComponentAccount: ComponentAccount | None
+    ComponentRegion: ComponentRegion | None
+    FirewallStatelessRule: FirewallStatelessRule | None
+    FirewallStatefulRule: FirewallStatefulRule | None
 
 
-ExplanationList = List[Explanation]
+ExplanationList = list[Explanation]
 
 
 class RuleOption(TypedDict, total=False):
-    Keyword: Optional[String]
-    Settings: Optional[StringList]
+    Keyword: String | None
+    Settings: StringList | None
 
 
-RuleOptionList = List[RuleOption]
+RuleOptionList = list[RuleOption]
 
 
 class RuleGroupRuleOptionsPair(TypedDict, total=False):
-    RuleGroupArn: Optional[ResourceArn]
-    RuleOptions: Optional[RuleOptionList]
+    RuleGroupArn: ResourceArn | None
+    RuleOptions: RuleOptionList | None
 
 
-RuleGroupRuleOptionsPairList = List[RuleGroupRuleOptionsPair]
+RuleGroupRuleOptionsPairList = list[RuleGroupRuleOptionsPair]
 
 
 class RuleGroupTypePair(TypedDict, total=False):
-    RuleGroupArn: Optional[ResourceArn]
-    RuleGroupType: Optional[String]
+    RuleGroupArn: ResourceArn | None
+    RuleGroupType: String | None
 
 
-RuleGroupTypePairList = List[RuleGroupTypePair]
+RuleGroupTypePairList = list[RuleGroupTypePair]
 
 
 class AdditionalDetail(TypedDict, total=False):
-    AdditionalDetailType: Optional[String]
-    Component: Optional[AnalysisComponent]
-    VpcEndpointService: Optional[AnalysisComponent]
-    RuleOptions: Optional[RuleOptionList]
-    RuleGroupTypePairs: Optional[RuleGroupTypePairList]
-    RuleGroupRuleOptionsPairs: Optional[RuleGroupRuleOptionsPairList]
-    ServiceName: Optional[String]
-    LoadBalancers: Optional[AnalysisComponentList]
+    AdditionalDetailType: String | None
+    Component: AnalysisComponent | None
+    VpcEndpointService: AnalysisComponent | None
+    RuleOptions: RuleOptionList | None
+    RuleGroupTypePairs: RuleGroupTypePairList | None
+    RuleGroupRuleOptionsPairs: RuleGroupRuleOptionsPairList | None
+    ServiceName: String | None
+    LoadBalancers: AnalysisComponentList | None
 
 
-AdditionalDetailList = List[AdditionalDetail]
+AdditionalDetailList = list[AdditionalDetail]
 
 
 class AnalysisPacketHeader(TypedDict, total=False):
-    DestinationAddresses: Optional[IpAddressList]
-    DestinationPortRanges: Optional[PortRangeList]
-    Protocol: Optional[String]
-    SourceAddresses: Optional[IpAddressList]
-    SourcePortRanges: Optional[PortRangeList]
+    DestinationAddresses: IpAddressList | None
+    DestinationPortRanges: PortRangeList | None
+    Protocol: String | None
+    SourceAddresses: IpAddressList | None
+    SourcePortRanges: PortRangeList | None
 
 
 class PathComponent(TypedDict, total=False):
-    SequenceNumber: Optional[Integer]
-    AclRule: Optional[AnalysisAclRule]
-    AttachedTo: Optional[AnalysisComponent]
-    Component: Optional[AnalysisComponent]
-    DestinationVpc: Optional[AnalysisComponent]
-    OutboundHeader: Optional[AnalysisPacketHeader]
-    InboundHeader: Optional[AnalysisPacketHeader]
-    RouteTableRoute: Optional[AnalysisRouteTableRoute]
-    SecurityGroupRule: Optional[AnalysisSecurityGroupRule]
-    SourceVpc: Optional[AnalysisComponent]
-    Subnet: Optional[AnalysisComponent]
-    Vpc: Optional[AnalysisComponent]
-    AdditionalDetails: Optional[AdditionalDetailList]
-    TransitGateway: Optional[AnalysisComponent]
-    TransitGatewayRouteTableRoute: Optional[TransitGatewayRouteTableRoute]
-    Explanations: Optional[ExplanationList]
-    ElasticLoadBalancerListener: Optional[AnalysisComponent]
-    FirewallStatelessRule: Optional[FirewallStatelessRule]
-    FirewallStatefulRule: Optional[FirewallStatefulRule]
-    ServiceName: Optional[String]
+    SequenceNumber: Integer | None
+    AclRule: AnalysisAclRule | None
+    AttachedTo: AnalysisComponent | None
+    Component: AnalysisComponent | None
+    DestinationVpc: AnalysisComponent | None
+    OutboundHeader: AnalysisPacketHeader | None
+    InboundHeader: AnalysisPacketHeader | None
+    RouteTableRoute: AnalysisRouteTableRoute | None
+    SecurityGroupRule: AnalysisSecurityGroupRule | None
+    SourceVpc: AnalysisComponent | None
+    Subnet: AnalysisComponent | None
+    Vpc: AnalysisComponent | None
+    AdditionalDetails: AdditionalDetailList | None
+    TransitGateway: AnalysisComponent | None
+    TransitGatewayRouteTableRoute: TransitGatewayRouteTableRoute | None
+    Explanations: ExplanationList | None
+    ElasticLoadBalancerListener: AnalysisComponent | None
+    FirewallStatelessRule: FirewallStatelessRule | None
+    FirewallStatefulRule: FirewallStatefulRule | None
+    ServiceName: String | None
 
 
-PathComponentList = List[PathComponent]
+PathComponentList = list[PathComponent]
 
 
 class AccessScopeAnalysisFinding(TypedDict, total=False):
-    NetworkInsightsAccessScopeAnalysisId: Optional[NetworkInsightsAccessScopeAnalysisId]
-    NetworkInsightsAccessScopeId: Optional[NetworkInsightsAccessScopeId]
-    FindingId: Optional[String]
-    FindingComponents: Optional[PathComponentList]
+    NetworkInsightsAccessScopeAnalysisId: NetworkInsightsAccessScopeAnalysisId | None
+    NetworkInsightsAccessScopeId: NetworkInsightsAccessScopeId | None
+    FindingId: String | None
+    FindingComponents: PathComponentList | None
 
 
-AccessScopeAnalysisFindingList = List[AccessScopeAnalysisFinding]
+AccessScopeAnalysisFindingList = list[AccessScopeAnalysisFinding]
 
 
 class ResourceStatement(TypedDict, total=False):
-    Resources: Optional[ValueStringList]
-    ResourceTypes: Optional[ValueStringList]
+    Resources: ValueStringList | None
+    ResourceTypes: ValueStringList | None
 
 
 class ThroughResourcesStatement(TypedDict, total=False):
-    ResourceStatement: Optional[ResourceStatement]
+    ResourceStatement: ResourceStatement | None
 
 
-ThroughResourcesStatementList = List[ThroughResourcesStatement]
-ProtocolList = List[Protocol]
+ThroughResourcesStatementList = list[ThroughResourcesStatement]
+ProtocolList = list[Protocol]
 
 
 class PacketHeaderStatement(TypedDict, total=False):
-    SourceAddresses: Optional[ValueStringList]
-    DestinationAddresses: Optional[ValueStringList]
-    SourcePorts: Optional[ValueStringList]
-    DestinationPorts: Optional[ValueStringList]
-    SourcePrefixLists: Optional[ValueStringList]
-    DestinationPrefixLists: Optional[ValueStringList]
-    Protocols: Optional[ProtocolList]
+    SourceAddresses: ValueStringList | None
+    DestinationAddresses: ValueStringList | None
+    SourcePorts: ValueStringList | None
+    DestinationPorts: ValueStringList | None
+    SourcePrefixLists: ValueStringList | None
+    DestinationPrefixLists: ValueStringList | None
+    Protocols: ProtocolList | None
 
 
 class PathStatement(TypedDict, total=False):
-    PacketHeaderStatement: Optional[PacketHeaderStatement]
-    ResourceStatement: Optional[ResourceStatement]
+    PacketHeaderStatement: PacketHeaderStatement | None
+    ResourceStatement: ResourceStatement | None
 
 
 class AccessScopePath(TypedDict, total=False):
-    Source: Optional[PathStatement]
-    Destination: Optional[PathStatement]
-    ThroughResources: Optional[ThroughResourcesStatementList]
+    Source: PathStatement | None
+    Destination: PathStatement | None
+    ThroughResources: ThroughResourcesStatementList | None
 
 
-AccessScopePathList = List[AccessScopePath]
+AccessScopePathList = list[AccessScopePath]
 
 
 class ResourceStatementRequest(TypedDict, total=False):
-    Resources: Optional[ValueStringList]
-    ResourceTypes: Optional[ValueStringList]
+    Resources: ValueStringList | None
+    ResourceTypes: ValueStringList | None
 
 
 class ThroughResourcesStatementRequest(TypedDict, total=False):
-    ResourceStatement: Optional[ResourceStatementRequest]
+    ResourceStatement: ResourceStatementRequest | None
 
 
-ThroughResourcesStatementRequestList = List[ThroughResourcesStatementRequest]
+ThroughResourcesStatementRequestList = list[ThroughResourcesStatementRequest]
 
 
 class PacketHeaderStatementRequest(TypedDict, total=False):
-    SourceAddresses: Optional[ValueStringList]
-    DestinationAddresses: Optional[ValueStringList]
-    SourcePorts: Optional[ValueStringList]
-    DestinationPorts: Optional[ValueStringList]
-    SourcePrefixLists: Optional[ValueStringList]
-    DestinationPrefixLists: Optional[ValueStringList]
-    Protocols: Optional[ProtocolList]
+    SourceAddresses: ValueStringList | None
+    DestinationAddresses: ValueStringList | None
+    SourcePorts: ValueStringList | None
+    DestinationPorts: ValueStringList | None
+    SourcePrefixLists: ValueStringList | None
+    DestinationPrefixLists: ValueStringList | None
+    Protocols: ProtocolList | None
 
 
 class PathStatementRequest(TypedDict, total=False):
-    PacketHeaderStatement: Optional[PacketHeaderStatementRequest]
-    ResourceStatement: Optional[ResourceStatementRequest]
+    PacketHeaderStatement: PacketHeaderStatementRequest | None
+    ResourceStatement: ResourceStatementRequest | None
 
 
 class AccessScopePathRequest(TypedDict, total=False):
-    Source: Optional[PathStatementRequest]
-    Destination: Optional[PathStatementRequest]
-    ThroughResources: Optional[ThroughResourcesStatementRequestList]
+    Source: PathStatementRequest | None
+    Destination: PathStatementRequest | None
+    ThroughResources: ThroughResourcesStatementRequestList | None
 
 
-AccessScopePathListRequest = List[AccessScopePathRequest]
+AccessScopePathListRequest = list[AccessScopePathRequest]
 
 
 class AccountAttributeValue(TypedDict, total=False):
-    AttributeValue: Optional[String]
+    AttributeValue: String | None
 
 
-AccountAttributeValueList = List[AccountAttributeValue]
+AccountAttributeValueList = list[AccountAttributeValue]
 
 
 class AccountAttribute(TypedDict, total=False):
-    AttributeName: Optional[String]
-    AttributeValues: Optional[AccountAttributeValueList]
+    AttributeName: String | None
+    AttributeValues: AccountAttributeValueList | None
 
 
-AccountAttributeList = List[AccountAttribute]
-AccountAttributeNameStringList = List[AccountAttributeName]
+AccountAttributeList = list[AccountAttribute]
+AccountAttributeNameStringList = list[AccountAttributeName]
 
 
 class ActiveInstance(TypedDict, total=False):
-    InstanceId: Optional[String]
-    InstanceType: Optional[String]
-    SpotInstanceRequestId: Optional[String]
-    InstanceHealth: Optional[InstanceHealthStatus]
+    InstanceId: String | None
+    InstanceType: String | None
+    SpotInstanceRequestId: String | None
+    InstanceHealth: InstanceHealthStatus | None
 
 
-ActiveInstanceSet = List[ActiveInstance]
+ActiveInstanceSet = list[ActiveInstance]
 
 
 class ActiveVpnTunnelStatus(TypedDict, total=False):
-    Phase1EncryptionAlgorithm: Optional[String]
-    Phase2EncryptionAlgorithm: Optional[String]
-    Phase1IntegrityAlgorithm: Optional[String]
-    Phase2IntegrityAlgorithm: Optional[String]
-    Phase1DHGroup: Optional[Integer]
-    Phase2DHGroup: Optional[Integer]
-    IkeVersion: Optional[String]
-    ProvisioningStatus: Optional[VpnTunnelProvisioningStatus]
-    ProvisioningStatusReason: Optional[String]
+    Phase1EncryptionAlgorithm: String | None
+    Phase2EncryptionAlgorithm: String | None
+    Phase1IntegrityAlgorithm: String | None
+    Phase2IntegrityAlgorithm: String | None
+    Phase1DHGroup: Integer | None
+    Phase2DHGroup: Integer | None
+    IkeVersion: String | None
+    ProvisioningStatus: VpnTunnelProvisioningStatus | None
+    ProvisioningStatusReason: String | None
 
 
 class AddIpamOperatingRegion(TypedDict, total=False):
-    RegionName: Optional[String]
+    RegionName: String | None
 
 
-AddIpamOperatingRegionSet = List[AddIpamOperatingRegion]
+AddIpamOperatingRegionSet = list[AddIpamOperatingRegion]
 
 
 class AddIpamOrganizationalUnitExclusion(TypedDict, total=False):
-    OrganizationsEntityPath: Optional[String]
+    OrganizationsEntityPath: String | None
 
 
-AddIpamOrganizationalUnitExclusionSet = List[AddIpamOrganizationalUnitExclusion]
+AddIpamOrganizationalUnitExclusionSet = list[AddIpamOrganizationalUnitExclusion]
 
 
 class AddPrefixListEntry(TypedDict, total=False):
     Cidr: String
-    Description: Optional[String]
+    Description: String | None
 
 
-AddPrefixListEntries = List[AddPrefixListEntry]
+AddPrefixListEntries = list[AddPrefixListEntry]
 
 
 class AddedPrincipal(TypedDict, total=False):
-    PrincipalType: Optional[PrincipalType]
-    Principal: Optional[String]
-    ServicePermissionId: Optional[String]
-    ServiceId: Optional[String]
+    PrincipalType: PrincipalType | None
+    Principal: String | None
+    ServicePermissionId: String | None
+    ServiceId: String | None
 
 
-AddedPrincipalSet = List[AddedPrincipal]
+AddedPrincipalSet = list[AddedPrincipal]
 
 
 class Address(TypedDict, total=False):
-    AllocationId: Optional[String]
-    AssociationId: Optional[String]
-    Domain: Optional[DomainType]
-    NetworkInterfaceId: Optional[String]
-    NetworkInterfaceOwnerId: Optional[String]
-    PrivateIpAddress: Optional[String]
-    Tags: Optional[TagList]
-    PublicIpv4Pool: Optional[String]
-    NetworkBorderGroup: Optional[String]
-    CustomerOwnedIp: Optional[String]
-    CustomerOwnedIpv4Pool: Optional[String]
-    CarrierIp: Optional[String]
-    SubnetId: Optional[String]
-    ServiceManaged: Optional[ServiceManaged]
-    InstanceId: Optional[String]
-    PublicIp: Optional[String]
+    AllocationId: String | None
+    AssociationId: String | None
+    Domain: DomainType | None
+    NetworkInterfaceId: String | None
+    NetworkInterfaceOwnerId: String | None
+    PrivateIpAddress: String | None
+    Tags: TagList | None
+    PublicIpv4Pool: String | None
+    NetworkBorderGroup: String | None
+    CustomerOwnedIp: String | None
+    CustomerOwnedIpv4Pool: String | None
+    CarrierIp: String | None
+    SubnetId: String | None
+    ServiceManaged: ServiceManaged | None
+    InstanceId: String | None
+    PublicIp: String | None
 
 
 class PtrUpdateStatus(TypedDict, total=False):
-    Value: Optional[String]
-    Status: Optional[String]
-    Reason: Optional[String]
+    Value: String | None
+    Status: String | None
+    Reason: String | None
 
 
 class AddressAttribute(TypedDict, total=False):
-    PublicIp: Optional[PublicIpAddress]
-    AllocationId: Optional[AllocationId]
-    PtrRecord: Optional[String]
-    PtrRecordUpdate: Optional[PtrUpdateStatus]
+    PublicIp: PublicIpAddress | None
+    AllocationId: AllocationId | None
+    PtrRecord: String | None
+    PtrRecordUpdate: PtrUpdateStatus | None
 
 
-AddressList = List[Address]
-AddressSet = List[AddressAttribute]
-AddressTransferList = List[AddressTransfer]
+AddressList = list[Address]
+AddressSet = list[AddressAttribute]
+AddressTransferList = list[AddressTransfer]
 
 
 class AdvertiseByoipCidrRequest(ServiceRequest):
     Cidr: String
-    Asn: Optional[String]
-    DryRun: Optional[Boolean]
-    NetworkBorderGroup: Optional[String]
+    Asn: String | None
+    DryRun: Boolean | None
+    NetworkBorderGroup: String | None
 
 
 class AsnAssociation(TypedDict, total=False):
-    Asn: Optional[String]
-    Cidr: Optional[String]
-    StatusMessage: Optional[String]
-    State: Optional[AsnAssociationState]
+    Asn: String | None
+    Cidr: String | None
+    StatusMessage: String | None
+    State: AsnAssociationState | None
 
 
-AsnAssociationSet = List[AsnAssociation]
+AsnAssociationSet = list[AsnAssociation]
 
 
 class ByoipCidr(TypedDict, total=False):
-    Cidr: Optional[String]
-    Description: Optional[String]
-    AsnAssociations: Optional[AsnAssociationSet]
-    StatusMessage: Optional[String]
-    State: Optional[ByoipCidrState]
-    NetworkBorderGroup: Optional[String]
+    Cidr: String | None
+    Description: String | None
+    AsnAssociations: AsnAssociationSet | None
+    StatusMessage: String | None
+    State: ByoipCidrState | None
+    NetworkBorderGroup: String | None
 
 
 class AdvertiseByoipCidrResult(TypedDict, total=False):
-    ByoipCidr: Optional[ByoipCidr]
+    ByoipCidr: ByoipCidr | None
 
 
 class AllocateAddressRequest(ServiceRequest):
-    Domain: Optional[DomainType]
-    Address: Optional[PublicIpAddress]
-    PublicIpv4Pool: Optional[Ipv4PoolEc2Id]
-    NetworkBorderGroup: Optional[String]
-    CustomerOwnedIpv4Pool: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    IpamPoolId: Optional[IpamPoolId]
-    DryRun: Optional[Boolean]
+    Domain: DomainType | None
+    Address: PublicIpAddress | None
+    PublicIpv4Pool: Ipv4PoolEc2Id | None
+    NetworkBorderGroup: String | None
+    CustomerOwnedIpv4Pool: String | None
+    TagSpecifications: TagSpecificationList | None
+    IpamPoolId: IpamPoolId | None
+    DryRun: Boolean | None
 
 
 class AllocateAddressResult(TypedDict, total=False):
-    AllocationId: Optional[String]
-    PublicIpv4Pool: Optional[String]
-    NetworkBorderGroup: Optional[String]
-    Domain: Optional[DomainType]
-    CustomerOwnedIp: Optional[String]
-    CustomerOwnedIpv4Pool: Optional[String]
-    CarrierIp: Optional[String]
-    PublicIp: Optional[String]
+    AllocationId: String | None
+    PublicIpv4Pool: String | None
+    NetworkBorderGroup: String | None
+    Domain: DomainType | None
+    CustomerOwnedIp: String | None
+    CustomerOwnedIpv4Pool: String | None
+    CarrierIp: String | None
+    PublicIp: String | None
 
 
-AssetIdList = List[AssetId]
+AssetIdList = list[AssetId]
 
 
 class AllocateHostsRequest(ServiceRequest):
-    InstanceFamily: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    HostRecovery: Optional[HostRecovery]
-    OutpostArn: Optional[String]
-    HostMaintenance: Optional[HostMaintenance]
-    AssetIds: Optional[AssetIdList]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    AutoPlacement: Optional[AutoPlacement]
-    ClientToken: Optional[String]
-    InstanceType: Optional[String]
-    Quantity: Optional[Integer]
-    AvailabilityZone: Optional[String]
+    InstanceFamily: String | None
+    TagSpecifications: TagSpecificationList | None
+    HostRecovery: HostRecovery | None
+    OutpostArn: String | None
+    HostMaintenance: HostMaintenance | None
+    AssetIds: AssetIdList | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    AutoPlacement: AutoPlacement | None
+    ClientToken: String | None
+    InstanceType: String | None
+    Quantity: Integer | None
+    AvailabilityZone: String | None
 
 
-ResponseHostIdList = List[String]
+ResponseHostIdList = list[String]
 
 
 class AllocateHostsResult(TypedDict, total=False):
-    HostIds: Optional[ResponseHostIdList]
+    HostIds: ResponseHostIdList | None
 
 
-IpamPoolAllocationDisallowedCidrs = List[String]
-IpamPoolAllocationAllowedCidrs = List[String]
+IpamPoolAllocationDisallowedCidrs = list[String]
+IpamPoolAllocationAllowedCidrs = list[String]
 
 
 class AllocateIpamPoolCidrRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPoolId: IpamPoolId
-    Cidr: Optional[String]
-    NetmaskLength: Optional[Integer]
-    ClientToken: Optional[String]
-    Description: Optional[String]
-    PreviewNextCidr: Optional[Boolean]
-    AllowedCidrs: Optional[IpamPoolAllocationAllowedCidrs]
-    DisallowedCidrs: Optional[IpamPoolAllocationDisallowedCidrs]
+    Cidr: String | None
+    NetmaskLength: Integer | None
+    ClientToken: String | None
+    Description: String | None
+    PreviewNextCidr: Boolean | None
+    AllowedCidrs: IpamPoolAllocationAllowedCidrs | None
+    DisallowedCidrs: IpamPoolAllocationDisallowedCidrs | None
 
 
 class IpamPoolAllocation(TypedDict, total=False):
-    Cidr: Optional[String]
-    IpamPoolAllocationId: Optional[IpamPoolAllocationId]
-    Description: Optional[String]
-    ResourceId: Optional[String]
-    ResourceType: Optional[IpamPoolAllocationResourceType]
-    ResourceRegion: Optional[String]
-    ResourceOwner: Optional[String]
+    Cidr: String | None
+    IpamPoolAllocationId: IpamPoolAllocationId | None
+    Description: String | None
+    ResourceId: String | None
+    ResourceType: IpamPoolAllocationResourceType | None
+    ResourceRegion: String | None
+    ResourceOwner: String | None
 
 
 class AllocateIpamPoolCidrResult(TypedDict, total=False):
-    IpamPoolAllocation: Optional[IpamPoolAllocation]
+    IpamPoolAllocation: IpamPoolAllocation | None
 
 
-AllocationIdList = List[AllocationId]
-AllocationIds = List[AllocationId]
-AllowedInstanceTypeSet = List[AllowedInstanceType]
+AllocationIdList = list[AllocationId]
+AllocationIds = list[AllocationId]
+AllowedInstanceTypeSet = list[AllowedInstanceType]
 
 
 class AllowedPrincipal(TypedDict, total=False):
-    PrincipalType: Optional[PrincipalType]
-    Principal: Optional[String]
-    ServicePermissionId: Optional[String]
-    Tags: Optional[TagList]
-    ServiceId: Optional[String]
+    PrincipalType: PrincipalType | None
+    Principal: String | None
+    ServicePermissionId: String | None
+    Tags: TagList | None
+    ServiceId: String | None
 
 
-AllowedPrincipalSet = List[AllowedPrincipal]
+AllowedPrincipalSet = list[AllowedPrincipal]
 
 
 class AlternatePathHint(TypedDict, total=False):
-    ComponentId: Optional[String]
-    ComponentArn: Optional[String]
+    ComponentId: String | None
+    ComponentArn: String | None
 
 
-AlternatePathHintList = List[AlternatePathHint]
-ClientVpnSecurityGroupIdSet = List[SecurityGroupId]
+AlternatePathHintList = list[AlternatePathHint]
+ClientVpnSecurityGroupIdSet = list[SecurityGroupId]
 
 
 class ApplySecurityGroupsToClientVpnTargetNetworkRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
     VpcId: VpcId
     SecurityGroupIds: ClientVpnSecurityGroupIdSet
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ApplySecurityGroupsToClientVpnTargetNetworkResult(TypedDict, total=False):
-    SecurityGroupIds: Optional[ClientVpnSecurityGroupIdSet]
+    SecurityGroupIds: ClientVpnSecurityGroupIdSet | None
 
 
-ArchitectureTypeList = List[ArchitectureType]
-ArchitectureTypeSet = List[ArchitectureType]
-ArnList = List[ResourceArn]
-AsPath = List[String]
+ArchitectureTypeList = list[ArchitectureType]
+ArchitectureTypeSet = list[ArchitectureType]
+ArnList = list[ResourceArn]
+AsPath = list[String]
 
 
 class AsnAuthorizationContext(TypedDict, total=False):
@@ -5195,147 +5212,147 @@ class AsnAuthorizationContext(TypedDict, total=False):
     Signature: String
 
 
-Ipv6AddressList = List[String]
-IpPrefixList = List[String]
+Ipv6AddressList = list[String]
+IpPrefixList = list[String]
 
 
 class AssignIpv6AddressesRequest(ServiceRequest):
-    Ipv6PrefixCount: Optional[Integer]
-    Ipv6Prefixes: Optional[IpPrefixList]
+    Ipv6PrefixCount: Integer | None
+    Ipv6Prefixes: IpPrefixList | None
     NetworkInterfaceId: NetworkInterfaceId
-    Ipv6Addresses: Optional[Ipv6AddressList]
-    Ipv6AddressCount: Optional[Integer]
+    Ipv6Addresses: Ipv6AddressList | None
+    Ipv6AddressCount: Integer | None
 
 
 class AssignIpv6AddressesResult(TypedDict, total=False):
-    AssignedIpv6Addresses: Optional[Ipv6AddressList]
-    AssignedIpv6Prefixes: Optional[IpPrefixList]
-    NetworkInterfaceId: Optional[String]
+    AssignedIpv6Addresses: Ipv6AddressList | None
+    AssignedIpv6Prefixes: IpPrefixList | None
+    NetworkInterfaceId: String | None
 
 
-PrivateIpAddressStringList = List[String]
+PrivateIpAddressStringList = list[String]
 
 
 class AssignPrivateIpAddressesRequest(ServiceRequest):
-    Ipv4Prefixes: Optional[IpPrefixList]
-    Ipv4PrefixCount: Optional[Integer]
+    Ipv4Prefixes: IpPrefixList | None
+    Ipv4PrefixCount: Integer | None
     NetworkInterfaceId: NetworkInterfaceId
-    PrivateIpAddresses: Optional[PrivateIpAddressStringList]
-    SecondaryPrivateIpAddressCount: Optional[Integer]
-    AllowReassignment: Optional[Boolean]
+    PrivateIpAddresses: PrivateIpAddressStringList | None
+    SecondaryPrivateIpAddressCount: Integer | None
+    AllowReassignment: Boolean | None
 
 
 class Ipv4PrefixSpecification(TypedDict, total=False):
-    Ipv4Prefix: Optional[String]
+    Ipv4Prefix: String | None
 
 
-Ipv4PrefixesList = List[Ipv4PrefixSpecification]
+Ipv4PrefixesList = list[Ipv4PrefixSpecification]
 
 
 class AssignedPrivateIpAddress(TypedDict, total=False):
-    PrivateIpAddress: Optional[String]
+    PrivateIpAddress: String | None
 
 
-AssignedPrivateIpAddressList = List[AssignedPrivateIpAddress]
+AssignedPrivateIpAddressList = list[AssignedPrivateIpAddress]
 
 
 class AssignPrivateIpAddressesResult(TypedDict, total=False):
-    NetworkInterfaceId: Optional[String]
-    AssignedPrivateIpAddresses: Optional[AssignedPrivateIpAddressList]
-    AssignedIpv4Prefixes: Optional[Ipv4PrefixesList]
+    NetworkInterfaceId: String | None
+    AssignedPrivateIpAddresses: AssignedPrivateIpAddressList | None
+    AssignedIpv4Prefixes: Ipv4PrefixesList | None
 
 
-IpList = List[String]
+IpList = list[String]
 
 
 class AssignPrivateNatGatewayAddressRequest(ServiceRequest):
     NatGatewayId: NatGatewayId
-    PrivateIpAddresses: Optional[IpList]
-    PrivateIpAddressCount: Optional[PrivateIpAddressCount]
-    DryRun: Optional[Boolean]
+    PrivateIpAddresses: IpList | None
+    PrivateIpAddressCount: PrivateIpAddressCount | None
+    DryRun: Boolean | None
 
 
 class NatGatewayAddress(TypedDict, total=False):
-    AllocationId: Optional[String]
-    NetworkInterfaceId: Optional[String]
-    PrivateIp: Optional[String]
-    PublicIp: Optional[String]
-    AssociationId: Optional[String]
-    IsPrimary: Optional[Boolean]
-    FailureMessage: Optional[String]
-    Status: Optional[NatGatewayAddressStatus]
+    AllocationId: String | None
+    NetworkInterfaceId: String | None
+    PrivateIp: String | None
+    PublicIp: String | None
+    AssociationId: String | None
+    IsPrimary: Boolean | None
+    FailureMessage: String | None
+    Status: NatGatewayAddressStatus | None
 
 
-NatGatewayAddressList = List[NatGatewayAddress]
+NatGatewayAddressList = list[NatGatewayAddress]
 
 
 class AssignPrivateNatGatewayAddressResult(TypedDict, total=False):
-    NatGatewayId: Optional[NatGatewayId]
-    NatGatewayAddresses: Optional[NatGatewayAddressList]
+    NatGatewayId: NatGatewayId | None
+    NatGatewayAddresses: NatGatewayAddressList | None
 
 
 class AssociateAddressRequest(ServiceRequest):
-    AllocationId: Optional[AllocationId]
-    InstanceId: Optional[InstanceId]
-    PublicIp: Optional[EipAllocationPublicIp]
-    DryRun: Optional[Boolean]
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    PrivateIpAddress: Optional[String]
-    AllowReassociation: Optional[Boolean]
+    AllocationId: AllocationId | None
+    InstanceId: InstanceId | None
+    PublicIp: EipAllocationPublicIp | None
+    DryRun: Boolean | None
+    NetworkInterfaceId: NetworkInterfaceId | None
+    PrivateIpAddress: String | None
+    AllowReassociation: Boolean | None
 
 
 class AssociateAddressResult(TypedDict, total=False):
-    AssociationId: Optional[String]
+    AssociationId: String | None
 
 
 class AssociateCapacityReservationBillingOwnerRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     CapacityReservationId: CapacityReservationId
     UnusedReservationBillingOwnerId: AccountID
 
 
 class AssociateCapacityReservationBillingOwnerResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class AssociateClientVpnTargetNetworkRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
     SubnetId: SubnetId
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ClientToken: String | None
+    DryRun: Boolean | None
 
 
 class AssociationStatus(TypedDict, total=False):
-    Code: Optional[AssociationStatusCode]
-    Message: Optional[String]
+    Code: AssociationStatusCode | None
+    Message: String | None
 
 
 class AssociateClientVpnTargetNetworkResult(TypedDict, total=False):
-    AssociationId: Optional[String]
-    Status: Optional[AssociationStatus]
+    AssociationId: String | None
+    Status: AssociationStatus | None
 
 
 class AssociateDhcpOptionsRequest(ServiceRequest):
     DhcpOptionsId: DefaultingDhcpOptionsId
     VpcId: VpcId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class AssociateEnclaveCertificateIamRoleRequest(ServiceRequest):
     CertificateArn: CertificateId
     RoleArn: RoleId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class AssociateEnclaveCertificateIamRoleResult(TypedDict, total=False):
-    CertificateS3BucketName: Optional[String]
-    CertificateS3ObjectKey: Optional[String]
-    EncryptionKmsKeyId: Optional[String]
+    CertificateS3BucketName: String | None
+    CertificateS3ObjectKey: String | None
+    EncryptionKmsKeyId: String | None
 
 
 class IamInstanceProfileSpecification(TypedDict, total=False):
-    Arn: Optional[String]
-    Name: Optional[String]
+    Arn: String | None
+    Name: String | None
 
 
 class AssociateIamInstanceProfileRequest(ServiceRequest):
@@ -5344,928 +5361,929 @@ class AssociateIamInstanceProfileRequest(ServiceRequest):
 
 
 class IamInstanceProfile(TypedDict, total=False):
-    Arn: Optional[String]
-    Id: Optional[String]
+    Arn: String | None
+    Id: String | None
 
 
 class IamInstanceProfileAssociation(TypedDict, total=False):
-    AssociationId: Optional[String]
-    InstanceId: Optional[String]
-    IamInstanceProfile: Optional[IamInstanceProfile]
-    State: Optional[IamInstanceProfileAssociationState]
-    Timestamp: Optional[DateTime]
+    AssociationId: String | None
+    InstanceId: String | None
+    IamInstanceProfile: IamInstanceProfile | None
+    State: IamInstanceProfileAssociationState | None
+    Timestamp: DateTime | None
 
 
 class AssociateIamInstanceProfileResult(TypedDict, total=False):
-    IamInstanceProfileAssociation: Optional[IamInstanceProfileAssociation]
+    IamInstanceProfileAssociation: IamInstanceProfileAssociation | None
 
 
-DedicatedHostIdList = List[DedicatedHostId]
-InstanceIdList = List[InstanceId]
+DedicatedHostIdList = list[DedicatedHostId]
+InstanceIdList = list[InstanceId]
 
 
 class InstanceEventWindowAssociationRequest(TypedDict, total=False):
-    InstanceIds: Optional[InstanceIdList]
-    InstanceTags: Optional[TagList]
-    DedicatedHostIds: Optional[DedicatedHostIdList]
+    InstanceIds: InstanceIdList | None
+    InstanceTags: TagList | None
+    DedicatedHostIds: DedicatedHostIdList | None
 
 
 class AssociateInstanceEventWindowRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceEventWindowId: InstanceEventWindowId
     AssociationTarget: InstanceEventWindowAssociationRequest
 
 
 class InstanceEventWindowAssociationTarget(TypedDict, total=False):
-    InstanceIds: Optional[InstanceIdList]
-    Tags: Optional[TagList]
-    DedicatedHostIds: Optional[DedicatedHostIdList]
+    InstanceIds: InstanceIdList | None
+    Tags: TagList | None
+    DedicatedHostIds: DedicatedHostIdList | None
 
 
 class InstanceEventWindowTimeRange(TypedDict, total=False):
-    StartWeekDay: Optional[WeekDay]
-    StartHour: Optional[Hour]
-    EndWeekDay: Optional[WeekDay]
-    EndHour: Optional[Hour]
+    StartWeekDay: WeekDay | None
+    StartHour: Hour | None
+    EndWeekDay: WeekDay | None
+    EndHour: Hour | None
 
 
-InstanceEventWindowTimeRangeList = List[InstanceEventWindowTimeRange]
+InstanceEventWindowTimeRangeList = list[InstanceEventWindowTimeRange]
 
 
 class InstanceEventWindow(TypedDict, total=False):
-    InstanceEventWindowId: Optional[InstanceEventWindowId]
-    TimeRanges: Optional[InstanceEventWindowTimeRangeList]
-    Name: Optional[String]
-    CronExpression: Optional[InstanceEventWindowCronExpression]
-    AssociationTarget: Optional[InstanceEventWindowAssociationTarget]
-    State: Optional[InstanceEventWindowState]
-    Tags: Optional[TagList]
+    InstanceEventWindowId: InstanceEventWindowId | None
+    TimeRanges: InstanceEventWindowTimeRangeList | None
+    Name: String | None
+    CronExpression: InstanceEventWindowCronExpression | None
+    AssociationTarget: InstanceEventWindowAssociationTarget | None
+    State: InstanceEventWindowState | None
+    Tags: TagList | None
 
 
 class AssociateInstanceEventWindowResult(TypedDict, total=False):
-    InstanceEventWindow: Optional[InstanceEventWindow]
+    InstanceEventWindow: InstanceEventWindow | None
 
 
 class AssociateIpamByoasnRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     Asn: String
     Cidr: String
 
 
 class AssociateIpamByoasnResult(TypedDict, total=False):
-    AsnAssociation: Optional[AsnAssociation]
+    AsnAssociation: AsnAssociation | None
 
 
 class AssociateIpamResourceDiscoveryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamId: IpamId
     IpamResourceDiscoveryId: IpamResourceDiscoveryId
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
 
 
 class IpamResourceDiscoveryAssociation(TypedDict, total=False):
-    OwnerId: Optional[String]
-    IpamResourceDiscoveryAssociationId: Optional[IpamResourceDiscoveryAssociationId]
-    IpamResourceDiscoveryAssociationArn: Optional[String]
-    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
-    IpamId: Optional[IpamId]
-    IpamArn: Optional[ResourceArn]
-    IpamRegion: Optional[String]
-    IsDefault: Optional[Boolean]
-    ResourceDiscoveryStatus: Optional[IpamAssociatedResourceDiscoveryStatus]
-    State: Optional[IpamResourceDiscoveryAssociationState]
-    Tags: Optional[TagList]
+    OwnerId: String | None
+    IpamResourceDiscoveryAssociationId: IpamResourceDiscoveryAssociationId | None
+    IpamResourceDiscoveryAssociationArn: String | None
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId | None
+    IpamId: IpamId | None
+    IpamArn: ResourceArn | None
+    IpamRegion: String | None
+    IsDefault: Boolean | None
+    ResourceDiscoveryStatus: IpamAssociatedResourceDiscoveryStatus | None
+    State: IpamResourceDiscoveryAssociationState | None
+    Tags: TagList | None
 
 
 class AssociateIpamResourceDiscoveryResult(TypedDict, total=False):
-    IpamResourceDiscoveryAssociation: Optional[IpamResourceDiscoveryAssociation]
+    IpamResourceDiscoveryAssociation: IpamResourceDiscoveryAssociation | None
 
 
 class AssociateNatGatewayAddressRequest(ServiceRequest):
     NatGatewayId: NatGatewayId
     AllocationIds: AllocationIdList
-    PrivateIpAddresses: Optional[IpList]
-    DryRun: Optional[Boolean]
+    PrivateIpAddresses: IpList | None
+    DryRun: Boolean | None
 
 
 class AssociateNatGatewayAddressResult(TypedDict, total=False):
-    NatGatewayId: Optional[NatGatewayId]
-    NatGatewayAddresses: Optional[NatGatewayAddressList]
+    NatGatewayId: NatGatewayId | None
+    NatGatewayAddresses: NatGatewayAddressList | None
 
 
 class AssociateRouteServerRequest(ServiceRequest):
     RouteServerId: RouteServerId
     VpcId: VpcId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class RouteServerAssociation(TypedDict, total=False):
-    RouteServerId: Optional[RouteServerId]
-    VpcId: Optional[VpcId]
-    State: Optional[RouteServerAssociationState]
+    RouteServerId: RouteServerId | None
+    VpcId: VpcId | None
+    State: RouteServerAssociationState | None
 
 
 class AssociateRouteServerResult(TypedDict, total=False):
-    RouteServerAssociation: Optional[RouteServerAssociation]
+    RouteServerAssociation: RouteServerAssociation | None
 
 
 class AssociateRouteTableRequest(ServiceRequest):
-    GatewayId: Optional[RouteGatewayId]
-    PublicIpv4Pool: Optional[Ipv4PoolEc2Id]
-    DryRun: Optional[Boolean]
-    SubnetId: Optional[SubnetId]
+    GatewayId: RouteGatewayId | None
+    PublicIpv4Pool: Ipv4PoolEc2Id | None
+    DryRun: Boolean | None
+    SubnetId: SubnetId | None
     RouteTableId: RouteTableId
 
 
 class RouteTableAssociationState(TypedDict, total=False):
-    State: Optional[RouteTableAssociationStateCode]
-    StatusMessage: Optional[String]
+    State: RouteTableAssociationStateCode | None
+    StatusMessage: String | None
 
 
 class AssociateRouteTableResult(TypedDict, total=False):
-    AssociationId: Optional[String]
-    AssociationState: Optional[RouteTableAssociationState]
+    AssociationId: String | None
+    AssociationState: RouteTableAssociationState | None
 
 
 class AssociateSecurityGroupVpcRequest(ServiceRequest):
     GroupId: SecurityGroupId
     VpcId: VpcId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class AssociateSecurityGroupVpcResult(TypedDict, total=False):
-    State: Optional[SecurityGroupVpcAssociationState]
+    State: SecurityGroupVpcAssociationState | None
 
 
 class AssociateSubnetCidrBlockRequest(ServiceRequest):
-    Ipv6IpamPoolId: Optional[IpamPoolId]
-    Ipv6NetmaskLength: Optional[NetmaskLength]
+    Ipv6IpamPoolId: IpamPoolId | None
+    Ipv6NetmaskLength: NetmaskLength | None
     SubnetId: SubnetId
-    Ipv6CidrBlock: Optional[String]
+    Ipv6CidrBlock: String | None
 
 
 class SubnetCidrBlockState(TypedDict, total=False):
-    State: Optional[SubnetCidrBlockStateCode]
-    StatusMessage: Optional[String]
+    State: SubnetCidrBlockStateCode | None
+    StatusMessage: String | None
 
 
 class SubnetIpv6CidrBlockAssociation(TypedDict, total=False):
-    AssociationId: Optional[SubnetCidrAssociationId]
-    Ipv6CidrBlock: Optional[String]
-    Ipv6CidrBlockState: Optional[SubnetCidrBlockState]
-    Ipv6AddressAttribute: Optional[Ipv6AddressAttribute]
-    IpSource: Optional[IpSource]
+    AssociationId: SubnetCidrAssociationId | None
+    Ipv6CidrBlock: String | None
+    Ipv6CidrBlockState: SubnetCidrBlockState | None
+    Ipv6AddressAttribute: Ipv6AddressAttribute | None
+    IpSource: IpSource | None
 
 
 class AssociateSubnetCidrBlockResult(TypedDict, total=False):
-    Ipv6CidrBlockAssociation: Optional[SubnetIpv6CidrBlockAssociation]
-    SubnetId: Optional[String]
+    Ipv6CidrBlockAssociation: SubnetIpv6CidrBlockAssociation | None
+    SubnetId: String | None
 
 
-TransitGatewaySubnetIdList = List[SubnetId]
+TransitGatewaySubnetIdList = list[SubnetId]
 
 
 class AssociateTransitGatewayMulticastDomainRequest(ServiceRequest):
     TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
     SubnetIds: TransitGatewaySubnetIdList
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class AssociateTransitGatewayMulticastDomainResult(TypedDict, total=False):
-    Associations: Optional[TransitGatewayMulticastDomainAssociations]
+    Associations: TransitGatewayMulticastDomainAssociations | None
 
 
 class AssociateTransitGatewayPolicyTableRequest(ServiceRequest):
     TransitGatewayPolicyTableId: TransitGatewayPolicyTableId
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class TransitGatewayPolicyTableAssociation(TypedDict, total=False):
-    TransitGatewayPolicyTableId: Optional[TransitGatewayPolicyTableId]
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    ResourceId: Optional[String]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
-    State: Optional[TransitGatewayAssociationState]
+    TransitGatewayPolicyTableId: TransitGatewayPolicyTableId | None
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    ResourceId: String | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
+    State: TransitGatewayAssociationState | None
 
 
 class AssociateTransitGatewayPolicyTableResult(TypedDict, total=False):
-    Association: Optional[TransitGatewayPolicyTableAssociation]
+    Association: TransitGatewayPolicyTableAssociation | None
 
 
 class AssociateTransitGatewayRouteTableRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class TransitGatewayAssociation(TypedDict, total=False):
-    TransitGatewayRouteTableId: Optional[TransitGatewayRouteTableId]
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    ResourceId: Optional[String]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
-    State: Optional[TransitGatewayAssociationState]
+    TransitGatewayRouteTableId: TransitGatewayRouteTableId | None
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    ResourceId: String | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
+    State: TransitGatewayAssociationState | None
 
 
 class AssociateTransitGatewayRouteTableResult(TypedDict, total=False):
-    Association: Optional[TransitGatewayAssociation]
+    Association: TransitGatewayAssociation | None
 
 
 class AssociateTrunkInterfaceRequest(ServiceRequest):
     BranchInterfaceId: NetworkInterfaceId
     TrunkInterfaceId: NetworkInterfaceId
-    VlanId: Optional[Integer]
-    GreKey: Optional[Integer]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    VlanId: Integer | None
+    GreKey: Integer | None
+    ClientToken: String | None
+    DryRun: Boolean | None
 
 
 class TrunkInterfaceAssociation(TypedDict, total=False):
-    AssociationId: Optional[TrunkInterfaceAssociationId]
-    BranchInterfaceId: Optional[String]
-    TrunkInterfaceId: Optional[String]
-    InterfaceProtocol: Optional[InterfaceProtocolType]
-    VlanId: Optional[Integer]
-    GreKey: Optional[Integer]
-    Tags: Optional[TagList]
+    AssociationId: TrunkInterfaceAssociationId | None
+    BranchInterfaceId: String | None
+    TrunkInterfaceId: String | None
+    InterfaceProtocol: InterfaceProtocolType | None
+    VlanId: Integer | None
+    GreKey: Integer | None
+    Tags: TagList | None
 
 
 class AssociateTrunkInterfaceResult(TypedDict, total=False):
-    InterfaceAssociation: Optional[TrunkInterfaceAssociation]
-    ClientToken: Optional[String]
+    InterfaceAssociation: TrunkInterfaceAssociation | None
+    ClientToken: String | None
 
 
 class AssociateVpcCidrBlockRequest(ServiceRequest):
-    CidrBlock: Optional[String]
-    Ipv6CidrBlockNetworkBorderGroup: Optional[String]
-    Ipv6Pool: Optional[Ipv6PoolEc2Id]
-    Ipv6CidrBlock: Optional[String]
-    Ipv4IpamPoolId: Optional[IpamPoolId]
-    Ipv4NetmaskLength: Optional[NetmaskLength]
-    Ipv6IpamPoolId: Optional[IpamPoolId]
-    Ipv6NetmaskLength: Optional[NetmaskLength]
+    CidrBlock: String | None
+    Ipv6CidrBlockNetworkBorderGroup: String | None
+    Ipv6Pool: Ipv6PoolEc2Id | None
+    Ipv6CidrBlock: String | None
+    Ipv4IpamPoolId: IpamPoolId | None
+    Ipv4NetmaskLength: NetmaskLength | None
+    Ipv6IpamPoolId: IpamPoolId | None
+    Ipv6NetmaskLength: NetmaskLength | None
     VpcId: VpcId
-    AmazonProvidedIpv6CidrBlock: Optional[Boolean]
+    AmazonProvidedIpv6CidrBlock: Boolean | None
 
 
 class VpcCidrBlockState(TypedDict, total=False):
-    State: Optional[VpcCidrBlockStateCode]
-    StatusMessage: Optional[String]
+    State: VpcCidrBlockStateCode | None
+    StatusMessage: String | None
 
 
 class VpcCidrBlockAssociation(TypedDict, total=False):
-    AssociationId: Optional[String]
-    CidrBlock: Optional[String]
-    CidrBlockState: Optional[VpcCidrBlockState]
+    AssociationId: String | None
+    CidrBlock: String | None
+    CidrBlockState: VpcCidrBlockState | None
 
 
 class VpcIpv6CidrBlockAssociation(TypedDict, total=False):
-    AssociationId: Optional[String]
-    Ipv6CidrBlock: Optional[String]
-    Ipv6CidrBlockState: Optional[VpcCidrBlockState]
-    NetworkBorderGroup: Optional[String]
-    Ipv6Pool: Optional[String]
-    Ipv6AddressAttribute: Optional[Ipv6AddressAttribute]
-    IpSource: Optional[IpSource]
+    AssociationId: String | None
+    Ipv6CidrBlock: String | None
+    Ipv6CidrBlockState: VpcCidrBlockState | None
+    NetworkBorderGroup: String | None
+    Ipv6Pool: String | None
+    Ipv6AddressAttribute: Ipv6AddressAttribute | None
+    IpSource: IpSource | None
 
 
 class AssociateVpcCidrBlockResult(TypedDict, total=False):
-    Ipv6CidrBlockAssociation: Optional[VpcIpv6CidrBlockAssociation]
-    CidrBlockAssociation: Optional[VpcCidrBlockAssociation]
-    VpcId: Optional[String]
+    Ipv6CidrBlockAssociation: VpcIpv6CidrBlockAssociation | None
+    CidrBlockAssociation: VpcCidrBlockAssociation | None
+    VpcId: String | None
 
 
 class AssociatedRole(TypedDict, total=False):
-    AssociatedRoleArn: Optional[ResourceArn]
-    CertificateS3BucketName: Optional[String]
-    CertificateS3ObjectKey: Optional[String]
-    EncryptionKmsKeyId: Optional[String]
+    AssociatedRoleArn: ResourceArn | None
+    CertificateS3BucketName: String | None
+    CertificateS3ObjectKey: String | None
+    EncryptionKmsKeyId: String | None
 
 
-AssociatedRolesList = List[AssociatedRole]
-AssociatedSubnetList = List[SubnetId]
+AssociatedRolesList = list[AssociatedRole]
+AssociatedSubnetList = list[SubnetId]
 
 
 class AssociatedTargetNetwork(TypedDict, total=False):
-    NetworkId: Optional[String]
-    NetworkType: Optional[AssociatedNetworkType]
+    NetworkId: String | None
+    NetworkType: AssociatedNetworkType | None
 
 
-AssociatedTargetNetworkSet = List[AssociatedTargetNetwork]
-AssociationIdList = List[IamInstanceProfileAssociationId]
+AssociatedTargetNetworkSet = list[AssociatedTargetNetwork]
+AssociationIdList = list[IamInstanceProfileAssociationId]
 
 
 class AthenaIntegration(TypedDict, total=False):
     IntegrationResultS3DestinationArn: String
     PartitionLoadFrequency: PartitionLoadFrequency
-    PartitionStartDate: Optional[MillisecondDateTime]
-    PartitionEndDate: Optional[MillisecondDateTime]
+    PartitionStartDate: MillisecondDateTime | None
+    PartitionEndDate: MillisecondDateTime | None
 
 
-AthenaIntegrationsSet = List[AthenaIntegration]
-GroupIdStringList = List[SecurityGroupId]
+AthenaIntegrationsSet = list[AthenaIntegration]
+GroupIdStringList = list[SecurityGroupId]
 
 
 class AttachClassicLinkVpcRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceId: InstanceId
     VpcId: VpcId
     Groups: GroupIdStringList
 
 
 class AttachClassicLinkVpcResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class AttachInternetGatewayRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InternetGatewayId: InternetGatewayId
     VpcId: VpcId
 
 
 class EnaSrdUdpSpecification(TypedDict, total=False):
-    EnaSrdUdpEnabled: Optional[Boolean]
+    EnaSrdUdpEnabled: Boolean | None
 
 
 class EnaSrdSpecification(TypedDict, total=False):
-    EnaSrdEnabled: Optional[Boolean]
-    EnaSrdUdpSpecification: Optional[EnaSrdUdpSpecification]
+    EnaSrdEnabled: Boolean | None
+    EnaSrdUdpSpecification: EnaSrdUdpSpecification | None
 
 
 class AttachNetworkInterfaceRequest(ServiceRequest):
-    NetworkCardIndex: Optional[Integer]
-    EnaSrdSpecification: Optional[EnaSrdSpecification]
-    EnaQueueCount: Optional[Integer]
-    DryRun: Optional[Boolean]
+    NetworkCardIndex: Integer | None
+    EnaSrdSpecification: EnaSrdSpecification | None
+    EnaQueueCount: Integer | None
+    DryRun: Boolean | None
     NetworkInterfaceId: NetworkInterfaceId
     InstanceId: InstanceId
     DeviceIndex: Integer
 
 
 class AttachNetworkInterfaceResult(TypedDict, total=False):
-    AttachmentId: Optional[String]
-    NetworkCardIndex: Optional[Integer]
+    AttachmentId: String | None
+    NetworkCardIndex: Integer | None
 
 
 class AttachVerifiedAccessTrustProviderRequest(ServiceRequest):
     VerifiedAccessInstanceId: VerifiedAccessInstanceId
     VerifiedAccessTrustProviderId: VerifiedAccessTrustProviderId
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ClientToken: String | None
+    DryRun: Boolean | None
 
 
 class VerifiedAccessInstanceCustomSubDomain(TypedDict, total=False):
-    SubDomain: Optional[String]
-    Nameservers: Optional[ValueStringList]
+    SubDomain: String | None
+    Nameservers: ValueStringList | None
 
 
 class VerifiedAccessTrustProviderCondensed(TypedDict, total=False):
-    VerifiedAccessTrustProviderId: Optional[String]
-    Description: Optional[String]
-    TrustProviderType: Optional[TrustProviderType]
-    UserTrustProviderType: Optional[UserTrustProviderType]
-    DeviceTrustProviderType: Optional[DeviceTrustProviderType]
+    VerifiedAccessTrustProviderId: String | None
+    Description: String | None
+    TrustProviderType: TrustProviderType | None
+    UserTrustProviderType: UserTrustProviderType | None
+    DeviceTrustProviderType: DeviceTrustProviderType | None
 
 
-VerifiedAccessTrustProviderCondensedList = List[VerifiedAccessTrustProviderCondensed]
+VerifiedAccessTrustProviderCondensedList = list[VerifiedAccessTrustProviderCondensed]
 
 
 class VerifiedAccessInstance(TypedDict, total=False):
-    VerifiedAccessInstanceId: Optional[String]
-    Description: Optional[String]
-    VerifiedAccessTrustProviders: Optional[VerifiedAccessTrustProviderCondensedList]
-    CreationTime: Optional[String]
-    LastUpdatedTime: Optional[String]
-    Tags: Optional[TagList]
-    FipsEnabled: Optional[Boolean]
-    CidrEndpointsCustomSubDomain: Optional[VerifiedAccessInstanceCustomSubDomain]
+    VerifiedAccessInstanceId: String | None
+    Description: String | None
+    VerifiedAccessTrustProviders: VerifiedAccessTrustProviderCondensedList | None
+    CreationTime: String | None
+    LastUpdatedTime: String | None
+    Tags: TagList | None
+    FipsEnabled: Boolean | None
+    CidrEndpointsCustomSubDomain: VerifiedAccessInstanceCustomSubDomain | None
 
 
 class NativeApplicationOidcOptions(TypedDict, total=False):
-    PublicSigningKeyEndpoint: Optional[String]
-    Issuer: Optional[String]
-    AuthorizationEndpoint: Optional[String]
-    TokenEndpoint: Optional[String]
-    UserInfoEndpoint: Optional[String]
-    ClientId: Optional[String]
-    Scope: Optional[String]
+    PublicSigningKeyEndpoint: String | None
+    Issuer: String | None
+    AuthorizationEndpoint: String | None
+    TokenEndpoint: String | None
+    UserInfoEndpoint: String | None
+    ClientId: String | None
+    Scope: String | None
 
 
 class VerifiedAccessSseSpecificationResponse(TypedDict, total=False):
-    CustomerManagedKeyEnabled: Optional[Boolean]
-    KmsKeyArn: Optional[KmsKeyArn]
+    CustomerManagedKeyEnabled: Boolean | None
+    KmsKeyArn: KmsKeyArn | None
 
 
 class DeviceOptions(TypedDict, total=False):
-    TenantId: Optional[String]
-    PublicSigningKeyUrl: Optional[String]
+    TenantId: String | None
+    PublicSigningKeyUrl: String | None
 
 
 class OidcOptions(TypedDict, total=False):
-    Issuer: Optional[String]
-    AuthorizationEndpoint: Optional[String]
-    TokenEndpoint: Optional[String]
-    UserInfoEndpoint: Optional[String]
-    ClientId: Optional[String]
-    ClientSecret: Optional[ClientSecretType]
-    Scope: Optional[String]
+    Issuer: String | None
+    AuthorizationEndpoint: String | None
+    TokenEndpoint: String | None
+    UserInfoEndpoint: String | None
+    ClientId: String | None
+    ClientSecret: ClientSecretType | None
+    Scope: String | None
 
 
 class VerifiedAccessTrustProvider(TypedDict, total=False):
-    VerifiedAccessTrustProviderId: Optional[String]
-    Description: Optional[String]
-    TrustProviderType: Optional[TrustProviderType]
-    UserTrustProviderType: Optional[UserTrustProviderType]
-    DeviceTrustProviderType: Optional[DeviceTrustProviderType]
-    OidcOptions: Optional[OidcOptions]
-    DeviceOptions: Optional[DeviceOptions]
-    PolicyReferenceName: Optional[String]
-    CreationTime: Optional[String]
-    LastUpdatedTime: Optional[String]
-    Tags: Optional[TagList]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
-    NativeApplicationOidcOptions: Optional[NativeApplicationOidcOptions]
+    VerifiedAccessTrustProviderId: String | None
+    Description: String | None
+    TrustProviderType: TrustProviderType | None
+    UserTrustProviderType: UserTrustProviderType | None
+    DeviceTrustProviderType: DeviceTrustProviderType | None
+    OidcOptions: OidcOptions | None
+    DeviceOptions: DeviceOptions | None
+    PolicyReferenceName: String | None
+    CreationTime: String | None
+    LastUpdatedTime: String | None
+    Tags: TagList | None
+    SseSpecification: VerifiedAccessSseSpecificationResponse | None
+    NativeApplicationOidcOptions: NativeApplicationOidcOptions | None
 
 
 class AttachVerifiedAccessTrustProviderResult(TypedDict, total=False):
-    VerifiedAccessTrustProvider: Optional[VerifiedAccessTrustProvider]
-    VerifiedAccessInstance: Optional[VerifiedAccessInstance]
+    VerifiedAccessTrustProvider: VerifiedAccessTrustProvider | None
+    VerifiedAccessInstance: VerifiedAccessInstance | None
 
 
 class AttachVolumeRequest(ServiceRequest):
     Device: String
     InstanceId: InstanceId
     VolumeId: VolumeId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class AttachVpnGatewayRequest(ServiceRequest):
     VpcId: VpcId
     VpnGatewayId: VpnGatewayId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class VpcAttachment(TypedDict, total=False):
-    VpcId: Optional[String]
-    State: Optional[AttachmentStatus]
+    VpcId: String | None
+    State: AttachmentStatus | None
 
 
 class AttachVpnGatewayResult(TypedDict, total=False):
-    VpcAttachment: Optional[VpcAttachment]
+    VpcAttachment: VpcAttachment | None
 
 
 class AttachmentEnaSrdUdpSpecification(TypedDict, total=False):
-    EnaSrdUdpEnabled: Optional[Boolean]
+    EnaSrdUdpEnabled: Boolean | None
 
 
 class AttachmentEnaSrdSpecification(TypedDict, total=False):
-    EnaSrdEnabled: Optional[Boolean]
-    EnaSrdUdpSpecification: Optional[AttachmentEnaSrdUdpSpecification]
+    EnaSrdEnabled: Boolean | None
+    EnaSrdUdpSpecification: AttachmentEnaSrdUdpSpecification | None
 
 
 class AttributeBooleanValue(TypedDict, total=False):
-    Value: Optional[Boolean]
+    Value: Boolean | None
 
 
 class RegionalSummary(TypedDict, total=False):
-    RegionName: Optional[String]
-    NumberOfMatchedAccounts: Optional[Integer]
-    NumberOfUnmatchedAccounts: Optional[Integer]
+    RegionName: String | None
+    NumberOfMatchedAccounts: Integer | None
+    NumberOfUnmatchedAccounts: Integer | None
 
 
-RegionalSummaryList = List[RegionalSummary]
+RegionalSummaryList = list[RegionalSummary]
 
 
 class AttributeSummary(TypedDict, total=False):
-    AttributeName: Optional[String]
-    MostFrequentValue: Optional[String]
-    NumberOfMatchedAccounts: Optional[Integer]
-    NumberOfUnmatchedAccounts: Optional[Integer]
-    RegionalSummaries: Optional[RegionalSummaryList]
+    AttributeName: String | None
+    MostFrequentValue: String | None
+    NumberOfMatchedAccounts: Integer | None
+    NumberOfUnmatchedAccounts: Integer | None
+    RegionalSummaries: RegionalSummaryList | None
 
 
-AttributeSummaryList = List[AttributeSummary]
+AttributeSummaryList = list[AttributeSummary]
 
 
 class AttributeValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
 class ClientVpnAuthorizationRuleStatus(TypedDict, total=False):
-    Code: Optional[ClientVpnAuthorizationRuleStatusCode]
-    Message: Optional[String]
+    Code: ClientVpnAuthorizationRuleStatusCode | None
+    Message: String | None
 
 
 class AuthorizationRule(TypedDict, total=False):
-    ClientVpnEndpointId: Optional[String]
-    Description: Optional[String]
-    GroupId: Optional[String]
-    AccessAll: Optional[Boolean]
-    DestinationCidr: Optional[String]
-    Status: Optional[ClientVpnAuthorizationRuleStatus]
+    ClientVpnEndpointId: String | None
+    Description: String | None
+    GroupId: String | None
+    AccessAll: Boolean | None
+    DestinationCidr: String | None
+    Status: ClientVpnAuthorizationRuleStatus | None
 
 
-AuthorizationRuleSet = List[AuthorizationRule]
+AuthorizationRuleSet = list[AuthorizationRule]
 
 
 class AuthorizeClientVpnIngressRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
     TargetNetworkCidr: String
-    AccessGroupId: Optional[String]
-    AuthorizeAllGroups: Optional[Boolean]
-    Description: Optional[String]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    AccessGroupId: String | None
+    AuthorizeAllGroups: Boolean | None
+    Description: String | None
+    ClientToken: String | None
+    DryRun: Boolean | None
 
 
 class AuthorizeClientVpnIngressResult(TypedDict, total=False):
-    Status: Optional[ClientVpnAuthorizationRuleStatus]
+    Status: ClientVpnAuthorizationRuleStatus | None
 
 
 class PrefixListId(TypedDict, total=False):
-    Description: Optional[String]
-    PrefixListId: Optional[String]
+    Description: String | None
+    PrefixListId: String | None
 
 
-PrefixListIdList = List[PrefixListId]
+PrefixListIdList = list[PrefixListId]
 
 
 class Ipv6Range(TypedDict, total=False):
-    Description: Optional[String]
-    CidrIpv6: Optional[String]
+    Description: String | None
+    CidrIpv6: String | None
 
 
-Ipv6RangeList = List[Ipv6Range]
+Ipv6RangeList = list[Ipv6Range]
 
 
 class IpRange(TypedDict, total=False):
-    Description: Optional[String]
-    CidrIp: Optional[String]
+    Description: String | None
+    CidrIp: String | None
 
 
-IpRangeList = List[IpRange]
+IpRangeList = list[IpRange]
 
 
 class UserIdGroupPair(TypedDict, total=False):
-    Description: Optional[String]
-    UserId: Optional[String]
-    GroupName: Optional[String]
-    GroupId: Optional[String]
-    VpcId: Optional[String]
-    VpcPeeringConnectionId: Optional[String]
-    PeeringStatus: Optional[String]
+    Description: String | None
+    UserId: String | None
+    GroupName: String | None
+    GroupId: String | None
+    VpcId: String | None
+    VpcPeeringConnectionId: String | None
+    PeeringStatus: String | None
 
 
-UserIdGroupPairList = List[UserIdGroupPair]
+UserIdGroupPairList = list[UserIdGroupPair]
 
 
 class IpPermission(TypedDict, total=False):
-    IpProtocol: Optional[String]
-    FromPort: Optional[Integer]
-    ToPort: Optional[Integer]
-    UserIdGroupPairs: Optional[UserIdGroupPairList]
-    IpRanges: Optional[IpRangeList]
-    Ipv6Ranges: Optional[Ipv6RangeList]
-    PrefixListIds: Optional[PrefixListIdList]
+    IpProtocol: String | None
+    FromPort: Integer | None
+    ToPort: Integer | None
+    UserIdGroupPairs: UserIdGroupPairList | None
+    IpRanges: IpRangeList | None
+    Ipv6Ranges: Ipv6RangeList | None
+    PrefixListIds: PrefixListIdList | None
 
 
-IpPermissionList = List[IpPermission]
+IpPermissionList = list[IpPermission]
 
 
 class AuthorizeSecurityGroupEgressRequest(ServiceRequest):
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
     GroupId: SecurityGroupId
-    SourceSecurityGroupName: Optional[String]
-    SourceSecurityGroupOwnerId: Optional[String]
-    IpProtocol: Optional[String]
-    FromPort: Optional[Integer]
-    ToPort: Optional[Integer]
-    CidrIp: Optional[String]
-    IpPermissions: Optional[IpPermissionList]
+    SourceSecurityGroupName: String | None
+    SourceSecurityGroupOwnerId: String | None
+    IpProtocol: String | None
+    FromPort: Integer | None
+    ToPort: Integer | None
+    CidrIp: String | None
+    IpPermissions: IpPermissionList | None
 
 
 class ReferencedSecurityGroup(TypedDict, total=False):
-    GroupId: Optional[String]
-    PeeringStatus: Optional[String]
-    UserId: Optional[String]
-    VpcId: Optional[String]
-    VpcPeeringConnectionId: Optional[String]
+    GroupId: String | None
+    PeeringStatus: String | None
+    UserId: String | None
+    VpcId: String | None
+    VpcPeeringConnectionId: String | None
 
 
 class SecurityGroupRule(TypedDict, total=False):
-    SecurityGroupRuleId: Optional[SecurityGroupRuleId]
-    GroupId: Optional[SecurityGroupId]
-    GroupOwnerId: Optional[String]
-    IsEgress: Optional[Boolean]
-    IpProtocol: Optional[String]
-    FromPort: Optional[Integer]
-    ToPort: Optional[Integer]
-    CidrIpv4: Optional[String]
-    CidrIpv6: Optional[String]
-    PrefixListId: Optional[PrefixListResourceId]
-    ReferencedGroupInfo: Optional[ReferencedSecurityGroup]
-    Description: Optional[String]
-    Tags: Optional[TagList]
-    SecurityGroupRuleArn: Optional[String]
+    SecurityGroupRuleId: SecurityGroupRuleId | None
+    GroupId: SecurityGroupId | None
+    GroupOwnerId: String | None
+    IsEgress: Boolean | None
+    IpProtocol: String | None
+    FromPort: Integer | None
+    ToPort: Integer | None
+    CidrIpv4: String | None
+    CidrIpv6: String | None
+    PrefixListId: PrefixListResourceId | None
+    ReferencedGroupInfo: ReferencedSecurityGroup | None
+    Description: String | None
+    Tags: TagList | None
+    SecurityGroupRuleArn: String | None
 
 
-SecurityGroupRuleList = List[SecurityGroupRule]
+SecurityGroupRuleList = list[SecurityGroupRule]
 
 
 class AuthorizeSecurityGroupEgressResult(TypedDict, total=False):
-    Return: Optional[Boolean]
-    SecurityGroupRules: Optional[SecurityGroupRuleList]
+    Return: Boolean | None
+    SecurityGroupRules: SecurityGroupRuleList | None
 
 
 class AuthorizeSecurityGroupIngressRequest(ServiceRequest):
-    CidrIp: Optional[String]
-    FromPort: Optional[Integer]
-    GroupId: Optional[SecurityGroupId]
-    GroupName: Optional[SecurityGroupName]
-    IpPermissions: Optional[IpPermissionList]
-    IpProtocol: Optional[String]
-    SourceSecurityGroupName: Optional[String]
-    SourceSecurityGroupOwnerId: Optional[String]
-    ToPort: Optional[Integer]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    CidrIp: String | None
+    FromPort: Integer | None
+    GroupId: SecurityGroupId | None
+    GroupName: SecurityGroupName | None
+    IpPermissions: IpPermissionList | None
+    IpProtocol: String | None
+    SourceSecurityGroupName: String | None
+    SourceSecurityGroupOwnerId: String | None
+    ToPort: Integer | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class AuthorizeSecurityGroupIngressResult(TypedDict, total=False):
-    Return: Optional[Boolean]
-    SecurityGroupRules: Optional[SecurityGroupRuleList]
+    Return: Boolean | None
+    SecurityGroupRules: SecurityGroupRuleList | None
 
 
 class AvailabilityZoneMessage(TypedDict, total=False):
-    Message: Optional[String]
+    Message: String | None
 
 
-AvailabilityZoneMessageList = List[AvailabilityZoneMessage]
+AvailabilityZoneMessageList = list[AvailabilityZoneMessage]
 
 
 class AvailabilityZone(TypedDict, total=False):
-    OptInStatus: Optional[AvailabilityZoneOptInStatus]
-    Messages: Optional[AvailabilityZoneMessageList]
-    RegionName: Optional[String]
-    ZoneName: Optional[String]
-    ZoneId: Optional[String]
-    GroupName: Optional[String]
-    NetworkBorderGroup: Optional[String]
-    ZoneType: Optional[String]
-    ParentZoneName: Optional[String]
-    ParentZoneId: Optional[String]
-    GroupLongName: Optional[String]
-    State: Optional[AvailabilityZoneState]
+    OptInStatus: AvailabilityZoneOptInStatus | None
+    Messages: AvailabilityZoneMessageList | None
+    RegionName: String | None
+    ZoneName: String | None
+    ZoneId: String | None
+    GroupName: String | None
+    NetworkBorderGroup: String | None
+    ZoneType: String | None
+    ParentZoneName: String | None
+    ParentZoneId: String | None
+    GroupLongName: String | None
+    State: AvailabilityZoneState | None
 
 
-AvailabilityZoneList = List[AvailabilityZone]
-AvailabilityZoneStringList = List[String]
+AvailabilityZoneIdStringList = list[String]
+AvailabilityZoneList = list[AvailabilityZone]
+AvailabilityZoneStringList = list[String]
 
 
 class InstanceCapacity(TypedDict, total=False):
-    AvailableCapacity: Optional[Integer]
-    InstanceType: Optional[String]
-    TotalCapacity: Optional[Integer]
+    AvailableCapacity: Integer | None
+    InstanceType: String | None
+    TotalCapacity: Integer | None
 
 
-AvailableInstanceCapacityList = List[InstanceCapacity]
+AvailableInstanceCapacityList = list[InstanceCapacity]
 
 
 class AvailableCapacity(TypedDict, total=False):
-    AvailableInstanceCapacity: Optional[AvailableInstanceCapacityList]
-    AvailableVCpus: Optional[Integer]
+    AvailableInstanceCapacity: AvailableInstanceCapacityList | None
+    AvailableVCpus: Integer | None
 
 
-BandwidthWeightingTypeList = List[BandwidthWeightingType]
+BandwidthWeightingTypeList = list[BandwidthWeightingType]
 
 
 class BaselineEbsBandwidthMbps(TypedDict, total=False):
-    Min: Optional[Integer]
-    Max: Optional[Integer]
+    Min: Integer | None
+    Max: Integer | None
 
 
 class BaselineEbsBandwidthMbpsRequest(TypedDict, total=False):
-    Min: Optional[Integer]
-    Max: Optional[Integer]
+    Min: Integer | None
+    Max: Integer | None
 
 
 class PerformanceFactorReference(TypedDict, total=False):
-    InstanceFamily: Optional[String]
+    InstanceFamily: String | None
 
 
-PerformanceFactorReferenceSet = List[PerformanceFactorReference]
+PerformanceFactorReferenceSet = list[PerformanceFactorReference]
 
 
 class CpuPerformanceFactor(TypedDict, total=False):
-    References: Optional[PerformanceFactorReferenceSet]
+    References: PerformanceFactorReferenceSet | None
 
 
 class BaselinePerformanceFactors(TypedDict, total=False):
-    Cpu: Optional[CpuPerformanceFactor]
+    Cpu: CpuPerformanceFactor | None
 
 
 class PerformanceFactorReferenceRequest(TypedDict, total=False):
-    InstanceFamily: Optional[String]
+    InstanceFamily: String | None
 
 
-PerformanceFactorReferenceSetRequest = List[PerformanceFactorReferenceRequest]
+PerformanceFactorReferenceSetRequest = list[PerformanceFactorReferenceRequest]
 
 
 class CpuPerformanceFactorRequest(TypedDict, total=False):
-    References: Optional[PerformanceFactorReferenceSetRequest]
+    References: PerformanceFactorReferenceSetRequest | None
 
 
 class BaselinePerformanceFactorsRequest(TypedDict, total=False):
-    Cpu: Optional[CpuPerformanceFactorRequest]
+    Cpu: CpuPerformanceFactorRequest | None
 
 
-BillingProductList = List[String]
+BillingProductList = list[String]
 Blob = bytes
 
 
 class BlobAttributeValue(TypedDict, total=False):
-    Value: Optional[Blob]
+    Value: Blob | None
 
 
 class EbsBlockDevice(TypedDict, total=False):
-    DeleteOnTermination: Optional[Boolean]
-    Iops: Optional[Integer]
-    SnapshotId: Optional[SnapshotId]
-    VolumeSize: Optional[Integer]
-    VolumeType: Optional[VolumeType]
-    KmsKeyId: Optional[String]
-    Throughput: Optional[Integer]
-    OutpostArn: Optional[String]
-    AvailabilityZone: Optional[String]
-    Encrypted: Optional[Boolean]
-    VolumeInitializationRate: Optional[Integer]
-    AvailabilityZoneId: Optional[String]
+    DeleteOnTermination: Boolean | None
+    Iops: Integer | None
+    SnapshotId: SnapshotId | None
+    VolumeSize: Integer | None
+    VolumeType: VolumeType | None
+    KmsKeyId: String | None
+    Throughput: Integer | None
+    OutpostArn: String | None
+    AvailabilityZone: String | None
+    Encrypted: Boolean | None
+    VolumeInitializationRate: Integer | None
+    AvailabilityZoneId: String | None
 
 
 class BlockDeviceMapping(TypedDict, total=False):
-    Ebs: Optional[EbsBlockDevice]
-    NoDevice: Optional[String]
-    DeviceName: Optional[String]
-    VirtualName: Optional[String]
+    Ebs: EbsBlockDevice | None
+    NoDevice: String | None
+    DeviceName: String | None
+    VirtualName: String | None
 
 
-BlockDeviceMappingList = List[BlockDeviceMapping]
-BlockDeviceMappingRequestList = List[BlockDeviceMapping]
+BlockDeviceMappingList = list[BlockDeviceMapping]
+BlockDeviceMappingRequestList = list[BlockDeviceMapping]
 
 
 class EbsBlockDeviceResponse(TypedDict, total=False):
-    Encrypted: Optional[Boolean]
-    DeleteOnTermination: Optional[Boolean]
-    Iops: Optional[Integer]
-    Throughput: Optional[Integer]
-    KmsKeyId: Optional[KmsKeyId]
-    SnapshotId: Optional[SnapshotId]
-    VolumeSize: Optional[Integer]
-    VolumeType: Optional[VolumeType]
+    Encrypted: Boolean | None
+    DeleteOnTermination: Boolean | None
+    Iops: Integer | None
+    Throughput: Integer | None
+    KmsKeyId: KmsKeyId | None
+    SnapshotId: SnapshotId | None
+    VolumeSize: Integer | None
+    VolumeType: VolumeType | None
 
 
 class BlockDeviceMappingResponse(TypedDict, total=False):
-    DeviceName: Optional[String]
-    VirtualName: Optional[String]
-    Ebs: Optional[EbsBlockDeviceResponse]
-    NoDevice: Optional[String]
+    DeviceName: String | None
+    VirtualName: String | None
+    Ebs: EbsBlockDeviceResponse | None
+    NoDevice: String | None
 
 
-BlockDeviceMappingResponseList = List[BlockDeviceMappingResponse]
+BlockDeviceMappingResponseList = list[BlockDeviceMappingResponse]
 
 
 class BlockPublicAccessStates(TypedDict, total=False):
-    InternetGatewayBlockMode: Optional[BlockPublicAccessMode]
+    InternetGatewayBlockMode: BlockPublicAccessMode | None
 
 
-BootModeTypeList = List[BootModeType]
+BootModeTypeList = list[BootModeType]
 BoxedLong = int
-BundleIdStringList = List[BundleId]
+BundleIdStringList = list[BundleId]
 
 
 class S3Storage(TypedDict, total=False):
-    AWSAccessKeyId: Optional[String]
-    Bucket: Optional[String]
-    Prefix: Optional[String]
-    UploadPolicy: Optional[Blob]
-    UploadPolicySignature: Optional[S3StorageUploadPolicySignature]
+    AWSAccessKeyId: String | None
+    Bucket: String | None
+    Prefix: String | None
+    UploadPolicy: Blob | None
+    UploadPolicySignature: S3StorageUploadPolicySignature | None
 
 
 class Storage(TypedDict, total=False):
-    S3: Optional[S3Storage]
+    S3: S3Storage | None
 
 
 class BundleInstanceRequest(ServiceRequest):
     InstanceId: InstanceId
     Storage: Storage
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class BundleTaskError(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
+    Code: String | None
+    Message: String | None
 
 
 class BundleTask(TypedDict, total=False):
-    InstanceId: Optional[String]
-    BundleId: Optional[String]
-    State: Optional[BundleTaskState]
-    StartTime: Optional[DateTime]
-    UpdateTime: Optional[DateTime]
-    Storage: Optional[Storage]
-    Progress: Optional[String]
-    BundleTaskError: Optional[BundleTaskError]
+    InstanceId: String | None
+    BundleId: String | None
+    State: BundleTaskState | None
+    StartTime: DateTime | None
+    UpdateTime: DateTime | None
+    Storage: Storage | None
+    Progress: String | None
+    BundleTaskError: BundleTaskError | None
 
 
 class BundleInstanceResult(TypedDict, total=False):
-    BundleTask: Optional[BundleTask]
+    BundleTask: BundleTask | None
 
 
-BundleTaskList = List[BundleTask]
+BundleTaskList = list[BundleTask]
 
 
 class Byoasn(TypedDict, total=False):
-    Asn: Optional[String]
-    IpamId: Optional[IpamId]
-    StatusMessage: Optional[String]
-    State: Optional[AsnState]
+    Asn: String | None
+    IpamId: IpamId | None
+    StatusMessage: String | None
+    State: AsnState | None
 
 
-ByoasnSet = List[Byoasn]
-ByoipCidrSet = List[ByoipCidr]
+ByoasnSet = list[Byoasn]
+ByoipCidrSet = list[ByoipCidr]
 
 
 class CancelBundleTaskRequest(ServiceRequest):
     BundleId: BundleId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class CancelBundleTaskResult(TypedDict, total=False):
-    BundleTask: Optional[BundleTask]
+    BundleTask: BundleTask | None
 
 
 class CancelCapacityReservationFleetError(TypedDict, total=False):
-    Code: Optional[CancelCapacityReservationFleetErrorCode]
-    Message: Optional[CancelCapacityReservationFleetErrorMessage]
+    Code: CancelCapacityReservationFleetErrorCode | None
+    Message: CancelCapacityReservationFleetErrorMessage | None
 
 
-CapacityReservationFleetIdSet = List[CapacityReservationFleetId]
+CapacityReservationFleetIdSet = list[CapacityReservationFleetId]
 
 
 class CancelCapacityReservationFleetsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     CapacityReservationFleetIds: CapacityReservationFleetIdSet
 
 
 class FailedCapacityReservationFleetCancellationResult(TypedDict, total=False):
-    CapacityReservationFleetId: Optional[CapacityReservationFleetId]
-    CancelCapacityReservationFleetError: Optional[CancelCapacityReservationFleetError]
+    CapacityReservationFleetId: CapacityReservationFleetId | None
+    CancelCapacityReservationFleetError: CancelCapacityReservationFleetError | None
 
 
-FailedCapacityReservationFleetCancellationResultSet = List[
+FailedCapacityReservationFleetCancellationResultSet = list[
     FailedCapacityReservationFleetCancellationResult
 ]
 
 
 class CapacityReservationFleetCancellationState(TypedDict, total=False):
-    CurrentFleetState: Optional[CapacityReservationFleetState]
-    PreviousFleetState: Optional[CapacityReservationFleetState]
-    CapacityReservationFleetId: Optional[CapacityReservationFleetId]
+    CurrentFleetState: CapacityReservationFleetState | None
+    PreviousFleetState: CapacityReservationFleetState | None
+    CapacityReservationFleetId: CapacityReservationFleetId | None
 
 
-CapacityReservationFleetCancellationStateSet = List[CapacityReservationFleetCancellationState]
+CapacityReservationFleetCancellationStateSet = list[CapacityReservationFleetCancellationState]
 
 
 class CancelCapacityReservationFleetsResult(TypedDict, total=False):
-    SuccessfulFleetCancellations: Optional[CapacityReservationFleetCancellationStateSet]
-    FailedFleetCancellations: Optional[FailedCapacityReservationFleetCancellationResultSet]
+    SuccessfulFleetCancellations: CapacityReservationFleetCancellationStateSet | None
+    FailedFleetCancellations: FailedCapacityReservationFleetCancellationResultSet | None
 
 
 class CancelCapacityReservationRequest(ServiceRequest):
     CapacityReservationId: CapacityReservationId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class CancelCapacityReservationResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class CancelConversionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ConversionTaskId: ConversionTaskId
-    ReasonMessage: Optional[String]
+    ReasonMessage: String | None
 
 
 class CancelDeclarativePoliciesReportRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ReportId: DeclarativePoliciesReportId
 
 
 class CancelDeclarativePoliciesReportResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class CancelExportTaskRequest(ServiceRequest):
@@ -6274,23 +6292,23 @@ class CancelExportTaskRequest(ServiceRequest):
 
 class CancelImageLaunchPermissionRequest(ServiceRequest):
     ImageId: ImageId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class CancelImageLaunchPermissionResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class CancelImportTaskRequest(ServiceRequest):
-    CancelReason: Optional[String]
-    DryRun: Optional[Boolean]
-    ImportTaskId: Optional[ImportTaskId]
+    CancelReason: String | None
+    DryRun: Boolean | None
+    ImportTaskId: ImportTaskId | None
 
 
 class CancelImportTaskResult(TypedDict, total=False):
-    ImportTaskId: Optional[String]
-    PreviousState: Optional[String]
-    State: Optional[String]
+    ImportTaskId: String | None
+    PreviousState: String | None
+    State: String | None
 
 
 class CancelReservedInstancesListingRequest(ServiceRequest):
@@ -6301,415 +6319,415 @@ Long = int
 
 
 class PriceSchedule(TypedDict, total=False):
-    Active: Optional[Boolean]
-    CurrencyCode: Optional[CurrencyCodeValues]
-    Price: Optional[Double]
-    Term: Optional[Long]
+    Active: Boolean | None
+    CurrencyCode: CurrencyCodeValues | None
+    Price: Double | None
+    Term: Long | None
 
 
-PriceScheduleList = List[PriceSchedule]
+PriceScheduleList = list[PriceSchedule]
 
 
 class InstanceCount(TypedDict, total=False):
-    InstanceCount: Optional[Integer]
-    State: Optional[ListingState]
+    InstanceCount: Integer | None
+    State: ListingState | None
 
 
-InstanceCountList = List[InstanceCount]
+InstanceCountList = list[InstanceCount]
 
 
 class ReservedInstancesListing(TypedDict, total=False):
-    ClientToken: Optional[String]
-    CreateDate: Optional[DateTime]
-    InstanceCounts: Optional[InstanceCountList]
-    PriceSchedules: Optional[PriceScheduleList]
-    ReservedInstancesId: Optional[String]
-    ReservedInstancesListingId: Optional[String]
-    Status: Optional[ListingStatus]
-    StatusMessage: Optional[String]
-    Tags: Optional[TagList]
-    UpdateDate: Optional[DateTime]
+    ClientToken: String | None
+    CreateDate: DateTime | None
+    InstanceCounts: InstanceCountList | None
+    PriceSchedules: PriceScheduleList | None
+    ReservedInstancesId: String | None
+    ReservedInstancesListingId: String | None
+    Status: ListingStatus | None
+    StatusMessage: String | None
+    Tags: TagList | None
+    UpdateDate: DateTime | None
 
 
-ReservedInstancesListingList = List[ReservedInstancesListing]
+ReservedInstancesListingList = list[ReservedInstancesListing]
 
 
 class CancelReservedInstancesListingResult(TypedDict, total=False):
-    ReservedInstancesListings: Optional[ReservedInstancesListingList]
+    ReservedInstancesListings: ReservedInstancesListingList | None
 
 
 class CancelSpotFleetRequestsError(TypedDict, total=False):
-    Code: Optional[CancelBatchErrorCode]
-    Message: Optional[String]
+    Code: CancelBatchErrorCode | None
+    Message: String | None
 
 
 class CancelSpotFleetRequestsErrorItem(TypedDict, total=False):
-    Error: Optional[CancelSpotFleetRequestsError]
-    SpotFleetRequestId: Optional[String]
+    Error: CancelSpotFleetRequestsError | None
+    SpotFleetRequestId: String | None
 
 
-CancelSpotFleetRequestsErrorSet = List[CancelSpotFleetRequestsErrorItem]
-SpotFleetRequestIdList = List[SpotFleetRequestId]
+CancelSpotFleetRequestsErrorSet = list[CancelSpotFleetRequestsErrorItem]
+SpotFleetRequestIdList = list[SpotFleetRequestId]
 
 
 class CancelSpotFleetRequestsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     SpotFleetRequestIds: SpotFleetRequestIdList
     TerminateInstances: Boolean
 
 
 class CancelSpotFleetRequestsSuccessItem(TypedDict, total=False):
-    CurrentSpotFleetRequestState: Optional[BatchState]
-    PreviousSpotFleetRequestState: Optional[BatchState]
-    SpotFleetRequestId: Optional[String]
+    CurrentSpotFleetRequestState: BatchState | None
+    PreviousSpotFleetRequestState: BatchState | None
+    SpotFleetRequestId: String | None
 
 
-CancelSpotFleetRequestsSuccessSet = List[CancelSpotFleetRequestsSuccessItem]
+CancelSpotFleetRequestsSuccessSet = list[CancelSpotFleetRequestsSuccessItem]
 
 
 class CancelSpotFleetRequestsResponse(TypedDict, total=False):
-    SuccessfulFleetRequests: Optional[CancelSpotFleetRequestsSuccessSet]
-    UnsuccessfulFleetRequests: Optional[CancelSpotFleetRequestsErrorSet]
+    SuccessfulFleetRequests: CancelSpotFleetRequestsSuccessSet | None
+    UnsuccessfulFleetRequests: CancelSpotFleetRequestsErrorSet | None
 
 
-SpotInstanceRequestIdList = List[SpotInstanceRequestId]
+SpotInstanceRequestIdList = list[SpotInstanceRequestId]
 
 
 class CancelSpotInstanceRequestsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     SpotInstanceRequestIds: SpotInstanceRequestIdList
 
 
 class CancelledSpotInstanceRequest(TypedDict, total=False):
-    SpotInstanceRequestId: Optional[String]
-    State: Optional[CancelSpotInstanceRequestState]
+    SpotInstanceRequestId: String | None
+    State: CancelSpotInstanceRequestState | None
 
 
-CancelledSpotInstanceRequestList = List[CancelledSpotInstanceRequest]
+CancelledSpotInstanceRequestList = list[CancelledSpotInstanceRequest]
 
 
 class CancelSpotInstanceRequestsResult(TypedDict, total=False):
-    CancelledSpotInstanceRequests: Optional[CancelledSpotInstanceRequestList]
+    CancelledSpotInstanceRequests: CancelledSpotInstanceRequestList | None
 
 
 class CapacityAllocation(TypedDict, total=False):
-    AllocationType: Optional[AllocationType]
-    Count: Optional[Integer]
+    AllocationType: AllocationType | None
+    Count: Integer | None
 
 
-CapacityAllocations = List[CapacityAllocation]
-CapacityReservationIdSet = List[CapacityReservationId]
+CapacityAllocations = list[CapacityAllocation]
+CapacityReservationIdSet = list[CapacityReservationId]
 
 
 class CapacityBlock(TypedDict, total=False):
-    CapacityBlockId: Optional[CapacityBlockId]
-    UltraserverType: Optional[String]
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    CapacityReservationIds: Optional[CapacityReservationIdSet]
-    StartDate: Optional[MillisecondDateTime]
-    EndDate: Optional[MillisecondDateTime]
-    CreateDate: Optional[MillisecondDateTime]
-    State: Optional[CapacityBlockResourceState]
-    Tags: Optional[TagList]
+    CapacityBlockId: CapacityBlockId | None
+    UltraserverType: String | None
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    CapacityReservationIds: CapacityReservationIdSet | None
+    StartDate: MillisecondDateTime | None
+    EndDate: MillisecondDateTime | None
+    CreateDate: MillisecondDateTime | None
+    State: CapacityBlockResourceState | None
+    Tags: TagList | None
 
 
 class CapacityBlockExtension(TypedDict, total=False):
-    CapacityReservationId: Optional[CapacityReservationId]
-    InstanceType: Optional[String]
-    InstanceCount: Optional[Integer]
-    AvailabilityZone: Optional[AvailabilityZoneName]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    CapacityBlockExtensionOfferingId: Optional[OfferingId]
-    CapacityBlockExtensionDurationHours: Optional[Integer]
-    CapacityBlockExtensionStatus: Optional[CapacityBlockExtensionStatus]
-    CapacityBlockExtensionPurchaseDate: Optional[MillisecondDateTime]
-    CapacityBlockExtensionStartDate: Optional[MillisecondDateTime]
-    CapacityBlockExtensionEndDate: Optional[MillisecondDateTime]
-    UpfrontFee: Optional[String]
-    CurrencyCode: Optional[String]
+    CapacityReservationId: CapacityReservationId | None
+    InstanceType: String | None
+    InstanceCount: Integer | None
+    AvailabilityZone: AvailabilityZoneName | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    CapacityBlockExtensionOfferingId: OfferingId | None
+    CapacityBlockExtensionDurationHours: Integer | None
+    CapacityBlockExtensionStatus: CapacityBlockExtensionStatus | None
+    CapacityBlockExtensionPurchaseDate: MillisecondDateTime | None
+    CapacityBlockExtensionStartDate: MillisecondDateTime | None
+    CapacityBlockExtensionEndDate: MillisecondDateTime | None
+    UpfrontFee: String | None
+    CurrencyCode: String | None
 
 
 class CapacityBlockExtensionOffering(TypedDict, total=False):
-    CapacityBlockExtensionOfferingId: Optional[OfferingId]
-    InstanceType: Optional[String]
-    InstanceCount: Optional[Integer]
-    AvailabilityZone: Optional[AvailabilityZoneName]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    StartDate: Optional[MillisecondDateTime]
-    CapacityBlockExtensionStartDate: Optional[MillisecondDateTime]
-    CapacityBlockExtensionEndDate: Optional[MillisecondDateTime]
-    CapacityBlockExtensionDurationHours: Optional[Integer]
-    UpfrontFee: Optional[String]
-    CurrencyCode: Optional[String]
-    Tenancy: Optional[CapacityReservationTenancy]
+    CapacityBlockExtensionOfferingId: OfferingId | None
+    InstanceType: String | None
+    InstanceCount: Integer | None
+    AvailabilityZone: AvailabilityZoneName | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    StartDate: MillisecondDateTime | None
+    CapacityBlockExtensionStartDate: MillisecondDateTime | None
+    CapacityBlockExtensionEndDate: MillisecondDateTime | None
+    CapacityBlockExtensionDurationHours: Integer | None
+    UpfrontFee: String | None
+    CurrencyCode: String | None
+    Tenancy: CapacityReservationTenancy | None
 
 
-CapacityBlockExtensionOfferingSet = List[CapacityBlockExtensionOffering]
-CapacityBlockExtensionSet = List[CapacityBlockExtension]
-CapacityBlockIds = List[CapacityBlockId]
+CapacityBlockExtensionOfferingSet = list[CapacityBlockExtensionOffering]
+CapacityBlockExtensionSet = list[CapacityBlockExtension]
+CapacityBlockIds = list[CapacityBlockId]
 
 
 class CapacityBlockOffering(TypedDict, total=False):
-    CapacityBlockOfferingId: Optional[OfferingId]
-    InstanceType: Optional[String]
-    AvailabilityZone: Optional[String]
-    InstanceCount: Optional[Integer]
-    StartDate: Optional[MillisecondDateTime]
-    EndDate: Optional[MillisecondDateTime]
-    CapacityBlockDurationHours: Optional[Integer]
-    UpfrontFee: Optional[String]
-    CurrencyCode: Optional[String]
-    Tenancy: Optional[CapacityReservationTenancy]
-    UltraserverType: Optional[String]
-    UltraserverCount: Optional[BoxedInteger]
-    CapacityBlockDurationMinutes: Optional[Integer]
+    CapacityBlockOfferingId: OfferingId | None
+    InstanceType: String | None
+    AvailabilityZone: String | None
+    InstanceCount: Integer | None
+    StartDate: MillisecondDateTime | None
+    EndDate: MillisecondDateTime | None
+    CapacityBlockDurationHours: Integer | None
+    UpfrontFee: String | None
+    CurrencyCode: String | None
+    Tenancy: CapacityReservationTenancy | None
+    UltraserverType: String | None
+    UltraserverCount: BoxedInteger | None
+    CapacityBlockDurationMinutes: Integer | None
 
 
-CapacityBlockOfferingSet = List[CapacityBlockOffering]
-CapacityBlockSet = List[CapacityBlock]
+CapacityBlockOfferingSet = list[CapacityBlockOffering]
+CapacityBlockSet = list[CapacityBlock]
 
 
 class CapacityReservationStatus(TypedDict, total=False):
-    CapacityReservationId: Optional[CapacityReservationId]
-    TotalCapacity: Optional[Integer]
-    TotalAvailableCapacity: Optional[Integer]
-    TotalUnavailableCapacity: Optional[Integer]
+    CapacityReservationId: CapacityReservationId | None
+    TotalCapacity: Integer | None
+    TotalAvailableCapacity: Integer | None
+    TotalUnavailableCapacity: Integer | None
 
 
-CapacityReservationStatusSet = List[CapacityReservationStatus]
+CapacityReservationStatusSet = list[CapacityReservationStatus]
 
 
 class CapacityBlockStatus(TypedDict, total=False):
-    CapacityBlockId: Optional[CapacityBlockId]
-    InterconnectStatus: Optional[CapacityBlockInterconnectStatus]
-    TotalCapacity: Optional[Integer]
-    TotalAvailableCapacity: Optional[Integer]
-    TotalUnavailableCapacity: Optional[Integer]
-    CapacityReservationStatuses: Optional[CapacityReservationStatusSet]
+    CapacityBlockId: CapacityBlockId | None
+    InterconnectStatus: CapacityBlockInterconnectStatus | None
+    TotalCapacity: Integer | None
+    TotalAvailableCapacity: Integer | None
+    TotalUnavailableCapacity: Integer | None
+    CapacityReservationStatuses: CapacityReservationStatusSet | None
 
 
-CapacityBlockStatusSet = List[CapacityBlockStatus]
-ConditionValueList = List[String]
+CapacityBlockStatusSet = list[CapacityBlockStatus]
+ConditionValueList = list[String]
 
 
 class DimensionCondition(TypedDict, total=False):
-    Dimension: Optional[FilterByDimension]
-    Comparison: Optional[Comparison]
-    Values: Optional[ConditionValueList]
+    Dimension: FilterByDimension | None
+    Comparison: Comparison | None
+    Values: ConditionValueList | None
 
 
 class CapacityManagerCondition(TypedDict, total=False):
-    DimensionCondition: Optional[DimensionCondition]
+    DimensionCondition: DimensionCondition | None
 
 
-CapacityManagerConditionSet = List[CapacityManagerCondition]
-CapacityManagerDataExportIdSet = List[CapacityManagerDataExportId]
+CapacityManagerConditionSet = list[CapacityManagerCondition]
+CapacityManagerDataExportIdSet = list[CapacityManagerDataExportId]
 
 
 class CapacityManagerDataExportResponse(TypedDict, total=False):
-    CapacityManagerDataExportId: Optional[CapacityManagerDataExportId]
-    S3BucketName: Optional[String]
-    S3BucketPrefix: Optional[String]
-    Schedule: Optional[Schedule]
-    OutputFormat: Optional[OutputFormat]
-    CreateTime: Optional[MillisecondDateTime]
-    LatestDeliveryStatus: Optional[CapacityManagerDataExportStatus]
-    LatestDeliveryStatusMessage: Optional[String]
-    LatestDeliveryS3LocationUri: Optional[String]
-    LatestDeliveryTime: Optional[MillisecondDateTime]
-    Tags: Optional[TagList]
+    CapacityManagerDataExportId: CapacityManagerDataExportId | None
+    S3BucketName: String | None
+    S3BucketPrefix: String | None
+    Schedule: Schedule | None
+    OutputFormat: OutputFormat | None
+    CreateTime: MillisecondDateTime | None
+    LatestDeliveryStatus: CapacityManagerDataExportStatus | None
+    LatestDeliveryStatusMessage: String | None
+    LatestDeliveryS3LocationUri: String | None
+    LatestDeliveryTime: MillisecondDateTime | None
+    Tags: TagList | None
 
 
-CapacityManagerDataExportResponseSet = List[CapacityManagerDataExportResponse]
+CapacityManagerDataExportResponseSet = list[CapacityManagerDataExportResponse]
 
 
 class CapacityManagerDimension(TypedDict, total=False):
-    ResourceRegion: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    AccountId: Optional[String]
-    InstanceFamily: Optional[String]
-    InstanceType: Optional[String]
-    InstancePlatform: Optional[String]
-    ReservationArn: Optional[String]
-    ReservationId: Optional[String]
-    ReservationType: Optional[ReservationType]
-    ReservationCreateTimestamp: Optional[MillisecondDateTime]
-    ReservationStartTimestamp: Optional[MillisecondDateTime]
-    ReservationEndTimestamp: Optional[MillisecondDateTime]
-    ReservationEndDateType: Optional[ReservationEndDateType]
-    Tenancy: Optional[CapacityTenancy]
-    ReservationState: Optional[ReservationState]
-    ReservationInstanceMatchCriteria: Optional[String]
-    ReservationUnusedFinancialOwner: Optional[String]
+    ResourceRegion: String | None
+    AvailabilityZoneId: String | None
+    AccountId: String | None
+    InstanceFamily: String | None
+    InstanceType: String | None
+    InstancePlatform: String | None
+    ReservationArn: String | None
+    ReservationId: String | None
+    ReservationType: ReservationType | None
+    ReservationCreateTimestamp: MillisecondDateTime | None
+    ReservationStartTimestamp: MillisecondDateTime | None
+    ReservationEndTimestamp: MillisecondDateTime | None
+    ReservationEndDateType: ReservationEndDateType | None
+    Tenancy: CapacityTenancy | None
+    ReservationState: ReservationState | None
+    ReservationInstanceMatchCriteria: String | None
+    ReservationUnusedFinancialOwner: String | None
 
 
 class CapacityReservationCommitmentInfo(TypedDict, total=False):
-    CommittedInstanceCount: Optional[Integer]
-    CommitmentEndDate: Optional[MillisecondDateTime]
+    CommittedInstanceCount: Integer | None
+    CommitmentEndDate: MillisecondDateTime | None
 
 
 class CapacityReservation(TypedDict, total=False):
-    CapacityReservationId: Optional[String]
-    OwnerId: Optional[String]
-    CapacityReservationArn: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    InstanceType: Optional[String]
-    InstancePlatform: Optional[CapacityReservationInstancePlatform]
-    AvailabilityZone: Optional[String]
-    Tenancy: Optional[CapacityReservationTenancy]
-    TotalInstanceCount: Optional[Integer]
-    AvailableInstanceCount: Optional[Integer]
-    EbsOptimized: Optional[Boolean]
-    EphemeralStorage: Optional[Boolean]
-    State: Optional[CapacityReservationState]
-    StartDate: Optional[MillisecondDateTime]
-    EndDate: Optional[DateTime]
-    EndDateType: Optional[EndDateType]
-    InstanceMatchCriteria: Optional[InstanceMatchCriteria]
-    CreateDate: Optional[DateTime]
-    Tags: Optional[TagList]
-    OutpostArn: Optional[OutpostArn]
-    CapacityReservationFleetId: Optional[String]
-    PlacementGroupArn: Optional[PlacementGroupArn]
-    CapacityAllocations: Optional[CapacityAllocations]
-    ReservationType: Optional[CapacityReservationType]
-    UnusedReservationBillingOwnerId: Optional[AccountID]
-    CommitmentInfo: Optional[CapacityReservationCommitmentInfo]
-    DeliveryPreference: Optional[CapacityReservationDeliveryPreference]
-    CapacityBlockId: Optional[CapacityBlockId]
+    CapacityReservationId: String | None
+    OwnerId: String | None
+    CapacityReservationArn: String | None
+    AvailabilityZoneId: String | None
+    InstanceType: String | None
+    InstancePlatform: CapacityReservationInstancePlatform | None
+    AvailabilityZone: String | None
+    Tenancy: CapacityReservationTenancy | None
+    TotalInstanceCount: Integer | None
+    AvailableInstanceCount: Integer | None
+    EbsOptimized: Boolean | None
+    EphemeralStorage: Boolean | None
+    State: CapacityReservationState | None
+    StartDate: MillisecondDateTime | None
+    EndDate: DateTime | None
+    EndDateType: EndDateType | None
+    InstanceMatchCriteria: InstanceMatchCriteria | None
+    CreateDate: DateTime | None
+    Tags: TagList | None
+    OutpostArn: OutpostArn | None
+    CapacityReservationFleetId: String | None
+    PlacementGroupArn: PlacementGroupArn | None
+    CapacityAllocations: CapacityAllocations | None
+    ReservationType: CapacityReservationType | None
+    UnusedReservationBillingOwnerId: AccountID | None
+    CommitmentInfo: CapacityReservationCommitmentInfo | None
+    DeliveryPreference: CapacityReservationDeliveryPreference | None
+    CapacityBlockId: CapacityBlockId | None
 
 
 class CapacityReservationInfo(TypedDict, total=False):
-    InstanceType: Optional[String]
-    AvailabilityZone: Optional[AvailabilityZoneName]
-    Tenancy: Optional[CapacityReservationTenancy]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
+    InstanceType: String | None
+    AvailabilityZone: AvailabilityZoneName | None
+    Tenancy: CapacityReservationTenancy | None
+    AvailabilityZoneId: AvailabilityZoneId | None
 
 
 class CapacityReservationBillingRequest(TypedDict, total=False):
-    CapacityReservationId: Optional[String]
-    RequestedBy: Optional[String]
-    UnusedReservationBillingOwnerId: Optional[AccountID]
-    LastUpdateTime: Optional[MillisecondDateTime]
-    Status: Optional[CapacityReservationBillingRequestStatus]
-    StatusMessage: Optional[String]
-    CapacityReservationInfo: Optional[CapacityReservationInfo]
+    CapacityReservationId: String | None
+    RequestedBy: String | None
+    UnusedReservationBillingOwnerId: AccountID | None
+    LastUpdateTime: MillisecondDateTime | None
+    Status: CapacityReservationBillingRequestStatus | None
+    StatusMessage: String | None
+    CapacityReservationInfo: CapacityReservationInfo | None
 
 
-CapacityReservationBillingRequestSet = List[CapacityReservationBillingRequest]
+CapacityReservationBillingRequestSet = list[CapacityReservationBillingRequest]
 CapacityReservationCommitmentDuration = int
 
 
 class FleetCapacityReservation(TypedDict, total=False):
-    CapacityReservationId: Optional[CapacityReservationId]
-    AvailabilityZoneId: Optional[String]
-    InstanceType: Optional[InstanceType]
-    InstancePlatform: Optional[CapacityReservationInstancePlatform]
-    AvailabilityZone: Optional[String]
-    TotalInstanceCount: Optional[Integer]
-    FulfilledCapacity: Optional[Double]
-    EbsOptimized: Optional[Boolean]
-    CreateDate: Optional[MillisecondDateTime]
-    Weight: Optional[DoubleWithConstraints]
-    Priority: Optional[IntegerWithConstraints]
+    CapacityReservationId: CapacityReservationId | None
+    AvailabilityZoneId: String | None
+    InstanceType: InstanceType | None
+    InstancePlatform: CapacityReservationInstancePlatform | None
+    AvailabilityZone: String | None
+    TotalInstanceCount: Integer | None
+    FulfilledCapacity: Double | None
+    EbsOptimized: Boolean | None
+    CreateDate: MillisecondDateTime | None
+    Weight: DoubleWithConstraints | None
+    Priority: IntegerWithConstraints | None
 
 
-FleetCapacityReservationSet = List[FleetCapacityReservation]
+FleetCapacityReservationSet = list[FleetCapacityReservation]
 
 
 class CapacityReservationFleet(TypedDict, total=False):
-    CapacityReservationFleetId: Optional[CapacityReservationFleetId]
-    CapacityReservationFleetArn: Optional[String]
-    State: Optional[CapacityReservationFleetState]
-    TotalTargetCapacity: Optional[Integer]
-    TotalFulfilledCapacity: Optional[Double]
-    Tenancy: Optional[FleetCapacityReservationTenancy]
-    EndDate: Optional[MillisecondDateTime]
-    CreateTime: Optional[MillisecondDateTime]
-    InstanceMatchCriteria: Optional[FleetInstanceMatchCriteria]
-    AllocationStrategy: Optional[String]
-    InstanceTypeSpecifications: Optional[FleetCapacityReservationSet]
-    Tags: Optional[TagList]
+    CapacityReservationFleetId: CapacityReservationFleetId | None
+    CapacityReservationFleetArn: String | None
+    State: CapacityReservationFleetState | None
+    TotalTargetCapacity: Integer | None
+    TotalFulfilledCapacity: Double | None
+    Tenancy: FleetCapacityReservationTenancy | None
+    EndDate: MillisecondDateTime | None
+    CreateTime: MillisecondDateTime | None
+    InstanceMatchCriteria: FleetInstanceMatchCriteria | None
+    AllocationStrategy: String | None
+    InstanceTypeSpecifications: FleetCapacityReservationSet | None
+    Tags: TagList | None
 
 
-CapacityReservationFleetSet = List[CapacityReservationFleet]
+CapacityReservationFleetSet = list[CapacityReservationFleet]
 
 
 class CapacityReservationGroup(TypedDict, total=False):
-    GroupArn: Optional[String]
-    OwnerId: Optional[String]
+    GroupArn: String | None
+    OwnerId: String | None
 
 
-CapacityReservationGroupSet = List[CapacityReservationGroup]
+CapacityReservationGroupSet = list[CapacityReservationGroup]
 
 
 class CapacityReservationOptions(TypedDict, total=False):
-    UsageStrategy: Optional[FleetCapacityReservationUsageStrategy]
+    UsageStrategy: FleetCapacityReservationUsageStrategy | None
 
 
 class CapacityReservationOptionsRequest(TypedDict, total=False):
-    UsageStrategy: Optional[FleetCapacityReservationUsageStrategy]
+    UsageStrategy: FleetCapacityReservationUsageStrategy | None
 
 
-CapacityReservationSet = List[CapacityReservation]
+CapacityReservationSet = list[CapacityReservation]
 
 
 class CapacityReservationTarget(TypedDict, total=False):
-    CapacityReservationId: Optional[CapacityReservationId]
-    CapacityReservationResourceGroupArn: Optional[String]
+    CapacityReservationId: CapacityReservationId | None
+    CapacityReservationResourceGroupArn: String | None
 
 
 class CapacityReservationSpecification(TypedDict, total=False):
-    CapacityReservationPreference: Optional[CapacityReservationPreference]
-    CapacityReservationTarget: Optional[CapacityReservationTarget]
+    CapacityReservationPreference: CapacityReservationPreference | None
+    CapacityReservationTarget: CapacityReservationTarget | None
 
 
 class CapacityReservationTargetResponse(TypedDict, total=False):
-    CapacityReservationId: Optional[String]
-    CapacityReservationResourceGroupArn: Optional[String]
+    CapacityReservationId: String | None
+    CapacityReservationResourceGroupArn: String | None
 
 
 class CapacityReservationSpecificationResponse(TypedDict, total=False):
-    CapacityReservationPreference: Optional[CapacityReservationPreference]
-    CapacityReservationTarget: Optional[CapacityReservationTargetResponse]
+    CapacityReservationPreference: CapacityReservationPreference | None
+    CapacityReservationTarget: CapacityReservationTargetResponse | None
 
 
-NetworkNodeSet = List[String]
+NetworkNodeSet = list[String]
 
 
 class CapacityReservationTopology(TypedDict, total=False):
-    CapacityReservationId: Optional[String]
-    CapacityBlockId: Optional[String]
-    State: Optional[String]
-    InstanceType: Optional[String]
-    GroupName: Optional[String]
-    NetworkNodes: Optional[NetworkNodeSet]
-    AvailabilityZoneId: Optional[String]
-    AvailabilityZone: Optional[String]
+    CapacityReservationId: String | None
+    CapacityBlockId: String | None
+    State: String | None
+    InstanceType: String | None
+    GroupName: String | None
+    NetworkNodes: NetworkNodeSet | None
+    AvailabilityZoneId: String | None
+    AvailabilityZone: String | None
 
 
-CapacityReservationTopologySet = List[CapacityReservationTopology]
+CapacityReservationTopologySet = list[CapacityReservationTopology]
 
 
 class CarrierGateway(TypedDict, total=False):
-    CarrierGatewayId: Optional[CarrierGatewayId]
-    VpcId: Optional[VpcId]
-    State: Optional[CarrierGatewayState]
-    OwnerId: Optional[String]
-    Tags: Optional[TagList]
+    CarrierGatewayId: CarrierGatewayId | None
+    VpcId: VpcId | None
+    State: CarrierGatewayState | None
+    OwnerId: String | None
+    Tags: TagList | None
 
 
-CarrierGatewayIdSet = List[CarrierGatewayId]
-CarrierGatewaySet = List[CarrierGateway]
+CarrierGatewayIdSet = list[CarrierGatewayId]
+CarrierGatewaySet = list[CarrierGateway]
 
 
 class CertificateAuthentication(TypedDict, total=False):
-    ClientRootCertificateChain: Optional[String]
+    ClientRootCertificateChain: String | None
 
 
 class CertificateAuthenticationRequest(TypedDict, total=False):
-    ClientRootCertificateChainArn: Optional[String]
+    ClientRootCertificateChainArn: String | None
 
 
 class CidrAuthorizationContext(TypedDict, total=False):
@@ -6718,1762 +6736,1774 @@ class CidrAuthorizationContext(TypedDict, total=False):
 
 
 class ClassicLinkDnsSupport(TypedDict, total=False):
-    ClassicLinkDnsSupported: Optional[Boolean]
-    VpcId: Optional[String]
+    ClassicLinkDnsSupported: Boolean | None
+    VpcId: String | None
 
 
-ClassicLinkDnsSupportList = List[ClassicLinkDnsSupport]
+ClassicLinkDnsSupportList = list[ClassicLinkDnsSupport]
 
 
 class GroupIdentifier(TypedDict, total=False):
-    GroupId: Optional[String]
-    GroupName: Optional[String]
+    GroupId: String | None
+    GroupName: String | None
 
 
-GroupIdentifierList = List[GroupIdentifier]
+GroupIdentifierList = list[GroupIdentifier]
 
 
 class ClassicLinkInstance(TypedDict, total=False):
-    Groups: Optional[GroupIdentifierList]
-    InstanceId: Optional[String]
-    Tags: Optional[TagList]
-    VpcId: Optional[String]
+    Groups: GroupIdentifierList | None
+    InstanceId: String | None
+    Tags: TagList | None
+    VpcId: String | None
 
 
-ClassicLinkInstanceList = List[ClassicLinkInstance]
+ClassicLinkInstanceList = list[ClassicLinkInstance]
 
 
 class ClassicLoadBalancer(TypedDict, total=False):
-    Name: Optional[String]
+    Name: String | None
 
 
-ClassicLoadBalancers = List[ClassicLoadBalancer]
+ClassicLoadBalancers = list[ClassicLoadBalancer]
 
 
 class ClassicLoadBalancersConfig(TypedDict, total=False):
-    ClassicLoadBalancers: Optional[ClassicLoadBalancers]
+    ClassicLoadBalancers: ClassicLoadBalancers | None
 
 
 class ClientCertificateRevocationListStatus(TypedDict, total=False):
-    Code: Optional[ClientCertificateRevocationListStatusCode]
-    Message: Optional[String]
+    Code: ClientCertificateRevocationListStatusCode | None
+    Message: String | None
 
 
 class ClientConnectOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    LambdaFunctionArn: Optional[String]
+    Enabled: Boolean | None
+    LambdaFunctionArn: String | None
 
 
 class ClientVpnEndpointAttributeStatus(TypedDict, total=False):
-    Code: Optional[ClientVpnEndpointAttributeStatusCode]
-    Message: Optional[String]
+    Code: ClientVpnEndpointAttributeStatusCode | None
+    Message: String | None
 
 
 class ClientConnectResponseOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    LambdaFunctionArn: Optional[String]
-    Status: Optional[ClientVpnEndpointAttributeStatus]
+    Enabled: Boolean | None
+    LambdaFunctionArn: String | None
+    Status: ClientVpnEndpointAttributeStatus | None
 
 
 class ClientData(TypedDict, total=False):
-    Comment: Optional[String]
-    UploadEnd: Optional[DateTime]
-    UploadSize: Optional[Double]
-    UploadStart: Optional[DateTime]
+    Comment: String | None
+    UploadEnd: DateTime | None
+    UploadSize: Double | None
+    UploadStart: DateTime | None
 
 
 class ClientLoginBannerOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    BannerText: Optional[String]
+    Enabled: Boolean | None
+    BannerText: String | None
 
 
 class ClientLoginBannerResponseOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    BannerText: Optional[String]
+    Enabled: Boolean | None
+    BannerText: String | None
 
 
 class ClientRouteEnforcementOptions(TypedDict, total=False):
-    Enforced: Optional[Boolean]
+    Enforced: Boolean | None
 
 
 class ClientRouteEnforcementResponseOptions(TypedDict, total=False):
-    Enforced: Optional[Boolean]
+    Enforced: Boolean | None
 
 
 class FederatedAuthentication(TypedDict, total=False):
-    SamlProviderArn: Optional[String]
-    SelfServiceSamlProviderArn: Optional[String]
+    SamlProviderArn: String | None
+    SelfServiceSamlProviderArn: String | None
 
 
 class DirectoryServiceAuthentication(TypedDict, total=False):
-    DirectoryId: Optional[String]
+    DirectoryId: String | None
 
 
 class ClientVpnAuthentication(TypedDict, total=False):
-    Type: Optional[ClientVpnAuthenticationType]
-    ActiveDirectory: Optional[DirectoryServiceAuthentication]
-    MutualAuthentication: Optional[CertificateAuthentication]
-    FederatedAuthentication: Optional[FederatedAuthentication]
+    Type: ClientVpnAuthenticationType | None
+    ActiveDirectory: DirectoryServiceAuthentication | None
+    MutualAuthentication: CertificateAuthentication | None
+    FederatedAuthentication: FederatedAuthentication | None
 
 
-ClientVpnAuthenticationList = List[ClientVpnAuthentication]
+ClientVpnAuthenticationList = list[ClientVpnAuthentication]
 
 
 class FederatedAuthenticationRequest(TypedDict, total=False):
-    SAMLProviderArn: Optional[String]
-    SelfServiceSAMLProviderArn: Optional[String]
+    SAMLProviderArn: String | None
+    SelfServiceSAMLProviderArn: String | None
 
 
 class DirectoryServiceAuthenticationRequest(TypedDict, total=False):
-    DirectoryId: Optional[String]
+    DirectoryId: String | None
 
 
 class ClientVpnAuthenticationRequest(TypedDict, total=False):
-    Type: Optional[ClientVpnAuthenticationType]
-    ActiveDirectory: Optional[DirectoryServiceAuthenticationRequest]
-    MutualAuthentication: Optional[CertificateAuthenticationRequest]
-    FederatedAuthentication: Optional[FederatedAuthenticationRequest]
+    Type: ClientVpnAuthenticationType | None
+    ActiveDirectory: DirectoryServiceAuthenticationRequest | None
+    MutualAuthentication: CertificateAuthenticationRequest | None
+    FederatedAuthentication: FederatedAuthenticationRequest | None
 
 
-ClientVpnAuthenticationRequestList = List[ClientVpnAuthenticationRequest]
+ClientVpnAuthenticationRequestList = list[ClientVpnAuthenticationRequest]
 
 
 class ClientVpnConnectionStatus(TypedDict, total=False):
-    Code: Optional[ClientVpnConnectionStatusCode]
-    Message: Optional[String]
+    Code: ClientVpnConnectionStatusCode | None
+    Message: String | None
 
 
 class ClientVpnConnection(TypedDict, total=False):
-    ClientVpnEndpointId: Optional[String]
-    Timestamp: Optional[String]
-    ConnectionId: Optional[String]
-    Username: Optional[String]
-    ConnectionEstablishedTime: Optional[String]
-    IngressBytes: Optional[String]
-    EgressBytes: Optional[String]
-    IngressPackets: Optional[String]
-    EgressPackets: Optional[String]
-    ClientIp: Optional[String]
-    ClientIpv6Address: Optional[String]
-    CommonName: Optional[String]
-    Status: Optional[ClientVpnConnectionStatus]
-    ConnectionEndTime: Optional[String]
-    PostureComplianceStatuses: Optional[ValueStringList]
+    ClientVpnEndpointId: String | None
+    Timestamp: String | None
+    ConnectionId: String | None
+    Username: String | None
+    ConnectionEstablishedTime: String | None
+    IngressBytes: String | None
+    EgressBytes: String | None
+    IngressPackets: String | None
+    EgressPackets: String | None
+    ClientIp: String | None
+    ClientIpv6Address: String | None
+    CommonName: String | None
+    Status: ClientVpnConnectionStatus | None
+    ConnectionEndTime: String | None
+    PostureComplianceStatuses: ValueStringList | None
 
 
-ClientVpnConnectionSet = List[ClientVpnConnection]
+ClientVpnConnectionSet = list[ClientVpnConnection]
 
 
 class ConnectionLogResponseOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    CloudwatchLogGroup: Optional[String]
-    CloudwatchLogStream: Optional[String]
+    Enabled: Boolean | None
+    CloudwatchLogGroup: String | None
+    CloudwatchLogStream: String | None
 
 
 class ClientVpnEndpointStatus(TypedDict, total=False):
-    Code: Optional[ClientVpnEndpointStatusCode]
-    Message: Optional[String]
+    Code: ClientVpnEndpointStatusCode | None
+    Message: String | None
 
 
 class ClientVpnEndpoint(TypedDict, total=False):
-    ClientVpnEndpointId: Optional[String]
-    Description: Optional[String]
-    Status: Optional[ClientVpnEndpointStatus]
-    CreationTime: Optional[String]
-    DeletionTime: Optional[String]
-    DnsName: Optional[String]
-    ClientCidrBlock: Optional[String]
-    DnsServers: Optional[ValueStringList]
-    SplitTunnel: Optional[Boolean]
-    VpnProtocol: Optional[VpnProtocol]
-    TransportProtocol: Optional[TransportProtocol]
-    VpnPort: Optional[Integer]
-    AssociatedTargetNetworks: Optional[AssociatedTargetNetworkSet]
-    ServerCertificateArn: Optional[String]
-    AuthenticationOptions: Optional[ClientVpnAuthenticationList]
-    ConnectionLogOptions: Optional[ConnectionLogResponseOptions]
-    Tags: Optional[TagList]
-    SecurityGroupIds: Optional[ClientVpnSecurityGroupIdSet]
-    VpcId: Optional[VpcId]
-    SelfServicePortalUrl: Optional[String]
-    ClientConnectOptions: Optional[ClientConnectResponseOptions]
-    SessionTimeoutHours: Optional[Integer]
-    ClientLoginBannerOptions: Optional[ClientLoginBannerResponseOptions]
-    ClientRouteEnforcementOptions: Optional[ClientRouteEnforcementResponseOptions]
-    DisconnectOnSessionTimeout: Optional[Boolean]
-    EndpointIpAddressType: Optional[EndpointIpAddressType]
-    TrafficIpAddressType: Optional[TrafficIpAddressType]
+    ClientVpnEndpointId: String | None
+    Description: String | None
+    Status: ClientVpnEndpointStatus | None
+    CreationTime: String | None
+    DeletionTime: String | None
+    DnsName: String | None
+    ClientCidrBlock: String | None
+    DnsServers: ValueStringList | None
+    SplitTunnel: Boolean | None
+    VpnProtocol: VpnProtocol | None
+    TransportProtocol: TransportProtocol | None
+    VpnPort: Integer | None
+    AssociatedTargetNetworks: AssociatedTargetNetworkSet | None
+    ServerCertificateArn: String | None
+    AuthenticationOptions: ClientVpnAuthenticationList | None
+    ConnectionLogOptions: ConnectionLogResponseOptions | None
+    Tags: TagList | None
+    SecurityGroupIds: ClientVpnSecurityGroupIdSet | None
+    VpcId: VpcId | None
+    SelfServicePortalUrl: String | None
+    ClientConnectOptions: ClientConnectResponseOptions | None
+    SessionTimeoutHours: Integer | None
+    ClientLoginBannerOptions: ClientLoginBannerResponseOptions | None
+    ClientRouteEnforcementOptions: ClientRouteEnforcementResponseOptions | None
+    DisconnectOnSessionTimeout: Boolean | None
+    EndpointIpAddressType: EndpointIpAddressType | None
+    TrafficIpAddressType: TrafficIpAddressType | None
 
 
-ClientVpnEndpointIdList = List[ClientVpnEndpointId]
+ClientVpnEndpointIdList = list[ClientVpnEndpointId]
 
 
 class ClientVpnRouteStatus(TypedDict, total=False):
-    Code: Optional[ClientVpnRouteStatusCode]
-    Message: Optional[String]
+    Code: ClientVpnRouteStatusCode | None
+    Message: String | None
 
 
 class ClientVpnRoute(TypedDict, total=False):
-    ClientVpnEndpointId: Optional[String]
-    DestinationCidr: Optional[String]
-    TargetSubnet: Optional[String]
-    Type: Optional[String]
-    Origin: Optional[String]
-    Status: Optional[ClientVpnRouteStatus]
-    Description: Optional[String]
+    ClientVpnEndpointId: String | None
+    DestinationCidr: String | None
+    TargetSubnet: String | None
+    Type: String | None
+    Origin: String | None
+    Status: ClientVpnRouteStatus | None
+    Description: String | None
 
 
-ClientVpnRouteSet = List[ClientVpnRoute]
+ClientVpnRouteSet = list[ClientVpnRoute]
 
 
 class CloudWatchLogOptions(TypedDict, total=False):
-    LogEnabled: Optional[Boolean]
-    LogGroupArn: Optional[String]
-    LogOutputFormat: Optional[String]
+    LogEnabled: Boolean | None
+    LogGroupArn: String | None
+    LogOutputFormat: String | None
 
 
 class CloudWatchLogOptionsSpecification(TypedDict, total=False):
-    LogEnabled: Optional[Boolean]
-    LogGroupArn: Optional[CloudWatchLogGroupArn]
-    LogOutputFormat: Optional[String]
+    LogEnabled: Boolean | None
+    LogGroupArn: CloudWatchLogGroupArn | None
+    LogOutputFormat: String | None
 
 
 class CoipAddressUsage(TypedDict, total=False):
-    AllocationId: Optional[String]
-    AwsAccountId: Optional[String]
-    AwsService: Optional[String]
-    CoIp: Optional[String]
+    AllocationId: String | None
+    AwsAccountId: String | None
+    AwsService: String | None
+    CoIp: String | None
 
 
-CoipAddressUsageSet = List[CoipAddressUsage]
+CoipAddressUsageSet = list[CoipAddressUsage]
 
 
 class CoipCidr(TypedDict, total=False):
-    Cidr: Optional[String]
-    CoipPoolId: Optional[Ipv4PoolCoipId]
-    LocalGatewayRouteTableId: Optional[String]
+    Cidr: String | None
+    CoipPoolId: Ipv4PoolCoipId | None
+    LocalGatewayRouteTableId: String | None
 
 
 class CoipPool(TypedDict, total=False):
-    PoolId: Optional[Ipv4PoolCoipId]
-    PoolCidrs: Optional[ValueStringList]
-    LocalGatewayRouteTableId: Optional[LocalGatewayRoutetableId]
-    Tags: Optional[TagList]
-    PoolArn: Optional[ResourceArn]
+    PoolId: Ipv4PoolCoipId | None
+    PoolCidrs: ValueStringList | None
+    LocalGatewayRouteTableId: LocalGatewayRoutetableId | None
+    Tags: TagList | None
+    PoolArn: ResourceArn | None
 
 
-CoipPoolIdSet = List[Ipv4PoolCoipId]
-CoipPoolSet = List[CoipPool]
+CoipPoolIdSet = list[Ipv4PoolCoipId]
+CoipPoolSet = list[CoipPool]
 
 
 class ConfirmProductInstanceRequest(ServiceRequest):
     InstanceId: InstanceId
     ProductCode: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ConfirmProductInstanceResult(TypedDict, total=False):
-    Return: Optional[Boolean]
-    OwnerId: Optional[String]
+    Return: Boolean | None
+    OwnerId: String | None
 
 
 class ConnectionLogOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    CloudwatchLogGroup: Optional[String]
-    CloudwatchLogStream: Optional[String]
+    Enabled: Boolean | None
+    CloudwatchLogGroup: String | None
+    CloudwatchLogStream: String | None
 
 
 class ConnectionNotification(TypedDict, total=False):
-    ConnectionNotificationId: Optional[String]
-    ServiceId: Optional[String]
-    VpcEndpointId: Optional[String]
-    ConnectionNotificationType: Optional[ConnectionNotificationType]
-    ConnectionNotificationArn: Optional[String]
-    ConnectionEvents: Optional[ValueStringList]
-    ConnectionNotificationState: Optional[ConnectionNotificationState]
-    ServiceRegion: Optional[String]
+    ConnectionNotificationId: String | None
+    ServiceId: String | None
+    VpcEndpointId: String | None
+    ConnectionNotificationType: ConnectionNotificationType | None
+    ConnectionNotificationArn: String | None
+    ConnectionEvents: ValueStringList | None
+    ConnectionNotificationState: ConnectionNotificationState | None
+    ServiceRegion: String | None
 
 
-ConnectionNotificationIdsList = List[ConnectionNotificationId]
-ConnectionNotificationSet = List[ConnectionNotification]
+ConnectionNotificationIdsList = list[ConnectionNotificationId]
+ConnectionNotificationSet = list[ConnectionNotification]
 
 
 class ConnectionTrackingConfiguration(TypedDict, total=False):
-    TcpEstablishedTimeout: Optional[Integer]
-    UdpStreamTimeout: Optional[Integer]
-    UdpTimeout: Optional[Integer]
+    TcpEstablishedTimeout: Integer | None
+    UdpStreamTimeout: Integer | None
+    UdpTimeout: Integer | None
 
 
 class ConnectionTrackingSpecification(TypedDict, total=False):
-    TcpEstablishedTimeout: Optional[Integer]
-    UdpTimeout: Optional[Integer]
-    UdpStreamTimeout: Optional[Integer]
+    TcpEstablishedTimeout: Integer | None
+    UdpTimeout: Integer | None
+    UdpStreamTimeout: Integer | None
 
 
 class ConnectionTrackingSpecificationRequest(TypedDict, total=False):
-    TcpEstablishedTimeout: Optional[Integer]
-    UdpStreamTimeout: Optional[Integer]
-    UdpTimeout: Optional[Integer]
+    TcpEstablishedTimeout: Integer | None
+    UdpStreamTimeout: Integer | None
+    UdpTimeout: Integer | None
 
 
 class ConnectionTrackingSpecificationResponse(TypedDict, total=False):
-    TcpEstablishedTimeout: Optional[Integer]
-    UdpStreamTimeout: Optional[Integer]
-    UdpTimeout: Optional[Integer]
+    TcpEstablishedTimeout: Integer | None
+    UdpStreamTimeout: Integer | None
+    UdpTimeout: Integer | None
 
 
-ConversionIdStringList = List[ConversionTaskId]
+ConversionIdStringList = list[ConversionTaskId]
 
 
 class DiskImageVolumeDescription(TypedDict, total=False):
-    Id: Optional[String]
-    Size: Optional[Long]
+    Id: String | None
+    Size: Long | None
 
 
 class DiskImageDescription(TypedDict, total=False):
-    Checksum: Optional[String]
-    Format: Optional[DiskImageFormat]
-    ImportManifestUrl: Optional[ImportManifestUrl]
-    Size: Optional[Long]
+    Checksum: String | None
+    Format: DiskImageFormat | None
+    ImportManifestUrl: ImportManifestUrl | None
+    Size: Long | None
 
 
 class ImportVolumeTaskDetails(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    BytesConverted: Optional[Long]
-    Description: Optional[String]
-    Image: Optional[DiskImageDescription]
-    Volume: Optional[DiskImageVolumeDescription]
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    BytesConverted: Long | None
+    Description: String | None
+    Image: DiskImageDescription | None
+    Volume: DiskImageVolumeDescription | None
 
 
 class ImportInstanceVolumeDetailItem(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    BytesConverted: Optional[Long]
-    Description: Optional[String]
-    Image: Optional[DiskImageDescription]
-    Status: Optional[String]
-    StatusMessage: Optional[String]
-    Volume: Optional[DiskImageVolumeDescription]
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    BytesConverted: Long | None
+    Description: String | None
+    Image: DiskImageDescription | None
+    Status: String | None
+    StatusMessage: String | None
+    Volume: DiskImageVolumeDescription | None
 
 
-ImportInstanceVolumeDetailSet = List[ImportInstanceVolumeDetailItem]
+ImportInstanceVolumeDetailSet = list[ImportInstanceVolumeDetailItem]
 
 
 class ImportInstanceTaskDetails(TypedDict, total=False):
-    Description: Optional[String]
-    InstanceId: Optional[String]
-    Platform: Optional[PlatformValues]
-    Volumes: Optional[ImportInstanceVolumeDetailSet]
+    Description: String | None
+    InstanceId: String | None
+    Platform: PlatformValues | None
+    Volumes: ImportInstanceVolumeDetailSet | None
 
 
 class ConversionTask(TypedDict, total=False):
-    ConversionTaskId: Optional[String]
-    ExpirationTime: Optional[String]
-    ImportInstance: Optional[ImportInstanceTaskDetails]
-    ImportVolume: Optional[ImportVolumeTaskDetails]
-    State: Optional[ConversionTaskState]
-    StatusMessage: Optional[String]
-    Tags: Optional[TagList]
+    ConversionTaskId: String | None
+    ExpirationTime: String | None
+    ImportInstance: ImportInstanceTaskDetails | None
+    ImportVolume: ImportVolumeTaskDetails | None
+    State: ConversionTaskState | None
+    StatusMessage: String | None
+    Tags: TagList | None
 
 
 class CopyFpgaImageRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     SourceFpgaImageId: String
-    Description: Optional[String]
-    Name: Optional[String]
+    Description: String | None
+    Name: String | None
     SourceRegion: String
-    ClientToken: Optional[String]
+    ClientToken: String | None
 
 
 class CopyFpgaImageResult(TypedDict, total=False):
-    FpgaImageId: Optional[String]
+    FpgaImageId: String | None
 
 
 class CopyImageRequest(ServiceRequest):
-    ClientToken: Optional[String]
-    Description: Optional[String]
-    Encrypted: Optional[Boolean]
-    KmsKeyId: Optional[KmsKeyId]
+    ClientToken: String | None
+    Description: String | None
+    Encrypted: Boolean | None
+    KmsKeyId: KmsKeyId | None
     Name: String
     SourceImageId: String
     SourceRegion: String
-    DestinationOutpostArn: Optional[String]
-    CopyImageTags: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
-    SnapshotCopyCompletionDurationMinutes: Optional[Long]
-    DestinationAvailabilityZone: Optional[String]
-    DestinationAvailabilityZoneId: Optional[String]
-    DryRun: Optional[Boolean]
+    DestinationOutpostArn: String | None
+    CopyImageTags: Boolean | None
+    TagSpecifications: TagSpecificationList | None
+    SnapshotCopyCompletionDurationMinutes: Long | None
+    DestinationAvailabilityZone: String | None
+    DestinationAvailabilityZoneId: String | None
+    DryRun: Boolean | None
 
 
 class CopyImageResult(TypedDict, total=False):
-    ImageId: Optional[String]
+    ImageId: String | None
 
 
 class CopySnapshotRequest(ServiceRequest):
-    Description: Optional[String]
-    DestinationOutpostArn: Optional[String]
-    DestinationRegion: Optional[String]
-    Encrypted: Optional[Boolean]
-    KmsKeyId: Optional[KmsKeyId]
-    PresignedUrl: Optional[CopySnapshotRequestPSU]
+    Description: String | None
+    DestinationOutpostArn: String | None
+    DestinationRegion: String | None
+    Encrypted: Boolean | None
+    KmsKeyId: KmsKeyId | None
+    PresignedUrl: CopySnapshotRequestPSU | None
     SourceRegion: String
     SourceSnapshotId: String
-    TagSpecifications: Optional[TagSpecificationList]
-    CompletionDurationMinutes: Optional[SnapshotCompletionDurationMinutesRequest]
-    DestinationAvailabilityZone: Optional[String]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    CompletionDurationMinutes: SnapshotCompletionDurationMinutesRequest | None
+    DestinationAvailabilityZone: String | None
+    DryRun: Boolean | None
 
 
 class CopySnapshotResult(TypedDict, total=False):
-    Tags: Optional[TagList]
-    SnapshotId: Optional[String]
+    Tags: TagList | None
+    SnapshotId: String | None
 
 
 class CopyVolumesRequest(ServiceRequest):
     SourceVolumeId: VolumeId
-    Iops: Optional[Integer]
-    Size: Optional[Integer]
-    VolumeType: Optional[VolumeType]
-    DryRun: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
-    MultiAttachEnabled: Optional[Boolean]
-    Throughput: Optional[Integer]
-    ClientToken: Optional[String]
+    Iops: Integer | None
+    Size: Integer | None
+    VolumeType: VolumeType | None
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
+    MultiAttachEnabled: Boolean | None
+    Throughput: Integer | None
+    ClientToken: String | None
 
 
 class VolumeAttachment(TypedDict, total=False):
-    DeleteOnTermination: Optional[Boolean]
-    AssociatedResource: Optional[String]
-    InstanceOwningService: Optional[String]
-    VolumeId: Optional[String]
-    InstanceId: Optional[String]
-    Device: Optional[String]
-    State: Optional[VolumeAttachmentState]
-    AttachTime: Optional[DateTime]
+    DeleteOnTermination: Boolean | None
+    AssociatedResource: String | None
+    InstanceOwningService: String | None
+    VolumeId: String | None
+    InstanceId: String | None
+    Device: String | None
+    State: VolumeAttachmentState | None
+    AttachTime: DateTime | None
 
 
-VolumeAttachmentList = List[VolumeAttachment]
+VolumeAttachmentList = list[VolumeAttachment]
 
 
 class OperatorResponse(TypedDict, total=False):
-    Managed: Optional[Boolean]
-    Principal: Optional[String]
+    Managed: Boolean | None
+    Principal: String | None
 
 
 class Volume(TypedDict, total=False):
-    AvailabilityZoneId: Optional[String]
-    OutpostArn: Optional[String]
-    SourceVolumeId: Optional[String]
-    Iops: Optional[Integer]
-    Tags: Optional[TagList]
-    VolumeType: Optional[VolumeType]
-    FastRestored: Optional[Boolean]
-    MultiAttachEnabled: Optional[Boolean]
-    Throughput: Optional[Integer]
-    SseType: Optional[SSEType]
-    Operator: Optional[OperatorResponse]
-    VolumeInitializationRate: Optional[Integer]
-    VolumeId: Optional[String]
-    Size: Optional[Integer]
-    SnapshotId: Optional[String]
-    AvailabilityZone: Optional[String]
-    State: Optional[VolumeState]
-    CreateTime: Optional[DateTime]
-    Attachments: Optional[VolumeAttachmentList]
-    Encrypted: Optional[Boolean]
-    KmsKeyId: Optional[String]
+    AvailabilityZoneId: String | None
+    OutpostArn: String | None
+    SourceVolumeId: String | None
+    Iops: Integer | None
+    Tags: TagList | None
+    VolumeType: VolumeType | None
+    FastRestored: Boolean | None
+    MultiAttachEnabled: Boolean | None
+    Throughput: Integer | None
+    SseType: SSEType | None
+    Operator: OperatorResponse | None
+    VolumeInitializationRate: Integer | None
+    VolumeId: String | None
+    Size: Integer | None
+    SnapshotId: String | None
+    AvailabilityZone: String | None
+    State: VolumeState | None
+    CreateTime: DateTime | None
+    Attachments: VolumeAttachmentList | None
+    Encrypted: Boolean | None
+    KmsKeyId: String | None
 
 
-VolumeList = List[Volume]
+VolumeList = list[Volume]
 
 
 class CopyVolumesResult(TypedDict, total=False):
-    Volumes: Optional[VolumeList]
+    Volumes: VolumeList | None
 
 
-CoreCountList = List[CoreCount]
-CpuManufacturerSet = List[CpuManufacturer]
+CoreCountList = list[CoreCount]
+CpuManufacturerSet = list[CpuManufacturer]
 
 
 class CpuOptions(TypedDict, total=False):
-    CoreCount: Optional[Integer]
-    ThreadsPerCore: Optional[Integer]
-    AmdSevSnp: Optional[AmdSevSnpSpecification]
+    CoreCount: Integer | None
+    ThreadsPerCore: Integer | None
+    AmdSevSnp: AmdSevSnpSpecification | None
 
 
 class CpuOptionsRequest(TypedDict, total=False):
-    CoreCount: Optional[Integer]
-    ThreadsPerCore: Optional[Integer]
-    AmdSevSnp: Optional[AmdSevSnpSpecification]
+    CoreCount: Integer | None
+    ThreadsPerCore: Integer | None
+    AmdSevSnp: AmdSevSnpSpecification | None
 
 
 class CreateCapacityManagerDataExportRequest(ServiceRequest):
     S3BucketName: String
-    S3BucketPrefix: Optional[String]
+    S3BucketPrefix: String | None
     Schedule: Schedule
     OutputFormat: OutputFormat
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: String | None
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class CreateCapacityManagerDataExportResult(TypedDict, total=False):
-    CapacityManagerDataExportId: Optional[CapacityManagerDataExportId]
+    CapacityManagerDataExportId: CapacityManagerDataExportId | None
 
 
 class CreateCapacityReservationBySplittingRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
     SourceCapacityReservationId: CapacityReservationId
     InstanceCount: Integer
-    TagSpecifications: Optional[TagSpecificationList]
+    TagSpecifications: TagSpecificationList | None
 
 
 class CreateCapacityReservationBySplittingResult(TypedDict, total=False):
-    SourceCapacityReservation: Optional[CapacityReservation]
-    DestinationCapacityReservation: Optional[CapacityReservation]
-    InstanceCount: Optional[Integer]
+    SourceCapacityReservation: CapacityReservation | None
+    DestinationCapacityReservation: CapacityReservation | None
+    InstanceCount: Integer | None
 
 
 class ReservationFleetInstanceSpecification(TypedDict, total=False):
-    InstanceType: Optional[InstanceType]
-    InstancePlatform: Optional[CapacityReservationInstancePlatform]
-    Weight: Optional[DoubleWithConstraints]
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    EbsOptimized: Optional[Boolean]
-    Priority: Optional[IntegerWithConstraints]
+    InstanceType: InstanceType | None
+    InstancePlatform: CapacityReservationInstancePlatform | None
+    Weight: DoubleWithConstraints | None
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    EbsOptimized: Boolean | None
+    Priority: IntegerWithConstraints | None
 
 
-ReservationFleetInstanceSpecificationList = List[ReservationFleetInstanceSpecification]
+ReservationFleetInstanceSpecificationList = list[ReservationFleetInstanceSpecification]
 
 
 class CreateCapacityReservationFleetRequest(ServiceRequest):
-    AllocationStrategy: Optional[String]
-    ClientToken: Optional[String]
+    AllocationStrategy: String | None
+    ClientToken: String | None
     InstanceTypeSpecifications: ReservationFleetInstanceSpecificationList
-    Tenancy: Optional[FleetCapacityReservationTenancy]
+    Tenancy: FleetCapacityReservationTenancy | None
     TotalTargetCapacity: Integer
-    EndDate: Optional[MillisecondDateTime]
-    InstanceMatchCriteria: Optional[FleetInstanceMatchCriteria]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    EndDate: MillisecondDateTime | None
+    InstanceMatchCriteria: FleetInstanceMatchCriteria | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class CreateCapacityReservationFleetResult(TypedDict, total=False):
-    CapacityReservationFleetId: Optional[CapacityReservationFleetId]
-    State: Optional[CapacityReservationFleetState]
-    TotalTargetCapacity: Optional[Integer]
-    TotalFulfilledCapacity: Optional[Double]
-    InstanceMatchCriteria: Optional[FleetInstanceMatchCriteria]
-    AllocationStrategy: Optional[String]
-    CreateTime: Optional[MillisecondDateTime]
-    EndDate: Optional[MillisecondDateTime]
-    Tenancy: Optional[FleetCapacityReservationTenancy]
-    FleetCapacityReservations: Optional[FleetCapacityReservationSet]
-    Tags: Optional[TagList]
+    CapacityReservationFleetId: CapacityReservationFleetId | None
+    State: CapacityReservationFleetState | None
+    TotalTargetCapacity: Integer | None
+    TotalFulfilledCapacity: Double | None
+    InstanceMatchCriteria: FleetInstanceMatchCriteria | None
+    AllocationStrategy: String | None
+    CreateTime: MillisecondDateTime | None
+    EndDate: MillisecondDateTime | None
+    Tenancy: FleetCapacityReservationTenancy | None
+    FleetCapacityReservations: FleetCapacityReservationSet | None
+    Tags: TagList | None
 
 
 class CreateCapacityReservationRequest(ServiceRequest):
-    ClientToken: Optional[String]
+    ClientToken: String | None
     InstanceType: String
     InstancePlatform: CapacityReservationInstancePlatform
-    AvailabilityZone: Optional[AvailabilityZoneName]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    Tenancy: Optional[CapacityReservationTenancy]
+    AvailabilityZone: AvailabilityZoneName | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    Tenancy: CapacityReservationTenancy | None
     InstanceCount: Integer
-    EbsOptimized: Optional[Boolean]
-    EphemeralStorage: Optional[Boolean]
-    EndDate: Optional[DateTime]
-    EndDateType: Optional[EndDateType]
-    InstanceMatchCriteria: Optional[InstanceMatchCriteria]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
-    OutpostArn: Optional[OutpostArn]
-    PlacementGroupArn: Optional[PlacementGroupArn]
-    StartDate: Optional[MillisecondDateTime]
-    CommitmentDuration: Optional[CapacityReservationCommitmentDuration]
-    DeliveryPreference: Optional[CapacityReservationDeliveryPreference]
+    EbsOptimized: Boolean | None
+    EphemeralStorage: Boolean | None
+    EndDate: DateTime | None
+    EndDateType: EndDateType | None
+    InstanceMatchCriteria: InstanceMatchCriteria | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
+    OutpostArn: OutpostArn | None
+    PlacementGroupArn: PlacementGroupArn | None
+    StartDate: MillisecondDateTime | None
+    CommitmentDuration: CapacityReservationCommitmentDuration | None
+    DeliveryPreference: CapacityReservationDeliveryPreference | None
 
 
 class CreateCapacityReservationResult(TypedDict, total=False):
-    CapacityReservation: Optional[CapacityReservation]
+    CapacityReservation: CapacityReservation | None
 
 
 class CreateCarrierGatewayRequest(ServiceRequest):
     VpcId: VpcId
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
+    ClientToken: String | None
 
 
 class CreateCarrierGatewayResult(TypedDict, total=False):
-    CarrierGateway: Optional[CarrierGateway]
+    CarrierGateway: CarrierGateway | None
 
 
 class CreateClientVpnEndpointRequest(ServiceRequest):
-    ClientCidrBlock: Optional[String]
+    ClientCidrBlock: String | None
     ServerCertificateArn: String
     AuthenticationOptions: ClientVpnAuthenticationRequestList
     ConnectionLogOptions: ConnectionLogOptions
-    DnsServers: Optional[ValueStringList]
-    TransportProtocol: Optional[TransportProtocol]
-    VpnPort: Optional[Integer]
-    Description: Optional[String]
-    SplitTunnel: Optional[Boolean]
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    SecurityGroupIds: Optional[ClientVpnSecurityGroupIdSet]
-    VpcId: Optional[VpcId]
-    SelfServicePortal: Optional[SelfServicePortal]
-    ClientConnectOptions: Optional[ClientConnectOptions]
-    SessionTimeoutHours: Optional[Integer]
-    ClientLoginBannerOptions: Optional[ClientLoginBannerOptions]
-    ClientRouteEnforcementOptions: Optional[ClientRouteEnforcementOptions]
-    DisconnectOnSessionTimeout: Optional[Boolean]
-    EndpointIpAddressType: Optional[EndpointIpAddressType]
-    TrafficIpAddressType: Optional[TrafficIpAddressType]
+    DnsServers: ValueStringList | None
+    TransportProtocol: TransportProtocol | None
+    VpnPort: Integer | None
+    Description: String | None
+    SplitTunnel: Boolean | None
+    DryRun: Boolean | None
+    ClientToken: String | None
+    TagSpecifications: TagSpecificationList | None
+    SecurityGroupIds: ClientVpnSecurityGroupIdSet | None
+    VpcId: VpcId | None
+    SelfServicePortal: SelfServicePortal | None
+    ClientConnectOptions: ClientConnectOptions | None
+    SessionTimeoutHours: Integer | None
+    ClientLoginBannerOptions: ClientLoginBannerOptions | None
+    ClientRouteEnforcementOptions: ClientRouteEnforcementOptions | None
+    DisconnectOnSessionTimeout: Boolean | None
+    EndpointIpAddressType: EndpointIpAddressType | None
+    TrafficIpAddressType: TrafficIpAddressType | None
 
 
 class CreateClientVpnEndpointResult(TypedDict, total=False):
-    ClientVpnEndpointId: Optional[String]
-    Status: Optional[ClientVpnEndpointStatus]
-    DnsName: Optional[String]
+    ClientVpnEndpointId: String | None
+    Status: ClientVpnEndpointStatus | None
+    DnsName: String | None
 
 
 class CreateClientVpnRouteRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
     DestinationCidrBlock: String
     TargetVpcSubnetId: SubnetId
-    Description: Optional[String]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Description: String | None
+    ClientToken: String | None
+    DryRun: Boolean | None
 
 
 class CreateClientVpnRouteResult(TypedDict, total=False):
-    Status: Optional[ClientVpnRouteStatus]
+    Status: ClientVpnRouteStatus | None
 
 
 class CreateCoipCidrRequest(ServiceRequest):
     Cidr: String
     CoipPoolId: Ipv4PoolCoipId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class CreateCoipCidrResult(TypedDict, total=False):
-    CoipCidr: Optional[CoipCidr]
+    CoipCidr: CoipCidr | None
 
 
 class CreateCoipPoolRequest(ServiceRequest):
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class CreateCoipPoolResult(TypedDict, total=False):
-    CoipPool: Optional[CoipPool]
+    CoipPool: CoipPool | None
 
 
 class CreateCustomerGatewayRequest(ServiceRequest):
-    BgpAsn: Optional[Integer]
-    PublicIp: Optional[String]
-    CertificateArn: Optional[String]
+    BgpAsn: Integer | None
+    PublicIp: String | None
+    CertificateArn: String | None
     Type: GatewayType
-    TagSpecifications: Optional[TagSpecificationList]
-    DeviceName: Optional[String]
-    IpAddress: Optional[String]
-    BgpAsnExtended: Optional[Long]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DeviceName: String | None
+    IpAddress: String | None
+    BgpAsnExtended: Long | None
+    DryRun: Boolean | None
 
 
 class CustomerGateway(TypedDict, total=False):
-    CertificateArn: Optional[String]
-    DeviceName: Optional[String]
-    Tags: Optional[TagList]
-    BgpAsnExtended: Optional[String]
-    CustomerGatewayId: Optional[String]
-    State: Optional[String]
-    Type: Optional[String]
-    IpAddress: Optional[String]
-    BgpAsn: Optional[String]
+    CertificateArn: String | None
+    DeviceName: String | None
+    Tags: TagList | None
+    BgpAsnExtended: String | None
+    CustomerGatewayId: String | None
+    State: String | None
+    Type: String | None
+    IpAddress: String | None
+    BgpAsn: String | None
 
 
 class CreateCustomerGatewayResult(TypedDict, total=False):
-    CustomerGateway: Optional[CustomerGateway]
+    CustomerGateway: CustomerGateway | None
 
 
 class CreateDefaultSubnetRequest(ServiceRequest):
-    AvailabilityZone: Optional[AvailabilityZoneName]
-    DryRun: Optional[Boolean]
-    Ipv6Native: Optional[Boolean]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
+    AvailabilityZone: AvailabilityZoneName | None
+    DryRun: Boolean | None
+    Ipv6Native: Boolean | None
+    AvailabilityZoneId: AvailabilityZoneId | None
 
 
 class PrivateDnsNameOptionsOnLaunch(TypedDict, total=False):
-    HostnameType: Optional[HostnameType]
-    EnableResourceNameDnsARecord: Optional[Boolean]
-    EnableResourceNameDnsAAAARecord: Optional[Boolean]
+    HostnameType: HostnameType | None
+    EnableResourceNameDnsARecord: Boolean | None
+    EnableResourceNameDnsAAAARecord: Boolean | None
 
 
-SubnetIpv6CidrBlockAssociationSet = List[SubnetIpv6CidrBlockAssociation]
+SubnetIpv6CidrBlockAssociationSet = list[SubnetIpv6CidrBlockAssociation]
 
 
 class Subnet(TypedDict, total=False):
-    AvailabilityZoneId: Optional[String]
-    EnableLniAtDeviceIndex: Optional[Integer]
-    MapCustomerOwnedIpOnLaunch: Optional[Boolean]
-    CustomerOwnedIpv4Pool: Optional[CoipPoolId]
-    OwnerId: Optional[String]
-    AssignIpv6AddressOnCreation: Optional[Boolean]
-    Ipv6CidrBlockAssociationSet: Optional[SubnetIpv6CidrBlockAssociationSet]
-    Tags: Optional[TagList]
-    SubnetArn: Optional[String]
-    OutpostArn: Optional[String]
-    EnableDns64: Optional[Boolean]
-    Ipv6Native: Optional[Boolean]
-    PrivateDnsNameOptionsOnLaunch: Optional[PrivateDnsNameOptionsOnLaunch]
-    BlockPublicAccessStates: Optional[BlockPublicAccessStates]
-    Type: Optional[String]
-    SubnetId: Optional[String]
-    State: Optional[SubnetState]
-    VpcId: Optional[String]
-    CidrBlock: Optional[String]
-    AvailableIpAddressCount: Optional[Integer]
-    AvailabilityZone: Optional[String]
-    DefaultForAz: Optional[Boolean]
-    MapPublicIpOnLaunch: Optional[Boolean]
+    AvailabilityZoneId: String | None
+    EnableLniAtDeviceIndex: Integer | None
+    MapCustomerOwnedIpOnLaunch: Boolean | None
+    CustomerOwnedIpv4Pool: CoipPoolId | None
+    OwnerId: String | None
+    AssignIpv6AddressOnCreation: Boolean | None
+    Ipv6CidrBlockAssociationSet: SubnetIpv6CidrBlockAssociationSet | None
+    Tags: TagList | None
+    SubnetArn: String | None
+    OutpostArn: String | None
+    EnableDns64: Boolean | None
+    Ipv6Native: Boolean | None
+    PrivateDnsNameOptionsOnLaunch: PrivateDnsNameOptionsOnLaunch | None
+    BlockPublicAccessStates: BlockPublicAccessStates | None
+    Type: String | None
+    SubnetId: String | None
+    State: SubnetState | None
+    VpcId: String | None
+    CidrBlock: String | None
+    AvailableIpAddressCount: Integer | None
+    AvailabilityZone: String | None
+    DefaultForAz: Boolean | None
+    MapPublicIpOnLaunch: Boolean | None
 
 
 class CreateDefaultSubnetResult(TypedDict, total=False):
-    Subnet: Optional[Subnet]
+    Subnet: Subnet | None
 
 
 class CreateDefaultVpcRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class VpcEncryptionControlExclusion(TypedDict, total=False):
-    State: Optional[VpcEncryptionControlExclusionState]
-    StateMessage: Optional[String]
+    State: VpcEncryptionControlExclusionState | None
+    StateMessage: String | None
 
 
 class VpcEncryptionControlExclusions(TypedDict, total=False):
-    InternetGateway: Optional[VpcEncryptionControlExclusion]
-    EgressOnlyInternetGateway: Optional[VpcEncryptionControlExclusion]
-    NatGateway: Optional[VpcEncryptionControlExclusion]
-    VirtualPrivateGateway: Optional[VpcEncryptionControlExclusion]
-    VpcPeering: Optional[VpcEncryptionControlExclusion]
-    Lambda: Optional[VpcEncryptionControlExclusion]
-    VpcLattice: Optional[VpcEncryptionControlExclusion]
-    ElasticFileSystem: Optional[VpcEncryptionControlExclusion]
+    InternetGateway: VpcEncryptionControlExclusion | None
+    EgressOnlyInternetGateway: VpcEncryptionControlExclusion | None
+    NatGateway: VpcEncryptionControlExclusion | None
+    VirtualPrivateGateway: VpcEncryptionControlExclusion | None
+    VpcPeering: VpcEncryptionControlExclusion | None
+    Lambda: VpcEncryptionControlExclusion | None
+    VpcLattice: VpcEncryptionControlExclusion | None
+    ElasticFileSystem: VpcEncryptionControlExclusion | None
 
 
 class VpcEncryptionControl(TypedDict, total=False):
-    VpcId: Optional[VpcId]
-    VpcEncryptionControlId: Optional[VpcEncryptionControlId]
-    Mode: Optional[VpcEncryptionControlMode]
-    State: Optional[VpcEncryptionControlState]
-    StateMessage: Optional[String]
-    ResourceExclusions: Optional[VpcEncryptionControlExclusions]
-    Tags: Optional[TagList]
+    VpcId: VpcId | None
+    VpcEncryptionControlId: VpcEncryptionControlId | None
+    Mode: VpcEncryptionControlMode | None
+    State: VpcEncryptionControlState | None
+    StateMessage: String | None
+    ResourceExclusions: VpcEncryptionControlExclusions | None
+    Tags: TagList | None
 
 
-VpcCidrBlockAssociationSet = List[VpcCidrBlockAssociation]
-VpcIpv6CidrBlockAssociationSet = List[VpcIpv6CidrBlockAssociation]
+VpcCidrBlockAssociationSet = list[VpcCidrBlockAssociation]
+VpcIpv6CidrBlockAssociationSet = list[VpcIpv6CidrBlockAssociation]
 
 
 class Vpc(TypedDict, total=False):
-    OwnerId: Optional[String]
-    InstanceTenancy: Optional[Tenancy]
-    Ipv6CidrBlockAssociationSet: Optional[VpcIpv6CidrBlockAssociationSet]
-    CidrBlockAssociationSet: Optional[VpcCidrBlockAssociationSet]
-    IsDefault: Optional[Boolean]
-    EncryptionControl: Optional[VpcEncryptionControl]
-    Tags: Optional[TagList]
-    BlockPublicAccessStates: Optional[BlockPublicAccessStates]
-    VpcId: Optional[String]
-    State: Optional[VpcState]
-    CidrBlock: Optional[String]
-    DhcpOptionsId: Optional[String]
+    OwnerId: String | None
+    InstanceTenancy: Tenancy | None
+    Ipv6CidrBlockAssociationSet: VpcIpv6CidrBlockAssociationSet | None
+    CidrBlockAssociationSet: VpcCidrBlockAssociationSet | None
+    IsDefault: Boolean | None
+    EncryptionControl: VpcEncryptionControl | None
+    Tags: TagList | None
+    BlockPublicAccessStates: BlockPublicAccessStates | None
+    VpcId: String | None
+    State: VpcState | None
+    CidrBlock: String | None
+    DhcpOptionsId: String | None
 
 
 class CreateDefaultVpcResult(TypedDict, total=False):
-    Vpc: Optional[Vpc]
+    Vpc: Vpc | None
 
 
 class CreateDelegateMacVolumeOwnershipTaskRequest(ServiceRequest):
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ClientToken: String | None
+    DryRun: Boolean | None
     InstanceId: InstanceId
     MacCredentials: SensitiveMacCredentials
-    TagSpecifications: Optional[TagSpecificationList]
+    TagSpecifications: TagSpecificationList | None
 
 
 class MacSystemIntegrityProtectionConfiguration(TypedDict, total=False):
-    AppleInternal: Optional[MacSystemIntegrityProtectionSettingStatus]
-    BaseSystem: Optional[MacSystemIntegrityProtectionSettingStatus]
-    DebuggingRestrictions: Optional[MacSystemIntegrityProtectionSettingStatus]
-    DTraceRestrictions: Optional[MacSystemIntegrityProtectionSettingStatus]
-    FilesystemProtections: Optional[MacSystemIntegrityProtectionSettingStatus]
-    KextSigning: Optional[MacSystemIntegrityProtectionSettingStatus]
-    NvramProtections: Optional[MacSystemIntegrityProtectionSettingStatus]
-    Status: Optional[MacSystemIntegrityProtectionSettingStatus]
+    AppleInternal: MacSystemIntegrityProtectionSettingStatus | None
+    BaseSystem: MacSystemIntegrityProtectionSettingStatus | None
+    DebuggingRestrictions: MacSystemIntegrityProtectionSettingStatus | None
+    DTraceRestrictions: MacSystemIntegrityProtectionSettingStatus | None
+    FilesystemProtections: MacSystemIntegrityProtectionSettingStatus | None
+    KextSigning: MacSystemIntegrityProtectionSettingStatus | None
+    NvramProtections: MacSystemIntegrityProtectionSettingStatus | None
+    Status: MacSystemIntegrityProtectionSettingStatus | None
 
 
 class MacModificationTask(TypedDict, total=False):
-    InstanceId: Optional[InstanceId]
-    MacModificationTaskId: Optional[MacModificationTaskId]
-    MacSystemIntegrityProtectionConfig: Optional[MacSystemIntegrityProtectionConfiguration]
-    StartTime: Optional[MillisecondDateTime]
-    Tags: Optional[TagList]
-    TaskState: Optional[MacModificationTaskState]
-    TaskType: Optional[MacModificationTaskType]
+    InstanceId: InstanceId | None
+    MacModificationTaskId: MacModificationTaskId | None
+    MacSystemIntegrityProtectionConfig: MacSystemIntegrityProtectionConfiguration | None
+    StartTime: MillisecondDateTime | None
+    Tags: TagList | None
+    TaskState: MacModificationTaskState | None
+    TaskType: MacModificationTaskType | None
 
 
 class CreateDelegateMacVolumeOwnershipTaskResult(TypedDict, total=False):
-    MacModificationTask: Optional[MacModificationTask]
+    MacModificationTask: MacModificationTask | None
 
 
 class NewDhcpConfiguration(TypedDict, total=False):
-    Key: Optional[String]
-    Values: Optional[ValueStringList]
+    Key: String | None
+    Values: ValueStringList | None
 
 
-NewDhcpConfigurationList = List[NewDhcpConfiguration]
+NewDhcpConfigurationList = list[NewDhcpConfiguration]
 
 
 class CreateDhcpOptionsRequest(ServiceRequest):
     DhcpConfigurations: NewDhcpConfigurationList
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
-DhcpConfigurationValueList = List[AttributeValue]
+DhcpConfigurationValueList = list[AttributeValue]
 
 
 class DhcpConfiguration(TypedDict, total=False):
-    Key: Optional[String]
-    Values: Optional[DhcpConfigurationValueList]
+    Key: String | None
+    Values: DhcpConfigurationValueList | None
 
 
-DhcpConfigurationList = List[DhcpConfiguration]
+DhcpConfigurationList = list[DhcpConfiguration]
 
 
 class DhcpOptions(TypedDict, total=False):
-    OwnerId: Optional[String]
-    Tags: Optional[TagList]
-    DhcpOptionsId: Optional[String]
-    DhcpConfigurations: Optional[DhcpConfigurationList]
+    OwnerId: String | None
+    Tags: TagList | None
+    DhcpOptionsId: String | None
+    DhcpConfigurations: DhcpConfigurationList | None
 
 
 class CreateDhcpOptionsResult(TypedDict, total=False):
-    DhcpOptions: Optional[DhcpOptions]
+    DhcpOptions: DhcpOptions | None
 
 
 class CreateEgressOnlyInternetGatewayRequest(ServiceRequest):
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ClientToken: String | None
+    DryRun: Boolean | None
     VpcId: VpcId
-    TagSpecifications: Optional[TagSpecificationList]
+    TagSpecifications: TagSpecificationList | None
 
 
 class InternetGatewayAttachment(TypedDict, total=False):
-    State: Optional[AttachmentStatus]
-    VpcId: Optional[String]
+    State: AttachmentStatus | None
+    VpcId: String | None
 
 
-InternetGatewayAttachmentList = List[InternetGatewayAttachment]
+InternetGatewayAttachmentList = list[InternetGatewayAttachment]
 
 
 class EgressOnlyInternetGateway(TypedDict, total=False):
-    Attachments: Optional[InternetGatewayAttachmentList]
-    EgressOnlyInternetGatewayId: Optional[EgressOnlyInternetGatewayId]
-    Tags: Optional[TagList]
+    Attachments: InternetGatewayAttachmentList | None
+    EgressOnlyInternetGatewayId: EgressOnlyInternetGatewayId | None
+    Tags: TagList | None
 
 
 class CreateEgressOnlyInternetGatewayResult(TypedDict, total=False):
-    ClientToken: Optional[String]
-    EgressOnlyInternetGateway: Optional[EgressOnlyInternetGateway]
+    ClientToken: String | None
+    EgressOnlyInternetGateway: EgressOnlyInternetGateway | None
 
 
 class NetworkBandwidthGbps(TypedDict, total=False):
-    Min: Optional[Double]
-    Max: Optional[Double]
+    Min: Double | None
+    Max: Double | None
 
 
 class TotalLocalStorageGB(TypedDict, total=False):
-    Min: Optional[Double]
-    Max: Optional[Double]
+    Min: Double | None
+    Max: Double | None
 
 
-LocalStorageTypeSet = List[LocalStorageType]
+LocalStorageTypeSet = list[LocalStorageType]
 
 
 class NetworkInterfaceCount(TypedDict, total=False):
-    Min: Optional[Integer]
-    Max: Optional[Integer]
+    Min: Integer | None
+    Max: Integer | None
 
 
-InstanceGenerationSet = List[InstanceGeneration]
-ExcludedInstanceTypeSet = List[ExcludedInstanceType]
+InstanceGenerationSet = list[InstanceGeneration]
+ExcludedInstanceTypeSet = list[ExcludedInstanceType]
 
 
 class MemoryGiBPerVCpu(TypedDict, total=False):
-    Min: Optional[Double]
-    Max: Optional[Double]
+    Min: Double | None
+    Max: Double | None
 
 
 class MemoryMiB(TypedDict, total=False):
-    Min: Optional[Integer]
-    Max: Optional[Integer]
+    Min: Integer | None
+    Max: Integer | None
 
 
 class VCpuCountRange(TypedDict, total=False):
-    Min: Optional[Integer]
-    Max: Optional[Integer]
+    Min: Integer | None
+    Max: Integer | None
 
 
 class InstanceRequirements(TypedDict, total=False):
-    VCpuCount: Optional[VCpuCountRange]
-    MemoryMiB: Optional[MemoryMiB]
-    CpuManufacturers: Optional[CpuManufacturerSet]
-    MemoryGiBPerVCpu: Optional[MemoryGiBPerVCpu]
-    ExcludedInstanceTypes: Optional[ExcludedInstanceTypeSet]
-    InstanceGenerations: Optional[InstanceGenerationSet]
-    SpotMaxPricePercentageOverLowestPrice: Optional[Integer]
-    OnDemandMaxPricePercentageOverLowestPrice: Optional[Integer]
-    BareMetal: Optional[BareMetal]
-    BurstablePerformance: Optional[BurstablePerformance]
-    RequireHibernateSupport: Optional[Boolean]
-    NetworkInterfaceCount: Optional[NetworkInterfaceCount]
-    LocalStorage: Optional[LocalStorage]
-    LocalStorageTypes: Optional[LocalStorageTypeSet]
-    TotalLocalStorageGB: Optional[TotalLocalStorageGB]
-    BaselineEbsBandwidthMbps: Optional[BaselineEbsBandwidthMbps]
-    AcceleratorTypes: Optional[AcceleratorTypeSet]
-    AcceleratorCount: Optional[AcceleratorCount]
-    AcceleratorManufacturers: Optional[AcceleratorManufacturerSet]
-    AcceleratorNames: Optional[AcceleratorNameSet]
-    AcceleratorTotalMemoryMiB: Optional[AcceleratorTotalMemoryMiB]
-    NetworkBandwidthGbps: Optional[NetworkBandwidthGbps]
-    AllowedInstanceTypes: Optional[AllowedInstanceTypeSet]
-    MaxSpotPriceAsPercentageOfOptimalOnDemandPrice: Optional[Integer]
-    BaselinePerformanceFactors: Optional[BaselinePerformanceFactors]
+    VCpuCount: VCpuCountRange | None
+    MemoryMiB: MemoryMiB | None
+    CpuManufacturers: CpuManufacturerSet | None
+    MemoryGiBPerVCpu: MemoryGiBPerVCpu | None
+    ExcludedInstanceTypes: ExcludedInstanceTypeSet | None
+    InstanceGenerations: InstanceGenerationSet | None
+    SpotMaxPricePercentageOverLowestPrice: Integer | None
+    OnDemandMaxPricePercentageOverLowestPrice: Integer | None
+    BareMetal: BareMetal | None
+    BurstablePerformance: BurstablePerformance | None
+    RequireHibernateSupport: Boolean | None
+    NetworkInterfaceCount: NetworkInterfaceCount | None
+    LocalStorage: LocalStorage | None
+    LocalStorageTypes: LocalStorageTypeSet | None
+    TotalLocalStorageGB: TotalLocalStorageGB | None
+    BaselineEbsBandwidthMbps: BaselineEbsBandwidthMbps | None
+    AcceleratorTypes: AcceleratorTypeSet | None
+    AcceleratorCount: AcceleratorCount | None
+    AcceleratorManufacturers: AcceleratorManufacturerSet | None
+    AcceleratorNames: AcceleratorNameSet | None
+    AcceleratorTotalMemoryMiB: AcceleratorTotalMemoryMiB | None
+    NetworkBandwidthGbps: NetworkBandwidthGbps | None
+    AllowedInstanceTypes: AllowedInstanceTypeSet | None
+    MaxSpotPriceAsPercentageOfOptimalOnDemandPrice: Integer | None
+    BaselinePerformanceFactors: BaselinePerformanceFactors | None
 
 
 class PlacementResponse(TypedDict, total=False):
-    GroupName: Optional[PlacementGroupName]
+    GroupName: PlacementGroupName | None
 
 
 class FleetLaunchTemplateOverrides(TypedDict, total=False):
-    InstanceType: Optional[InstanceType]
-    MaxPrice: Optional[String]
-    SubnetId: Optional[String]
-    AvailabilityZone: Optional[AvailabilityZoneName]
-    WeightedCapacity: Optional[Double]
-    Priority: Optional[Double]
-    Placement: Optional[PlacementResponse]
-    InstanceRequirements: Optional[InstanceRequirements]
-    ImageId: Optional[ImageId]
-    BlockDeviceMappings: Optional[BlockDeviceMappingResponseList]
+    InstanceType: InstanceType | None
+    MaxPrice: String | None
+    SubnetId: String | None
+    AvailabilityZone: AvailabilityZoneName | None
+    WeightedCapacity: Double | None
+    Priority: Double | None
+    Placement: PlacementResponse | None
+    InstanceRequirements: InstanceRequirements | None
+    ImageId: ImageId | None
+    BlockDeviceMappings: BlockDeviceMappingResponseList | None
 
 
 class FleetLaunchTemplateSpecification(TypedDict, total=False):
-    LaunchTemplateId: Optional[String]
-    LaunchTemplateName: Optional[LaunchTemplateName]
-    Version: Optional[String]
+    LaunchTemplateId: String | None
+    LaunchTemplateName: LaunchTemplateName | None
+    Version: String | None
 
 
 class LaunchTemplateAndOverridesResponse(TypedDict, total=False):
-    LaunchTemplateSpecification: Optional[FleetLaunchTemplateSpecification]
-    Overrides: Optional[FleetLaunchTemplateOverrides]
+    LaunchTemplateSpecification: FleetLaunchTemplateSpecification | None
+    Overrides: FleetLaunchTemplateOverrides | None
 
 
 class CreateFleetError(TypedDict, total=False):
-    LaunchTemplateAndOverrides: Optional[LaunchTemplateAndOverridesResponse]
-    Lifecycle: Optional[InstanceLifecycle]
-    ErrorCode: Optional[String]
-    ErrorMessage: Optional[String]
+    LaunchTemplateAndOverrides: LaunchTemplateAndOverridesResponse | None
+    Lifecycle: InstanceLifecycle | None
+    ErrorCode: String | None
+    ErrorMessage: String | None
 
 
-CreateFleetErrorsSet = List[CreateFleetError]
-InstanceIdsSet = List[InstanceId]
+CreateFleetErrorsSet = list[CreateFleetError]
+InstanceIdsSet = list[InstanceId]
 
 
 class CreateFleetInstance(TypedDict, total=False):
-    LaunchTemplateAndOverrides: Optional[LaunchTemplateAndOverridesResponse]
-    Lifecycle: Optional[InstanceLifecycle]
-    InstanceIds: Optional[InstanceIdsSet]
-    InstanceType: Optional[InstanceType]
-    Platform: Optional[PlatformValues]
+    LaunchTemplateAndOverrides: LaunchTemplateAndOverridesResponse | None
+    Lifecycle: InstanceLifecycle | None
+    InstanceIds: InstanceIdsSet | None
+    InstanceType: InstanceType | None
+    Platform: PlatformValues | None
 
 
-CreateFleetInstancesSet = List[CreateFleetInstance]
+CreateFleetInstancesSet = list[CreateFleetInstance]
 
 
 class TargetCapacitySpecificationRequest(TypedDict, total=False):
     TotalTargetCapacity: Integer
-    OnDemandTargetCapacity: Optional[Integer]
-    SpotTargetCapacity: Optional[Integer]
-    DefaultTargetCapacityType: Optional[DefaultTargetCapacityType]
-    TargetCapacityUnitType: Optional[TargetCapacityUnitType]
+    OnDemandTargetCapacity: Integer | None
+    SpotTargetCapacity: Integer | None
+    DefaultTargetCapacityType: DefaultTargetCapacityType | None
+    TargetCapacityUnitType: TargetCapacityUnitType | None
 
 
 class NetworkBandwidthGbpsRequest(TypedDict, total=False):
-    Min: Optional[Double]
-    Max: Optional[Double]
+    Min: Double | None
+    Max: Double | None
 
 
 class TotalLocalStorageGBRequest(TypedDict, total=False):
-    Min: Optional[Double]
-    Max: Optional[Double]
+    Min: Double | None
+    Max: Double | None
 
 
 class NetworkInterfaceCountRequest(TypedDict, total=False):
-    Min: Optional[Integer]
-    Max: Optional[Integer]
+    Min: Integer | None
+    Max: Integer | None
 
 
 class MemoryGiBPerVCpuRequest(TypedDict, total=False):
-    Min: Optional[Double]
-    Max: Optional[Double]
+    Min: Double | None
+    Max: Double | None
 
 
 class MemoryMiBRequest(TypedDict, total=False):
     Min: Integer
-    Max: Optional[Integer]
+    Max: Integer | None
 
 
 class VCpuCountRangeRequest(TypedDict, total=False):
     Min: Integer
-    Max: Optional[Integer]
+    Max: Integer | None
 
 
 class InstanceRequirementsRequest(TypedDict, total=False):
     VCpuCount: VCpuCountRangeRequest
     MemoryMiB: MemoryMiBRequest
-    CpuManufacturers: Optional[CpuManufacturerSet]
-    MemoryGiBPerVCpu: Optional[MemoryGiBPerVCpuRequest]
-    ExcludedInstanceTypes: Optional[ExcludedInstanceTypeSet]
-    InstanceGenerations: Optional[InstanceGenerationSet]
-    SpotMaxPricePercentageOverLowestPrice: Optional[Integer]
-    OnDemandMaxPricePercentageOverLowestPrice: Optional[Integer]
-    BareMetal: Optional[BareMetal]
-    BurstablePerformance: Optional[BurstablePerformance]
-    RequireHibernateSupport: Optional[Boolean]
-    NetworkInterfaceCount: Optional[NetworkInterfaceCountRequest]
-    LocalStorage: Optional[LocalStorage]
-    LocalStorageTypes: Optional[LocalStorageTypeSet]
-    TotalLocalStorageGB: Optional[TotalLocalStorageGBRequest]
-    BaselineEbsBandwidthMbps: Optional[BaselineEbsBandwidthMbpsRequest]
-    AcceleratorTypes: Optional[AcceleratorTypeSet]
-    AcceleratorCount: Optional[AcceleratorCountRequest]
-    AcceleratorManufacturers: Optional[AcceleratorManufacturerSet]
-    AcceleratorNames: Optional[AcceleratorNameSet]
-    AcceleratorTotalMemoryMiB: Optional[AcceleratorTotalMemoryMiBRequest]
-    NetworkBandwidthGbps: Optional[NetworkBandwidthGbpsRequest]
-    AllowedInstanceTypes: Optional[AllowedInstanceTypeSet]
-    MaxSpotPriceAsPercentageOfOptimalOnDemandPrice: Optional[Integer]
-    BaselinePerformanceFactors: Optional[BaselinePerformanceFactorsRequest]
+    CpuManufacturers: CpuManufacturerSet | None
+    MemoryGiBPerVCpu: MemoryGiBPerVCpuRequest | None
+    ExcludedInstanceTypes: ExcludedInstanceTypeSet | None
+    InstanceGenerations: InstanceGenerationSet | None
+    SpotMaxPricePercentageOverLowestPrice: Integer | None
+    OnDemandMaxPricePercentageOverLowestPrice: Integer | None
+    BareMetal: BareMetal | None
+    BurstablePerformance: BurstablePerformance | None
+    RequireHibernateSupport: Boolean | None
+    NetworkInterfaceCount: NetworkInterfaceCountRequest | None
+    LocalStorage: LocalStorage | None
+    LocalStorageTypes: LocalStorageTypeSet | None
+    TotalLocalStorageGB: TotalLocalStorageGBRequest | None
+    BaselineEbsBandwidthMbps: BaselineEbsBandwidthMbpsRequest | None
+    AcceleratorTypes: AcceleratorTypeSet | None
+    AcceleratorCount: AcceleratorCountRequest | None
+    AcceleratorManufacturers: AcceleratorManufacturerSet | None
+    AcceleratorNames: AcceleratorNameSet | None
+    AcceleratorTotalMemoryMiB: AcceleratorTotalMemoryMiBRequest | None
+    NetworkBandwidthGbps: NetworkBandwidthGbpsRequest | None
+    AllowedInstanceTypes: AllowedInstanceTypeSet | None
+    MaxSpotPriceAsPercentageOfOptimalOnDemandPrice: Integer | None
+    BaselinePerformanceFactors: BaselinePerformanceFactorsRequest | None
 
 
 class FleetEbsBlockDeviceRequest(TypedDict, total=False):
-    Encrypted: Optional[Boolean]
-    DeleteOnTermination: Optional[Boolean]
-    Iops: Optional[Integer]
-    Throughput: Optional[Integer]
-    KmsKeyId: Optional[KmsKeyId]
-    SnapshotId: Optional[SnapshotId]
-    VolumeSize: Optional[Integer]
-    VolumeType: Optional[VolumeType]
+    Encrypted: Boolean | None
+    DeleteOnTermination: Boolean | None
+    Iops: Integer | None
+    Throughput: Integer | None
+    KmsKeyId: KmsKeyId | None
+    SnapshotId: SnapshotId | None
+    VolumeSize: Integer | None
+    VolumeType: VolumeType | None
 
 
 class FleetBlockDeviceMappingRequest(TypedDict, total=False):
-    DeviceName: Optional[String]
-    VirtualName: Optional[String]
-    Ebs: Optional[FleetEbsBlockDeviceRequest]
-    NoDevice: Optional[String]
+    DeviceName: String | None
+    VirtualName: String | None
+    Ebs: FleetEbsBlockDeviceRequest | None
+    NoDevice: String | None
 
 
-FleetBlockDeviceMappingRequestList = List[FleetBlockDeviceMappingRequest]
+FleetBlockDeviceMappingRequestList = list[FleetBlockDeviceMappingRequest]
 
 
 class Placement(TypedDict, total=False):
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    Affinity: Optional[String]
-    GroupName: Optional[PlacementGroupName]
-    PartitionNumber: Optional[Integer]
-    HostId: Optional[String]
-    Tenancy: Optional[Tenancy]
-    SpreadDomain: Optional[String]
-    HostResourceGroupArn: Optional[String]
-    GroupId: Optional[PlacementGroupId]
-    AvailabilityZone: Optional[String]
+    AvailabilityZoneId: AvailabilityZoneId | None
+    Affinity: String | None
+    GroupName: PlacementGroupName | None
+    PartitionNumber: Integer | None
+    HostId: String | None
+    Tenancy: Tenancy | None
+    SpreadDomain: String | None
+    HostResourceGroupArn: String | None
+    GroupId: PlacementGroupId | None
+    AvailabilityZone: String | None
 
 
 class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
-    InstanceType: Optional[InstanceType]
-    MaxPrice: Optional[String]
-    SubnetId: Optional[SubnetId]
-    AvailabilityZone: Optional[AvailabilityZoneName]
-    WeightedCapacity: Optional[Double]
-    Priority: Optional[Double]
-    Placement: Optional[Placement]
-    BlockDeviceMappings: Optional[FleetBlockDeviceMappingRequestList]
-    InstanceRequirements: Optional[InstanceRequirementsRequest]
-    ImageId: Optional[String]
+    InstanceType: InstanceType | None
+    MaxPrice: String | None
+    SubnetId: SubnetId | None
+    AvailabilityZone: AvailabilityZoneName | None
+    WeightedCapacity: Double | None
+    Priority: Double | None
+    Placement: Placement | None
+    BlockDeviceMappings: FleetBlockDeviceMappingRequestList | None
+    InstanceRequirements: InstanceRequirementsRequest | None
+    ImageId: String | None
 
 
-FleetLaunchTemplateOverridesListRequest = List[FleetLaunchTemplateOverridesRequest]
+FleetLaunchTemplateOverridesListRequest = list[FleetLaunchTemplateOverridesRequest]
 
 
 class FleetLaunchTemplateSpecificationRequest(TypedDict, total=False):
-    LaunchTemplateId: Optional[LaunchTemplateId]
-    LaunchTemplateName: Optional[LaunchTemplateName]
-    Version: Optional[String]
+    LaunchTemplateId: LaunchTemplateId | None
+    LaunchTemplateName: LaunchTemplateName | None
+    Version: String | None
 
 
 class FleetLaunchTemplateConfigRequest(TypedDict, total=False):
-    LaunchTemplateSpecification: Optional[FleetLaunchTemplateSpecificationRequest]
-    Overrides: Optional[FleetLaunchTemplateOverridesListRequest]
+    LaunchTemplateSpecification: FleetLaunchTemplateSpecificationRequest | None
+    Overrides: FleetLaunchTemplateOverridesListRequest | None
 
 
-FleetLaunchTemplateConfigListRequest = List[FleetLaunchTemplateConfigRequest]
+FleetLaunchTemplateConfigListRequest = list[FleetLaunchTemplateConfigRequest]
 
 
 class OnDemandOptionsRequest(TypedDict, total=False):
-    AllocationStrategy: Optional[FleetOnDemandAllocationStrategy]
-    CapacityReservationOptions: Optional[CapacityReservationOptionsRequest]
-    SingleInstanceType: Optional[Boolean]
-    SingleAvailabilityZone: Optional[Boolean]
-    MinTargetCapacity: Optional[Integer]
-    MaxTotalPrice: Optional[String]
+    AllocationStrategy: FleetOnDemandAllocationStrategy | None
+    CapacityReservationOptions: CapacityReservationOptionsRequest | None
+    SingleInstanceType: Boolean | None
+    SingleAvailabilityZone: Boolean | None
+    MinTargetCapacity: Integer | None
+    MaxTotalPrice: String | None
 
 
 class FleetSpotCapacityRebalanceRequest(TypedDict, total=False):
-    ReplacementStrategy: Optional[FleetReplacementStrategy]
-    TerminationDelay: Optional[Integer]
+    ReplacementStrategy: FleetReplacementStrategy | None
+    TerminationDelay: Integer | None
 
 
 class FleetSpotMaintenanceStrategiesRequest(TypedDict, total=False):
-    CapacityRebalance: Optional[FleetSpotCapacityRebalanceRequest]
+    CapacityRebalance: FleetSpotCapacityRebalanceRequest | None
 
 
 class SpotOptionsRequest(TypedDict, total=False):
-    AllocationStrategy: Optional[SpotAllocationStrategy]
-    MaintenanceStrategies: Optional[FleetSpotMaintenanceStrategiesRequest]
-    InstanceInterruptionBehavior: Optional[SpotInstanceInterruptionBehavior]
-    InstancePoolsToUseCount: Optional[Integer]
-    SingleInstanceType: Optional[Boolean]
-    SingleAvailabilityZone: Optional[Boolean]
-    MinTargetCapacity: Optional[Integer]
-    MaxTotalPrice: Optional[String]
+    AllocationStrategy: SpotAllocationStrategy | None
+    MaintenanceStrategies: FleetSpotMaintenanceStrategiesRequest | None
+    InstanceInterruptionBehavior: SpotInstanceInterruptionBehavior | None
+    InstancePoolsToUseCount: Integer | None
+    SingleInstanceType: Boolean | None
+    SingleAvailabilityZone: Boolean | None
+    MinTargetCapacity: Integer | None
+    MaxTotalPrice: String | None
 
 
 class CreateFleetRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
-    SpotOptions: Optional[SpotOptionsRequest]
-    OnDemandOptions: Optional[OnDemandOptionsRequest]
-    ExcessCapacityTerminationPolicy: Optional[FleetExcessCapacityTerminationPolicy]
+    DryRun: Boolean | None
+    ClientToken: String | None
+    SpotOptions: SpotOptionsRequest | None
+    OnDemandOptions: OnDemandOptionsRequest | None
+    ExcessCapacityTerminationPolicy: FleetExcessCapacityTerminationPolicy | None
     LaunchTemplateConfigs: FleetLaunchTemplateConfigListRequest
     TargetCapacitySpecification: TargetCapacitySpecificationRequest
-    TerminateInstancesWithExpiration: Optional[Boolean]
-    Type: Optional[FleetType]
-    ValidFrom: Optional[DateTime]
-    ValidUntil: Optional[DateTime]
-    ReplaceUnhealthyInstances: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
-    Context: Optional[String]
+    TerminateInstancesWithExpiration: Boolean | None
+    Type: FleetType | None
+    ValidFrom: DateTime | None
+    ValidUntil: DateTime | None
+    ReplaceUnhealthyInstances: Boolean | None
+    TagSpecifications: TagSpecificationList | None
+    Context: String | None
 
 
 class CreateFleetResult(TypedDict, total=False):
-    FleetId: Optional[FleetId]
-    Errors: Optional[CreateFleetErrorsSet]
-    Instances: Optional[CreateFleetInstancesSet]
+    FleetId: FleetId | None
+    Errors: CreateFleetErrorsSet | None
+    Instances: CreateFleetInstancesSet | None
 
 
 class DestinationOptionsRequest(TypedDict, total=False):
-    FileFormat: Optional[DestinationFileFormat]
-    HiveCompatiblePartitions: Optional[Boolean]
-    PerHourPartition: Optional[Boolean]
+    FileFormat: DestinationFileFormat | None
+    HiveCompatiblePartitions: Boolean | None
+    PerHourPartition: Boolean | None
 
 
-FlowLogResourceIds = List[FlowLogResourceId]
+FlowLogResourceIds = list[FlowLogResourceId]
 
 
 class CreateFlowLogsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
-    DeliverLogsPermissionArn: Optional[String]
-    DeliverCrossAccountRole: Optional[String]
-    LogGroupName: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
+    DeliverLogsPermissionArn: String | None
+    DeliverCrossAccountRole: String | None
+    LogGroupName: String | None
     ResourceIds: FlowLogResourceIds
     ResourceType: FlowLogsResourceType
-    TrafficType: Optional[TrafficType]
-    LogDestinationType: Optional[LogDestinationType]
-    LogDestination: Optional[String]
-    LogFormat: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    MaxAggregationInterval: Optional[Integer]
-    DestinationOptions: Optional[DestinationOptionsRequest]
+    TrafficType: TrafficType | None
+    LogDestinationType: LogDestinationType | None
+    LogDestination: String | None
+    LogFormat: String | None
+    TagSpecifications: TagSpecificationList | None
+    MaxAggregationInterval: Integer | None
+    DestinationOptions: DestinationOptionsRequest | None
 
 
 class CreateFlowLogsResult(TypedDict, total=False):
-    ClientToken: Optional[String]
-    FlowLogIds: Optional[ValueStringList]
-    Unsuccessful: Optional[UnsuccessfulItemSet]
+    ClientToken: String | None
+    FlowLogIds: ValueStringList | None
+    Unsuccessful: UnsuccessfulItemSet | None
 
 
 class StorageLocation(TypedDict, total=False):
-    Bucket: Optional[String]
-    Key: Optional[String]
+    Bucket: String | None
+    Key: String | None
 
 
 class CreateFpgaImageRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InputStorageLocation: StorageLocation
-    LogsStorageLocation: Optional[StorageLocation]
-    Description: Optional[String]
-    Name: Optional[String]
-    ClientToken: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
+    LogsStorageLocation: StorageLocation | None
+    Description: String | None
+    Name: String | None
+    ClientToken: String | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class CreateFpgaImageResult(TypedDict, total=False):
-    FpgaImageId: Optional[String]
-    FpgaImageGlobalId: Optional[String]
+    FpgaImageId: String | None
+    FpgaImageGlobalId: String | None
 
 
 class CreateImageRequest(ServiceRequest):
-    TagSpecifications: Optional[TagSpecificationList]
-    SnapshotLocation: Optional[SnapshotLocationEnum]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    SnapshotLocation: SnapshotLocationEnum | None
+    DryRun: Boolean | None
     InstanceId: InstanceId
     Name: String
-    Description: Optional[String]
-    NoReboot: Optional[Boolean]
-    BlockDeviceMappings: Optional[BlockDeviceMappingRequestList]
+    Description: String | None
+    NoReboot: Boolean | None
+    BlockDeviceMappings: BlockDeviceMappingRequestList | None
 
 
 class CreateImageResult(TypedDict, total=False):
-    ImageId: Optional[String]
+    ImageId: String | None
 
 
-ImageUsageReportUserIdStringList = List[String]
-ImageUsageResourceTypeOptionValuesList = List[ImageUsageResourceTypeOptionValue]
+ImageUsageReportUserIdStringList = list[String]
+ImageUsageResourceTypeOptionValuesList = list[ImageUsageResourceTypeOptionValue]
 
 
 class ImageUsageResourceTypeOptionRequest(TypedDict, total=False):
-    OptionName: Optional[String]
-    OptionValues: Optional[ImageUsageResourceTypeOptionValuesList]
+    OptionName: String | None
+    OptionValues: ImageUsageResourceTypeOptionValuesList | None
 
 
-ImageUsageResourceTypeOptionRequestList = List[ImageUsageResourceTypeOptionRequest]
+ImageUsageResourceTypeOptionRequestList = list[ImageUsageResourceTypeOptionRequest]
 
 
 class ImageUsageResourceTypeRequest(TypedDict, total=False):
-    ResourceType: Optional[ImageUsageResourceTypeName]
-    ResourceTypeOptions: Optional[ImageUsageResourceTypeOptionRequestList]
+    ResourceType: ImageUsageResourceTypeName | None
+    ResourceTypeOptions: ImageUsageResourceTypeOptionRequestList | None
 
 
-ImageUsageResourceTypeRequestList = List[ImageUsageResourceTypeRequest]
+ImageUsageResourceTypeRequestList = list[ImageUsageResourceTypeRequest]
 
 
 class CreateImageUsageReportRequest(ServiceRequest):
     ImageId: ImageId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ResourceTypes: ImageUsageResourceTypeRequestList
-    AccountIds: Optional[ImageUsageReportUserIdStringList]
-    ClientToken: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
+    AccountIds: ImageUsageReportUserIdStringList | None
+    ClientToken: String | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class CreateImageUsageReportResult(TypedDict, total=False):
-    ReportId: Optional[ImageUsageReportId]
+    ReportId: ImageUsageReportId | None
 
 
-SecurityGroupIdStringListRequest = List[SecurityGroupId]
+SecurityGroupIdStringListRequest = list[SecurityGroupId]
 
 
 class CreateInstanceConnectEndpointRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     SubnetId: SubnetId
-    SecurityGroupIds: Optional[SecurityGroupIdStringListRequest]
-    PreserveClientIp: Optional[Boolean]
-    ClientToken: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    IpAddressType: Optional[IpAddressType]
+    SecurityGroupIds: SecurityGroupIdStringListRequest | None
+    PreserveClientIp: Boolean | None
+    ClientToken: String | None
+    TagSpecifications: TagSpecificationList | None
+    IpAddressType: IpAddressType | None
 
 
 class InstanceConnectEndpointDnsNames(TypedDict, total=False):
-    DnsName: Optional[String]
-    FipsDnsName: Optional[String]
+    DnsName: String | None
+    FipsDnsName: String | None
 
 
 class InstanceConnectEndpointPublicDnsNames(TypedDict, total=False):
-    Ipv4: Optional[InstanceConnectEndpointDnsNames]
-    Dualstack: Optional[InstanceConnectEndpointDnsNames]
+    Ipv4: InstanceConnectEndpointDnsNames | None
+    Dualstack: InstanceConnectEndpointDnsNames | None
 
 
-SecurityGroupIdSet = List[SecurityGroupId]
-NetworkInterfaceIdSet = List[String]
+SecurityGroupIdSet = list[SecurityGroupId]
+NetworkInterfaceIdSet = list[String]
 
 
 class Ec2InstanceConnectEndpoint(TypedDict, total=False):
-    OwnerId: Optional[String]
-    InstanceConnectEndpointId: Optional[InstanceConnectEndpointId]
-    InstanceConnectEndpointArn: Optional[ResourceArn]
-    State: Optional[Ec2InstanceConnectEndpointState]
-    StateMessage: Optional[String]
-    DnsName: Optional[String]
-    FipsDnsName: Optional[String]
-    NetworkInterfaceIds: Optional[NetworkInterfaceIdSet]
-    VpcId: Optional[VpcId]
-    AvailabilityZone: Optional[String]
-    CreatedAt: Optional[MillisecondDateTime]
-    SubnetId: Optional[SubnetId]
-    PreserveClientIp: Optional[Boolean]
-    SecurityGroupIds: Optional[SecurityGroupIdSet]
-    Tags: Optional[TagList]
-    IpAddressType: Optional[IpAddressType]
-    PublicDnsNames: Optional[InstanceConnectEndpointPublicDnsNames]
+    OwnerId: String | None
+    InstanceConnectEndpointId: InstanceConnectEndpointId | None
+    InstanceConnectEndpointArn: ResourceArn | None
+    State: Ec2InstanceConnectEndpointState | None
+    StateMessage: String | None
+    DnsName: String | None
+    FipsDnsName: String | None
+    NetworkInterfaceIds: NetworkInterfaceIdSet | None
+    VpcId: VpcId | None
+    AvailabilityZone: String | None
+    CreatedAt: MillisecondDateTime | None
+    SubnetId: SubnetId | None
+    PreserveClientIp: Boolean | None
+    SecurityGroupIds: SecurityGroupIdSet | None
+    Tags: TagList | None
+    IpAddressType: IpAddressType | None
+    PublicDnsNames: InstanceConnectEndpointPublicDnsNames | None
 
 
 class CreateInstanceConnectEndpointResult(TypedDict, total=False):
-    InstanceConnectEndpoint: Optional[Ec2InstanceConnectEndpoint]
-    ClientToken: Optional[String]
+    InstanceConnectEndpoint: Ec2InstanceConnectEndpoint | None
+    ClientToken: String | None
 
 
 class InstanceEventWindowTimeRangeRequest(TypedDict, total=False):
-    StartWeekDay: Optional[WeekDay]
-    StartHour: Optional[Hour]
-    EndWeekDay: Optional[WeekDay]
-    EndHour: Optional[Hour]
+    StartWeekDay: WeekDay | None
+    StartHour: Hour | None
+    EndWeekDay: WeekDay | None
+    EndHour: Hour | None
 
 
-InstanceEventWindowTimeRangeRequestSet = List[InstanceEventWindowTimeRangeRequest]
+InstanceEventWindowTimeRangeRequestSet = list[InstanceEventWindowTimeRangeRequest]
 
 
 class CreateInstanceEventWindowRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Name: Optional[String]
-    TimeRanges: Optional[InstanceEventWindowTimeRangeRequestSet]
-    CronExpression: Optional[InstanceEventWindowCronExpression]
-    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Boolean | None
+    Name: String | None
+    TimeRanges: InstanceEventWindowTimeRangeRequestSet | None
+    CronExpression: InstanceEventWindowCronExpression | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class CreateInstanceEventWindowResult(TypedDict, total=False):
-    InstanceEventWindow: Optional[InstanceEventWindow]
+    InstanceEventWindow: InstanceEventWindow | None
 
 
 class ExportToS3TaskSpecification(TypedDict, total=False):
-    DiskImageFormat: Optional[DiskImageFormat]
-    ContainerFormat: Optional[ContainerFormat]
-    S3Bucket: Optional[String]
-    S3Prefix: Optional[String]
+    DiskImageFormat: DiskImageFormat | None
+    ContainerFormat: ContainerFormat | None
+    S3Bucket: String | None
+    S3Prefix: String | None
 
 
 class CreateInstanceExportTaskRequest(ServiceRequest):
-    TagSpecifications: Optional[TagSpecificationList]
-    Description: Optional[String]
+    TagSpecifications: TagSpecificationList | None
+    Description: String | None
     InstanceId: InstanceId
     TargetEnvironment: ExportEnvironment
     ExportToS3Task: ExportToS3TaskSpecification
 
 
 class InstanceExportDetails(TypedDict, total=False):
-    InstanceId: Optional[String]
-    TargetEnvironment: Optional[ExportEnvironment]
+    InstanceId: String | None
+    TargetEnvironment: ExportEnvironment | None
 
 
 class ExportToS3Task(TypedDict, total=False):
-    ContainerFormat: Optional[ContainerFormat]
-    DiskImageFormat: Optional[DiskImageFormat]
-    S3Bucket: Optional[String]
-    S3Key: Optional[String]
+    ContainerFormat: ContainerFormat | None
+    DiskImageFormat: DiskImageFormat | None
+    S3Bucket: String | None
+    S3Key: String | None
 
 
 class ExportTask(TypedDict, total=False):
-    Description: Optional[String]
-    ExportTaskId: Optional[String]
-    ExportToS3Task: Optional[ExportToS3Task]
-    InstanceExportDetails: Optional[InstanceExportDetails]
-    State: Optional[ExportTaskState]
-    StatusMessage: Optional[String]
-    Tags: Optional[TagList]
+    Description: String | None
+    ExportTaskId: String | None
+    ExportToS3Task: ExportToS3Task | None
+    InstanceExportDetails: InstanceExportDetails | None
+    State: ExportTaskState | None
+    StatusMessage: String | None
+    Tags: TagList | None
 
 
 class CreateInstanceExportTaskResult(TypedDict, total=False):
-    ExportTask: Optional[ExportTask]
+    ExportTask: ExportTask | None
 
 
 class CreateInternetGatewayRequest(ServiceRequest):
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class InternetGateway(TypedDict, total=False):
-    Attachments: Optional[InternetGatewayAttachmentList]
-    InternetGatewayId: Optional[String]
-    OwnerId: Optional[String]
-    Tags: Optional[TagList]
+    Attachments: InternetGatewayAttachmentList | None
+    InternetGatewayId: String | None
+    OwnerId: String | None
+    Tags: TagList | None
 
 
 class CreateInternetGatewayResult(TypedDict, total=False):
-    InternetGateway: Optional[InternetGateway]
+    InternetGateway: InternetGateway | None
 
 
 class CreateIpamExternalResourceVerificationTokenRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamId: IpamId
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
 
 
 class IpamExternalResourceVerificationToken(TypedDict, total=False):
-    IpamExternalResourceVerificationTokenId: Optional[IpamExternalResourceVerificationTokenId]
-    IpamExternalResourceVerificationTokenArn: Optional[ResourceArn]
-    IpamId: Optional[IpamId]
-    IpamArn: Optional[ResourceArn]
-    IpamRegion: Optional[String]
-    TokenValue: Optional[String]
-    TokenName: Optional[String]
-    NotAfter: Optional[MillisecondDateTime]
-    Status: Optional[TokenState]
-    Tags: Optional[TagList]
-    State: Optional[IpamExternalResourceVerificationTokenState]
+    IpamExternalResourceVerificationTokenId: IpamExternalResourceVerificationTokenId | None
+    IpamExternalResourceVerificationTokenArn: ResourceArn | None
+    IpamId: IpamId | None
+    IpamArn: ResourceArn | None
+    IpamRegion: String | None
+    TokenValue: String | None
+    TokenName: String | None
+    NotAfter: MillisecondDateTime | None
+    Status: TokenState | None
+    Tags: TagList | None
+    State: IpamExternalResourceVerificationTokenState | None
 
 
 class CreateIpamExternalResourceVerificationTokenResult(TypedDict, total=False):
-    IpamExternalResourceVerificationToken: Optional[IpamExternalResourceVerificationToken]
+    IpamExternalResourceVerificationToken: IpamExternalResourceVerificationToken | None
 
 
 class IpamPoolSourceResourceRequest(TypedDict, total=False):
-    ResourceId: Optional[String]
-    ResourceType: Optional[IpamPoolSourceResourceType]
-    ResourceRegion: Optional[String]
-    ResourceOwner: Optional[String]
+    ResourceId: String | None
+    ResourceType: IpamPoolSourceResourceType | None
+    ResourceRegion: String | None
+    ResourceOwner: String | None
 
 
 class RequestIpamResourceTag(TypedDict, total=False):
-    Key: Optional[String]
-    Value: Optional[String]
+    Key: String | None
+    Value: String | None
 
 
-RequestIpamResourceTagList = List[RequestIpamResourceTag]
+RequestIpamResourceTagList = list[RequestIpamResourceTag]
 
 
 class CreateIpamPoolRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamScopeId: IpamScopeId
-    Locale: Optional[String]
-    SourceIpamPoolId: Optional[IpamPoolId]
-    Description: Optional[String]
+    Locale: String | None
+    SourceIpamPoolId: IpamPoolId | None
+    Description: String | None
     AddressFamily: AddressFamily
-    AutoImport: Optional[Boolean]
-    PubliclyAdvertisable: Optional[Boolean]
-    AllocationMinNetmaskLength: Optional[IpamNetmaskLength]
-    AllocationMaxNetmaskLength: Optional[IpamNetmaskLength]
-    AllocationDefaultNetmaskLength: Optional[IpamNetmaskLength]
-    AllocationResourceTags: Optional[RequestIpamResourceTagList]
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
-    AwsService: Optional[IpamPoolAwsService]
-    PublicIpSource: Optional[IpamPoolPublicIpSource]
-    SourceResource: Optional[IpamPoolSourceResourceRequest]
+    AutoImport: Boolean | None
+    PubliclyAdvertisable: Boolean | None
+    AllocationMinNetmaskLength: IpamNetmaskLength | None
+    AllocationMaxNetmaskLength: IpamNetmaskLength | None
+    AllocationDefaultNetmaskLength: IpamNetmaskLength | None
+    AllocationResourceTags: RequestIpamResourceTagList | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    AwsService: IpamPoolAwsService | None
+    PublicIpSource: IpamPoolPublicIpSource | None
+    SourceResource: IpamPoolSourceResourceRequest | None
 
 
 class IpamPoolSourceResource(TypedDict, total=False):
-    ResourceId: Optional[String]
-    ResourceType: Optional[IpamPoolSourceResourceType]
-    ResourceRegion: Optional[String]
-    ResourceOwner: Optional[String]
+    ResourceId: String | None
+    ResourceType: IpamPoolSourceResourceType | None
+    ResourceRegion: String | None
+    ResourceOwner: String | None
 
 
 class IpamResourceTag(TypedDict, total=False):
-    Key: Optional[String]
-    Value: Optional[String]
+    Key: String | None
+    Value: String | None
 
 
-IpamResourceTagList = List[IpamResourceTag]
+IpamResourceTagList = list[IpamResourceTag]
 
 
 class IpamPool(TypedDict, total=False):
-    OwnerId: Optional[String]
-    IpamPoolId: Optional[IpamPoolId]
-    SourceIpamPoolId: Optional[IpamPoolId]
-    IpamPoolArn: Optional[ResourceArn]
-    IpamScopeArn: Optional[ResourceArn]
-    IpamScopeType: Optional[IpamScopeType]
-    IpamArn: Optional[ResourceArn]
-    IpamRegion: Optional[String]
-    Locale: Optional[String]
-    PoolDepth: Optional[Integer]
-    State: Optional[IpamPoolState]
-    StateMessage: Optional[String]
-    Description: Optional[String]
-    AutoImport: Optional[Boolean]
-    PubliclyAdvertisable: Optional[Boolean]
-    AddressFamily: Optional[AddressFamily]
-    AllocationMinNetmaskLength: Optional[IpamNetmaskLength]
-    AllocationMaxNetmaskLength: Optional[IpamNetmaskLength]
-    AllocationDefaultNetmaskLength: Optional[IpamNetmaskLength]
-    AllocationResourceTags: Optional[IpamResourceTagList]
-    Tags: Optional[TagList]
-    AwsService: Optional[IpamPoolAwsService]
-    PublicIpSource: Optional[IpamPoolPublicIpSource]
-    SourceResource: Optional[IpamPoolSourceResource]
+    OwnerId: String | None
+    IpamPoolId: IpamPoolId | None
+    SourceIpamPoolId: IpamPoolId | None
+    IpamPoolArn: ResourceArn | None
+    IpamScopeArn: ResourceArn | None
+    IpamScopeType: IpamScopeType | None
+    IpamArn: ResourceArn | None
+    IpamRegion: String | None
+    Locale: String | None
+    PoolDepth: Integer | None
+    State: IpamPoolState | None
+    StateMessage: String | None
+    Description: String | None
+    AutoImport: Boolean | None
+    PubliclyAdvertisable: Boolean | None
+    AddressFamily: AddressFamily | None
+    AllocationMinNetmaskLength: IpamNetmaskLength | None
+    AllocationMaxNetmaskLength: IpamNetmaskLength | None
+    AllocationDefaultNetmaskLength: IpamNetmaskLength | None
+    AllocationResourceTags: IpamResourceTagList | None
+    Tags: TagList | None
+    AwsService: IpamPoolAwsService | None
+    PublicIpSource: IpamPoolPublicIpSource | None
+    SourceResource: IpamPoolSourceResource | None
 
 
 class CreateIpamPoolResult(TypedDict, total=False):
-    IpamPool: Optional[IpamPool]
+    IpamPool: IpamPool | None
 
 
 class IpamPrefixListResolverRuleConditionRequest(TypedDict, total=False):
     Operation: IpamPrefixListResolverRuleConditionOperation
-    IpamPoolId: Optional[String]
-    ResourceId: Optional[String]
-    ResourceOwner: Optional[String]
-    ResourceRegion: Optional[String]
-    ResourceTag: Optional[RequestIpamResourceTag]
-    Cidr: Optional[String]
+    IpamPoolId: String | None
+    ResourceId: String | None
+    ResourceOwner: String | None
+    ResourceRegion: String | None
+    ResourceTag: RequestIpamResourceTag | None
+    Cidr: String | None
 
 
-IpamPrefixListResolverRuleConditionRequestSet = List[IpamPrefixListResolverRuleConditionRequest]
+IpamPrefixListResolverRuleConditionRequestSet = list[IpamPrefixListResolverRuleConditionRequest]
 
 
 class IpamPrefixListResolverRuleRequest(TypedDict, total=False):
     RuleType: IpamPrefixListResolverRuleType
-    StaticCidr: Optional[String]
-    IpamScopeId: Optional[IpamScopeId]
-    ResourceType: Optional[IpamResourceType]
-    Conditions: Optional[IpamPrefixListResolverRuleConditionRequestSet]
+    StaticCidr: String | None
+    IpamScopeId: IpamScopeId | None
+    ResourceType: IpamResourceType | None
+    Conditions: IpamPrefixListResolverRuleConditionRequestSet | None
 
 
-IpamPrefixListResolverRuleRequestSet = List[IpamPrefixListResolverRuleRequest]
+IpamPrefixListResolverRuleRequestSet = list[IpamPrefixListResolverRuleRequest]
 
 
 class CreateIpamPrefixListResolverRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamId: IpamId
-    Description: Optional[String]
+    Description: String | None
     AddressFamily: AddressFamily
-    Rules: Optional[IpamPrefixListResolverRuleRequestSet]
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
+    Rules: IpamPrefixListResolverRuleRequestSet | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
 
 
 class IpamPrefixListResolver(TypedDict, total=False):
-    OwnerId: Optional[String]
-    IpamPrefixListResolverId: Optional[IpamPrefixListResolverId]
-    IpamPrefixListResolverArn: Optional[ResourceArn]
-    IpamArn: Optional[ResourceArn]
-    IpamRegion: Optional[String]
-    Description: Optional[String]
-    AddressFamily: Optional[AddressFamily]
-    State: Optional[IpamPrefixListResolverState]
-    Tags: Optional[TagList]
-    LastVersionCreationStatus: Optional[IpamPrefixListResolverVersionCreationStatus]
-    LastVersionCreationStatusMessage: Optional[String]
+    OwnerId: String | None
+    IpamPrefixListResolverId: IpamPrefixListResolverId | None
+    IpamPrefixListResolverArn: ResourceArn | None
+    IpamArn: ResourceArn | None
+    IpamRegion: String | None
+    Description: String | None
+    AddressFamily: AddressFamily | None
+    State: IpamPrefixListResolverState | None
+    Tags: TagList | None
+    LastVersionCreationStatus: IpamPrefixListResolverVersionCreationStatus | None
+    LastVersionCreationStatusMessage: String | None
 
 
 class CreateIpamPrefixListResolverResult(TypedDict, total=False):
-    IpamPrefixListResolver: Optional[IpamPrefixListResolver]
+    IpamPrefixListResolver: IpamPrefixListResolver | None
 
 
 class CreateIpamPrefixListResolverTargetRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPrefixListResolverId: IpamPrefixListResolverId
     PrefixListId: String
     PrefixListRegion: String
-    DesiredVersion: Optional[BoxedLong]
+    DesiredVersion: BoxedLong | None
     TrackLatestVersion: Boolean
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
 
 
 class IpamPrefixListResolverTarget(TypedDict, total=False):
-    IpamPrefixListResolverTargetId: Optional[IpamPrefixListResolverTargetId]
-    IpamPrefixListResolverTargetArn: Optional[ResourceArn]
-    IpamPrefixListResolverId: Optional[IpamPrefixListResolverId]
-    OwnerId: Optional[String]
-    PrefixListId: Optional[PrefixListResourceId]
-    PrefixListRegion: Optional[String]
-    DesiredVersion: Optional[BoxedLong]
-    LastSyncedVersion: Optional[BoxedLong]
-    TrackLatestVersion: Optional[Boolean]
-    StateMessage: Optional[String]
-    State: Optional[IpamPrefixListResolverTargetState]
-    Tags: Optional[TagList]
+    IpamPrefixListResolverTargetId: IpamPrefixListResolverTargetId | None
+    IpamPrefixListResolverTargetArn: ResourceArn | None
+    IpamPrefixListResolverId: IpamPrefixListResolverId | None
+    OwnerId: String | None
+    PrefixListId: PrefixListResourceId | None
+    PrefixListRegion: String | None
+    DesiredVersion: BoxedLong | None
+    LastSyncedVersion: BoxedLong | None
+    TrackLatestVersion: Boolean | None
+    StateMessage: String | None
+    State: IpamPrefixListResolverTargetState | None
+    Tags: TagList | None
 
 
 class CreateIpamPrefixListResolverTargetResult(TypedDict, total=False):
-    IpamPrefixListResolverTarget: Optional[IpamPrefixListResolverTarget]
+    IpamPrefixListResolverTarget: IpamPrefixListResolverTarget | None
 
 
 class CreateIpamRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Description: Optional[String]
-    OperatingRegions: Optional[AddIpamOperatingRegionSet]
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
-    Tier: Optional[IpamTier]
-    EnablePrivateGua: Optional[Boolean]
-    MeteredAccount: Optional[IpamMeteredAccount]
+    DryRun: Boolean | None
+    Description: String | None
+    OperatingRegions: AddIpamOperatingRegionSet | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    Tier: IpamTier | None
+    EnablePrivateGua: Boolean | None
+    MeteredAccount: IpamMeteredAccount | None
 
 
 class CreateIpamResourceDiscoveryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Description: Optional[String]
-    OperatingRegions: Optional[AddIpamOperatingRegionSet]
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
+    DryRun: Boolean | None
+    Description: String | None
+    OperatingRegions: AddIpamOperatingRegionSet | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
 
 
 class IpamOrganizationalUnitExclusion(TypedDict, total=False):
-    OrganizationsEntityPath: Optional[String]
+    OrganizationsEntityPath: String | None
 
 
-IpamOrganizationalUnitExclusionSet = List[IpamOrganizationalUnitExclusion]
+IpamOrganizationalUnitExclusionSet = list[IpamOrganizationalUnitExclusion]
 
 
 class IpamOperatingRegion(TypedDict, total=False):
-    RegionName: Optional[String]
+    RegionName: String | None
 
 
-IpamOperatingRegionSet = List[IpamOperatingRegion]
+IpamOperatingRegionSet = list[IpamOperatingRegion]
 
 
 class IpamResourceDiscovery(TypedDict, total=False):
-    OwnerId: Optional[String]
-    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
-    IpamResourceDiscoveryArn: Optional[String]
-    IpamResourceDiscoveryRegion: Optional[String]
-    Description: Optional[String]
-    OperatingRegions: Optional[IpamOperatingRegionSet]
-    IsDefault: Optional[Boolean]
-    State: Optional[IpamResourceDiscoveryState]
-    Tags: Optional[TagList]
-    OrganizationalUnitExclusions: Optional[IpamOrganizationalUnitExclusionSet]
+    OwnerId: String | None
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId | None
+    IpamResourceDiscoveryArn: String | None
+    IpamResourceDiscoveryRegion: String | None
+    Description: String | None
+    OperatingRegions: IpamOperatingRegionSet | None
+    IsDefault: Boolean | None
+    State: IpamResourceDiscoveryState | None
+    Tags: TagList | None
+    OrganizationalUnitExclusions: IpamOrganizationalUnitExclusionSet | None
 
 
 class CreateIpamResourceDiscoveryResult(TypedDict, total=False):
-    IpamResourceDiscovery: Optional[IpamResourceDiscovery]
+    IpamResourceDiscovery: IpamResourceDiscovery | None
 
 
 class Ipam(TypedDict, total=False):
-    OwnerId: Optional[String]
-    IpamId: Optional[IpamId]
-    IpamArn: Optional[ResourceArn]
-    IpamRegion: Optional[String]
-    PublicDefaultScopeId: Optional[IpamScopeId]
-    PrivateDefaultScopeId: Optional[IpamScopeId]
-    ScopeCount: Optional[Integer]
-    Description: Optional[String]
-    OperatingRegions: Optional[IpamOperatingRegionSet]
-    State: Optional[IpamState]
-    Tags: Optional[TagList]
-    DefaultResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
-    DefaultResourceDiscoveryAssociationId: Optional[IpamResourceDiscoveryAssociationId]
-    ResourceDiscoveryAssociationCount: Optional[Integer]
-    StateMessage: Optional[String]
-    Tier: Optional[IpamTier]
-    EnablePrivateGua: Optional[Boolean]
-    MeteredAccount: Optional[IpamMeteredAccount]
+    OwnerId: String | None
+    IpamId: IpamId | None
+    IpamArn: ResourceArn | None
+    IpamRegion: String | None
+    PublicDefaultScopeId: IpamScopeId | None
+    PrivateDefaultScopeId: IpamScopeId | None
+    ScopeCount: Integer | None
+    Description: String | None
+    OperatingRegions: IpamOperatingRegionSet | None
+    State: IpamState | None
+    Tags: TagList | None
+    DefaultResourceDiscoveryId: IpamResourceDiscoveryId | None
+    DefaultResourceDiscoveryAssociationId: IpamResourceDiscoveryAssociationId | None
+    ResourceDiscoveryAssociationCount: Integer | None
+    StateMessage: String | None
+    Tier: IpamTier | None
+    EnablePrivateGua: Boolean | None
+    MeteredAccount: IpamMeteredAccount | None
 
 
 class CreateIpamResult(TypedDict, total=False):
-    Ipam: Optional[Ipam]
+    Ipam: Ipam | None
+
+
+class ExternalAuthorityConfiguration(TypedDict, total=False):
+    Type: IpamScopeExternalAuthorityType | None
+    ExternalResourceIdentifier: String | None
 
 
 class CreateIpamScopeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamId: IpamId
-    Description: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
+    Description: String | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    ExternalAuthorityConfiguration: ExternalAuthorityConfiguration | None
+
+
+class IpamScopeExternalAuthorityConfiguration(TypedDict, total=False):
+    Type: IpamScopeExternalAuthorityType | None
+    ExternalResourceIdentifier: String | None
 
 
 class IpamScope(TypedDict, total=False):
-    OwnerId: Optional[String]
-    IpamScopeId: Optional[IpamScopeId]
-    IpamScopeArn: Optional[ResourceArn]
-    IpamArn: Optional[ResourceArn]
-    IpamRegion: Optional[String]
-    IpamScopeType: Optional[IpamScopeType]
-    IsDefault: Optional[Boolean]
-    Description: Optional[String]
-    PoolCount: Optional[Integer]
-    State: Optional[IpamScopeState]
-    Tags: Optional[TagList]
+    OwnerId: String | None
+    IpamScopeId: IpamScopeId | None
+    IpamScopeArn: ResourceArn | None
+    IpamArn: ResourceArn | None
+    IpamRegion: String | None
+    IpamScopeType: IpamScopeType | None
+    IsDefault: Boolean | None
+    Description: String | None
+    PoolCount: Integer | None
+    State: IpamScopeState | None
+    Tags: TagList | None
+    ExternalAuthorityConfiguration: IpamScopeExternalAuthorityConfiguration | None
 
 
 class CreateIpamScopeResult(TypedDict, total=False):
-    IpamScope: Optional[IpamScope]
+    IpamScope: IpamScope | None
 
 
 class CreateKeyPairRequest(ServiceRequest):
     KeyName: String
-    KeyType: Optional[KeyType]
-    TagSpecifications: Optional[TagSpecificationList]
-    KeyFormat: Optional[KeyFormat]
-    DryRun: Optional[Boolean]
+    KeyType: KeyType | None
+    TagSpecifications: TagSpecificationList | None
+    KeyFormat: KeyFormat | None
+    DryRun: Boolean | None
 
 
 class OperatorRequest(TypedDict, total=False):
-    Principal: Optional[String]
+    Principal: String | None
 
 
 class LaunchTemplateNetworkPerformanceOptionsRequest(TypedDict, total=False):
-    BandwidthWeighting: Optional[InstanceBandwidthWeighting]
+    BandwidthWeighting: InstanceBandwidthWeighting | None
 
 
 class LaunchTemplateInstanceMaintenanceOptionsRequest(TypedDict, total=False):
-    AutoRecovery: Optional[LaunchTemplateAutoRecoveryState]
+    AutoRecovery: LaunchTemplateAutoRecoveryState | None
 
 
 class LaunchTemplatePrivateDnsNameOptionsRequest(TypedDict, total=False):
-    HostnameType: Optional[HostnameType]
-    EnableResourceNameDnsARecord: Optional[Boolean]
-    EnableResourceNameDnsAAAARecord: Optional[Boolean]
+    HostnameType: HostnameType | None
+    EnableResourceNameDnsARecord: Boolean | None
+    EnableResourceNameDnsAAAARecord: Boolean | None
 
 
 class LaunchTemplateEnclaveOptionsRequest(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class LaunchTemplateInstanceMetadataOptionsRequest(TypedDict, total=False):
-    HttpTokens: Optional[LaunchTemplateHttpTokensState]
-    HttpPutResponseHopLimit: Optional[Integer]
-    HttpEndpoint: Optional[LaunchTemplateInstanceMetadataEndpointState]
-    HttpProtocolIpv6: Optional[LaunchTemplateInstanceMetadataProtocolIpv6]
-    InstanceMetadataTags: Optional[LaunchTemplateInstanceMetadataTagsState]
+    HttpTokens: LaunchTemplateHttpTokensState | None
+    HttpPutResponseHopLimit: Integer | None
+    HttpEndpoint: LaunchTemplateInstanceMetadataEndpointState | None
+    HttpProtocolIpv6: LaunchTemplateInstanceMetadataProtocolIpv6 | None
+    InstanceMetadataTags: LaunchTemplateInstanceMetadataTagsState | None
 
 
 class LaunchTemplateHibernationOptionsRequest(TypedDict, total=False):
-    Configured: Optional[Boolean]
+    Configured: Boolean | None
 
 
 class LaunchTemplateLicenseConfigurationRequest(TypedDict, total=False):
-    LicenseConfigurationArn: Optional[String]
+    LicenseConfigurationArn: String | None
 
 
-LaunchTemplateLicenseSpecificationListRequest = List[LaunchTemplateLicenseConfigurationRequest]
+LaunchTemplateLicenseSpecificationListRequest = list[LaunchTemplateLicenseConfigurationRequest]
 
 
 class LaunchTemplateCapacityReservationSpecificationRequest(TypedDict, total=False):
-    CapacityReservationPreference: Optional[CapacityReservationPreference]
-    CapacityReservationTarget: Optional[CapacityReservationTarget]
+    CapacityReservationPreference: CapacityReservationPreference | None
+    CapacityReservationTarget: CapacityReservationTarget | None
 
 
 class LaunchTemplateCpuOptionsRequest(TypedDict, total=False):
-    CoreCount: Optional[Integer]
-    ThreadsPerCore: Optional[Integer]
-    AmdSevSnp: Optional[AmdSevSnpSpecification]
+    CoreCount: Integer | None
+    ThreadsPerCore: Integer | None
+    AmdSevSnp: AmdSevSnpSpecification | None
 
 
 class CreditSpecificationRequest(TypedDict, total=False):
@@ -8481,625 +8511,621 @@ class CreditSpecificationRequest(TypedDict, total=False):
 
 
 class LaunchTemplateSpotMarketOptionsRequest(TypedDict, total=False):
-    MaxPrice: Optional[String]
-    SpotInstanceType: Optional[SpotInstanceType]
-    BlockDurationMinutes: Optional[Integer]
-    ValidUntil: Optional[DateTime]
-    InstanceInterruptionBehavior: Optional[InstanceInterruptionBehavior]
+    MaxPrice: String | None
+    SpotInstanceType: SpotInstanceType | None
+    BlockDurationMinutes: Integer | None
+    ValidUntil: DateTime | None
+    InstanceInterruptionBehavior: InstanceInterruptionBehavior | None
 
 
 class LaunchTemplateInstanceMarketOptionsRequest(TypedDict, total=False):
-    MarketType: Optional[MarketType]
-    SpotOptions: Optional[LaunchTemplateSpotMarketOptionsRequest]
+    MarketType: MarketType | None
+    SpotOptions: LaunchTemplateSpotMarketOptionsRequest | None
 
 
-SecurityGroupStringList = List[SecurityGroupName]
-SecurityGroupIdStringList = List[SecurityGroupId]
+SecurityGroupStringList = list[SecurityGroupName]
+SecurityGroupIdStringList = list[SecurityGroupId]
 
 
 class LaunchTemplateElasticInferenceAccelerator(TypedDict, total=False):
     Type: String
-    Count: Optional[LaunchTemplateElasticInferenceAcceleratorCount]
+    Count: LaunchTemplateElasticInferenceAcceleratorCount | None
 
 
-LaunchTemplateElasticInferenceAcceleratorList = List[LaunchTemplateElasticInferenceAccelerator]
+LaunchTemplateElasticInferenceAcceleratorList = list[LaunchTemplateElasticInferenceAccelerator]
 
 
 class ElasticGpuSpecification(TypedDict, total=False):
     Type: String
 
 
-ElasticGpuSpecificationList = List[ElasticGpuSpecification]
+ElasticGpuSpecificationList = list[ElasticGpuSpecification]
 
 
 class LaunchTemplateTagSpecificationRequest(TypedDict, total=False):
-    ResourceType: Optional[ResourceType]
-    Tags: Optional[TagList]
+    ResourceType: ResourceType | None
+    Tags: TagList | None
 
 
-LaunchTemplateTagSpecificationRequestList = List[LaunchTemplateTagSpecificationRequest]
+LaunchTemplateTagSpecificationRequestList = list[LaunchTemplateTagSpecificationRequest]
 
 
 class LaunchTemplatePlacementRequest(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    Affinity: Optional[String]
-    GroupName: Optional[PlacementGroupName]
-    HostId: Optional[DedicatedHostId]
-    Tenancy: Optional[Tenancy]
-    SpreadDomain: Optional[String]
-    HostResourceGroupArn: Optional[String]
-    PartitionNumber: Optional[Integer]
-    GroupId: Optional[PlacementGroupId]
+    AvailabilityZone: String | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    Affinity: String | None
+    GroupName: PlacementGroupName | None
+    HostId: DedicatedHostId | None
+    Tenancy: Tenancy | None
+    SpreadDomain: String | None
+    HostResourceGroupArn: String | None
+    PartitionNumber: Integer | None
+    GroupId: PlacementGroupId | None
 
 
 class LaunchTemplatesMonitoringRequest(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class EnaSrdUdpSpecificationRequest(TypedDict, total=False):
-    EnaSrdUdpEnabled: Optional[Boolean]
+    EnaSrdUdpEnabled: Boolean | None
 
 
 class EnaSrdSpecificationRequest(TypedDict, total=False):
-    EnaSrdEnabled: Optional[Boolean]
-    EnaSrdUdpSpecification: Optional[EnaSrdUdpSpecificationRequest]
+    EnaSrdEnabled: Boolean | None
+    EnaSrdUdpSpecification: EnaSrdUdpSpecificationRequest | None
 
 
 class Ipv6PrefixSpecificationRequest(TypedDict, total=False):
-    Ipv6Prefix: Optional[String]
+    Ipv6Prefix: String | None
 
 
-Ipv6PrefixList = List[Ipv6PrefixSpecificationRequest]
+Ipv6PrefixList = list[Ipv6PrefixSpecificationRequest]
 
 
 class Ipv4PrefixSpecificationRequest(TypedDict, total=False):
-    Ipv4Prefix: Optional[String]
+    Ipv4Prefix: String | None
 
 
-Ipv4PrefixList = List[Ipv4PrefixSpecificationRequest]
+Ipv4PrefixList = list[Ipv4PrefixSpecificationRequest]
 
 
 class PrivateIpAddressSpecification(TypedDict, total=False):
-    Primary: Optional[Boolean]
-    PrivateIpAddress: Optional[String]
+    Primary: Boolean | None
+    PrivateIpAddress: String | None
 
 
-PrivateIpAddressSpecificationList = List[PrivateIpAddressSpecification]
+PrivateIpAddressSpecificationList = list[PrivateIpAddressSpecification]
 
 
 class InstanceIpv6AddressRequest(TypedDict, total=False):
-    Ipv6Address: Optional[String]
+    Ipv6Address: String | None
 
 
-InstanceIpv6AddressListRequest = List[InstanceIpv6AddressRequest]
+InstanceIpv6AddressListRequest = list[InstanceIpv6AddressRequest]
 
 
 class LaunchTemplateInstanceNetworkInterfaceSpecificationRequest(TypedDict, total=False):
-    AssociateCarrierIpAddress: Optional[Boolean]
-    AssociatePublicIpAddress: Optional[Boolean]
-    DeleteOnTermination: Optional[Boolean]
-    Description: Optional[String]
-    DeviceIndex: Optional[Integer]
-    Groups: Optional[SecurityGroupIdStringList]
-    InterfaceType: Optional[String]
-    Ipv6AddressCount: Optional[Integer]
-    Ipv6Addresses: Optional[InstanceIpv6AddressListRequest]
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    PrivateIpAddress: Optional[String]
-    PrivateIpAddresses: Optional[PrivateIpAddressSpecificationList]
-    SecondaryPrivateIpAddressCount: Optional[Integer]
-    SubnetId: Optional[SubnetId]
-    NetworkCardIndex: Optional[Integer]
-    Ipv4Prefixes: Optional[Ipv4PrefixList]
-    Ipv4PrefixCount: Optional[Integer]
-    Ipv6Prefixes: Optional[Ipv6PrefixList]
-    Ipv6PrefixCount: Optional[Integer]
-    PrimaryIpv6: Optional[Boolean]
-    EnaSrdSpecification: Optional[EnaSrdSpecificationRequest]
-    ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
-    EnaQueueCount: Optional[Integer]
+    AssociateCarrierIpAddress: Boolean | None
+    AssociatePublicIpAddress: Boolean | None
+    DeleteOnTermination: Boolean | None
+    Description: String | None
+    DeviceIndex: Integer | None
+    Groups: SecurityGroupIdStringList | None
+    InterfaceType: String | None
+    Ipv6AddressCount: Integer | None
+    Ipv6Addresses: InstanceIpv6AddressListRequest | None
+    NetworkInterfaceId: NetworkInterfaceId | None
+    PrivateIpAddress: String | None
+    PrivateIpAddresses: PrivateIpAddressSpecificationList | None
+    SecondaryPrivateIpAddressCount: Integer | None
+    SubnetId: SubnetId | None
+    NetworkCardIndex: Integer | None
+    Ipv4Prefixes: Ipv4PrefixList | None
+    Ipv4PrefixCount: Integer | None
+    Ipv6Prefixes: Ipv6PrefixList | None
+    Ipv6PrefixCount: Integer | None
+    PrimaryIpv6: Boolean | None
+    EnaSrdSpecification: EnaSrdSpecificationRequest | None
+    ConnectionTrackingSpecification: ConnectionTrackingSpecificationRequest | None
+    EnaQueueCount: Integer | None
 
 
-LaunchTemplateInstanceNetworkInterfaceSpecificationRequestList = List[
+LaunchTemplateInstanceNetworkInterfaceSpecificationRequestList = list[
     LaunchTemplateInstanceNetworkInterfaceSpecificationRequest
 ]
 
 
 class LaunchTemplateEbsBlockDeviceRequest(TypedDict, total=False):
-    Encrypted: Optional[Boolean]
-    DeleteOnTermination: Optional[Boolean]
-    Iops: Optional[Integer]
-    KmsKeyId: Optional[KmsKeyId]
-    SnapshotId: Optional[SnapshotId]
-    VolumeSize: Optional[Integer]
-    VolumeType: Optional[VolumeType]
-    Throughput: Optional[Integer]
-    VolumeInitializationRate: Optional[Integer]
+    Encrypted: Boolean | None
+    DeleteOnTermination: Boolean | None
+    Iops: Integer | None
+    KmsKeyId: KmsKeyId | None
+    SnapshotId: SnapshotId | None
+    VolumeSize: Integer | None
+    VolumeType: VolumeType | None
+    Throughput: Integer | None
+    VolumeInitializationRate: Integer | None
 
 
 class LaunchTemplateBlockDeviceMappingRequest(TypedDict, total=False):
-    DeviceName: Optional[String]
-    VirtualName: Optional[String]
-    Ebs: Optional[LaunchTemplateEbsBlockDeviceRequest]
-    NoDevice: Optional[String]
+    DeviceName: String | None
+    VirtualName: String | None
+    Ebs: LaunchTemplateEbsBlockDeviceRequest | None
+    NoDevice: String | None
 
 
-LaunchTemplateBlockDeviceMappingRequestList = List[LaunchTemplateBlockDeviceMappingRequest]
+LaunchTemplateBlockDeviceMappingRequestList = list[LaunchTemplateBlockDeviceMappingRequest]
 
 
 class LaunchTemplateIamInstanceProfileSpecificationRequest(TypedDict, total=False):
-    Arn: Optional[String]
-    Name: Optional[String]
+    Arn: String | None
+    Name: String | None
 
 
 class RequestLaunchTemplateData(TypedDict, total=False):
-    KernelId: Optional[KernelId]
-    EbsOptimized: Optional[Boolean]
-    IamInstanceProfile: Optional[LaunchTemplateIamInstanceProfileSpecificationRequest]
-    BlockDeviceMappings: Optional[LaunchTemplateBlockDeviceMappingRequestList]
-    NetworkInterfaces: Optional[LaunchTemplateInstanceNetworkInterfaceSpecificationRequestList]
-    ImageId: Optional[ImageId]
-    InstanceType: Optional[InstanceType]
-    KeyName: Optional[KeyPairName]
-    Monitoring: Optional[LaunchTemplatesMonitoringRequest]
-    Placement: Optional[LaunchTemplatePlacementRequest]
-    RamDiskId: Optional[RamdiskId]
-    DisableApiTermination: Optional[Boolean]
-    InstanceInitiatedShutdownBehavior: Optional[ShutdownBehavior]
-    UserData: Optional[SensitiveUserData]
-    TagSpecifications: Optional[LaunchTemplateTagSpecificationRequestList]
-    ElasticGpuSpecifications: Optional[ElasticGpuSpecificationList]
-    ElasticInferenceAccelerators: Optional[LaunchTemplateElasticInferenceAcceleratorList]
-    SecurityGroupIds: Optional[SecurityGroupIdStringList]
-    SecurityGroups: Optional[SecurityGroupStringList]
-    InstanceMarketOptions: Optional[LaunchTemplateInstanceMarketOptionsRequest]
-    CreditSpecification: Optional[CreditSpecificationRequest]
-    CpuOptions: Optional[LaunchTemplateCpuOptionsRequest]
-    CapacityReservationSpecification: Optional[
-        LaunchTemplateCapacityReservationSpecificationRequest
-    ]
-    LicenseSpecifications: Optional[LaunchTemplateLicenseSpecificationListRequest]
-    HibernationOptions: Optional[LaunchTemplateHibernationOptionsRequest]
-    MetadataOptions: Optional[LaunchTemplateInstanceMetadataOptionsRequest]
-    EnclaveOptions: Optional[LaunchTemplateEnclaveOptionsRequest]
-    InstanceRequirements: Optional[InstanceRequirementsRequest]
-    PrivateDnsNameOptions: Optional[LaunchTemplatePrivateDnsNameOptionsRequest]
-    MaintenanceOptions: Optional[LaunchTemplateInstanceMaintenanceOptionsRequest]
-    DisableApiStop: Optional[Boolean]
-    Operator: Optional[OperatorRequest]
-    NetworkPerformanceOptions: Optional[LaunchTemplateNetworkPerformanceOptionsRequest]
+    KernelId: KernelId | None
+    EbsOptimized: Boolean | None
+    IamInstanceProfile: LaunchTemplateIamInstanceProfileSpecificationRequest | None
+    BlockDeviceMappings: LaunchTemplateBlockDeviceMappingRequestList | None
+    NetworkInterfaces: LaunchTemplateInstanceNetworkInterfaceSpecificationRequestList | None
+    ImageId: ImageId | None
+    InstanceType: InstanceType | None
+    KeyName: KeyPairName | None
+    Monitoring: LaunchTemplatesMonitoringRequest | None
+    Placement: LaunchTemplatePlacementRequest | None
+    RamDiskId: RamdiskId | None
+    DisableApiTermination: Boolean | None
+    InstanceInitiatedShutdownBehavior: ShutdownBehavior | None
+    UserData: SensitiveUserData | None
+    TagSpecifications: LaunchTemplateTagSpecificationRequestList | None
+    ElasticGpuSpecifications: ElasticGpuSpecificationList | None
+    ElasticInferenceAccelerators: LaunchTemplateElasticInferenceAcceleratorList | None
+    SecurityGroupIds: SecurityGroupIdStringList | None
+    SecurityGroups: SecurityGroupStringList | None
+    InstanceMarketOptions: LaunchTemplateInstanceMarketOptionsRequest | None
+    CreditSpecification: CreditSpecificationRequest | None
+    CpuOptions: LaunchTemplateCpuOptionsRequest | None
+    CapacityReservationSpecification: LaunchTemplateCapacityReservationSpecificationRequest | None
+    LicenseSpecifications: LaunchTemplateLicenseSpecificationListRequest | None
+    HibernationOptions: LaunchTemplateHibernationOptionsRequest | None
+    MetadataOptions: LaunchTemplateInstanceMetadataOptionsRequest | None
+    EnclaveOptions: LaunchTemplateEnclaveOptionsRequest | None
+    InstanceRequirements: InstanceRequirementsRequest | None
+    PrivateDnsNameOptions: LaunchTemplatePrivateDnsNameOptionsRequest | None
+    MaintenanceOptions: LaunchTemplateInstanceMaintenanceOptionsRequest | None
+    DisableApiStop: Boolean | None
+    Operator: OperatorRequest | None
+    NetworkPerformanceOptions: LaunchTemplateNetworkPerformanceOptionsRequest | None
 
 
 class CreateLaunchTemplateRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
     LaunchTemplateName: LaunchTemplateName
-    VersionDescription: Optional[VersionDescription]
+    VersionDescription: VersionDescription | None
     LaunchTemplateData: RequestLaunchTemplateData
-    Operator: Optional[OperatorRequest]
-    TagSpecifications: Optional[TagSpecificationList]
+    Operator: OperatorRequest | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class ValidationError(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
+    Code: String | None
+    Message: String | None
 
 
-ErrorSet = List[ValidationError]
+ErrorSet = list[ValidationError]
 
 
 class ValidationWarning(TypedDict, total=False):
-    Errors: Optional[ErrorSet]
+    Errors: ErrorSet | None
 
 
 class LaunchTemplate(TypedDict, total=False):
-    LaunchTemplateId: Optional[String]
-    LaunchTemplateName: Optional[LaunchTemplateName]
-    CreateTime: Optional[DateTime]
-    CreatedBy: Optional[String]
-    DefaultVersionNumber: Optional[Long]
-    LatestVersionNumber: Optional[Long]
-    Tags: Optional[TagList]
-    Operator: Optional[OperatorResponse]
+    LaunchTemplateId: String | None
+    LaunchTemplateName: LaunchTemplateName | None
+    CreateTime: DateTime | None
+    CreatedBy: String | None
+    DefaultVersionNumber: Long | None
+    LatestVersionNumber: Long | None
+    Tags: TagList | None
+    Operator: OperatorResponse | None
 
 
 class CreateLaunchTemplateResult(TypedDict, total=False):
-    LaunchTemplate: Optional[LaunchTemplate]
-    Warning: Optional[ValidationWarning]
+    LaunchTemplate: LaunchTemplate | None
+    Warning: ValidationWarning | None
 
 
 class CreateLaunchTemplateVersionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
-    LaunchTemplateId: Optional[LaunchTemplateId]
-    LaunchTemplateName: Optional[LaunchTemplateName]
-    SourceVersion: Optional[String]
-    VersionDescription: Optional[VersionDescription]
+    DryRun: Boolean | None
+    ClientToken: String | None
+    LaunchTemplateId: LaunchTemplateId | None
+    LaunchTemplateName: LaunchTemplateName | None
+    SourceVersion: String | None
+    VersionDescription: VersionDescription | None
     LaunchTemplateData: RequestLaunchTemplateData
-    ResolveAlias: Optional[Boolean]
+    ResolveAlias: Boolean | None
 
 
 class LaunchTemplateNetworkPerformanceOptions(TypedDict, total=False):
-    BandwidthWeighting: Optional[InstanceBandwidthWeighting]
+    BandwidthWeighting: InstanceBandwidthWeighting | None
 
 
 class LaunchTemplateInstanceMaintenanceOptions(TypedDict, total=False):
-    AutoRecovery: Optional[LaunchTemplateAutoRecoveryState]
+    AutoRecovery: LaunchTemplateAutoRecoveryState | None
 
 
 class LaunchTemplatePrivateDnsNameOptions(TypedDict, total=False):
-    HostnameType: Optional[HostnameType]
-    EnableResourceNameDnsARecord: Optional[Boolean]
-    EnableResourceNameDnsAAAARecord: Optional[Boolean]
+    HostnameType: HostnameType | None
+    EnableResourceNameDnsARecord: Boolean | None
+    EnableResourceNameDnsAAAARecord: Boolean | None
 
 
 class LaunchTemplateEnclaveOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class LaunchTemplateInstanceMetadataOptions(TypedDict, total=False):
-    State: Optional[LaunchTemplateInstanceMetadataOptionsState]
-    HttpTokens: Optional[LaunchTemplateHttpTokensState]
-    HttpPutResponseHopLimit: Optional[Integer]
-    HttpEndpoint: Optional[LaunchTemplateInstanceMetadataEndpointState]
-    HttpProtocolIpv6: Optional[LaunchTemplateInstanceMetadataProtocolIpv6]
-    InstanceMetadataTags: Optional[LaunchTemplateInstanceMetadataTagsState]
+    State: LaunchTemplateInstanceMetadataOptionsState | None
+    HttpTokens: LaunchTemplateHttpTokensState | None
+    HttpPutResponseHopLimit: Integer | None
+    HttpEndpoint: LaunchTemplateInstanceMetadataEndpointState | None
+    HttpProtocolIpv6: LaunchTemplateInstanceMetadataProtocolIpv6 | None
+    InstanceMetadataTags: LaunchTemplateInstanceMetadataTagsState | None
 
 
 class LaunchTemplateHibernationOptions(TypedDict, total=False):
-    Configured: Optional[Boolean]
+    Configured: Boolean | None
 
 
 class LaunchTemplateLicenseConfiguration(TypedDict, total=False):
-    LicenseConfigurationArn: Optional[String]
+    LicenseConfigurationArn: String | None
 
 
-LaunchTemplateLicenseList = List[LaunchTemplateLicenseConfiguration]
+LaunchTemplateLicenseList = list[LaunchTemplateLicenseConfiguration]
 
 
 class LaunchTemplateCapacityReservationSpecificationResponse(TypedDict, total=False):
-    CapacityReservationPreference: Optional[CapacityReservationPreference]
-    CapacityReservationTarget: Optional[CapacityReservationTargetResponse]
+    CapacityReservationPreference: CapacityReservationPreference | None
+    CapacityReservationTarget: CapacityReservationTargetResponse | None
 
 
 class LaunchTemplateCpuOptions(TypedDict, total=False):
-    CoreCount: Optional[Integer]
-    ThreadsPerCore: Optional[Integer]
-    AmdSevSnp: Optional[AmdSevSnpSpecification]
+    CoreCount: Integer | None
+    ThreadsPerCore: Integer | None
+    AmdSevSnp: AmdSevSnpSpecification | None
 
 
 class CreditSpecification(TypedDict, total=False):
-    CpuCredits: Optional[String]
+    CpuCredits: String | None
 
 
 class LaunchTemplateSpotMarketOptions(TypedDict, total=False):
-    MaxPrice: Optional[String]
-    SpotInstanceType: Optional[SpotInstanceType]
-    BlockDurationMinutes: Optional[Integer]
-    ValidUntil: Optional[DateTime]
-    InstanceInterruptionBehavior: Optional[InstanceInterruptionBehavior]
+    MaxPrice: String | None
+    SpotInstanceType: SpotInstanceType | None
+    BlockDurationMinutes: Integer | None
+    ValidUntil: DateTime | None
+    InstanceInterruptionBehavior: InstanceInterruptionBehavior | None
 
 
 class LaunchTemplateInstanceMarketOptions(TypedDict, total=False):
-    MarketType: Optional[MarketType]
-    SpotOptions: Optional[LaunchTemplateSpotMarketOptions]
+    MarketType: MarketType | None
+    SpotOptions: LaunchTemplateSpotMarketOptions | None
 
 
 class LaunchTemplateElasticInferenceAcceleratorResponse(TypedDict, total=False):
-    Type: Optional[String]
-    Count: Optional[Integer]
+    Type: String | None
+    Count: Integer | None
 
 
-LaunchTemplateElasticInferenceAcceleratorResponseList = List[
+LaunchTemplateElasticInferenceAcceleratorResponseList = list[
     LaunchTemplateElasticInferenceAcceleratorResponse
 ]
 
 
 class ElasticGpuSpecificationResponse(TypedDict, total=False):
-    Type: Optional[String]
+    Type: String | None
 
 
-ElasticGpuSpecificationResponseList = List[ElasticGpuSpecificationResponse]
+ElasticGpuSpecificationResponseList = list[ElasticGpuSpecificationResponse]
 
 
 class LaunchTemplateTagSpecification(TypedDict, total=False):
-    ResourceType: Optional[ResourceType]
-    Tags: Optional[TagList]
+    ResourceType: ResourceType | None
+    Tags: TagList | None
 
 
-LaunchTemplateTagSpecificationList = List[LaunchTemplateTagSpecification]
+LaunchTemplateTagSpecificationList = list[LaunchTemplateTagSpecification]
 
 
 class LaunchTemplatePlacement(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    Affinity: Optional[String]
-    GroupName: Optional[String]
-    HostId: Optional[String]
-    Tenancy: Optional[Tenancy]
-    SpreadDomain: Optional[String]
-    HostResourceGroupArn: Optional[String]
-    PartitionNumber: Optional[Integer]
-    GroupId: Optional[PlacementGroupId]
+    AvailabilityZone: String | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    Affinity: String | None
+    GroupName: String | None
+    HostId: String | None
+    Tenancy: Tenancy | None
+    SpreadDomain: String | None
+    HostResourceGroupArn: String | None
+    PartitionNumber: Integer | None
+    GroupId: PlacementGroupId | None
 
 
 class LaunchTemplatesMonitoring(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class LaunchTemplateEnaSrdUdpSpecification(TypedDict, total=False):
-    EnaSrdUdpEnabled: Optional[Boolean]
+    EnaSrdUdpEnabled: Boolean | None
 
 
 class LaunchTemplateEnaSrdSpecification(TypedDict, total=False):
-    EnaSrdEnabled: Optional[Boolean]
-    EnaSrdUdpSpecification: Optional[LaunchTemplateEnaSrdUdpSpecification]
+    EnaSrdEnabled: Boolean | None
+    EnaSrdUdpSpecification: LaunchTemplateEnaSrdUdpSpecification | None
 
 
 class Ipv6PrefixSpecificationResponse(TypedDict, total=False):
-    Ipv6Prefix: Optional[String]
+    Ipv6Prefix: String | None
 
 
-Ipv6PrefixListResponse = List[Ipv6PrefixSpecificationResponse]
+Ipv6PrefixListResponse = list[Ipv6PrefixSpecificationResponse]
 
 
 class Ipv4PrefixSpecificationResponse(TypedDict, total=False):
-    Ipv4Prefix: Optional[String]
+    Ipv4Prefix: String | None
 
 
-Ipv4PrefixListResponse = List[Ipv4PrefixSpecificationResponse]
+Ipv4PrefixListResponse = list[Ipv4PrefixSpecificationResponse]
 
 
 class InstanceIpv6Address(TypedDict, total=False):
-    Ipv6Address: Optional[String]
-    IsPrimaryIpv6: Optional[Boolean]
+    Ipv6Address: String | None
+    IsPrimaryIpv6: Boolean | None
 
 
-InstanceIpv6AddressList = List[InstanceIpv6Address]
+InstanceIpv6AddressList = list[InstanceIpv6Address]
 
 
 class LaunchTemplateInstanceNetworkInterfaceSpecification(TypedDict, total=False):
-    AssociateCarrierIpAddress: Optional[Boolean]
-    AssociatePublicIpAddress: Optional[Boolean]
-    DeleteOnTermination: Optional[Boolean]
-    Description: Optional[String]
-    DeviceIndex: Optional[Integer]
-    Groups: Optional[GroupIdStringList]
-    InterfaceType: Optional[String]
-    Ipv6AddressCount: Optional[Integer]
-    Ipv6Addresses: Optional[InstanceIpv6AddressList]
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    PrivateIpAddress: Optional[String]
-    PrivateIpAddresses: Optional[PrivateIpAddressSpecificationList]
-    SecondaryPrivateIpAddressCount: Optional[Integer]
-    SubnetId: Optional[SubnetId]
-    NetworkCardIndex: Optional[Integer]
-    Ipv4Prefixes: Optional[Ipv4PrefixListResponse]
-    Ipv4PrefixCount: Optional[Integer]
-    Ipv6Prefixes: Optional[Ipv6PrefixListResponse]
-    Ipv6PrefixCount: Optional[Integer]
-    PrimaryIpv6: Optional[Boolean]
-    EnaSrdSpecification: Optional[LaunchTemplateEnaSrdSpecification]
-    ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecification]
-    EnaQueueCount: Optional[Integer]
+    AssociateCarrierIpAddress: Boolean | None
+    AssociatePublicIpAddress: Boolean | None
+    DeleteOnTermination: Boolean | None
+    Description: String | None
+    DeviceIndex: Integer | None
+    Groups: GroupIdStringList | None
+    InterfaceType: String | None
+    Ipv6AddressCount: Integer | None
+    Ipv6Addresses: InstanceIpv6AddressList | None
+    NetworkInterfaceId: NetworkInterfaceId | None
+    PrivateIpAddress: String | None
+    PrivateIpAddresses: PrivateIpAddressSpecificationList | None
+    SecondaryPrivateIpAddressCount: Integer | None
+    SubnetId: SubnetId | None
+    NetworkCardIndex: Integer | None
+    Ipv4Prefixes: Ipv4PrefixListResponse | None
+    Ipv4PrefixCount: Integer | None
+    Ipv6Prefixes: Ipv6PrefixListResponse | None
+    Ipv6PrefixCount: Integer | None
+    PrimaryIpv6: Boolean | None
+    EnaSrdSpecification: LaunchTemplateEnaSrdSpecification | None
+    ConnectionTrackingSpecification: ConnectionTrackingSpecification | None
+    EnaQueueCount: Integer | None
 
 
-LaunchTemplateInstanceNetworkInterfaceSpecificationList = List[
+LaunchTemplateInstanceNetworkInterfaceSpecificationList = list[
     LaunchTemplateInstanceNetworkInterfaceSpecification
 ]
 
 
 class LaunchTemplateEbsBlockDevice(TypedDict, total=False):
-    Encrypted: Optional[Boolean]
-    DeleteOnTermination: Optional[Boolean]
-    Iops: Optional[Integer]
-    KmsKeyId: Optional[KmsKeyId]
-    SnapshotId: Optional[SnapshotId]
-    VolumeSize: Optional[Integer]
-    VolumeType: Optional[VolumeType]
-    Throughput: Optional[Integer]
-    VolumeInitializationRate: Optional[Integer]
+    Encrypted: Boolean | None
+    DeleteOnTermination: Boolean | None
+    Iops: Integer | None
+    KmsKeyId: KmsKeyId | None
+    SnapshotId: SnapshotId | None
+    VolumeSize: Integer | None
+    VolumeType: VolumeType | None
+    Throughput: Integer | None
+    VolumeInitializationRate: Integer | None
 
 
 class LaunchTemplateBlockDeviceMapping(TypedDict, total=False):
-    DeviceName: Optional[String]
-    VirtualName: Optional[String]
-    Ebs: Optional[LaunchTemplateEbsBlockDevice]
-    NoDevice: Optional[String]
+    DeviceName: String | None
+    VirtualName: String | None
+    Ebs: LaunchTemplateEbsBlockDevice | None
+    NoDevice: String | None
 
 
-LaunchTemplateBlockDeviceMappingList = List[LaunchTemplateBlockDeviceMapping]
+LaunchTemplateBlockDeviceMappingList = list[LaunchTemplateBlockDeviceMapping]
 
 
 class LaunchTemplateIamInstanceProfileSpecification(TypedDict, total=False):
-    Arn: Optional[String]
-    Name: Optional[String]
+    Arn: String | None
+    Name: String | None
 
 
 class ResponseLaunchTemplateData(TypedDict, total=False):
-    KernelId: Optional[String]
-    EbsOptimized: Optional[Boolean]
-    IamInstanceProfile: Optional[LaunchTemplateIamInstanceProfileSpecification]
-    BlockDeviceMappings: Optional[LaunchTemplateBlockDeviceMappingList]
-    NetworkInterfaces: Optional[LaunchTemplateInstanceNetworkInterfaceSpecificationList]
-    ImageId: Optional[String]
-    InstanceType: Optional[InstanceType]
-    KeyName: Optional[String]
-    Monitoring: Optional[LaunchTemplatesMonitoring]
-    Placement: Optional[LaunchTemplatePlacement]
-    RamDiskId: Optional[String]
-    DisableApiTermination: Optional[Boolean]
-    InstanceInitiatedShutdownBehavior: Optional[ShutdownBehavior]
-    UserData: Optional[SensitiveUserData]
-    TagSpecifications: Optional[LaunchTemplateTagSpecificationList]
-    ElasticGpuSpecifications: Optional[ElasticGpuSpecificationResponseList]
-    ElasticInferenceAccelerators: Optional[LaunchTemplateElasticInferenceAcceleratorResponseList]
-    SecurityGroupIds: Optional[ValueStringList]
-    SecurityGroups: Optional[ValueStringList]
-    InstanceMarketOptions: Optional[LaunchTemplateInstanceMarketOptions]
-    CreditSpecification: Optional[CreditSpecification]
-    CpuOptions: Optional[LaunchTemplateCpuOptions]
-    CapacityReservationSpecification: Optional[
-        LaunchTemplateCapacityReservationSpecificationResponse
-    ]
-    LicenseSpecifications: Optional[LaunchTemplateLicenseList]
-    HibernationOptions: Optional[LaunchTemplateHibernationOptions]
-    MetadataOptions: Optional[LaunchTemplateInstanceMetadataOptions]
-    EnclaveOptions: Optional[LaunchTemplateEnclaveOptions]
-    InstanceRequirements: Optional[InstanceRequirements]
-    PrivateDnsNameOptions: Optional[LaunchTemplatePrivateDnsNameOptions]
-    MaintenanceOptions: Optional[LaunchTemplateInstanceMaintenanceOptions]
-    DisableApiStop: Optional[Boolean]
-    Operator: Optional[OperatorResponse]
-    NetworkPerformanceOptions: Optional[LaunchTemplateNetworkPerformanceOptions]
+    KernelId: String | None
+    EbsOptimized: Boolean | None
+    IamInstanceProfile: LaunchTemplateIamInstanceProfileSpecification | None
+    BlockDeviceMappings: LaunchTemplateBlockDeviceMappingList | None
+    NetworkInterfaces: LaunchTemplateInstanceNetworkInterfaceSpecificationList | None
+    ImageId: String | None
+    InstanceType: InstanceType | None
+    KeyName: String | None
+    Monitoring: LaunchTemplatesMonitoring | None
+    Placement: LaunchTemplatePlacement | None
+    RamDiskId: String | None
+    DisableApiTermination: Boolean | None
+    InstanceInitiatedShutdownBehavior: ShutdownBehavior | None
+    UserData: SensitiveUserData | None
+    TagSpecifications: LaunchTemplateTagSpecificationList | None
+    ElasticGpuSpecifications: ElasticGpuSpecificationResponseList | None
+    ElasticInferenceAccelerators: LaunchTemplateElasticInferenceAcceleratorResponseList | None
+    SecurityGroupIds: ValueStringList | None
+    SecurityGroups: ValueStringList | None
+    InstanceMarketOptions: LaunchTemplateInstanceMarketOptions | None
+    CreditSpecification: CreditSpecification | None
+    CpuOptions: LaunchTemplateCpuOptions | None
+    CapacityReservationSpecification: LaunchTemplateCapacityReservationSpecificationResponse | None
+    LicenseSpecifications: LaunchTemplateLicenseList | None
+    HibernationOptions: LaunchTemplateHibernationOptions | None
+    MetadataOptions: LaunchTemplateInstanceMetadataOptions | None
+    EnclaveOptions: LaunchTemplateEnclaveOptions | None
+    InstanceRequirements: InstanceRequirements | None
+    PrivateDnsNameOptions: LaunchTemplatePrivateDnsNameOptions | None
+    MaintenanceOptions: LaunchTemplateInstanceMaintenanceOptions | None
+    DisableApiStop: Boolean | None
+    Operator: OperatorResponse | None
+    NetworkPerformanceOptions: LaunchTemplateNetworkPerformanceOptions | None
 
 
 class LaunchTemplateVersion(TypedDict, total=False):
-    LaunchTemplateId: Optional[String]
-    LaunchTemplateName: Optional[LaunchTemplateName]
-    VersionNumber: Optional[Long]
-    VersionDescription: Optional[VersionDescription]
-    CreateTime: Optional[DateTime]
-    CreatedBy: Optional[String]
-    DefaultVersion: Optional[Boolean]
-    LaunchTemplateData: Optional[ResponseLaunchTemplateData]
-    Operator: Optional[OperatorResponse]
+    LaunchTemplateId: String | None
+    LaunchTemplateName: LaunchTemplateName | None
+    VersionNumber: Long | None
+    VersionDescription: VersionDescription | None
+    CreateTime: DateTime | None
+    CreatedBy: String | None
+    DefaultVersion: Boolean | None
+    LaunchTemplateData: ResponseLaunchTemplateData | None
+    Operator: OperatorResponse | None
 
 
 class CreateLaunchTemplateVersionResult(TypedDict, total=False):
-    LaunchTemplateVersion: Optional[LaunchTemplateVersion]
-    Warning: Optional[ValidationWarning]
+    LaunchTemplateVersion: LaunchTemplateVersion | None
+    Warning: ValidationWarning | None
 
 
 class CreateLocalGatewayRouteRequest(ServiceRequest):
-    DestinationCidrBlock: Optional[String]
+    DestinationCidrBlock: String | None
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
-    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
-    DryRun: Optional[Boolean]
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    DestinationPrefixListId: Optional[PrefixListResourceId]
+    LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId | None
+    DryRun: Boolean | None
+    NetworkInterfaceId: NetworkInterfaceId | None
+    DestinationPrefixListId: PrefixListResourceId | None
 
 
 class LocalGatewayRoute(TypedDict, total=False):
-    DestinationCidrBlock: Optional[String]
-    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
-    Type: Optional[LocalGatewayRouteType]
-    State: Optional[LocalGatewayRouteState]
-    LocalGatewayRouteTableId: Optional[LocalGatewayRoutetableId]
-    LocalGatewayRouteTableArn: Optional[ResourceArn]
-    OwnerId: Optional[String]
-    SubnetId: Optional[SubnetId]
-    CoipPoolId: Optional[CoipPoolId]
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    DestinationPrefixListId: Optional[PrefixListResourceId]
+    DestinationCidrBlock: String | None
+    LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId | None
+    Type: LocalGatewayRouteType | None
+    State: LocalGatewayRouteState | None
+    LocalGatewayRouteTableId: LocalGatewayRoutetableId | None
+    LocalGatewayRouteTableArn: ResourceArn | None
+    OwnerId: String | None
+    SubnetId: SubnetId | None
+    CoipPoolId: CoipPoolId | None
+    NetworkInterfaceId: NetworkInterfaceId | None
+    DestinationPrefixListId: PrefixListResourceId | None
 
 
 class CreateLocalGatewayRouteResult(TypedDict, total=False):
-    Route: Optional[LocalGatewayRoute]
+    Route: LocalGatewayRoute | None
 
 
 class CreateLocalGatewayRouteTableRequest(ServiceRequest):
     LocalGatewayId: LocalGatewayId
-    Mode: Optional[LocalGatewayRouteTableMode]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    Mode: LocalGatewayRouteTableMode | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class StateReason(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
+    Code: String | None
+    Message: String | None
 
 
 class LocalGatewayRouteTable(TypedDict, total=False):
-    LocalGatewayRouteTableId: Optional[String]
-    LocalGatewayRouteTableArn: Optional[ResourceArn]
-    LocalGatewayId: Optional[LocalGatewayId]
-    OutpostArn: Optional[String]
-    OwnerId: Optional[String]
-    State: Optional[String]
-    Tags: Optional[TagList]
-    Mode: Optional[LocalGatewayRouteTableMode]
-    StateReason: Optional[StateReason]
+    LocalGatewayRouteTableId: String | None
+    LocalGatewayRouteTableArn: ResourceArn | None
+    LocalGatewayId: LocalGatewayId | None
+    OutpostArn: String | None
+    OwnerId: String | None
+    State: String | None
+    Tags: TagList | None
+    Mode: LocalGatewayRouteTableMode | None
+    StateReason: StateReason | None
 
 
 class CreateLocalGatewayRouteTableResult(TypedDict, total=False):
-    LocalGatewayRouteTable: Optional[LocalGatewayRouteTable]
+    LocalGatewayRouteTable: LocalGatewayRouteTable | None
 
 
 class CreateLocalGatewayRouteTableVirtualInterfaceGroupAssociationRequest(ServiceRequest):
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
     LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class LocalGatewayRouteTableVirtualInterfaceGroupAssociation(TypedDict, total=False):
-    LocalGatewayRouteTableVirtualInterfaceGroupAssociationId: Optional[
-        LocalGatewayRouteTableVirtualInterfaceGroupAssociationId
-    ]
-    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
-    LocalGatewayId: Optional[String]
-    LocalGatewayRouteTableId: Optional[LocalGatewayId]
-    LocalGatewayRouteTableArn: Optional[ResourceArn]
-    OwnerId: Optional[String]
-    State: Optional[String]
-    Tags: Optional[TagList]
+    LocalGatewayRouteTableVirtualInterfaceGroupAssociationId: (
+        LocalGatewayRouteTableVirtualInterfaceGroupAssociationId | None
+    )
+    LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId | None
+    LocalGatewayId: String | None
+    LocalGatewayRouteTableId: LocalGatewayId | None
+    LocalGatewayRouteTableArn: ResourceArn | None
+    OwnerId: String | None
+    State: String | None
+    Tags: TagList | None
 
 
 class CreateLocalGatewayRouteTableVirtualInterfaceGroupAssociationResult(TypedDict, total=False):
-    LocalGatewayRouteTableVirtualInterfaceGroupAssociation: Optional[
-        LocalGatewayRouteTableVirtualInterfaceGroupAssociation
-    ]
+    LocalGatewayRouteTableVirtualInterfaceGroupAssociation: (
+        LocalGatewayRouteTableVirtualInterfaceGroupAssociation | None
+    )
 
 
 class CreateLocalGatewayRouteTableVpcAssociationRequest(ServiceRequest):
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
     VpcId: VpcId
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class LocalGatewayRouteTableVpcAssociation(TypedDict, total=False):
-    LocalGatewayRouteTableVpcAssociationId: Optional[LocalGatewayRouteTableVpcAssociationId]
-    LocalGatewayRouteTableId: Optional[String]
-    LocalGatewayRouteTableArn: Optional[ResourceArn]
-    LocalGatewayId: Optional[String]
-    VpcId: Optional[String]
-    OwnerId: Optional[String]
-    State: Optional[String]
-    Tags: Optional[TagList]
+    LocalGatewayRouteTableVpcAssociationId: LocalGatewayRouteTableVpcAssociationId | None
+    LocalGatewayRouteTableId: String | None
+    LocalGatewayRouteTableArn: ResourceArn | None
+    LocalGatewayId: String | None
+    VpcId: String | None
+    OwnerId: String | None
+    State: String | None
+    Tags: TagList | None
 
 
 class CreateLocalGatewayRouteTableVpcAssociationResult(TypedDict, total=False):
-    LocalGatewayRouteTableVpcAssociation: Optional[LocalGatewayRouteTableVpcAssociation]
+    LocalGatewayRouteTableVpcAssociation: LocalGatewayRouteTableVpcAssociation | None
 
 
 class CreateLocalGatewayVirtualInterfaceGroupRequest(ServiceRequest):
     LocalGatewayId: LocalGatewayId
-    LocalBgpAsn: Optional[Integer]
-    LocalBgpAsnExtended: Optional[Long]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    LocalBgpAsn: Integer | None
+    LocalBgpAsnExtended: Long | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
-LocalGatewayVirtualInterfaceIdSet = List[LocalGatewayVirtualInterfaceId]
+LocalGatewayVirtualInterfaceIdSet = list[LocalGatewayVirtualInterfaceId]
 
 
 class LocalGatewayVirtualInterfaceGroup(TypedDict, total=False):
-    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
-    LocalGatewayVirtualInterfaceIds: Optional[LocalGatewayVirtualInterfaceIdSet]
-    LocalGatewayId: Optional[String]
-    OwnerId: Optional[String]
-    LocalBgpAsn: Optional[Integer]
-    LocalBgpAsnExtended: Optional[Long]
-    LocalGatewayVirtualInterfaceGroupArn: Optional[ResourceArn]
-    Tags: Optional[TagList]
-    ConfigurationState: Optional[LocalGatewayVirtualInterfaceGroupConfigurationState]
+    LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId | None
+    LocalGatewayVirtualInterfaceIds: LocalGatewayVirtualInterfaceIdSet | None
+    LocalGatewayId: String | None
+    OwnerId: String | None
+    LocalBgpAsn: Integer | None
+    LocalBgpAsnExtended: Long | None
+    LocalGatewayVirtualInterfaceGroupArn: ResourceArn | None
+    Tags: TagList | None
+    ConfigurationState: LocalGatewayVirtualInterfaceGroupConfigurationState | None
 
 
 class CreateLocalGatewayVirtualInterfaceGroupResult(TypedDict, total=False):
-    LocalGatewayVirtualInterfaceGroup: Optional[LocalGatewayVirtualInterfaceGroup]
+    LocalGatewayVirtualInterfaceGroup: LocalGatewayVirtualInterfaceGroup | None
 
 
 class CreateLocalGatewayVirtualInterfaceRequest(ServiceRequest):
@@ -9108,490 +9134,490 @@ class CreateLocalGatewayVirtualInterfaceRequest(ServiceRequest):
     Vlan: Integer
     LocalAddress: String
     PeerAddress: String
-    PeerBgpAsn: Optional[Integer]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
-    PeerBgpAsnExtended: Optional[Long]
+    PeerBgpAsn: Integer | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
+    PeerBgpAsnExtended: Long | None
 
 
 class LocalGatewayVirtualInterface(TypedDict, total=False):
-    LocalGatewayVirtualInterfaceId: Optional[LocalGatewayVirtualInterfaceId]
-    LocalGatewayId: Optional[String]
-    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
-    LocalGatewayVirtualInterfaceArn: Optional[ResourceArn]
-    OutpostLagId: Optional[String]
-    Vlan: Optional[Integer]
-    LocalAddress: Optional[String]
-    PeerAddress: Optional[String]
-    LocalBgpAsn: Optional[Integer]
-    PeerBgpAsn: Optional[Integer]
-    PeerBgpAsnExtended: Optional[Long]
-    OwnerId: Optional[String]
-    Tags: Optional[TagList]
-    ConfigurationState: Optional[LocalGatewayVirtualInterfaceConfigurationState]
+    LocalGatewayVirtualInterfaceId: LocalGatewayVirtualInterfaceId | None
+    LocalGatewayId: String | None
+    LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId | None
+    LocalGatewayVirtualInterfaceArn: ResourceArn | None
+    OutpostLagId: String | None
+    Vlan: Integer | None
+    LocalAddress: String | None
+    PeerAddress: String | None
+    LocalBgpAsn: Integer | None
+    PeerBgpAsn: Integer | None
+    PeerBgpAsnExtended: Long | None
+    OwnerId: String | None
+    Tags: TagList | None
+    ConfigurationState: LocalGatewayVirtualInterfaceConfigurationState | None
 
 
 class CreateLocalGatewayVirtualInterfaceResult(TypedDict, total=False):
-    LocalGatewayVirtualInterface: Optional[LocalGatewayVirtualInterface]
+    LocalGatewayVirtualInterface: LocalGatewayVirtualInterface | None
 
 
 class MacSystemIntegrityProtectionConfigurationRequest(TypedDict, total=False):
-    AppleInternal: Optional[MacSystemIntegrityProtectionSettingStatus]
-    BaseSystem: Optional[MacSystemIntegrityProtectionSettingStatus]
-    DebuggingRestrictions: Optional[MacSystemIntegrityProtectionSettingStatus]
-    DTraceRestrictions: Optional[MacSystemIntegrityProtectionSettingStatus]
-    FilesystemProtections: Optional[MacSystemIntegrityProtectionSettingStatus]
-    KextSigning: Optional[MacSystemIntegrityProtectionSettingStatus]
-    NvramProtections: Optional[MacSystemIntegrityProtectionSettingStatus]
+    AppleInternal: MacSystemIntegrityProtectionSettingStatus | None
+    BaseSystem: MacSystemIntegrityProtectionSettingStatus | None
+    DebuggingRestrictions: MacSystemIntegrityProtectionSettingStatus | None
+    DTraceRestrictions: MacSystemIntegrityProtectionSettingStatus | None
+    FilesystemProtections: MacSystemIntegrityProtectionSettingStatus | None
+    KextSigning: MacSystemIntegrityProtectionSettingStatus | None
+    NvramProtections: MacSystemIntegrityProtectionSettingStatus | None
 
 
 class CreateMacSystemIntegrityProtectionModificationTaskRequest(ServiceRequest):
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ClientToken: String | None
+    DryRun: Boolean | None
     InstanceId: InstanceId
-    MacCredentials: Optional[SensitiveMacCredentials]
-    MacSystemIntegrityProtectionConfiguration: Optional[
-        MacSystemIntegrityProtectionConfigurationRequest
-    ]
+    MacCredentials: SensitiveMacCredentials | None
+    MacSystemIntegrityProtectionConfiguration: (
+        MacSystemIntegrityProtectionConfigurationRequest | None
+    )
     MacSystemIntegrityProtectionStatus: MacSystemIntegrityProtectionSettingStatus
-    TagSpecifications: Optional[TagSpecificationList]
+    TagSpecifications: TagSpecificationList | None
 
 
 class CreateMacSystemIntegrityProtectionModificationTaskResult(TypedDict, total=False):
-    MacModificationTask: Optional[MacModificationTask]
+    MacModificationTask: MacModificationTask | None
 
 
 class CreateManagedPrefixListRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     PrefixListName: String
-    Entries: Optional[AddPrefixListEntries]
+    Entries: AddPrefixListEntries | None
     MaxEntries: Integer
-    TagSpecifications: Optional[TagSpecificationList]
+    TagSpecifications: TagSpecificationList | None
     AddressFamily: String
-    ClientToken: Optional[String]
+    ClientToken: String | None
 
 
 class ManagedPrefixList(TypedDict, total=False):
-    PrefixListId: Optional[PrefixListResourceId]
-    AddressFamily: Optional[String]
-    State: Optional[PrefixListState]
-    StateMessage: Optional[String]
-    PrefixListArn: Optional[ResourceArn]
-    PrefixListName: Optional[String]
-    MaxEntries: Optional[Integer]
-    Version: Optional[Long]
-    Tags: Optional[TagList]
-    OwnerId: Optional[String]
-    IpamPrefixListResolverTargetId: Optional[String]
-    IpamPrefixListResolverSyncEnabled: Optional[Boolean]
+    PrefixListId: PrefixListResourceId | None
+    AddressFamily: String | None
+    State: PrefixListState | None
+    StateMessage: String | None
+    PrefixListArn: ResourceArn | None
+    PrefixListName: String | None
+    MaxEntries: Integer | None
+    Version: Long | None
+    Tags: TagList | None
+    OwnerId: String | None
+    IpamPrefixListResolverTargetId: String | None
+    IpamPrefixListResolverSyncEnabled: Boolean | None
 
 
 class CreateManagedPrefixListResult(TypedDict, total=False):
-    PrefixList: Optional[ManagedPrefixList]
+    PrefixList: ManagedPrefixList | None
 
 
 class CreateNatGatewayRequest(ServiceRequest):
-    AllocationId: Optional[AllocationId]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    AllocationId: AllocationId | None
+    ClientToken: String | None
+    DryRun: Boolean | None
     SubnetId: SubnetId
-    TagSpecifications: Optional[TagSpecificationList]
-    ConnectivityType: Optional[ConnectivityType]
-    PrivateIpAddress: Optional[String]
-    SecondaryAllocationIds: Optional[AllocationIdList]
-    SecondaryPrivateIpAddresses: Optional[IpList]
-    SecondaryPrivateIpAddressCount: Optional[PrivateIpAddressCount]
+    TagSpecifications: TagSpecificationList | None
+    ConnectivityType: ConnectivityType | None
+    PrivateIpAddress: String | None
+    SecondaryAllocationIds: AllocationIdList | None
+    SecondaryPrivateIpAddresses: IpList | None
+    SecondaryPrivateIpAddressCount: PrivateIpAddressCount | None
 
 
 class ProvisionedBandwidth(TypedDict, total=False):
-    ProvisionTime: Optional[DateTime]
-    Provisioned: Optional[String]
-    RequestTime: Optional[DateTime]
-    Requested: Optional[String]
-    Status: Optional[String]
+    ProvisionTime: DateTime | None
+    Provisioned: String | None
+    RequestTime: DateTime | None
+    Requested: String | None
+    Status: String | None
 
 
 class NatGateway(TypedDict, total=False):
-    CreateTime: Optional[DateTime]
-    DeleteTime: Optional[DateTime]
-    FailureCode: Optional[String]
-    FailureMessage: Optional[String]
-    NatGatewayAddresses: Optional[NatGatewayAddressList]
-    NatGatewayId: Optional[String]
-    ProvisionedBandwidth: Optional[ProvisionedBandwidth]
-    State: Optional[NatGatewayState]
-    SubnetId: Optional[String]
-    VpcId: Optional[String]
-    Tags: Optional[TagList]
-    ConnectivityType: Optional[ConnectivityType]
+    CreateTime: DateTime | None
+    DeleteTime: DateTime | None
+    FailureCode: String | None
+    FailureMessage: String | None
+    NatGatewayAddresses: NatGatewayAddressList | None
+    NatGatewayId: String | None
+    ProvisionedBandwidth: ProvisionedBandwidth | None
+    State: NatGatewayState | None
+    SubnetId: String | None
+    VpcId: String | None
+    Tags: TagList | None
+    ConnectivityType: ConnectivityType | None
 
 
 class CreateNatGatewayResult(TypedDict, total=False):
-    ClientToken: Optional[String]
-    NatGateway: Optional[NatGateway]
+    ClientToken: String | None
+    NatGateway: NatGateway | None
 
 
 class IcmpTypeCode(TypedDict, total=False):
-    Code: Optional[Integer]
-    Type: Optional[Integer]
+    Code: Integer | None
+    Type: Integer | None
 
 
 class CreateNetworkAclEntryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NetworkAclId: NetworkAclId
     RuleNumber: Integer
     Protocol: String
     RuleAction: RuleAction
     Egress: Boolean
-    CidrBlock: Optional[String]
-    Ipv6CidrBlock: Optional[String]
-    IcmpTypeCode: Optional[IcmpTypeCode]
-    PortRange: Optional[PortRange]
+    CidrBlock: String | None
+    Ipv6CidrBlock: String | None
+    IcmpTypeCode: IcmpTypeCode | None
+    PortRange: PortRange | None
 
 
 class CreateNetworkAclRequest(ServiceRequest):
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    DryRun: Boolean | None
     VpcId: VpcId
 
 
 class NetworkAclEntry(TypedDict, total=False):
-    CidrBlock: Optional[String]
-    Egress: Optional[Boolean]
-    IcmpTypeCode: Optional[IcmpTypeCode]
-    Ipv6CidrBlock: Optional[String]
-    PortRange: Optional[PortRange]
-    Protocol: Optional[String]
-    RuleAction: Optional[RuleAction]
-    RuleNumber: Optional[Integer]
+    CidrBlock: String | None
+    Egress: Boolean | None
+    IcmpTypeCode: IcmpTypeCode | None
+    Ipv6CidrBlock: String | None
+    PortRange: PortRange | None
+    Protocol: String | None
+    RuleAction: RuleAction | None
+    RuleNumber: Integer | None
 
 
-NetworkAclEntryList = List[NetworkAclEntry]
+NetworkAclEntryList = list[NetworkAclEntry]
 
 
 class NetworkAclAssociation(TypedDict, total=False):
-    NetworkAclAssociationId: Optional[String]
-    NetworkAclId: Optional[String]
-    SubnetId: Optional[String]
+    NetworkAclAssociationId: String | None
+    NetworkAclId: String | None
+    SubnetId: String | None
 
 
-NetworkAclAssociationList = List[NetworkAclAssociation]
+NetworkAclAssociationList = list[NetworkAclAssociation]
 
 
 class NetworkAcl(TypedDict, total=False):
-    Associations: Optional[NetworkAclAssociationList]
-    Entries: Optional[NetworkAclEntryList]
-    IsDefault: Optional[Boolean]
-    NetworkAclId: Optional[String]
-    Tags: Optional[TagList]
-    VpcId: Optional[String]
-    OwnerId: Optional[String]
+    Associations: NetworkAclAssociationList | None
+    Entries: NetworkAclEntryList | None
+    IsDefault: Boolean | None
+    NetworkAclId: String | None
+    Tags: TagList | None
+    VpcId: String | None
+    OwnerId: String | None
 
 
 class CreateNetworkAclResult(TypedDict, total=False):
-    NetworkAcl: Optional[NetworkAcl]
-    ClientToken: Optional[String]
+    NetworkAcl: NetworkAcl | None
+    ClientToken: String | None
 
 
 class CreateNetworkInsightsAccessScopeRequest(ServiceRequest):
-    MatchPaths: Optional[AccessScopePathListRequest]
-    ExcludePaths: Optional[AccessScopePathListRequest]
+    MatchPaths: AccessScopePathListRequest | None
+    ExcludePaths: AccessScopePathListRequest | None
     ClientToken: String
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class NetworkInsightsAccessScopeContent(TypedDict, total=False):
-    NetworkInsightsAccessScopeId: Optional[NetworkInsightsAccessScopeId]
-    MatchPaths: Optional[AccessScopePathList]
-    ExcludePaths: Optional[AccessScopePathList]
+    NetworkInsightsAccessScopeId: NetworkInsightsAccessScopeId | None
+    MatchPaths: AccessScopePathList | None
+    ExcludePaths: AccessScopePathList | None
 
 
 class NetworkInsightsAccessScope(TypedDict, total=False):
-    NetworkInsightsAccessScopeId: Optional[NetworkInsightsAccessScopeId]
-    NetworkInsightsAccessScopeArn: Optional[ResourceArn]
-    CreatedDate: Optional[MillisecondDateTime]
-    UpdatedDate: Optional[MillisecondDateTime]
-    Tags: Optional[TagList]
+    NetworkInsightsAccessScopeId: NetworkInsightsAccessScopeId | None
+    NetworkInsightsAccessScopeArn: ResourceArn | None
+    CreatedDate: MillisecondDateTime | None
+    UpdatedDate: MillisecondDateTime | None
+    Tags: TagList | None
 
 
 class CreateNetworkInsightsAccessScopeResult(TypedDict, total=False):
-    NetworkInsightsAccessScope: Optional[NetworkInsightsAccessScope]
-    NetworkInsightsAccessScopeContent: Optional[NetworkInsightsAccessScopeContent]
+    NetworkInsightsAccessScope: NetworkInsightsAccessScope | None
+    NetworkInsightsAccessScopeContent: NetworkInsightsAccessScopeContent | None
 
 
 class RequestFilterPortRange(TypedDict, total=False):
-    FromPort: Optional[Port]
-    ToPort: Optional[Port]
+    FromPort: Port | None
+    ToPort: Port | None
 
 
 class PathRequestFilter(TypedDict, total=False):
-    SourceAddress: Optional[IpAddress]
-    SourcePortRange: Optional[RequestFilterPortRange]
-    DestinationAddress: Optional[IpAddress]
-    DestinationPortRange: Optional[RequestFilterPortRange]
+    SourceAddress: IpAddress | None
+    SourcePortRange: RequestFilterPortRange | None
+    DestinationAddress: IpAddress | None
+    DestinationPortRange: RequestFilterPortRange | None
 
 
 class CreateNetworkInsightsPathRequest(ServiceRequest):
-    SourceIp: Optional[IpAddress]
-    DestinationIp: Optional[IpAddress]
+    SourceIp: IpAddress | None
+    DestinationIp: IpAddress | None
     Source: NetworkInsightsResourceId
-    Destination: Optional[NetworkInsightsResourceId]
+    Destination: NetworkInsightsResourceId | None
     Protocol: Protocol
-    DestinationPort: Optional[Port]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    DestinationPort: Port | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
     ClientToken: String
-    FilterAtSource: Optional[PathRequestFilter]
-    FilterAtDestination: Optional[PathRequestFilter]
+    FilterAtSource: PathRequestFilter | None
+    FilterAtDestination: PathRequestFilter | None
 
 
 class FilterPortRange(TypedDict, total=False):
-    FromPort: Optional[Port]
-    ToPort: Optional[Port]
+    FromPort: Port | None
+    ToPort: Port | None
 
 
 class PathFilter(TypedDict, total=False):
-    SourceAddress: Optional[IpAddress]
-    SourcePortRange: Optional[FilterPortRange]
-    DestinationAddress: Optional[IpAddress]
-    DestinationPortRange: Optional[FilterPortRange]
+    SourceAddress: IpAddress | None
+    SourcePortRange: FilterPortRange | None
+    DestinationAddress: IpAddress | None
+    DestinationPortRange: FilterPortRange | None
 
 
 class NetworkInsightsPath(TypedDict, total=False):
-    NetworkInsightsPathId: Optional[NetworkInsightsPathId]
-    NetworkInsightsPathArn: Optional[ResourceArn]
-    CreatedDate: Optional[MillisecondDateTime]
-    Source: Optional[String]
-    Destination: Optional[String]
-    SourceArn: Optional[ResourceArn]
-    DestinationArn: Optional[ResourceArn]
-    SourceIp: Optional[IpAddress]
-    DestinationIp: Optional[IpAddress]
-    Protocol: Optional[Protocol]
-    DestinationPort: Optional[Integer]
-    Tags: Optional[TagList]
-    FilterAtSource: Optional[PathFilter]
-    FilterAtDestination: Optional[PathFilter]
+    NetworkInsightsPathId: NetworkInsightsPathId | None
+    NetworkInsightsPathArn: ResourceArn | None
+    CreatedDate: MillisecondDateTime | None
+    Source: String | None
+    Destination: String | None
+    SourceArn: ResourceArn | None
+    DestinationArn: ResourceArn | None
+    SourceIp: IpAddress | None
+    DestinationIp: IpAddress | None
+    Protocol: Protocol | None
+    DestinationPort: Integer | None
+    Tags: TagList | None
+    FilterAtSource: PathFilter | None
+    FilterAtDestination: PathFilter | None
 
 
 class CreateNetworkInsightsPathResult(TypedDict, total=False):
-    NetworkInsightsPath: Optional[NetworkInsightsPath]
+    NetworkInsightsPath: NetworkInsightsPath | None
 
 
 class CreateNetworkInterfacePermissionRequest(ServiceRequest):
     NetworkInterfaceId: NetworkInterfaceId
-    AwsAccountId: Optional[String]
-    AwsService: Optional[String]
+    AwsAccountId: String | None
+    AwsService: String | None
     Permission: InterfacePermissionType
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class NetworkInterfacePermissionState(TypedDict, total=False):
-    State: Optional[NetworkInterfacePermissionStateCode]
-    StatusMessage: Optional[String]
+    State: NetworkInterfacePermissionStateCode | None
+    StatusMessage: String | None
 
 
 class NetworkInterfacePermission(TypedDict, total=False):
-    NetworkInterfacePermissionId: Optional[String]
-    NetworkInterfaceId: Optional[String]
-    AwsAccountId: Optional[String]
-    AwsService: Optional[String]
-    Permission: Optional[InterfacePermissionType]
-    PermissionState: Optional[NetworkInterfacePermissionState]
+    NetworkInterfacePermissionId: String | None
+    NetworkInterfaceId: String | None
+    AwsAccountId: String | None
+    AwsService: String | None
+    Permission: InterfacePermissionType | None
+    PermissionState: NetworkInterfacePermissionState | None
 
 
 class CreateNetworkInterfacePermissionResult(TypedDict, total=False):
-    InterfacePermission: Optional[NetworkInterfacePermission]
+    InterfacePermission: NetworkInterfacePermission | None
 
 
 class CreateNetworkInterfaceRequest(ServiceRequest):
-    Ipv4Prefixes: Optional[Ipv4PrefixList]
-    Ipv4PrefixCount: Optional[Integer]
-    Ipv6Prefixes: Optional[Ipv6PrefixList]
-    Ipv6PrefixCount: Optional[Integer]
-    InterfaceType: Optional[NetworkInterfaceCreationType]
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
-    EnablePrimaryIpv6: Optional[Boolean]
-    ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
-    Operator: Optional[OperatorRequest]
+    Ipv4Prefixes: Ipv4PrefixList | None
+    Ipv4PrefixCount: Integer | None
+    Ipv6Prefixes: Ipv6PrefixList | None
+    Ipv6PrefixCount: Integer | None
+    InterfaceType: NetworkInterfaceCreationType | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    EnablePrimaryIpv6: Boolean | None
+    ConnectionTrackingSpecification: ConnectionTrackingSpecificationRequest | None
+    Operator: OperatorRequest | None
     SubnetId: SubnetId
-    Description: Optional[String]
-    PrivateIpAddress: Optional[String]
-    Groups: Optional[SecurityGroupIdStringList]
-    PrivateIpAddresses: Optional[PrivateIpAddressSpecificationList]
-    SecondaryPrivateIpAddressCount: Optional[Integer]
-    Ipv6Addresses: Optional[InstanceIpv6AddressList]
-    Ipv6AddressCount: Optional[Integer]
-    DryRun: Optional[Boolean]
+    Description: String | None
+    PrivateIpAddress: String | None
+    Groups: SecurityGroupIdStringList | None
+    PrivateIpAddresses: PrivateIpAddressSpecificationList | None
+    SecondaryPrivateIpAddressCount: Integer | None
+    Ipv6Addresses: InstanceIpv6AddressList | None
+    Ipv6AddressCount: Integer | None
+    DryRun: Boolean | None
 
 
 class Ipv6PrefixSpecification(TypedDict, total=False):
-    Ipv6Prefix: Optional[String]
+    Ipv6Prefix: String | None
 
 
-Ipv6PrefixesList = List[Ipv6PrefixSpecification]
+Ipv6PrefixesList = list[Ipv6PrefixSpecification]
 
 
 class NetworkInterfaceAssociation(TypedDict, total=False):
-    AllocationId: Optional[String]
-    AssociationId: Optional[String]
-    IpOwnerId: Optional[String]
-    PublicDnsName: Optional[String]
-    PublicIp: Optional[String]
-    CustomerOwnedIp: Optional[String]
-    CarrierIp: Optional[String]
+    AllocationId: String | None
+    AssociationId: String | None
+    IpOwnerId: String | None
+    PublicDnsName: String | None
+    PublicIp: String | None
+    CustomerOwnedIp: String | None
+    CarrierIp: String | None
 
 
 class NetworkInterfacePrivateIpAddress(TypedDict, total=False):
-    Association: Optional[NetworkInterfaceAssociation]
-    Primary: Optional[Boolean]
-    PrivateDnsName: Optional[String]
-    PrivateIpAddress: Optional[String]
+    Association: NetworkInterfaceAssociation | None
+    Primary: Boolean | None
+    PrivateDnsName: String | None
+    PrivateIpAddress: String | None
 
 
-NetworkInterfacePrivateIpAddressList = List[NetworkInterfacePrivateIpAddress]
+NetworkInterfacePrivateIpAddressList = list[NetworkInterfacePrivateIpAddress]
 
 
 class PublicIpDnsNameOptions(TypedDict, total=False):
-    DnsHostnameType: Optional[String]
-    PublicIpv4DnsName: Optional[String]
-    PublicIpv6DnsName: Optional[String]
-    PublicDualStackDnsName: Optional[String]
+    DnsHostnameType: String | None
+    PublicIpv4DnsName: String | None
+    PublicIpv6DnsName: String | None
+    PublicDualStackDnsName: String | None
 
 
 class NetworkInterfaceIpv6Address(TypedDict, total=False):
-    Ipv6Address: Optional[String]
-    PublicIpv6DnsName: Optional[String]
-    IsPrimaryIpv6: Optional[Boolean]
+    Ipv6Address: String | None
+    PublicIpv6DnsName: String | None
+    IsPrimaryIpv6: Boolean | None
 
 
-NetworkInterfaceIpv6AddressesList = List[NetworkInterfaceIpv6Address]
+NetworkInterfaceIpv6AddressesList = list[NetworkInterfaceIpv6Address]
 
 
 class NetworkInterfaceAttachment(TypedDict, total=False):
-    AttachTime: Optional[DateTime]
-    AttachmentId: Optional[String]
-    DeleteOnTermination: Optional[Boolean]
-    DeviceIndex: Optional[Integer]
-    NetworkCardIndex: Optional[Integer]
-    InstanceId: Optional[String]
-    InstanceOwnerId: Optional[String]
-    Status: Optional[AttachmentStatus]
-    EnaSrdSpecification: Optional[AttachmentEnaSrdSpecification]
-    EnaQueueCount: Optional[Integer]
+    AttachTime: DateTime | None
+    AttachmentId: String | None
+    DeleteOnTermination: Boolean | None
+    DeviceIndex: Integer | None
+    NetworkCardIndex: Integer | None
+    InstanceId: String | None
+    InstanceOwnerId: String | None
+    Status: AttachmentStatus | None
+    EnaSrdSpecification: AttachmentEnaSrdSpecification | None
+    EnaQueueCount: Integer | None
 
 
 class NetworkInterface(TypedDict, total=False):
-    Association: Optional[NetworkInterfaceAssociation]
-    Attachment: Optional[NetworkInterfaceAttachment]
-    AvailabilityZone: Optional[String]
-    ConnectionTrackingConfiguration: Optional[ConnectionTrackingConfiguration]
-    Description: Optional[String]
-    Groups: Optional[GroupIdentifierList]
-    InterfaceType: Optional[NetworkInterfaceType]
-    Ipv6Addresses: Optional[NetworkInterfaceIpv6AddressesList]
-    MacAddress: Optional[String]
-    NetworkInterfaceId: Optional[String]
-    OutpostArn: Optional[String]
-    OwnerId: Optional[String]
-    PrivateDnsName: Optional[String]
-    PublicDnsName: Optional[String]
-    PublicIpDnsNameOptions: Optional[PublicIpDnsNameOptions]
-    PrivateIpAddress: Optional[String]
-    PrivateIpAddresses: Optional[NetworkInterfacePrivateIpAddressList]
-    Ipv4Prefixes: Optional[Ipv4PrefixesList]
-    Ipv6Prefixes: Optional[Ipv6PrefixesList]
-    RequesterId: Optional[String]
-    RequesterManaged: Optional[Boolean]
-    SourceDestCheck: Optional[Boolean]
-    Status: Optional[NetworkInterfaceStatus]
-    SubnetId: Optional[String]
-    TagSet: Optional[TagList]
-    VpcId: Optional[String]
-    DenyAllIgwTraffic: Optional[Boolean]
-    Ipv6Native: Optional[Boolean]
-    Ipv6Address: Optional[String]
-    Operator: Optional[OperatorResponse]
-    AssociatedSubnets: Optional[AssociatedSubnetList]
-    AvailabilityZoneId: Optional[String]
+    Association: NetworkInterfaceAssociation | None
+    Attachment: NetworkInterfaceAttachment | None
+    AvailabilityZone: String | None
+    ConnectionTrackingConfiguration: ConnectionTrackingConfiguration | None
+    Description: String | None
+    Groups: GroupIdentifierList | None
+    InterfaceType: NetworkInterfaceType | None
+    Ipv6Addresses: NetworkInterfaceIpv6AddressesList | None
+    MacAddress: String | None
+    NetworkInterfaceId: String | None
+    OutpostArn: String | None
+    OwnerId: String | None
+    PrivateDnsName: String | None
+    PublicDnsName: String | None
+    PublicIpDnsNameOptions: PublicIpDnsNameOptions | None
+    PrivateIpAddress: String | None
+    PrivateIpAddresses: NetworkInterfacePrivateIpAddressList | None
+    Ipv4Prefixes: Ipv4PrefixesList | None
+    Ipv6Prefixes: Ipv6PrefixesList | None
+    RequesterId: String | None
+    RequesterManaged: Boolean | None
+    SourceDestCheck: Boolean | None
+    Status: NetworkInterfaceStatus | None
+    SubnetId: String | None
+    TagSet: TagList | None
+    VpcId: String | None
+    DenyAllIgwTraffic: Boolean | None
+    Ipv6Native: Boolean | None
+    Ipv6Address: String | None
+    Operator: OperatorResponse | None
+    AssociatedSubnets: AssociatedSubnetList | None
+    AvailabilityZoneId: String | None
 
 
 class CreateNetworkInterfaceResult(TypedDict, total=False):
-    NetworkInterface: Optional[NetworkInterface]
-    ClientToken: Optional[String]
+    NetworkInterface: NetworkInterface | None
+    ClientToken: String | None
 
 
 class CreatePlacementGroupRequest(ServiceRequest):
-    PartitionCount: Optional[Integer]
-    TagSpecifications: Optional[TagSpecificationList]
-    SpreadLevel: Optional[SpreadLevel]
-    DryRun: Optional[Boolean]
-    GroupName: Optional[String]
-    Strategy: Optional[PlacementStrategy]
+    PartitionCount: Integer | None
+    TagSpecifications: TagSpecificationList | None
+    SpreadLevel: SpreadLevel | None
+    DryRun: Boolean | None
+    GroupName: String | None
+    Strategy: PlacementStrategy | None
 
 
 class PlacementGroup(TypedDict, total=False):
-    GroupName: Optional[String]
-    State: Optional[PlacementGroupState]
-    Strategy: Optional[PlacementStrategy]
-    PartitionCount: Optional[Integer]
-    GroupId: Optional[String]
-    Tags: Optional[TagList]
-    GroupArn: Optional[String]
-    SpreadLevel: Optional[SpreadLevel]
+    GroupName: String | None
+    State: PlacementGroupState | None
+    Strategy: PlacementStrategy | None
+    PartitionCount: Integer | None
+    GroupId: String | None
+    Tags: TagList | None
+    GroupArn: String | None
+    SpreadLevel: SpreadLevel | None
 
 
 class CreatePlacementGroupResult(TypedDict, total=False):
-    PlacementGroup: Optional[PlacementGroup]
+    PlacementGroup: PlacementGroup | None
 
 
 class CreatePublicIpv4PoolRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
-    NetworkBorderGroup: Optional[String]
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
+    NetworkBorderGroup: String | None
 
 
 class CreatePublicIpv4PoolResult(TypedDict, total=False):
-    PoolId: Optional[Ipv4PoolEc2Id]
+    PoolId: Ipv4PoolEc2Id | None
 
 
 class CreateReplaceRootVolumeTaskRequest(ServiceRequest):
     InstanceId: InstanceId
-    SnapshotId: Optional[SnapshotId]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
-    ImageId: Optional[ImageId]
-    DeleteReplacedRootVolume: Optional[Boolean]
-    VolumeInitializationRate: Optional[Long]
+    SnapshotId: SnapshotId | None
+    ClientToken: String | None
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
+    ImageId: ImageId | None
+    DeleteReplacedRootVolume: Boolean | None
+    VolumeInitializationRate: Long | None
 
 
 class ReplaceRootVolumeTask(TypedDict, total=False):
-    ReplaceRootVolumeTaskId: Optional[ReplaceRootVolumeTaskId]
-    InstanceId: Optional[String]
-    TaskState: Optional[ReplaceRootVolumeTaskState]
-    StartTime: Optional[String]
-    CompleteTime: Optional[String]
-    Tags: Optional[TagList]
-    ImageId: Optional[ImageId]
-    SnapshotId: Optional[SnapshotId]
-    DeleteReplacedRootVolume: Optional[Boolean]
+    ReplaceRootVolumeTaskId: ReplaceRootVolumeTaskId | None
+    InstanceId: String | None
+    TaskState: ReplaceRootVolumeTaskState | None
+    StartTime: String | None
+    CompleteTime: String | None
+    Tags: TagList | None
+    ImageId: ImageId | None
+    SnapshotId: SnapshotId | None
+    DeleteReplacedRootVolume: Boolean | None
 
 
 class CreateReplaceRootVolumeTaskResult(TypedDict, total=False):
-    ReplaceRootVolumeTask: Optional[ReplaceRootVolumeTask]
+    ReplaceRootVolumeTask: ReplaceRootVolumeTask | None
 
 
 class PriceScheduleSpecification(TypedDict, total=False):
-    Term: Optional[Long]
-    Price: Optional[Double]
-    CurrencyCode: Optional[CurrencyCodeValues]
+    Term: Long | None
+    Price: Double | None
+    CurrencyCode: CurrencyCodeValues | None
 
 
-PriceScheduleSpecificationList = List[PriceScheduleSpecification]
+PriceScheduleSpecificationList = list[PriceScheduleSpecification]
 
 
 class CreateReservedInstancesListingRequest(ServiceRequest):
@@ -9602,416 +9628,416 @@ class CreateReservedInstancesListingRequest(ServiceRequest):
 
 
 class CreateReservedInstancesListingResult(TypedDict, total=False):
-    ReservedInstancesListings: Optional[ReservedInstancesListingList]
+    ReservedInstancesListings: ReservedInstancesListingList | None
 
 
 class CreateRestoreImageTaskRequest(ServiceRequest):
     Bucket: String
     ObjectKey: String
-    Name: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    Name: String | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class CreateRestoreImageTaskResult(TypedDict, total=False):
-    ImageId: Optional[String]
+    ImageId: String | None
 
 
 class CreateRouteRequest(ServiceRequest):
-    DestinationPrefixListId: Optional[PrefixListResourceId]
-    VpcEndpointId: Optional[VpcEndpointId]
-    TransitGatewayId: Optional[TransitGatewayId]
-    LocalGatewayId: Optional[LocalGatewayId]
-    CarrierGatewayId: Optional[CarrierGatewayId]
-    CoreNetworkArn: Optional[CoreNetworkArn]
-    OdbNetworkArn: Optional[OdbNetworkArn]
-    DryRun: Optional[Boolean]
+    DestinationPrefixListId: PrefixListResourceId | None
+    VpcEndpointId: VpcEndpointId | None
+    TransitGatewayId: TransitGatewayId | None
+    LocalGatewayId: LocalGatewayId | None
+    CarrierGatewayId: CarrierGatewayId | None
+    CoreNetworkArn: CoreNetworkArn | None
+    OdbNetworkArn: OdbNetworkArn | None
+    DryRun: Boolean | None
     RouteTableId: RouteTableId
-    DestinationCidrBlock: Optional[String]
-    GatewayId: Optional[RouteGatewayId]
-    DestinationIpv6CidrBlock: Optional[String]
-    EgressOnlyInternetGatewayId: Optional[EgressOnlyInternetGatewayId]
-    InstanceId: Optional[InstanceId]
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    VpcPeeringConnectionId: Optional[VpcPeeringConnectionId]
-    NatGatewayId: Optional[NatGatewayId]
+    DestinationCidrBlock: String | None
+    GatewayId: RouteGatewayId | None
+    DestinationIpv6CidrBlock: String | None
+    EgressOnlyInternetGatewayId: EgressOnlyInternetGatewayId | None
+    InstanceId: InstanceId | None
+    NetworkInterfaceId: NetworkInterfaceId | None
+    VpcPeeringConnectionId: VpcPeeringConnectionId | None
+    NatGatewayId: NatGatewayId | None
 
 
 class CreateRouteResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class CreateRouteServerEndpointRequest(ServiceRequest):
     RouteServerId: RouteServerId
     SubnetId: SubnetId
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: String | None
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class RouteServerEndpoint(TypedDict, total=False):
-    RouteServerId: Optional[RouteServerId]
-    RouteServerEndpointId: Optional[RouteServerEndpointId]
-    VpcId: Optional[VpcId]
-    SubnetId: Optional[SubnetId]
-    EniId: Optional[NetworkInterfaceId]
-    EniAddress: Optional[String]
-    State: Optional[RouteServerEndpointState]
-    FailureReason: Optional[String]
-    Tags: Optional[TagList]
+    RouteServerId: RouteServerId | None
+    RouteServerEndpointId: RouteServerEndpointId | None
+    VpcId: VpcId | None
+    SubnetId: SubnetId | None
+    EniId: NetworkInterfaceId | None
+    EniAddress: String | None
+    State: RouteServerEndpointState | None
+    FailureReason: String | None
+    Tags: TagList | None
 
 
 class CreateRouteServerEndpointResult(TypedDict, total=False):
-    RouteServerEndpoint: Optional[RouteServerEndpoint]
+    RouteServerEndpoint: RouteServerEndpoint | None
 
 
 class RouteServerBgpOptionsRequest(TypedDict, total=False):
     PeerAsn: Long
-    PeerLivenessDetection: Optional[RouteServerPeerLivenessMode]
+    PeerLivenessDetection: RouteServerPeerLivenessMode | None
 
 
 class CreateRouteServerPeerRequest(ServiceRequest):
     RouteServerEndpointId: RouteServerEndpointId
     PeerAddress: String
     BgpOptions: RouteServerBgpOptionsRequest
-    DryRun: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class RouteServerBfdStatus(TypedDict, total=False):
-    Status: Optional[RouteServerBfdState]
+    Status: RouteServerBfdState | None
 
 
 class RouteServerBgpStatus(TypedDict, total=False):
-    Status: Optional[RouteServerBgpState]
+    Status: RouteServerBgpState | None
 
 
 class RouteServerBgpOptions(TypedDict, total=False):
-    PeerAsn: Optional[Long]
-    PeerLivenessDetection: Optional[RouteServerPeerLivenessMode]
+    PeerAsn: Long | None
+    PeerLivenessDetection: RouteServerPeerLivenessMode | None
 
 
 class RouteServerPeer(TypedDict, total=False):
-    RouteServerPeerId: Optional[RouteServerPeerId]
-    RouteServerEndpointId: Optional[RouteServerEndpointId]
-    RouteServerId: Optional[RouteServerId]
-    VpcId: Optional[VpcId]
-    SubnetId: Optional[SubnetId]
-    State: Optional[RouteServerPeerState]
-    FailureReason: Optional[String]
-    EndpointEniId: Optional[NetworkInterfaceId]
-    EndpointEniAddress: Optional[String]
-    PeerAddress: Optional[String]
-    BgpOptions: Optional[RouteServerBgpOptions]
-    BgpStatus: Optional[RouteServerBgpStatus]
-    BfdStatus: Optional[RouteServerBfdStatus]
-    Tags: Optional[TagList]
+    RouteServerPeerId: RouteServerPeerId | None
+    RouteServerEndpointId: RouteServerEndpointId | None
+    RouteServerId: RouteServerId | None
+    VpcId: VpcId | None
+    SubnetId: SubnetId | None
+    State: RouteServerPeerState | None
+    FailureReason: String | None
+    EndpointEniId: NetworkInterfaceId | None
+    EndpointEniAddress: String | None
+    PeerAddress: String | None
+    BgpOptions: RouteServerBgpOptions | None
+    BgpStatus: RouteServerBgpStatus | None
+    BfdStatus: RouteServerBfdStatus | None
+    Tags: TagList | None
 
 
 class CreateRouteServerPeerResult(TypedDict, total=False):
-    RouteServerPeer: Optional[RouteServerPeer]
+    RouteServerPeer: RouteServerPeer | None
 
 
 class CreateRouteServerRequest(ServiceRequest):
     AmazonSideAsn: Long
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    PersistRoutes: Optional[RouteServerPersistRoutesAction]
-    PersistRoutesDuration: Optional[BoxedLong]
-    SnsNotificationsEnabled: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: String | None
+    DryRun: Boolean | None
+    PersistRoutes: RouteServerPersistRoutesAction | None
+    PersistRoutesDuration: BoxedLong | None
+    SnsNotificationsEnabled: Boolean | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class RouteServer(TypedDict, total=False):
-    RouteServerId: Optional[RouteServerId]
-    AmazonSideAsn: Optional[Long]
-    State: Optional[RouteServerState]
-    Tags: Optional[TagList]
-    PersistRoutesState: Optional[RouteServerPersistRoutesState]
-    PersistRoutesDuration: Optional[BoxedLong]
-    SnsNotificationsEnabled: Optional[Boolean]
-    SnsTopicArn: Optional[String]
+    RouteServerId: RouteServerId | None
+    AmazonSideAsn: Long | None
+    State: RouteServerState | None
+    Tags: TagList | None
+    PersistRoutesState: RouteServerPersistRoutesState | None
+    PersistRoutesDuration: BoxedLong | None
+    SnsNotificationsEnabled: Boolean | None
+    SnsTopicArn: String | None
 
 
 class CreateRouteServerResult(TypedDict, total=False):
-    RouteServer: Optional[RouteServer]
+    RouteServer: RouteServer | None
 
 
 class CreateRouteTableRequest(ServiceRequest):
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    DryRun: Boolean | None
     VpcId: VpcId
 
 
 class Route(TypedDict, total=False):
-    DestinationCidrBlock: Optional[String]
-    DestinationIpv6CidrBlock: Optional[String]
-    DestinationPrefixListId: Optional[String]
-    EgressOnlyInternetGatewayId: Optional[String]
-    GatewayId: Optional[String]
-    InstanceId: Optional[String]
-    InstanceOwnerId: Optional[String]
-    NatGatewayId: Optional[String]
-    TransitGatewayId: Optional[String]
-    LocalGatewayId: Optional[String]
-    CarrierGatewayId: Optional[CarrierGatewayId]
-    NetworkInterfaceId: Optional[String]
-    Origin: Optional[RouteOrigin]
-    State: Optional[RouteState]
-    VpcPeeringConnectionId: Optional[String]
-    CoreNetworkArn: Optional[CoreNetworkArn]
-    OdbNetworkArn: Optional[OdbNetworkArn]
-    IpAddress: Optional[String]
+    DestinationCidrBlock: String | None
+    DestinationIpv6CidrBlock: String | None
+    DestinationPrefixListId: String | None
+    EgressOnlyInternetGatewayId: String | None
+    GatewayId: String | None
+    InstanceId: String | None
+    InstanceOwnerId: String | None
+    NatGatewayId: String | None
+    TransitGatewayId: String | None
+    LocalGatewayId: String | None
+    CarrierGatewayId: CarrierGatewayId | None
+    NetworkInterfaceId: String | None
+    Origin: RouteOrigin | None
+    State: RouteState | None
+    VpcPeeringConnectionId: String | None
+    CoreNetworkArn: CoreNetworkArn | None
+    OdbNetworkArn: OdbNetworkArn | None
+    IpAddress: String | None
 
 
-RouteList = List[Route]
+RouteList = list[Route]
 
 
 class PropagatingVgw(TypedDict, total=False):
-    GatewayId: Optional[String]
+    GatewayId: String | None
 
 
-PropagatingVgwList = List[PropagatingVgw]
+PropagatingVgwList = list[PropagatingVgw]
 
 
 class RouteTableAssociation(TypedDict, total=False):
-    Main: Optional[Boolean]
-    RouteTableAssociationId: Optional[String]
-    RouteTableId: Optional[String]
-    SubnetId: Optional[String]
-    GatewayId: Optional[String]
-    PublicIpv4Pool: Optional[String]
-    AssociationState: Optional[RouteTableAssociationState]
+    Main: Boolean | None
+    RouteTableAssociationId: String | None
+    RouteTableId: String | None
+    SubnetId: String | None
+    GatewayId: String | None
+    PublicIpv4Pool: String | None
+    AssociationState: RouteTableAssociationState | None
 
 
-RouteTableAssociationList = List[RouteTableAssociation]
+RouteTableAssociationList = list[RouteTableAssociation]
 
 
 class RouteTable(TypedDict, total=False):
-    Associations: Optional[RouteTableAssociationList]
-    PropagatingVgws: Optional[PropagatingVgwList]
-    RouteTableId: Optional[String]
-    Routes: Optional[RouteList]
-    Tags: Optional[TagList]
-    VpcId: Optional[String]
-    OwnerId: Optional[String]
+    Associations: RouteTableAssociationList | None
+    PropagatingVgws: PropagatingVgwList | None
+    RouteTableId: String | None
+    Routes: RouteList | None
+    Tags: TagList | None
+    VpcId: String | None
+    OwnerId: String | None
 
 
 class CreateRouteTableResult(TypedDict, total=False):
-    RouteTable: Optional[RouteTable]
-    ClientToken: Optional[String]
+    RouteTable: RouteTable | None
+    ClientToken: String | None
 
 
 class CreateSecurityGroupRequest(ServiceRequest):
     Description: String
     GroupName: String
-    VpcId: Optional[VpcId]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    VpcId: VpcId | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class CreateSecurityGroupResult(TypedDict, total=False):
-    GroupId: Optional[String]
-    Tags: Optional[TagList]
-    SecurityGroupArn: Optional[String]
+    GroupId: String | None
+    Tags: TagList | None
+    SecurityGroupArn: String | None
 
 
 class CreateSnapshotRequest(ServiceRequest):
-    Description: Optional[String]
-    OutpostArn: Optional[String]
+    Description: String | None
+    OutpostArn: String | None
     VolumeId: VolumeId
-    TagSpecifications: Optional[TagSpecificationList]
-    Location: Optional[SnapshotLocationEnum]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    Location: SnapshotLocationEnum | None
+    DryRun: Boolean | None
 
 
-VolumeIdStringList = List[VolumeId]
+VolumeIdStringList = list[VolumeId]
 
 
 class InstanceSpecification(TypedDict, total=False):
     InstanceId: InstanceIdWithVolumeResolver
-    ExcludeBootVolume: Optional[Boolean]
-    ExcludeDataVolumeIds: Optional[VolumeIdStringList]
+    ExcludeBootVolume: Boolean | None
+    ExcludeDataVolumeIds: VolumeIdStringList | None
 
 
 class CreateSnapshotsRequest(ServiceRequest):
-    Description: Optional[String]
+    Description: String | None
     InstanceSpecification: InstanceSpecification
-    OutpostArn: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
-    CopyTagsFromSource: Optional[CopyTagsFromSource]
-    Location: Optional[SnapshotLocationEnum]
+    OutpostArn: String | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
+    CopyTagsFromSource: CopyTagsFromSource | None
+    Location: SnapshotLocationEnum | None
 
 
 class SnapshotInfo(TypedDict, total=False):
-    Description: Optional[String]
-    Tags: Optional[TagList]
-    Encrypted: Optional[Boolean]
-    VolumeId: Optional[String]
-    State: Optional[SnapshotState]
-    VolumeSize: Optional[Integer]
-    StartTime: Optional[MillisecondDateTime]
-    Progress: Optional[String]
-    OwnerId: Optional[String]
-    SnapshotId: Optional[String]
-    OutpostArn: Optional[String]
-    SseType: Optional[SSEType]
-    AvailabilityZone: Optional[String]
+    Description: String | None
+    Tags: TagList | None
+    Encrypted: Boolean | None
+    VolumeId: String | None
+    State: SnapshotState | None
+    VolumeSize: Integer | None
+    StartTime: MillisecondDateTime | None
+    Progress: String | None
+    OwnerId: String | None
+    SnapshotId: String | None
+    OutpostArn: String | None
+    SseType: SSEType | None
+    AvailabilityZone: String | None
 
 
-SnapshotSet = List[SnapshotInfo]
+SnapshotSet = list[SnapshotInfo]
 
 
 class CreateSnapshotsResult(TypedDict, total=False):
-    Snapshots: Optional[SnapshotSet]
+    Snapshots: SnapshotSet | None
 
 
 class CreateSpotDatafeedSubscriptionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     Bucket: String
-    Prefix: Optional[String]
+    Prefix: String | None
 
 
 class SpotInstanceStateFault(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
+    Code: String | None
+    Message: String | None
 
 
 class SpotDatafeedSubscription(TypedDict, total=False):
-    Bucket: Optional[String]
-    Fault: Optional[SpotInstanceStateFault]
-    OwnerId: Optional[String]
-    Prefix: Optional[String]
-    State: Optional[DatafeedSubscriptionState]
+    Bucket: String | None
+    Fault: SpotInstanceStateFault | None
+    OwnerId: String | None
+    Prefix: String | None
+    State: DatafeedSubscriptionState | None
 
 
 class CreateSpotDatafeedSubscriptionResult(TypedDict, total=False):
-    SpotDatafeedSubscription: Optional[SpotDatafeedSubscription]
+    SpotDatafeedSubscription: SpotDatafeedSubscription | None
 
 
 class S3ObjectTag(TypedDict, total=False):
-    Key: Optional[String]
-    Value: Optional[String]
+    Key: String | None
+    Value: String | None
 
 
-S3ObjectTagList = List[S3ObjectTag]
+S3ObjectTagList = list[S3ObjectTag]
 
 
 class CreateStoreImageTaskRequest(ServiceRequest):
     ImageId: ImageId
     Bucket: String
-    S3ObjectTags: Optional[S3ObjectTagList]
-    DryRun: Optional[Boolean]
+    S3ObjectTags: S3ObjectTagList | None
+    DryRun: Boolean | None
 
 
 class CreateStoreImageTaskResult(TypedDict, total=False):
-    ObjectKey: Optional[String]
+    ObjectKey: String | None
 
 
 class CreateSubnetCidrReservationRequest(ServiceRequest):
     SubnetId: SubnetId
     Cidr: String
     ReservationType: SubnetCidrReservationType
-    Description: Optional[String]
-    DryRun: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
+    Description: String | None
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class SubnetCidrReservation(TypedDict, total=False):
-    SubnetCidrReservationId: Optional[SubnetCidrReservationId]
-    SubnetId: Optional[SubnetId]
-    Cidr: Optional[String]
-    ReservationType: Optional[SubnetCidrReservationType]
-    OwnerId: Optional[String]
-    Description: Optional[String]
-    Tags: Optional[TagList]
+    SubnetCidrReservationId: SubnetCidrReservationId | None
+    SubnetId: SubnetId | None
+    Cidr: String | None
+    ReservationType: SubnetCidrReservationType | None
+    OwnerId: String | None
+    Description: String | None
+    Tags: TagList | None
 
 
 class CreateSubnetCidrReservationResult(TypedDict, total=False):
-    SubnetCidrReservation: Optional[SubnetCidrReservation]
+    SubnetCidrReservation: SubnetCidrReservation | None
 
 
 class CreateSubnetRequest(ServiceRequest):
-    TagSpecifications: Optional[TagSpecificationList]
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    CidrBlock: Optional[String]
-    Ipv6CidrBlock: Optional[String]
-    OutpostArn: Optional[String]
+    TagSpecifications: TagSpecificationList | None
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    CidrBlock: String | None
+    Ipv6CidrBlock: String | None
+    OutpostArn: String | None
     VpcId: VpcId
-    Ipv6Native: Optional[Boolean]
-    Ipv4IpamPoolId: Optional[IpamPoolId]
-    Ipv4NetmaskLength: Optional[NetmaskLength]
-    Ipv6IpamPoolId: Optional[IpamPoolId]
-    Ipv6NetmaskLength: Optional[NetmaskLength]
-    DryRun: Optional[Boolean]
+    Ipv6Native: Boolean | None
+    Ipv4IpamPoolId: IpamPoolId | None
+    Ipv4NetmaskLength: NetmaskLength | None
+    Ipv6IpamPoolId: IpamPoolId | None
+    Ipv6NetmaskLength: NetmaskLength | None
+    DryRun: Boolean | None
 
 
 class CreateSubnetResult(TypedDict, total=False):
-    Subnet: Optional[Subnet]
+    Subnet: Subnet | None
 
 
-ResourceIdList = List[TaggableResourceId]
+ResourceIdList = list[TaggableResourceId]
 
 
 class CreateTagsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     Resources: ResourceIdList
     Tags: TagList
 
 
 class CreateTrafficMirrorFilterRequest(ServiceRequest):
-    Description: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    Description: String | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
+    ClientToken: String | None
 
 
-TrafficMirrorNetworkServiceList = List[TrafficMirrorNetworkService]
+TrafficMirrorNetworkServiceList = list[TrafficMirrorNetworkService]
 
 
 class TrafficMirrorPortRange(TypedDict, total=False):
-    FromPort: Optional[Integer]
-    ToPort: Optional[Integer]
+    FromPort: Integer | None
+    ToPort: Integer | None
 
 
 class TrafficMirrorFilterRule(TypedDict, total=False):
-    TrafficMirrorFilterRuleId: Optional[String]
-    TrafficMirrorFilterId: Optional[String]
-    TrafficDirection: Optional[TrafficDirection]
-    RuleNumber: Optional[Integer]
-    RuleAction: Optional[TrafficMirrorRuleAction]
-    Protocol: Optional[Integer]
-    DestinationPortRange: Optional[TrafficMirrorPortRange]
-    SourcePortRange: Optional[TrafficMirrorPortRange]
-    DestinationCidrBlock: Optional[String]
-    SourceCidrBlock: Optional[String]
-    Description: Optional[String]
-    Tags: Optional[TagList]
+    TrafficMirrorFilterRuleId: String | None
+    TrafficMirrorFilterId: String | None
+    TrafficDirection: TrafficDirection | None
+    RuleNumber: Integer | None
+    RuleAction: TrafficMirrorRuleAction | None
+    Protocol: Integer | None
+    DestinationPortRange: TrafficMirrorPortRange | None
+    SourcePortRange: TrafficMirrorPortRange | None
+    DestinationCidrBlock: String | None
+    SourceCidrBlock: String | None
+    Description: String | None
+    Tags: TagList | None
 
 
-TrafficMirrorFilterRuleList = List[TrafficMirrorFilterRule]
+TrafficMirrorFilterRuleList = list[TrafficMirrorFilterRule]
 
 
 class TrafficMirrorFilter(TypedDict, total=False):
-    TrafficMirrorFilterId: Optional[String]
-    IngressFilterRules: Optional[TrafficMirrorFilterRuleList]
-    EgressFilterRules: Optional[TrafficMirrorFilterRuleList]
-    NetworkServices: Optional[TrafficMirrorNetworkServiceList]
-    Description: Optional[String]
-    Tags: Optional[TagList]
+    TrafficMirrorFilterId: String | None
+    IngressFilterRules: TrafficMirrorFilterRuleList | None
+    EgressFilterRules: TrafficMirrorFilterRuleList | None
+    NetworkServices: TrafficMirrorNetworkServiceList | None
+    Description: String | None
+    Tags: TagList | None
 
 
 class CreateTrafficMirrorFilterResult(TypedDict, total=False):
-    TrafficMirrorFilter: Optional[TrafficMirrorFilter]
-    ClientToken: Optional[String]
+    TrafficMirrorFilter: TrafficMirrorFilter | None
+    ClientToken: String | None
 
 
 class TrafficMirrorPortRangeRequest(TypedDict, total=False):
-    FromPort: Optional[Integer]
-    ToPort: Optional[Integer]
+    FromPort: Integer | None
+    ToPort: Integer | None
 
 
 class CreateTrafficMirrorFilterRuleRequest(ServiceRequest):
@@ -10019,126 +10045,126 @@ class CreateTrafficMirrorFilterRuleRequest(ServiceRequest):
     TrafficDirection: TrafficDirection
     RuleNumber: Integer
     RuleAction: TrafficMirrorRuleAction
-    DestinationPortRange: Optional[TrafficMirrorPortRangeRequest]
-    SourcePortRange: Optional[TrafficMirrorPortRangeRequest]
-    Protocol: Optional[Integer]
+    DestinationPortRange: TrafficMirrorPortRangeRequest | None
+    SourcePortRange: TrafficMirrorPortRangeRequest | None
+    Protocol: Integer | None
     DestinationCidrBlock: String
     SourceCidrBlock: String
-    Description: Optional[String]
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
+    Description: String | None
+    DryRun: Boolean | None
+    ClientToken: String | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class CreateTrafficMirrorFilterRuleResult(TypedDict, total=False):
-    TrafficMirrorFilterRule: Optional[TrafficMirrorFilterRule]
-    ClientToken: Optional[String]
+    TrafficMirrorFilterRule: TrafficMirrorFilterRule | None
+    ClientToken: String | None
 
 
 class CreateTrafficMirrorSessionRequest(ServiceRequest):
     NetworkInterfaceId: NetworkInterfaceId
     TrafficMirrorTargetId: TrafficMirrorTargetId
     TrafficMirrorFilterId: TrafficMirrorFilterId
-    PacketLength: Optional[Integer]
+    PacketLength: Integer | None
     SessionNumber: Integer
-    VirtualNetworkId: Optional[Integer]
-    Description: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    VirtualNetworkId: Integer | None
+    Description: String | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
+    ClientToken: String | None
 
 
 class TrafficMirrorSession(TypedDict, total=False):
-    TrafficMirrorSessionId: Optional[String]
-    TrafficMirrorTargetId: Optional[String]
-    TrafficMirrorFilterId: Optional[String]
-    NetworkInterfaceId: Optional[String]
-    OwnerId: Optional[String]
-    PacketLength: Optional[Integer]
-    SessionNumber: Optional[Integer]
-    VirtualNetworkId: Optional[Integer]
-    Description: Optional[String]
-    Tags: Optional[TagList]
+    TrafficMirrorSessionId: String | None
+    TrafficMirrorTargetId: String | None
+    TrafficMirrorFilterId: String | None
+    NetworkInterfaceId: String | None
+    OwnerId: String | None
+    PacketLength: Integer | None
+    SessionNumber: Integer | None
+    VirtualNetworkId: Integer | None
+    Description: String | None
+    Tags: TagList | None
 
 
 class CreateTrafficMirrorSessionResult(TypedDict, total=False):
-    TrafficMirrorSession: Optional[TrafficMirrorSession]
-    ClientToken: Optional[String]
+    TrafficMirrorSession: TrafficMirrorSession | None
+    ClientToken: String | None
 
 
 class CreateTrafficMirrorTargetRequest(ServiceRequest):
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    NetworkLoadBalancerArn: Optional[String]
-    Description: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
-    GatewayLoadBalancerEndpointId: Optional[VpcEndpointId]
+    NetworkInterfaceId: NetworkInterfaceId | None
+    NetworkLoadBalancerArn: String | None
+    Description: String | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
+    ClientToken: String | None
+    GatewayLoadBalancerEndpointId: VpcEndpointId | None
 
 
 class TrafficMirrorTarget(TypedDict, total=False):
-    TrafficMirrorTargetId: Optional[String]
-    NetworkInterfaceId: Optional[String]
-    NetworkLoadBalancerArn: Optional[String]
-    Type: Optional[TrafficMirrorTargetType]
-    Description: Optional[String]
-    OwnerId: Optional[String]
-    Tags: Optional[TagList]
-    GatewayLoadBalancerEndpointId: Optional[String]
+    TrafficMirrorTargetId: String | None
+    NetworkInterfaceId: String | None
+    NetworkLoadBalancerArn: String | None
+    Type: TrafficMirrorTargetType | None
+    Description: String | None
+    OwnerId: String | None
+    Tags: TagList | None
+    GatewayLoadBalancerEndpointId: String | None
 
 
 class CreateTrafficMirrorTargetResult(TypedDict, total=False):
-    TrafficMirrorTarget: Optional[TrafficMirrorTarget]
-    ClientToken: Optional[String]
+    TrafficMirrorTarget: TrafficMirrorTarget | None
+    ClientToken: String | None
 
 
-InsideCidrBlocksStringList = List[String]
+InsideCidrBlocksStringList = list[String]
 
 
 class TransitGatewayConnectRequestBgpOptions(TypedDict, total=False):
-    PeerAsn: Optional[Long]
+    PeerAsn: Long | None
 
 
 class CreateTransitGatewayConnectPeerRequest(ServiceRequest):
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    TransitGatewayAddress: Optional[String]
+    TransitGatewayAddress: String | None
     PeerAddress: String
-    BgpOptions: Optional[TransitGatewayConnectRequestBgpOptions]
+    BgpOptions: TransitGatewayConnectRequestBgpOptions | None
     InsideCidrBlocks: InsideCidrBlocksStringList
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayAttachmentBgpConfiguration(TypedDict, total=False):
-    TransitGatewayAsn: Optional[Long]
-    PeerAsn: Optional[Long]
-    TransitGatewayAddress: Optional[String]
-    PeerAddress: Optional[String]
-    BgpStatus: Optional[BgpStatus]
+    TransitGatewayAsn: Long | None
+    PeerAsn: Long | None
+    TransitGatewayAddress: String | None
+    PeerAddress: String | None
+    BgpStatus: BgpStatus | None
 
 
-TransitGatewayAttachmentBgpConfigurationList = List[TransitGatewayAttachmentBgpConfiguration]
+TransitGatewayAttachmentBgpConfigurationList = list[TransitGatewayAttachmentBgpConfiguration]
 
 
 class TransitGatewayConnectPeerConfiguration(TypedDict, total=False):
-    TransitGatewayAddress: Optional[String]
-    PeerAddress: Optional[String]
-    InsideCidrBlocks: Optional[InsideCidrBlocksStringList]
-    Protocol: Optional[ProtocolValue]
-    BgpConfigurations: Optional[TransitGatewayAttachmentBgpConfigurationList]
+    TransitGatewayAddress: String | None
+    PeerAddress: String | None
+    InsideCidrBlocks: InsideCidrBlocksStringList | None
+    Protocol: ProtocolValue | None
+    BgpConfigurations: TransitGatewayAttachmentBgpConfigurationList | None
 
 
 class TransitGatewayConnectPeer(TypedDict, total=False):
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    TransitGatewayConnectPeerId: Optional[TransitGatewayConnectPeerId]
-    State: Optional[TransitGatewayConnectPeerState]
-    CreationTime: Optional[DateTime]
-    ConnectPeerConfiguration: Optional[TransitGatewayConnectPeerConfiguration]
-    Tags: Optional[TagList]
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    TransitGatewayConnectPeerId: TransitGatewayConnectPeerId | None
+    State: TransitGatewayConnectPeerState | None
+    CreationTime: DateTime | None
+    ConnectPeerConfiguration: TransitGatewayConnectPeerConfiguration | None
+    Tags: TagList | None
 
 
 class CreateTransitGatewayConnectPeerResult(TypedDict, total=False):
-    TransitGatewayConnectPeer: Optional[TransitGatewayConnectPeer]
+    TransitGatewayConnectPeer: TransitGatewayConnectPeer | None
 
 
 class CreateTransitGatewayConnectRequestOptions(TypedDict, total=False):
@@ -10148,64 +10174,64 @@ class CreateTransitGatewayConnectRequestOptions(TypedDict, total=False):
 class CreateTransitGatewayConnectRequest(ServiceRequest):
     TransportTransitGatewayAttachmentId: TransitGatewayAttachmentId
     Options: CreateTransitGatewayConnectRequestOptions
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayConnectOptions(TypedDict, total=False):
-    Protocol: Optional[ProtocolValue]
+    Protocol: ProtocolValue | None
 
 
 class TransitGatewayConnect(TypedDict, total=False):
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    TransportTransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    TransitGatewayId: Optional[TransitGatewayId]
-    State: Optional[TransitGatewayAttachmentState]
-    CreationTime: Optional[DateTime]
-    Options: Optional[TransitGatewayConnectOptions]
-    Tags: Optional[TagList]
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    TransportTransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    TransitGatewayId: TransitGatewayId | None
+    State: TransitGatewayAttachmentState | None
+    CreationTime: DateTime | None
+    Options: TransitGatewayConnectOptions | None
+    Tags: TagList | None
 
 
 class CreateTransitGatewayConnectResult(TypedDict, total=False):
-    TransitGatewayConnect: Optional[TransitGatewayConnect]
+    TransitGatewayConnect: TransitGatewayConnect | None
 
 
 class CreateTransitGatewayMulticastDomainRequestOptions(TypedDict, total=False):
-    Igmpv2Support: Optional[Igmpv2SupportValue]
-    StaticSourcesSupport: Optional[StaticSourcesSupportValue]
-    AutoAcceptSharedAssociations: Optional[AutoAcceptSharedAssociationsValue]
+    Igmpv2Support: Igmpv2SupportValue | None
+    StaticSourcesSupport: StaticSourcesSupportValue | None
+    AutoAcceptSharedAssociations: AutoAcceptSharedAssociationsValue | None
 
 
 class CreateTransitGatewayMulticastDomainRequest(ServiceRequest):
     TransitGatewayId: TransitGatewayId
-    Options: Optional[CreateTransitGatewayMulticastDomainRequestOptions]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    Options: CreateTransitGatewayMulticastDomainRequestOptions | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayMulticastDomainOptions(TypedDict, total=False):
-    Igmpv2Support: Optional[Igmpv2SupportValue]
-    StaticSourcesSupport: Optional[StaticSourcesSupportValue]
-    AutoAcceptSharedAssociations: Optional[AutoAcceptSharedAssociationsValue]
+    Igmpv2Support: Igmpv2SupportValue | None
+    StaticSourcesSupport: StaticSourcesSupportValue | None
+    AutoAcceptSharedAssociations: AutoAcceptSharedAssociationsValue | None
 
 
 class TransitGatewayMulticastDomain(TypedDict, total=False):
-    TransitGatewayMulticastDomainId: Optional[String]
-    TransitGatewayId: Optional[String]
-    TransitGatewayMulticastDomainArn: Optional[String]
-    OwnerId: Optional[String]
-    Options: Optional[TransitGatewayMulticastDomainOptions]
-    State: Optional[TransitGatewayMulticastDomainState]
-    CreationTime: Optional[DateTime]
-    Tags: Optional[TagList]
+    TransitGatewayMulticastDomainId: String | None
+    TransitGatewayId: String | None
+    TransitGatewayMulticastDomainArn: String | None
+    OwnerId: String | None
+    Options: TransitGatewayMulticastDomainOptions | None
+    State: TransitGatewayMulticastDomainState | None
+    CreationTime: DateTime | None
+    Tags: TagList | None
 
 
 class CreateTransitGatewayMulticastDomainResult(TypedDict, total=False):
-    TransitGatewayMulticastDomain: Optional[TransitGatewayMulticastDomain]
+    TransitGatewayMulticastDomain: TransitGatewayMulticastDomain | None
 
 
 class CreateTransitGatewayPeeringAttachmentRequestOptions(TypedDict, total=False):
-    DynamicRouting: Optional[DynamicRoutingValue]
+    DynamicRouting: DynamicRoutingValue | None
 
 
 class CreateTransitGatewayPeeringAttachmentRequest(ServiceRequest):
@@ -10213,945 +10239,950 @@ class CreateTransitGatewayPeeringAttachmentRequest(ServiceRequest):
     PeerTransitGatewayId: TransitAssociationGatewayId
     PeerAccountId: String
     PeerRegion: String
-    Options: Optional[CreateTransitGatewayPeeringAttachmentRequestOptions]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    Options: CreateTransitGatewayPeeringAttachmentRequestOptions | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class CreateTransitGatewayPeeringAttachmentResult(TypedDict, total=False):
-    TransitGatewayPeeringAttachment: Optional[TransitGatewayPeeringAttachment]
+    TransitGatewayPeeringAttachment: TransitGatewayPeeringAttachment | None
 
 
 class CreateTransitGatewayPolicyTableRequest(ServiceRequest):
     TransitGatewayId: TransitGatewayId
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayPolicyTable(TypedDict, total=False):
-    TransitGatewayPolicyTableId: Optional[TransitGatewayPolicyTableId]
-    TransitGatewayId: Optional[TransitGatewayId]
-    State: Optional[TransitGatewayPolicyTableState]
-    CreationTime: Optional[DateTime]
-    Tags: Optional[TagList]
+    TransitGatewayPolicyTableId: TransitGatewayPolicyTableId | None
+    TransitGatewayId: TransitGatewayId | None
+    State: TransitGatewayPolicyTableState | None
+    CreationTime: DateTime | None
+    Tags: TagList | None
 
 
 class CreateTransitGatewayPolicyTableResult(TypedDict, total=False):
-    TransitGatewayPolicyTable: Optional[TransitGatewayPolicyTable]
+    TransitGatewayPolicyTable: TransitGatewayPolicyTable | None
 
 
 class CreateTransitGatewayPrefixListReferenceRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     PrefixListId: PrefixListResourceId
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    Blackhole: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    Blackhole: Boolean | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayPrefixListAttachment(TypedDict, total=False):
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
-    ResourceId: Optional[String]
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
+    ResourceId: String | None
 
 
 class TransitGatewayPrefixListReference(TypedDict, total=False):
-    TransitGatewayRouteTableId: Optional[TransitGatewayRouteTableId]
-    PrefixListId: Optional[PrefixListResourceId]
-    PrefixListOwnerId: Optional[String]
-    State: Optional[TransitGatewayPrefixListReferenceState]
-    Blackhole: Optional[Boolean]
-    TransitGatewayAttachment: Optional[TransitGatewayPrefixListAttachment]
+    TransitGatewayRouteTableId: TransitGatewayRouteTableId | None
+    PrefixListId: PrefixListResourceId | None
+    PrefixListOwnerId: String | None
+    State: TransitGatewayPrefixListReferenceState | None
+    Blackhole: Boolean | None
+    TransitGatewayAttachment: TransitGatewayPrefixListAttachment | None
 
 
 class CreateTransitGatewayPrefixListReferenceResult(TypedDict, total=False):
-    TransitGatewayPrefixListReference: Optional[TransitGatewayPrefixListReference]
+    TransitGatewayPrefixListReference: TransitGatewayPrefixListReference | None
 
 
-TransitGatewayCidrBlockStringList = List[String]
+TransitGatewayCidrBlockStringList = list[String]
 
 
 class TransitGatewayRequestOptions(TypedDict, total=False):
-    AmazonSideAsn: Optional[Long]
-    AutoAcceptSharedAttachments: Optional[AutoAcceptSharedAttachmentsValue]
-    DefaultRouteTableAssociation: Optional[DefaultRouteTableAssociationValue]
-    DefaultRouteTablePropagation: Optional[DefaultRouteTablePropagationValue]
-    VpnEcmpSupport: Optional[VpnEcmpSupportValue]
-    DnsSupport: Optional[DnsSupportValue]
-    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
-    MulticastSupport: Optional[MulticastSupportValue]
-    TransitGatewayCidrBlocks: Optional[TransitGatewayCidrBlockStringList]
+    AmazonSideAsn: Long | None
+    AutoAcceptSharedAttachments: AutoAcceptSharedAttachmentsValue | None
+    DefaultRouteTableAssociation: DefaultRouteTableAssociationValue | None
+    DefaultRouteTablePropagation: DefaultRouteTablePropagationValue | None
+    VpnEcmpSupport: VpnEcmpSupportValue | None
+    DnsSupport: DnsSupportValue | None
+    SecurityGroupReferencingSupport: SecurityGroupReferencingSupportValue | None
+    MulticastSupport: MulticastSupportValue | None
+    TransitGatewayCidrBlocks: TransitGatewayCidrBlockStringList | None
 
 
 class CreateTransitGatewayRequest(ServiceRequest):
-    Description: Optional[String]
-    Options: Optional[TransitGatewayRequestOptions]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    Description: String | None
+    Options: TransitGatewayRequestOptions | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayOptions(TypedDict, total=False):
-    AmazonSideAsn: Optional[Long]
-    TransitGatewayCidrBlocks: Optional[ValueStringList]
-    AutoAcceptSharedAttachments: Optional[AutoAcceptSharedAttachmentsValue]
-    DefaultRouteTableAssociation: Optional[DefaultRouteTableAssociationValue]
-    AssociationDefaultRouteTableId: Optional[String]
-    DefaultRouteTablePropagation: Optional[DefaultRouteTablePropagationValue]
-    PropagationDefaultRouteTableId: Optional[String]
-    VpnEcmpSupport: Optional[VpnEcmpSupportValue]
-    DnsSupport: Optional[DnsSupportValue]
-    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
-    MulticastSupport: Optional[MulticastSupportValue]
+    AmazonSideAsn: Long | None
+    TransitGatewayCidrBlocks: ValueStringList | None
+    AutoAcceptSharedAttachments: AutoAcceptSharedAttachmentsValue | None
+    DefaultRouteTableAssociation: DefaultRouteTableAssociationValue | None
+    AssociationDefaultRouteTableId: String | None
+    DefaultRouteTablePropagation: DefaultRouteTablePropagationValue | None
+    PropagationDefaultRouteTableId: String | None
+    VpnEcmpSupport: VpnEcmpSupportValue | None
+    DnsSupport: DnsSupportValue | None
+    SecurityGroupReferencingSupport: SecurityGroupReferencingSupportValue | None
+    MulticastSupport: MulticastSupportValue | None
 
 
 class TransitGateway(TypedDict, total=False):
-    TransitGatewayId: Optional[String]
-    TransitGatewayArn: Optional[String]
-    State: Optional[TransitGatewayState]
-    OwnerId: Optional[String]
-    Description: Optional[String]
-    CreationTime: Optional[DateTime]
-    Options: Optional[TransitGatewayOptions]
-    Tags: Optional[TagList]
+    TransitGatewayId: String | None
+    TransitGatewayArn: String | None
+    State: TransitGatewayState | None
+    OwnerId: String | None
+    Description: String | None
+    CreationTime: DateTime | None
+    Options: TransitGatewayOptions | None
+    Tags: TagList | None
 
 
 class CreateTransitGatewayResult(TypedDict, total=False):
-    TransitGateway: Optional[TransitGateway]
+    TransitGateway: TransitGateway | None
 
 
 class CreateTransitGatewayRouteRequest(ServiceRequest):
     DestinationCidrBlock: String
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    Blackhole: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    Blackhole: Boolean | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayRouteAttachment(TypedDict, total=False):
-    ResourceId: Optional[String]
-    TransitGatewayAttachmentId: Optional[String]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
+    ResourceId: String | None
+    TransitGatewayAttachmentId: String | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
 
 
-TransitGatewayRouteAttachmentList = List[TransitGatewayRouteAttachment]
+TransitGatewayRouteAttachmentList = list[TransitGatewayRouteAttachment]
 
 
 class TransitGatewayRoute(TypedDict, total=False):
-    DestinationCidrBlock: Optional[String]
-    PrefixListId: Optional[PrefixListResourceId]
-    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
-    TransitGatewayAttachments: Optional[TransitGatewayRouteAttachmentList]
-    Type: Optional[TransitGatewayRouteType]
-    State: Optional[TransitGatewayRouteState]
+    DestinationCidrBlock: String | None
+    PrefixListId: PrefixListResourceId | None
+    TransitGatewayRouteTableAnnouncementId: TransitGatewayRouteTableAnnouncementId | None
+    TransitGatewayAttachments: TransitGatewayRouteAttachmentList | None
+    Type: TransitGatewayRouteType | None
+    State: TransitGatewayRouteState | None
 
 
 class CreateTransitGatewayRouteResult(TypedDict, total=False):
-    Route: Optional[TransitGatewayRoute]
+    Route: TransitGatewayRoute | None
 
 
 class CreateTransitGatewayRouteTableAnnouncementRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     PeeringAttachmentId: TransitGatewayAttachmentId
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayRouteTableAnnouncement(TypedDict, total=False):
-    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
-    TransitGatewayId: Optional[TransitGatewayId]
-    CoreNetworkId: Optional[String]
-    PeerTransitGatewayId: Optional[TransitGatewayId]
-    PeerCoreNetworkId: Optional[String]
-    PeeringAttachmentId: Optional[TransitGatewayAttachmentId]
-    AnnouncementDirection: Optional[TransitGatewayRouteTableAnnouncementDirection]
-    TransitGatewayRouteTableId: Optional[TransitGatewayRouteTableId]
-    State: Optional[TransitGatewayRouteTableAnnouncementState]
-    CreationTime: Optional[DateTime]
-    Tags: Optional[TagList]
+    TransitGatewayRouteTableAnnouncementId: TransitGatewayRouteTableAnnouncementId | None
+    TransitGatewayId: TransitGatewayId | None
+    CoreNetworkId: String | None
+    PeerTransitGatewayId: TransitGatewayId | None
+    PeerCoreNetworkId: String | None
+    PeeringAttachmentId: TransitGatewayAttachmentId | None
+    AnnouncementDirection: TransitGatewayRouteTableAnnouncementDirection | None
+    TransitGatewayRouteTableId: TransitGatewayRouteTableId | None
+    State: TransitGatewayRouteTableAnnouncementState | None
+    CreationTime: DateTime | None
+    Tags: TagList | None
 
 
 class CreateTransitGatewayRouteTableAnnouncementResult(TypedDict, total=False):
-    TransitGatewayRouteTableAnnouncement: Optional[TransitGatewayRouteTableAnnouncement]
+    TransitGatewayRouteTableAnnouncement: TransitGatewayRouteTableAnnouncement | None
 
 
 class CreateTransitGatewayRouteTableRequest(ServiceRequest):
     TransitGatewayId: TransitGatewayId
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayRouteTable(TypedDict, total=False):
-    TransitGatewayRouteTableId: Optional[String]
-    TransitGatewayId: Optional[String]
-    State: Optional[TransitGatewayRouteTableState]
-    DefaultAssociationRouteTable: Optional[Boolean]
-    DefaultPropagationRouteTable: Optional[Boolean]
-    CreationTime: Optional[DateTime]
-    Tags: Optional[TagList]
+    TransitGatewayRouteTableId: String | None
+    TransitGatewayId: String | None
+    State: TransitGatewayRouteTableState | None
+    DefaultAssociationRouteTable: Boolean | None
+    DefaultPropagationRouteTable: Boolean | None
+    CreationTime: DateTime | None
+    Tags: TagList | None
 
 
 class CreateTransitGatewayRouteTableResult(TypedDict, total=False):
-    TransitGatewayRouteTable: Optional[TransitGatewayRouteTable]
+    TransitGatewayRouteTable: TransitGatewayRouteTable | None
 
 
 class CreateTransitGatewayVpcAttachmentRequestOptions(TypedDict, total=False):
-    DnsSupport: Optional[DnsSupportValue]
-    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
-    Ipv6Support: Optional[Ipv6SupportValue]
-    ApplianceModeSupport: Optional[ApplianceModeSupportValue]
+    DnsSupport: DnsSupportValue | None
+    SecurityGroupReferencingSupport: SecurityGroupReferencingSupportValue | None
+    Ipv6Support: Ipv6SupportValue | None
+    ApplianceModeSupport: ApplianceModeSupportValue | None
 
 
 class CreateTransitGatewayVpcAttachmentRequest(ServiceRequest):
     TransitGatewayId: TransitGatewayId
     VpcId: VpcId
     SubnetIds: TransitGatewaySubnetIdList
-    Options: Optional[CreateTransitGatewayVpcAttachmentRequestOptions]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    Options: CreateTransitGatewayVpcAttachmentRequestOptions | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
 
 
 class CreateTransitGatewayVpcAttachmentResult(TypedDict, total=False):
-    TransitGatewayVpcAttachment: Optional[TransitGatewayVpcAttachment]
+    TransitGatewayVpcAttachment: TransitGatewayVpcAttachment | None
 
 
 class CreateVerifiedAccessEndpointPortRange(TypedDict, total=False):
-    FromPort: Optional[VerifiedAccessEndpointPortNumber]
-    ToPort: Optional[VerifiedAccessEndpointPortNumber]
+    FromPort: VerifiedAccessEndpointPortNumber | None
+    ToPort: VerifiedAccessEndpointPortNumber | None
 
 
-CreateVerifiedAccessEndpointPortRangeList = List[CreateVerifiedAccessEndpointPortRange]
-CreateVerifiedAccessEndpointSubnetIdList = List[SubnetId]
+CreateVerifiedAccessEndpointPortRangeList = list[CreateVerifiedAccessEndpointPortRange]
+CreateVerifiedAccessEndpointSubnetIdList = list[SubnetId]
 
 
 class CreateVerifiedAccessEndpointCidrOptions(TypedDict, total=False):
-    Protocol: Optional[VerifiedAccessEndpointProtocol]
-    SubnetIds: Optional[CreateVerifiedAccessEndpointSubnetIdList]
-    Cidr: Optional[String]
-    PortRanges: Optional[CreateVerifiedAccessEndpointPortRangeList]
+    Protocol: VerifiedAccessEndpointProtocol | None
+    SubnetIds: CreateVerifiedAccessEndpointSubnetIdList | None
+    Cidr: String | None
+    PortRanges: CreateVerifiedAccessEndpointPortRangeList | None
 
 
 class CreateVerifiedAccessEndpointEniOptions(TypedDict, total=False):
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    Protocol: Optional[VerifiedAccessEndpointProtocol]
-    Port: Optional[VerifiedAccessEndpointPortNumber]
-    PortRanges: Optional[CreateVerifiedAccessEndpointPortRangeList]
+    NetworkInterfaceId: NetworkInterfaceId | None
+    Protocol: VerifiedAccessEndpointProtocol | None
+    Port: VerifiedAccessEndpointPortNumber | None
+    PortRanges: CreateVerifiedAccessEndpointPortRangeList | None
 
 
 class CreateVerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
-    Protocol: Optional[VerifiedAccessEndpointProtocol]
-    Port: Optional[VerifiedAccessEndpointPortNumber]
-    LoadBalancerArn: Optional[LoadBalancerArn]
-    SubnetIds: Optional[CreateVerifiedAccessEndpointSubnetIdList]
-    PortRanges: Optional[CreateVerifiedAccessEndpointPortRangeList]
+    Protocol: VerifiedAccessEndpointProtocol | None
+    Port: VerifiedAccessEndpointPortNumber | None
+    LoadBalancerArn: LoadBalancerArn | None
+    SubnetIds: CreateVerifiedAccessEndpointSubnetIdList | None
+    PortRanges: CreateVerifiedAccessEndpointPortRangeList | None
 
 
 class CreateVerifiedAccessEndpointRdsOptions(TypedDict, total=False):
-    Protocol: Optional[VerifiedAccessEndpointProtocol]
-    Port: Optional[VerifiedAccessEndpointPortNumber]
-    RdsDbInstanceArn: Optional[RdsDbInstanceArn]
-    RdsDbClusterArn: Optional[RdsDbClusterArn]
-    RdsDbProxyArn: Optional[RdsDbProxyArn]
-    RdsEndpoint: Optional[String]
-    SubnetIds: Optional[CreateVerifiedAccessEndpointSubnetIdList]
+    Protocol: VerifiedAccessEndpointProtocol | None
+    Port: VerifiedAccessEndpointPortNumber | None
+    RdsDbInstanceArn: RdsDbInstanceArn | None
+    RdsDbClusterArn: RdsDbClusterArn | None
+    RdsDbProxyArn: RdsDbProxyArn | None
+    RdsEndpoint: String | None
+    SubnetIds: CreateVerifiedAccessEndpointSubnetIdList | None
 
 
 class VerifiedAccessSseSpecificationRequest(TypedDict, total=False):
-    CustomerManagedKeyEnabled: Optional[Boolean]
-    KmsKeyArn: Optional[KmsKeyArn]
+    CustomerManagedKeyEnabled: Boolean | None
+    KmsKeyArn: KmsKeyArn | None
 
 
-SecurityGroupIdList = List[SecurityGroupId]
+SecurityGroupIdList = list[SecurityGroupId]
 
 
 class CreateVerifiedAccessEndpointRequest(ServiceRequest):
     VerifiedAccessGroupId: VerifiedAccessGroupId
     EndpointType: VerifiedAccessEndpointType
     AttachmentType: VerifiedAccessEndpointAttachmentType
-    DomainCertificateArn: Optional[CertificateArn]
-    ApplicationDomain: Optional[String]
-    EndpointDomainPrefix: Optional[String]
-    SecurityGroupIds: Optional[SecurityGroupIdList]
-    LoadBalancerOptions: Optional[CreateVerifiedAccessEndpointLoadBalancerOptions]
-    NetworkInterfaceOptions: Optional[CreateVerifiedAccessEndpointEniOptions]
-    Description: Optional[String]
-    PolicyDocument: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
-    RdsOptions: Optional[CreateVerifiedAccessEndpointRdsOptions]
-    CidrOptions: Optional[CreateVerifiedAccessEndpointCidrOptions]
+    DomainCertificateArn: CertificateArn | None
+    ApplicationDomain: String | None
+    EndpointDomainPrefix: String | None
+    SecurityGroupIds: SecurityGroupIdList | None
+    LoadBalancerOptions: CreateVerifiedAccessEndpointLoadBalancerOptions | None
+    NetworkInterfaceOptions: CreateVerifiedAccessEndpointEniOptions | None
+    Description: String | None
+    PolicyDocument: String | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    DryRun: Boolean | None
+    SseSpecification: VerifiedAccessSseSpecificationRequest | None
+    RdsOptions: CreateVerifiedAccessEndpointRdsOptions | None
+    CidrOptions: CreateVerifiedAccessEndpointCidrOptions | None
 
 
-VerifiedAccessEndpointSubnetIdList = List[SubnetId]
+VerifiedAccessEndpointSubnetIdList = list[SubnetId]
 
 
 class VerifiedAccessEndpointPortRange(TypedDict, total=False):
-    FromPort: Optional[VerifiedAccessEndpointPortNumber]
-    ToPort: Optional[VerifiedAccessEndpointPortNumber]
+    FromPort: VerifiedAccessEndpointPortNumber | None
+    ToPort: VerifiedAccessEndpointPortNumber | None
 
 
-VerifiedAccessEndpointPortRangeList = List[VerifiedAccessEndpointPortRange]
+VerifiedAccessEndpointPortRangeList = list[VerifiedAccessEndpointPortRange]
 
 
 class VerifiedAccessEndpointCidrOptions(TypedDict, total=False):
-    Cidr: Optional[String]
-    PortRanges: Optional[VerifiedAccessEndpointPortRangeList]
-    Protocol: Optional[VerifiedAccessEndpointProtocol]
-    SubnetIds: Optional[VerifiedAccessEndpointSubnetIdList]
+    Cidr: String | None
+    PortRanges: VerifiedAccessEndpointPortRangeList | None
+    Protocol: VerifiedAccessEndpointProtocol | None
+    SubnetIds: VerifiedAccessEndpointSubnetIdList | None
 
 
 class VerifiedAccessEndpointRdsOptions(TypedDict, total=False):
-    Protocol: Optional[VerifiedAccessEndpointProtocol]
-    Port: Optional[VerifiedAccessEndpointPortNumber]
-    RdsDbInstanceArn: Optional[String]
-    RdsDbClusterArn: Optional[String]
-    RdsDbProxyArn: Optional[String]
-    RdsEndpoint: Optional[String]
-    SubnetIds: Optional[VerifiedAccessEndpointSubnetIdList]
+    Protocol: VerifiedAccessEndpointProtocol | None
+    Port: VerifiedAccessEndpointPortNumber | None
+    RdsDbInstanceArn: String | None
+    RdsDbClusterArn: String | None
+    RdsDbProxyArn: String | None
+    RdsEndpoint: String | None
+    SubnetIds: VerifiedAccessEndpointSubnetIdList | None
 
 
 class VerifiedAccessEndpointStatus(TypedDict, total=False):
-    Code: Optional[VerifiedAccessEndpointStatusCode]
-    Message: Optional[String]
+    Code: VerifiedAccessEndpointStatusCode | None
+    Message: String | None
 
 
 class VerifiedAccessEndpointEniOptions(TypedDict, total=False):
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    Protocol: Optional[VerifiedAccessEndpointProtocol]
-    Port: Optional[VerifiedAccessEndpointPortNumber]
-    PortRanges: Optional[VerifiedAccessEndpointPortRangeList]
+    NetworkInterfaceId: NetworkInterfaceId | None
+    Protocol: VerifiedAccessEndpointProtocol | None
+    Port: VerifiedAccessEndpointPortNumber | None
+    PortRanges: VerifiedAccessEndpointPortRangeList | None
 
 
 class VerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
-    Protocol: Optional[VerifiedAccessEndpointProtocol]
-    Port: Optional[VerifiedAccessEndpointPortNumber]
-    LoadBalancerArn: Optional[String]
-    SubnetIds: Optional[VerifiedAccessEndpointSubnetIdList]
-    PortRanges: Optional[VerifiedAccessEndpointPortRangeList]
+    Protocol: VerifiedAccessEndpointProtocol | None
+    Port: VerifiedAccessEndpointPortNumber | None
+    LoadBalancerArn: String | None
+    SubnetIds: VerifiedAccessEndpointSubnetIdList | None
+    PortRanges: VerifiedAccessEndpointPortRangeList | None
 
 
 class VerifiedAccessEndpoint(TypedDict, total=False):
-    VerifiedAccessInstanceId: Optional[String]
-    VerifiedAccessGroupId: Optional[String]
-    VerifiedAccessEndpointId: Optional[String]
-    ApplicationDomain: Optional[String]
-    EndpointType: Optional[VerifiedAccessEndpointType]
-    AttachmentType: Optional[VerifiedAccessEndpointAttachmentType]
-    DomainCertificateArn: Optional[String]
-    EndpointDomain: Optional[String]
-    DeviceValidationDomain: Optional[String]
-    SecurityGroupIds: Optional[SecurityGroupIdList]
-    LoadBalancerOptions: Optional[VerifiedAccessEndpointLoadBalancerOptions]
-    NetworkInterfaceOptions: Optional[VerifiedAccessEndpointEniOptions]
-    Status: Optional[VerifiedAccessEndpointStatus]
-    Description: Optional[String]
-    CreationTime: Optional[String]
-    LastUpdatedTime: Optional[String]
-    DeletionTime: Optional[String]
-    Tags: Optional[TagList]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
-    RdsOptions: Optional[VerifiedAccessEndpointRdsOptions]
-    CidrOptions: Optional[VerifiedAccessEndpointCidrOptions]
+    VerifiedAccessInstanceId: String | None
+    VerifiedAccessGroupId: String | None
+    VerifiedAccessEndpointId: String | None
+    ApplicationDomain: String | None
+    EndpointType: VerifiedAccessEndpointType | None
+    AttachmentType: VerifiedAccessEndpointAttachmentType | None
+    DomainCertificateArn: String | None
+    EndpointDomain: String | None
+    DeviceValidationDomain: String | None
+    SecurityGroupIds: SecurityGroupIdList | None
+    LoadBalancerOptions: VerifiedAccessEndpointLoadBalancerOptions | None
+    NetworkInterfaceOptions: VerifiedAccessEndpointEniOptions | None
+    Status: VerifiedAccessEndpointStatus | None
+    Description: String | None
+    CreationTime: String | None
+    LastUpdatedTime: String | None
+    DeletionTime: String | None
+    Tags: TagList | None
+    SseSpecification: VerifiedAccessSseSpecificationResponse | None
+    RdsOptions: VerifiedAccessEndpointRdsOptions | None
+    CidrOptions: VerifiedAccessEndpointCidrOptions | None
 
 
 class CreateVerifiedAccessEndpointResult(TypedDict, total=False):
-    VerifiedAccessEndpoint: Optional[VerifiedAccessEndpoint]
+    VerifiedAccessEndpoint: VerifiedAccessEndpoint | None
 
 
 class CreateVerifiedAccessGroupRequest(ServiceRequest):
     VerifiedAccessInstanceId: VerifiedAccessInstanceId
-    Description: Optional[String]
-    PolicyDocument: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
+    Description: String | None
+    PolicyDocument: String | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    DryRun: Boolean | None
+    SseSpecification: VerifiedAccessSseSpecificationRequest | None
 
 
 class VerifiedAccessGroup(TypedDict, total=False):
-    VerifiedAccessGroupId: Optional[String]
-    VerifiedAccessInstanceId: Optional[String]
-    Description: Optional[String]
-    Owner: Optional[String]
-    VerifiedAccessGroupArn: Optional[String]
-    CreationTime: Optional[String]
-    LastUpdatedTime: Optional[String]
-    DeletionTime: Optional[String]
-    Tags: Optional[TagList]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
+    VerifiedAccessGroupId: String | None
+    VerifiedAccessInstanceId: String | None
+    Description: String | None
+    Owner: String | None
+    VerifiedAccessGroupArn: String | None
+    CreationTime: String | None
+    LastUpdatedTime: String | None
+    DeletionTime: String | None
+    Tags: TagList | None
+    SseSpecification: VerifiedAccessSseSpecificationResponse | None
 
 
 class CreateVerifiedAccessGroupResult(TypedDict, total=False):
-    VerifiedAccessGroup: Optional[VerifiedAccessGroup]
+    VerifiedAccessGroup: VerifiedAccessGroup | None
 
 
 class CreateVerifiedAccessInstanceRequest(ServiceRequest):
-    Description: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    FIPSEnabled: Optional[Boolean]
-    CidrEndpointsCustomSubDomain: Optional[String]
+    Description: String | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    DryRun: Boolean | None
+    FIPSEnabled: Boolean | None
+    CidrEndpointsCustomSubDomain: String | None
 
 
 class CreateVerifiedAccessInstanceResult(TypedDict, total=False):
-    VerifiedAccessInstance: Optional[VerifiedAccessInstance]
+    VerifiedAccessInstance: VerifiedAccessInstance | None
 
 
 class CreateVerifiedAccessNativeApplicationOidcOptions(TypedDict, total=False):
-    PublicSigningKeyEndpoint: Optional[String]
-    Issuer: Optional[String]
-    AuthorizationEndpoint: Optional[String]
-    TokenEndpoint: Optional[String]
-    UserInfoEndpoint: Optional[String]
-    ClientId: Optional[String]
-    ClientSecret: Optional[ClientSecretType]
-    Scope: Optional[String]
+    PublicSigningKeyEndpoint: String | None
+    Issuer: String | None
+    AuthorizationEndpoint: String | None
+    TokenEndpoint: String | None
+    UserInfoEndpoint: String | None
+    ClientId: String | None
+    ClientSecret: ClientSecretType | None
+    Scope: String | None
 
 
 class CreateVerifiedAccessTrustProviderDeviceOptions(TypedDict, total=False):
-    TenantId: Optional[String]
-    PublicSigningKeyUrl: Optional[String]
+    TenantId: String | None
+    PublicSigningKeyUrl: String | None
 
 
 class CreateVerifiedAccessTrustProviderOidcOptions(TypedDict, total=False):
-    Issuer: Optional[String]
-    AuthorizationEndpoint: Optional[String]
-    TokenEndpoint: Optional[String]
-    UserInfoEndpoint: Optional[String]
-    ClientId: Optional[String]
-    ClientSecret: Optional[ClientSecretType]
-    Scope: Optional[String]
+    Issuer: String | None
+    AuthorizationEndpoint: String | None
+    TokenEndpoint: String | None
+    UserInfoEndpoint: String | None
+    ClientId: String | None
+    ClientSecret: ClientSecretType | None
+    Scope: String | None
 
 
 class CreateVerifiedAccessTrustProviderRequest(ServiceRequest):
     TrustProviderType: TrustProviderType
-    UserTrustProviderType: Optional[UserTrustProviderType]
-    DeviceTrustProviderType: Optional[DeviceTrustProviderType]
-    OidcOptions: Optional[CreateVerifiedAccessTrustProviderOidcOptions]
-    DeviceOptions: Optional[CreateVerifiedAccessTrustProviderDeviceOptions]
+    UserTrustProviderType: UserTrustProviderType | None
+    DeviceTrustProviderType: DeviceTrustProviderType | None
+    OidcOptions: CreateVerifiedAccessTrustProviderOidcOptions | None
+    DeviceOptions: CreateVerifiedAccessTrustProviderDeviceOptions | None
     PolicyReferenceName: String
-    Description: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
-    NativeApplicationOidcOptions: Optional[CreateVerifiedAccessNativeApplicationOidcOptions]
+    Description: String | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    DryRun: Boolean | None
+    SseSpecification: VerifiedAccessSseSpecificationRequest | None
+    NativeApplicationOidcOptions: CreateVerifiedAccessNativeApplicationOidcOptions | None
 
 
 class CreateVerifiedAccessTrustProviderResult(TypedDict, total=False):
-    VerifiedAccessTrustProvider: Optional[VerifiedAccessTrustProvider]
+    VerifiedAccessTrustProvider: VerifiedAccessTrustProvider | None
 
 
 class CreateVolumePermission(TypedDict, total=False):
-    UserId: Optional[String]
-    Group: Optional[PermissionGroup]
+    UserId: String | None
+    Group: PermissionGroup | None
 
 
-CreateVolumePermissionList = List[CreateVolumePermission]
+CreateVolumePermissionList = list[CreateVolumePermission]
 
 
 class CreateVolumePermissionModifications(TypedDict, total=False):
-    Add: Optional[CreateVolumePermissionList]
-    Remove: Optional[CreateVolumePermissionList]
+    Add: CreateVolumePermissionList | None
+    Remove: CreateVolumePermissionList | None
 
 
 class CreateVolumeRequest(ServiceRequest):
-    AvailabilityZone: Optional[AvailabilityZoneName]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    Encrypted: Optional[Boolean]
-    Iops: Optional[Integer]
-    KmsKeyId: Optional[KmsKeyId]
-    OutpostArn: Optional[String]
-    Size: Optional[Integer]
-    SnapshotId: Optional[SnapshotId]
-    VolumeType: Optional[VolumeType]
-    TagSpecifications: Optional[TagSpecificationList]
-    MultiAttachEnabled: Optional[Boolean]
-    Throughput: Optional[Integer]
-    ClientToken: Optional[String]
-    VolumeInitializationRate: Optional[Integer]
-    Operator: Optional[OperatorRequest]
-    DryRun: Optional[Boolean]
+    AvailabilityZone: AvailabilityZoneName | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    Encrypted: Boolean | None
+    Iops: Integer | None
+    KmsKeyId: KmsKeyId | None
+    OutpostArn: String | None
+    Size: Integer | None
+    SnapshotId: SnapshotId | None
+    VolumeType: VolumeType | None
+    TagSpecifications: TagSpecificationList | None
+    MultiAttachEnabled: Boolean | None
+    Throughput: Integer | None
+    ClientToken: String | None
+    VolumeInitializationRate: Integer | None
+    Operator: OperatorRequest | None
+    DryRun: Boolean | None
 
 
 class CreateVpcBlockPublicAccessExclusionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    SubnetId: Optional[SubnetId]
-    VpcId: Optional[VpcId]
+    DryRun: Boolean | None
+    SubnetId: SubnetId | None
+    VpcId: VpcId | None
     InternetGatewayExclusionMode: InternetGatewayExclusionMode
-    TagSpecifications: Optional[TagSpecificationList]
+    TagSpecifications: TagSpecificationList | None
 
 
 class VpcBlockPublicAccessExclusion(TypedDict, total=False):
-    ExclusionId: Optional[VpcBlockPublicAccessExclusionId]
-    InternetGatewayExclusionMode: Optional[InternetGatewayExclusionMode]
-    ResourceArn: Optional[ResourceArn]
-    State: Optional[VpcBlockPublicAccessExclusionState]
-    Reason: Optional[String]
-    CreationTimestamp: Optional[MillisecondDateTime]
-    LastUpdateTimestamp: Optional[MillisecondDateTime]
-    DeletionTimestamp: Optional[MillisecondDateTime]
-    Tags: Optional[TagList]
+    ExclusionId: VpcBlockPublicAccessExclusionId | None
+    InternetGatewayExclusionMode: InternetGatewayExclusionMode | None
+    ResourceArn: ResourceArn | None
+    State: VpcBlockPublicAccessExclusionState | None
+    Reason: String | None
+    CreationTimestamp: MillisecondDateTime | None
+    LastUpdateTimestamp: MillisecondDateTime | None
+    DeletionTimestamp: MillisecondDateTime | None
+    Tags: TagList | None
 
 
 class CreateVpcBlockPublicAccessExclusionResult(TypedDict, total=False):
-    VpcBlockPublicAccessExclusion: Optional[VpcBlockPublicAccessExclusion]
+    VpcBlockPublicAccessExclusion: VpcBlockPublicAccessExclusion | None
 
 
 class CreateVpcEndpointConnectionNotificationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ServiceId: Optional[VpcEndpointServiceId]
-    VpcEndpointId: Optional[VpcEndpointId]
+    DryRun: Boolean | None
+    ServiceId: VpcEndpointServiceId | None
+    VpcEndpointId: VpcEndpointId | None
     ConnectionNotificationArn: String
     ConnectionEvents: ValueStringList
-    ClientToken: Optional[String]
+    ClientToken: String | None
 
 
 class CreateVpcEndpointConnectionNotificationResult(TypedDict, total=False):
-    ConnectionNotification: Optional[ConnectionNotification]
-    ClientToken: Optional[String]
+    ConnectionNotification: ConnectionNotification | None
+    ClientToken: String | None
 
 
 class SubnetConfiguration(TypedDict, total=False):
-    SubnetId: Optional[SubnetId]
-    Ipv4: Optional[String]
-    Ipv6: Optional[String]
+    SubnetId: SubnetId | None
+    Ipv4: String | None
+    Ipv6: String | None
 
 
-SubnetConfigurationsList = List[SubnetConfiguration]
+SubnetConfigurationsList = list[SubnetConfiguration]
+PrivateDnsSpecifiedDomainSet = list[String]
 
 
 class DnsOptionsSpecification(TypedDict, total=False):
-    DnsRecordIpType: Optional[DnsRecordIpType]
-    PrivateDnsOnlyForInboundResolverEndpoint: Optional[Boolean]
+    DnsRecordIpType: DnsRecordIpType | None
+    PrivateDnsOnlyForInboundResolverEndpoint: Boolean | None
+    PrivateDnsPreference: String | None
+    PrivateDnsSpecifiedDomains: PrivateDnsSpecifiedDomainSet | None
 
 
-VpcEndpointSecurityGroupIdList = List[SecurityGroupId]
-VpcEndpointSubnetIdList = List[SubnetId]
-VpcEndpointRouteTableIdList = List[RouteTableId]
+VpcEndpointSecurityGroupIdList = list[SecurityGroupId]
+VpcEndpointSubnetIdList = list[SubnetId]
+VpcEndpointRouteTableIdList = list[RouteTableId]
 
 
 class CreateVpcEndpointRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    VpcEndpointType: Optional[VpcEndpointType]
+    DryRun: Boolean | None
+    VpcEndpointType: VpcEndpointType | None
     VpcId: VpcId
-    ServiceName: Optional[String]
-    PolicyDocument: Optional[String]
-    RouteTableIds: Optional[VpcEndpointRouteTableIdList]
-    SubnetIds: Optional[VpcEndpointSubnetIdList]
-    SecurityGroupIds: Optional[VpcEndpointSecurityGroupIdList]
-    IpAddressType: Optional[IpAddressType]
-    DnsOptions: Optional[DnsOptionsSpecification]
-    ClientToken: Optional[String]
-    PrivateDnsEnabled: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
-    SubnetConfigurations: Optional[SubnetConfigurationsList]
-    ServiceNetworkArn: Optional[ServiceNetworkArn]
-    ResourceConfigurationArn: Optional[ResourceConfigurationArn]
-    ServiceRegion: Optional[String]
+    ServiceName: String | None
+    PolicyDocument: String | None
+    RouteTableIds: VpcEndpointRouteTableIdList | None
+    SubnetIds: VpcEndpointSubnetIdList | None
+    SecurityGroupIds: VpcEndpointSecurityGroupIdList | None
+    IpAddressType: IpAddressType | None
+    DnsOptions: DnsOptionsSpecification | None
+    ClientToken: String | None
+    PrivateDnsEnabled: Boolean | None
+    TagSpecifications: TagSpecificationList | None
+    SubnetConfigurations: SubnetConfigurationsList | None
+    ServiceNetworkArn: ServiceNetworkArn | None
+    ResourceConfigurationArn: ResourceConfigurationArn | None
+    ServiceRegion: String | None
 
 
 class SubnetIpPrefixes(TypedDict, total=False):
-    SubnetId: Optional[String]
-    IpPrefixes: Optional[ValueStringList]
+    SubnetId: String | None
+    IpPrefixes: ValueStringList | None
 
 
-SubnetIpPrefixesList = List[SubnetIpPrefixes]
+SubnetIpPrefixesList = list[SubnetIpPrefixes]
 
 
 class LastError(TypedDict, total=False):
-    Message: Optional[String]
-    Code: Optional[String]
+    Message: String | None
+    Code: String | None
 
 
 class DnsEntry(TypedDict, total=False):
-    DnsName: Optional[String]
-    HostedZoneId: Optional[String]
+    DnsName: String | None
+    HostedZoneId: String | None
 
 
-DnsEntrySet = List[DnsEntry]
+DnsEntrySet = list[DnsEntry]
 
 
 class DnsOptions(TypedDict, total=False):
-    DnsRecordIpType: Optional[DnsRecordIpType]
-    PrivateDnsOnlyForInboundResolverEndpoint: Optional[Boolean]
+    DnsRecordIpType: DnsRecordIpType | None
+    PrivateDnsOnlyForInboundResolverEndpoint: Boolean | None
+    PrivateDnsPreference: String | None
+    PrivateDnsSpecifiedDomains: PrivateDnsSpecifiedDomainSet | None
 
 
 class SecurityGroupIdentifier(TypedDict, total=False):
-    GroupId: Optional[String]
-    GroupName: Optional[String]
+    GroupId: String | None
+    GroupName: String | None
 
 
-GroupIdentifierSet = List[SecurityGroupIdentifier]
+GroupIdentifierSet = list[SecurityGroupIdentifier]
 
 
 class VpcEndpoint(TypedDict, total=False):
-    VpcEndpointId: Optional[String]
-    VpcEndpointType: Optional[VpcEndpointType]
-    VpcId: Optional[String]
-    ServiceName: Optional[String]
-    State: Optional[State]
-    PolicyDocument: Optional[String]
-    RouteTableIds: Optional[ValueStringList]
-    SubnetIds: Optional[ValueStringList]
-    Groups: Optional[GroupIdentifierSet]
-    IpAddressType: Optional[IpAddressType]
-    DnsOptions: Optional[DnsOptions]
-    PrivateDnsEnabled: Optional[Boolean]
-    RequesterManaged: Optional[Boolean]
-    NetworkInterfaceIds: Optional[ValueStringList]
-    DnsEntries: Optional[DnsEntrySet]
-    CreationTimestamp: Optional[MillisecondDateTime]
-    Tags: Optional[TagList]
-    OwnerId: Optional[String]
-    LastError: Optional[LastError]
-    Ipv4Prefixes: Optional[SubnetIpPrefixesList]
-    Ipv6Prefixes: Optional[SubnetIpPrefixesList]
-    FailureReason: Optional[String]
-    ServiceNetworkArn: Optional[ServiceNetworkArn]
-    ResourceConfigurationArn: Optional[ResourceConfigurationArn]
-    ServiceRegion: Optional[String]
+    VpcEndpointId: String | None
+    VpcEndpointType: VpcEndpointType | None
+    VpcId: String | None
+    ServiceName: String | None
+    State: State | None
+    PolicyDocument: String | None
+    RouteTableIds: ValueStringList | None
+    SubnetIds: ValueStringList | None
+    Groups: GroupIdentifierSet | None
+    IpAddressType: IpAddressType | None
+    DnsOptions: DnsOptions | None
+    PrivateDnsEnabled: Boolean | None
+    RequesterManaged: Boolean | None
+    NetworkInterfaceIds: ValueStringList | None
+    DnsEntries: DnsEntrySet | None
+    CreationTimestamp: MillisecondDateTime | None
+    Tags: TagList | None
+    OwnerId: String | None
+    LastError: LastError | None
+    Ipv4Prefixes: SubnetIpPrefixesList | None
+    Ipv6Prefixes: SubnetIpPrefixesList | None
+    FailureReason: String | None
+    ServiceNetworkArn: ServiceNetworkArn | None
+    ResourceConfigurationArn: ResourceConfigurationArn | None
+    ServiceRegion: String | None
 
 
 class CreateVpcEndpointResult(TypedDict, total=False):
-    VpcEndpoint: Optional[VpcEndpoint]
-    ClientToken: Optional[String]
+    VpcEndpoint: VpcEndpoint | None
+    ClientToken: String | None
 
 
 class CreateVpcEndpointServiceConfigurationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    AcceptanceRequired: Optional[Boolean]
-    PrivateDnsName: Optional[String]
-    NetworkLoadBalancerArns: Optional[ValueStringList]
-    GatewayLoadBalancerArns: Optional[ValueStringList]
-    SupportedIpAddressTypes: Optional[ValueStringList]
-    SupportedRegions: Optional[ValueStringList]
-    ClientToken: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Boolean | None
+    AcceptanceRequired: Boolean | None
+    PrivateDnsName: String | None
+    NetworkLoadBalancerArns: ValueStringList | None
+    GatewayLoadBalancerArns: ValueStringList | None
+    SupportedIpAddressTypes: ValueStringList | None
+    SupportedRegions: ValueStringList | None
+    ClientToken: String | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class SupportedRegionDetail(TypedDict, total=False):
-    Region: Optional[String]
-    ServiceState: Optional[String]
+    Region: String | None
+    ServiceState: String | None
 
 
-SupportedRegionSet = List[SupportedRegionDetail]
+SupportedRegionSet = list[SupportedRegionDetail]
 
 
 class PrivateDnsNameConfiguration(TypedDict, total=False):
-    State: Optional[DnsNameState]
-    Type: Optional[String]
-    Value: Optional[String]
-    Name: Optional[String]
+    State: DnsNameState | None
+    Type: String | None
+    Value: String | None
+    Name: String | None
 
 
-SupportedIpAddressTypes = List[ServiceConnectivityType]
+SupportedIpAddressTypes = list[ServiceConnectivityType]
 
 
 class ServiceTypeDetail(TypedDict, total=False):
-    ServiceType: Optional[ServiceType]
+    ServiceType: ServiceType | None
 
 
-ServiceTypeDetailSet = List[ServiceTypeDetail]
+ServiceTypeDetailSet = list[ServiceTypeDetail]
 
 
 class ServiceConfiguration(TypedDict, total=False):
-    ServiceType: Optional[ServiceTypeDetailSet]
-    ServiceId: Optional[String]
-    ServiceName: Optional[String]
-    ServiceState: Optional[ServiceState]
-    AvailabilityZoneIds: Optional[ValueStringList]
-    AvailabilityZones: Optional[ValueStringList]
-    AcceptanceRequired: Optional[Boolean]
-    ManagesVpcEndpoints: Optional[Boolean]
-    NetworkLoadBalancerArns: Optional[ValueStringList]
-    GatewayLoadBalancerArns: Optional[ValueStringList]
-    SupportedIpAddressTypes: Optional[SupportedIpAddressTypes]
-    BaseEndpointDnsNames: Optional[ValueStringList]
-    PrivateDnsName: Optional[String]
-    PrivateDnsNameConfiguration: Optional[PrivateDnsNameConfiguration]
-    PayerResponsibility: Optional[PayerResponsibility]
-    Tags: Optional[TagList]
-    SupportedRegions: Optional[SupportedRegionSet]
-    RemoteAccessEnabled: Optional[Boolean]
+    ServiceType: ServiceTypeDetailSet | None
+    ServiceId: String | None
+    ServiceName: String | None
+    ServiceState: ServiceState | None
+    AvailabilityZoneIds: ValueStringList | None
+    AvailabilityZones: ValueStringList | None
+    AcceptanceRequired: Boolean | None
+    ManagesVpcEndpoints: Boolean | None
+    NetworkLoadBalancerArns: ValueStringList | None
+    GatewayLoadBalancerArns: ValueStringList | None
+    SupportedIpAddressTypes: SupportedIpAddressTypes | None
+    BaseEndpointDnsNames: ValueStringList | None
+    PrivateDnsName: String | None
+    PrivateDnsNameConfiguration: PrivateDnsNameConfiguration | None
+    PayerResponsibility: PayerResponsibility | None
+    Tags: TagList | None
+    SupportedRegions: SupportedRegionSet | None
+    RemoteAccessEnabled: Boolean | None
 
 
 class CreateVpcEndpointServiceConfigurationResult(TypedDict, total=False):
-    ServiceConfiguration: Optional[ServiceConfiguration]
-    ClientToken: Optional[String]
+    ServiceConfiguration: ServiceConfiguration | None
+    ClientToken: String | None
 
 
 class CreateVpcPeeringConnectionRequest(ServiceRequest):
-    PeerRegion: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    PeerRegion: String | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
     VpcId: VpcId
-    PeerVpcId: Optional[String]
-    PeerOwnerId: Optional[String]
+    PeerVpcId: String | None
+    PeerOwnerId: String | None
 
 
 class CreateVpcPeeringConnectionResult(TypedDict, total=False):
-    VpcPeeringConnection: Optional[VpcPeeringConnection]
+    VpcPeeringConnection: VpcPeeringConnection | None
 
 
 class CreateVpcRequest(ServiceRequest):
-    CidrBlock: Optional[String]
-    Ipv6Pool: Optional[Ipv6PoolEc2Id]
-    Ipv6CidrBlock: Optional[String]
-    Ipv4IpamPoolId: Optional[IpamPoolId]
-    Ipv4NetmaskLength: Optional[NetmaskLength]
-    Ipv6IpamPoolId: Optional[IpamPoolId]
-    Ipv6NetmaskLength: Optional[NetmaskLength]
-    Ipv6CidrBlockNetworkBorderGroup: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
-    InstanceTenancy: Optional[Tenancy]
-    AmazonProvidedIpv6CidrBlock: Optional[Boolean]
+    CidrBlock: String | None
+    Ipv6Pool: Ipv6PoolEc2Id | None
+    Ipv6CidrBlock: String | None
+    Ipv4IpamPoolId: IpamPoolId | None
+    Ipv4NetmaskLength: NetmaskLength | None
+    Ipv6IpamPoolId: IpamPoolId | None
+    Ipv6NetmaskLength: NetmaskLength | None
+    Ipv6CidrBlockNetworkBorderGroup: String | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
+    InstanceTenancy: Tenancy | None
+    AmazonProvidedIpv6CidrBlock: Boolean | None
 
 
 class CreateVpcResult(TypedDict, total=False):
-    Vpc: Optional[Vpc]
+    Vpc: Vpc | None
 
 
 class VpnTunnelLogOptionsSpecification(TypedDict, total=False):
-    CloudWatchLogOptions: Optional[CloudWatchLogOptionsSpecification]
+    CloudWatchLogOptions: CloudWatchLogOptionsSpecification | None
 
 
 class IKEVersionsRequestListValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
-IKEVersionsRequestList = List[IKEVersionsRequestListValue]
+IKEVersionsRequestList = list[IKEVersionsRequestListValue]
 
 
 class Phase2DHGroupNumbersRequestListValue(TypedDict, total=False):
-    Value: Optional[Integer]
+    Value: Integer | None
 
 
-Phase2DHGroupNumbersRequestList = List[Phase2DHGroupNumbersRequestListValue]
+Phase2DHGroupNumbersRequestList = list[Phase2DHGroupNumbersRequestListValue]
 
 
 class Phase1DHGroupNumbersRequestListValue(TypedDict, total=False):
-    Value: Optional[Integer]
+    Value: Integer | None
 
 
-Phase1DHGroupNumbersRequestList = List[Phase1DHGroupNumbersRequestListValue]
+Phase1DHGroupNumbersRequestList = list[Phase1DHGroupNumbersRequestListValue]
 
 
 class Phase2IntegrityAlgorithmsRequestListValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
-Phase2IntegrityAlgorithmsRequestList = List[Phase2IntegrityAlgorithmsRequestListValue]
+Phase2IntegrityAlgorithmsRequestList = list[Phase2IntegrityAlgorithmsRequestListValue]
 
 
 class Phase1IntegrityAlgorithmsRequestListValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
-Phase1IntegrityAlgorithmsRequestList = List[Phase1IntegrityAlgorithmsRequestListValue]
+Phase1IntegrityAlgorithmsRequestList = list[Phase1IntegrityAlgorithmsRequestListValue]
 
 
 class Phase2EncryptionAlgorithmsRequestListValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
-Phase2EncryptionAlgorithmsRequestList = List[Phase2EncryptionAlgorithmsRequestListValue]
+Phase2EncryptionAlgorithmsRequestList = list[Phase2EncryptionAlgorithmsRequestListValue]
 
 
 class Phase1EncryptionAlgorithmsRequestListValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
-Phase1EncryptionAlgorithmsRequestList = List[Phase1EncryptionAlgorithmsRequestListValue]
+Phase1EncryptionAlgorithmsRequestList = list[Phase1EncryptionAlgorithmsRequestListValue]
 
 
 class VpnTunnelOptionsSpecification(TypedDict, total=False):
-    TunnelInsideCidr: Optional[String]
-    TunnelInsideIpv6Cidr: Optional[String]
-    PreSharedKey: Optional[preSharedKey]
-    Phase1LifetimeSeconds: Optional[Integer]
-    Phase2LifetimeSeconds: Optional[Integer]
-    RekeyMarginTimeSeconds: Optional[Integer]
-    RekeyFuzzPercentage: Optional[Integer]
-    ReplayWindowSize: Optional[Integer]
-    DPDTimeoutSeconds: Optional[Integer]
-    DPDTimeoutAction: Optional[String]
-    Phase1EncryptionAlgorithms: Optional[Phase1EncryptionAlgorithmsRequestList]
-    Phase2EncryptionAlgorithms: Optional[Phase2EncryptionAlgorithmsRequestList]
-    Phase1IntegrityAlgorithms: Optional[Phase1IntegrityAlgorithmsRequestList]
-    Phase2IntegrityAlgorithms: Optional[Phase2IntegrityAlgorithmsRequestList]
-    Phase1DHGroupNumbers: Optional[Phase1DHGroupNumbersRequestList]
-    Phase2DHGroupNumbers: Optional[Phase2DHGroupNumbersRequestList]
-    IKEVersions: Optional[IKEVersionsRequestList]
-    StartupAction: Optional[String]
-    LogOptions: Optional[VpnTunnelLogOptionsSpecification]
-    EnableTunnelLifecycleControl: Optional[Boolean]
+    TunnelInsideCidr: String | None
+    TunnelInsideIpv6Cidr: String | None
+    PreSharedKey: preSharedKey | None
+    Phase1LifetimeSeconds: Integer | None
+    Phase2LifetimeSeconds: Integer | None
+    RekeyMarginTimeSeconds: Integer | None
+    RekeyFuzzPercentage: Integer | None
+    ReplayWindowSize: Integer | None
+    DPDTimeoutSeconds: Integer | None
+    DPDTimeoutAction: String | None
+    Phase1EncryptionAlgorithms: Phase1EncryptionAlgorithmsRequestList | None
+    Phase2EncryptionAlgorithms: Phase2EncryptionAlgorithmsRequestList | None
+    Phase1IntegrityAlgorithms: Phase1IntegrityAlgorithmsRequestList | None
+    Phase2IntegrityAlgorithms: Phase2IntegrityAlgorithmsRequestList | None
+    Phase1DHGroupNumbers: Phase1DHGroupNumbersRequestList | None
+    Phase2DHGroupNumbers: Phase2DHGroupNumbersRequestList | None
+    IKEVersions: IKEVersionsRequestList | None
+    StartupAction: String | None
+    LogOptions: VpnTunnelLogOptionsSpecification | None
+    EnableTunnelLifecycleControl: Boolean | None
 
 
-VpnTunnelOptionsSpecificationsList = List[VpnTunnelOptionsSpecification]
+VpnTunnelOptionsSpecificationsList = list[VpnTunnelOptionsSpecification]
 
 
 class VpnConnectionOptionsSpecification(TypedDict, total=False):
-    EnableAcceleration: Optional[Boolean]
-    TunnelInsideIpVersion: Optional[TunnelInsideIpVersion]
-    TunnelOptions: Optional[VpnTunnelOptionsSpecificationsList]
-    LocalIpv4NetworkCidr: Optional[String]
-    RemoteIpv4NetworkCidr: Optional[String]
-    LocalIpv6NetworkCidr: Optional[String]
-    RemoteIpv6NetworkCidr: Optional[String]
-    OutsideIpAddressType: Optional[String]
-    TransportTransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    StaticRoutesOnly: Optional[Boolean]
+    EnableAcceleration: Boolean | None
+    TunnelInsideIpVersion: TunnelInsideIpVersion | None
+    TunnelOptions: VpnTunnelOptionsSpecificationsList | None
+    LocalIpv4NetworkCidr: String | None
+    RemoteIpv4NetworkCidr: String | None
+    LocalIpv6NetworkCidr: String | None
+    RemoteIpv6NetworkCidr: String | None
+    OutsideIpAddressType: String | None
+    TransportTransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    StaticRoutesOnly: Boolean | None
 
 
 class CreateVpnConnectionRequest(ServiceRequest):
     CustomerGatewayId: CustomerGatewayId
     Type: String
-    VpnGatewayId: Optional[VpnGatewayId]
-    TransitGatewayId: Optional[TransitGatewayId]
-    TagSpecifications: Optional[TagSpecificationList]
-    PreSharedKeyStorage: Optional[String]
-    DryRun: Optional[Boolean]
-    Options: Optional[VpnConnectionOptionsSpecification]
+    VpnGatewayId: VpnGatewayId | None
+    TransitGatewayId: TransitGatewayId | None
+    TagSpecifications: TagSpecificationList | None
+    PreSharedKeyStorage: String | None
+    DryRun: Boolean | None
+    Options: VpnConnectionOptionsSpecification | None
 
 
 class VgwTelemetry(TypedDict, total=False):
-    AcceptedRouteCount: Optional[Integer]
-    LastStatusChange: Optional[DateTime]
-    OutsideIpAddress: Optional[String]
-    Status: Optional[TelemetryStatus]
-    StatusMessage: Optional[String]
-    CertificateArn: Optional[String]
+    AcceptedRouteCount: Integer | None
+    LastStatusChange: DateTime | None
+    OutsideIpAddress: String | None
+    Status: TelemetryStatus | None
+    StatusMessage: String | None
+    CertificateArn: String | None
 
 
-VgwTelemetryList = List[VgwTelemetry]
+VgwTelemetryList = list[VgwTelemetry]
 
 
 class VpnStaticRoute(TypedDict, total=False):
-    DestinationCidrBlock: Optional[String]
-    Source: Optional[VpnStaticRouteSource]
-    State: Optional[VpnState]
+    DestinationCidrBlock: String | None
+    Source: VpnStaticRouteSource | None
+    State: VpnState | None
 
 
-VpnStaticRouteList = List[VpnStaticRoute]
+VpnStaticRouteList = list[VpnStaticRoute]
 
 
 class VpnTunnelLogOptions(TypedDict, total=False):
-    CloudWatchLogOptions: Optional[CloudWatchLogOptions]
+    CloudWatchLogOptions: CloudWatchLogOptions | None
 
 
 class IKEVersionsListValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
-IKEVersionsList = List[IKEVersionsListValue]
+IKEVersionsList = list[IKEVersionsListValue]
 
 
 class Phase2DHGroupNumbersListValue(TypedDict, total=False):
-    Value: Optional[Integer]
+    Value: Integer | None
 
 
-Phase2DHGroupNumbersList = List[Phase2DHGroupNumbersListValue]
+Phase2DHGroupNumbersList = list[Phase2DHGroupNumbersListValue]
 
 
 class Phase1DHGroupNumbersListValue(TypedDict, total=False):
-    Value: Optional[Integer]
+    Value: Integer | None
 
 
-Phase1DHGroupNumbersList = List[Phase1DHGroupNumbersListValue]
+Phase1DHGroupNumbersList = list[Phase1DHGroupNumbersListValue]
 
 
 class Phase2IntegrityAlgorithmsListValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
-Phase2IntegrityAlgorithmsList = List[Phase2IntegrityAlgorithmsListValue]
+Phase2IntegrityAlgorithmsList = list[Phase2IntegrityAlgorithmsListValue]
 
 
 class Phase1IntegrityAlgorithmsListValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
-Phase1IntegrityAlgorithmsList = List[Phase1IntegrityAlgorithmsListValue]
+Phase1IntegrityAlgorithmsList = list[Phase1IntegrityAlgorithmsListValue]
 
 
 class Phase2EncryptionAlgorithmsListValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
-Phase2EncryptionAlgorithmsList = List[Phase2EncryptionAlgorithmsListValue]
+Phase2EncryptionAlgorithmsList = list[Phase2EncryptionAlgorithmsListValue]
 
 
 class Phase1EncryptionAlgorithmsListValue(TypedDict, total=False):
-    Value: Optional[String]
+    Value: String | None
 
 
-Phase1EncryptionAlgorithmsList = List[Phase1EncryptionAlgorithmsListValue]
+Phase1EncryptionAlgorithmsList = list[Phase1EncryptionAlgorithmsListValue]
 
 
 class TunnelOption(TypedDict, total=False):
-    OutsideIpAddress: Optional[String]
-    TunnelInsideCidr: Optional[String]
-    TunnelInsideIpv6Cidr: Optional[String]
-    PreSharedKey: Optional[preSharedKey]
-    Phase1LifetimeSeconds: Optional[Integer]
-    Phase2LifetimeSeconds: Optional[Integer]
-    RekeyMarginTimeSeconds: Optional[Integer]
-    RekeyFuzzPercentage: Optional[Integer]
-    ReplayWindowSize: Optional[Integer]
-    DpdTimeoutSeconds: Optional[Integer]
-    DpdTimeoutAction: Optional[String]
-    Phase1EncryptionAlgorithms: Optional[Phase1EncryptionAlgorithmsList]
-    Phase2EncryptionAlgorithms: Optional[Phase2EncryptionAlgorithmsList]
-    Phase1IntegrityAlgorithms: Optional[Phase1IntegrityAlgorithmsList]
-    Phase2IntegrityAlgorithms: Optional[Phase2IntegrityAlgorithmsList]
-    Phase1DHGroupNumbers: Optional[Phase1DHGroupNumbersList]
-    Phase2DHGroupNumbers: Optional[Phase2DHGroupNumbersList]
-    IkeVersions: Optional[IKEVersionsList]
-    StartupAction: Optional[String]
-    LogOptions: Optional[VpnTunnelLogOptions]
-    EnableTunnelLifecycleControl: Optional[Boolean]
+    OutsideIpAddress: String | None
+    TunnelInsideCidr: String | None
+    TunnelInsideIpv6Cidr: String | None
+    PreSharedKey: preSharedKey | None
+    Phase1LifetimeSeconds: Integer | None
+    Phase2LifetimeSeconds: Integer | None
+    RekeyMarginTimeSeconds: Integer | None
+    RekeyFuzzPercentage: Integer | None
+    ReplayWindowSize: Integer | None
+    DpdTimeoutSeconds: Integer | None
+    DpdTimeoutAction: String | None
+    Phase1EncryptionAlgorithms: Phase1EncryptionAlgorithmsList | None
+    Phase2EncryptionAlgorithms: Phase2EncryptionAlgorithmsList | None
+    Phase1IntegrityAlgorithms: Phase1IntegrityAlgorithmsList | None
+    Phase2IntegrityAlgorithms: Phase2IntegrityAlgorithmsList | None
+    Phase1DHGroupNumbers: Phase1DHGroupNumbersList | None
+    Phase2DHGroupNumbers: Phase2DHGroupNumbersList | None
+    IkeVersions: IKEVersionsList | None
+    StartupAction: String | None
+    LogOptions: VpnTunnelLogOptions | None
+    EnableTunnelLifecycleControl: Boolean | None
 
 
-TunnelOptionsList = List[TunnelOption]
+TunnelOptionsList = list[TunnelOption]
 
 
 class VpnConnectionOptions(TypedDict, total=False):
-    EnableAcceleration: Optional[Boolean]
-    StaticRoutesOnly: Optional[Boolean]
-    LocalIpv4NetworkCidr: Optional[String]
-    RemoteIpv4NetworkCidr: Optional[String]
-    LocalIpv6NetworkCidr: Optional[String]
-    RemoteIpv6NetworkCidr: Optional[String]
-    OutsideIpAddressType: Optional[String]
-    TransportTransitGatewayAttachmentId: Optional[String]
-    TunnelInsideIpVersion: Optional[TunnelInsideIpVersion]
-    TunnelOptions: Optional[TunnelOptionsList]
+    EnableAcceleration: Boolean | None
+    StaticRoutesOnly: Boolean | None
+    LocalIpv4NetworkCidr: String | None
+    RemoteIpv4NetworkCidr: String | None
+    LocalIpv6NetworkCidr: String | None
+    RemoteIpv6NetworkCidr: String | None
+    OutsideIpAddressType: String | None
+    TransportTransitGatewayAttachmentId: String | None
+    TunnelInsideIpVersion: TunnelInsideIpVersion | None
+    TunnelOptions: TunnelOptionsList | None
 
 
 class VpnConnection(TypedDict, total=False):
-    Category: Optional[String]
-    TransitGatewayId: Optional[String]
-    CoreNetworkArn: Optional[String]
-    CoreNetworkAttachmentArn: Optional[String]
-    GatewayAssociationState: Optional[GatewayAssociationState]
-    Options: Optional[VpnConnectionOptions]
-    Routes: Optional[VpnStaticRouteList]
-    Tags: Optional[TagList]
-    VgwTelemetry: Optional[VgwTelemetryList]
-    PreSharedKeyArn: Optional[String]
-    VpnConnectionId: Optional[String]
-    State: Optional[VpnState]
-    CustomerGatewayConfiguration: Optional[customerGatewayConfiguration]
-    Type: Optional[GatewayType]
-    CustomerGatewayId: Optional[String]
-    VpnGatewayId: Optional[String]
+    Category: String | None
+    TransitGatewayId: String | None
+    CoreNetworkArn: String | None
+    CoreNetworkAttachmentArn: String | None
+    GatewayAssociationState: GatewayAssociationState | None
+    Options: VpnConnectionOptions | None
+    Routes: VpnStaticRouteList | None
+    Tags: TagList | None
+    VgwTelemetry: VgwTelemetryList | None
+    PreSharedKeyArn: String | None
+    VpnConnectionId: String | None
+    State: VpnState | None
+    CustomerGatewayConfiguration: customerGatewayConfiguration | None
+    Type: GatewayType | None
+    CustomerGatewayId: String | None
+    VpnGatewayId: String | None
 
 
 class CreateVpnConnectionResult(TypedDict, total=False):
-    VpnConnection: Optional[VpnConnection]
+    VpnConnection: VpnConnection | None
 
 
 class CreateVpnConnectionRouteRequest(ServiceRequest):
@@ -11160,906 +11191,902 @@ class CreateVpnConnectionRouteRequest(ServiceRequest):
 
 
 class CreateVpnGatewayRequest(ServiceRequest):
-    AvailabilityZone: Optional[String]
+    AvailabilityZone: String | None
     Type: GatewayType
-    TagSpecifications: Optional[TagSpecificationList]
-    AmazonSideAsn: Optional[Long]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    AmazonSideAsn: Long | None
+    DryRun: Boolean | None
 
 
-VpcAttachmentList = List[VpcAttachment]
+VpcAttachmentList = list[VpcAttachment]
 
 
 class VpnGateway(TypedDict, total=False):
-    AmazonSideAsn: Optional[Long]
-    Tags: Optional[TagList]
-    VpnGatewayId: Optional[String]
-    State: Optional[VpnState]
-    Type: Optional[GatewayType]
-    AvailabilityZone: Optional[String]
-    VpcAttachments: Optional[VpcAttachmentList]
+    AmazonSideAsn: Long | None
+    Tags: TagList | None
+    VpnGatewayId: String | None
+    State: VpnState | None
+    Type: GatewayType | None
+    AvailabilityZone: String | None
+    VpcAttachments: VpcAttachmentList | None
 
 
 class CreateVpnGatewayResult(TypedDict, total=False):
-    VpnGateway: Optional[VpnGateway]
+    VpnGateway: VpnGateway | None
 
 
 class CreationDateCondition(TypedDict, total=False):
-    MaximumDaysSinceCreated: Optional[MaximumDaysSinceCreatedValue]
+    MaximumDaysSinceCreated: MaximumDaysSinceCreatedValue | None
 
 
 class CreationDateConditionRequest(TypedDict, total=False):
-    MaximumDaysSinceCreated: Optional[MaximumDaysSinceCreatedValue]
+    MaximumDaysSinceCreated: MaximumDaysSinceCreatedValue | None
 
 
-CustomerGatewayIdStringList = List[CustomerGatewayId]
-CustomerGatewayList = List[CustomerGateway]
+CustomerGatewayIdStringList = list[CustomerGatewayId]
+CustomerGatewayList = list[CustomerGateway]
 
 
 class DataQuery(TypedDict, total=False):
-    Id: Optional[String]
-    Source: Optional[String]
-    Destination: Optional[String]
-    Metric: Optional[MetricType]
-    Statistic: Optional[StatisticType]
-    Period: Optional[PeriodType]
+    Id: String | None
+    Source: String | None
+    Destination: String | None
+    Metric: MetricType | None
+    Statistic: StatisticType | None
+    Period: PeriodType | None
 
 
-DataQueries = List[DataQuery]
+DataQueries = list[DataQuery]
 
 
 class MetricPoint(TypedDict, total=False):
-    StartDate: Optional[MillisecondDateTime]
-    EndDate: Optional[MillisecondDateTime]
-    Value: Optional[Float]
-    Status: Optional[String]
+    StartDate: MillisecondDateTime | None
+    EndDate: MillisecondDateTime | None
+    Value: Float | None
+    Status: String | None
 
 
-MetricPoints = List[MetricPoint]
+MetricPoints = list[MetricPoint]
 
 
 class DataResponse(TypedDict, total=False):
-    Id: Optional[String]
-    Source: Optional[String]
-    Destination: Optional[String]
-    Metric: Optional[MetricType]
-    Statistic: Optional[StatisticType]
-    Period: Optional[PeriodType]
-    MetricPoints: Optional[MetricPoints]
+    Id: String | None
+    Source: String | None
+    Destination: String | None
+    Metric: MetricType | None
+    Statistic: StatisticType | None
+    Period: PeriodType | None
+    MetricPoints: MetricPoints | None
 
 
-DataResponses = List[DataResponse]
+DataResponses = list[DataResponse]
 
 
 class DeclarativePoliciesReport(TypedDict, total=False):
-    ReportId: Optional[String]
-    S3Bucket: Optional[String]
-    S3Prefix: Optional[String]
-    TargetId: Optional[String]
-    StartTime: Optional[MillisecondDateTime]
-    EndTime: Optional[MillisecondDateTime]
-    Status: Optional[ReportState]
-    Tags: Optional[TagList]
+    ReportId: String | None
+    S3Bucket: String | None
+    S3Prefix: String | None
+    TargetId: String | None
+    StartTime: MillisecondDateTime | None
+    EndTime: MillisecondDateTime | None
+    Status: ReportState | None
+    Tags: TagList | None
 
 
-DeclarativePoliciesReportList = List[DeclarativePoliciesReport]
+DeclarativePoliciesReportList = list[DeclarativePoliciesReport]
 
 
 class DeleteCapacityManagerDataExportRequest(ServiceRequest):
     CapacityManagerDataExportId: CapacityManagerDataExportId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteCapacityManagerDataExportResult(TypedDict, total=False):
-    CapacityManagerDataExportId: Optional[CapacityManagerDataExportId]
+    CapacityManagerDataExportId: CapacityManagerDataExportId | None
 
 
 class DeleteCarrierGatewayRequest(ServiceRequest):
     CarrierGatewayId: CarrierGatewayId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteCarrierGatewayResult(TypedDict, total=False):
-    CarrierGateway: Optional[CarrierGateway]
+    CarrierGateway: CarrierGateway | None
 
 
 class DeleteClientVpnEndpointRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteClientVpnEndpointResult(TypedDict, total=False):
-    Status: Optional[ClientVpnEndpointStatus]
+    Status: ClientVpnEndpointStatus | None
 
 
 class DeleteClientVpnRouteRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    TargetVpcSubnetId: Optional[SubnetId]
+    TargetVpcSubnetId: SubnetId | None
     DestinationCidrBlock: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteClientVpnRouteResult(TypedDict, total=False):
-    Status: Optional[ClientVpnRouteStatus]
+    Status: ClientVpnRouteStatus | None
 
 
 class DeleteCoipCidrRequest(ServiceRequest):
     Cidr: String
     CoipPoolId: Ipv4PoolCoipId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteCoipCidrResult(TypedDict, total=False):
-    CoipCidr: Optional[CoipCidr]
+    CoipCidr: CoipCidr | None
 
 
 class DeleteCoipPoolRequest(ServiceRequest):
     CoipPoolId: Ipv4PoolCoipId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteCoipPoolResult(TypedDict, total=False):
-    CoipPool: Optional[CoipPool]
+    CoipPool: CoipPool | None
 
 
 class DeleteCustomerGatewayRequest(ServiceRequest):
     CustomerGatewayId: CustomerGatewayId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteDhcpOptionsRequest(ServiceRequest):
     DhcpOptionsId: DhcpOptionsId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteEgressOnlyInternetGatewayRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     EgressOnlyInternetGatewayId: EgressOnlyInternetGatewayId
 
 
 class DeleteEgressOnlyInternetGatewayResult(TypedDict, total=False):
-    ReturnCode: Optional[Boolean]
+    ReturnCode: Boolean | None
 
 
 class DeleteFleetError(TypedDict, total=False):
-    Code: Optional[DeleteFleetErrorCode]
-    Message: Optional[String]
+    Code: DeleteFleetErrorCode | None
+    Message: String | None
 
 
 class DeleteFleetErrorItem(TypedDict, total=False):
-    Error: Optional[DeleteFleetError]
-    FleetId: Optional[FleetId]
+    Error: DeleteFleetError | None
+    FleetId: FleetId | None
 
 
-DeleteFleetErrorSet = List[DeleteFleetErrorItem]
+DeleteFleetErrorSet = list[DeleteFleetErrorItem]
 
 
 class DeleteFleetSuccessItem(TypedDict, total=False):
-    CurrentFleetState: Optional[FleetStateCode]
-    PreviousFleetState: Optional[FleetStateCode]
-    FleetId: Optional[FleetId]
+    CurrentFleetState: FleetStateCode | None
+    PreviousFleetState: FleetStateCode | None
+    FleetId: FleetId | None
 
 
-DeleteFleetSuccessSet = List[DeleteFleetSuccessItem]
-FleetIdSet = List[FleetId]
+DeleteFleetSuccessSet = list[DeleteFleetSuccessItem]
+FleetIdSet = list[FleetId]
 
 
 class DeleteFleetsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     FleetIds: FleetIdSet
     TerminateInstances: Boolean
 
 
 class DeleteFleetsResult(TypedDict, total=False):
-    SuccessfulFleetDeletions: Optional[DeleteFleetSuccessSet]
-    UnsuccessfulFleetDeletions: Optional[DeleteFleetErrorSet]
+    SuccessfulFleetDeletions: DeleteFleetSuccessSet | None
+    UnsuccessfulFleetDeletions: DeleteFleetErrorSet | None
 
 
-FlowLogIdList = List[VpcFlowLogId]
+FlowLogIdList = list[VpcFlowLogId]
 
 
 class DeleteFlowLogsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     FlowLogIds: FlowLogIdList
 
 
 class DeleteFlowLogsResult(TypedDict, total=False):
-    Unsuccessful: Optional[UnsuccessfulItemSet]
+    Unsuccessful: UnsuccessfulItemSet | None
 
 
 class DeleteFpgaImageRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     FpgaImageId: FpgaImageId
 
 
 class DeleteFpgaImageResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DeleteImageUsageReportRequest(ServiceRequest):
     ReportId: ImageUsageReportId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteImageUsageReportResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DeleteInstanceConnectEndpointRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceConnectEndpointId: InstanceConnectEndpointId
 
 
 class DeleteInstanceConnectEndpointResult(TypedDict, total=False):
-    InstanceConnectEndpoint: Optional[Ec2InstanceConnectEndpoint]
+    InstanceConnectEndpoint: Ec2InstanceConnectEndpoint | None
 
 
 class DeleteInstanceEventWindowRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ForceDelete: Optional[Boolean]
+    DryRun: Boolean | None
+    ForceDelete: Boolean | None
     InstanceEventWindowId: InstanceEventWindowId
 
 
 class InstanceEventWindowStateChange(TypedDict, total=False):
-    InstanceEventWindowId: Optional[InstanceEventWindowId]
-    State: Optional[InstanceEventWindowState]
+    InstanceEventWindowId: InstanceEventWindowId | None
+    State: InstanceEventWindowState | None
 
 
 class DeleteInstanceEventWindowResult(TypedDict, total=False):
-    InstanceEventWindowState: Optional[InstanceEventWindowStateChange]
+    InstanceEventWindowState: InstanceEventWindowStateChange | None
 
 
 class DeleteInternetGatewayRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InternetGatewayId: InternetGatewayId
 
 
 class DeleteIpamExternalResourceVerificationTokenRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamExternalResourceVerificationTokenId: IpamExternalResourceVerificationTokenId
 
 
 class DeleteIpamExternalResourceVerificationTokenResult(TypedDict, total=False):
-    IpamExternalResourceVerificationToken: Optional[IpamExternalResourceVerificationToken]
+    IpamExternalResourceVerificationToken: IpamExternalResourceVerificationToken | None
 
 
 class DeleteIpamPoolRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPoolId: IpamPoolId
-    Cascade: Optional[Boolean]
+    Cascade: Boolean | None
 
 
 class DeleteIpamPoolResult(TypedDict, total=False):
-    IpamPool: Optional[IpamPool]
+    IpamPool: IpamPool | None
 
 
 class DeleteIpamPrefixListResolverRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPrefixListResolverId: IpamPrefixListResolverId
 
 
 class DeleteIpamPrefixListResolverResult(TypedDict, total=False):
-    IpamPrefixListResolver: Optional[IpamPrefixListResolver]
+    IpamPrefixListResolver: IpamPrefixListResolver | None
 
 
 class DeleteIpamPrefixListResolverTargetRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPrefixListResolverTargetId: IpamPrefixListResolverTargetId
 
 
 class DeleteIpamPrefixListResolverTargetResult(TypedDict, total=False):
-    IpamPrefixListResolverTarget: Optional[IpamPrefixListResolverTarget]
+    IpamPrefixListResolverTarget: IpamPrefixListResolverTarget | None
 
 
 class DeleteIpamRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamId: IpamId
-    Cascade: Optional[Boolean]
+    Cascade: Boolean | None
 
 
 class DeleteIpamResourceDiscoveryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamResourceDiscoveryId: IpamResourceDiscoveryId
 
 
 class DeleteIpamResourceDiscoveryResult(TypedDict, total=False):
-    IpamResourceDiscovery: Optional[IpamResourceDiscovery]
+    IpamResourceDiscovery: IpamResourceDiscovery | None
 
 
 class DeleteIpamResult(TypedDict, total=False):
-    Ipam: Optional[Ipam]
+    Ipam: Ipam | None
 
 
 class DeleteIpamScopeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamScopeId: IpamScopeId
 
 
 class DeleteIpamScopeResult(TypedDict, total=False):
-    IpamScope: Optional[IpamScope]
+    IpamScope: IpamScope | None
 
 
 class DeleteKeyPairRequest(ServiceRequest):
-    KeyName: Optional[KeyPairNameWithResolver]
-    KeyPairId: Optional[KeyPairId]
-    DryRun: Optional[Boolean]
+    KeyName: KeyPairNameWithResolver | None
+    KeyPairId: KeyPairId | None
+    DryRun: Boolean | None
 
 
 class DeleteKeyPairResult(TypedDict, total=False):
-    Return: Optional[Boolean]
-    KeyPairId: Optional[String]
+    Return: Boolean | None
+    KeyPairId: String | None
 
 
 class DeleteLaunchTemplateRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    LaunchTemplateId: Optional[LaunchTemplateId]
-    LaunchTemplateName: Optional[LaunchTemplateName]
+    DryRun: Boolean | None
+    LaunchTemplateId: LaunchTemplateId | None
+    LaunchTemplateName: LaunchTemplateName | None
 
 
 class DeleteLaunchTemplateResult(TypedDict, total=False):
-    LaunchTemplate: Optional[LaunchTemplate]
+    LaunchTemplate: LaunchTemplate | None
 
 
-VersionStringList = List[String]
+VersionStringList = list[String]
 
 
 class DeleteLaunchTemplateVersionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    LaunchTemplateId: Optional[LaunchTemplateId]
-    LaunchTemplateName: Optional[LaunchTemplateName]
+    DryRun: Boolean | None
+    LaunchTemplateId: LaunchTemplateId | None
+    LaunchTemplateName: LaunchTemplateName | None
     Versions: VersionStringList
 
 
 class ResponseError(TypedDict, total=False):
-    Code: Optional[LaunchTemplateErrorCode]
-    Message: Optional[String]
+    Code: LaunchTemplateErrorCode | None
+    Message: String | None
 
 
 class DeleteLaunchTemplateVersionsResponseErrorItem(TypedDict, total=False):
-    LaunchTemplateId: Optional[String]
-    LaunchTemplateName: Optional[String]
-    VersionNumber: Optional[Long]
-    ResponseError: Optional[ResponseError]
+    LaunchTemplateId: String | None
+    LaunchTemplateName: String | None
+    VersionNumber: Long | None
+    ResponseError: ResponseError | None
 
 
-DeleteLaunchTemplateVersionsResponseErrorSet = List[DeleteLaunchTemplateVersionsResponseErrorItem]
+DeleteLaunchTemplateVersionsResponseErrorSet = list[DeleteLaunchTemplateVersionsResponseErrorItem]
 
 
 class DeleteLaunchTemplateVersionsResponseSuccessItem(TypedDict, total=False):
-    LaunchTemplateId: Optional[String]
-    LaunchTemplateName: Optional[String]
-    VersionNumber: Optional[Long]
+    LaunchTemplateId: String | None
+    LaunchTemplateName: String | None
+    VersionNumber: Long | None
 
 
-DeleteLaunchTemplateVersionsResponseSuccessSet = List[
+DeleteLaunchTemplateVersionsResponseSuccessSet = list[
     DeleteLaunchTemplateVersionsResponseSuccessItem
 ]
 
 
 class DeleteLaunchTemplateVersionsResult(TypedDict, total=False):
-    SuccessfullyDeletedLaunchTemplateVersions: Optional[
-        DeleteLaunchTemplateVersionsResponseSuccessSet
-    ]
-    UnsuccessfullyDeletedLaunchTemplateVersions: Optional[
-        DeleteLaunchTemplateVersionsResponseErrorSet
-    ]
+    SuccessfullyDeletedLaunchTemplateVersions: DeleteLaunchTemplateVersionsResponseSuccessSet | None
+    UnsuccessfullyDeletedLaunchTemplateVersions: DeleteLaunchTemplateVersionsResponseErrorSet | None
 
 
 class DeleteLocalGatewayRouteRequest(ServiceRequest):
-    DestinationCidrBlock: Optional[String]
+    DestinationCidrBlock: String | None
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
-    DryRun: Optional[Boolean]
-    DestinationPrefixListId: Optional[PrefixListResourceId]
+    DryRun: Boolean | None
+    DestinationPrefixListId: PrefixListResourceId | None
 
 
 class DeleteLocalGatewayRouteResult(TypedDict, total=False):
-    Route: Optional[LocalGatewayRoute]
+    Route: LocalGatewayRoute | None
 
 
 class DeleteLocalGatewayRouteTableRequest(ServiceRequest):
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteLocalGatewayRouteTableResult(TypedDict, total=False):
-    LocalGatewayRouteTable: Optional[LocalGatewayRouteTable]
+    LocalGatewayRouteTable: LocalGatewayRouteTable | None
 
 
 class DeleteLocalGatewayRouteTableVirtualInterfaceGroupAssociationRequest(ServiceRequest):
     LocalGatewayRouteTableVirtualInterfaceGroupAssociationId: (
         LocalGatewayRouteTableVirtualInterfaceGroupAssociationId
     )
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteLocalGatewayRouteTableVirtualInterfaceGroupAssociationResult(TypedDict, total=False):
-    LocalGatewayRouteTableVirtualInterfaceGroupAssociation: Optional[
-        LocalGatewayRouteTableVirtualInterfaceGroupAssociation
-    ]
+    LocalGatewayRouteTableVirtualInterfaceGroupAssociation: (
+        LocalGatewayRouteTableVirtualInterfaceGroupAssociation | None
+    )
 
 
 class DeleteLocalGatewayRouteTableVpcAssociationRequest(ServiceRequest):
     LocalGatewayRouteTableVpcAssociationId: LocalGatewayRouteTableVpcAssociationId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteLocalGatewayRouteTableVpcAssociationResult(TypedDict, total=False):
-    LocalGatewayRouteTableVpcAssociation: Optional[LocalGatewayRouteTableVpcAssociation]
+    LocalGatewayRouteTableVpcAssociation: LocalGatewayRouteTableVpcAssociation | None
 
 
 class DeleteLocalGatewayVirtualInterfaceGroupRequest(ServiceRequest):
     LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteLocalGatewayVirtualInterfaceGroupResult(TypedDict, total=False):
-    LocalGatewayVirtualInterfaceGroup: Optional[LocalGatewayVirtualInterfaceGroup]
+    LocalGatewayVirtualInterfaceGroup: LocalGatewayVirtualInterfaceGroup | None
 
 
 class DeleteLocalGatewayVirtualInterfaceRequest(ServiceRequest):
     LocalGatewayVirtualInterfaceId: LocalGatewayVirtualInterfaceId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteLocalGatewayVirtualInterfaceResult(TypedDict, total=False):
-    LocalGatewayVirtualInterface: Optional[LocalGatewayVirtualInterface]
+    LocalGatewayVirtualInterface: LocalGatewayVirtualInterface | None
 
 
 class DeleteManagedPrefixListRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     PrefixListId: PrefixListResourceId
 
 
 class DeleteManagedPrefixListResult(TypedDict, total=False):
-    PrefixList: Optional[ManagedPrefixList]
+    PrefixList: ManagedPrefixList | None
 
 
 class DeleteNatGatewayRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NatGatewayId: NatGatewayId
 
 
 class DeleteNatGatewayResult(TypedDict, total=False):
-    NatGatewayId: Optional[String]
+    NatGatewayId: String | None
 
 
 class DeleteNetworkAclEntryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NetworkAclId: NetworkAclId
     RuleNumber: Integer
     Egress: Boolean
 
 
 class DeleteNetworkAclRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NetworkAclId: NetworkAclId
 
 
 class DeleteNetworkInsightsAccessScopeAnalysisRequest(ServiceRequest):
     NetworkInsightsAccessScopeAnalysisId: NetworkInsightsAccessScopeAnalysisId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteNetworkInsightsAccessScopeAnalysisResult(TypedDict, total=False):
-    NetworkInsightsAccessScopeAnalysisId: Optional[NetworkInsightsAccessScopeAnalysisId]
+    NetworkInsightsAccessScopeAnalysisId: NetworkInsightsAccessScopeAnalysisId | None
 
 
 class DeleteNetworkInsightsAccessScopeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NetworkInsightsAccessScopeId: NetworkInsightsAccessScopeId
 
 
 class DeleteNetworkInsightsAccessScopeResult(TypedDict, total=False):
-    NetworkInsightsAccessScopeId: Optional[NetworkInsightsAccessScopeId]
+    NetworkInsightsAccessScopeId: NetworkInsightsAccessScopeId | None
 
 
 class DeleteNetworkInsightsAnalysisRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NetworkInsightsAnalysisId: NetworkInsightsAnalysisId
 
 
 class DeleteNetworkInsightsAnalysisResult(TypedDict, total=False):
-    NetworkInsightsAnalysisId: Optional[NetworkInsightsAnalysisId]
+    NetworkInsightsAnalysisId: NetworkInsightsAnalysisId | None
 
 
 class DeleteNetworkInsightsPathRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NetworkInsightsPathId: NetworkInsightsPathId
 
 
 class DeleteNetworkInsightsPathResult(TypedDict, total=False):
-    NetworkInsightsPathId: Optional[NetworkInsightsPathId]
+    NetworkInsightsPathId: NetworkInsightsPathId | None
 
 
 class DeleteNetworkInterfacePermissionRequest(ServiceRequest):
     NetworkInterfacePermissionId: NetworkInterfacePermissionId
-    Force: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    Force: Boolean | None
+    DryRun: Boolean | None
 
 
 class DeleteNetworkInterfacePermissionResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DeleteNetworkInterfaceRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NetworkInterfaceId: NetworkInterfaceId
 
 
 class DeletePlacementGroupRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     GroupName: PlacementGroupName
 
 
 class DeletePublicIpv4PoolRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     PoolId: Ipv4PoolEc2Id
-    NetworkBorderGroup: Optional[String]
+    NetworkBorderGroup: String | None
 
 
 class DeletePublicIpv4PoolResult(TypedDict, total=False):
-    ReturnValue: Optional[Boolean]
+    ReturnValue: Boolean | None
 
 
 class DeleteQueuedReservedInstancesError(TypedDict, total=False):
-    Code: Optional[DeleteQueuedReservedInstancesErrorCode]
-    Message: Optional[String]
+    Code: DeleteQueuedReservedInstancesErrorCode | None
+    Message: String | None
 
 
-DeleteQueuedReservedInstancesIdList = List[ReservationId]
+DeleteQueuedReservedInstancesIdList = list[ReservationId]
 
 
 class DeleteQueuedReservedInstancesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ReservedInstancesIds: DeleteQueuedReservedInstancesIdList
 
 
 class FailedQueuedPurchaseDeletion(TypedDict, total=False):
-    Error: Optional[DeleteQueuedReservedInstancesError]
-    ReservedInstancesId: Optional[String]
+    Error: DeleteQueuedReservedInstancesError | None
+    ReservedInstancesId: String | None
 
 
-FailedQueuedPurchaseDeletionSet = List[FailedQueuedPurchaseDeletion]
+FailedQueuedPurchaseDeletionSet = list[FailedQueuedPurchaseDeletion]
 
 
 class SuccessfulQueuedPurchaseDeletion(TypedDict, total=False):
-    ReservedInstancesId: Optional[String]
+    ReservedInstancesId: String | None
 
 
-SuccessfulQueuedPurchaseDeletionSet = List[SuccessfulQueuedPurchaseDeletion]
+SuccessfulQueuedPurchaseDeletionSet = list[SuccessfulQueuedPurchaseDeletion]
 
 
 class DeleteQueuedReservedInstancesResult(TypedDict, total=False):
-    SuccessfulQueuedPurchaseDeletions: Optional[SuccessfulQueuedPurchaseDeletionSet]
-    FailedQueuedPurchaseDeletions: Optional[FailedQueuedPurchaseDeletionSet]
+    SuccessfulQueuedPurchaseDeletions: SuccessfulQueuedPurchaseDeletionSet | None
+    FailedQueuedPurchaseDeletions: FailedQueuedPurchaseDeletionSet | None
 
 
 class DeleteRouteRequest(ServiceRequest):
-    DestinationPrefixListId: Optional[PrefixListResourceId]
-    DryRun: Optional[Boolean]
+    DestinationPrefixListId: PrefixListResourceId | None
+    DryRun: Boolean | None
     RouteTableId: RouteTableId
-    DestinationCidrBlock: Optional[String]
-    DestinationIpv6CidrBlock: Optional[String]
+    DestinationCidrBlock: String | None
+    DestinationIpv6CidrBlock: String | None
 
 
 class DeleteRouteServerEndpointRequest(ServiceRequest):
     RouteServerEndpointId: RouteServerEndpointId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteRouteServerEndpointResult(TypedDict, total=False):
-    RouteServerEndpoint: Optional[RouteServerEndpoint]
+    RouteServerEndpoint: RouteServerEndpoint | None
 
 
 class DeleteRouteServerPeerRequest(ServiceRequest):
     RouteServerPeerId: RouteServerPeerId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteRouteServerPeerResult(TypedDict, total=False):
-    RouteServerPeer: Optional[RouteServerPeer]
+    RouteServerPeer: RouteServerPeer | None
 
 
 class DeleteRouteServerRequest(ServiceRequest):
     RouteServerId: RouteServerId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteRouteServerResult(TypedDict, total=False):
-    RouteServer: Optional[RouteServer]
+    RouteServer: RouteServer | None
 
 
 class DeleteRouteTableRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     RouteTableId: RouteTableId
 
 
 class DeleteSecurityGroupRequest(ServiceRequest):
-    GroupId: Optional[SecurityGroupId]
-    GroupName: Optional[SecurityGroupName]
-    DryRun: Optional[Boolean]
+    GroupId: SecurityGroupId | None
+    GroupName: SecurityGroupName | None
+    DryRun: Boolean | None
 
 
 class DeleteSecurityGroupResult(TypedDict, total=False):
-    Return: Optional[Boolean]
-    GroupId: Optional[SecurityGroupId]
+    Return: Boolean | None
+    GroupId: SecurityGroupId | None
 
 
 class DeleteSnapshotRequest(ServiceRequest):
     SnapshotId: SnapshotId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteSnapshotReturnCode(TypedDict, total=False):
-    SnapshotId: Optional[SnapshotId]
-    ReturnCode: Optional[SnapshotReturnCodes]
+    SnapshotId: SnapshotId | None
+    ReturnCode: SnapshotReturnCodes | None
 
 
-DeleteSnapshotResultSet = List[DeleteSnapshotReturnCode]
+DeleteSnapshotResultSet = list[DeleteSnapshotReturnCode]
 
 
 class DeleteSpotDatafeedSubscriptionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteSubnetCidrReservationRequest(ServiceRequest):
     SubnetCidrReservationId: SubnetCidrReservationId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteSubnetCidrReservationResult(TypedDict, total=False):
-    DeletedSubnetCidrReservation: Optional[SubnetCidrReservation]
+    DeletedSubnetCidrReservation: SubnetCidrReservation | None
 
 
 class DeleteSubnetRequest(ServiceRequest):
     SubnetId: SubnetId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTagsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     Resources: ResourceIdList
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class DeleteTrafficMirrorFilterRequest(ServiceRequest):
     TrafficMirrorFilterId: TrafficMirrorFilterId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTrafficMirrorFilterResult(TypedDict, total=False):
-    TrafficMirrorFilterId: Optional[String]
+    TrafficMirrorFilterId: String | None
 
 
 class DeleteTrafficMirrorFilterRuleRequest(ServiceRequest):
     TrafficMirrorFilterRuleId: TrafficMirrorFilterRuleIdWithResolver
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTrafficMirrorFilterRuleResult(TypedDict, total=False):
-    TrafficMirrorFilterRuleId: Optional[String]
+    TrafficMirrorFilterRuleId: String | None
 
 
 class DeleteTrafficMirrorSessionRequest(ServiceRequest):
     TrafficMirrorSessionId: TrafficMirrorSessionId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTrafficMirrorSessionResult(TypedDict, total=False):
-    TrafficMirrorSessionId: Optional[String]
+    TrafficMirrorSessionId: String | None
 
 
 class DeleteTrafficMirrorTargetRequest(ServiceRequest):
     TrafficMirrorTargetId: TrafficMirrorTargetId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTrafficMirrorTargetResult(TypedDict, total=False):
-    TrafficMirrorTargetId: Optional[String]
+    TrafficMirrorTargetId: String | None
 
 
 class DeleteTransitGatewayConnectPeerRequest(ServiceRequest):
     TransitGatewayConnectPeerId: TransitGatewayConnectPeerId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayConnectPeerResult(TypedDict, total=False):
-    TransitGatewayConnectPeer: Optional[TransitGatewayConnectPeer]
+    TransitGatewayConnectPeer: TransitGatewayConnectPeer | None
 
 
 class DeleteTransitGatewayConnectRequest(ServiceRequest):
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayConnectResult(TypedDict, total=False):
-    TransitGatewayConnect: Optional[TransitGatewayConnect]
+    TransitGatewayConnect: TransitGatewayConnect | None
 
 
 class DeleteTransitGatewayMulticastDomainRequest(ServiceRequest):
     TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayMulticastDomainResult(TypedDict, total=False):
-    TransitGatewayMulticastDomain: Optional[TransitGatewayMulticastDomain]
+    TransitGatewayMulticastDomain: TransitGatewayMulticastDomain | None
 
 
 class DeleteTransitGatewayPeeringAttachmentRequest(ServiceRequest):
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayPeeringAttachmentResult(TypedDict, total=False):
-    TransitGatewayPeeringAttachment: Optional[TransitGatewayPeeringAttachment]
+    TransitGatewayPeeringAttachment: TransitGatewayPeeringAttachment | None
 
 
 class DeleteTransitGatewayPolicyTableRequest(ServiceRequest):
     TransitGatewayPolicyTableId: TransitGatewayPolicyTableId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayPolicyTableResult(TypedDict, total=False):
-    TransitGatewayPolicyTable: Optional[TransitGatewayPolicyTable]
+    TransitGatewayPolicyTable: TransitGatewayPolicyTable | None
 
 
 class DeleteTransitGatewayPrefixListReferenceRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     PrefixListId: PrefixListResourceId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayPrefixListReferenceResult(TypedDict, total=False):
-    TransitGatewayPrefixListReference: Optional[TransitGatewayPrefixListReference]
+    TransitGatewayPrefixListReference: TransitGatewayPrefixListReference | None
 
 
 class DeleteTransitGatewayRequest(ServiceRequest):
     TransitGatewayId: TransitGatewayId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayResult(TypedDict, total=False):
-    TransitGateway: Optional[TransitGateway]
+    TransitGateway: TransitGateway | None
 
 
 class DeleteTransitGatewayRouteRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     DestinationCidrBlock: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayRouteResult(TypedDict, total=False):
-    Route: Optional[TransitGatewayRoute]
+    Route: TransitGatewayRoute | None
 
 
 class DeleteTransitGatewayRouteTableAnnouncementRequest(ServiceRequest):
     TransitGatewayRouteTableAnnouncementId: TransitGatewayRouteTableAnnouncementId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayRouteTableAnnouncementResult(TypedDict, total=False):
-    TransitGatewayRouteTableAnnouncement: Optional[TransitGatewayRouteTableAnnouncement]
+    TransitGatewayRouteTableAnnouncement: TransitGatewayRouteTableAnnouncement | None
 
 
 class DeleteTransitGatewayRouteTableRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayRouteTableResult(TypedDict, total=False):
-    TransitGatewayRouteTable: Optional[TransitGatewayRouteTable]
+    TransitGatewayRouteTable: TransitGatewayRouteTable | None
 
 
 class DeleteTransitGatewayVpcAttachmentRequest(ServiceRequest):
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteTransitGatewayVpcAttachmentResult(TypedDict, total=False):
-    TransitGatewayVpcAttachment: Optional[TransitGatewayVpcAttachment]
+    TransitGatewayVpcAttachment: TransitGatewayVpcAttachment | None
 
 
 class DeleteVerifiedAccessEndpointRequest(ServiceRequest):
     VerifiedAccessEndpointId: VerifiedAccessEndpointId
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ClientToken: String | None
+    DryRun: Boolean | None
 
 
 class DeleteVerifiedAccessEndpointResult(TypedDict, total=False):
-    VerifiedAccessEndpoint: Optional[VerifiedAccessEndpoint]
+    VerifiedAccessEndpoint: VerifiedAccessEndpoint | None
 
 
 class DeleteVerifiedAccessGroupRequest(ServiceRequest):
     VerifiedAccessGroupId: VerifiedAccessGroupId
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ClientToken: String | None
+    DryRun: Boolean | None
 
 
 class DeleteVerifiedAccessGroupResult(TypedDict, total=False):
-    VerifiedAccessGroup: Optional[VerifiedAccessGroup]
+    VerifiedAccessGroup: VerifiedAccessGroup | None
 
 
 class DeleteVerifiedAccessInstanceRequest(ServiceRequest):
     VerifiedAccessInstanceId: VerifiedAccessInstanceId
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
 
 
 class DeleteVerifiedAccessInstanceResult(TypedDict, total=False):
-    VerifiedAccessInstance: Optional[VerifiedAccessInstance]
+    VerifiedAccessInstance: VerifiedAccessInstance | None
 
 
 class DeleteVerifiedAccessTrustProviderRequest(ServiceRequest):
     VerifiedAccessTrustProviderId: VerifiedAccessTrustProviderId
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
 
 
 class DeleteVerifiedAccessTrustProviderResult(TypedDict, total=False):
-    VerifiedAccessTrustProvider: Optional[VerifiedAccessTrustProvider]
+    VerifiedAccessTrustProvider: VerifiedAccessTrustProvider | None
 
 
 class DeleteVolumeRequest(ServiceRequest):
     VolumeId: VolumeId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteVpcBlockPublicAccessExclusionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ExclusionId: VpcBlockPublicAccessExclusionId
 
 
 class DeleteVpcBlockPublicAccessExclusionResult(TypedDict, total=False):
-    VpcBlockPublicAccessExclusion: Optional[VpcBlockPublicAccessExclusion]
+    VpcBlockPublicAccessExclusion: VpcBlockPublicAccessExclusion | None
 
 
 class DeleteVpcEndpointConnectionNotificationsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ConnectionNotificationIds: ConnectionNotificationIdsList
 
 
 class DeleteVpcEndpointConnectionNotificationsResult(TypedDict, total=False):
-    Unsuccessful: Optional[UnsuccessfulItemSet]
+    Unsuccessful: UnsuccessfulItemSet | None
 
 
-VpcEndpointServiceIdList = List[VpcEndpointServiceId]
+VpcEndpointServiceIdList = list[VpcEndpointServiceId]
 
 
 class DeleteVpcEndpointServiceConfigurationsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ServiceIds: VpcEndpointServiceIdList
 
 
 class DeleteVpcEndpointServiceConfigurationsResult(TypedDict, total=False):
-    Unsuccessful: Optional[UnsuccessfulItemSet]
+    Unsuccessful: UnsuccessfulItemSet | None
 
 
 class DeleteVpcEndpointsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     VpcEndpointIds: VpcEndpointIdList
 
 
 class DeleteVpcEndpointsResult(TypedDict, total=False):
-    Unsuccessful: Optional[UnsuccessfulItemSet]
+    Unsuccessful: UnsuccessfulItemSet | None
 
 
 class DeleteVpcPeeringConnectionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     VpcPeeringConnectionId: VpcPeeringConnectionId
 
 
 class DeleteVpcPeeringConnectionResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DeleteVpcRequest(ServiceRequest):
     VpcId: VpcId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteVpnConnectionRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeleteVpnConnectionRouteRequest(ServiceRequest):
@@ -12069,3399 +12096,3400 @@ class DeleteVpnConnectionRouteRequest(ServiceRequest):
 
 class DeleteVpnGatewayRequest(ServiceRequest):
     VpnGatewayId: VpnGatewayId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeprecationTimeCondition(TypedDict, total=False):
-    MaximumDaysSinceDeprecated: Optional[MaximumDaysSinceDeprecatedValue]
+    MaximumDaysSinceDeprecated: MaximumDaysSinceDeprecatedValue | None
 
 
 class DeprecationTimeConditionRequest(TypedDict, total=False):
-    MaximumDaysSinceDeprecated: Optional[MaximumDaysSinceDeprecatedValue]
+    MaximumDaysSinceDeprecated: MaximumDaysSinceDeprecatedValue | None
 
 
 class DeprovisionByoipCidrRequest(ServiceRequest):
     Cidr: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DeprovisionByoipCidrResult(TypedDict, total=False):
-    ByoipCidr: Optional[ByoipCidr]
+    ByoipCidr: ByoipCidr | None
 
 
 class DeprovisionIpamByoasnRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamId: IpamId
     Asn: String
 
 
 class DeprovisionIpamByoasnResult(TypedDict, total=False):
-    Byoasn: Optional[Byoasn]
+    Byoasn: Byoasn | None
 
 
 class DeprovisionIpamPoolCidrRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPoolId: IpamPoolId
-    Cidr: Optional[String]
+    Cidr: String | None
 
 
 class IpamPoolCidrFailureReason(TypedDict, total=False):
-    Code: Optional[IpamPoolCidrFailureCode]
-    Message: Optional[String]
+    Code: IpamPoolCidrFailureCode | None
+    Message: String | None
 
 
 class IpamPoolCidr(TypedDict, total=False):
-    Cidr: Optional[String]
-    State: Optional[IpamPoolCidrState]
-    FailureReason: Optional[IpamPoolCidrFailureReason]
-    IpamPoolCidrId: Optional[IpamPoolCidrId]
-    NetmaskLength: Optional[Integer]
+    Cidr: String | None
+    State: IpamPoolCidrState | None
+    FailureReason: IpamPoolCidrFailureReason | None
+    IpamPoolCidrId: IpamPoolCidrId | None
+    NetmaskLength: Integer | None
 
 
 class DeprovisionIpamPoolCidrResult(TypedDict, total=False):
-    IpamPoolCidr: Optional[IpamPoolCidr]
+    IpamPoolCidr: IpamPoolCidr | None
 
 
 class DeprovisionPublicIpv4PoolCidrRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     PoolId: Ipv4PoolEc2Id
     Cidr: String
 
 
-DeprovisionedAddressSet = List[String]
+DeprovisionedAddressSet = list[String]
 
 
 class DeprovisionPublicIpv4PoolCidrResult(TypedDict, total=False):
-    PoolId: Optional[Ipv4PoolEc2Id]
-    DeprovisionedAddresses: Optional[DeprovisionedAddressSet]
+    PoolId: Ipv4PoolEc2Id | None
+    DeprovisionedAddresses: DeprovisionedAddressSet | None
 
 
 class DeregisterImageRequest(ServiceRequest):
     ImageId: ImageId
-    DeleteAssociatedSnapshots: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    DeleteAssociatedSnapshots: Boolean | None
+    DryRun: Boolean | None
 
 
 class DeregisterImageResult(TypedDict, total=False):
-    Return: Optional[Boolean]
-    DeleteSnapshotResults: Optional[DeleteSnapshotResultSet]
+    Return: Boolean | None
+    DeleteSnapshotResults: DeleteSnapshotResultSet | None
 
 
-InstanceTagKeySet = List[String]
+InstanceTagKeySet = list[String]
 
 
 class DeregisterInstanceTagAttributeRequest(TypedDict, total=False):
-    IncludeAllTagsOfInstance: Optional[Boolean]
-    InstanceTagKeys: Optional[InstanceTagKeySet]
+    IncludeAllTagsOfInstance: Boolean | None
+    InstanceTagKeys: InstanceTagKeySet | None
 
 
 class DeregisterInstanceEventNotificationAttributesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceTagAttribute: DeregisterInstanceTagAttributeRequest
 
 
 class InstanceTagNotificationAttribute(TypedDict, total=False):
-    InstanceTagKeys: Optional[InstanceTagKeySet]
-    IncludeAllTagsOfInstance: Optional[Boolean]
+    InstanceTagKeys: InstanceTagKeySet | None
+    IncludeAllTagsOfInstance: Boolean | None
 
 
 class DeregisterInstanceEventNotificationAttributesResult(TypedDict, total=False):
-    InstanceTagAttribute: Optional[InstanceTagNotificationAttribute]
+    InstanceTagAttribute: InstanceTagNotificationAttribute | None
 
 
-TransitGatewayNetworkInterfaceIdList = List[NetworkInterfaceId]
+TransitGatewayNetworkInterfaceIdList = list[NetworkInterfaceId]
 
 
 class DeregisterTransitGatewayMulticastGroupMembersRequest(ServiceRequest):
-    TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
-    GroupIpAddress: Optional[String]
-    NetworkInterfaceIds: Optional[TransitGatewayNetworkInterfaceIdList]
-    DryRun: Optional[Boolean]
+    TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId | None
+    GroupIpAddress: String | None
+    NetworkInterfaceIds: TransitGatewayNetworkInterfaceIdList | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayMulticastDeregisteredGroupMembers(TypedDict, total=False):
-    TransitGatewayMulticastDomainId: Optional[String]
-    DeregisteredNetworkInterfaceIds: Optional[ValueStringList]
-    GroupIpAddress: Optional[String]
+    TransitGatewayMulticastDomainId: String | None
+    DeregisteredNetworkInterfaceIds: ValueStringList | None
+    GroupIpAddress: String | None
 
 
 class DeregisterTransitGatewayMulticastGroupMembersResult(TypedDict, total=False):
-    DeregisteredMulticastGroupMembers: Optional[TransitGatewayMulticastDeregisteredGroupMembers]
+    DeregisteredMulticastGroupMembers: TransitGatewayMulticastDeregisteredGroupMembers | None
 
 
 class DeregisterTransitGatewayMulticastGroupSourcesRequest(ServiceRequest):
-    TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
-    GroupIpAddress: Optional[String]
-    NetworkInterfaceIds: Optional[TransitGatewayNetworkInterfaceIdList]
-    DryRun: Optional[Boolean]
+    TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId | None
+    GroupIpAddress: String | None
+    NetworkInterfaceIds: TransitGatewayNetworkInterfaceIdList | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayMulticastDeregisteredGroupSources(TypedDict, total=False):
-    TransitGatewayMulticastDomainId: Optional[String]
-    DeregisteredNetworkInterfaceIds: Optional[ValueStringList]
-    GroupIpAddress: Optional[String]
+    TransitGatewayMulticastDomainId: String | None
+    DeregisteredNetworkInterfaceIds: ValueStringList | None
+    GroupIpAddress: String | None
 
 
 class DeregisterTransitGatewayMulticastGroupSourcesResult(TypedDict, total=False):
-    DeregisteredMulticastGroupSources: Optional[TransitGatewayMulticastDeregisteredGroupSources]
+    DeregisteredMulticastGroupSources: TransitGatewayMulticastDeregisteredGroupSources | None
 
 
 class DescribeAccountAttributesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    AttributeNames: Optional[AccountAttributeNameStringList]
+    DryRun: Boolean | None
+    AttributeNames: AccountAttributeNameStringList | None
 
 
 class DescribeAccountAttributesResult(TypedDict, total=False):
-    AccountAttributes: Optional[AccountAttributeList]
+    AccountAttributes: AccountAttributeList | None
 
 
 class DescribeAddressTransfersRequest(ServiceRequest):
-    AllocationIds: Optional[AllocationIdList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeAddressTransfersMaxResults]
-    DryRun: Optional[Boolean]
+    AllocationIds: AllocationIdList | None
+    NextToken: String | None
+    MaxResults: DescribeAddressTransfersMaxResults | None
+    DryRun: Boolean | None
 
 
 class DescribeAddressTransfersResult(TypedDict, total=False):
-    AddressTransfers: Optional[AddressTransferList]
-    NextToken: Optional[String]
+    AddressTransfers: AddressTransferList | None
+    NextToken: String | None
 
 
 class DescribeAddressesAttributeRequest(ServiceRequest):
-    AllocationIds: Optional[AllocationIds]
-    Attribute: Optional[AddressAttributeName]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[AddressMaxResults]
-    DryRun: Optional[Boolean]
+    AllocationIds: AllocationIds | None
+    Attribute: AddressAttributeName | None
+    NextToken: NextToken | None
+    MaxResults: AddressMaxResults | None
+    DryRun: Boolean | None
 
 
 class DescribeAddressesAttributeResult(TypedDict, total=False):
-    Addresses: Optional[AddressSet]
-    NextToken: Optional[NextToken]
+    Addresses: AddressSet | None
+    NextToken: NextToken | None
 
 
 class Filter(TypedDict, total=False):
-    Name: Optional[String]
-    Values: Optional[ValueStringList]
+    Name: String | None
+    Values: ValueStringList | None
 
 
-FilterList = List[Filter]
-PublicIpStringList = List[String]
+FilterList = list[Filter]
+PublicIpStringList = list[String]
 
 
 class DescribeAddressesRequest(ServiceRequest):
-    PublicIps: Optional[PublicIpStringList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    AllocationIds: Optional[AllocationIdList]
+    PublicIps: PublicIpStringList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    AllocationIds: AllocationIdList | None
 
 
 class DescribeAddressesResult(TypedDict, total=False):
-    Addresses: Optional[AddressList]
+    Addresses: AddressList | None
 
 
 class DescribeAggregateIdFormatRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class IdFormat(TypedDict, total=False):
-    Deadline: Optional[DateTime]
-    Resource: Optional[String]
-    UseLongIds: Optional[Boolean]
+    Deadline: DateTime | None
+    Resource: String | None
+    UseLongIds: Boolean | None
 
 
-IdFormatList = List[IdFormat]
+IdFormatList = list[IdFormat]
 
 
 class DescribeAggregateIdFormatResult(TypedDict, total=False):
-    UseLongIdsAggregated: Optional[Boolean]
-    Statuses: Optional[IdFormatList]
+    UseLongIdsAggregated: Boolean | None
+    Statuses: IdFormatList | None
 
 
-ZoneIdStringList = List[String]
-ZoneNameStringList = List[String]
+ZoneIdStringList = list[String]
+ZoneNameStringList = list[String]
 
 
 class DescribeAvailabilityZonesRequest(ServiceRequest):
-    ZoneNames: Optional[ZoneNameStringList]
-    ZoneIds: Optional[ZoneIdStringList]
-    AllAvailabilityZones: Optional[Boolean]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    ZoneNames: ZoneNameStringList | None
+    ZoneIds: ZoneIdStringList | None
+    AllAvailabilityZones: Boolean | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class DescribeAvailabilityZonesResult(TypedDict, total=False):
-    AvailabilityZones: Optional[AvailabilityZoneList]
+    AvailabilityZones: AvailabilityZoneList | None
 
 
 class DescribeAwsNetworkPerformanceMetricSubscriptionsRequest(ServiceRequest):
-    MaxResults: Optional[MaxResultsParam]
-    NextToken: Optional[String]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    MaxResults: MaxResultsParam | None
+    NextToken: String | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class Subscription(TypedDict, total=False):
-    Source: Optional[String]
-    Destination: Optional[String]
-    Metric: Optional[MetricType]
-    Statistic: Optional[StatisticType]
-    Period: Optional[PeriodType]
+    Source: String | None
+    Destination: String | None
+    Metric: MetricType | None
+    Statistic: StatisticType | None
+    Period: PeriodType | None
 
 
-SubscriptionList = List[Subscription]
+SubscriptionList = list[Subscription]
 
 
 class DescribeAwsNetworkPerformanceMetricSubscriptionsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    Subscriptions: Optional[SubscriptionList]
+    NextToken: String | None
+    Subscriptions: SubscriptionList | None
 
 
 class DescribeBundleTasksRequest(ServiceRequest):
-    BundleIds: Optional[BundleIdStringList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    BundleIds: BundleIdStringList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class DescribeBundleTasksResult(TypedDict, total=False):
-    BundleTasks: Optional[BundleTaskList]
+    BundleTasks: BundleTaskList | None
 
 
 class DescribeByoipCidrsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     MaxResults: DescribeByoipCidrsMaxResults
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class DescribeByoipCidrsResult(TypedDict, total=False):
-    ByoipCidrs: Optional[ByoipCidrSet]
-    NextToken: Optional[String]
+    ByoipCidrs: ByoipCidrSet | None
+    NextToken: String | None
 
 
 class DescribeCapacityBlockExtensionHistoryRequest(ServiceRequest):
-    CapacityReservationIds: Optional[CapacityReservationIdSet]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeFutureCapacityMaxResults]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    CapacityReservationIds: CapacityReservationIdSet | None
+    NextToken: String | None
+    MaxResults: DescribeFutureCapacityMaxResults | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class DescribeCapacityBlockExtensionHistoryResult(TypedDict, total=False):
-    CapacityBlockExtensions: Optional[CapacityBlockExtensionSet]
-    NextToken: Optional[String]
+    CapacityBlockExtensions: CapacityBlockExtensionSet | None
+    NextToken: String | None
 
 
 class DescribeCapacityBlockExtensionOfferingsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     CapacityBlockExtensionDurationHours: Integer
     CapacityReservationId: CapacityReservationId
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeCapacityBlockExtensionOfferingsMaxResults]
+    NextToken: String | None
+    MaxResults: DescribeCapacityBlockExtensionOfferingsMaxResults | None
 
 
 class DescribeCapacityBlockExtensionOfferingsResult(TypedDict, total=False):
-    CapacityBlockExtensionOfferings: Optional[CapacityBlockExtensionOfferingSet]
-    NextToken: Optional[String]
+    CapacityBlockExtensionOfferings: CapacityBlockExtensionOfferingSet | None
+    NextToken: String | None
 
 
 class DescribeCapacityBlockOfferingsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    InstanceType: Optional[String]
-    InstanceCount: Optional[Integer]
-    StartDateRange: Optional[MillisecondDateTime]
-    EndDateRange: Optional[MillisecondDateTime]
+    DryRun: Boolean | None
+    InstanceType: String | None
+    InstanceCount: Integer | None
+    StartDateRange: MillisecondDateTime | None
+    EndDateRange: MillisecondDateTime | None
     CapacityDurationHours: Integer
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeCapacityBlockOfferingsMaxResults]
-    UltraserverType: Optional[String]
-    UltraserverCount: Optional[Integer]
+    NextToken: String | None
+    MaxResults: DescribeCapacityBlockOfferingsMaxResults | None
+    UltraserverType: String | None
+    UltraserverCount: Integer | None
 
 
 class DescribeCapacityBlockOfferingsResult(TypedDict, total=False):
-    CapacityBlockOfferings: Optional[CapacityBlockOfferingSet]
-    NextToken: Optional[String]
+    CapacityBlockOfferings: CapacityBlockOfferingSet | None
+    NextToken: String | None
 
 
 class DescribeCapacityBlockStatusRequest(ServiceRequest):
-    CapacityBlockIds: Optional[CapacityBlockIds]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeCapacityBlockStatusMaxResults]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    CapacityBlockIds: CapacityBlockIds | None
+    NextToken: String | None
+    MaxResults: DescribeCapacityBlockStatusMaxResults | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class DescribeCapacityBlockStatusResult(TypedDict, total=False):
-    CapacityBlockStatuses: Optional[CapacityBlockStatusSet]
-    NextToken: Optional[String]
+    CapacityBlockStatuses: CapacityBlockStatusSet | None
+    NextToken: String | None
 
 
 class DescribeCapacityBlocksRequest(ServiceRequest):
-    CapacityBlockIds: Optional[CapacityBlockIds]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeCapacityBlocksMaxResults]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    CapacityBlockIds: CapacityBlockIds | None
+    NextToken: String | None
+    MaxResults: DescribeCapacityBlocksMaxResults | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class DescribeCapacityBlocksResult(TypedDict, total=False):
-    CapacityBlocks: Optional[CapacityBlockSet]
-    NextToken: Optional[String]
+    CapacityBlocks: CapacityBlockSet | None
+    NextToken: String | None
 
 
 class DescribeCapacityManagerDataExportsRequest(ServiceRequest):
-    CapacityManagerDataExportIds: Optional[CapacityManagerDataExportIdSet]
-    MaxResults: Optional[DescribeCapacityManagerDataExportsRequestMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    CapacityManagerDataExportIds: CapacityManagerDataExportIdSet | None
+    MaxResults: DescribeCapacityManagerDataExportsRequestMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class DescribeCapacityManagerDataExportsResult(TypedDict, total=False):
-    CapacityManagerDataExports: Optional[CapacityManagerDataExportResponseSet]
-    NextToken: Optional[String]
+    CapacityManagerDataExports: CapacityManagerDataExportResponseSet | None
+    NextToken: String | None
 
 
 class DescribeCapacityReservationBillingRequestsRequest(ServiceRequest):
-    CapacityReservationIds: Optional[CapacityReservationIdSet]
+    CapacityReservationIds: CapacityReservationIdSet | None
     Role: CallerRole
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeCapacityReservationBillingRequestsRequestMaxResults]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    NextToken: String | None
+    MaxResults: DescribeCapacityReservationBillingRequestsRequestMaxResults | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class DescribeCapacityReservationBillingRequestsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    CapacityReservationBillingRequests: Optional[CapacityReservationBillingRequestSet]
+    NextToken: String | None
+    CapacityReservationBillingRequests: CapacityReservationBillingRequestSet | None
 
 
 class DescribeCapacityReservationFleetsRequest(ServiceRequest):
-    CapacityReservationFleetIds: Optional[CapacityReservationFleetIdSet]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeCapacityReservationFleetsMaxResults]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    CapacityReservationFleetIds: CapacityReservationFleetIdSet | None
+    NextToken: String | None
+    MaxResults: DescribeCapacityReservationFleetsMaxResults | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class DescribeCapacityReservationFleetsResult(TypedDict, total=False):
-    CapacityReservationFleets: Optional[CapacityReservationFleetSet]
-    NextToken: Optional[String]
+    CapacityReservationFleets: CapacityReservationFleetSet | None
+    NextToken: String | None
 
 
 class DescribeCapacityReservationTopologyRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeCapacityReservationTopologyMaxResults]
-    CapacityReservationIds: Optional[CapacityReservationIdSet]
-    Filters: Optional[FilterList]
+    DryRun: Boolean | None
+    NextToken: String | None
+    MaxResults: DescribeCapacityReservationTopologyMaxResults | None
+    CapacityReservationIds: CapacityReservationIdSet | None
+    Filters: FilterList | None
 
 
 class DescribeCapacityReservationTopologyResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    CapacityReservations: Optional[CapacityReservationTopologySet]
+    NextToken: String | None
+    CapacityReservations: CapacityReservationTopologySet | None
 
 
 class DescribeCapacityReservationsRequest(ServiceRequest):
-    CapacityReservationIds: Optional[CapacityReservationIdSet]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeCapacityReservationsMaxResults]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    CapacityReservationIds: CapacityReservationIdSet | None
+    NextToken: String | None
+    MaxResults: DescribeCapacityReservationsMaxResults | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class DescribeCapacityReservationsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    CapacityReservations: Optional[CapacityReservationSet]
+    NextToken: String | None
+    CapacityReservations: CapacityReservationSet | None
 
 
 class DescribeCarrierGatewaysRequest(ServiceRequest):
-    CarrierGatewayIds: Optional[CarrierGatewayIdSet]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[CarrierGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    CarrierGatewayIds: CarrierGatewayIdSet | None
+    Filters: FilterList | None
+    MaxResults: CarrierGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class DescribeCarrierGatewaysResult(TypedDict, total=False):
-    CarrierGateways: Optional[CarrierGatewaySet]
-    NextToken: Optional[String]
+    CarrierGateways: CarrierGatewaySet | None
+    NextToken: String | None
 
 
-InstanceIdStringList = List[InstanceId]
+InstanceIdStringList = list[InstanceId]
 
 
 class DescribeClassicLinkInstancesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    InstanceIds: Optional[InstanceIdStringList]
-    Filters: Optional[FilterList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeClassicLinkInstancesMaxResults]
+    DryRun: Boolean | None
+    InstanceIds: InstanceIdStringList | None
+    Filters: FilterList | None
+    NextToken: String | None
+    MaxResults: DescribeClassicLinkInstancesMaxResults | None
 
 
 class DescribeClassicLinkInstancesResult(TypedDict, total=False):
-    Instances: Optional[ClassicLinkInstanceList]
-    NextToken: Optional[String]
+    Instances: ClassicLinkInstanceList | None
+    NextToken: String | None
 
 
 class DescribeClientVpnAuthorizationRulesRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    DryRun: Optional[Boolean]
-    NextToken: Optional[NextToken]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DescribeClientVpnAuthorizationRulesMaxResults]
+    DryRun: Boolean | None
+    NextToken: NextToken | None
+    Filters: FilterList | None
+    MaxResults: DescribeClientVpnAuthorizationRulesMaxResults | None
 
 
 class DescribeClientVpnAuthorizationRulesResult(TypedDict, total=False):
-    AuthorizationRules: Optional[AuthorizationRuleSet]
-    NextToken: Optional[NextToken]
+    AuthorizationRules: AuthorizationRuleSet | None
+    NextToken: NextToken | None
 
 
 class DescribeClientVpnConnectionsRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    Filters: Optional[FilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[DescribeClientVpnConnectionsMaxResults]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    NextToken: NextToken | None
+    MaxResults: DescribeClientVpnConnectionsMaxResults | None
+    DryRun: Boolean | None
 
 
 class DescribeClientVpnConnectionsResult(TypedDict, total=False):
-    Connections: Optional[ClientVpnConnectionSet]
-    NextToken: Optional[NextToken]
+    Connections: ClientVpnConnectionSet | None
+    NextToken: NextToken | None
 
 
 class DescribeClientVpnEndpointsRequest(ServiceRequest):
-    ClientVpnEndpointIds: Optional[ClientVpnEndpointIdList]
-    MaxResults: Optional[DescribeClientVpnEndpointMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    ClientVpnEndpointIds: ClientVpnEndpointIdList | None
+    MaxResults: DescribeClientVpnEndpointMaxResults | None
+    NextToken: NextToken | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
-EndpointSet = List[ClientVpnEndpoint]
+EndpointSet = list[ClientVpnEndpoint]
 
 
 class DescribeClientVpnEndpointsResult(TypedDict, total=False):
-    ClientVpnEndpoints: Optional[EndpointSet]
-    NextToken: Optional[NextToken]
+    ClientVpnEndpoints: EndpointSet | None
+    NextToken: NextToken | None
 
 
 class DescribeClientVpnRoutesRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DescribeClientVpnRoutesMaxResults]
-    NextToken: Optional[NextToken]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: DescribeClientVpnRoutesMaxResults | None
+    NextToken: NextToken | None
+    DryRun: Boolean | None
 
 
 class DescribeClientVpnRoutesResult(TypedDict, total=False):
-    Routes: Optional[ClientVpnRouteSet]
-    NextToken: Optional[NextToken]
+    Routes: ClientVpnRouteSet | None
+    NextToken: NextToken | None
 
 
 class DescribeClientVpnTargetNetworksRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    AssociationIds: Optional[ValueStringList]
-    MaxResults: Optional[DescribeClientVpnTargetNetworksMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    AssociationIds: ValueStringList | None
+    MaxResults: DescribeClientVpnTargetNetworksMaxResults | None
+    NextToken: NextToken | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class TargetNetwork(TypedDict, total=False):
-    AssociationId: Optional[String]
-    VpcId: Optional[String]
-    TargetNetworkId: Optional[String]
-    ClientVpnEndpointId: Optional[String]
-    Status: Optional[AssociationStatus]
-    SecurityGroups: Optional[ValueStringList]
+    AssociationId: String | None
+    VpcId: String | None
+    TargetNetworkId: String | None
+    ClientVpnEndpointId: String | None
+    Status: AssociationStatus | None
+    SecurityGroups: ValueStringList | None
 
 
-TargetNetworkSet = List[TargetNetwork]
+TargetNetworkSet = list[TargetNetwork]
 
 
 class DescribeClientVpnTargetNetworksResult(TypedDict, total=False):
-    ClientVpnTargetNetworks: Optional[TargetNetworkSet]
-    NextToken: Optional[NextToken]
+    ClientVpnTargetNetworks: TargetNetworkSet | None
+    NextToken: NextToken | None
 
 
 class DescribeCoipPoolsRequest(ServiceRequest):
-    PoolIds: Optional[CoipPoolIdSet]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[CoipPoolMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    PoolIds: CoipPoolIdSet | None
+    Filters: FilterList | None
+    MaxResults: CoipPoolMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class DescribeCoipPoolsResult(TypedDict, total=False):
-    CoipPools: Optional[CoipPoolSet]
-    NextToken: Optional[String]
+    CoipPools: CoipPoolSet | None
+    NextToken: String | None
 
 
-DescribeConversionTaskList = List[ConversionTask]
+DescribeConversionTaskList = list[ConversionTask]
 
 
 class DescribeConversionTasksRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ConversionTaskIds: Optional[ConversionIdStringList]
+    DryRun: Boolean | None
+    ConversionTaskIds: ConversionIdStringList | None
 
 
 class DescribeConversionTasksResult(TypedDict, total=False):
-    ConversionTasks: Optional[DescribeConversionTaskList]
+    ConversionTasks: DescribeConversionTaskList | None
 
 
 class DescribeCustomerGatewaysRequest(ServiceRequest):
-    CustomerGatewayIds: Optional[CustomerGatewayIdStringList]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    CustomerGatewayIds: CustomerGatewayIdStringList | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class DescribeCustomerGatewaysResult(TypedDict, total=False):
-    CustomerGateways: Optional[CustomerGatewayList]
+    CustomerGateways: CustomerGatewayList | None
 
 
 class DescribeDeclarativePoliciesReportsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    NextToken: Optional[String]
-    MaxResults: Optional[DeclarativePoliciesMaxResults]
-    ReportIds: Optional[ValueStringList]
+    DryRun: Boolean | None
+    NextToken: String | None
+    MaxResults: DeclarativePoliciesMaxResults | None
+    ReportIds: ValueStringList | None
 
 
 class DescribeDeclarativePoliciesReportsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    Reports: Optional[DeclarativePoliciesReportList]
+    NextToken: String | None
+    Reports: DeclarativePoliciesReportList | None
 
 
-DhcpOptionsIdStringList = List[DhcpOptionsId]
+DhcpOptionsIdStringList = list[DhcpOptionsId]
 
 
 class DescribeDhcpOptionsRequest(ServiceRequest):
-    DhcpOptionsIds: Optional[DhcpOptionsIdStringList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeDhcpOptionsMaxResults]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    DhcpOptionsIds: DhcpOptionsIdStringList | None
+    NextToken: String | None
+    MaxResults: DescribeDhcpOptionsMaxResults | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
-DhcpOptionsList = List[DhcpOptions]
+DhcpOptionsList = list[DhcpOptions]
 
 
 class DescribeDhcpOptionsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    DhcpOptions: Optional[DhcpOptionsList]
+    NextToken: String | None
+    DhcpOptions: DhcpOptionsList | None
 
 
-EgressOnlyInternetGatewayIdList = List[EgressOnlyInternetGatewayId]
+EgressOnlyInternetGatewayIdList = list[EgressOnlyInternetGatewayId]
 
 
 class DescribeEgressOnlyInternetGatewaysRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    EgressOnlyInternetGatewayIds: Optional[EgressOnlyInternetGatewayIdList]
-    MaxResults: Optional[DescribeEgressOnlyInternetGatewaysMaxResults]
-    NextToken: Optional[String]
-    Filters: Optional[FilterList]
+    DryRun: Boolean | None
+    EgressOnlyInternetGatewayIds: EgressOnlyInternetGatewayIdList | None
+    MaxResults: DescribeEgressOnlyInternetGatewaysMaxResults | None
+    NextToken: String | None
+    Filters: FilterList | None
 
 
-EgressOnlyInternetGatewayList = List[EgressOnlyInternetGateway]
+EgressOnlyInternetGatewayList = list[EgressOnlyInternetGateway]
 
 
 class DescribeEgressOnlyInternetGatewaysResult(TypedDict, total=False):
-    EgressOnlyInternetGateways: Optional[EgressOnlyInternetGatewayList]
-    NextToken: Optional[String]
+    EgressOnlyInternetGateways: EgressOnlyInternetGatewayList | None
+    NextToken: String | None
 
 
-ElasticGpuIdSet = List[ElasticGpuId]
+ElasticGpuIdSet = list[ElasticGpuId]
 
 
 class DescribeElasticGpusRequest(ServiceRequest):
-    ElasticGpuIds: Optional[ElasticGpuIdSet]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DescribeElasticGpusMaxResults]
-    NextToken: Optional[String]
+    ElasticGpuIds: ElasticGpuIdSet | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: DescribeElasticGpusMaxResults | None
+    NextToken: String | None
 
 
 class ElasticGpuHealth(TypedDict, total=False):
-    Status: Optional[ElasticGpuStatus]
+    Status: ElasticGpuStatus | None
 
 
 class ElasticGpus(TypedDict, total=False):
-    ElasticGpuId: Optional[String]
-    AvailabilityZone: Optional[String]
-    ElasticGpuType: Optional[String]
-    ElasticGpuHealth: Optional[ElasticGpuHealth]
-    ElasticGpuState: Optional[ElasticGpuState]
-    InstanceId: Optional[String]
-    Tags: Optional[TagList]
+    ElasticGpuId: String | None
+    AvailabilityZone: String | None
+    ElasticGpuType: String | None
+    ElasticGpuHealth: ElasticGpuHealth | None
+    ElasticGpuState: ElasticGpuState | None
+    InstanceId: String | None
+    Tags: TagList | None
 
 
-ElasticGpuSet = List[ElasticGpus]
+ElasticGpuSet = list[ElasticGpus]
 
 
 class DescribeElasticGpusResult(TypedDict, total=False):
-    ElasticGpuSet: Optional[ElasticGpuSet]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    ElasticGpuSet: ElasticGpuSet | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
-ExportImageTaskIdList = List[ExportImageTaskId]
+ExportImageTaskIdList = list[ExportImageTaskId]
 
 
 class DescribeExportImageTasksRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    ExportImageTaskIds: Optional[ExportImageTaskIdList]
-    MaxResults: Optional[DescribeExportImageTasksMaxResults]
-    NextToken: Optional[NextToken]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    ExportImageTaskIds: ExportImageTaskIdList | None
+    MaxResults: DescribeExportImageTasksMaxResults | None
+    NextToken: NextToken | None
 
 
 class ExportTaskS3Location(TypedDict, total=False):
-    S3Bucket: Optional[String]
-    S3Prefix: Optional[String]
+    S3Bucket: String | None
+    S3Prefix: String | None
 
 
 class ExportImageTask(TypedDict, total=False):
-    Description: Optional[String]
-    ExportImageTaskId: Optional[String]
-    ImageId: Optional[String]
-    Progress: Optional[String]
-    S3ExportLocation: Optional[ExportTaskS3Location]
-    Status: Optional[String]
-    StatusMessage: Optional[String]
-    Tags: Optional[TagList]
+    Description: String | None
+    ExportImageTaskId: String | None
+    ImageId: String | None
+    Progress: String | None
+    S3ExportLocation: ExportTaskS3Location | None
+    Status: String | None
+    StatusMessage: String | None
+    Tags: TagList | None
 
 
-ExportImageTaskList = List[ExportImageTask]
+ExportImageTaskList = list[ExportImageTask]
 
 
 class DescribeExportImageTasksResult(TypedDict, total=False):
-    ExportImageTasks: Optional[ExportImageTaskList]
-    NextToken: Optional[NextToken]
+    ExportImageTasks: ExportImageTaskList | None
+    NextToken: NextToken | None
 
 
-ExportTaskIdStringList = List[ExportTaskId]
+ExportTaskIdStringList = list[ExportTaskId]
 
 
 class DescribeExportTasksRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    ExportTaskIds: Optional[ExportTaskIdStringList]
+    Filters: FilterList | None
+    ExportTaskIds: ExportTaskIdStringList | None
 
 
-ExportTaskList = List[ExportTask]
+ExportTaskList = list[ExportTask]
 
 
 class DescribeExportTasksResult(TypedDict, total=False):
-    ExportTasks: Optional[ExportTaskList]
+    ExportTasks: ExportTaskList | None
 
 
-FastLaunchImageIdList = List[ImageId]
+FastLaunchImageIdList = list[ImageId]
 
 
 class DescribeFastLaunchImagesRequest(ServiceRequest):
-    ImageIds: Optional[FastLaunchImageIdList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DescribeFastLaunchImagesRequestMaxResults]
-    NextToken: Optional[NextToken]
-    DryRun: Optional[Boolean]
+    ImageIds: FastLaunchImageIdList | None
+    Filters: FilterList | None
+    MaxResults: DescribeFastLaunchImagesRequestMaxResults | None
+    NextToken: NextToken | None
+    DryRun: Boolean | None
 
 
 class FastLaunchLaunchTemplateSpecificationResponse(TypedDict, total=False):
-    LaunchTemplateId: Optional[LaunchTemplateId]
-    LaunchTemplateName: Optional[String]
-    Version: Optional[String]
+    LaunchTemplateId: LaunchTemplateId | None
+    LaunchTemplateName: String | None
+    Version: String | None
 
 
 class FastLaunchSnapshotConfigurationResponse(TypedDict, total=False):
-    TargetResourceCount: Optional[Integer]
+    TargetResourceCount: Integer | None
 
 
 class DescribeFastLaunchImagesSuccessItem(TypedDict, total=False):
-    ImageId: Optional[ImageId]
-    ResourceType: Optional[FastLaunchResourceType]
-    SnapshotConfiguration: Optional[FastLaunchSnapshotConfigurationResponse]
-    LaunchTemplate: Optional[FastLaunchLaunchTemplateSpecificationResponse]
-    MaxParallelLaunches: Optional[Integer]
-    OwnerId: Optional[String]
-    State: Optional[FastLaunchStateCode]
-    StateTransitionReason: Optional[String]
-    StateTransitionTime: Optional[MillisecondDateTime]
+    ImageId: ImageId | None
+    ResourceType: FastLaunchResourceType | None
+    SnapshotConfiguration: FastLaunchSnapshotConfigurationResponse | None
+    LaunchTemplate: FastLaunchLaunchTemplateSpecificationResponse | None
+    MaxParallelLaunches: Integer | None
+    OwnerId: String | None
+    State: FastLaunchStateCode | None
+    StateTransitionReason: String | None
+    StateTransitionTime: MillisecondDateTime | None
 
 
-DescribeFastLaunchImagesSuccessSet = List[DescribeFastLaunchImagesSuccessItem]
+DescribeFastLaunchImagesSuccessSet = list[DescribeFastLaunchImagesSuccessItem]
 
 
 class DescribeFastLaunchImagesResult(TypedDict, total=False):
-    FastLaunchImages: Optional[DescribeFastLaunchImagesSuccessSet]
-    NextToken: Optional[NextToken]
+    FastLaunchImages: DescribeFastLaunchImagesSuccessSet | None
+    NextToken: NextToken | None
 
 
 class DescribeFastSnapshotRestoreSuccessItem(TypedDict, total=False):
-    SnapshotId: Optional[String]
-    AvailabilityZone: Optional[String]
-    State: Optional[FastSnapshotRestoreStateCode]
-    StateTransitionReason: Optional[String]
-    OwnerId: Optional[String]
-    OwnerAlias: Optional[String]
-    EnablingTime: Optional[MillisecondDateTime]
-    OptimizingTime: Optional[MillisecondDateTime]
-    EnabledTime: Optional[MillisecondDateTime]
-    DisablingTime: Optional[MillisecondDateTime]
-    DisabledTime: Optional[MillisecondDateTime]
+    SnapshotId: String | None
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    State: FastSnapshotRestoreStateCode | None
+    StateTransitionReason: String | None
+    OwnerId: String | None
+    OwnerAlias: String | None
+    EnablingTime: MillisecondDateTime | None
+    OptimizingTime: MillisecondDateTime | None
+    EnabledTime: MillisecondDateTime | None
+    DisablingTime: MillisecondDateTime | None
+    DisabledTime: MillisecondDateTime | None
 
 
-DescribeFastSnapshotRestoreSuccessSet = List[DescribeFastSnapshotRestoreSuccessItem]
+DescribeFastSnapshotRestoreSuccessSet = list[DescribeFastSnapshotRestoreSuccessItem]
 
 
 class DescribeFastSnapshotRestoresRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DescribeFastSnapshotRestoresMaxResults]
-    NextToken: Optional[NextToken]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: DescribeFastSnapshotRestoresMaxResults | None
+    NextToken: NextToken | None
+    DryRun: Boolean | None
 
 
 class DescribeFastSnapshotRestoresResult(TypedDict, total=False):
-    FastSnapshotRestores: Optional[DescribeFastSnapshotRestoreSuccessSet]
-    NextToken: Optional[NextToken]
+    FastSnapshotRestores: DescribeFastSnapshotRestoreSuccessSet | None
+    NextToken: NextToken | None
 
 
 class DescribeFleetError(TypedDict, total=False):
-    LaunchTemplateAndOverrides: Optional[LaunchTemplateAndOverridesResponse]
-    Lifecycle: Optional[InstanceLifecycle]
-    ErrorCode: Optional[String]
-    ErrorMessage: Optional[String]
+    LaunchTemplateAndOverrides: LaunchTemplateAndOverridesResponse | None
+    Lifecycle: InstanceLifecycle | None
+    ErrorCode: String | None
+    ErrorMessage: String | None
 
 
 class DescribeFleetHistoryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    EventType: Optional[FleetEventType]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    EventType: FleetEventType | None
+    MaxResults: Integer | None
+    NextToken: String | None
     FleetId: FleetId
     StartTime: DateTime
 
 
 class EventInformation(TypedDict, total=False):
-    EventDescription: Optional[String]
-    EventSubType: Optional[String]
-    InstanceId: Optional[String]
+    EventDescription: String | None
+    EventSubType: String | None
+    InstanceId: String | None
 
 
 class HistoryRecordEntry(TypedDict, total=False):
-    EventInformation: Optional[EventInformation]
-    EventType: Optional[FleetEventType]
-    Timestamp: Optional[DateTime]
+    EventInformation: EventInformation | None
+    EventType: FleetEventType | None
+    Timestamp: DateTime | None
 
 
-HistoryRecordSet = List[HistoryRecordEntry]
+HistoryRecordSet = list[HistoryRecordEntry]
 
 
 class DescribeFleetHistoryResult(TypedDict, total=False):
-    HistoryRecords: Optional[HistoryRecordSet]
-    LastEvaluatedTime: Optional[DateTime]
-    NextToken: Optional[String]
-    FleetId: Optional[FleetId]
-    StartTime: Optional[DateTime]
+    HistoryRecords: HistoryRecordSet | None
+    LastEvaluatedTime: DateTime | None
+    NextToken: String | None
+    FleetId: FleetId | None
+    StartTime: DateTime | None
 
 
 class DescribeFleetInstancesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    MaxResults: Integer | None
+    NextToken: String | None
     FleetId: FleetId
-    Filters: Optional[FilterList]
+    Filters: FilterList | None
 
 
 class DescribeFleetInstancesResult(TypedDict, total=False):
-    ActiveInstances: Optional[ActiveInstanceSet]
-    NextToken: Optional[String]
-    FleetId: Optional[FleetId]
+    ActiveInstances: ActiveInstanceSet | None
+    NextToken: String | None
+    FleetId: FleetId | None
 
 
-DescribeFleetsErrorSet = List[DescribeFleetError]
+DescribeFleetsErrorSet = list[DescribeFleetError]
 
 
 class DescribeFleetsInstances(TypedDict, total=False):
-    LaunchTemplateAndOverrides: Optional[LaunchTemplateAndOverridesResponse]
-    Lifecycle: Optional[InstanceLifecycle]
-    InstanceIds: Optional[InstanceIdsSet]
-    InstanceType: Optional[InstanceType]
-    Platform: Optional[PlatformValues]
+    LaunchTemplateAndOverrides: LaunchTemplateAndOverridesResponse | None
+    Lifecycle: InstanceLifecycle | None
+    InstanceIds: InstanceIdsSet | None
+    InstanceType: InstanceType | None
+    Platform: PlatformValues | None
 
 
-DescribeFleetsInstancesSet = List[DescribeFleetsInstances]
+DescribeFleetsInstancesSet = list[DescribeFleetsInstances]
 
 
 class DescribeFleetsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
-    FleetIds: Optional[FleetIdSet]
-    Filters: Optional[FilterList]
+    DryRun: Boolean | None
+    MaxResults: Integer | None
+    NextToken: String | None
+    FleetIds: FleetIdSet | None
+    Filters: FilterList | None
 
 
 class OnDemandOptions(TypedDict, total=False):
-    AllocationStrategy: Optional[FleetOnDemandAllocationStrategy]
-    CapacityReservationOptions: Optional[CapacityReservationOptions]
-    SingleInstanceType: Optional[Boolean]
-    SingleAvailabilityZone: Optional[Boolean]
-    MinTargetCapacity: Optional[Integer]
-    MaxTotalPrice: Optional[String]
+    AllocationStrategy: FleetOnDemandAllocationStrategy | None
+    CapacityReservationOptions: CapacityReservationOptions | None
+    SingleInstanceType: Boolean | None
+    SingleAvailabilityZone: Boolean | None
+    MinTargetCapacity: Integer | None
+    MaxTotalPrice: String | None
 
 
 class FleetSpotCapacityRebalance(TypedDict, total=False):
-    ReplacementStrategy: Optional[FleetReplacementStrategy]
-    TerminationDelay: Optional[Integer]
+    ReplacementStrategy: FleetReplacementStrategy | None
+    TerminationDelay: Integer | None
 
 
 class FleetSpotMaintenanceStrategies(TypedDict, total=False):
-    CapacityRebalance: Optional[FleetSpotCapacityRebalance]
+    CapacityRebalance: FleetSpotCapacityRebalance | None
 
 
 class SpotOptions(TypedDict, total=False):
-    AllocationStrategy: Optional[SpotAllocationStrategy]
-    MaintenanceStrategies: Optional[FleetSpotMaintenanceStrategies]
-    InstanceInterruptionBehavior: Optional[SpotInstanceInterruptionBehavior]
-    InstancePoolsToUseCount: Optional[Integer]
-    SingleInstanceType: Optional[Boolean]
-    SingleAvailabilityZone: Optional[Boolean]
-    MinTargetCapacity: Optional[Integer]
-    MaxTotalPrice: Optional[String]
+    AllocationStrategy: SpotAllocationStrategy | None
+    MaintenanceStrategies: FleetSpotMaintenanceStrategies | None
+    InstanceInterruptionBehavior: SpotInstanceInterruptionBehavior | None
+    InstancePoolsToUseCount: Integer | None
+    SingleInstanceType: Boolean | None
+    SingleAvailabilityZone: Boolean | None
+    MinTargetCapacity: Integer | None
+    MaxTotalPrice: String | None
 
 
 class TargetCapacitySpecification(TypedDict, total=False):
-    TotalTargetCapacity: Optional[Integer]
-    OnDemandTargetCapacity: Optional[Integer]
-    SpotTargetCapacity: Optional[Integer]
-    DefaultTargetCapacityType: Optional[DefaultTargetCapacityType]
-    TargetCapacityUnitType: Optional[TargetCapacityUnitType]
+    TotalTargetCapacity: Integer | None
+    OnDemandTargetCapacity: Integer | None
+    SpotTargetCapacity: Integer | None
+    DefaultTargetCapacityType: DefaultTargetCapacityType | None
+    TargetCapacityUnitType: TargetCapacityUnitType | None
 
 
-FleetLaunchTemplateOverridesList = List[FleetLaunchTemplateOverrides]
+FleetLaunchTemplateOverridesList = list[FleetLaunchTemplateOverrides]
 
 
 class FleetLaunchTemplateConfig(TypedDict, total=False):
-    LaunchTemplateSpecification: Optional[FleetLaunchTemplateSpecification]
-    Overrides: Optional[FleetLaunchTemplateOverridesList]
+    LaunchTemplateSpecification: FleetLaunchTemplateSpecification | None
+    Overrides: FleetLaunchTemplateOverridesList | None
 
 
-FleetLaunchTemplateConfigList = List[FleetLaunchTemplateConfig]
+FleetLaunchTemplateConfigList = list[FleetLaunchTemplateConfig]
 
 
 class FleetData(TypedDict, total=False):
-    ActivityStatus: Optional[FleetActivityStatus]
-    CreateTime: Optional[DateTime]
-    FleetId: Optional[FleetId]
-    FleetState: Optional[FleetStateCode]
-    ClientToken: Optional[String]
-    ExcessCapacityTerminationPolicy: Optional[FleetExcessCapacityTerminationPolicy]
-    FulfilledCapacity: Optional[Double]
-    FulfilledOnDemandCapacity: Optional[Double]
-    LaunchTemplateConfigs: Optional[FleetLaunchTemplateConfigList]
-    TargetCapacitySpecification: Optional[TargetCapacitySpecification]
-    TerminateInstancesWithExpiration: Optional[Boolean]
-    Type: Optional[FleetType]
-    ValidFrom: Optional[DateTime]
-    ValidUntil: Optional[DateTime]
-    ReplaceUnhealthyInstances: Optional[Boolean]
-    SpotOptions: Optional[SpotOptions]
-    OnDemandOptions: Optional[OnDemandOptions]
-    Tags: Optional[TagList]
-    Errors: Optional[DescribeFleetsErrorSet]
-    Instances: Optional[DescribeFleetsInstancesSet]
-    Context: Optional[String]
+    ActivityStatus: FleetActivityStatus | None
+    CreateTime: DateTime | None
+    FleetId: FleetId | None
+    FleetState: FleetStateCode | None
+    ClientToken: String | None
+    ExcessCapacityTerminationPolicy: FleetExcessCapacityTerminationPolicy | None
+    FulfilledCapacity: Double | None
+    FulfilledOnDemandCapacity: Double | None
+    LaunchTemplateConfigs: FleetLaunchTemplateConfigList | None
+    TargetCapacitySpecification: TargetCapacitySpecification | None
+    TerminateInstancesWithExpiration: Boolean | None
+    Type: FleetType | None
+    ValidFrom: DateTime | None
+    ValidUntil: DateTime | None
+    ReplaceUnhealthyInstances: Boolean | None
+    SpotOptions: SpotOptions | None
+    OnDemandOptions: OnDemandOptions | None
+    Tags: TagList | None
+    Errors: DescribeFleetsErrorSet | None
+    Instances: DescribeFleetsInstancesSet | None
+    Context: String | None
 
 
-FleetSet = List[FleetData]
+FleetSet = list[FleetData]
 
 
 class DescribeFleetsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    Fleets: Optional[FleetSet]
+    NextToken: String | None
+    Fleets: FleetSet | None
 
 
 class DescribeFlowLogsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filter: Optional[FilterList]
-    FlowLogIds: Optional[FlowLogIdList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    Filter: FilterList | None
+    FlowLogIds: FlowLogIdList | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
 class DestinationOptionsResponse(TypedDict, total=False):
-    FileFormat: Optional[DestinationFileFormat]
-    HiveCompatiblePartitions: Optional[Boolean]
-    PerHourPartition: Optional[Boolean]
+    FileFormat: DestinationFileFormat | None
+    HiveCompatiblePartitions: Boolean | None
+    PerHourPartition: Boolean | None
 
 
 class FlowLog(TypedDict, total=False):
-    CreationTime: Optional[MillisecondDateTime]
-    DeliverLogsErrorMessage: Optional[String]
-    DeliverLogsPermissionArn: Optional[String]
-    DeliverCrossAccountRole: Optional[String]
-    DeliverLogsStatus: Optional[String]
-    FlowLogId: Optional[String]
-    FlowLogStatus: Optional[String]
-    LogGroupName: Optional[String]
-    ResourceId: Optional[String]
-    TrafficType: Optional[TrafficType]
-    LogDestinationType: Optional[LogDestinationType]
-    LogDestination: Optional[String]
-    LogFormat: Optional[String]
-    Tags: Optional[TagList]
-    MaxAggregationInterval: Optional[Integer]
-    DestinationOptions: Optional[DestinationOptionsResponse]
+    CreationTime: MillisecondDateTime | None
+    DeliverLogsErrorMessage: String | None
+    DeliverLogsPermissionArn: String | None
+    DeliverCrossAccountRole: String | None
+    DeliverLogsStatus: String | None
+    FlowLogId: String | None
+    FlowLogStatus: String | None
+    LogGroupName: String | None
+    ResourceId: String | None
+    TrafficType: TrafficType | None
+    LogDestinationType: LogDestinationType | None
+    LogDestination: String | None
+    LogFormat: String | None
+    Tags: TagList | None
+    MaxAggregationInterval: Integer | None
+    DestinationOptions: DestinationOptionsResponse | None
 
 
-FlowLogSet = List[FlowLog]
+FlowLogSet = list[FlowLog]
 
 
 class DescribeFlowLogsResult(TypedDict, total=False):
-    FlowLogs: Optional[FlowLogSet]
-    NextToken: Optional[String]
+    FlowLogs: FlowLogSet | None
+    NextToken: String | None
 
 
 class DescribeFpgaImageAttributeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     FpgaImageId: FpgaImageId
     Attribute: FpgaImageAttributeName
 
 
 class ProductCode(TypedDict, total=False):
-    ProductCodeId: Optional[String]
-    ProductCodeType: Optional[ProductCodeValues]
+    ProductCodeId: String | None
+    ProductCodeType: ProductCodeValues | None
 
 
-ProductCodeList = List[ProductCode]
+ProductCodeList = list[ProductCode]
 
 
 class LoadPermission(TypedDict, total=False):
-    UserId: Optional[String]
-    Group: Optional[PermissionGroup]
+    UserId: String | None
+    Group: PermissionGroup | None
 
 
-LoadPermissionList = List[LoadPermission]
+LoadPermissionList = list[LoadPermission]
 
 
 class FpgaImageAttribute(TypedDict, total=False):
-    FpgaImageId: Optional[String]
-    Name: Optional[String]
-    Description: Optional[String]
-    LoadPermissions: Optional[LoadPermissionList]
-    ProductCodes: Optional[ProductCodeList]
+    FpgaImageId: String | None
+    Name: String | None
+    Description: String | None
+    LoadPermissions: LoadPermissionList | None
+    ProductCodes: ProductCodeList | None
 
 
 class DescribeFpgaImageAttributeResult(TypedDict, total=False):
-    FpgaImageAttribute: Optional[FpgaImageAttribute]
+    FpgaImageAttribute: FpgaImageAttribute | None
 
 
-OwnerStringList = List[String]
-FpgaImageIdList = List[FpgaImageId]
+OwnerStringList = list[String]
+FpgaImageIdList = list[FpgaImageId]
 
 
 class DescribeFpgaImagesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    FpgaImageIds: Optional[FpgaImageIdList]
-    Owners: Optional[OwnerStringList]
-    Filters: Optional[FilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[DescribeFpgaImagesMaxResults]
+    DryRun: Boolean | None
+    FpgaImageIds: FpgaImageIdList | None
+    Owners: OwnerStringList | None
+    Filters: FilterList | None
+    NextToken: NextToken | None
+    MaxResults: DescribeFpgaImagesMaxResults | None
 
 
-InstanceTypesList = List[String]
+InstanceTypesList = list[String]
 
 
 class FpgaImageState(TypedDict, total=False):
-    Code: Optional[FpgaImageStateCode]
-    Message: Optional[String]
+    Code: FpgaImageStateCode | None
+    Message: String | None
 
 
 class PciId(TypedDict, total=False):
-    DeviceId: Optional[String]
-    VendorId: Optional[String]
-    SubsystemId: Optional[String]
-    SubsystemVendorId: Optional[String]
+    DeviceId: String | None
+    VendorId: String | None
+    SubsystemId: String | None
+    SubsystemVendorId: String | None
 
 
 class FpgaImage(TypedDict, total=False):
-    FpgaImageId: Optional[String]
-    FpgaImageGlobalId: Optional[String]
-    Name: Optional[String]
-    Description: Optional[String]
-    ShellVersion: Optional[String]
-    PciId: Optional[PciId]
-    State: Optional[FpgaImageState]
-    CreateTime: Optional[DateTime]
-    UpdateTime: Optional[DateTime]
-    OwnerId: Optional[String]
-    OwnerAlias: Optional[String]
-    ProductCodes: Optional[ProductCodeList]
-    Tags: Optional[TagList]
-    Public: Optional[Boolean]
-    DataRetentionSupport: Optional[Boolean]
-    InstanceTypes: Optional[InstanceTypesList]
+    FpgaImageId: String | None
+    FpgaImageGlobalId: String | None
+    Name: String | None
+    Description: String | None
+    ShellVersion: String | None
+    PciId: PciId | None
+    State: FpgaImageState | None
+    CreateTime: DateTime | None
+    UpdateTime: DateTime | None
+    OwnerId: String | None
+    OwnerAlias: String | None
+    ProductCodes: ProductCodeList | None
+    Tags: TagList | None
+    Public: Boolean | None
+    DataRetentionSupport: Boolean | None
+    InstanceTypes: InstanceTypesList | None
 
 
-FpgaImageList = List[FpgaImage]
+FpgaImageList = list[FpgaImage]
 
 
 class DescribeFpgaImagesResult(TypedDict, total=False):
-    FpgaImages: Optional[FpgaImageList]
-    NextToken: Optional[NextToken]
+    FpgaImages: FpgaImageList | None
+    NextToken: NextToken | None
 
 
 class DescribeHostReservationOfferingsRequest(ServiceRequest):
-    Filter: Optional[FilterList]
-    MaxDuration: Optional[Integer]
-    MaxResults: Optional[DescribeHostReservationsMaxResults]
-    MinDuration: Optional[Integer]
-    NextToken: Optional[String]
-    OfferingId: Optional[OfferingId]
+    Filter: FilterList | None
+    MaxDuration: Integer | None
+    MaxResults: DescribeHostReservationsMaxResults | None
+    MinDuration: Integer | None
+    NextToken: String | None
+    OfferingId: OfferingId | None
 
 
 class HostOffering(TypedDict, total=False):
-    CurrencyCode: Optional[CurrencyCodeValues]
-    Duration: Optional[Integer]
-    HourlyPrice: Optional[String]
-    InstanceFamily: Optional[String]
-    OfferingId: Optional[OfferingId]
-    PaymentOption: Optional[PaymentOption]
-    UpfrontPrice: Optional[String]
+    CurrencyCode: CurrencyCodeValues | None
+    Duration: Integer | None
+    HourlyPrice: String | None
+    InstanceFamily: String | None
+    OfferingId: OfferingId | None
+    PaymentOption: PaymentOption | None
+    UpfrontPrice: String | None
 
 
-HostOfferingSet = List[HostOffering]
+HostOfferingSet = list[HostOffering]
 
 
 class DescribeHostReservationOfferingsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    OfferingSet: Optional[HostOfferingSet]
+    NextToken: String | None
+    OfferingSet: HostOfferingSet | None
 
 
-HostReservationIdSet = List[HostReservationId]
+HostReservationIdSet = list[HostReservationId]
 
 
 class DescribeHostReservationsRequest(ServiceRequest):
-    Filter: Optional[FilterList]
-    HostReservationIdSet: Optional[HostReservationIdSet]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    Filter: FilterList | None
+    HostReservationIdSet: HostReservationIdSet | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
-ResponseHostIdSet = List[String]
+ResponseHostIdSet = list[String]
 
 
 class HostReservation(TypedDict, total=False):
-    Count: Optional[Integer]
-    CurrencyCode: Optional[CurrencyCodeValues]
-    Duration: Optional[Integer]
-    End: Optional[DateTime]
-    HostIdSet: Optional[ResponseHostIdSet]
-    HostReservationId: Optional[HostReservationId]
-    HourlyPrice: Optional[String]
-    InstanceFamily: Optional[String]
-    OfferingId: Optional[OfferingId]
-    PaymentOption: Optional[PaymentOption]
-    Start: Optional[DateTime]
-    State: Optional[ReservationState]
-    UpfrontPrice: Optional[String]
-    Tags: Optional[TagList]
+    Count: Integer | None
+    CurrencyCode: CurrencyCodeValues | None
+    Duration: Integer | None
+    End: DateTime | None
+    HostIdSet: ResponseHostIdSet | None
+    HostReservationId: HostReservationId | None
+    HourlyPrice: String | None
+    InstanceFamily: String | None
+    OfferingId: OfferingId | None
+    PaymentOption: PaymentOption | None
+    Start: DateTime | None
+    State: ReservationState | None
+    UpfrontPrice: String | None
+    Tags: TagList | None
 
 
-HostReservationSet = List[HostReservation]
+HostReservationSet = list[HostReservation]
 
 
 class DescribeHostReservationsResult(TypedDict, total=False):
-    HostReservationSet: Optional[HostReservationSet]
-    NextToken: Optional[String]
+    HostReservationSet: HostReservationSet | None
+    NextToken: String | None
 
 
-RequestHostIdList = List[DedicatedHostId]
+RequestHostIdList = list[DedicatedHostId]
 
 
 class DescribeHostsRequest(ServiceRequest):
-    HostIds: Optional[RequestHostIdList]
-    NextToken: Optional[String]
-    MaxResults: Optional[Integer]
-    Filter: Optional[FilterList]
+    HostIds: RequestHostIdList | None
+    NextToken: String | None
+    MaxResults: Integer | None
+    Filter: FilterList | None
 
 
 class HostInstance(TypedDict, total=False):
-    InstanceId: Optional[String]
-    InstanceType: Optional[String]
-    OwnerId: Optional[String]
+    InstanceId: String | None
+    InstanceType: String | None
+    OwnerId: String | None
 
 
-HostInstanceList = List[HostInstance]
+HostInstanceList = list[HostInstance]
 
 
 class HostProperties(TypedDict, total=False):
-    Cores: Optional[Integer]
-    InstanceType: Optional[String]
-    InstanceFamily: Optional[String]
-    Sockets: Optional[Integer]
-    TotalVCpus: Optional[Integer]
+    Cores: Integer | None
+    InstanceType: String | None
+    InstanceFamily: String | None
+    Sockets: Integer | None
+    TotalVCpus: Integer | None
 
 
 class Host(TypedDict, total=False):
-    AutoPlacement: Optional[AutoPlacement]
-    AvailabilityZone: Optional[String]
-    AvailableCapacity: Optional[AvailableCapacity]
-    ClientToken: Optional[String]
-    HostId: Optional[String]
-    HostProperties: Optional[HostProperties]
-    HostReservationId: Optional[String]
-    Instances: Optional[HostInstanceList]
-    State: Optional[AllocationState]
-    AllocationTime: Optional[DateTime]
-    ReleaseTime: Optional[DateTime]
-    Tags: Optional[TagList]
-    HostRecovery: Optional[HostRecovery]
-    AllowsMultipleInstanceTypes: Optional[AllowsMultipleInstanceTypes]
-    OwnerId: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    MemberOfServiceLinkedResourceGroup: Optional[Boolean]
-    OutpostArn: Optional[String]
-    HostMaintenance: Optional[HostMaintenance]
-    AssetId: Optional[AssetId]
+    AutoPlacement: AutoPlacement | None
+    AvailabilityZone: String | None
+    AvailableCapacity: AvailableCapacity | None
+    ClientToken: String | None
+    HostId: String | None
+    HostProperties: HostProperties | None
+    HostReservationId: String | None
+    Instances: HostInstanceList | None
+    State: AllocationState | None
+    AllocationTime: DateTime | None
+    ReleaseTime: DateTime | None
+    Tags: TagList | None
+    HostRecovery: HostRecovery | None
+    AllowsMultipleInstanceTypes: AllowsMultipleInstanceTypes | None
+    OwnerId: String | None
+    AvailabilityZoneId: String | None
+    MemberOfServiceLinkedResourceGroup: Boolean | None
+    OutpostArn: String | None
+    HostMaintenance: HostMaintenance | None
+    AssetId: AssetId | None
 
 
-HostList = List[Host]
+HostList = list[Host]
 
 
 class DescribeHostsResult(TypedDict, total=False):
-    Hosts: Optional[HostList]
-    NextToken: Optional[String]
+    Hosts: HostList | None
+    NextToken: String | None
 
 
 class DescribeIamInstanceProfileAssociationsRequest(ServiceRequest):
-    AssociationIds: Optional[AssociationIdList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DescribeIamInstanceProfileAssociationsMaxResults]
-    NextToken: Optional[NextToken]
+    AssociationIds: AssociationIdList | None
+    Filters: FilterList | None
+    MaxResults: DescribeIamInstanceProfileAssociationsMaxResults | None
+    NextToken: NextToken | None
 
 
-IamInstanceProfileAssociationSet = List[IamInstanceProfileAssociation]
+IamInstanceProfileAssociationSet = list[IamInstanceProfileAssociation]
 
 
 class DescribeIamInstanceProfileAssociationsResult(TypedDict, total=False):
-    IamInstanceProfileAssociations: Optional[IamInstanceProfileAssociationSet]
-    NextToken: Optional[NextToken]
+    IamInstanceProfileAssociations: IamInstanceProfileAssociationSet | None
+    NextToken: NextToken | None
 
 
 class DescribeIdFormatRequest(ServiceRequest):
-    Resource: Optional[String]
+    Resource: String | None
 
 
 class DescribeIdFormatResult(TypedDict, total=False):
-    Statuses: Optional[IdFormatList]
+    Statuses: IdFormatList | None
 
 
 class DescribeIdentityIdFormatRequest(ServiceRequest):
-    Resource: Optional[String]
+    Resource: String | None
     PrincipalArn: String
 
 
 class DescribeIdentityIdFormatResult(TypedDict, total=False):
-    Statuses: Optional[IdFormatList]
+    Statuses: IdFormatList | None
 
 
 class DescribeImageAttributeRequest(ServiceRequest):
     Attribute: ImageAttributeName
     ImageId: ImageId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
-DescribeImageReferencesImageIdStringList = List[ImageId]
-ResourceTypeOptionValuesList = List[ResourceTypeOptionValue]
+DescribeImageReferencesImageIdStringList = list[ImageId]
+ResourceTypeOptionValuesList = list[ResourceTypeOptionValue]
 
 
 class ResourceTypeOption(TypedDict, total=False):
-    OptionName: Optional[ImageReferenceOptionName]
-    OptionValues: Optional[ResourceTypeOptionValuesList]
+    OptionName: ImageReferenceOptionName | None
+    OptionValues: ResourceTypeOptionValuesList | None
 
 
-ResourceTypeOptionList = List[ResourceTypeOption]
+ResourceTypeOptionList = list[ResourceTypeOption]
 
 
 class ResourceTypeRequest(TypedDict, total=False):
-    ResourceType: Optional[ImageReferenceResourceType]
-    ResourceTypeOptions: Optional[ResourceTypeOptionList]
+    ResourceType: ImageReferenceResourceType | None
+    ResourceTypeOptions: ResourceTypeOptionList | None
 
 
-ResourceTypeRequestList = List[ResourceTypeRequest]
+ResourceTypeRequestList = list[ResourceTypeRequest]
 
 
 class DescribeImageReferencesRequest(ServiceRequest):
     ImageIds: DescribeImageReferencesImageIdStringList
-    IncludeAllResourceTypes: Optional[Boolean]
-    ResourceTypes: Optional[ResourceTypeRequestList]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
-    MaxResults: Optional[DescribeImageReferencesMaxResults]
+    IncludeAllResourceTypes: Boolean | None
+    ResourceTypes: ResourceTypeRequestList | None
+    NextToken: String | None
+    DryRun: Boolean | None
+    MaxResults: DescribeImageReferencesMaxResults | None
 
 
 class ImageReference(TypedDict, total=False):
-    ImageId: Optional[ImageId]
-    ResourceType: Optional[ImageReferenceResourceType]
-    Arn: Optional[String]
+    ImageId: ImageId | None
+    ResourceType: ImageReferenceResourceType | None
+    Arn: String | None
 
 
-ImageReferenceList = List[ImageReference]
+ImageReferenceList = list[ImageReference]
 
 
 class DescribeImageReferencesResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    ImageReferences: Optional[ImageReferenceList]
+    NextToken: String | None
+    ImageReferences: ImageReferenceList | None
 
 
-ImageUsageReportIdStringList = List[ImageUsageReportId]
-DescribeImageUsageReportsImageIdStringList = List[ImageId]
+ImageUsageReportIdStringList = list[ImageUsageReportId]
+DescribeImageUsageReportsImageIdStringList = list[ImageId]
 
 
 class DescribeImageUsageReportEntriesRequest(ServiceRequest):
-    ImageIds: Optional[DescribeImageUsageReportsImageIdStringList]
-    ReportIds: Optional[ImageUsageReportIdStringList]
-    NextToken: Optional[String]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
-    MaxResults: Optional[DescribeImageUsageReportEntriesMaxResults]
+    ImageIds: DescribeImageUsageReportsImageIdStringList | None
+    ReportIds: ImageUsageReportIdStringList | None
+    NextToken: String | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
+    MaxResults: DescribeImageUsageReportEntriesMaxResults | None
 
 
 class ImageUsageReportEntry(TypedDict, total=False):
-    ResourceType: Optional[ImageUsageResourceTypeName]
-    ReportId: Optional[ImageUsageReportId]
-    UsageCount: Optional[Long]
-    AccountId: Optional[String]
-    ImageId: Optional[ImageId]
-    ReportCreationTime: Optional[MillisecondDateTime]
+    ResourceType: ImageUsageResourceTypeName | None
+    ReportId: ImageUsageReportId | None
+    UsageCount: Long | None
+    AccountId: String | None
+    ImageId: ImageId | None
+    ReportCreationTime: MillisecondDateTime | None
 
 
-ImageUsageReportEntryList = List[ImageUsageReportEntry]
+ImageUsageReportEntryList = list[ImageUsageReportEntry]
 
 
 class DescribeImageUsageReportEntriesResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    ImageUsageReportEntries: Optional[ImageUsageReportEntryList]
+    NextToken: String | None
+    ImageUsageReportEntries: ImageUsageReportEntryList | None
 
 
 class DescribeImageUsageReportsRequest(ServiceRequest):
-    ImageIds: Optional[DescribeImageUsageReportsImageIdStringList]
-    ReportIds: Optional[ImageUsageReportIdStringList]
-    NextToken: Optional[String]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
-    MaxResults: Optional[DescribeImageUsageReportsMaxResults]
+    ImageIds: DescribeImageUsageReportsImageIdStringList | None
+    ReportIds: ImageUsageReportIdStringList | None
+    NextToken: String | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
+    MaxResults: DescribeImageUsageReportsMaxResults | None
 
 
-UserIdList = List[String]
+UserIdList = list[String]
 
 
 class ImageUsageResourceTypeOption(TypedDict, total=False):
-    OptionName: Optional[String]
-    OptionValues: Optional[ImageUsageResourceTypeOptionValuesList]
+    OptionName: String | None
+    OptionValues: ImageUsageResourceTypeOptionValuesList | None
 
 
-ImageUsageResourceTypeOptionList = List[ImageUsageResourceTypeOption]
+ImageUsageResourceTypeOptionList = list[ImageUsageResourceTypeOption]
 
 
 class ImageUsageResourceType(TypedDict, total=False):
-    ResourceType: Optional[ImageUsageResourceTypeName]
-    ResourceTypeOptions: Optional[ImageUsageResourceTypeOptionList]
+    ResourceType: ImageUsageResourceTypeName | None
+    ResourceTypeOptions: ImageUsageResourceTypeOptionList | None
 
 
-ImageUsageResourceTypeList = List[ImageUsageResourceType]
+ImageUsageResourceTypeList = list[ImageUsageResourceType]
 
 
 class ImageUsageReport(TypedDict, total=False):
-    ImageId: Optional[ImageId]
-    ReportId: Optional[ImageUsageReportId]
-    ResourceTypes: Optional[ImageUsageResourceTypeList]
-    AccountIds: Optional[UserIdList]
-    State: Optional[ImageUsageReportState]
-    StateReason: Optional[ImageUsageReportStateReason]
-    CreationTime: Optional[MillisecondDateTime]
-    ExpirationTime: Optional[MillisecondDateTime]
-    Tags: Optional[TagList]
+    ImageId: ImageId | None
+    ReportId: ImageUsageReportId | None
+    ResourceTypes: ImageUsageResourceTypeList | None
+    AccountIds: UserIdList | None
+    State: ImageUsageReportState | None
+    StateReason: ImageUsageReportStateReason | None
+    CreationTime: MillisecondDateTime | None
+    ExpirationTime: MillisecondDateTime | None
+    Tags: TagList | None
 
 
-ImageUsageReportList = List[ImageUsageReport]
+ImageUsageReportList = list[ImageUsageReport]
 
 
 class DescribeImageUsageReportsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    ImageUsageReports: Optional[ImageUsageReportList]
+    NextToken: String | None
+    ImageUsageReports: ImageUsageReportList | None
 
 
-ImageIdStringList = List[ImageId]
-ExecutableByStringList = List[String]
+ImageIdStringList = list[ImageId]
+ExecutableByStringList = list[String]
 
 
 class DescribeImagesRequest(ServiceRequest):
-    ExecutableUsers: Optional[ExecutableByStringList]
-    ImageIds: Optional[ImageIdStringList]
-    Owners: Optional[OwnerStringList]
-    IncludeDeprecated: Optional[Boolean]
-    IncludeDisabled: Optional[Boolean]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    ExecutableUsers: ExecutableByStringList | None
+    ImageIds: ImageIdStringList | None
+    Owners: OwnerStringList | None
+    IncludeDeprecated: Boolean | None
+    IncludeDisabled: Boolean | None
+    MaxResults: Integer | None
+    NextToken: String | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class Image(TypedDict, total=False):
-    PlatformDetails: Optional[String]
-    UsageOperation: Optional[String]
-    BlockDeviceMappings: Optional[BlockDeviceMappingList]
-    Description: Optional[String]
-    EnaSupport: Optional[Boolean]
-    Hypervisor: Optional[HypervisorType]
-    ImageOwnerAlias: Optional[String]
-    Name: Optional[String]
-    RootDeviceName: Optional[String]
-    RootDeviceType: Optional[DeviceType]
-    SriovNetSupport: Optional[String]
-    StateReason: Optional[StateReason]
-    Tags: Optional[TagList]
-    VirtualizationType: Optional[VirtualizationType]
-    BootMode: Optional[BootModeValues]
-    TpmSupport: Optional[TpmSupportValues]
-    DeprecationTime: Optional[String]
-    ImdsSupport: Optional[ImdsSupportValues]
-    SourceInstanceId: Optional[String]
-    DeregistrationProtection: Optional[String]
-    LastLaunchedTime: Optional[String]
-    ImageAllowed: Optional[Boolean]
-    SourceImageId: Optional[String]
-    SourceImageRegion: Optional[String]
-    FreeTierEligible: Optional[Boolean]
-    ImageId: Optional[String]
-    ImageLocation: Optional[String]
-    State: Optional[ImageState]
-    OwnerId: Optional[String]
-    CreationDate: Optional[String]
-    Public: Optional[Boolean]
-    ProductCodes: Optional[ProductCodeList]
-    Architecture: Optional[ArchitectureValues]
-    ImageType: Optional[ImageTypeValues]
-    KernelId: Optional[String]
-    RamdiskId: Optional[String]
-    Platform: Optional[PlatformValues]
+    PlatformDetails: String | None
+    UsageOperation: String | None
+    BlockDeviceMappings: BlockDeviceMappingList | None
+    Description: String | None
+    EnaSupport: Boolean | None
+    Hypervisor: HypervisorType | None
+    ImageOwnerAlias: String | None
+    Name: String | None
+    RootDeviceName: String | None
+    RootDeviceType: DeviceType | None
+    SriovNetSupport: String | None
+    StateReason: StateReason | None
+    Tags: TagList | None
+    VirtualizationType: VirtualizationType | None
+    BootMode: BootModeValues | None
+    TpmSupport: TpmSupportValues | None
+    DeprecationTime: String | None
+    ImdsSupport: ImdsSupportValues | None
+    SourceInstanceId: String | None
+    DeregistrationProtection: String | None
+    LastLaunchedTime: String | None
+    ImageAllowed: Boolean | None
+    SourceImageId: String | None
+    SourceImageRegion: String | None
+    FreeTierEligible: Boolean | None
+    ImageId: String | None
+    ImageLocation: String | None
+    State: ImageState | None
+    OwnerId: String | None
+    CreationDate: String | None
+    Public: Boolean | None
+    ProductCodes: ProductCodeList | None
+    Architecture: ArchitectureValues | None
+    ImageType: ImageTypeValues | None
+    KernelId: String | None
+    RamdiskId: String | None
+    Platform: PlatformValues | None
 
 
-ImageList = List[Image]
+ImageList = list[Image]
 
 
 class DescribeImagesResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    Images: Optional[ImageList]
+    NextToken: String | None
+    Images: ImageList | None
 
 
-ImportTaskIdList = List[ImportImageTaskId]
+ImportTaskIdList = list[ImportImageTaskId]
 
 
 class DescribeImportImageTasksRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    ImportTaskIds: Optional[ImportTaskIdList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    ImportTaskIds: ImportTaskIdList | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
 class ImportImageLicenseConfigurationResponse(TypedDict, total=False):
-    LicenseConfigurationArn: Optional[String]
+    LicenseConfigurationArn: String | None
 
 
-ImportImageLicenseSpecificationListResponse = List[ImportImageLicenseConfigurationResponse]
+ImportImageLicenseSpecificationListResponse = list[ImportImageLicenseConfigurationResponse]
 
 
 class UserBucketDetails(TypedDict, total=False):
-    S3Bucket: Optional[String]
-    S3Key: Optional[String]
+    S3Bucket: String | None
+    S3Key: String | None
 
 
 class SnapshotDetail(TypedDict, total=False):
-    Description: Optional[String]
-    DeviceName: Optional[String]
-    DiskImageSize: Optional[Double]
-    Format: Optional[String]
-    Progress: Optional[String]
-    SnapshotId: Optional[String]
-    Status: Optional[String]
-    StatusMessage: Optional[String]
-    Url: Optional[SensitiveUrl]
-    UserBucket: Optional[UserBucketDetails]
+    Description: String | None
+    DeviceName: String | None
+    DiskImageSize: Double | None
+    Format: String | None
+    Progress: String | None
+    SnapshotId: String | None
+    Status: String | None
+    StatusMessage: String | None
+    Url: SensitiveUrl | None
+    UserBucket: UserBucketDetails | None
 
 
-SnapshotDetailList = List[SnapshotDetail]
+SnapshotDetailList = list[SnapshotDetail]
 
 
 class ImportImageTask(TypedDict, total=False):
-    Architecture: Optional[String]
-    Description: Optional[String]
-    Encrypted: Optional[Boolean]
-    Hypervisor: Optional[String]
-    ImageId: Optional[String]
-    ImportTaskId: Optional[String]
-    KmsKeyId: Optional[String]
-    LicenseType: Optional[String]
-    Platform: Optional[String]
-    Progress: Optional[String]
-    SnapshotDetails: Optional[SnapshotDetailList]
-    Status: Optional[String]
-    StatusMessage: Optional[String]
-    Tags: Optional[TagList]
-    LicenseSpecifications: Optional[ImportImageLicenseSpecificationListResponse]
-    UsageOperation: Optional[String]
-    BootMode: Optional[BootModeValues]
+    Architecture: String | None
+    Description: String | None
+    Encrypted: Boolean | None
+    Hypervisor: String | None
+    ImageId: String | None
+    ImportTaskId: String | None
+    KmsKeyId: String | None
+    LicenseType: String | None
+    Platform: String | None
+    Progress: String | None
+    SnapshotDetails: SnapshotDetailList | None
+    Status: String | None
+    StatusMessage: String | None
+    Tags: TagList | None
+    LicenseSpecifications: ImportImageLicenseSpecificationListResponse | None
+    UsageOperation: String | None
+    BootMode: BootModeValues | None
 
 
-ImportImageTaskList = List[ImportImageTask]
+ImportImageTaskList = list[ImportImageTask]
 
 
 class DescribeImportImageTasksResult(TypedDict, total=False):
-    ImportImageTasks: Optional[ImportImageTaskList]
-    NextToken: Optional[String]
+    ImportImageTasks: ImportImageTaskList | None
+    NextToken: String | None
 
 
-ImportSnapshotTaskIdList = List[ImportSnapshotTaskId]
+ImportSnapshotTaskIdList = list[ImportSnapshotTaskId]
 
 
 class DescribeImportSnapshotTasksRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    ImportTaskIds: Optional[ImportSnapshotTaskIdList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    ImportTaskIds: ImportSnapshotTaskIdList | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
 class SnapshotTaskDetail(TypedDict, total=False):
-    Description: Optional[String]
-    DiskImageSize: Optional[Double]
-    Encrypted: Optional[Boolean]
-    Format: Optional[String]
-    KmsKeyId: Optional[String]
-    Progress: Optional[String]
-    SnapshotId: Optional[String]
-    Status: Optional[String]
-    StatusMessage: Optional[String]
-    Url: Optional[SensitiveUrl]
-    UserBucket: Optional[UserBucketDetails]
+    Description: String | None
+    DiskImageSize: Double | None
+    Encrypted: Boolean | None
+    Format: String | None
+    KmsKeyId: String | None
+    Progress: String | None
+    SnapshotId: String | None
+    Status: String | None
+    StatusMessage: String | None
+    Url: SensitiveUrl | None
+    UserBucket: UserBucketDetails | None
 
 
 class ImportSnapshotTask(TypedDict, total=False):
-    Description: Optional[String]
-    ImportTaskId: Optional[String]
-    SnapshotTaskDetail: Optional[SnapshotTaskDetail]
-    Tags: Optional[TagList]
+    Description: String | None
+    ImportTaskId: String | None
+    SnapshotTaskDetail: SnapshotTaskDetail | None
+    Tags: TagList | None
 
 
-ImportSnapshotTaskList = List[ImportSnapshotTask]
+ImportSnapshotTaskList = list[ImportSnapshotTask]
 
 
 class DescribeImportSnapshotTasksResult(TypedDict, total=False):
-    ImportSnapshotTasks: Optional[ImportSnapshotTaskList]
-    NextToken: Optional[String]
+    ImportSnapshotTasks: ImportSnapshotTaskList | None
+    NextToken: String | None
 
 
 class DescribeInstanceAttributeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceId: InstanceId
     Attribute: InstanceAttributeName
 
 
 class DescribeInstanceConnectEndpointsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    MaxResults: Optional[InstanceConnectEndpointMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[FilterList]
-    InstanceConnectEndpointIds: Optional[ValueStringList]
+    DryRun: Boolean | None
+    MaxResults: InstanceConnectEndpointMaxResults | None
+    NextToken: NextToken | None
+    Filters: FilterList | None
+    InstanceConnectEndpointIds: ValueStringList | None
 
 
-InstanceConnectEndpointSet = List[Ec2InstanceConnectEndpoint]
+InstanceConnectEndpointSet = list[Ec2InstanceConnectEndpoint]
 
 
 class DescribeInstanceConnectEndpointsResult(TypedDict, total=False):
-    InstanceConnectEndpoints: Optional[InstanceConnectEndpointSet]
-    NextToken: Optional[NextToken]
+    InstanceConnectEndpoints: InstanceConnectEndpointSet | None
+    NextToken: NextToken | None
 
 
 class DescribeInstanceCreditSpecificationsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    InstanceIds: Optional[InstanceIdStringList]
-    MaxResults: Optional[DescribeInstanceCreditSpecificationsMaxResults]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    InstanceIds: InstanceIdStringList | None
+    MaxResults: DescribeInstanceCreditSpecificationsMaxResults | None
+    NextToken: String | None
 
 
 class InstanceCreditSpecification(TypedDict, total=False):
-    InstanceId: Optional[String]
-    CpuCredits: Optional[String]
+    InstanceId: String | None
+    CpuCredits: String | None
 
 
-InstanceCreditSpecificationList = List[InstanceCreditSpecification]
+InstanceCreditSpecificationList = list[InstanceCreditSpecification]
 
 
 class DescribeInstanceCreditSpecificationsResult(TypedDict, total=False):
-    InstanceCreditSpecifications: Optional[InstanceCreditSpecificationList]
-    NextToken: Optional[String]
+    InstanceCreditSpecifications: InstanceCreditSpecificationList | None
+    NextToken: String | None
 
 
 class DescribeInstanceEventNotificationAttributesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DescribeInstanceEventNotificationAttributesResult(TypedDict, total=False):
-    InstanceTagAttribute: Optional[InstanceTagNotificationAttribute]
+    InstanceTagAttribute: InstanceTagNotificationAttribute | None
 
 
-InstanceEventWindowIdSet = List[InstanceEventWindowId]
+InstanceEventWindowIdSet = list[InstanceEventWindowId]
 
 
 class DescribeInstanceEventWindowsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    InstanceEventWindowIds: Optional[InstanceEventWindowIdSet]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[ResultRange]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    InstanceEventWindowIds: InstanceEventWindowIdSet | None
+    Filters: FilterList | None
+    MaxResults: ResultRange | None
+    NextToken: String | None
 
 
-InstanceEventWindowSet = List[InstanceEventWindow]
+InstanceEventWindowSet = list[InstanceEventWindow]
 
 
 class DescribeInstanceEventWindowsResult(TypedDict, total=False):
-    InstanceEventWindows: Optional[InstanceEventWindowSet]
-    NextToken: Optional[String]
+    InstanceEventWindows: InstanceEventWindowSet | None
+    NextToken: String | None
 
 
 class DescribeInstanceImageMetadataRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    InstanceIds: Optional[InstanceIdStringList]
-    MaxResults: Optional[DescribeInstanceImageMetadataMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    InstanceIds: InstanceIdStringList | None
+    MaxResults: DescribeInstanceImageMetadataMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class ImageMetadata(TypedDict, total=False):
-    ImageId: Optional[ImageId]
-    Name: Optional[String]
-    OwnerId: Optional[String]
-    State: Optional[ImageState]
-    ImageOwnerAlias: Optional[String]
-    CreationDate: Optional[String]
-    DeprecationTime: Optional[String]
-    ImageAllowed: Optional[Boolean]
-    IsPublic: Optional[Boolean]
+    ImageId: ImageId | None
+    Name: String | None
+    OwnerId: String | None
+    State: ImageState | None
+    ImageOwnerAlias: String | None
+    CreationDate: String | None
+    DeprecationTime: String | None
+    ImageAllowed: Boolean | None
+    IsPublic: Boolean | None
 
 
 class InstanceState(TypedDict, total=False):
-    Code: Optional[Integer]
-    Name: Optional[InstanceStateName]
+    Code: Integer | None
+    Name: InstanceStateName | None
 
 
 class InstanceImageMetadata(TypedDict, total=False):
-    InstanceId: Optional[InstanceId]
-    InstanceType: Optional[InstanceType]
-    LaunchTime: Optional[MillisecondDateTime]
-    AvailabilityZone: Optional[String]
-    ZoneId: Optional[String]
-    State: Optional[InstanceState]
-    OwnerId: Optional[String]
-    Tags: Optional[TagList]
-    ImageMetadata: Optional[ImageMetadata]
-    Operator: Optional[OperatorResponse]
+    InstanceId: InstanceId | None
+    InstanceType: InstanceType | None
+    LaunchTime: MillisecondDateTime | None
+    AvailabilityZone: String | None
+    ZoneId: String | None
+    State: InstanceState | None
+    OwnerId: String | None
+    Tags: TagList | None
+    ImageMetadata: ImageMetadata | None
+    Operator: OperatorResponse | None
 
 
-InstanceImageMetadataList = List[InstanceImageMetadata]
+InstanceImageMetadataList = list[InstanceImageMetadata]
 
 
 class DescribeInstanceImageMetadataResult(TypedDict, total=False):
-    InstanceImageMetadata: Optional[InstanceImageMetadataList]
-    NextToken: Optional[String]
+    InstanceImageMetadata: InstanceImageMetadataList | None
+    NextToken: String | None
 
 
 class DescribeInstanceStatusRequest(ServiceRequest):
-    InstanceIds: Optional[InstanceIdStringList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    IncludeAllInstances: Optional[Boolean]
+    InstanceIds: InstanceIdStringList | None
+    MaxResults: Integer | None
+    NextToken: String | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    IncludeAllInstances: Boolean | None
 
 
 class EbsStatusDetails(TypedDict, total=False):
-    ImpairedSince: Optional[MillisecondDateTime]
-    Name: Optional[StatusName]
-    Status: Optional[StatusType]
+    ImpairedSince: MillisecondDateTime | None
+    Name: StatusName | None
+    Status: StatusType | None
 
 
-EbsStatusDetailsList = List[EbsStatusDetails]
+EbsStatusDetailsList = list[EbsStatusDetails]
 
 
 class EbsStatusSummary(TypedDict, total=False):
-    Details: Optional[EbsStatusDetailsList]
-    Status: Optional[SummaryStatus]
+    Details: EbsStatusDetailsList | None
+    Status: SummaryStatus | None
 
 
 class InstanceStatusDetails(TypedDict, total=False):
-    ImpairedSince: Optional[DateTime]
-    Name: Optional[StatusName]
-    Status: Optional[StatusType]
+    ImpairedSince: DateTime | None
+    Name: StatusName | None
+    Status: StatusType | None
 
 
-InstanceStatusDetailsList = List[InstanceStatusDetails]
+InstanceStatusDetailsList = list[InstanceStatusDetails]
 
 
 class InstanceStatusSummary(TypedDict, total=False):
-    Details: Optional[InstanceStatusDetailsList]
-    Status: Optional[SummaryStatus]
+    Details: InstanceStatusDetailsList | None
+    Status: SummaryStatus | None
 
 
 class InstanceStatusEvent(TypedDict, total=False):
-    InstanceEventId: Optional[InstanceEventId]
-    Code: Optional[EventCode]
-    Description: Optional[String]
-    NotAfter: Optional[DateTime]
-    NotBefore: Optional[DateTime]
-    NotBeforeDeadline: Optional[DateTime]
+    InstanceEventId: InstanceEventId | None
+    Code: EventCode | None
+    Description: String | None
+    NotAfter: DateTime | None
+    NotBefore: DateTime | None
+    NotBeforeDeadline: DateTime | None
 
 
-InstanceStatusEventList = List[InstanceStatusEvent]
+InstanceStatusEventList = list[InstanceStatusEvent]
 
 
 class InstanceStatus(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    OutpostArn: Optional[String]
-    Operator: Optional[OperatorResponse]
-    Events: Optional[InstanceStatusEventList]
-    InstanceId: Optional[String]
-    InstanceState: Optional[InstanceState]
-    InstanceStatus: Optional[InstanceStatusSummary]
-    SystemStatus: Optional[InstanceStatusSummary]
-    AttachedEbsStatus: Optional[EbsStatusSummary]
+    AvailabilityZone: String | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    OutpostArn: String | None
+    Operator: OperatorResponse | None
+    Events: InstanceStatusEventList | None
+    InstanceId: String | None
+    InstanceState: InstanceState | None
+    InstanceStatus: InstanceStatusSummary | None
+    SystemStatus: InstanceStatusSummary | None
+    AttachedEbsStatus: EbsStatusSummary | None
 
 
-InstanceStatusList = List[InstanceStatus]
+InstanceStatusList = list[InstanceStatus]
 
 
 class DescribeInstanceStatusResult(TypedDict, total=False):
-    InstanceStatuses: Optional[InstanceStatusList]
-    NextToken: Optional[String]
+    InstanceStatuses: InstanceStatusList | None
+    NextToken: String | None
 
 
-DescribeInstanceTopologyGroupNameSet = List[PlacementGroupName]
-DescribeInstanceTopologyInstanceIdSet = List[InstanceId]
+DescribeInstanceTopologyGroupNameSet = list[PlacementGroupName]
+DescribeInstanceTopologyInstanceIdSet = list[InstanceId]
 
 
 class DescribeInstanceTopologyRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeInstanceTopologyMaxResults]
-    InstanceIds: Optional[DescribeInstanceTopologyInstanceIdSet]
-    GroupNames: Optional[DescribeInstanceTopologyGroupNameSet]
-    Filters: Optional[FilterList]
+    DryRun: Boolean | None
+    NextToken: String | None
+    MaxResults: DescribeInstanceTopologyMaxResults | None
+    InstanceIds: DescribeInstanceTopologyInstanceIdSet | None
+    GroupNames: DescribeInstanceTopologyGroupNameSet | None
+    Filters: FilterList | None
 
 
-NetworkNodesList = List[String]
+NetworkNodesList = list[String]
 
 
 class InstanceTopology(TypedDict, total=False):
-    InstanceId: Optional[String]
-    InstanceType: Optional[String]
-    GroupName: Optional[String]
-    NetworkNodes: Optional[NetworkNodesList]
-    AvailabilityZone: Optional[String]
-    ZoneId: Optional[String]
-    CapacityBlockId: Optional[String]
+    InstanceId: String | None
+    InstanceType: String | None
+    GroupName: String | None
+    NetworkNodes: NetworkNodesList | None
+    AvailabilityZone: String | None
+    ZoneId: String | None
+    CapacityBlockId: String | None
 
 
-InstanceSet = List[InstanceTopology]
+InstanceSet = list[InstanceTopology]
 
 
 class DescribeInstanceTopologyResult(TypedDict, total=False):
-    Instances: Optional[InstanceSet]
-    NextToken: Optional[String]
+    Instances: InstanceSet | None
+    NextToken: String | None
 
 
 class DescribeInstanceTypeOfferingsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    LocationType: Optional[LocationType]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DITOMaxResults]
-    NextToken: Optional[NextToken]
+    DryRun: Boolean | None
+    LocationType: LocationType | None
+    Filters: FilterList | None
+    MaxResults: DITOMaxResults | None
+    NextToken: NextToken | None
 
 
 class InstanceTypeOffering(TypedDict, total=False):
-    InstanceType: Optional[InstanceType]
-    LocationType: Optional[LocationType]
-    Location: Optional[Location]
+    InstanceType: InstanceType | None
+    LocationType: LocationType | None
+    Location: Location | None
 
 
-InstanceTypeOfferingsList = List[InstanceTypeOffering]
+InstanceTypeOfferingsList = list[InstanceTypeOffering]
 
 
 class DescribeInstanceTypeOfferingsResult(TypedDict, total=False):
-    InstanceTypeOfferings: Optional[InstanceTypeOfferingsList]
-    NextToken: Optional[NextToken]
+    InstanceTypeOfferings: InstanceTypeOfferingsList | None
+    NextToken: NextToken | None
 
 
-RequestInstanceTypeList = List[InstanceType]
+RequestInstanceTypeList = list[InstanceType]
 
 
 class DescribeInstanceTypesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    InstanceTypes: Optional[RequestInstanceTypeList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DITMaxResults]
-    NextToken: Optional[NextToken]
+    DryRun: Boolean | None
+    InstanceTypes: RequestInstanceTypeList | None
+    Filters: FilterList | None
+    MaxResults: DITMaxResults | None
+    NextToken: NextToken | None
 
 
 class NeuronDeviceMemoryInfo(TypedDict, total=False):
-    SizeInMiB: Optional[NeuronDeviceMemorySize]
+    SizeInMiB: NeuronDeviceMemorySize | None
 
 
 class NeuronDeviceCoreInfo(TypedDict, total=False):
-    Count: Optional[NeuronDeviceCoreCount]
-    Version: Optional[NeuronDeviceCoreVersion]
+    Count: NeuronDeviceCoreCount | None
+    Version: NeuronDeviceCoreVersion | None
 
 
 class NeuronDeviceInfo(TypedDict, total=False):
-    Count: Optional[NeuronDeviceCount]
-    Name: Optional[NeuronDeviceName]
-    CoreInfo: Optional[NeuronDeviceCoreInfo]
-    MemoryInfo: Optional[NeuronDeviceMemoryInfo]
+    Count: NeuronDeviceCount | None
+    Name: NeuronDeviceName | None
+    CoreInfo: NeuronDeviceCoreInfo | None
+    MemoryInfo: NeuronDeviceMemoryInfo | None
 
 
-NeuronDeviceInfoList = List[NeuronDeviceInfo]
+NeuronDeviceInfoList = list[NeuronDeviceInfo]
 
 
 class NeuronInfo(TypedDict, total=False):
-    NeuronDevices: Optional[NeuronDeviceInfoList]
-    TotalNeuronDeviceMemoryInMiB: Optional[TotalNeuronMemory]
+    NeuronDevices: NeuronDeviceInfoList | None
+    TotalNeuronDeviceMemoryInMiB: TotalNeuronMemory | None
 
 
 class MediaDeviceMemoryInfo(TypedDict, total=False):
-    SizeInMiB: Optional[MediaDeviceMemorySize]
+    SizeInMiB: MediaDeviceMemorySize | None
 
 
 class MediaDeviceInfo(TypedDict, total=False):
-    Count: Optional[MediaDeviceCount]
-    Name: Optional[MediaDeviceName]
-    Manufacturer: Optional[MediaDeviceManufacturerName]
-    MemoryInfo: Optional[MediaDeviceMemoryInfo]
+    Count: MediaDeviceCount | None
+    Name: MediaDeviceName | None
+    Manufacturer: MediaDeviceManufacturerName | None
+    MemoryInfo: MediaDeviceMemoryInfo | None
 
 
-MediaDeviceInfoList = List[MediaDeviceInfo]
+MediaDeviceInfoList = list[MediaDeviceInfo]
 
 
 class MediaAcceleratorInfo(TypedDict, total=False):
-    Accelerators: Optional[MediaDeviceInfoList]
-    TotalMediaMemoryInMiB: Optional[TotalMediaMemory]
+    Accelerators: MediaDeviceInfoList | None
+    TotalMediaMemoryInMiB: TotalMediaMemory | None
 
 
-NitroTpmSupportedVersionsList = List[NitroTpmSupportedVersionType]
+NitroTpmSupportedVersionsList = list[NitroTpmSupportedVersionType]
 
 
 class NitroTpmInfo(TypedDict, total=False):
-    SupportedVersions: Optional[NitroTpmSupportedVersionsList]
+    SupportedVersions: NitroTpmSupportedVersionsList | None
 
 
 class InferenceDeviceMemoryInfo(TypedDict, total=False):
-    SizeInMiB: Optional[InferenceDeviceMemorySize]
+    SizeInMiB: InferenceDeviceMemorySize | None
 
 
 class InferenceDeviceInfo(TypedDict, total=False):
-    Count: Optional[InferenceDeviceCount]
-    Name: Optional[InferenceDeviceName]
-    Manufacturer: Optional[InferenceDeviceManufacturerName]
-    MemoryInfo: Optional[InferenceDeviceMemoryInfo]
+    Count: InferenceDeviceCount | None
+    Name: InferenceDeviceName | None
+    Manufacturer: InferenceDeviceManufacturerName | None
+    MemoryInfo: InferenceDeviceMemoryInfo | None
 
 
-InferenceDeviceInfoList = List[InferenceDeviceInfo]
+InferenceDeviceInfoList = list[InferenceDeviceInfo]
 
 
 class InferenceAcceleratorInfo(TypedDict, total=False):
-    Accelerators: Optional[InferenceDeviceInfoList]
-    TotalInferenceMemoryInMiB: Optional[totalInferenceMemory]
+    Accelerators: InferenceDeviceInfoList | None
+    TotalInferenceMemoryInMiB: totalInferenceMemory | None
 
 
-PlacementGroupStrategyList = List[PlacementGroupStrategy]
+PlacementGroupStrategyList = list[PlacementGroupStrategy]
 
 
 class PlacementGroupInfo(TypedDict, total=False):
-    SupportedStrategies: Optional[PlacementGroupStrategyList]
+    SupportedStrategies: PlacementGroupStrategyList | None
 
 
 class FpgaDeviceMemoryInfo(TypedDict, total=False):
-    SizeInMiB: Optional[FpgaDeviceMemorySize]
+    SizeInMiB: FpgaDeviceMemorySize | None
 
 
 class FpgaDeviceInfo(TypedDict, total=False):
-    Name: Optional[FpgaDeviceName]
-    Manufacturer: Optional[FpgaDeviceManufacturerName]
-    Count: Optional[FpgaDeviceCount]
-    MemoryInfo: Optional[FpgaDeviceMemoryInfo]
+    Name: FpgaDeviceName | None
+    Manufacturer: FpgaDeviceManufacturerName | None
+    Count: FpgaDeviceCount | None
+    MemoryInfo: FpgaDeviceMemoryInfo | None
 
 
-FpgaDeviceInfoList = List[FpgaDeviceInfo]
+FpgaDeviceInfoList = list[FpgaDeviceInfo]
 
 
 class FpgaInfo(TypedDict, total=False):
-    Fpgas: Optional[FpgaDeviceInfoList]
-    TotalFpgaMemoryInMiB: Optional[totalFpgaMemory]
+    Fpgas: FpgaDeviceInfoList | None
+    TotalFpgaMemoryInMiB: totalFpgaMemory | None
 
 
 class GpuDeviceMemoryInfo(TypedDict, total=False):
-    SizeInMiB: Optional[GpuDeviceMemorySize]
+    SizeInMiB: GpuDeviceMemorySize | None
 
 
 class GpuDeviceInfo(TypedDict, total=False):
-    Name: Optional[GpuDeviceName]
-    Manufacturer: Optional[GpuDeviceManufacturerName]
-    Count: Optional[GpuDeviceCount]
-    MemoryInfo: Optional[GpuDeviceMemoryInfo]
+    Name: GpuDeviceName | None
+    Manufacturer: GpuDeviceManufacturerName | None
+    Count: GpuDeviceCount | None
+    MemoryInfo: GpuDeviceMemoryInfo | None
 
 
-GpuDeviceInfoList = List[GpuDeviceInfo]
+GpuDeviceInfoList = list[GpuDeviceInfo]
 
 
 class GpuInfo(TypedDict, total=False):
-    Gpus: Optional[GpuDeviceInfoList]
-    TotalGpuMemoryInMiB: Optional[totalGpuMemory]
+    Gpus: GpuDeviceInfoList | None
+    TotalGpuMemoryInMiB: totalGpuMemory | None
 
 
 class EfaInfo(TypedDict, total=False):
-    MaximumEfaInterfaces: Optional[MaximumEfaInterfaces]
+    MaximumEfaInterfaces: MaximumEfaInterfaces | None
 
 
 class NetworkCardInfo(TypedDict, total=False):
-    NetworkCardIndex: Optional[NetworkCardIndex]
-    NetworkPerformance: Optional[NetworkPerformance]
-    MaximumNetworkInterfaces: Optional[MaxNetworkInterfaces]
-    BaselineBandwidthInGbps: Optional[BaselineBandwidthInGbps]
-    PeakBandwidthInGbps: Optional[PeakBandwidthInGbps]
-    DefaultEnaQueueCountPerInterface: Optional[DefaultEnaQueueCountPerInterface]
-    MaximumEnaQueueCount: Optional[MaximumEnaQueueCount]
-    MaximumEnaQueueCountPerInterface: Optional[MaximumEnaQueueCountPerInterface]
+    NetworkCardIndex: NetworkCardIndex | None
+    NetworkPerformance: NetworkPerformance | None
+    MaximumNetworkInterfaces: MaxNetworkInterfaces | None
+    BaselineBandwidthInGbps: BaselineBandwidthInGbps | None
+    PeakBandwidthInGbps: PeakBandwidthInGbps | None
+    DefaultEnaQueueCountPerInterface: DefaultEnaQueueCountPerInterface | None
+    MaximumEnaQueueCount: MaximumEnaQueueCount | None
+    MaximumEnaQueueCountPerInterface: MaximumEnaQueueCountPerInterface | None
 
 
-NetworkCardInfoList = List[NetworkCardInfo]
+NetworkCardInfoList = list[NetworkCardInfo]
 
 
 class NetworkInfo(TypedDict, total=False):
-    NetworkPerformance: Optional[NetworkPerformance]
-    MaximumNetworkInterfaces: Optional[MaxNetworkInterfaces]
-    MaximumNetworkCards: Optional[MaximumNetworkCards]
-    DefaultNetworkCardIndex: Optional[DefaultNetworkCardIndex]
-    NetworkCards: Optional[NetworkCardInfoList]
-    Ipv4AddressesPerInterface: Optional[MaxIpv4AddrPerInterface]
-    Ipv6AddressesPerInterface: Optional[MaxIpv6AddrPerInterface]
-    Ipv6Supported: Optional[Ipv6Flag]
-    EnaSupport: Optional[EnaSupport]
-    EfaSupported: Optional[EfaSupportedFlag]
-    EfaInfo: Optional[EfaInfo]
-    EncryptionInTransitSupported: Optional[EncryptionInTransitSupported]
-    EnaSrdSupported: Optional[EnaSrdSupported]
-    BandwidthWeightings: Optional[BandwidthWeightingTypeList]
-    FlexibleEnaQueuesSupport: Optional[FlexibleEnaQueuesSupport]
+    NetworkPerformance: NetworkPerformance | None
+    MaximumNetworkInterfaces: MaxNetworkInterfaces | None
+    MaximumNetworkCards: MaximumNetworkCards | None
+    DefaultNetworkCardIndex: DefaultNetworkCardIndex | None
+    NetworkCards: NetworkCardInfoList | None
+    Ipv4AddressesPerInterface: MaxIpv4AddrPerInterface | None
+    Ipv6AddressesPerInterface: MaxIpv6AddrPerInterface | None
+    Ipv6Supported: Ipv6Flag | None
+    EnaSupport: EnaSupport | None
+    EfaSupported: EfaSupportedFlag | None
+    EfaInfo: EfaInfo | None
+    EncryptionInTransitSupported: EncryptionInTransitSupported | None
+    EnaSrdSupported: EnaSrdSupported | None
+    BandwidthWeightings: BandwidthWeightingTypeList | None
+    FlexibleEnaQueuesSupport: FlexibleEnaQueuesSupport | None
 
 
 class EbsOptimizedInfo(TypedDict, total=False):
-    BaselineBandwidthInMbps: Optional[BaselineBandwidthInMbps]
-    BaselineThroughputInMBps: Optional[BaselineThroughputInMBps]
-    BaselineIops: Optional[BaselineIops]
-    MaximumBandwidthInMbps: Optional[MaximumBandwidthInMbps]
-    MaximumThroughputInMBps: Optional[MaximumThroughputInMBps]
-    MaximumIops: Optional[MaximumIops]
+    BaselineBandwidthInMbps: BaselineBandwidthInMbps | None
+    BaselineThroughputInMBps: BaselineThroughputInMBps | None
+    BaselineIops: BaselineIops | None
+    MaximumBandwidthInMbps: MaximumBandwidthInMbps | None
+    MaximumThroughputInMBps: MaximumThroughputInMBps | None
+    MaximumIops: MaximumIops | None
 
 
 class EbsInfo(TypedDict, total=False):
-    EbsOptimizedSupport: Optional[EbsOptimizedSupport]
-    EncryptionSupport: Optional[EbsEncryptionSupport]
-    EbsOptimizedInfo: Optional[EbsOptimizedInfo]
-    NvmeSupport: Optional[EbsNvmeSupport]
-    MaximumEbsAttachments: Optional[MaximumEbsAttachments]
-    AttachmentLimitType: Optional[AttachmentLimitType]
+    EbsOptimizedSupport: EbsOptimizedSupport | None
+    EncryptionSupport: EbsEncryptionSupport | None
+    EbsOptimizedInfo: EbsOptimizedInfo | None
+    NvmeSupport: EbsNvmeSupport | None
+    MaximumEbsAttachments: MaximumEbsAttachments | None
+    AttachmentLimitType: AttachmentLimitType | None
 
 
 DiskSize = int
 
 
 class DiskInfo(TypedDict, total=False):
-    SizeInGB: Optional[DiskSize]
-    Count: Optional[DiskCount]
-    Type: Optional[DiskType]
+    SizeInGB: DiskSize | None
+    Count: DiskCount | None
+    Type: DiskType | None
 
 
-DiskInfoList = List[DiskInfo]
+DiskInfoList = list[DiskInfo]
 
 
 class InstanceStorageInfo(TypedDict, total=False):
-    TotalSizeInGB: Optional[DiskSize]
-    Disks: Optional[DiskInfoList]
-    NvmeSupport: Optional[EphemeralNvmeSupport]
-    EncryptionSupport: Optional[InstanceStorageEncryptionSupport]
+    TotalSizeInGB: DiskSize | None
+    Disks: DiskInfoList | None
+    NvmeSupport: EphemeralNvmeSupport | None
+    EncryptionSupport: InstanceStorageEncryptionSupport | None
 
 
 MemorySize = int
 
 
 class MemoryInfo(TypedDict, total=False):
-    SizeInMiB: Optional[MemorySize]
+    SizeInMiB: MemorySize | None
 
 
-ThreadsPerCoreList = List[ThreadsPerCore]
+ThreadsPerCoreList = list[ThreadsPerCore]
 
 
 class VCpuInfo(TypedDict, total=False):
-    DefaultVCpus: Optional[VCpuCount]
-    DefaultCores: Optional[CoreCount]
-    DefaultThreadsPerCore: Optional[ThreadsPerCore]
-    ValidCores: Optional[CoreCountList]
-    ValidThreadsPerCore: Optional[ThreadsPerCoreList]
+    DefaultVCpus: VCpuCount | None
+    DefaultCores: CoreCount | None
+    DefaultThreadsPerCore: ThreadsPerCore | None
+    ValidCores: CoreCountList | None
+    ValidThreadsPerCore: ThreadsPerCoreList | None
 
 
-SupportedAdditionalProcessorFeatureList = List[SupportedAdditionalProcessorFeature]
+SupportedAdditionalProcessorFeatureList = list[SupportedAdditionalProcessorFeature]
 
 
 class ProcessorInfo(TypedDict, total=False):
-    SupportedArchitectures: Optional[ArchitectureTypeList]
-    SustainedClockSpeedInGhz: Optional[ProcessorSustainedClockSpeed]
-    SupportedFeatures: Optional[SupportedAdditionalProcessorFeatureList]
-    Manufacturer: Optional[CpuManufacturerName]
+    SupportedArchitectures: ArchitectureTypeList | None
+    SustainedClockSpeedInGhz: ProcessorSustainedClockSpeed | None
+    SupportedFeatures: SupportedAdditionalProcessorFeatureList | None
+    Manufacturer: CpuManufacturerName | None
 
 
-VirtualizationTypeList = List[VirtualizationType]
-RootDeviceTypeList = List[RootDeviceType]
-UsageClassTypeList = List[UsageClassType]
+VirtualizationTypeList = list[VirtualizationType]
+RootDeviceTypeList = list[RootDeviceType]
+UsageClassTypeList = list[UsageClassType]
 
 
 class InstanceTypeInfo(TypedDict, total=False):
-    InstanceType: Optional[InstanceType]
-    CurrentGeneration: Optional[CurrentGenerationFlag]
-    FreeTierEligible: Optional[FreeTierEligibleFlag]
-    SupportedUsageClasses: Optional[UsageClassTypeList]
-    SupportedRootDeviceTypes: Optional[RootDeviceTypeList]
-    SupportedVirtualizationTypes: Optional[VirtualizationTypeList]
-    BareMetal: Optional[BareMetalFlag]
-    Hypervisor: Optional[InstanceTypeHypervisor]
-    ProcessorInfo: Optional[ProcessorInfo]
-    VCpuInfo: Optional[VCpuInfo]
-    MemoryInfo: Optional[MemoryInfo]
-    InstanceStorageSupported: Optional[InstanceStorageFlag]
-    InstanceStorageInfo: Optional[InstanceStorageInfo]
-    EbsInfo: Optional[EbsInfo]
-    NetworkInfo: Optional[NetworkInfo]
-    GpuInfo: Optional[GpuInfo]
-    FpgaInfo: Optional[FpgaInfo]
-    PlacementGroupInfo: Optional[PlacementGroupInfo]
-    InferenceAcceleratorInfo: Optional[InferenceAcceleratorInfo]
-    HibernationSupported: Optional[HibernationFlag]
-    BurstablePerformanceSupported: Optional[BurstablePerformanceFlag]
-    DedicatedHostsSupported: Optional[DedicatedHostFlag]
-    AutoRecoverySupported: Optional[AutoRecoveryFlag]
-    SupportedBootModes: Optional[BootModeTypeList]
-    NitroEnclavesSupport: Optional[NitroEnclavesSupport]
-    NitroTpmSupport: Optional[NitroTpmSupport]
-    NitroTpmInfo: Optional[NitroTpmInfo]
-    MediaAcceleratorInfo: Optional[MediaAcceleratorInfo]
-    NeuronInfo: Optional[NeuronInfo]
-    PhcSupport: Optional[PhcSupport]
-    RebootMigrationSupport: Optional[RebootMigrationSupport]
+    InstanceType: InstanceType | None
+    CurrentGeneration: CurrentGenerationFlag | None
+    FreeTierEligible: FreeTierEligibleFlag | None
+    SupportedUsageClasses: UsageClassTypeList | None
+    SupportedRootDeviceTypes: RootDeviceTypeList | None
+    SupportedVirtualizationTypes: VirtualizationTypeList | None
+    BareMetal: BareMetalFlag | None
+    Hypervisor: InstanceTypeHypervisor | None
+    ProcessorInfo: ProcessorInfo | None
+    VCpuInfo: VCpuInfo | None
+    MemoryInfo: MemoryInfo | None
+    InstanceStorageSupported: InstanceStorageFlag | None
+    InstanceStorageInfo: InstanceStorageInfo | None
+    EbsInfo: EbsInfo | None
+    NetworkInfo: NetworkInfo | None
+    GpuInfo: GpuInfo | None
+    FpgaInfo: FpgaInfo | None
+    PlacementGroupInfo: PlacementGroupInfo | None
+    InferenceAcceleratorInfo: InferenceAcceleratorInfo | None
+    HibernationSupported: HibernationFlag | None
+    BurstablePerformanceSupported: BurstablePerformanceFlag | None
+    DedicatedHostsSupported: DedicatedHostFlag | None
+    AutoRecoverySupported: AutoRecoveryFlag | None
+    SupportedBootModes: BootModeTypeList | None
+    NitroEnclavesSupport: NitroEnclavesSupport | None
+    NitroTpmSupport: NitroTpmSupport | None
+    NitroTpmInfo: NitroTpmInfo | None
+    MediaAcceleratorInfo: MediaAcceleratorInfo | None
+    NeuronInfo: NeuronInfo | None
+    PhcSupport: PhcSupport | None
+    RebootMigrationSupport: RebootMigrationSupport | None
 
 
-InstanceTypeInfoList = List[InstanceTypeInfo]
+InstanceTypeInfoList = list[InstanceTypeInfo]
 
 
 class DescribeInstanceTypesResult(TypedDict, total=False):
-    InstanceTypes: Optional[InstanceTypeInfoList]
-    NextToken: Optional[NextToken]
+    InstanceTypes: InstanceTypeInfoList | None
+    NextToken: NextToken | None
 
 
 class DescribeInstancesRequest(ServiceRequest):
-    InstanceIds: Optional[InstanceIdStringList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    NextToken: Optional[String]
-    MaxResults: Optional[Integer]
+    InstanceIds: InstanceIdStringList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    NextToken: String | None
+    MaxResults: Integer | None
 
 
 class Monitoring(TypedDict, total=False):
-    State: Optional[MonitoringState]
+    State: MonitoringState | None
 
 
 class InstanceNetworkPerformanceOptions(TypedDict, total=False):
-    BandwidthWeighting: Optional[InstanceBandwidthWeighting]
+    BandwidthWeighting: InstanceBandwidthWeighting | None
 
 
 class InstanceMaintenanceOptions(TypedDict, total=False):
-    AutoRecovery: Optional[InstanceAutoRecoveryState]
-    RebootMigration: Optional[InstanceRebootMigrationState]
+    AutoRecovery: InstanceAutoRecoveryState | None
+    RebootMigration: InstanceRebootMigrationState | None
 
 
 class PrivateDnsNameOptionsResponse(TypedDict, total=False):
-    HostnameType: Optional[HostnameType]
-    EnableResourceNameDnsARecord: Optional[Boolean]
-    EnableResourceNameDnsAAAARecord: Optional[Boolean]
+    HostnameType: HostnameType | None
+    EnableResourceNameDnsARecord: Boolean | None
+    EnableResourceNameDnsAAAARecord: Boolean | None
 
 
 class EnclaveOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class InstanceMetadataOptionsResponse(TypedDict, total=False):
-    State: Optional[InstanceMetadataOptionsState]
-    HttpTokens: Optional[HttpTokensState]
-    HttpPutResponseHopLimit: Optional[Integer]
-    HttpEndpoint: Optional[InstanceMetadataEndpointState]
-    HttpProtocolIpv6: Optional[InstanceMetadataProtocolState]
-    InstanceMetadataTags: Optional[InstanceMetadataTagsState]
+    State: InstanceMetadataOptionsState | None
+    HttpTokens: HttpTokensState | None
+    HttpPutResponseHopLimit: Integer | None
+    HttpEndpoint: InstanceMetadataEndpointState | None
+    HttpProtocolIpv6: InstanceMetadataProtocolState | None
+    InstanceMetadataTags: InstanceMetadataTagsState | None
 
 
 class LicenseConfiguration(TypedDict, total=False):
-    LicenseConfigurationArn: Optional[String]
+    LicenseConfigurationArn: String | None
 
 
-LicenseList = List[LicenseConfiguration]
+LicenseList = list[LicenseConfiguration]
 
 
 class HibernationOptions(TypedDict, total=False):
-    Configured: Optional[Boolean]
+    Configured: Boolean | None
 
 
 class InstanceIpv6Prefix(TypedDict, total=False):
-    Ipv6Prefix: Optional[String]
+    Ipv6Prefix: String | None
 
 
-InstanceIpv6PrefixList = List[InstanceIpv6Prefix]
+InstanceIpv6PrefixList = list[InstanceIpv6Prefix]
 
 
 class InstanceIpv4Prefix(TypedDict, total=False):
-    Ipv4Prefix: Optional[String]
+    Ipv4Prefix: String | None
 
 
-InstanceIpv4PrefixList = List[InstanceIpv4Prefix]
+InstanceIpv4PrefixList = list[InstanceIpv4Prefix]
 
 
 class InstanceNetworkInterfaceAssociation(TypedDict, total=False):
-    CarrierIp: Optional[String]
-    CustomerOwnedIp: Optional[String]
-    IpOwnerId: Optional[String]
-    PublicDnsName: Optional[String]
-    PublicIp: Optional[String]
+    CarrierIp: String | None
+    CustomerOwnedIp: String | None
+    IpOwnerId: String | None
+    PublicDnsName: String | None
+    PublicIp: String | None
 
 
 class InstancePrivateIpAddress(TypedDict, total=False):
-    Association: Optional[InstanceNetworkInterfaceAssociation]
-    Primary: Optional[Boolean]
-    PrivateDnsName: Optional[String]
-    PrivateIpAddress: Optional[String]
+    Association: InstanceNetworkInterfaceAssociation | None
+    Primary: Boolean | None
+    PrivateDnsName: String | None
+    PrivateIpAddress: String | None
 
 
-InstancePrivateIpAddressList = List[InstancePrivateIpAddress]
+InstancePrivateIpAddressList = list[InstancePrivateIpAddress]
 
 
 class InstanceAttachmentEnaSrdUdpSpecification(TypedDict, total=False):
-    EnaSrdUdpEnabled: Optional[Boolean]
+    EnaSrdUdpEnabled: Boolean | None
 
 
 class InstanceAttachmentEnaSrdSpecification(TypedDict, total=False):
-    EnaSrdEnabled: Optional[Boolean]
-    EnaSrdUdpSpecification: Optional[InstanceAttachmentEnaSrdUdpSpecification]
+    EnaSrdEnabled: Boolean | None
+    EnaSrdUdpSpecification: InstanceAttachmentEnaSrdUdpSpecification | None
 
 
 class InstanceNetworkInterfaceAttachment(TypedDict, total=False):
-    AttachTime: Optional[DateTime]
-    AttachmentId: Optional[String]
-    DeleteOnTermination: Optional[Boolean]
-    DeviceIndex: Optional[Integer]
-    Status: Optional[AttachmentStatus]
-    NetworkCardIndex: Optional[Integer]
-    EnaSrdSpecification: Optional[InstanceAttachmentEnaSrdSpecification]
-    EnaQueueCount: Optional[Integer]
+    AttachTime: DateTime | None
+    AttachmentId: String | None
+    DeleteOnTermination: Boolean | None
+    DeviceIndex: Integer | None
+    Status: AttachmentStatus | None
+    NetworkCardIndex: Integer | None
+    EnaSrdSpecification: InstanceAttachmentEnaSrdSpecification | None
+    EnaQueueCount: Integer | None
 
 
 class InstanceNetworkInterface(TypedDict, total=False):
-    Association: Optional[InstanceNetworkInterfaceAssociation]
-    Attachment: Optional[InstanceNetworkInterfaceAttachment]
-    Description: Optional[String]
-    Groups: Optional[GroupIdentifierList]
-    Ipv6Addresses: Optional[InstanceIpv6AddressList]
-    MacAddress: Optional[String]
-    NetworkInterfaceId: Optional[String]
-    OwnerId: Optional[String]
-    PrivateDnsName: Optional[String]
-    PrivateIpAddress: Optional[String]
-    PrivateIpAddresses: Optional[InstancePrivateIpAddressList]
-    SourceDestCheck: Optional[Boolean]
-    Status: Optional[NetworkInterfaceStatus]
-    SubnetId: Optional[String]
-    VpcId: Optional[String]
-    InterfaceType: Optional[String]
-    Ipv4Prefixes: Optional[InstanceIpv4PrefixList]
-    Ipv6Prefixes: Optional[InstanceIpv6PrefixList]
-    ConnectionTrackingConfiguration: Optional[ConnectionTrackingSpecificationResponse]
-    Operator: Optional[OperatorResponse]
+    Association: InstanceNetworkInterfaceAssociation | None
+    Attachment: InstanceNetworkInterfaceAttachment | None
+    Description: String | None
+    Groups: GroupIdentifierList | None
+    Ipv6Addresses: InstanceIpv6AddressList | None
+    MacAddress: String | None
+    NetworkInterfaceId: String | None
+    OwnerId: String | None
+    PrivateDnsName: String | None
+    PrivateIpAddress: String | None
+    PrivateIpAddresses: InstancePrivateIpAddressList | None
+    SourceDestCheck: Boolean | None
+    Status: NetworkInterfaceStatus | None
+    SubnetId: String | None
+    VpcId: String | None
+    InterfaceType: String | None
+    Ipv4Prefixes: InstanceIpv4PrefixList | None
+    Ipv6Prefixes: InstanceIpv6PrefixList | None
+    ConnectionTrackingConfiguration: ConnectionTrackingSpecificationResponse | None
+    Operator: OperatorResponse | None
 
 
-InstanceNetworkInterfaceList = List[InstanceNetworkInterface]
+InstanceNetworkInterfaceList = list[InstanceNetworkInterface]
 
 
 class ElasticInferenceAcceleratorAssociation(TypedDict, total=False):
-    ElasticInferenceAcceleratorArn: Optional[String]
-    ElasticInferenceAcceleratorAssociationId: Optional[String]
-    ElasticInferenceAcceleratorAssociationState: Optional[String]
-    ElasticInferenceAcceleratorAssociationTime: Optional[DateTime]
+    ElasticInferenceAcceleratorArn: String | None
+    ElasticInferenceAcceleratorAssociationId: String | None
+    ElasticInferenceAcceleratorAssociationState: String | None
+    ElasticInferenceAcceleratorAssociationTime: DateTime | None
 
 
-ElasticInferenceAcceleratorAssociationList = List[ElasticInferenceAcceleratorAssociation]
+ElasticInferenceAcceleratorAssociationList = list[ElasticInferenceAcceleratorAssociation]
 
 
 class ElasticGpuAssociation(TypedDict, total=False):
-    ElasticGpuId: Optional[ElasticGpuId]
-    ElasticGpuAssociationId: Optional[String]
-    ElasticGpuAssociationState: Optional[String]
-    ElasticGpuAssociationTime: Optional[String]
+    ElasticGpuId: ElasticGpuId | None
+    ElasticGpuAssociationId: String | None
+    ElasticGpuAssociationState: String | None
+    ElasticGpuAssociationTime: String | None
 
 
-ElasticGpuAssociationList = List[ElasticGpuAssociation]
+ElasticGpuAssociationList = list[ElasticGpuAssociation]
 
 
 class EbsInstanceBlockDevice(TypedDict, total=False):
-    AttachTime: Optional[DateTime]
-    DeleteOnTermination: Optional[Boolean]
-    Status: Optional[AttachmentStatus]
-    VolumeId: Optional[String]
-    AssociatedResource: Optional[String]
-    VolumeOwnerId: Optional[String]
-    Operator: Optional[OperatorResponse]
+    AttachTime: DateTime | None
+    DeleteOnTermination: Boolean | None
+    Status: AttachmentStatus | None
+    VolumeId: String | None
+    AssociatedResource: String | None
+    VolumeOwnerId: String | None
+    Operator: OperatorResponse | None
 
 
 class InstanceBlockDeviceMapping(TypedDict, total=False):
-    DeviceName: Optional[String]
-    Ebs: Optional[EbsInstanceBlockDevice]
+    DeviceName: String | None
+    Ebs: EbsInstanceBlockDevice | None
 
 
-InstanceBlockDeviceMappingList = List[InstanceBlockDeviceMapping]
+InstanceBlockDeviceMappingList = list[InstanceBlockDeviceMapping]
 
 
 class Instance(TypedDict, total=False):
-    Architecture: Optional[ArchitectureValues]
-    BlockDeviceMappings: Optional[InstanceBlockDeviceMappingList]
-    ClientToken: Optional[String]
-    EbsOptimized: Optional[Boolean]
-    EnaSupport: Optional[Boolean]
-    Hypervisor: Optional[HypervisorType]
-    IamInstanceProfile: Optional[IamInstanceProfile]
-    InstanceLifecycle: Optional[InstanceLifecycleType]
-    ElasticGpuAssociations: Optional[ElasticGpuAssociationList]
-    ElasticInferenceAcceleratorAssociations: Optional[ElasticInferenceAcceleratorAssociationList]
-    NetworkInterfaces: Optional[InstanceNetworkInterfaceList]
-    OutpostArn: Optional[String]
-    RootDeviceName: Optional[String]
-    RootDeviceType: Optional[DeviceType]
-    SecurityGroups: Optional[GroupIdentifierList]
-    SourceDestCheck: Optional[Boolean]
-    SpotInstanceRequestId: Optional[String]
-    SriovNetSupport: Optional[String]
-    StateReason: Optional[StateReason]
-    Tags: Optional[TagList]
-    VirtualizationType: Optional[VirtualizationType]
-    CpuOptions: Optional[CpuOptions]
-    CapacityBlockId: Optional[String]
-    CapacityReservationId: Optional[String]
-    CapacityReservationSpecification: Optional[CapacityReservationSpecificationResponse]
-    HibernationOptions: Optional[HibernationOptions]
-    Licenses: Optional[LicenseList]
-    MetadataOptions: Optional[InstanceMetadataOptionsResponse]
-    EnclaveOptions: Optional[EnclaveOptions]
-    BootMode: Optional[BootModeValues]
-    PlatformDetails: Optional[String]
-    UsageOperation: Optional[String]
-    UsageOperationUpdateTime: Optional[MillisecondDateTime]
-    PrivateDnsNameOptions: Optional[PrivateDnsNameOptionsResponse]
-    Ipv6Address: Optional[String]
-    TpmSupport: Optional[String]
-    MaintenanceOptions: Optional[InstanceMaintenanceOptions]
-    CurrentInstanceBootMode: Optional[InstanceBootModeValues]
-    NetworkPerformanceOptions: Optional[InstanceNetworkPerformanceOptions]
-    Operator: Optional[OperatorResponse]
-    InstanceId: Optional[String]
-    ImageId: Optional[String]
-    State: Optional[InstanceState]
-    PrivateDnsName: Optional[String]
-    PublicDnsName: Optional[String]
-    StateTransitionReason: Optional[String]
-    KeyName: Optional[String]
-    AmiLaunchIndex: Optional[Integer]
-    ProductCodes: Optional[ProductCodeList]
-    InstanceType: Optional[InstanceType]
-    LaunchTime: Optional[DateTime]
-    Placement: Optional[Placement]
-    KernelId: Optional[String]
-    RamdiskId: Optional[String]
-    Platform: Optional[PlatformValues]
-    Monitoring: Optional[Monitoring]
-    SubnetId: Optional[String]
-    VpcId: Optional[String]
-    PrivateIpAddress: Optional[String]
-    PublicIpAddress: Optional[String]
+    Architecture: ArchitectureValues | None
+    BlockDeviceMappings: InstanceBlockDeviceMappingList | None
+    ClientToken: String | None
+    EbsOptimized: Boolean | None
+    EnaSupport: Boolean | None
+    Hypervisor: HypervisorType | None
+    IamInstanceProfile: IamInstanceProfile | None
+    InstanceLifecycle: InstanceLifecycleType | None
+    ElasticGpuAssociations: ElasticGpuAssociationList | None
+    ElasticInferenceAcceleratorAssociations: ElasticInferenceAcceleratorAssociationList | None
+    NetworkInterfaces: InstanceNetworkInterfaceList | None
+    OutpostArn: String | None
+    RootDeviceName: String | None
+    RootDeviceType: DeviceType | None
+    SecurityGroups: GroupIdentifierList | None
+    SourceDestCheck: Boolean | None
+    SpotInstanceRequestId: String | None
+    SriovNetSupport: String | None
+    StateReason: StateReason | None
+    Tags: TagList | None
+    VirtualizationType: VirtualizationType | None
+    CpuOptions: CpuOptions | None
+    CapacityBlockId: String | None
+    CapacityReservationId: String | None
+    CapacityReservationSpecification: CapacityReservationSpecificationResponse | None
+    HibernationOptions: HibernationOptions | None
+    Licenses: LicenseList | None
+    MetadataOptions: InstanceMetadataOptionsResponse | None
+    EnclaveOptions: EnclaveOptions | None
+    BootMode: BootModeValues | None
+    PlatformDetails: String | None
+    UsageOperation: String | None
+    UsageOperationUpdateTime: MillisecondDateTime | None
+    PrivateDnsNameOptions: PrivateDnsNameOptionsResponse | None
+    Ipv6Address: String | None
+    TpmSupport: String | None
+    MaintenanceOptions: InstanceMaintenanceOptions | None
+    CurrentInstanceBootMode: InstanceBootModeValues | None
+    NetworkPerformanceOptions: InstanceNetworkPerformanceOptions | None
+    Operator: OperatorResponse | None
+    InstanceId: String | None
+    ImageId: String | None
+    State: InstanceState | None
+    PrivateDnsName: String | None
+    PublicDnsName: String | None
+    StateTransitionReason: String | None
+    KeyName: String | None
+    AmiLaunchIndex: Integer | None
+    ProductCodes: ProductCodeList | None
+    InstanceType: InstanceType | None
+    LaunchTime: DateTime | None
+    Placement: Placement | None
+    KernelId: String | None
+    RamdiskId: String | None
+    Platform: PlatformValues | None
+    Monitoring: Monitoring | None
+    SubnetId: String | None
+    VpcId: String | None
+    PrivateIpAddress: String | None
+    PublicIpAddress: String | None
 
 
-InstanceList = List[Instance]
+InstanceList = list[Instance]
 
 
 class Reservation(TypedDict, total=False):
-    ReservationId: Optional[String]
-    OwnerId: Optional[String]
-    RequesterId: Optional[String]
-    Groups: Optional[GroupIdentifierList]
-    Instances: Optional[InstanceList]
+    ReservationId: String | None
+    OwnerId: String | None
+    RequesterId: String | None
+    Groups: GroupIdentifierList | None
+    Instances: InstanceList | None
 
 
-ReservationList = List[Reservation]
+ReservationList = list[Reservation]
 
 
 class DescribeInstancesResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    Reservations: Optional[ReservationList]
+    NextToken: String | None
+    Reservations: ReservationList | None
 
 
-InternetGatewayIdList = List[InternetGatewayId]
+InternetGatewayIdList = list[InternetGatewayId]
 
 
 class DescribeInternetGatewaysRequest(ServiceRequest):
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeInternetGatewaysMaxResults]
-    DryRun: Optional[Boolean]
-    InternetGatewayIds: Optional[InternetGatewayIdList]
-    Filters: Optional[FilterList]
+    NextToken: String | None
+    MaxResults: DescribeInternetGatewaysMaxResults | None
+    DryRun: Boolean | None
+    InternetGatewayIds: InternetGatewayIdList | None
+    Filters: FilterList | None
 
 
-InternetGatewayList = List[InternetGateway]
+InternetGatewayList = list[InternetGateway]
 
 
 class DescribeInternetGatewaysResult(TypedDict, total=False):
-    InternetGateways: Optional[InternetGatewayList]
-    NextToken: Optional[String]
+    InternetGateways: InternetGatewayList | None
+    NextToken: String | None
 
 
 class DescribeIpamByoasnRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    MaxResults: Optional[DescribeIpamByoasnMaxResults]
-    NextToken: Optional[NextToken]
+    DryRun: Boolean | None
+    MaxResults: DescribeIpamByoasnMaxResults | None
+    NextToken: NextToken | None
 
 
 class DescribeIpamByoasnResult(TypedDict, total=False):
-    Byoasns: Optional[ByoasnSet]
-    NextToken: Optional[String]
+    Byoasns: ByoasnSet | None
+    NextToken: String | None
 
 
 class DescribeIpamExternalResourceVerificationTokensRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[IpamMaxResults]
-    IpamExternalResourceVerificationTokenIds: Optional[ValueStringList]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    NextToken: NextToken | None
+    MaxResults: IpamMaxResults | None
+    IpamExternalResourceVerificationTokenIds: ValueStringList | None
 
 
-IpamExternalResourceVerificationTokenSet = List[IpamExternalResourceVerificationToken]
+IpamExternalResourceVerificationTokenSet = list[IpamExternalResourceVerificationToken]
 
 
 class DescribeIpamExternalResourceVerificationTokensResult(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    IpamExternalResourceVerificationTokens: Optional[IpamExternalResourceVerificationTokenSet]
+    NextToken: NextToken | None
+    IpamExternalResourceVerificationTokens: IpamExternalResourceVerificationTokenSet | None
 
 
 class DescribeIpamPoolsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[IpamMaxResults]
-    NextToken: Optional[NextToken]
-    IpamPoolIds: Optional[ValueStringList]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
+    IpamPoolIds: ValueStringList | None
 
 
-IpamPoolSet = List[IpamPool]
+IpamPoolSet = list[IpamPool]
 
 
 class DescribeIpamPoolsResult(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    IpamPools: Optional[IpamPoolSet]
+    NextToken: NextToken | None
+    IpamPools: IpamPoolSet | None
 
 
 class DescribeIpamPrefixListResolverTargetsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[IpamMaxResults]
-    NextToken: Optional[NextToken]
-    IpamPrefixListResolverTargetIds: Optional[ValueStringList]
-    IpamPrefixListResolverId: Optional[IpamPrefixListResolverId]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
+    IpamPrefixListResolverTargetIds: ValueStringList | None
+    IpamPrefixListResolverId: IpamPrefixListResolverId | None
 
 
-IpamPrefixListResolverTargetSet = List[IpamPrefixListResolverTarget]
+IpamPrefixListResolverTargetSet = list[IpamPrefixListResolverTarget]
 
 
 class DescribeIpamPrefixListResolverTargetsResult(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    IpamPrefixListResolverTargets: Optional[IpamPrefixListResolverTargetSet]
+    NextToken: NextToken | None
+    IpamPrefixListResolverTargets: IpamPrefixListResolverTargetSet | None
 
 
 class DescribeIpamPrefixListResolversRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[IpamMaxResults]
-    NextToken: Optional[NextToken]
-    IpamPrefixListResolverIds: Optional[ValueStringList]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
+    IpamPrefixListResolverIds: ValueStringList | None
 
 
-IpamPrefixListResolverSet = List[IpamPrefixListResolver]
+IpamPrefixListResolverSet = list[IpamPrefixListResolver]
 
 
 class DescribeIpamPrefixListResolversResult(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    IpamPrefixListResolvers: Optional[IpamPrefixListResolverSet]
+    NextToken: NextToken | None
+    IpamPrefixListResolvers: IpamPrefixListResolverSet | None
 
 
 class DescribeIpamResourceDiscoveriesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    IpamResourceDiscoveryIds: Optional[ValueStringList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[IpamMaxResults]
-    Filters: Optional[FilterList]
+    DryRun: Boolean | None
+    IpamResourceDiscoveryIds: ValueStringList | None
+    NextToken: NextToken | None
+    MaxResults: IpamMaxResults | None
+    Filters: FilterList | None
 
 
-IpamResourceDiscoverySet = List[IpamResourceDiscovery]
+IpamResourceDiscoverySet = list[IpamResourceDiscovery]
 
 
 class DescribeIpamResourceDiscoveriesResult(TypedDict, total=False):
-    IpamResourceDiscoveries: Optional[IpamResourceDiscoverySet]
-    NextToken: Optional[NextToken]
+    IpamResourceDiscoveries: IpamResourceDiscoverySet | None
+    NextToken: NextToken | None
 
 
 class DescribeIpamResourceDiscoveryAssociationsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    IpamResourceDiscoveryAssociationIds: Optional[ValueStringList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[IpamMaxResults]
-    Filters: Optional[FilterList]
+    DryRun: Boolean | None
+    IpamResourceDiscoveryAssociationIds: ValueStringList | None
+    NextToken: NextToken | None
+    MaxResults: IpamMaxResults | None
+    Filters: FilterList | None
 
 
-IpamResourceDiscoveryAssociationSet = List[IpamResourceDiscoveryAssociation]
+IpamResourceDiscoveryAssociationSet = list[IpamResourceDiscoveryAssociation]
 
 
 class DescribeIpamResourceDiscoveryAssociationsResult(TypedDict, total=False):
-    IpamResourceDiscoveryAssociations: Optional[IpamResourceDiscoveryAssociationSet]
-    NextToken: Optional[NextToken]
+    IpamResourceDiscoveryAssociations: IpamResourceDiscoveryAssociationSet | None
+    NextToken: NextToken | None
 
 
 class DescribeIpamScopesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[IpamMaxResults]
-    NextToken: Optional[NextToken]
-    IpamScopeIds: Optional[ValueStringList]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
+    IpamScopeIds: ValueStringList | None
 
 
-IpamScopeSet = List[IpamScope]
+IpamScopeSet = list[IpamScope]
 
 
 class DescribeIpamScopesResult(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    IpamScopes: Optional[IpamScopeSet]
+    NextToken: NextToken | None
+    IpamScopes: IpamScopeSet | None
 
 
 class DescribeIpamsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[IpamMaxResults]
-    NextToken: Optional[NextToken]
-    IpamIds: Optional[ValueStringList]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
+    IpamIds: ValueStringList | None
 
 
-IpamSet = List[Ipam]
+IpamSet = list[Ipam]
 
 
 class DescribeIpamsResult(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    Ipams: Optional[IpamSet]
+    NextToken: NextToken | None
+    Ipams: IpamSet | None
 
 
-Ipv6PoolIdList = List[Ipv6PoolEc2Id]
+Ipv6PoolIdList = list[Ipv6PoolEc2Id]
 
 
 class DescribeIpv6PoolsRequest(ServiceRequest):
-    PoolIds: Optional[Ipv6PoolIdList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[Ipv6PoolMaxResults]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    PoolIds: Ipv6PoolIdList | None
+    NextToken: NextToken | None
+    MaxResults: Ipv6PoolMaxResults | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class PoolCidrBlock(TypedDict, total=False):
-    Cidr: Optional[String]
+    Cidr: String | None
 
 
-PoolCidrBlocksSet = List[PoolCidrBlock]
+PoolCidrBlocksSet = list[PoolCidrBlock]
 
 
 class Ipv6Pool(TypedDict, total=False):
-    PoolId: Optional[String]
-    Description: Optional[String]
-    PoolCidrBlocks: Optional[PoolCidrBlocksSet]
-    Tags: Optional[TagList]
+    PoolId: String | None
+    Description: String | None
+    PoolCidrBlocks: PoolCidrBlocksSet | None
+    Tags: TagList | None
 
 
-Ipv6PoolSet = List[Ipv6Pool]
+Ipv6PoolSet = list[Ipv6Pool]
 
 
 class DescribeIpv6PoolsResult(TypedDict, total=False):
-    Ipv6Pools: Optional[Ipv6PoolSet]
-    NextToken: Optional[NextToken]
+    Ipv6Pools: Ipv6PoolSet | None
+    NextToken: NextToken | None
 
 
-KeyPairIdStringList = List[KeyPairId]
-KeyNameStringList = List[KeyPairName]
+KeyPairIdStringList = list[KeyPairId]
+KeyNameStringList = list[KeyPairName]
 
 
 class DescribeKeyPairsRequest(ServiceRequest):
-    KeyNames: Optional[KeyNameStringList]
-    KeyPairIds: Optional[KeyPairIdStringList]
-    IncludePublicKey: Optional[Boolean]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    KeyNames: KeyNameStringList | None
+    KeyPairIds: KeyPairIdStringList | None
+    IncludePublicKey: Boolean | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class KeyPairInfo(TypedDict, total=False):
-    KeyPairId: Optional[String]
-    KeyType: Optional[KeyType]
-    Tags: Optional[TagList]
-    PublicKey: Optional[String]
-    CreateTime: Optional[MillisecondDateTime]
-    KeyName: Optional[String]
-    KeyFingerprint: Optional[String]
+    KeyPairId: String | None
+    KeyType: KeyType | None
+    Tags: TagList | None
+    PublicKey: String | None
+    CreateTime: MillisecondDateTime | None
+    KeyName: String | None
+    KeyFingerprint: String | None
 
 
-KeyPairList = List[KeyPairInfo]
+KeyPairList = list[KeyPairInfo]
 
 
 class DescribeKeyPairsResult(TypedDict, total=False):
-    KeyPairs: Optional[KeyPairList]
+    KeyPairs: KeyPairList | None
 
 
 class DescribeLaunchTemplateVersionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    LaunchTemplateId: Optional[LaunchTemplateId]
-    LaunchTemplateName: Optional[LaunchTemplateName]
-    Versions: Optional[VersionStringList]
-    MinVersion: Optional[String]
-    MaxVersion: Optional[String]
-    NextToken: Optional[String]
-    MaxResults: Optional[Integer]
-    Filters: Optional[FilterList]
-    ResolveAlias: Optional[Boolean]
+    DryRun: Boolean | None
+    LaunchTemplateId: LaunchTemplateId | None
+    LaunchTemplateName: LaunchTemplateName | None
+    Versions: VersionStringList | None
+    MinVersion: String | None
+    MaxVersion: String | None
+    NextToken: String | None
+    MaxResults: Integer | None
+    Filters: FilterList | None
+    ResolveAlias: Boolean | None
 
 
-LaunchTemplateVersionSet = List[LaunchTemplateVersion]
+LaunchTemplateVersionSet = list[LaunchTemplateVersion]
 
 
 class DescribeLaunchTemplateVersionsResult(TypedDict, total=False):
-    LaunchTemplateVersions: Optional[LaunchTemplateVersionSet]
-    NextToken: Optional[String]
+    LaunchTemplateVersions: LaunchTemplateVersionSet | None
+    NextToken: String | None
 
 
-LaunchTemplateNameStringList = List[LaunchTemplateName]
-LaunchTemplateIdStringList = List[LaunchTemplateId]
+LaunchTemplateNameStringList = list[LaunchTemplateName]
+LaunchTemplateIdStringList = list[LaunchTemplateId]
 
 
 class DescribeLaunchTemplatesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    LaunchTemplateIds: Optional[LaunchTemplateIdStringList]
-    LaunchTemplateNames: Optional[LaunchTemplateNameStringList]
-    Filters: Optional[FilterList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeLaunchTemplatesMaxResults]
+    DryRun: Boolean | None
+    LaunchTemplateIds: LaunchTemplateIdStringList | None
+    LaunchTemplateNames: LaunchTemplateNameStringList | None
+    Filters: FilterList | None
+    NextToken: String | None
+    MaxResults: DescribeLaunchTemplatesMaxResults | None
 
 
-LaunchTemplateSet = List[LaunchTemplate]
+LaunchTemplateSet = list[LaunchTemplate]
 
 
 class DescribeLaunchTemplatesResult(TypedDict, total=False):
-    LaunchTemplates: Optional[LaunchTemplateSet]
-    NextToken: Optional[String]
+    LaunchTemplates: LaunchTemplateSet | None
+    NextToken: String | None
 
 
-LocalGatewayRouteTableVirtualInterfaceGroupAssociationIdSet = List[
+LocalGatewayRouteTableVirtualInterfaceGroupAssociationIdSet = list[
     LocalGatewayRouteTableVirtualInterfaceGroupAssociationId
 ]
 
 
 class DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociationsRequest(ServiceRequest):
-    LocalGatewayRouteTableVirtualInterfaceGroupAssociationIds: Optional[
-        LocalGatewayRouteTableVirtualInterfaceGroupAssociationIdSet
-    ]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[LocalGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    LocalGatewayRouteTableVirtualInterfaceGroupAssociationIds: (
+        LocalGatewayRouteTableVirtualInterfaceGroupAssociationIdSet | None
+    )
+    Filters: FilterList | None
+    MaxResults: LocalGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-LocalGatewayRouteTableVirtualInterfaceGroupAssociationSet = List[
+LocalGatewayRouteTableVirtualInterfaceGroupAssociationSet = list[
     LocalGatewayRouteTableVirtualInterfaceGroupAssociation
 ]
 
 
 class DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociationsResult(TypedDict, total=False):
-    LocalGatewayRouteTableVirtualInterfaceGroupAssociations: Optional[
-        LocalGatewayRouteTableVirtualInterfaceGroupAssociationSet
-    ]
-    NextToken: Optional[String]
+    LocalGatewayRouteTableVirtualInterfaceGroupAssociations: (
+        LocalGatewayRouteTableVirtualInterfaceGroupAssociationSet | None
+    )
+    NextToken: String | None
 
 
-LocalGatewayRouteTableVpcAssociationIdSet = List[LocalGatewayRouteTableVpcAssociationId]
+LocalGatewayRouteTableVpcAssociationIdSet = list[LocalGatewayRouteTableVpcAssociationId]
 
 
 class DescribeLocalGatewayRouteTableVpcAssociationsRequest(ServiceRequest):
-    LocalGatewayRouteTableVpcAssociationIds: Optional[LocalGatewayRouteTableVpcAssociationIdSet]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[LocalGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    LocalGatewayRouteTableVpcAssociationIds: LocalGatewayRouteTableVpcAssociationIdSet | None
+    Filters: FilterList | None
+    MaxResults: LocalGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-LocalGatewayRouteTableVpcAssociationSet = List[LocalGatewayRouteTableVpcAssociation]
+LocalGatewayRouteTableVpcAssociationSet = list[LocalGatewayRouteTableVpcAssociation]
 
 
 class DescribeLocalGatewayRouteTableVpcAssociationsResult(TypedDict, total=False):
-    LocalGatewayRouteTableVpcAssociations: Optional[LocalGatewayRouteTableVpcAssociationSet]
-    NextToken: Optional[String]
+    LocalGatewayRouteTableVpcAssociations: LocalGatewayRouteTableVpcAssociationSet | None
+    NextToken: String | None
 
 
-LocalGatewayRouteTableIdSet = List[LocalGatewayRoutetableId]
+LocalGatewayRouteTableIdSet = list[LocalGatewayRoutetableId]
 
 
 class DescribeLocalGatewayRouteTablesRequest(ServiceRequest):
-    LocalGatewayRouteTableIds: Optional[LocalGatewayRouteTableIdSet]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[LocalGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    LocalGatewayRouteTableIds: LocalGatewayRouteTableIdSet | None
+    Filters: FilterList | None
+    MaxResults: LocalGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-LocalGatewayRouteTableSet = List[LocalGatewayRouteTable]
+LocalGatewayRouteTableSet = list[LocalGatewayRouteTable]
 
 
 class DescribeLocalGatewayRouteTablesResult(TypedDict, total=False):
-    LocalGatewayRouteTables: Optional[LocalGatewayRouteTableSet]
-    NextToken: Optional[String]
+    LocalGatewayRouteTables: LocalGatewayRouteTableSet | None
+    NextToken: String | None
 
 
-LocalGatewayVirtualInterfaceGroupIdSet = List[LocalGatewayVirtualInterfaceGroupId]
+LocalGatewayVirtualInterfaceGroupIdSet = list[LocalGatewayVirtualInterfaceGroupId]
 
 
 class DescribeLocalGatewayVirtualInterfaceGroupsRequest(ServiceRequest):
-    LocalGatewayVirtualInterfaceGroupIds: Optional[LocalGatewayVirtualInterfaceGroupIdSet]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[LocalGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    LocalGatewayVirtualInterfaceGroupIds: LocalGatewayVirtualInterfaceGroupIdSet | None
+    Filters: FilterList | None
+    MaxResults: LocalGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-LocalGatewayVirtualInterfaceGroupSet = List[LocalGatewayVirtualInterfaceGroup]
+LocalGatewayVirtualInterfaceGroupSet = list[LocalGatewayVirtualInterfaceGroup]
 
 
 class DescribeLocalGatewayVirtualInterfaceGroupsResult(TypedDict, total=False):
-    LocalGatewayVirtualInterfaceGroups: Optional[LocalGatewayVirtualInterfaceGroupSet]
-    NextToken: Optional[String]
+    LocalGatewayVirtualInterfaceGroups: LocalGatewayVirtualInterfaceGroupSet | None
+    NextToken: String | None
 
 
 class DescribeLocalGatewayVirtualInterfacesRequest(ServiceRequest):
-    LocalGatewayVirtualInterfaceIds: Optional[LocalGatewayVirtualInterfaceIdSet]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[LocalGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    LocalGatewayVirtualInterfaceIds: LocalGatewayVirtualInterfaceIdSet | None
+    Filters: FilterList | None
+    MaxResults: LocalGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-LocalGatewayVirtualInterfaceSet = List[LocalGatewayVirtualInterface]
+LocalGatewayVirtualInterfaceSet = list[LocalGatewayVirtualInterface]
 
 
 class DescribeLocalGatewayVirtualInterfacesResult(TypedDict, total=False):
-    LocalGatewayVirtualInterfaces: Optional[LocalGatewayVirtualInterfaceSet]
-    NextToken: Optional[String]
+    LocalGatewayVirtualInterfaces: LocalGatewayVirtualInterfaceSet | None
+    NextToken: String | None
 
 
-LocalGatewayIdSet = List[LocalGatewayId]
+LocalGatewayIdSet = list[LocalGatewayId]
 
 
 class DescribeLocalGatewaysRequest(ServiceRequest):
-    LocalGatewayIds: Optional[LocalGatewayIdSet]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[LocalGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    LocalGatewayIds: LocalGatewayIdSet | None
+    Filters: FilterList | None
+    MaxResults: LocalGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class LocalGateway(TypedDict, total=False):
-    LocalGatewayId: Optional[LocalGatewayId]
-    OutpostArn: Optional[String]
-    OwnerId: Optional[String]
-    State: Optional[String]
-    Tags: Optional[TagList]
+    LocalGatewayId: LocalGatewayId | None
+    OutpostArn: String | None
+    OwnerId: String | None
+    State: String | None
+    Tags: TagList | None
 
 
-LocalGatewaySet = List[LocalGateway]
+LocalGatewaySet = list[LocalGateway]
 
 
 class DescribeLocalGatewaysResult(TypedDict, total=False):
-    LocalGateways: Optional[LocalGatewaySet]
-    NextToken: Optional[String]
+    LocalGateways: LocalGatewaySet | None
+    NextToken: String | None
 
 
-SnapshotIdStringList = List[SnapshotId]
+SnapshotIdStringList = list[SnapshotId]
 
 
 class DescribeLockedSnapshotsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DescribeLockedSnapshotsMaxResults]
-    NextToken: Optional[String]
-    SnapshotIds: Optional[SnapshotIdStringList]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: DescribeLockedSnapshotsMaxResults | None
+    NextToken: String | None
+    SnapshotIds: SnapshotIdStringList | None
+    DryRun: Boolean | None
 
 
 class LockedSnapshotsInfo(TypedDict, total=False):
-    OwnerId: Optional[String]
-    SnapshotId: Optional[String]
-    LockState: Optional[LockState]
-    LockDuration: Optional[RetentionPeriodResponseDays]
-    CoolOffPeriod: Optional[CoolOffPeriodResponseHours]
-    CoolOffPeriodExpiresOn: Optional[MillisecondDateTime]
-    LockCreatedOn: Optional[MillisecondDateTime]
-    LockDurationStartTime: Optional[MillisecondDateTime]
-    LockExpiresOn: Optional[MillisecondDateTime]
+    OwnerId: String | None
+    SnapshotId: String | None
+    LockState: LockState | None
+    LockDuration: RetentionPeriodResponseDays | None
+    CoolOffPeriod: CoolOffPeriodResponseHours | None
+    CoolOffPeriodExpiresOn: MillisecondDateTime | None
+    LockCreatedOn: MillisecondDateTime | None
+    LockDurationStartTime: MillisecondDateTime | None
+    LockExpiresOn: MillisecondDateTime | None
 
 
-LockedSnapshotsInfoList = List[LockedSnapshotsInfo]
+LockedSnapshotsInfoList = list[LockedSnapshotsInfo]
 
 
 class DescribeLockedSnapshotsResult(TypedDict, total=False):
-    Snapshots: Optional[LockedSnapshotsInfoList]
-    NextToken: Optional[String]
+    Snapshots: LockedSnapshotsInfoList | None
+    NextToken: String | None
 
 
 class DescribeMacHostsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    HostIds: Optional[RequestHostIdList]
-    MaxResults: Optional[DescribeMacHostsRequestMaxResults]
-    NextToken: Optional[String]
+    Filters: FilterList | None
+    HostIds: RequestHostIdList | None
+    MaxResults: DescribeMacHostsRequestMaxResults | None
+    NextToken: String | None
 
 
-MacOSVersionStringList = List[String]
+MacOSVersionStringList = list[String]
 
 
 class MacHost(TypedDict, total=False):
-    HostId: Optional[DedicatedHostId]
-    MacOSLatestSupportedVersions: Optional[MacOSVersionStringList]
+    HostId: DedicatedHostId | None
+    MacOSLatestSupportedVersions: MacOSVersionStringList | None
 
 
-MacHostList = List[MacHost]
+MacHostList = list[MacHost]
 
 
 class DescribeMacHostsResult(TypedDict, total=False):
-    MacHosts: Optional[MacHostList]
-    NextToken: Optional[String]
+    MacHosts: MacHostList | None
+    NextToken: String | None
 
 
-MacModificationTaskIdList = List[MacModificationTaskId]
+MacModificationTaskIdList = list[MacModificationTaskId]
 
 
 class DescribeMacModificationTasksRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MacModificationTaskIds: Optional[MacModificationTaskIdList]
-    MaxResults: Optional[DescribeMacModificationTasksMaxResults]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MacModificationTaskIds: MacModificationTaskIdList | None
+    MaxResults: DescribeMacModificationTasksMaxResults | None
+    NextToken: String | None
 
 
-MacModificationTaskList = List[MacModificationTask]
+MacModificationTaskList = list[MacModificationTask]
 
 
 class DescribeMacModificationTasksResult(TypedDict, total=False):
-    MacModificationTasks: Optional[MacModificationTaskList]
-    NextToken: Optional[String]
+    MacModificationTasks: MacModificationTaskList | None
+    NextToken: String | None
 
 
 class DescribeManagedPrefixListsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[PrefixListMaxResults]
-    NextToken: Optional[NextToken]
-    PrefixListIds: Optional[ValueStringList]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: PrefixListMaxResults | None
+    NextToken: NextToken | None
+    PrefixListIds: ValueStringList | None
 
 
-ManagedPrefixListSet = List[ManagedPrefixList]
+ManagedPrefixListSet = list[ManagedPrefixList]
 
 
 class DescribeManagedPrefixListsResult(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    PrefixLists: Optional[ManagedPrefixListSet]
+    NextToken: NextToken | None
+    PrefixLists: ManagedPrefixListSet | None
 
 
 class DescribeMovingAddressesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    PublicIps: Optional[ValueStringList]
-    NextToken: Optional[String]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DescribeMovingAddressesMaxResults]
+    DryRun: Boolean | None
+    PublicIps: ValueStringList | None
+    NextToken: String | None
+    Filters: FilterList | None
+    MaxResults: DescribeMovingAddressesMaxResults | None
 
 
 class MovingAddressStatus(TypedDict, total=False):
-    MoveStatus: Optional[MoveStatus]
-    PublicIp: Optional[String]
+    MoveStatus: MoveStatus | None
+    PublicIp: String | None
 
 
-MovingAddressStatusSet = List[MovingAddressStatus]
+MovingAddressStatusSet = list[MovingAddressStatus]
 
 
 class DescribeMovingAddressesResult(TypedDict, total=False):
-    MovingAddressStatuses: Optional[MovingAddressStatusSet]
-    NextToken: Optional[String]
+    MovingAddressStatuses: MovingAddressStatusSet | None
+    NextToken: String | None
 
 
-NatGatewayIdStringList = List[NatGatewayId]
+NatGatewayIdStringList = list[NatGatewayId]
 
 
 class DescribeNatGatewaysRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filter: Optional[FilterList]
-    MaxResults: Optional[DescribeNatGatewaysMaxResults]
-    NatGatewayIds: Optional[NatGatewayIdStringList]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    Filter: FilterList | None
+    MaxResults: DescribeNatGatewaysMaxResults | None
+    NatGatewayIds: NatGatewayIdStringList | None
+    NextToken: String | None
 
 
-NatGatewayList = List[NatGateway]
+NatGatewayList = list[NatGateway]
 
 
 class DescribeNatGatewaysResult(TypedDict, total=False):
-    NatGateways: Optional[NatGatewayList]
-    NextToken: Optional[String]
+    NatGateways: NatGatewayList | None
+    NextToken: String | None
 
 
-NetworkAclIdStringList = List[NetworkAclId]
+NetworkAclIdStringList = list[NetworkAclId]
 
 
 class DescribeNetworkAclsRequest(ServiceRequest):
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeNetworkAclsMaxResults]
-    DryRun: Optional[Boolean]
-    NetworkAclIds: Optional[NetworkAclIdStringList]
-    Filters: Optional[FilterList]
+    NextToken: String | None
+    MaxResults: DescribeNetworkAclsMaxResults | None
+    DryRun: Boolean | None
+    NetworkAclIds: NetworkAclIdStringList | None
+    Filters: FilterList | None
 
 
-NetworkAclList = List[NetworkAcl]
+NetworkAclList = list[NetworkAcl]
 
 
 class DescribeNetworkAclsResult(TypedDict, total=False):
-    NetworkAcls: Optional[NetworkAclList]
-    NextToken: Optional[String]
+    NetworkAcls: NetworkAclList | None
+    NextToken: String | None
 
 
-NetworkInsightsAccessScopeAnalysisIdList = List[NetworkInsightsAccessScopeAnalysisId]
+NetworkInsightsAccessScopeAnalysisIdList = list[NetworkInsightsAccessScopeAnalysisId]
 
 
 class DescribeNetworkInsightsAccessScopeAnalysesRequest(ServiceRequest):
-    NetworkInsightsAccessScopeAnalysisIds: Optional[NetworkInsightsAccessScopeAnalysisIdList]
-    NetworkInsightsAccessScopeId: Optional[NetworkInsightsAccessScopeId]
-    AnalysisStartTimeBegin: Optional[MillisecondDateTime]
-    AnalysisStartTimeEnd: Optional[MillisecondDateTime]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[NetworkInsightsMaxResults]
-    DryRun: Optional[Boolean]
-    NextToken: Optional[NextToken]
+    NetworkInsightsAccessScopeAnalysisIds: NetworkInsightsAccessScopeAnalysisIdList | None
+    NetworkInsightsAccessScopeId: NetworkInsightsAccessScopeId | None
+    AnalysisStartTimeBegin: MillisecondDateTime | None
+    AnalysisStartTimeEnd: MillisecondDateTime | None
+    Filters: FilterList | None
+    MaxResults: NetworkInsightsMaxResults | None
+    DryRun: Boolean | None
+    NextToken: NextToken | None
 
 
 class NetworkInsightsAccessScopeAnalysis(TypedDict, total=False):
-    NetworkInsightsAccessScopeAnalysisId: Optional[NetworkInsightsAccessScopeAnalysisId]
-    NetworkInsightsAccessScopeAnalysisArn: Optional[ResourceArn]
-    NetworkInsightsAccessScopeId: Optional[NetworkInsightsAccessScopeId]
-    Status: Optional[AnalysisStatus]
-    StatusMessage: Optional[String]
-    WarningMessage: Optional[String]
-    StartDate: Optional[MillisecondDateTime]
-    EndDate: Optional[MillisecondDateTime]
-    FindingsFound: Optional[FindingsFound]
-    AnalyzedEniCount: Optional[Integer]
-    Tags: Optional[TagList]
+    NetworkInsightsAccessScopeAnalysisId: NetworkInsightsAccessScopeAnalysisId | None
+    NetworkInsightsAccessScopeAnalysisArn: ResourceArn | None
+    NetworkInsightsAccessScopeId: NetworkInsightsAccessScopeId | None
+    Status: AnalysisStatus | None
+    StatusMessage: String | None
+    WarningMessage: String | None
+    StartDate: MillisecondDateTime | None
+    EndDate: MillisecondDateTime | None
+    FindingsFound: FindingsFound | None
+    AnalyzedEniCount: Integer | None
+    Tags: TagList | None
 
 
-NetworkInsightsAccessScopeAnalysisList = List[NetworkInsightsAccessScopeAnalysis]
+NetworkInsightsAccessScopeAnalysisList = list[NetworkInsightsAccessScopeAnalysis]
 
 
 class DescribeNetworkInsightsAccessScopeAnalysesResult(TypedDict, total=False):
-    NetworkInsightsAccessScopeAnalyses: Optional[NetworkInsightsAccessScopeAnalysisList]
-    NextToken: Optional[String]
+    NetworkInsightsAccessScopeAnalyses: NetworkInsightsAccessScopeAnalysisList | None
+    NextToken: String | None
 
 
-NetworkInsightsAccessScopeIdList = List[NetworkInsightsAccessScopeId]
+NetworkInsightsAccessScopeIdList = list[NetworkInsightsAccessScopeId]
 
 
 class DescribeNetworkInsightsAccessScopesRequest(ServiceRequest):
-    NetworkInsightsAccessScopeIds: Optional[NetworkInsightsAccessScopeIdList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[NetworkInsightsMaxResults]
-    DryRun: Optional[Boolean]
-    NextToken: Optional[NextToken]
+    NetworkInsightsAccessScopeIds: NetworkInsightsAccessScopeIdList | None
+    Filters: FilterList | None
+    MaxResults: NetworkInsightsMaxResults | None
+    DryRun: Boolean | None
+    NextToken: NextToken | None
 
 
-NetworkInsightsAccessScopeList = List[NetworkInsightsAccessScope]
+NetworkInsightsAccessScopeList = list[NetworkInsightsAccessScope]
 
 
 class DescribeNetworkInsightsAccessScopesResult(TypedDict, total=False):
-    NetworkInsightsAccessScopes: Optional[NetworkInsightsAccessScopeList]
-    NextToken: Optional[String]
+    NetworkInsightsAccessScopes: NetworkInsightsAccessScopeList | None
+    NextToken: String | None
 
 
-NetworkInsightsAnalysisIdList = List[NetworkInsightsAnalysisId]
+NetworkInsightsAnalysisIdList = list[NetworkInsightsAnalysisId]
 
 
 class DescribeNetworkInsightsAnalysesRequest(ServiceRequest):
-    NetworkInsightsAnalysisIds: Optional[NetworkInsightsAnalysisIdList]
-    NetworkInsightsPathId: Optional[NetworkInsightsPathId]
-    AnalysisStartTime: Optional[MillisecondDateTime]
-    AnalysisEndTime: Optional[MillisecondDateTime]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[NetworkInsightsMaxResults]
-    DryRun: Optional[Boolean]
-    NextToken: Optional[NextToken]
+    NetworkInsightsAnalysisIds: NetworkInsightsAnalysisIdList | None
+    NetworkInsightsPathId: NetworkInsightsPathId | None
+    AnalysisStartTime: MillisecondDateTime | None
+    AnalysisEndTime: MillisecondDateTime | None
+    Filters: FilterList | None
+    MaxResults: NetworkInsightsMaxResults | None
+    DryRun: Boolean | None
+    NextToken: NextToken | None
 
 
 class NetworkInsightsAnalysis(TypedDict, total=False):
-    NetworkInsightsAnalysisId: Optional[NetworkInsightsAnalysisId]
-    NetworkInsightsAnalysisArn: Optional[ResourceArn]
-    NetworkInsightsPathId: Optional[NetworkInsightsPathId]
-    AdditionalAccounts: Optional[ValueStringList]
-    FilterInArns: Optional[ArnList]
-    FilterOutArns: Optional[ArnList]
-    StartDate: Optional[MillisecondDateTime]
-    Status: Optional[AnalysisStatus]
-    StatusMessage: Optional[String]
-    WarningMessage: Optional[String]
-    NetworkPathFound: Optional[Boolean]
-    ForwardPathComponents: Optional[PathComponentList]
-    ReturnPathComponents: Optional[PathComponentList]
-    Explanations: Optional[ExplanationList]
-    AlternatePathHints: Optional[AlternatePathHintList]
-    SuggestedAccounts: Optional[ValueStringList]
-    Tags: Optional[TagList]
+    NetworkInsightsAnalysisId: NetworkInsightsAnalysisId | None
+    NetworkInsightsAnalysisArn: ResourceArn | None
+    NetworkInsightsPathId: NetworkInsightsPathId | None
+    AdditionalAccounts: ValueStringList | None
+    FilterInArns: ArnList | None
+    FilterOutArns: ArnList | None
+    StartDate: MillisecondDateTime | None
+    Status: AnalysisStatus | None
+    StatusMessage: String | None
+    WarningMessage: String | None
+    NetworkPathFound: Boolean | None
+    ForwardPathComponents: PathComponentList | None
+    ReturnPathComponents: PathComponentList | None
+    Explanations: ExplanationList | None
+    AlternatePathHints: AlternatePathHintList | None
+    SuggestedAccounts: ValueStringList | None
+    Tags: TagList | None
 
 
-NetworkInsightsAnalysisList = List[NetworkInsightsAnalysis]
+NetworkInsightsAnalysisList = list[NetworkInsightsAnalysis]
 
 
 class DescribeNetworkInsightsAnalysesResult(TypedDict, total=False):
-    NetworkInsightsAnalyses: Optional[NetworkInsightsAnalysisList]
-    NextToken: Optional[String]
+    NetworkInsightsAnalyses: NetworkInsightsAnalysisList | None
+    NextToken: String | None
 
 
-NetworkInsightsPathIdList = List[NetworkInsightsPathId]
+NetworkInsightsPathIdList = list[NetworkInsightsPathId]
 
 
 class DescribeNetworkInsightsPathsRequest(ServiceRequest):
-    NetworkInsightsPathIds: Optional[NetworkInsightsPathIdList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[NetworkInsightsMaxResults]
-    DryRun: Optional[Boolean]
-    NextToken: Optional[NextToken]
+    NetworkInsightsPathIds: NetworkInsightsPathIdList | None
+    Filters: FilterList | None
+    MaxResults: NetworkInsightsMaxResults | None
+    DryRun: Boolean | None
+    NextToken: NextToken | None
 
 
-NetworkInsightsPathList = List[NetworkInsightsPath]
+NetworkInsightsPathList = list[NetworkInsightsPath]
 
 
 class DescribeNetworkInsightsPathsResult(TypedDict, total=False):
-    NetworkInsightsPaths: Optional[NetworkInsightsPathList]
-    NextToken: Optional[String]
+    NetworkInsightsPaths: NetworkInsightsPathList | None
+    NextToken: String | None
 
 
 class DescribeNetworkInterfaceAttributeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NetworkInterfaceId: NetworkInterfaceId
-    Attribute: Optional[NetworkInterfaceAttribute]
+    Attribute: NetworkInterfaceAttribute | None
 
 
 class DescribeNetworkInterfaceAttributeResult(TypedDict, total=False):
-    Attachment: Optional[NetworkInterfaceAttachment]
-    Description: Optional[AttributeValue]
-    Groups: Optional[GroupIdentifierList]
-    NetworkInterfaceId: Optional[String]
-    SourceDestCheck: Optional[AttributeBooleanValue]
-    AssociatePublicIpAddress: Optional[Boolean]
+    Attachment: NetworkInterfaceAttachment | None
+    Description: AttributeValue | None
+    Groups: GroupIdentifierList | None
+    NetworkInterfaceId: String | None
+    SourceDestCheck: AttributeBooleanValue | None
+    AssociatePublicIpAddress: Boolean | None
 
 
-NetworkInterfacePermissionIdList = List[NetworkInterfacePermissionId]
+NetworkInterfacePermissionIdList = list[NetworkInterfacePermissionId]
 
 
 class DescribeNetworkInterfacePermissionsRequest(ServiceRequest):
-    NetworkInterfacePermissionIds: Optional[NetworkInterfacePermissionIdList]
-    Filters: Optional[FilterList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeNetworkInterfacePermissionsMaxResults]
+    NetworkInterfacePermissionIds: NetworkInterfacePermissionIdList | None
+    Filters: FilterList | None
+    NextToken: String | None
+    MaxResults: DescribeNetworkInterfacePermissionsMaxResults | None
 
 
-NetworkInterfacePermissionList = List[NetworkInterfacePermission]
+NetworkInterfacePermissionList = list[NetworkInterfacePermission]
 
 
 class DescribeNetworkInterfacePermissionsResult(TypedDict, total=False):
-    NetworkInterfacePermissions: Optional[NetworkInterfacePermissionList]
-    NextToken: Optional[String]
+    NetworkInterfacePermissions: NetworkInterfacePermissionList | None
+    NextToken: String | None
 
 
-NetworkInterfaceIdList = List[NetworkInterfaceId]
+NetworkInterfaceIdList = list[NetworkInterfaceId]
 
 
 class DescribeNetworkInterfacesRequest(ServiceRequest):
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeNetworkInterfacesMaxResults]
-    DryRun: Optional[Boolean]
-    NetworkInterfaceIds: Optional[NetworkInterfaceIdList]
-    Filters: Optional[FilterList]
+    NextToken: String | None
+    MaxResults: DescribeNetworkInterfacesMaxResults | None
+    DryRun: Boolean | None
+    NetworkInterfaceIds: NetworkInterfaceIdList | None
+    Filters: FilterList | None
 
 
-NetworkInterfaceList = List[NetworkInterface]
+NetworkInterfaceList = list[NetworkInterface]
 
 
 class DescribeNetworkInterfacesResult(TypedDict, total=False):
-    NetworkInterfaces: Optional[NetworkInterfaceList]
-    NextToken: Optional[String]
+    NetworkInterfaces: NetworkInterfaceList | None
+    NextToken: String | None
 
 
-OutpostLagIdSet = List[OutpostLagId]
+OutpostLagIdSet = list[OutpostLagId]
 
 
 class DescribeOutpostLagsRequest(ServiceRequest):
-    OutpostLagIds: Optional[OutpostLagIdSet]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[OutpostLagMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    OutpostLagIds: OutpostLagIdSet | None
+    Filters: FilterList | None
+    MaxResults: OutpostLagMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-ServiceLinkVirtualInterfaceIdSet = List[ServiceLinkVirtualInterfaceId]
+ServiceLinkVirtualInterfaceIdSet = list[ServiceLinkVirtualInterfaceId]
 
 
 class OutpostLag(TypedDict, total=False):
-    OutpostArn: Optional[String]
-    OwnerId: Optional[String]
-    State: Optional[String]
-    OutpostLagId: Optional[OutpostLagId]
-    LocalGatewayVirtualInterfaceIds: Optional[LocalGatewayVirtualInterfaceIdSet]
-    ServiceLinkVirtualInterfaceIds: Optional[ServiceLinkVirtualInterfaceIdSet]
-    Tags: Optional[TagList]
+    OutpostArn: String | None
+    OwnerId: String | None
+    State: String | None
+    OutpostLagId: OutpostLagId | None
+    LocalGatewayVirtualInterfaceIds: LocalGatewayVirtualInterfaceIdSet | None
+    ServiceLinkVirtualInterfaceIds: ServiceLinkVirtualInterfaceIdSet | None
+    Tags: TagList | None
 
 
-OutpostLagSet = List[OutpostLag]
+OutpostLagSet = list[OutpostLag]
 
 
 class DescribeOutpostLagsResult(TypedDict, total=False):
-    OutpostLags: Optional[OutpostLagSet]
-    NextToken: Optional[String]
+    OutpostLags: OutpostLagSet | None
+    NextToken: String | None
 
 
-PlacementGroupStringList = List[PlacementGroupName]
-PlacementGroupIdStringList = List[PlacementGroupId]
+PlacementGroupStringList = list[PlacementGroupName]
+PlacementGroupIdStringList = list[PlacementGroupId]
 
 
 class DescribePlacementGroupsRequest(ServiceRequest):
-    GroupIds: Optional[PlacementGroupIdStringList]
-    DryRun: Optional[Boolean]
-    GroupNames: Optional[PlacementGroupStringList]
-    Filters: Optional[FilterList]
+    GroupIds: PlacementGroupIdStringList | None
+    DryRun: Boolean | None
+    GroupNames: PlacementGroupStringList | None
+    Filters: FilterList | None
 
 
-PlacementGroupList = List[PlacementGroup]
+PlacementGroupList = list[PlacementGroup]
 
 
 class DescribePlacementGroupsResult(TypedDict, total=False):
-    PlacementGroups: Optional[PlacementGroupList]
+    PlacementGroups: PlacementGroupList | None
 
 
-PrefixListResourceIdStringList = List[PrefixListResourceId]
+PrefixListResourceIdStringList = list[PrefixListResourceId]
 
 
 class DescribePrefixListsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
-    PrefixListIds: Optional[PrefixListResourceIdStringList]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: Integer | None
+    NextToken: String | None
+    PrefixListIds: PrefixListResourceIdStringList | None
 
 
 class PrefixList(TypedDict, total=False):
-    Cidrs: Optional[ValueStringList]
-    PrefixListId: Optional[String]
-    PrefixListName: Optional[String]
+    Cidrs: ValueStringList | None
+    PrefixListId: String | None
+    PrefixListName: String | None
 
 
-PrefixListSet = List[PrefixList]
+PrefixListSet = list[PrefixList]
 
 
 class DescribePrefixListsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    PrefixLists: Optional[PrefixListSet]
+    NextToken: String | None
+    PrefixLists: PrefixListSet | None
 
 
-ResourceList = List[String]
+ResourceList = list[String]
 
 
 class DescribePrincipalIdFormatRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Resources: Optional[ResourceList]
-    MaxResults: Optional[DescribePrincipalIdFormatMaxResults]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    Resources: ResourceList | None
+    MaxResults: DescribePrincipalIdFormatMaxResults | None
+    NextToken: String | None
 
 
 class PrincipalIdFormat(TypedDict, total=False):
-    Arn: Optional[String]
-    Statuses: Optional[IdFormatList]
+    Arn: String | None
+    Statuses: IdFormatList | None
 
 
-PrincipalIdFormatList = List[PrincipalIdFormat]
+PrincipalIdFormatList = list[PrincipalIdFormat]
 
 
 class DescribePrincipalIdFormatResult(TypedDict, total=False):
-    Principals: Optional[PrincipalIdFormatList]
-    NextToken: Optional[String]
+    Principals: PrincipalIdFormatList | None
+    NextToken: String | None
 
 
-PublicIpv4PoolIdStringList = List[Ipv4PoolEc2Id]
+PublicIpv4PoolIdStringList = list[Ipv4PoolEc2Id]
 
 
 class DescribePublicIpv4PoolsRequest(ServiceRequest):
-    PoolIds: Optional[PublicIpv4PoolIdStringList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[PoolMaxResults]
-    Filters: Optional[FilterList]
+    PoolIds: PublicIpv4PoolIdStringList | None
+    NextToken: NextToken | None
+    MaxResults: PoolMaxResults | None
+    Filters: FilterList | None
 
 
 class PublicIpv4PoolRange(TypedDict, total=False):
-    FirstAddress: Optional[String]
-    LastAddress: Optional[String]
-    AddressCount: Optional[Integer]
-    AvailableAddressCount: Optional[Integer]
+    FirstAddress: String | None
+    LastAddress: String | None
+    AddressCount: Integer | None
+    AvailableAddressCount: Integer | None
 
 
-PublicIpv4PoolRangeSet = List[PublicIpv4PoolRange]
+PublicIpv4PoolRangeSet = list[PublicIpv4PoolRange]
 
 
 class PublicIpv4Pool(TypedDict, total=False):
-    PoolId: Optional[String]
-    Description: Optional[String]
-    PoolAddressRanges: Optional[PublicIpv4PoolRangeSet]
-    TotalAddressCount: Optional[Integer]
-    TotalAvailableAddressCount: Optional[Integer]
-    NetworkBorderGroup: Optional[String]
-    Tags: Optional[TagList]
+    PoolId: String | None
+    Description: String | None
+    PoolAddressRanges: PublicIpv4PoolRangeSet | None
+    TotalAddressCount: Integer | None
+    TotalAvailableAddressCount: Integer | None
+    NetworkBorderGroup: String | None
+    Tags: TagList | None
 
 
-PublicIpv4PoolSet = List[PublicIpv4Pool]
+PublicIpv4PoolSet = list[PublicIpv4Pool]
 
 
 class DescribePublicIpv4PoolsResult(TypedDict, total=False):
-    PublicIpv4Pools: Optional[PublicIpv4PoolSet]
-    NextToken: Optional[String]
+    PublicIpv4Pools: PublicIpv4PoolSet | None
+    NextToken: String | None
 
 
-RegionNameStringList = List[String]
+RegionNameStringList = list[String]
 
 
 class DescribeRegionsRequest(ServiceRequest):
-    RegionNames: Optional[RegionNameStringList]
-    AllRegions: Optional[Boolean]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    RegionNames: RegionNameStringList | None
+    AllRegions: Boolean | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class Region(TypedDict, total=False):
-    OptInStatus: Optional[String]
-    RegionName: Optional[String]
-    Endpoint: Optional[String]
+    OptInStatus: String | None
+    RegionName: String | None
+    Endpoint: String | None
 
 
-RegionList = List[Region]
+RegionList = list[Region]
 
 
 class DescribeRegionsResult(TypedDict, total=False):
-    Regions: Optional[RegionList]
+    Regions: RegionList | None
 
 
-ReplaceRootVolumeTaskIds = List[ReplaceRootVolumeTaskId]
+ReplaceRootVolumeTaskIds = list[ReplaceRootVolumeTaskId]
 
 
 class DescribeReplaceRootVolumeTasksRequest(ServiceRequest):
-    ReplaceRootVolumeTaskIds: Optional[ReplaceRootVolumeTaskIds]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[DescribeReplaceRootVolumeTasksMaxResults]
-    NextToken: Optional[NextToken]
-    DryRun: Optional[Boolean]
+    ReplaceRootVolumeTaskIds: ReplaceRootVolumeTaskIds | None
+    Filters: FilterList | None
+    MaxResults: DescribeReplaceRootVolumeTasksMaxResults | None
+    NextToken: NextToken | None
+    DryRun: Boolean | None
 
 
-ReplaceRootVolumeTasks = List[ReplaceRootVolumeTask]
+ReplaceRootVolumeTasks = list[ReplaceRootVolumeTask]
 
 
 class DescribeReplaceRootVolumeTasksResult(TypedDict, total=False):
-    ReplaceRootVolumeTasks: Optional[ReplaceRootVolumeTasks]
-    NextToken: Optional[String]
+    ReplaceRootVolumeTasks: ReplaceRootVolumeTasks | None
+    NextToken: String | None
 
 
 class DescribeReservedInstancesListingsRequest(ServiceRequest):
-    ReservedInstancesId: Optional[ReservationId]
-    ReservedInstancesListingId: Optional[ReservedInstancesListingId]
-    Filters: Optional[FilterList]
+    ReservedInstancesId: ReservationId | None
+    ReservedInstancesListingId: ReservedInstancesListingId | None
+    Filters: FilterList | None
 
 
 class DescribeReservedInstancesListingsResult(TypedDict, total=False):
-    ReservedInstancesListings: Optional[ReservedInstancesListingList]
+    ReservedInstancesListings: ReservedInstancesListingList | None
 
 
-ReservedInstancesModificationIdStringList = List[ReservedInstancesModificationId]
+ReservedInstancesModificationIdStringList = list[ReservedInstancesModificationId]
 
 
 class DescribeReservedInstancesModificationsRequest(ServiceRequest):
-    ReservedInstancesModificationIds: Optional[ReservedInstancesModificationIdStringList]
-    NextToken: Optional[String]
-    Filters: Optional[FilterList]
+    ReservedInstancesModificationIds: ReservedInstancesModificationIdStringList | None
+    NextToken: String | None
+    Filters: FilterList | None
 
 
 class ReservedInstancesId(TypedDict, total=False):
-    ReservedInstancesId: Optional[String]
+    ReservedInstancesId: String | None
 
 
-ReservedIntancesIds = List[ReservedInstancesId]
+ReservedIntancesIds = list[ReservedInstancesId]
 
 
 class ReservedInstancesConfiguration(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    InstanceCount: Optional[Integer]
-    InstanceType: Optional[InstanceType]
-    Platform: Optional[String]
-    Scope: Optional[scope]
-    AvailabilityZoneId: Optional[String]
+    AvailabilityZone: String | None
+    InstanceCount: Integer | None
+    InstanceType: InstanceType | None
+    Platform: String | None
+    Scope: scope | None
+    AvailabilityZoneId: String | None
 
 
 class ReservedInstancesModificationResult(TypedDict, total=False):
-    ReservedInstancesId: Optional[String]
-    TargetConfiguration: Optional[ReservedInstancesConfiguration]
+    ReservedInstancesId: String | None
+    TargetConfiguration: ReservedInstancesConfiguration | None
 
 
-ReservedInstancesModificationResultList = List[ReservedInstancesModificationResult]
+ReservedInstancesModificationResultList = list[ReservedInstancesModificationResult]
 
 
 class ReservedInstancesModification(TypedDict, total=False):
-    ClientToken: Optional[String]
-    CreateDate: Optional[DateTime]
-    EffectiveDate: Optional[DateTime]
-    ModificationResults: Optional[ReservedInstancesModificationResultList]
-    ReservedInstancesIds: Optional[ReservedIntancesIds]
-    ReservedInstancesModificationId: Optional[String]
-    Status: Optional[String]
-    StatusMessage: Optional[String]
-    UpdateDate: Optional[DateTime]
+    ClientToken: String | None
+    CreateDate: DateTime | None
+    EffectiveDate: DateTime | None
+    ModificationResults: ReservedInstancesModificationResultList | None
+    ReservedInstancesIds: ReservedIntancesIds | None
+    ReservedInstancesModificationId: String | None
+    Status: String | None
+    StatusMessage: String | None
+    UpdateDate: DateTime | None
 
 
-ReservedInstancesModificationList = List[ReservedInstancesModification]
+ReservedInstancesModificationList = list[ReservedInstancesModification]
 
 
 class DescribeReservedInstancesModificationsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    ReservedInstancesModifications: Optional[ReservedInstancesModificationList]
+    NextToken: String | None
+    ReservedInstancesModifications: ReservedInstancesModificationList | None
 
 
-ReservedInstancesOfferingIdStringList = List[ReservedInstancesOfferingId]
+ReservedInstancesOfferingIdStringList = list[ReservedInstancesOfferingId]
 
 
 class DescribeReservedInstancesOfferingsRequest(ServiceRequest):
-    AvailabilityZone: Optional[String]
-    IncludeMarketplace: Optional[Boolean]
-    InstanceType: Optional[InstanceType]
-    MaxDuration: Optional[Long]
-    MaxInstanceCount: Optional[Integer]
-    MinDuration: Optional[Long]
-    OfferingClass: Optional[OfferingClassType]
-    ProductDescription: Optional[RIProductDescription]
-    ReservedInstancesOfferingIds: Optional[ReservedInstancesOfferingIdStringList]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    InstanceTenancy: Optional[Tenancy]
-    OfferingType: Optional[OfferingTypeValues]
-    NextToken: Optional[String]
-    MaxResults: Optional[Integer]
+    AvailabilityZone: String | None
+    IncludeMarketplace: Boolean | None
+    InstanceType: InstanceType | None
+    MaxDuration: Long | None
+    MaxInstanceCount: Integer | None
+    MinDuration: Long | None
+    OfferingClass: OfferingClassType | None
+    ProductDescription: RIProductDescription | None
+    ReservedInstancesOfferingIds: ReservedInstancesOfferingIdStringList | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    InstanceTenancy: Tenancy | None
+    OfferingType: OfferingTypeValues | None
+    NextToken: String | None
+    MaxResults: Integer | None
 
 
 class RecurringCharge(TypedDict, total=False):
-    Amount: Optional[Double]
-    Frequency: Optional[RecurringChargeFrequency]
+    Amount: Double | None
+    Frequency: RecurringChargeFrequency | None
 
 
-RecurringChargesList = List[RecurringCharge]
+RecurringChargesList = list[RecurringCharge]
 
 
 class PricingDetail(TypedDict, total=False):
-    Count: Optional[Integer]
-    Price: Optional[Double]
+    Count: Integer | None
+    Price: Double | None
 
 
-PricingDetailsList = List[PricingDetail]
+PricingDetailsList = list[PricingDetail]
 
 
 class ReservedInstancesOffering(TypedDict, total=False):
-    CurrencyCode: Optional[CurrencyCodeValues]
-    InstanceTenancy: Optional[Tenancy]
-    Marketplace: Optional[Boolean]
-    OfferingClass: Optional[OfferingClassType]
-    OfferingType: Optional[OfferingTypeValues]
-    PricingDetails: Optional[PricingDetailsList]
-    RecurringCharges: Optional[RecurringChargesList]
-    Scope: Optional[scope]
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    ReservedInstancesOfferingId: Optional[String]
-    InstanceType: Optional[InstanceType]
-    AvailabilityZone: Optional[String]
-    Duration: Optional[Long]
-    UsagePrice: Optional[Float]
-    FixedPrice: Optional[Float]
-    ProductDescription: Optional[RIProductDescription]
+    CurrencyCode: CurrencyCodeValues | None
+    InstanceTenancy: Tenancy | None
+    Marketplace: Boolean | None
+    OfferingClass: OfferingClassType | None
+    OfferingType: OfferingTypeValues | None
+    PricingDetails: PricingDetailsList | None
+    RecurringCharges: RecurringChargesList | None
+    Scope: scope | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    ReservedInstancesOfferingId: String | None
+    InstanceType: InstanceType | None
+    AvailabilityZone: String | None
+    Duration: Long | None
+    UsagePrice: Float | None
+    FixedPrice: Float | None
+    ProductDescription: RIProductDescription | None
 
 
-ReservedInstancesOfferingList = List[ReservedInstancesOffering]
+ReservedInstancesOfferingList = list[ReservedInstancesOffering]
 
 
 class DescribeReservedInstancesOfferingsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    ReservedInstancesOfferings: Optional[ReservedInstancesOfferingList]
+    NextToken: String | None
+    ReservedInstancesOfferings: ReservedInstancesOfferingList | None
 
 
-ReservedInstancesIdStringList = List[ReservationId]
+ReservedInstancesIdStringList = list[ReservationId]
 
 
 class DescribeReservedInstancesRequest(ServiceRequest):
-    OfferingClass: Optional[OfferingClassType]
-    ReservedInstancesIds: Optional[ReservedInstancesIdStringList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    OfferingType: Optional[OfferingTypeValues]
+    OfferingClass: OfferingClassType | None
+    ReservedInstancesIds: ReservedInstancesIdStringList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    OfferingType: OfferingTypeValues | None
 
 
 class ReservedInstances(TypedDict, total=False):
-    CurrencyCode: Optional[CurrencyCodeValues]
-    InstanceTenancy: Optional[Tenancy]
-    OfferingClass: Optional[OfferingClassType]
-    OfferingType: Optional[OfferingTypeValues]
-    RecurringCharges: Optional[RecurringChargesList]
-    Scope: Optional[scope]
-    Tags: Optional[TagList]
-    AvailabilityZoneId: Optional[String]
-    ReservedInstancesId: Optional[String]
-    InstanceType: Optional[InstanceType]
-    AvailabilityZone: Optional[String]
-    Start: Optional[DateTime]
-    End: Optional[DateTime]
-    Duration: Optional[Long]
-    UsagePrice: Optional[Float]
-    FixedPrice: Optional[Float]
-    InstanceCount: Optional[Integer]
-    ProductDescription: Optional[RIProductDescription]
-    State: Optional[ReservedInstanceState]
+    CurrencyCode: CurrencyCodeValues | None
+    InstanceTenancy: Tenancy | None
+    OfferingClass: OfferingClassType | None
+    OfferingType: OfferingTypeValues | None
+    RecurringCharges: RecurringChargesList | None
+    Scope: scope | None
+    Tags: TagList | None
+    AvailabilityZoneId: String | None
+    ReservedInstancesId: String | None
+    InstanceType: InstanceType | None
+    AvailabilityZone: String | None
+    Start: DateTime | None
+    End: DateTime | None
+    Duration: Long | None
+    UsagePrice: Float | None
+    FixedPrice: Float | None
+    InstanceCount: Integer | None
+    ProductDescription: RIProductDescription | None
+    State: ReservedInstanceState | None
 
 
-ReservedInstancesList = List[ReservedInstances]
+ReservedInstancesList = list[ReservedInstances]
 
 
 class DescribeReservedInstancesResult(TypedDict, total=False):
-    ReservedInstances: Optional[ReservedInstancesList]
+    ReservedInstances: ReservedInstancesList | None
 
 
-RouteServerEndpointIdsList = List[RouteServerEndpointId]
+RouteServerEndpointIdsList = list[RouteServerEndpointId]
 
 
 class DescribeRouteServerEndpointsRequest(ServiceRequest):
-    RouteServerEndpointIds: Optional[RouteServerEndpointIdsList]
-    NextToken: Optional[String]
-    MaxResults: Optional[RouteServerMaxResults]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    RouteServerEndpointIds: RouteServerEndpointIdsList | None
+    NextToken: String | None
+    MaxResults: RouteServerMaxResults | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
-RouteServerEndpointsList = List[RouteServerEndpoint]
+RouteServerEndpointsList = list[RouteServerEndpoint]
 
 
 class DescribeRouteServerEndpointsResult(TypedDict, total=False):
-    RouteServerEndpoints: Optional[RouteServerEndpointsList]
-    NextToken: Optional[String]
+    RouteServerEndpoints: RouteServerEndpointsList | None
+    NextToken: String | None
 
 
-RouteServerPeerIdsList = List[RouteServerPeerId]
+RouteServerPeerIdsList = list[RouteServerPeerId]
 
 
 class DescribeRouteServerPeersRequest(ServiceRequest):
-    RouteServerPeerIds: Optional[RouteServerPeerIdsList]
-    NextToken: Optional[String]
-    MaxResults: Optional[RouteServerMaxResults]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    RouteServerPeerIds: RouteServerPeerIdsList | None
+    NextToken: String | None
+    MaxResults: RouteServerMaxResults | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
-RouteServerPeersList = List[RouteServerPeer]
+RouteServerPeersList = list[RouteServerPeer]
 
 
 class DescribeRouteServerPeersResult(TypedDict, total=False):
-    RouteServerPeers: Optional[RouteServerPeersList]
-    NextToken: Optional[String]
+    RouteServerPeers: RouteServerPeersList | None
+    NextToken: String | None
 
 
-RouteServerIdsList = List[RouteServerId]
+RouteServerIdsList = list[RouteServerId]
 
 
 class DescribeRouteServersRequest(ServiceRequest):
-    RouteServerIds: Optional[RouteServerIdsList]
-    NextToken: Optional[String]
-    MaxResults: Optional[RouteServerMaxResults]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    RouteServerIds: RouteServerIdsList | None
+    NextToken: String | None
+    MaxResults: RouteServerMaxResults | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
-RouteServersList = List[RouteServer]
+RouteServersList = list[RouteServer]
 
 
 class DescribeRouteServersResult(TypedDict, total=False):
-    RouteServers: Optional[RouteServersList]
-    NextToken: Optional[String]
+    RouteServers: RouteServersList | None
+    NextToken: String | None
 
 
-RouteTableIdStringList = List[RouteTableId]
+RouteTableIdStringList = list[RouteTableId]
 
 
 class DescribeRouteTablesRequest(ServiceRequest):
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeRouteTablesMaxResults]
-    DryRun: Optional[Boolean]
-    RouteTableIds: Optional[RouteTableIdStringList]
-    Filters: Optional[FilterList]
+    NextToken: String | None
+    MaxResults: DescribeRouteTablesMaxResults | None
+    DryRun: Boolean | None
+    RouteTableIds: RouteTableIdStringList | None
+    Filters: FilterList | None
 
 
-RouteTableList = List[RouteTable]
+RouteTableList = list[RouteTable]
 
 
 class DescribeRouteTablesResult(TypedDict, total=False):
-    RouteTables: Optional[RouteTableList]
-    NextToken: Optional[String]
+    RouteTables: RouteTableList | None
+    NextToken: String | None
 
 
-OccurrenceDayRequestSet = List[Integer]
+OccurrenceDayRequestSet = list[Integer]
 
 
 class ScheduledInstanceRecurrenceRequest(TypedDict, total=False):
-    Frequency: Optional[String]
-    Interval: Optional[Integer]
-    OccurrenceDays: Optional[OccurrenceDayRequestSet]
-    OccurrenceRelativeToEnd: Optional[Boolean]
-    OccurrenceUnit: Optional[String]
+    Frequency: String | None
+    Interval: Integer | None
+    OccurrenceDays: OccurrenceDayRequestSet | None
+    OccurrenceRelativeToEnd: Boolean | None
+    OccurrenceUnit: String | None
 
 
 class SlotDateTimeRangeRequest(TypedDict, total=False):
@@ -15470,538 +15498,538 @@ class SlotDateTimeRangeRequest(TypedDict, total=False):
 
 
 class DescribeScheduledInstanceAvailabilityRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    DryRun: Boolean | None
+    Filters: FilterList | None
     FirstSlotStartTimeRange: SlotDateTimeRangeRequest
-    MaxResults: Optional[DescribeScheduledInstanceAvailabilityMaxResults]
-    MaxSlotDurationInHours: Optional[Integer]
-    MinSlotDurationInHours: Optional[Integer]
-    NextToken: Optional[String]
+    MaxResults: DescribeScheduledInstanceAvailabilityMaxResults | None
+    MaxSlotDurationInHours: Integer | None
+    MinSlotDurationInHours: Integer | None
+    NextToken: String | None
     Recurrence: ScheduledInstanceRecurrenceRequest
 
 
-OccurrenceDaySet = List[Integer]
+OccurrenceDaySet = list[Integer]
 
 
 class ScheduledInstanceRecurrence(TypedDict, total=False):
-    Frequency: Optional[String]
-    Interval: Optional[Integer]
-    OccurrenceDaySet: Optional[OccurrenceDaySet]
-    OccurrenceRelativeToEnd: Optional[Boolean]
-    OccurrenceUnit: Optional[String]
+    Frequency: String | None
+    Interval: Integer | None
+    OccurrenceDaySet: OccurrenceDaySet | None
+    OccurrenceRelativeToEnd: Boolean | None
+    OccurrenceUnit: String | None
 
 
 class ScheduledInstanceAvailability(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    AvailableInstanceCount: Optional[Integer]
-    FirstSlotStartTime: Optional[DateTime]
-    HourlyPrice: Optional[String]
-    InstanceType: Optional[String]
-    MaxTermDurationInDays: Optional[Integer]
-    MinTermDurationInDays: Optional[Integer]
-    NetworkPlatform: Optional[String]
-    Platform: Optional[String]
-    PurchaseToken: Optional[String]
-    Recurrence: Optional[ScheduledInstanceRecurrence]
-    SlotDurationInHours: Optional[Integer]
-    TotalScheduledInstanceHours: Optional[Integer]
+    AvailabilityZone: String | None
+    AvailableInstanceCount: Integer | None
+    FirstSlotStartTime: DateTime | None
+    HourlyPrice: String | None
+    InstanceType: String | None
+    MaxTermDurationInDays: Integer | None
+    MinTermDurationInDays: Integer | None
+    NetworkPlatform: String | None
+    Platform: String | None
+    PurchaseToken: String | None
+    Recurrence: ScheduledInstanceRecurrence | None
+    SlotDurationInHours: Integer | None
+    TotalScheduledInstanceHours: Integer | None
 
 
-ScheduledInstanceAvailabilitySet = List[ScheduledInstanceAvailability]
+ScheduledInstanceAvailabilitySet = list[ScheduledInstanceAvailability]
 
 
 class DescribeScheduledInstanceAvailabilityResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    ScheduledInstanceAvailabilitySet: Optional[ScheduledInstanceAvailabilitySet]
+    NextToken: String | None
+    ScheduledInstanceAvailabilitySet: ScheduledInstanceAvailabilitySet | None
 
 
 class SlotStartTimeRangeRequest(TypedDict, total=False):
-    EarliestTime: Optional[DateTime]
-    LatestTime: Optional[DateTime]
+    EarliestTime: DateTime | None
+    LatestTime: DateTime | None
 
 
-ScheduledInstanceIdRequestSet = List[ScheduledInstanceId]
+ScheduledInstanceIdRequestSet = list[ScheduledInstanceId]
 
 
 class DescribeScheduledInstancesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
-    ScheduledInstanceIds: Optional[ScheduledInstanceIdRequestSet]
-    SlotStartTimeRange: Optional[SlotStartTimeRangeRequest]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: Integer | None
+    NextToken: String | None
+    ScheduledInstanceIds: ScheduledInstanceIdRequestSet | None
+    SlotStartTimeRange: SlotStartTimeRangeRequest | None
 
 
 class ScheduledInstance(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    CreateDate: Optional[DateTime]
-    HourlyPrice: Optional[String]
-    InstanceCount: Optional[Integer]
-    InstanceType: Optional[String]
-    NetworkPlatform: Optional[String]
-    NextSlotStartTime: Optional[DateTime]
-    Platform: Optional[String]
-    PreviousSlotEndTime: Optional[DateTime]
-    Recurrence: Optional[ScheduledInstanceRecurrence]
-    ScheduledInstanceId: Optional[String]
-    SlotDurationInHours: Optional[Integer]
-    TermEndDate: Optional[DateTime]
-    TermStartDate: Optional[DateTime]
-    TotalScheduledInstanceHours: Optional[Integer]
+    AvailabilityZone: String | None
+    CreateDate: DateTime | None
+    HourlyPrice: String | None
+    InstanceCount: Integer | None
+    InstanceType: String | None
+    NetworkPlatform: String | None
+    NextSlotStartTime: DateTime | None
+    Platform: String | None
+    PreviousSlotEndTime: DateTime | None
+    Recurrence: ScheduledInstanceRecurrence | None
+    ScheduledInstanceId: String | None
+    SlotDurationInHours: Integer | None
+    TermEndDate: DateTime | None
+    TermStartDate: DateTime | None
+    TotalScheduledInstanceHours: Integer | None
 
 
-ScheduledInstanceSet = List[ScheduledInstance]
+ScheduledInstanceSet = list[ScheduledInstance]
 
 
 class DescribeScheduledInstancesResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    ScheduledInstanceSet: Optional[ScheduledInstanceSet]
+    NextToken: String | None
+    ScheduledInstanceSet: ScheduledInstanceSet | None
 
 
-GroupIds = List[SecurityGroupId]
+GroupIds = list[SecurityGroupId]
 
 
 class DescribeSecurityGroupReferencesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     GroupId: GroupIds
 
 
 class SecurityGroupReference(TypedDict, total=False):
-    GroupId: Optional[String]
-    ReferencingVpcId: Optional[String]
-    VpcPeeringConnectionId: Optional[String]
-    TransitGatewayId: Optional[String]
+    GroupId: String | None
+    ReferencingVpcId: String | None
+    VpcPeeringConnectionId: String | None
+    TransitGatewayId: String | None
 
 
-SecurityGroupReferences = List[SecurityGroupReference]
+SecurityGroupReferences = list[SecurityGroupReference]
 
 
 class DescribeSecurityGroupReferencesResult(TypedDict, total=False):
-    SecurityGroupReferenceSet: Optional[SecurityGroupReferences]
+    SecurityGroupReferenceSet: SecurityGroupReferences | None
 
 
-SecurityGroupRuleIdList = List[String]
+SecurityGroupRuleIdList = list[String]
 
 
 class DescribeSecurityGroupRulesRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    SecurityGroupRuleIds: Optional[SecurityGroupRuleIdList]
-    DryRun: Optional[Boolean]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeSecurityGroupRulesMaxResults]
+    Filters: FilterList | None
+    SecurityGroupRuleIds: SecurityGroupRuleIdList | None
+    DryRun: Boolean | None
+    NextToken: String | None
+    MaxResults: DescribeSecurityGroupRulesMaxResults | None
 
 
 class DescribeSecurityGroupRulesResult(TypedDict, total=False):
-    SecurityGroupRules: Optional[SecurityGroupRuleList]
-    NextToken: Optional[String]
+    SecurityGroupRules: SecurityGroupRuleList | None
+    NextToken: String | None
 
 
 class DescribeSecurityGroupVpcAssociationsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeSecurityGroupVpcAssociationsMaxResults]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    NextToken: String | None
+    MaxResults: DescribeSecurityGroupVpcAssociationsMaxResults | None
+    DryRun: Boolean | None
 
 
 class SecurityGroupVpcAssociation(TypedDict, total=False):
-    GroupId: Optional[SecurityGroupId]
-    VpcId: Optional[VpcId]
-    VpcOwnerId: Optional[String]
-    State: Optional[SecurityGroupVpcAssociationState]
-    StateReason: Optional[String]
-    GroupOwnerId: Optional[String]
+    GroupId: SecurityGroupId | None
+    VpcId: VpcId | None
+    VpcOwnerId: String | None
+    State: SecurityGroupVpcAssociationState | None
+    StateReason: String | None
+    GroupOwnerId: String | None
 
 
-SecurityGroupVpcAssociationList = List[SecurityGroupVpcAssociation]
+SecurityGroupVpcAssociationList = list[SecurityGroupVpcAssociation]
 
 
 class DescribeSecurityGroupVpcAssociationsResult(TypedDict, total=False):
-    SecurityGroupVpcAssociations: Optional[SecurityGroupVpcAssociationList]
-    NextToken: Optional[String]
+    SecurityGroupVpcAssociations: SecurityGroupVpcAssociationList | None
+    NextToken: String | None
 
 
-GroupNameStringList = List[SecurityGroupName]
+GroupNameStringList = list[SecurityGroupName]
 
 
 class DescribeSecurityGroupsRequest(ServiceRequest):
-    GroupIds: Optional[GroupIdStringList]
-    GroupNames: Optional[GroupNameStringList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeSecurityGroupsMaxResults]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    GroupIds: GroupIdStringList | None
+    GroupNames: GroupNameStringList | None
+    NextToken: String | None
+    MaxResults: DescribeSecurityGroupsMaxResults | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class SecurityGroup(TypedDict, total=False):
-    GroupId: Optional[String]
-    IpPermissionsEgress: Optional[IpPermissionList]
-    Tags: Optional[TagList]
-    VpcId: Optional[String]
-    SecurityGroupArn: Optional[String]
-    OwnerId: Optional[String]
-    GroupName: Optional[String]
-    Description: Optional[String]
-    IpPermissions: Optional[IpPermissionList]
+    GroupId: String | None
+    IpPermissionsEgress: IpPermissionList | None
+    Tags: TagList | None
+    VpcId: String | None
+    SecurityGroupArn: String | None
+    OwnerId: String | None
+    GroupName: String | None
+    Description: String | None
+    IpPermissions: IpPermissionList | None
 
 
-SecurityGroupList = List[SecurityGroup]
+SecurityGroupList = list[SecurityGroup]
 
 
 class DescribeSecurityGroupsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    SecurityGroups: Optional[SecurityGroupList]
+    NextToken: String | None
+    SecurityGroups: SecurityGroupList | None
 
 
 class DescribeServiceLinkVirtualInterfacesRequest(ServiceRequest):
-    ServiceLinkVirtualInterfaceIds: Optional[ServiceLinkVirtualInterfaceIdSet]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[ServiceLinkMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ServiceLinkVirtualInterfaceIds: ServiceLinkVirtualInterfaceIdSet | None
+    Filters: FilterList | None
+    MaxResults: ServiceLinkMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class ServiceLinkVirtualInterface(TypedDict, total=False):
-    ServiceLinkVirtualInterfaceId: Optional[ServiceLinkVirtualInterfaceId]
-    ServiceLinkVirtualInterfaceArn: Optional[ResourceArn]
-    OutpostId: Optional[String]
-    OutpostArn: Optional[String]
-    OwnerId: Optional[String]
-    LocalAddress: Optional[String]
-    PeerAddress: Optional[String]
-    PeerBgpAsn: Optional[Long]
-    Vlan: Optional[Integer]
-    OutpostLagId: Optional[OutpostLagId]
-    Tags: Optional[TagList]
-    ConfigurationState: Optional[ServiceLinkVirtualInterfaceConfigurationState]
+    ServiceLinkVirtualInterfaceId: ServiceLinkVirtualInterfaceId | None
+    ServiceLinkVirtualInterfaceArn: ResourceArn | None
+    OutpostId: String | None
+    OutpostArn: String | None
+    OwnerId: String | None
+    LocalAddress: String | None
+    PeerAddress: String | None
+    PeerBgpAsn: Long | None
+    Vlan: Integer | None
+    OutpostLagId: OutpostLagId | None
+    Tags: TagList | None
+    ConfigurationState: ServiceLinkVirtualInterfaceConfigurationState | None
 
 
-ServiceLinkVirtualInterfaceSet = List[ServiceLinkVirtualInterface]
+ServiceLinkVirtualInterfaceSet = list[ServiceLinkVirtualInterface]
 
 
 class DescribeServiceLinkVirtualInterfacesResult(TypedDict, total=False):
-    ServiceLinkVirtualInterfaces: Optional[ServiceLinkVirtualInterfaceSet]
-    NextToken: Optional[String]
+    ServiceLinkVirtualInterfaces: ServiceLinkVirtualInterfaceSet | None
+    NextToken: String | None
 
 
 class DescribeSnapshotAttributeRequest(ServiceRequest):
     Attribute: SnapshotAttributeName
     SnapshotId: SnapshotId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DescribeSnapshotAttributeResult(TypedDict, total=False):
-    ProductCodes: Optional[ProductCodeList]
-    SnapshotId: Optional[String]
-    CreateVolumePermissions: Optional[CreateVolumePermissionList]
+    ProductCodes: ProductCodeList | None
+    SnapshotId: String | None
+    CreateVolumePermissions: CreateVolumePermissionList | None
 
 
 class DescribeSnapshotTierStatusRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeSnapshotTierStatusMaxResults]
+    Filters: FilterList | None
+    DryRun: Boolean | None
+    NextToken: String | None
+    MaxResults: DescribeSnapshotTierStatusMaxResults | None
 
 
 class SnapshotTierStatus(TypedDict, total=False):
-    SnapshotId: Optional[SnapshotId]
-    VolumeId: Optional[VolumeId]
-    Status: Optional[SnapshotState]
-    OwnerId: Optional[String]
-    Tags: Optional[TagList]
-    StorageTier: Optional[StorageTier]
-    LastTieringStartTime: Optional[MillisecondDateTime]
-    LastTieringProgress: Optional[Integer]
-    LastTieringOperationStatus: Optional[TieringOperationStatus]
-    LastTieringOperationStatusDetail: Optional[String]
-    ArchivalCompleteTime: Optional[MillisecondDateTime]
-    RestoreExpiryTime: Optional[MillisecondDateTime]
+    SnapshotId: SnapshotId | None
+    VolumeId: VolumeId | None
+    Status: SnapshotState | None
+    OwnerId: String | None
+    Tags: TagList | None
+    StorageTier: StorageTier | None
+    LastTieringStartTime: MillisecondDateTime | None
+    LastTieringProgress: Integer | None
+    LastTieringOperationStatus: TieringOperationStatus | None
+    LastTieringOperationStatusDetail: String | None
+    ArchivalCompleteTime: MillisecondDateTime | None
+    RestoreExpiryTime: MillisecondDateTime | None
 
 
-snapshotTierStatusSet = List[SnapshotTierStatus]
+snapshotTierStatusSet = list[SnapshotTierStatus]
 
 
 class DescribeSnapshotTierStatusResult(TypedDict, total=False):
-    SnapshotTierStatuses: Optional[snapshotTierStatusSet]
-    NextToken: Optional[String]
+    SnapshotTierStatuses: snapshotTierStatusSet | None
+    NextToken: String | None
 
 
-RestorableByStringList = List[String]
+RestorableByStringList = list[String]
 
 
 class DescribeSnapshotsRequest(ServiceRequest):
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
-    OwnerIds: Optional[OwnerStringList]
-    RestorableByUserIds: Optional[RestorableByStringList]
-    SnapshotIds: Optional[SnapshotIdStringList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    MaxResults: Integer | None
+    NextToken: String | None
+    OwnerIds: OwnerStringList | None
+    RestorableByUserIds: RestorableByStringList | None
+    SnapshotIds: SnapshotIdStringList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class Snapshot(TypedDict, total=False):
-    OwnerAlias: Optional[String]
-    OutpostArn: Optional[String]
-    Tags: Optional[TagList]
-    StorageTier: Optional[StorageTier]
-    RestoreExpiryTime: Optional[MillisecondDateTime]
-    SseType: Optional[SSEType]
-    AvailabilityZone: Optional[String]
-    TransferType: Optional[TransferType]
-    CompletionDurationMinutes: Optional[SnapshotCompletionDurationMinutesResponse]
-    CompletionTime: Optional[MillisecondDateTime]
-    FullSnapshotSizeInBytes: Optional[Long]
-    SnapshotId: Optional[String]
-    VolumeId: Optional[String]
-    State: Optional[SnapshotState]
-    StateMessage: Optional[String]
-    StartTime: Optional[DateTime]
-    Progress: Optional[String]
-    OwnerId: Optional[String]
-    Description: Optional[String]
-    VolumeSize: Optional[Integer]
-    Encrypted: Optional[Boolean]
-    KmsKeyId: Optional[String]
-    DataEncryptionKeyId: Optional[String]
+    OwnerAlias: String | None
+    OutpostArn: String | None
+    Tags: TagList | None
+    StorageTier: StorageTier | None
+    RestoreExpiryTime: MillisecondDateTime | None
+    SseType: SSEType | None
+    AvailabilityZone: String | None
+    TransferType: TransferType | None
+    CompletionDurationMinutes: SnapshotCompletionDurationMinutesResponse | None
+    CompletionTime: MillisecondDateTime | None
+    FullSnapshotSizeInBytes: Long | None
+    SnapshotId: String | None
+    VolumeId: String | None
+    State: SnapshotState | None
+    StateMessage: String | None
+    StartTime: DateTime | None
+    Progress: String | None
+    OwnerId: String | None
+    Description: String | None
+    VolumeSize: Integer | None
+    Encrypted: Boolean | None
+    KmsKeyId: String | None
+    DataEncryptionKeyId: String | None
 
 
-SnapshotList = List[Snapshot]
+SnapshotList = list[Snapshot]
 
 
 class DescribeSnapshotsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    Snapshots: Optional[SnapshotList]
+    NextToken: String | None
+    Snapshots: SnapshotList | None
 
 
 class DescribeSpotDatafeedSubscriptionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DescribeSpotDatafeedSubscriptionResult(TypedDict, total=False):
-    SpotDatafeedSubscription: Optional[SpotDatafeedSubscription]
+    SpotDatafeedSubscription: SpotDatafeedSubscription | None
 
 
 class DescribeSpotFleetInstancesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     SpotFleetRequestId: SpotFleetRequestId
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeSpotFleetInstancesMaxResults]
+    NextToken: String | None
+    MaxResults: DescribeSpotFleetInstancesMaxResults | None
 
 
 class DescribeSpotFleetInstancesResponse(TypedDict, total=False):
-    ActiveInstances: Optional[ActiveInstanceSet]
-    NextToken: Optional[String]
-    SpotFleetRequestId: Optional[String]
+    ActiveInstances: ActiveInstanceSet | None
+    NextToken: String | None
+    SpotFleetRequestId: String | None
 
 
 class DescribeSpotFleetRequestHistoryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     SpotFleetRequestId: SpotFleetRequestId
-    EventType: Optional[EventType]
+    EventType: EventType | None
     StartTime: DateTime
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeSpotFleetRequestHistoryMaxResults]
+    NextToken: String | None
+    MaxResults: DescribeSpotFleetRequestHistoryMaxResults | None
 
 
 class HistoryRecord(TypedDict, total=False):
-    EventInformation: Optional[EventInformation]
-    EventType: Optional[EventType]
-    Timestamp: Optional[DateTime]
+    EventInformation: EventInformation | None
+    EventType: EventType | None
+    Timestamp: DateTime | None
 
 
-HistoryRecords = List[HistoryRecord]
+HistoryRecords = list[HistoryRecord]
 
 
 class DescribeSpotFleetRequestHistoryResponse(TypedDict, total=False):
-    HistoryRecords: Optional[HistoryRecords]
-    LastEvaluatedTime: Optional[DateTime]
-    NextToken: Optional[String]
-    SpotFleetRequestId: Optional[String]
-    StartTime: Optional[DateTime]
+    HistoryRecords: HistoryRecords | None
+    LastEvaluatedTime: DateTime | None
+    NextToken: String | None
+    SpotFleetRequestId: String | None
+    StartTime: DateTime | None
 
 
 class DescribeSpotFleetRequestsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    SpotFleetRequestIds: Optional[SpotFleetRequestIdList]
-    NextToken: Optional[String]
-    MaxResults: Optional[Integer]
+    DryRun: Boolean | None
+    SpotFleetRequestIds: SpotFleetRequestIdList | None
+    NextToken: String | None
+    MaxResults: Integer | None
 
 
 class TargetGroup(TypedDict, total=False):
-    Arn: Optional[String]
+    Arn: String | None
 
 
-TargetGroups = List[TargetGroup]
+TargetGroups = list[TargetGroup]
 
 
 class TargetGroupsConfig(TypedDict, total=False):
-    TargetGroups: Optional[TargetGroups]
+    TargetGroups: TargetGroups | None
 
 
 class LoadBalancersConfig(TypedDict, total=False):
-    ClassicLoadBalancersConfig: Optional[ClassicLoadBalancersConfig]
-    TargetGroupsConfig: Optional[TargetGroupsConfig]
+    ClassicLoadBalancersConfig: ClassicLoadBalancersConfig | None
+    TargetGroupsConfig: TargetGroupsConfig | None
 
 
 class LaunchTemplateOverrides(TypedDict, total=False):
-    InstanceType: Optional[InstanceType]
-    SpotPrice: Optional[String]
-    SubnetId: Optional[SubnetId]
-    AvailabilityZone: Optional[String]
-    WeightedCapacity: Optional[Double]
-    Priority: Optional[Double]
-    InstanceRequirements: Optional[InstanceRequirements]
+    InstanceType: InstanceType | None
+    SpotPrice: String | None
+    SubnetId: SubnetId | None
+    AvailabilityZone: String | None
+    WeightedCapacity: Double | None
+    Priority: Double | None
+    InstanceRequirements: InstanceRequirements | None
 
 
-LaunchTemplateOverridesList = List[LaunchTemplateOverrides]
+LaunchTemplateOverridesList = list[LaunchTemplateOverrides]
 
 
 class LaunchTemplateConfig(TypedDict, total=False):
-    LaunchTemplateSpecification: Optional[FleetLaunchTemplateSpecification]
-    Overrides: Optional[LaunchTemplateOverridesList]
+    LaunchTemplateSpecification: FleetLaunchTemplateSpecification | None
+    Overrides: LaunchTemplateOverridesList | None
 
 
-LaunchTemplateConfigList = List[LaunchTemplateConfig]
+LaunchTemplateConfigList = list[LaunchTemplateConfig]
 
 
 class SpotFleetTagSpecification(TypedDict, total=False):
-    ResourceType: Optional[ResourceType]
-    Tags: Optional[TagList]
+    ResourceType: ResourceType | None
+    Tags: TagList | None
 
 
-SpotFleetTagSpecificationList = List[SpotFleetTagSpecification]
+SpotFleetTagSpecificationList = list[SpotFleetTagSpecification]
 
 
 class SpotPlacement(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    GroupName: Optional[PlacementGroupName]
-    Tenancy: Optional[Tenancy]
+    AvailabilityZone: String | None
+    GroupName: PlacementGroupName | None
+    Tenancy: Tenancy | None
 
 
 class InstanceNetworkInterfaceSpecification(TypedDict, total=False):
-    AssociatePublicIpAddress: Optional[Boolean]
-    DeleteOnTermination: Optional[Boolean]
-    Description: Optional[String]
-    DeviceIndex: Optional[Integer]
-    Groups: Optional[SecurityGroupIdStringList]
-    Ipv6AddressCount: Optional[Integer]
-    Ipv6Addresses: Optional[InstanceIpv6AddressList]
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    PrivateIpAddress: Optional[String]
-    PrivateIpAddresses: Optional[PrivateIpAddressSpecificationList]
-    SecondaryPrivateIpAddressCount: Optional[Integer]
-    SubnetId: Optional[String]
-    AssociateCarrierIpAddress: Optional[Boolean]
-    InterfaceType: Optional[String]
-    NetworkCardIndex: Optional[Integer]
-    Ipv4Prefixes: Optional[Ipv4PrefixList]
-    Ipv4PrefixCount: Optional[Integer]
-    Ipv6Prefixes: Optional[Ipv6PrefixList]
-    Ipv6PrefixCount: Optional[Integer]
-    PrimaryIpv6: Optional[Boolean]
-    EnaSrdSpecification: Optional[EnaSrdSpecificationRequest]
-    ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
-    EnaQueueCount: Optional[Integer]
+    AssociatePublicIpAddress: Boolean | None
+    DeleteOnTermination: Boolean | None
+    Description: String | None
+    DeviceIndex: Integer | None
+    Groups: SecurityGroupIdStringList | None
+    Ipv6AddressCount: Integer | None
+    Ipv6Addresses: InstanceIpv6AddressList | None
+    NetworkInterfaceId: NetworkInterfaceId | None
+    PrivateIpAddress: String | None
+    PrivateIpAddresses: PrivateIpAddressSpecificationList | None
+    SecondaryPrivateIpAddressCount: Integer | None
+    SubnetId: String | None
+    AssociateCarrierIpAddress: Boolean | None
+    InterfaceType: String | None
+    NetworkCardIndex: Integer | None
+    Ipv4Prefixes: Ipv4PrefixList | None
+    Ipv4PrefixCount: Integer | None
+    Ipv6Prefixes: Ipv6PrefixList | None
+    Ipv6PrefixCount: Integer | None
+    PrimaryIpv6: Boolean | None
+    EnaSrdSpecification: EnaSrdSpecificationRequest | None
+    ConnectionTrackingSpecification: ConnectionTrackingSpecificationRequest | None
+    EnaQueueCount: Integer | None
 
 
-InstanceNetworkInterfaceSpecificationList = List[InstanceNetworkInterfaceSpecification]
+InstanceNetworkInterfaceSpecificationList = list[InstanceNetworkInterfaceSpecification]
 
 
 class SpotFleetMonitoring(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class SpotFleetLaunchSpecification(TypedDict, total=False):
-    AddressingType: Optional[String]
-    BlockDeviceMappings: Optional[BlockDeviceMappingList]
-    EbsOptimized: Optional[Boolean]
-    IamInstanceProfile: Optional[IamInstanceProfileSpecification]
-    ImageId: Optional[ImageId]
-    InstanceType: Optional[InstanceType]
-    KernelId: Optional[String]
-    KeyName: Optional[KeyPairName]
-    Monitoring: Optional[SpotFleetMonitoring]
-    NetworkInterfaces: Optional[InstanceNetworkInterfaceSpecificationList]
-    Placement: Optional[SpotPlacement]
-    RamdiskId: Optional[String]
-    SpotPrice: Optional[String]
-    SubnetId: Optional[SubnetId]
-    UserData: Optional[SensitiveUserData]
-    WeightedCapacity: Optional[Double]
-    TagSpecifications: Optional[SpotFleetTagSpecificationList]
-    InstanceRequirements: Optional[InstanceRequirements]
-    SecurityGroups: Optional[GroupIdentifierList]
+    AddressingType: String | None
+    BlockDeviceMappings: BlockDeviceMappingList | None
+    EbsOptimized: Boolean | None
+    IamInstanceProfile: IamInstanceProfileSpecification | None
+    ImageId: ImageId | None
+    InstanceType: InstanceType | None
+    KernelId: String | None
+    KeyName: KeyPairName | None
+    Monitoring: SpotFleetMonitoring | None
+    NetworkInterfaces: InstanceNetworkInterfaceSpecificationList | None
+    Placement: SpotPlacement | None
+    RamdiskId: String | None
+    SpotPrice: String | None
+    SubnetId: SubnetId | None
+    UserData: SensitiveUserData | None
+    WeightedCapacity: Double | None
+    TagSpecifications: SpotFleetTagSpecificationList | None
+    InstanceRequirements: InstanceRequirements | None
+    SecurityGroups: GroupIdentifierList | None
 
 
-LaunchSpecsList = List[SpotFleetLaunchSpecification]
+LaunchSpecsList = list[SpotFleetLaunchSpecification]
 
 
 class SpotCapacityRebalance(TypedDict, total=False):
-    ReplacementStrategy: Optional[ReplacementStrategy]
-    TerminationDelay: Optional[Integer]
+    ReplacementStrategy: ReplacementStrategy | None
+    TerminationDelay: Integer | None
 
 
 class SpotMaintenanceStrategies(TypedDict, total=False):
-    CapacityRebalance: Optional[SpotCapacityRebalance]
+    CapacityRebalance: SpotCapacityRebalance | None
 
 
 class SpotFleetRequestConfigData(TypedDict, total=False):
-    AllocationStrategy: Optional[AllocationStrategy]
-    OnDemandAllocationStrategy: Optional[OnDemandAllocationStrategy]
-    SpotMaintenanceStrategies: Optional[SpotMaintenanceStrategies]
-    ClientToken: Optional[String]
-    ExcessCapacityTerminationPolicy: Optional[ExcessCapacityTerminationPolicy]
-    FulfilledCapacity: Optional[Double]
-    OnDemandFulfilledCapacity: Optional[Double]
+    AllocationStrategy: AllocationStrategy | None
+    OnDemandAllocationStrategy: OnDemandAllocationStrategy | None
+    SpotMaintenanceStrategies: SpotMaintenanceStrategies | None
+    ClientToken: String | None
+    ExcessCapacityTerminationPolicy: ExcessCapacityTerminationPolicy | None
+    FulfilledCapacity: Double | None
+    OnDemandFulfilledCapacity: Double | None
     IamFleetRole: String
-    LaunchSpecifications: Optional[LaunchSpecsList]
-    LaunchTemplateConfigs: Optional[LaunchTemplateConfigList]
-    SpotPrice: Optional[String]
+    LaunchSpecifications: LaunchSpecsList | None
+    LaunchTemplateConfigs: LaunchTemplateConfigList | None
+    SpotPrice: String | None
     TargetCapacity: Integer
-    OnDemandTargetCapacity: Optional[Integer]
-    OnDemandMaxTotalPrice: Optional[String]
-    SpotMaxTotalPrice: Optional[String]
-    TerminateInstancesWithExpiration: Optional[Boolean]
-    Type: Optional[FleetType]
-    ValidFrom: Optional[DateTime]
-    ValidUntil: Optional[DateTime]
-    ReplaceUnhealthyInstances: Optional[Boolean]
-    InstanceInterruptionBehavior: Optional[InstanceInterruptionBehavior]
-    LoadBalancersConfig: Optional[LoadBalancersConfig]
-    InstancePoolsToUseCount: Optional[Integer]
-    Context: Optional[String]
-    TargetCapacityUnitType: Optional[TargetCapacityUnitType]
-    TagSpecifications: Optional[TagSpecificationList]
+    OnDemandTargetCapacity: Integer | None
+    OnDemandMaxTotalPrice: String | None
+    SpotMaxTotalPrice: String | None
+    TerminateInstancesWithExpiration: Boolean | None
+    Type: FleetType | None
+    ValidFrom: DateTime | None
+    ValidUntil: DateTime | None
+    ReplaceUnhealthyInstances: Boolean | None
+    InstanceInterruptionBehavior: InstanceInterruptionBehavior | None
+    LoadBalancersConfig: LoadBalancersConfig | None
+    InstancePoolsToUseCount: Integer | None
+    Context: String | None
+    TargetCapacityUnitType: TargetCapacityUnitType | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class SpotFleetRequestConfig(TypedDict, total=False):
-    ActivityStatus: Optional[ActivityStatus]
-    CreateTime: Optional[MillisecondDateTime]
-    SpotFleetRequestConfig: Optional[SpotFleetRequestConfigData]
-    SpotFleetRequestId: Optional[String]
-    SpotFleetRequestState: Optional[BatchState]
-    Tags: Optional[TagList]
+    ActivityStatus: ActivityStatus | None
+    CreateTime: MillisecondDateTime | None
+    SpotFleetRequestConfig: SpotFleetRequestConfigData | None
+    SpotFleetRequestId: String | None
+    SpotFleetRequestState: BatchState | None
+    Tags: TagList | None
 
 
-SpotFleetRequestConfigSet = List[SpotFleetRequestConfig]
+SpotFleetRequestConfigSet = list[SpotFleetRequestConfig]
 
 
 class DescribeSpotFleetRequestsResponse(TypedDict, total=False):
-    NextToken: Optional[String]
-    SpotFleetRequestConfigs: Optional[SpotFleetRequestConfigSet]
+    NextToken: String | None
+    SpotFleetRequestConfigs: SpotFleetRequestConfigSet | None
 
 
 class DescribeSpotInstanceRequestsRequest(ServiceRequest):
-    NextToken: Optional[String]
-    MaxResults: Optional[Integer]
-    DryRun: Optional[Boolean]
-    SpotInstanceRequestIds: Optional[SpotInstanceRequestIdList]
-    Filters: Optional[FilterList]
+    NextToken: String | None
+    MaxResults: Integer | None
+    DryRun: Boolean | None
+    SpotInstanceRequestIds: SpotInstanceRequestIdList | None
+    Filters: FilterList | None
 
 
 class SpotInstanceStatus(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
-    UpdateTime: Optional[DateTime]
+    Code: String | None
+    Message: String | None
+    UpdateTime: DateTime | None
 
 
 class RunInstancesMonitoringEnabled(TypedDict, total=False):
@@ -16009,1403 +16037,1404 @@ class RunInstancesMonitoringEnabled(TypedDict, total=False):
 
 
 class LaunchSpecification(TypedDict, total=False):
-    UserData: Optional[SensitiveUserData]
-    AddressingType: Optional[String]
-    BlockDeviceMappings: Optional[BlockDeviceMappingList]
-    EbsOptimized: Optional[Boolean]
-    IamInstanceProfile: Optional[IamInstanceProfileSpecification]
-    ImageId: Optional[String]
-    InstanceType: Optional[InstanceType]
-    KernelId: Optional[String]
-    KeyName: Optional[String]
-    NetworkInterfaces: Optional[InstanceNetworkInterfaceSpecificationList]
-    Placement: Optional[SpotPlacement]
-    RamdiskId: Optional[String]
-    SubnetId: Optional[String]
-    SecurityGroups: Optional[GroupIdentifierList]
-    Monitoring: Optional[RunInstancesMonitoringEnabled]
+    UserData: SensitiveUserData | None
+    AddressingType: String | None
+    BlockDeviceMappings: BlockDeviceMappingList | None
+    EbsOptimized: Boolean | None
+    IamInstanceProfile: IamInstanceProfileSpecification | None
+    ImageId: String | None
+    InstanceType: InstanceType | None
+    KernelId: String | None
+    KeyName: String | None
+    NetworkInterfaces: InstanceNetworkInterfaceSpecificationList | None
+    Placement: SpotPlacement | None
+    RamdiskId: String | None
+    SubnetId: String | None
+    SecurityGroups: GroupIdentifierList | None
+    Monitoring: RunInstancesMonitoringEnabled | None
 
 
 class SpotInstanceRequest(TypedDict, total=False):
-    ActualBlockHourlyPrice: Optional[String]
-    AvailabilityZoneGroup: Optional[String]
-    BlockDurationMinutes: Optional[Integer]
-    CreateTime: Optional[DateTime]
-    Fault: Optional[SpotInstanceStateFault]
-    InstanceId: Optional[InstanceId]
-    LaunchGroup: Optional[String]
-    LaunchSpecification: Optional[LaunchSpecification]
-    LaunchedAvailabilityZone: Optional[String]
-    LaunchedAvailabilityZoneId: Optional[String]
-    ProductDescription: Optional[RIProductDescription]
-    SpotInstanceRequestId: Optional[String]
-    SpotPrice: Optional[String]
-    State: Optional[SpotInstanceState]
-    Status: Optional[SpotInstanceStatus]
-    Tags: Optional[TagList]
-    Type: Optional[SpotInstanceType]
-    ValidFrom: Optional[DateTime]
-    ValidUntil: Optional[DateTime]
-    InstanceInterruptionBehavior: Optional[InstanceInterruptionBehavior]
+    ActualBlockHourlyPrice: String | None
+    AvailabilityZoneGroup: String | None
+    BlockDurationMinutes: Integer | None
+    CreateTime: DateTime | None
+    Fault: SpotInstanceStateFault | None
+    InstanceId: InstanceId | None
+    LaunchGroup: String | None
+    LaunchSpecification: LaunchSpecification | None
+    LaunchedAvailabilityZone: String | None
+    LaunchedAvailabilityZoneId: String | None
+    ProductDescription: RIProductDescription | None
+    SpotInstanceRequestId: String | None
+    SpotPrice: String | None
+    State: SpotInstanceState | None
+    Status: SpotInstanceStatus | None
+    Tags: TagList | None
+    Type: SpotInstanceType | None
+    ValidFrom: DateTime | None
+    ValidUntil: DateTime | None
+    InstanceInterruptionBehavior: InstanceInterruptionBehavior | None
 
 
-SpotInstanceRequestList = List[SpotInstanceRequest]
+SpotInstanceRequestList = list[SpotInstanceRequest]
 
 
 class DescribeSpotInstanceRequestsResult(TypedDict, total=False):
-    SpotInstanceRequests: Optional[SpotInstanceRequestList]
-    NextToken: Optional[String]
+    SpotInstanceRequests: SpotInstanceRequestList | None
+    NextToken: String | None
 
 
-ProductDescriptionList = List[String]
-InstanceTypeList = List[InstanceType]
+ProductDescriptionList = list[String]
+InstanceTypeList = list[InstanceType]
 
 
 class DescribeSpotPriceHistoryRequest(ServiceRequest):
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    DryRun: Optional[Boolean]
-    StartTime: Optional[DateTime]
-    EndTime: Optional[DateTime]
-    InstanceTypes: Optional[InstanceTypeList]
-    ProductDescriptions: Optional[ProductDescriptionList]
-    Filters: Optional[FilterList]
-    AvailabilityZone: Optional[String]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    AvailabilityZoneId: AvailabilityZoneId | None
+    DryRun: Boolean | None
+    StartTime: DateTime | None
+    EndTime: DateTime | None
+    InstanceTypes: InstanceTypeList | None
+    ProductDescriptions: ProductDescriptionList | None
+    Filters: FilterList | None
+    AvailabilityZone: String | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
 class SpotPrice(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    InstanceType: Optional[InstanceType]
-    ProductDescription: Optional[RIProductDescription]
-    SpotPrice: Optional[String]
-    Timestamp: Optional[DateTime]
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    InstanceType: InstanceType | None
+    ProductDescription: RIProductDescription | None
+    SpotPrice: String | None
+    Timestamp: DateTime | None
 
 
-SpotPriceHistoryList = List[SpotPrice]
+SpotPriceHistoryList = list[SpotPrice]
 
 
 class DescribeSpotPriceHistoryResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    SpotPriceHistory: Optional[SpotPriceHistoryList]
+    NextToken: String | None
+    SpotPriceHistory: SpotPriceHistoryList | None
 
 
 class DescribeStaleSecurityGroupsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    MaxResults: Optional[DescribeStaleSecurityGroupsMaxResults]
-    NextToken: Optional[DescribeStaleSecurityGroupsNextToken]
+    DryRun: Boolean | None
+    MaxResults: DescribeStaleSecurityGroupsMaxResults | None
+    NextToken: DescribeStaleSecurityGroupsNextToken | None
     VpcId: VpcId
 
 
-UserIdGroupPairSet = List[UserIdGroupPair]
-PrefixListIdSet = List[String]
-IpRanges = List[String]
+UserIdGroupPairSet = list[UserIdGroupPair]
+PrefixListIdSet = list[String]
+IpRanges = list[String]
 
 
 class StaleIpPermission(TypedDict, total=False):
-    FromPort: Optional[Integer]
-    IpProtocol: Optional[String]
-    IpRanges: Optional[IpRanges]
-    PrefixListIds: Optional[PrefixListIdSet]
-    ToPort: Optional[Integer]
-    UserIdGroupPairs: Optional[UserIdGroupPairSet]
+    FromPort: Integer | None
+    IpProtocol: String | None
+    IpRanges: IpRanges | None
+    PrefixListIds: PrefixListIdSet | None
+    ToPort: Integer | None
+    UserIdGroupPairs: UserIdGroupPairSet | None
 
 
-StaleIpPermissionSet = List[StaleIpPermission]
+StaleIpPermissionSet = list[StaleIpPermission]
 
 
 class StaleSecurityGroup(TypedDict, total=False):
-    Description: Optional[String]
-    GroupId: Optional[String]
-    GroupName: Optional[String]
-    StaleIpPermissions: Optional[StaleIpPermissionSet]
-    StaleIpPermissionsEgress: Optional[StaleIpPermissionSet]
-    VpcId: Optional[String]
+    Description: String | None
+    GroupId: String | None
+    GroupName: String | None
+    StaleIpPermissions: StaleIpPermissionSet | None
+    StaleIpPermissionsEgress: StaleIpPermissionSet | None
+    VpcId: String | None
 
 
-StaleSecurityGroupSet = List[StaleSecurityGroup]
+StaleSecurityGroupSet = list[StaleSecurityGroup]
 
 
 class DescribeStaleSecurityGroupsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    StaleSecurityGroupSet: Optional[StaleSecurityGroupSet]
+    NextToken: String | None
+    StaleSecurityGroupSet: StaleSecurityGroupSet | None
 
 
-ImageIdList = List[ImageId]
+ImageIdList = list[ImageId]
 
 
 class DescribeStoreImageTasksRequest(ServiceRequest):
-    ImageIds: Optional[ImageIdList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeStoreImageTasksRequestMaxResults]
+    ImageIds: ImageIdList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    NextToken: String | None
+    MaxResults: DescribeStoreImageTasksRequestMaxResults | None
 
 
 class StoreImageTaskResult(TypedDict, total=False):
-    AmiId: Optional[String]
-    TaskStartTime: Optional[MillisecondDateTime]
-    Bucket: Optional[String]
-    S3objectKey: Optional[String]
-    ProgressPercentage: Optional[Integer]
-    StoreTaskState: Optional[String]
-    StoreTaskFailureReason: Optional[String]
+    AmiId: String | None
+    TaskStartTime: MillisecondDateTime | None
+    Bucket: String | None
+    S3objectKey: String | None
+    ProgressPercentage: Integer | None
+    StoreTaskState: String | None
+    StoreTaskFailureReason: String | None
 
 
-StoreImageTaskResultSet = List[StoreImageTaskResult]
+StoreImageTaskResultSet = list[StoreImageTaskResult]
 
 
 class DescribeStoreImageTasksResult(TypedDict, total=False):
-    StoreImageTaskResults: Optional[StoreImageTaskResultSet]
-    NextToken: Optional[String]
+    StoreImageTaskResults: StoreImageTaskResultSet | None
+    NextToken: String | None
 
 
-SubnetIdStringList = List[SubnetId]
+SubnetIdStringList = list[SubnetId]
 
 
 class DescribeSubnetsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    SubnetIds: Optional[SubnetIdStringList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeSubnetsMaxResults]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    SubnetIds: SubnetIdStringList | None
+    NextToken: String | None
+    MaxResults: DescribeSubnetsMaxResults | None
+    DryRun: Boolean | None
 
 
-SubnetList = List[Subnet]
+SubnetList = list[Subnet]
 
 
 class DescribeSubnetsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    Subnets: Optional[SubnetList]
+    NextToken: String | None
+    Subnets: SubnetList | None
 
 
 class DescribeTagsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
 class TagDescription(TypedDict, total=False):
-    Key: Optional[String]
-    ResourceId: Optional[String]
-    ResourceType: Optional[ResourceType]
-    Value: Optional[String]
+    Key: String | None
+    ResourceId: String | None
+    ResourceType: ResourceType | None
+    Value: String | None
 
 
-TagDescriptionList = List[TagDescription]
+TagDescriptionList = list[TagDescription]
 
 
 class DescribeTagsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    Tags: Optional[TagDescriptionList]
+    NextToken: String | None
+    Tags: TagDescriptionList | None
 
 
-TrafficMirrorFilterRuleIdList = List[TrafficMirrorFilterRuleIdWithResolver]
+TrafficMirrorFilterRuleIdList = list[TrafficMirrorFilterRuleIdWithResolver]
 
 
 class DescribeTrafficMirrorFilterRulesRequest(ServiceRequest):
-    TrafficMirrorFilterRuleIds: Optional[TrafficMirrorFilterRuleIdList]
-    TrafficMirrorFilterId: Optional[TrafficMirrorFilterId]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TrafficMirroringMaxResults]
-    NextToken: Optional[NextToken]
+    TrafficMirrorFilterRuleIds: TrafficMirrorFilterRuleIdList | None
+    TrafficMirrorFilterId: TrafficMirrorFilterId | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: TrafficMirroringMaxResults | None
+    NextToken: NextToken | None
 
 
-TrafficMirrorFilterRuleSet = List[TrafficMirrorFilterRule]
+TrafficMirrorFilterRuleSet = list[TrafficMirrorFilterRule]
 
 
 class DescribeTrafficMirrorFilterRulesResult(TypedDict, total=False):
-    TrafficMirrorFilterRules: Optional[TrafficMirrorFilterRuleSet]
-    NextToken: Optional[String]
+    TrafficMirrorFilterRules: TrafficMirrorFilterRuleSet | None
+    NextToken: String | None
 
 
-TrafficMirrorFilterIdList = List[TrafficMirrorFilterId]
+TrafficMirrorFilterIdList = list[TrafficMirrorFilterId]
 
 
 class DescribeTrafficMirrorFiltersRequest(ServiceRequest):
-    TrafficMirrorFilterIds: Optional[TrafficMirrorFilterIdList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TrafficMirroringMaxResults]
-    NextToken: Optional[NextToken]
+    TrafficMirrorFilterIds: TrafficMirrorFilterIdList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: TrafficMirroringMaxResults | None
+    NextToken: NextToken | None
 
 
-TrafficMirrorFilterSet = List[TrafficMirrorFilter]
+TrafficMirrorFilterSet = list[TrafficMirrorFilter]
 
 
 class DescribeTrafficMirrorFiltersResult(TypedDict, total=False):
-    TrafficMirrorFilters: Optional[TrafficMirrorFilterSet]
-    NextToken: Optional[String]
+    TrafficMirrorFilters: TrafficMirrorFilterSet | None
+    NextToken: String | None
 
 
-TrafficMirrorSessionIdList = List[TrafficMirrorSessionId]
+TrafficMirrorSessionIdList = list[TrafficMirrorSessionId]
 
 
 class DescribeTrafficMirrorSessionsRequest(ServiceRequest):
-    TrafficMirrorSessionIds: Optional[TrafficMirrorSessionIdList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TrafficMirroringMaxResults]
-    NextToken: Optional[NextToken]
+    TrafficMirrorSessionIds: TrafficMirrorSessionIdList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: TrafficMirroringMaxResults | None
+    NextToken: NextToken | None
 
 
-TrafficMirrorSessionSet = List[TrafficMirrorSession]
+TrafficMirrorSessionSet = list[TrafficMirrorSession]
 
 
 class DescribeTrafficMirrorSessionsResult(TypedDict, total=False):
-    TrafficMirrorSessions: Optional[TrafficMirrorSessionSet]
-    NextToken: Optional[String]
+    TrafficMirrorSessions: TrafficMirrorSessionSet | None
+    NextToken: String | None
 
 
-TrafficMirrorTargetIdList = List[TrafficMirrorTargetId]
+TrafficMirrorTargetIdList = list[TrafficMirrorTargetId]
 
 
 class DescribeTrafficMirrorTargetsRequest(ServiceRequest):
-    TrafficMirrorTargetIds: Optional[TrafficMirrorTargetIdList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TrafficMirroringMaxResults]
-    NextToken: Optional[NextToken]
+    TrafficMirrorTargetIds: TrafficMirrorTargetIdList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: TrafficMirroringMaxResults | None
+    NextToken: NextToken | None
 
 
-TrafficMirrorTargetSet = List[TrafficMirrorTarget]
+TrafficMirrorTargetSet = list[TrafficMirrorTarget]
 
 
 class DescribeTrafficMirrorTargetsResult(TypedDict, total=False):
-    TrafficMirrorTargets: Optional[TrafficMirrorTargetSet]
-    NextToken: Optional[String]
+    TrafficMirrorTargets: TrafficMirrorTargetSet | None
+    NextToken: String | None
 
 
-TransitGatewayAttachmentIdStringList = List[TransitGatewayAttachmentId]
+TransitGatewayAttachmentIdStringList = list[TransitGatewayAttachmentId]
 
 
 class DescribeTransitGatewayAttachmentsRequest(ServiceRequest):
-    TransitGatewayAttachmentIds: Optional[TransitGatewayAttachmentIdStringList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TransitGatewayAttachmentIds: TransitGatewayAttachmentIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayAttachmentAssociation(TypedDict, total=False):
-    TransitGatewayRouteTableId: Optional[String]
-    State: Optional[TransitGatewayAssociationState]
+    TransitGatewayRouteTableId: String | None
+    State: TransitGatewayAssociationState | None
 
 
 class TransitGatewayAttachment(TypedDict, total=False):
-    TransitGatewayAttachmentId: Optional[String]
-    TransitGatewayId: Optional[String]
-    TransitGatewayOwnerId: Optional[String]
-    ResourceOwnerId: Optional[String]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
-    ResourceId: Optional[String]
-    State: Optional[TransitGatewayAttachmentState]
-    Association: Optional[TransitGatewayAttachmentAssociation]
-    CreationTime: Optional[DateTime]
-    Tags: Optional[TagList]
+    TransitGatewayAttachmentId: String | None
+    TransitGatewayId: String | None
+    TransitGatewayOwnerId: String | None
+    ResourceOwnerId: String | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
+    ResourceId: String | None
+    State: TransitGatewayAttachmentState | None
+    Association: TransitGatewayAttachmentAssociation | None
+    CreationTime: DateTime | None
+    Tags: TagList | None
 
 
-TransitGatewayAttachmentList = List[TransitGatewayAttachment]
+TransitGatewayAttachmentList = list[TransitGatewayAttachment]
 
 
 class DescribeTransitGatewayAttachmentsResult(TypedDict, total=False):
-    TransitGatewayAttachments: Optional[TransitGatewayAttachmentList]
-    NextToken: Optional[String]
+    TransitGatewayAttachments: TransitGatewayAttachmentList | None
+    NextToken: String | None
 
 
-TransitGatewayConnectPeerIdStringList = List[TransitGatewayConnectPeerId]
+TransitGatewayConnectPeerIdStringList = list[TransitGatewayConnectPeerId]
 
 
 class DescribeTransitGatewayConnectPeersRequest(ServiceRequest):
-    TransitGatewayConnectPeerIds: Optional[TransitGatewayConnectPeerIdStringList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TransitGatewayConnectPeerIds: TransitGatewayConnectPeerIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayConnectPeerList = List[TransitGatewayConnectPeer]
+TransitGatewayConnectPeerList = list[TransitGatewayConnectPeer]
 
 
 class DescribeTransitGatewayConnectPeersResult(TypedDict, total=False):
-    TransitGatewayConnectPeers: Optional[TransitGatewayConnectPeerList]
-    NextToken: Optional[String]
+    TransitGatewayConnectPeers: TransitGatewayConnectPeerList | None
+    NextToken: String | None
 
 
 class DescribeTransitGatewayConnectsRequest(ServiceRequest):
-    TransitGatewayAttachmentIds: Optional[TransitGatewayAttachmentIdStringList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TransitGatewayAttachmentIds: TransitGatewayAttachmentIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayConnectList = List[TransitGatewayConnect]
+TransitGatewayConnectList = list[TransitGatewayConnect]
 
 
 class DescribeTransitGatewayConnectsResult(TypedDict, total=False):
-    TransitGatewayConnects: Optional[TransitGatewayConnectList]
-    NextToken: Optional[String]
+    TransitGatewayConnects: TransitGatewayConnectList | None
+    NextToken: String | None
 
 
-TransitGatewayMulticastDomainIdStringList = List[TransitGatewayMulticastDomainId]
+TransitGatewayMulticastDomainIdStringList = list[TransitGatewayMulticastDomainId]
 
 
 class DescribeTransitGatewayMulticastDomainsRequest(ServiceRequest):
-    TransitGatewayMulticastDomainIds: Optional[TransitGatewayMulticastDomainIdStringList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TransitGatewayMulticastDomainIds: TransitGatewayMulticastDomainIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayMulticastDomainList = List[TransitGatewayMulticastDomain]
+TransitGatewayMulticastDomainList = list[TransitGatewayMulticastDomain]
 
 
 class DescribeTransitGatewayMulticastDomainsResult(TypedDict, total=False):
-    TransitGatewayMulticastDomains: Optional[TransitGatewayMulticastDomainList]
-    NextToken: Optional[String]
+    TransitGatewayMulticastDomains: TransitGatewayMulticastDomainList | None
+    NextToken: String | None
 
 
 class DescribeTransitGatewayPeeringAttachmentsRequest(ServiceRequest):
-    TransitGatewayAttachmentIds: Optional[TransitGatewayAttachmentIdStringList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TransitGatewayAttachmentIds: TransitGatewayAttachmentIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayPeeringAttachmentList = List[TransitGatewayPeeringAttachment]
+TransitGatewayPeeringAttachmentList = list[TransitGatewayPeeringAttachment]
 
 
 class DescribeTransitGatewayPeeringAttachmentsResult(TypedDict, total=False):
-    TransitGatewayPeeringAttachments: Optional[TransitGatewayPeeringAttachmentList]
-    NextToken: Optional[String]
+    TransitGatewayPeeringAttachments: TransitGatewayPeeringAttachmentList | None
+    NextToken: String | None
 
 
-TransitGatewayPolicyTableIdStringList = List[TransitGatewayPolicyTableId]
+TransitGatewayPolicyTableIdStringList = list[TransitGatewayPolicyTableId]
 
 
 class DescribeTransitGatewayPolicyTablesRequest(ServiceRequest):
-    TransitGatewayPolicyTableIds: Optional[TransitGatewayPolicyTableIdStringList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TransitGatewayPolicyTableIds: TransitGatewayPolicyTableIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayPolicyTableList = List[TransitGatewayPolicyTable]
+TransitGatewayPolicyTableList = list[TransitGatewayPolicyTable]
 
 
 class DescribeTransitGatewayPolicyTablesResult(TypedDict, total=False):
-    TransitGatewayPolicyTables: Optional[TransitGatewayPolicyTableList]
-    NextToken: Optional[String]
+    TransitGatewayPolicyTables: TransitGatewayPolicyTableList | None
+    NextToken: String | None
 
 
-TransitGatewayRouteTableAnnouncementIdStringList = List[TransitGatewayRouteTableAnnouncementId]
+TransitGatewayRouteTableAnnouncementIdStringList = list[TransitGatewayRouteTableAnnouncementId]
 
 
 class DescribeTransitGatewayRouteTableAnnouncementsRequest(ServiceRequest):
-    TransitGatewayRouteTableAnnouncementIds: Optional[
-        TransitGatewayRouteTableAnnouncementIdStringList
-    ]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TransitGatewayRouteTableAnnouncementIds: TransitGatewayRouteTableAnnouncementIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayRouteTableAnnouncementList = List[TransitGatewayRouteTableAnnouncement]
+TransitGatewayRouteTableAnnouncementList = list[TransitGatewayRouteTableAnnouncement]
 
 
 class DescribeTransitGatewayRouteTableAnnouncementsResult(TypedDict, total=False):
-    TransitGatewayRouteTableAnnouncements: Optional[TransitGatewayRouteTableAnnouncementList]
-    NextToken: Optional[String]
+    TransitGatewayRouteTableAnnouncements: TransitGatewayRouteTableAnnouncementList | None
+    NextToken: String | None
 
 
-TransitGatewayRouteTableIdStringList = List[TransitGatewayRouteTableId]
+TransitGatewayRouteTableIdStringList = list[TransitGatewayRouteTableId]
 
 
 class DescribeTransitGatewayRouteTablesRequest(ServiceRequest):
-    TransitGatewayRouteTableIds: Optional[TransitGatewayRouteTableIdStringList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TransitGatewayRouteTableIds: TransitGatewayRouteTableIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayRouteTableList = List[TransitGatewayRouteTable]
+TransitGatewayRouteTableList = list[TransitGatewayRouteTable]
 
 
 class DescribeTransitGatewayRouteTablesResult(TypedDict, total=False):
-    TransitGatewayRouteTables: Optional[TransitGatewayRouteTableList]
-    NextToken: Optional[String]
+    TransitGatewayRouteTables: TransitGatewayRouteTableList | None
+    NextToken: String | None
 
 
 class DescribeTransitGatewayVpcAttachmentsRequest(ServiceRequest):
-    TransitGatewayAttachmentIds: Optional[TransitGatewayAttachmentIdStringList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TransitGatewayAttachmentIds: TransitGatewayAttachmentIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayVpcAttachmentList = List[TransitGatewayVpcAttachment]
+TransitGatewayVpcAttachmentList = list[TransitGatewayVpcAttachment]
 
 
 class DescribeTransitGatewayVpcAttachmentsResult(TypedDict, total=False):
-    TransitGatewayVpcAttachments: Optional[TransitGatewayVpcAttachmentList]
-    NextToken: Optional[String]
+    TransitGatewayVpcAttachments: TransitGatewayVpcAttachmentList | None
+    NextToken: String | None
 
 
-TransitGatewayIdStringList = List[TransitGatewayId]
+TransitGatewayIdStringList = list[TransitGatewayId]
 
 
 class DescribeTransitGatewaysRequest(ServiceRequest):
-    TransitGatewayIds: Optional[TransitGatewayIdStringList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    TransitGatewayIds: TransitGatewayIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayList = List[TransitGateway]
+TransitGatewayList = list[TransitGateway]
 
 
 class DescribeTransitGatewaysResult(TypedDict, total=False):
-    TransitGateways: Optional[TransitGatewayList]
-    NextToken: Optional[String]
+    TransitGateways: TransitGatewayList | None
+    NextToken: String | None
 
 
-TrunkInterfaceAssociationIdList = List[TrunkInterfaceAssociationId]
+TrunkInterfaceAssociationIdList = list[TrunkInterfaceAssociationId]
 
 
 class DescribeTrunkInterfaceAssociationsRequest(ServiceRequest):
-    AssociationIds: Optional[TrunkInterfaceAssociationIdList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeTrunkInterfaceAssociationsMaxResults]
+    AssociationIds: TrunkInterfaceAssociationIdList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    NextToken: String | None
+    MaxResults: DescribeTrunkInterfaceAssociationsMaxResults | None
 
 
-TrunkInterfaceAssociationList = List[TrunkInterfaceAssociation]
+TrunkInterfaceAssociationList = list[TrunkInterfaceAssociation]
 
 
 class DescribeTrunkInterfaceAssociationsResult(TypedDict, total=False):
-    InterfaceAssociations: Optional[TrunkInterfaceAssociationList]
-    NextToken: Optional[String]
+    InterfaceAssociations: TrunkInterfaceAssociationList | None
+    NextToken: String | None
 
 
-VerifiedAccessEndpointIdList = List[VerifiedAccessEndpointId]
+VerifiedAccessEndpointIdList = list[VerifiedAccessEndpointId]
 
 
 class DescribeVerifiedAccessEndpointsRequest(ServiceRequest):
-    VerifiedAccessEndpointIds: Optional[VerifiedAccessEndpointIdList]
-    VerifiedAccessInstanceId: Optional[VerifiedAccessInstanceId]
-    VerifiedAccessGroupId: Optional[VerifiedAccessGroupId]
-    MaxResults: Optional[DescribeVerifiedAccessEndpointsMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    VerifiedAccessEndpointIds: VerifiedAccessEndpointIdList | None
+    VerifiedAccessInstanceId: VerifiedAccessInstanceId | None
+    VerifiedAccessGroupId: VerifiedAccessGroupId | None
+    MaxResults: DescribeVerifiedAccessEndpointsMaxResults | None
+    NextToken: NextToken | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
-VerifiedAccessEndpointList = List[VerifiedAccessEndpoint]
+VerifiedAccessEndpointList = list[VerifiedAccessEndpoint]
 
 
 class DescribeVerifiedAccessEndpointsResult(TypedDict, total=False):
-    VerifiedAccessEndpoints: Optional[VerifiedAccessEndpointList]
-    NextToken: Optional[NextToken]
+    VerifiedAccessEndpoints: VerifiedAccessEndpointList | None
+    NextToken: NextToken | None
 
 
-VerifiedAccessGroupIdList = List[VerifiedAccessGroupId]
+VerifiedAccessGroupIdList = list[VerifiedAccessGroupId]
 
 
 class DescribeVerifiedAccessGroupsRequest(ServiceRequest):
-    VerifiedAccessGroupIds: Optional[VerifiedAccessGroupIdList]
-    VerifiedAccessInstanceId: Optional[VerifiedAccessInstanceId]
-    MaxResults: Optional[DescribeVerifiedAccessGroupMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    VerifiedAccessGroupIds: VerifiedAccessGroupIdList | None
+    VerifiedAccessInstanceId: VerifiedAccessInstanceId | None
+    MaxResults: DescribeVerifiedAccessGroupMaxResults | None
+    NextToken: NextToken | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
-VerifiedAccessGroupList = List[VerifiedAccessGroup]
+VerifiedAccessGroupList = list[VerifiedAccessGroup]
 
 
 class DescribeVerifiedAccessGroupsResult(TypedDict, total=False):
-    VerifiedAccessGroups: Optional[VerifiedAccessGroupList]
-    NextToken: Optional[NextToken]
+    VerifiedAccessGroups: VerifiedAccessGroupList | None
+    NextToken: NextToken | None
 
 
-VerifiedAccessInstanceIdList = List[VerifiedAccessInstanceId]
+VerifiedAccessInstanceIdList = list[VerifiedAccessInstanceId]
 
 
 class DescribeVerifiedAccessInstanceLoggingConfigurationsRequest(ServiceRequest):
-    VerifiedAccessInstanceIds: Optional[VerifiedAccessInstanceIdList]
-    MaxResults: Optional[DescribeVerifiedAccessInstanceLoggingConfigurationsMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    VerifiedAccessInstanceIds: VerifiedAccessInstanceIdList | None
+    MaxResults: DescribeVerifiedAccessInstanceLoggingConfigurationsMaxResults | None
+    NextToken: NextToken | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class VerifiedAccessLogDeliveryStatus(TypedDict, total=False):
-    Code: Optional[VerifiedAccessLogDeliveryStatusCode]
-    Message: Optional[String]
+    Code: VerifiedAccessLogDeliveryStatusCode | None
+    Message: String | None
 
 
 class VerifiedAccessLogKinesisDataFirehoseDestination(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    DeliveryStatus: Optional[VerifiedAccessLogDeliveryStatus]
-    DeliveryStream: Optional[String]
+    Enabled: Boolean | None
+    DeliveryStatus: VerifiedAccessLogDeliveryStatus | None
+    DeliveryStream: String | None
 
 
 class VerifiedAccessLogCloudWatchLogsDestination(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    DeliveryStatus: Optional[VerifiedAccessLogDeliveryStatus]
-    LogGroup: Optional[String]
+    Enabled: Boolean | None
+    DeliveryStatus: VerifiedAccessLogDeliveryStatus | None
+    LogGroup: String | None
 
 
 class VerifiedAccessLogS3Destination(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    DeliveryStatus: Optional[VerifiedAccessLogDeliveryStatus]
-    BucketName: Optional[String]
-    Prefix: Optional[String]
-    BucketOwner: Optional[String]
+    Enabled: Boolean | None
+    DeliveryStatus: VerifiedAccessLogDeliveryStatus | None
+    BucketName: String | None
+    Prefix: String | None
+    BucketOwner: String | None
 
 
 class VerifiedAccessLogs(TypedDict, total=False):
-    S3: Optional[VerifiedAccessLogS3Destination]
-    CloudWatchLogs: Optional[VerifiedAccessLogCloudWatchLogsDestination]
-    KinesisDataFirehose: Optional[VerifiedAccessLogKinesisDataFirehoseDestination]
-    LogVersion: Optional[String]
-    IncludeTrustContext: Optional[Boolean]
+    S3: VerifiedAccessLogS3Destination | None
+    CloudWatchLogs: VerifiedAccessLogCloudWatchLogsDestination | None
+    KinesisDataFirehose: VerifiedAccessLogKinesisDataFirehoseDestination | None
+    LogVersion: String | None
+    IncludeTrustContext: Boolean | None
 
 
 class VerifiedAccessInstanceLoggingConfiguration(TypedDict, total=False):
-    VerifiedAccessInstanceId: Optional[String]
-    AccessLogs: Optional[VerifiedAccessLogs]
+    VerifiedAccessInstanceId: String | None
+    AccessLogs: VerifiedAccessLogs | None
 
 
-VerifiedAccessInstanceLoggingConfigurationList = List[VerifiedAccessInstanceLoggingConfiguration]
+VerifiedAccessInstanceLoggingConfigurationList = list[VerifiedAccessInstanceLoggingConfiguration]
 
 
 class DescribeVerifiedAccessInstanceLoggingConfigurationsResult(TypedDict, total=False):
-    LoggingConfigurations: Optional[VerifiedAccessInstanceLoggingConfigurationList]
-    NextToken: Optional[NextToken]
+    LoggingConfigurations: VerifiedAccessInstanceLoggingConfigurationList | None
+    NextToken: NextToken | None
 
 
 class DescribeVerifiedAccessInstancesRequest(ServiceRequest):
-    VerifiedAccessInstanceIds: Optional[VerifiedAccessInstanceIdList]
-    MaxResults: Optional[DescribeVerifiedAccessInstancesMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    VerifiedAccessInstanceIds: VerifiedAccessInstanceIdList | None
+    MaxResults: DescribeVerifiedAccessInstancesMaxResults | None
+    NextToken: NextToken | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
-VerifiedAccessInstanceList = List[VerifiedAccessInstance]
+VerifiedAccessInstanceList = list[VerifiedAccessInstance]
 
 
 class DescribeVerifiedAccessInstancesResult(TypedDict, total=False):
-    VerifiedAccessInstances: Optional[VerifiedAccessInstanceList]
-    NextToken: Optional[NextToken]
+    VerifiedAccessInstances: VerifiedAccessInstanceList | None
+    NextToken: NextToken | None
 
 
-VerifiedAccessTrustProviderIdList = List[VerifiedAccessTrustProviderId]
+VerifiedAccessTrustProviderIdList = list[VerifiedAccessTrustProviderId]
 
 
 class DescribeVerifiedAccessTrustProvidersRequest(ServiceRequest):
-    VerifiedAccessTrustProviderIds: Optional[VerifiedAccessTrustProviderIdList]
-    MaxResults: Optional[DescribeVerifiedAccessTrustProvidersMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    VerifiedAccessTrustProviderIds: VerifiedAccessTrustProviderIdList | None
+    MaxResults: DescribeVerifiedAccessTrustProvidersMaxResults | None
+    NextToken: NextToken | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
-VerifiedAccessTrustProviderList = List[VerifiedAccessTrustProvider]
+VerifiedAccessTrustProviderList = list[VerifiedAccessTrustProvider]
 
 
 class DescribeVerifiedAccessTrustProvidersResult(TypedDict, total=False):
-    VerifiedAccessTrustProviders: Optional[VerifiedAccessTrustProviderList]
-    NextToken: Optional[NextToken]
+    VerifiedAccessTrustProviders: VerifiedAccessTrustProviderList | None
+    NextToken: NextToken | None
 
 
 class DescribeVolumeAttributeRequest(ServiceRequest):
     Attribute: VolumeAttributeName
     VolumeId: VolumeId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DescribeVolumeAttributeResult(TypedDict, total=False):
-    AutoEnableIO: Optional[AttributeBooleanValue]
-    ProductCodes: Optional[ProductCodeList]
-    VolumeId: Optional[String]
+    AutoEnableIO: AttributeBooleanValue | None
+    ProductCodes: ProductCodeList | None
+    VolumeId: String | None
 
 
 class DescribeVolumeStatusRequest(ServiceRequest):
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
-    VolumeIds: Optional[VolumeIdStringList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    MaxResults: Integer | None
+    NextToken: String | None
+    VolumeIds: VolumeIdStringList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class InitializationStatusDetails(TypedDict, total=False):
-    InitializationType: Optional[InitializationType]
-    Progress: Optional[Long]
-    EstimatedTimeToCompleteInSeconds: Optional[Long]
+    InitializationType: InitializationType | None
+    Progress: Long | None
+    EstimatedTimeToCompleteInSeconds: Long | None
 
 
 class VolumeStatusAttachmentStatus(TypedDict, total=False):
-    IoPerformance: Optional[String]
-    InstanceId: Optional[String]
+    IoPerformance: String | None
+    InstanceId: String | None
 
 
-VolumeStatusAttachmentStatusList = List[VolumeStatusAttachmentStatus]
+VolumeStatusAttachmentStatusList = list[VolumeStatusAttachmentStatus]
 
 
 class VolumeStatusDetails(TypedDict, total=False):
-    Name: Optional[VolumeStatusName]
-    Status: Optional[String]
+    Name: VolumeStatusName | None
+    Status: String | None
 
 
-VolumeStatusDetailsList = List[VolumeStatusDetails]
+VolumeStatusDetailsList = list[VolumeStatusDetails]
 
 
 class VolumeStatusInfo(TypedDict, total=False):
-    Details: Optional[VolumeStatusDetailsList]
-    Status: Optional[VolumeStatusInfoStatus]
+    Details: VolumeStatusDetailsList | None
+    Status: VolumeStatusInfoStatus | None
 
 
 class VolumeStatusEvent(TypedDict, total=False):
-    Description: Optional[String]
-    EventId: Optional[String]
-    EventType: Optional[String]
-    NotAfter: Optional[MillisecondDateTime]
-    NotBefore: Optional[MillisecondDateTime]
-    InstanceId: Optional[String]
+    Description: String | None
+    EventId: String | None
+    EventType: String | None
+    NotAfter: MillisecondDateTime | None
+    NotBefore: MillisecondDateTime | None
+    InstanceId: String | None
 
 
-VolumeStatusEventsList = List[VolumeStatusEvent]
+VolumeStatusEventsList = list[VolumeStatusEvent]
 
 
 class VolumeStatusAction(TypedDict, total=False):
-    Code: Optional[String]
-    Description: Optional[String]
-    EventId: Optional[String]
-    EventType: Optional[String]
+    Code: String | None
+    Description: String | None
+    EventId: String | None
+    EventType: String | None
 
 
-VolumeStatusActionsList = List[VolumeStatusAction]
+VolumeStatusActionsList = list[VolumeStatusAction]
 
 
 class VolumeStatusItem(TypedDict, total=False):
-    Actions: Optional[VolumeStatusActionsList]
-    AvailabilityZone: Optional[String]
-    OutpostArn: Optional[String]
-    Events: Optional[VolumeStatusEventsList]
-    VolumeId: Optional[String]
-    VolumeStatus: Optional[VolumeStatusInfo]
-    AttachmentStatuses: Optional[VolumeStatusAttachmentStatusList]
-    InitializationStatusDetails: Optional[InitializationStatusDetails]
-    AvailabilityZoneId: Optional[String]
+    Actions: VolumeStatusActionsList | None
+    AvailabilityZone: String | None
+    OutpostArn: String | None
+    Events: VolumeStatusEventsList | None
+    VolumeId: String | None
+    VolumeStatus: VolumeStatusInfo | None
+    AttachmentStatuses: VolumeStatusAttachmentStatusList | None
+    InitializationStatusDetails: InitializationStatusDetails | None
+    AvailabilityZoneId: String | None
 
 
-VolumeStatusList = List[VolumeStatusItem]
+VolumeStatusList = list[VolumeStatusItem]
 
 
 class DescribeVolumeStatusResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    VolumeStatuses: Optional[VolumeStatusList]
+    NextToken: String | None
+    VolumeStatuses: VolumeStatusList | None
 
 
 class DescribeVolumesModificationsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    VolumeIds: Optional[VolumeIdStringList]
-    Filters: Optional[FilterList]
-    NextToken: Optional[String]
-    MaxResults: Optional[Integer]
+    DryRun: Boolean | None
+    VolumeIds: VolumeIdStringList | None
+    Filters: FilterList | None
+    NextToken: String | None
+    MaxResults: Integer | None
 
 
 class VolumeModification(TypedDict, total=False):
-    VolumeId: Optional[String]
-    ModificationState: Optional[VolumeModificationState]
-    StatusMessage: Optional[String]
-    TargetSize: Optional[Integer]
-    TargetIops: Optional[Integer]
-    TargetVolumeType: Optional[VolumeType]
-    TargetThroughput: Optional[Integer]
-    TargetMultiAttachEnabled: Optional[Boolean]
-    OriginalSize: Optional[Integer]
-    OriginalIops: Optional[Integer]
-    OriginalVolumeType: Optional[VolumeType]
-    OriginalThroughput: Optional[Integer]
-    OriginalMultiAttachEnabled: Optional[Boolean]
-    Progress: Optional[Long]
-    StartTime: Optional[DateTime]
-    EndTime: Optional[DateTime]
+    VolumeId: String | None
+    ModificationState: VolumeModificationState | None
+    StatusMessage: String | None
+    TargetSize: Integer | None
+    TargetIops: Integer | None
+    TargetVolumeType: VolumeType | None
+    TargetThroughput: Integer | None
+    TargetMultiAttachEnabled: Boolean | None
+    OriginalSize: Integer | None
+    OriginalIops: Integer | None
+    OriginalVolumeType: VolumeType | None
+    OriginalThroughput: Integer | None
+    OriginalMultiAttachEnabled: Boolean | None
+    Progress: Long | None
+    StartTime: DateTime | None
+    EndTime: DateTime | None
 
 
-VolumeModificationList = List[VolumeModification]
+VolumeModificationList = list[VolumeModification]
 
 
 class DescribeVolumesModificationsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    VolumesModifications: Optional[VolumeModificationList]
+    NextToken: String | None
+    VolumesModifications: VolumeModificationList | None
 
 
 class DescribeVolumesRequest(ServiceRequest):
-    VolumeIds: Optional[VolumeIdStringList]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    NextToken: Optional[String]
-    MaxResults: Optional[Integer]
+    VolumeIds: VolumeIdStringList | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    NextToken: String | None
+    MaxResults: Integer | None
 
 
 class DescribeVolumesResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    Volumes: Optional[VolumeList]
+    NextToken: String | None
+    Volumes: VolumeList | None
 
 
 class DescribeVpcAttributeRequest(ServiceRequest):
     Attribute: VpcAttributeName
     VpcId: VpcId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DescribeVpcAttributeResult(TypedDict, total=False):
-    EnableDnsHostnames: Optional[AttributeBooleanValue]
-    EnableDnsSupport: Optional[AttributeBooleanValue]
-    EnableNetworkAddressUsageMetrics: Optional[AttributeBooleanValue]
-    VpcId: Optional[String]
+    EnableDnsHostnames: AttributeBooleanValue | None
+    EnableDnsSupport: AttributeBooleanValue | None
+    EnableNetworkAddressUsageMetrics: AttributeBooleanValue | None
+    VpcId: String | None
 
 
-VpcBlockPublicAccessExclusionIdList = List[VpcBlockPublicAccessExclusionId]
+VpcBlockPublicAccessExclusionIdList = list[VpcBlockPublicAccessExclusionId]
 
 
 class DescribeVpcBlockPublicAccessExclusionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    ExclusionIds: Optional[VpcBlockPublicAccessExclusionIdList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeVpcBlockPublicAccessExclusionsMaxResults]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    ExclusionIds: VpcBlockPublicAccessExclusionIdList | None
+    NextToken: String | None
+    MaxResults: DescribeVpcBlockPublicAccessExclusionsMaxResults | None
 
 
-VpcBlockPublicAccessExclusionList = List[VpcBlockPublicAccessExclusion]
+VpcBlockPublicAccessExclusionList = list[VpcBlockPublicAccessExclusion]
 
 
 class DescribeVpcBlockPublicAccessExclusionsResult(TypedDict, total=False):
-    VpcBlockPublicAccessExclusions: Optional[VpcBlockPublicAccessExclusionList]
-    NextToken: Optional[String]
+    VpcBlockPublicAccessExclusions: VpcBlockPublicAccessExclusionList | None
+    NextToken: String | None
 
 
 class DescribeVpcBlockPublicAccessOptionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class VpcBlockPublicAccessOptions(TypedDict, total=False):
-    AwsAccountId: Optional[String]
-    AwsRegion: Optional[String]
-    State: Optional[VpcBlockPublicAccessState]
-    InternetGatewayBlockMode: Optional[InternetGatewayBlockMode]
-    Reason: Optional[String]
-    LastUpdateTimestamp: Optional[MillisecondDateTime]
-    ManagedBy: Optional[ManagedBy]
-    ExclusionsAllowed: Optional[VpcBlockPublicAccessExclusionsAllowed]
+    AwsAccountId: String | None
+    AwsRegion: String | None
+    State: VpcBlockPublicAccessState | None
+    InternetGatewayBlockMode: InternetGatewayBlockMode | None
+    Reason: String | None
+    LastUpdateTimestamp: MillisecondDateTime | None
+    ManagedBy: ManagedBy | None
+    ExclusionsAllowed: VpcBlockPublicAccessExclusionsAllowed | None
 
 
 class DescribeVpcBlockPublicAccessOptionsResult(TypedDict, total=False):
-    VpcBlockPublicAccessOptions: Optional[VpcBlockPublicAccessOptions]
+    VpcBlockPublicAccessOptions: VpcBlockPublicAccessOptions | None
 
 
-VpcClassicLinkIdList = List[VpcId]
+VpcClassicLinkIdList = list[VpcId]
 
 
 class DescribeVpcClassicLinkDnsSupportRequest(ServiceRequest):
-    VpcIds: Optional[VpcClassicLinkIdList]
-    MaxResults: Optional[DescribeVpcClassicLinkDnsSupportMaxResults]
-    NextToken: Optional[DescribeVpcClassicLinkDnsSupportNextToken]
+    VpcIds: VpcClassicLinkIdList | None
+    MaxResults: DescribeVpcClassicLinkDnsSupportMaxResults | None
+    NextToken: DescribeVpcClassicLinkDnsSupportNextToken | None
 
 
 class DescribeVpcClassicLinkDnsSupportResult(TypedDict, total=False):
-    NextToken: Optional[DescribeVpcClassicLinkDnsSupportNextToken]
-    Vpcs: Optional[ClassicLinkDnsSupportList]
+    NextToken: DescribeVpcClassicLinkDnsSupportNextToken | None
+    Vpcs: ClassicLinkDnsSupportList | None
 
 
 class DescribeVpcClassicLinkRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    VpcIds: Optional[VpcClassicLinkIdList]
-    Filters: Optional[FilterList]
+    DryRun: Boolean | None
+    VpcIds: VpcClassicLinkIdList | None
+    Filters: FilterList | None
 
 
 class VpcClassicLink(TypedDict, total=False):
-    ClassicLinkEnabled: Optional[Boolean]
-    Tags: Optional[TagList]
-    VpcId: Optional[String]
+    ClassicLinkEnabled: Boolean | None
+    Tags: TagList | None
+    VpcId: String | None
 
 
-VpcClassicLinkList = List[VpcClassicLink]
+VpcClassicLinkList = list[VpcClassicLink]
 
 
 class DescribeVpcClassicLinkResult(TypedDict, total=False):
-    Vpcs: Optional[VpcClassicLinkList]
+    Vpcs: VpcClassicLinkList | None
 
 
 class DescribeVpcEndpointAssociationsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    VpcEndpointIds: Optional[VpcEndpointIdList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[maxResults]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    VpcEndpointIds: VpcEndpointIdList | None
+    Filters: FilterList | None
+    MaxResults: maxResults | None
+    NextToken: String | None
 
 
 class VpcEndpointAssociation(TypedDict, total=False):
-    Id: Optional[String]
-    VpcEndpointId: Optional[VpcEndpointId]
-    ServiceNetworkArn: Optional[ServiceNetworkArn]
-    ServiceNetworkName: Optional[String]
-    AssociatedResourceAccessibility: Optional[String]
-    FailureReason: Optional[String]
-    FailureCode: Optional[String]
-    DnsEntry: Optional[DnsEntry]
-    PrivateDnsEntry: Optional[DnsEntry]
-    AssociatedResourceArn: Optional[String]
-    ResourceConfigurationGroupArn: Optional[String]
-    Tags: Optional[TagList]
+    Id: String | None
+    VpcEndpointId: VpcEndpointId | None
+    ServiceNetworkArn: ServiceNetworkArn | None
+    ServiceNetworkName: String | None
+    AssociatedResourceAccessibility: String | None
+    FailureReason: String | None
+    FailureCode: String | None
+    DnsEntry: DnsEntry | None
+    PrivateDnsEntry: DnsEntry | None
+    AssociatedResourceArn: String | None
+    ResourceConfigurationGroupArn: String | None
+    Tags: TagList | None
 
 
-VpcEndpointAssociationSet = List[VpcEndpointAssociation]
+VpcEndpointAssociationSet = list[VpcEndpointAssociation]
 
 
 class DescribeVpcEndpointAssociationsResult(TypedDict, total=False):
-    VpcEndpointAssociations: Optional[VpcEndpointAssociationSet]
-    NextToken: Optional[String]
+    VpcEndpointAssociations: VpcEndpointAssociationSet | None
+    NextToken: String | None
 
 
 class DescribeVpcEndpointConnectionNotificationsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ConnectionNotificationId: Optional[ConnectionNotificationId]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    ConnectionNotificationId: ConnectionNotificationId | None
+    Filters: FilterList | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
 class DescribeVpcEndpointConnectionNotificationsResult(TypedDict, total=False):
-    ConnectionNotificationSet: Optional[ConnectionNotificationSet]
-    NextToken: Optional[String]
+    ConnectionNotificationSet: ConnectionNotificationSet | None
+    NextToken: String | None
 
 
 class DescribeVpcEndpointConnectionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
 class VpcEndpointConnection(TypedDict, total=False):
-    ServiceId: Optional[String]
-    VpcEndpointId: Optional[String]
-    VpcEndpointOwner: Optional[String]
-    VpcEndpointState: Optional[State]
-    CreationTimestamp: Optional[MillisecondDateTime]
-    DnsEntries: Optional[DnsEntrySet]
-    NetworkLoadBalancerArns: Optional[ValueStringList]
-    GatewayLoadBalancerArns: Optional[ValueStringList]
-    IpAddressType: Optional[IpAddressType]
-    VpcEndpointConnectionId: Optional[String]
-    Tags: Optional[TagList]
-    VpcEndpointRegion: Optional[String]
+    ServiceId: String | None
+    VpcEndpointId: String | None
+    VpcEndpointOwner: String | None
+    VpcEndpointState: State | None
+    CreationTimestamp: MillisecondDateTime | None
+    DnsEntries: DnsEntrySet | None
+    NetworkLoadBalancerArns: ValueStringList | None
+    GatewayLoadBalancerArns: ValueStringList | None
+    IpAddressType: IpAddressType | None
+    VpcEndpointConnectionId: String | None
+    Tags: TagList | None
+    VpcEndpointRegion: String | None
 
 
-VpcEndpointConnectionSet = List[VpcEndpointConnection]
+VpcEndpointConnectionSet = list[VpcEndpointConnection]
 
 
 class DescribeVpcEndpointConnectionsResult(TypedDict, total=False):
-    VpcEndpointConnections: Optional[VpcEndpointConnectionSet]
-    NextToken: Optional[String]
+    VpcEndpointConnections: VpcEndpointConnectionSet | None
+    NextToken: String | None
 
 
 class DescribeVpcEndpointServiceConfigurationsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ServiceIds: Optional[VpcEndpointServiceIdList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    ServiceIds: VpcEndpointServiceIdList | None
+    Filters: FilterList | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
-ServiceConfigurationSet = List[ServiceConfiguration]
+ServiceConfigurationSet = list[ServiceConfiguration]
 
 
 class DescribeVpcEndpointServiceConfigurationsResult(TypedDict, total=False):
-    ServiceConfigurations: Optional[ServiceConfigurationSet]
-    NextToken: Optional[String]
+    ServiceConfigurations: ServiceConfigurationSet | None
+    NextToken: String | None
 
 
 class DescribeVpcEndpointServicePermissionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ServiceId: VpcEndpointServiceId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    Filters: FilterList | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
 class DescribeVpcEndpointServicePermissionsResult(TypedDict, total=False):
-    AllowedPrincipals: Optional[AllowedPrincipalSet]
-    NextToken: Optional[String]
+    AllowedPrincipals: AllowedPrincipalSet | None
+    NextToken: String | None
 
 
 class DescribeVpcEndpointServicesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ServiceNames: Optional[ValueStringList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
-    ServiceRegions: Optional[ValueStringList]
+    DryRun: Boolean | None
+    ServiceNames: ValueStringList | None
+    Filters: FilterList | None
+    MaxResults: Integer | None
+    NextToken: String | None
+    ServiceRegions: ValueStringList | None
 
 
 class PrivateDnsDetails(TypedDict, total=False):
-    PrivateDnsName: Optional[String]
+    PrivateDnsName: String | None
 
 
-PrivateDnsDetailsSet = List[PrivateDnsDetails]
+PrivateDnsDetailsSet = list[PrivateDnsDetails]
 
 
 class ServiceDetail(TypedDict, total=False):
-    ServiceName: Optional[String]
-    ServiceId: Optional[String]
-    ServiceType: Optional[ServiceTypeDetailSet]
-    ServiceRegion: Optional[String]
-    AvailabilityZoneIds: Optional[ValueStringList]
-    AvailabilityZones: Optional[ValueStringList]
-    Owner: Optional[String]
-    BaseEndpointDnsNames: Optional[ValueStringList]
-    PrivateDnsName: Optional[String]
-    PrivateDnsNames: Optional[PrivateDnsDetailsSet]
-    VpcEndpointPolicySupported: Optional[Boolean]
-    AcceptanceRequired: Optional[Boolean]
-    ManagesVpcEndpoints: Optional[Boolean]
-    PayerResponsibility: Optional[PayerResponsibility]
-    Tags: Optional[TagList]
-    PrivateDnsNameVerificationState: Optional[DnsNameState]
-    SupportedIpAddressTypes: Optional[SupportedIpAddressTypes]
+    ServiceName: String | None
+    ServiceId: String | None
+    ServiceType: ServiceTypeDetailSet | None
+    ServiceRegion: String | None
+    AvailabilityZoneIds: ValueStringList | None
+    AvailabilityZones: ValueStringList | None
+    Owner: String | None
+    BaseEndpointDnsNames: ValueStringList | None
+    PrivateDnsName: String | None
+    PrivateDnsNames: PrivateDnsDetailsSet | None
+    VpcEndpointPolicySupported: Boolean | None
+    AcceptanceRequired: Boolean | None
+    ManagesVpcEndpoints: Boolean | None
+    PayerResponsibility: PayerResponsibility | None
+    Tags: TagList | None
+    PrivateDnsNameVerificationState: DnsNameState | None
+    SupportedIpAddressTypes: SupportedIpAddressTypes | None
 
 
-ServiceDetailSet = List[ServiceDetail]
+ServiceDetailSet = list[ServiceDetail]
 
 
 class DescribeVpcEndpointServicesResult(TypedDict, total=False):
-    ServiceNames: Optional[ValueStringList]
-    ServiceDetails: Optional[ServiceDetailSet]
-    NextToken: Optional[String]
+    ServiceNames: ValueStringList | None
+    ServiceDetails: ServiceDetailSet | None
+    NextToken: String | None
 
 
 class DescribeVpcEndpointsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    VpcEndpointIds: Optional[VpcEndpointIdList]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
+    DryRun: Boolean | None
+    VpcEndpointIds: VpcEndpointIdList | None
+    Filters: FilterList | None
+    MaxResults: Integer | None
+    NextToken: String | None
 
 
-VpcEndpointSet = List[VpcEndpoint]
+VpcEndpointSet = list[VpcEndpoint]
 
 
 class DescribeVpcEndpointsResult(TypedDict, total=False):
-    VpcEndpoints: Optional[VpcEndpointSet]
-    NextToken: Optional[String]
+    VpcEndpoints: VpcEndpointSet | None
+    NextToken: String | None
 
 
-VpcPeeringConnectionIdList = List[VpcPeeringConnectionId]
+VpcPeeringConnectionIdList = list[VpcPeeringConnectionId]
 
 
 class DescribeVpcPeeringConnectionsRequest(ServiceRequest):
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeVpcPeeringConnectionsMaxResults]
-    DryRun: Optional[Boolean]
-    VpcPeeringConnectionIds: Optional[VpcPeeringConnectionIdList]
-    Filters: Optional[FilterList]
+    NextToken: String | None
+    MaxResults: DescribeVpcPeeringConnectionsMaxResults | None
+    DryRun: Boolean | None
+    VpcPeeringConnectionIds: VpcPeeringConnectionIdList | None
+    Filters: FilterList | None
 
 
-VpcPeeringConnectionList = List[VpcPeeringConnection]
+VpcPeeringConnectionList = list[VpcPeeringConnection]
 
 
 class DescribeVpcPeeringConnectionsResult(TypedDict, total=False):
-    VpcPeeringConnections: Optional[VpcPeeringConnectionList]
-    NextToken: Optional[String]
+    VpcPeeringConnections: VpcPeeringConnectionList | None
+    NextToken: String | None
 
 
-VpcIdStringList = List[VpcId]
+VpcIdStringList = list[VpcId]
 
 
 class DescribeVpcsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    VpcIds: Optional[VpcIdStringList]
-    NextToken: Optional[String]
-    MaxResults: Optional[DescribeVpcsMaxResults]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    VpcIds: VpcIdStringList | None
+    NextToken: String | None
+    MaxResults: DescribeVpcsMaxResults | None
+    DryRun: Boolean | None
 
 
-VpcList = List[Vpc]
+VpcList = list[Vpc]
 
 
 class DescribeVpcsResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    Vpcs: Optional[VpcList]
+    NextToken: String | None
+    Vpcs: VpcList | None
 
 
-VpnConnectionIdStringList = List[VpnConnectionId]
+VpnConnectionIdStringList = list[VpnConnectionId]
 
 
 class DescribeVpnConnectionsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    VpnConnectionIds: Optional[VpnConnectionIdStringList]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    VpnConnectionIds: VpnConnectionIdStringList | None
+    DryRun: Boolean | None
 
 
-VpnConnectionList = List[VpnConnection]
+VpnConnectionList = list[VpnConnection]
 
 
 class DescribeVpnConnectionsResult(TypedDict, total=False):
-    VpnConnections: Optional[VpnConnectionList]
+    VpnConnections: VpnConnectionList | None
 
 
-VpnGatewayIdStringList = List[VpnGatewayId]
+VpnGatewayIdStringList = list[VpnGatewayId]
 
 
 class DescribeVpnGatewaysRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    VpnGatewayIds: Optional[VpnGatewayIdStringList]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    VpnGatewayIds: VpnGatewayIdStringList | None
+    DryRun: Boolean | None
 
 
-VpnGatewayList = List[VpnGateway]
+VpnGatewayList = list[VpnGateway]
 
 
 class DescribeVpnGatewaysResult(TypedDict, total=False):
-    VpnGateways: Optional[VpnGatewayList]
+    VpnGateways: VpnGatewayList | None
 
 
 class DetachClassicLinkVpcRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceId: InstanceId
     VpcId: VpcId
 
 
 class DetachClassicLinkVpcResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DetachInternetGatewayRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InternetGatewayId: InternetGatewayId
     VpcId: VpcId
 
 
 class DetachNetworkInterfaceRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     AttachmentId: NetworkInterfaceAttachmentId
-    Force: Optional[Boolean]
+    Force: Boolean | None
 
 
 class DetachVerifiedAccessTrustProviderRequest(ServiceRequest):
     VerifiedAccessInstanceId: VerifiedAccessInstanceId
     VerifiedAccessTrustProviderId: VerifiedAccessTrustProviderId
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ClientToken: String | None
+    DryRun: Boolean | None
 
 
 class DetachVerifiedAccessTrustProviderResult(TypedDict, total=False):
-    VerifiedAccessTrustProvider: Optional[VerifiedAccessTrustProvider]
-    VerifiedAccessInstance: Optional[VerifiedAccessInstance]
+    VerifiedAccessTrustProvider: VerifiedAccessTrustProvider | None
+    VerifiedAccessInstance: VerifiedAccessInstance | None
 
 
 class DetachVolumeRequest(ServiceRequest):
-    Device: Optional[String]
-    Force: Optional[Boolean]
-    InstanceId: Optional[InstanceIdForResolver]
+    Device: String | None
+    Force: Boolean | None
+    InstanceId: InstanceIdForResolver | None
     VolumeId: VolumeIdWithResolver
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DetachVpnGatewayRequest(ServiceRequest):
     VpcId: VpcId
     VpnGatewayId: VpnGatewayId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
-DeviceTrustProviderTypeList = List[DeviceTrustProviderType]
+DeviceTrustProviderTypeList = list[DeviceTrustProviderType]
 
 
 class DisableAddressTransferRequest(ServiceRequest):
     AllocationId: AllocationId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableAddressTransferResult(TypedDict, total=False):
-    AddressTransfer: Optional[AddressTransfer]
+    AddressTransfer: AddressTransfer | None
 
 
 class DisableAllowedImagesSettingsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableAllowedImagesSettingsResult(TypedDict, total=False):
-    AllowedImagesSettingsState: Optional[AllowedImagesSettingsDisabledState]
+    AllowedImagesSettingsState: AllowedImagesSettingsDisabledState | None
 
 
 class DisableAwsNetworkPerformanceMetricSubscriptionRequest(ServiceRequest):
-    Source: Optional[String]
-    Destination: Optional[String]
-    Metric: Optional[MetricType]
-    Statistic: Optional[StatisticType]
-    DryRun: Optional[Boolean]
+    Source: String | None
+    Destination: String | None
+    Metric: MetricType | None
+    Statistic: StatisticType | None
+    DryRun: Boolean | None
 
 
 class DisableAwsNetworkPerformanceMetricSubscriptionResult(TypedDict, total=False):
-    Output: Optional[Boolean]
+    Output: Boolean | None
 
 
 class DisableCapacityManagerRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
 
 
 class DisableCapacityManagerResult(TypedDict, total=False):
-    CapacityManagerStatus: Optional[CapacityManagerStatus]
-    OrganizationsAccess: Optional[Boolean]
+    CapacityManagerStatus: CapacityManagerStatus | None
+    OrganizationsAccess: Boolean | None
 
 
 class DisableEbsEncryptionByDefaultRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableEbsEncryptionByDefaultResult(TypedDict, total=False):
-    EbsEncryptionByDefault: Optional[Boolean]
+    EbsEncryptionByDefault: Boolean | None
 
 
 class DisableFastLaunchRequest(ServiceRequest):
     ImageId: ImageId
-    Force: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    Force: Boolean | None
+    DryRun: Boolean | None
 
 
 class DisableFastLaunchResult(TypedDict, total=False):
-    ImageId: Optional[ImageId]
-    ResourceType: Optional[FastLaunchResourceType]
-    SnapshotConfiguration: Optional[FastLaunchSnapshotConfigurationResponse]
-    LaunchTemplate: Optional[FastLaunchLaunchTemplateSpecificationResponse]
-    MaxParallelLaunches: Optional[Integer]
-    OwnerId: Optional[String]
-    State: Optional[FastLaunchStateCode]
-    StateTransitionReason: Optional[String]
-    StateTransitionTime: Optional[MillisecondDateTime]
+    ImageId: ImageId | None
+    ResourceType: FastLaunchResourceType | None
+    SnapshotConfiguration: FastLaunchSnapshotConfigurationResponse | None
+    LaunchTemplate: FastLaunchLaunchTemplateSpecificationResponse | None
+    MaxParallelLaunches: Integer | None
+    OwnerId: String | None
+    State: FastLaunchStateCode | None
+    StateTransitionReason: String | None
+    StateTransitionTime: MillisecondDateTime | None
 
 
 class DisableFastSnapshotRestoreStateError(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
+    Code: String | None
+    Message: String | None
 
 
 class DisableFastSnapshotRestoreStateErrorItem(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    Error: Optional[DisableFastSnapshotRestoreStateError]
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    Error: DisableFastSnapshotRestoreStateError | None
 
 
-DisableFastSnapshotRestoreStateErrorSet = List[DisableFastSnapshotRestoreStateErrorItem]
+DisableFastSnapshotRestoreStateErrorSet = list[DisableFastSnapshotRestoreStateErrorItem]
 
 
 class DisableFastSnapshotRestoreErrorItem(TypedDict, total=False):
-    SnapshotId: Optional[String]
-    FastSnapshotRestoreStateErrors: Optional[DisableFastSnapshotRestoreStateErrorSet]
+    SnapshotId: String | None
+    FastSnapshotRestoreStateErrors: DisableFastSnapshotRestoreStateErrorSet | None
 
 
-DisableFastSnapshotRestoreErrorSet = List[DisableFastSnapshotRestoreErrorItem]
+DisableFastSnapshotRestoreErrorSet = list[DisableFastSnapshotRestoreErrorItem]
 
 
 class DisableFastSnapshotRestoreSuccessItem(TypedDict, total=False):
-    SnapshotId: Optional[String]
-    AvailabilityZone: Optional[String]
-    State: Optional[FastSnapshotRestoreStateCode]
-    StateTransitionReason: Optional[String]
-    OwnerId: Optional[String]
-    OwnerAlias: Optional[String]
-    EnablingTime: Optional[MillisecondDateTime]
-    OptimizingTime: Optional[MillisecondDateTime]
-    EnabledTime: Optional[MillisecondDateTime]
-    DisablingTime: Optional[MillisecondDateTime]
-    DisabledTime: Optional[MillisecondDateTime]
+    SnapshotId: String | None
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    State: FastSnapshotRestoreStateCode | None
+    StateTransitionReason: String | None
+    OwnerId: String | None
+    OwnerAlias: String | None
+    EnablingTime: MillisecondDateTime | None
+    OptimizingTime: MillisecondDateTime | None
+    EnabledTime: MillisecondDateTime | None
+    DisablingTime: MillisecondDateTime | None
+    DisabledTime: MillisecondDateTime | None
 
 
-DisableFastSnapshotRestoreSuccessSet = List[DisableFastSnapshotRestoreSuccessItem]
+DisableFastSnapshotRestoreSuccessSet = list[DisableFastSnapshotRestoreSuccessItem]
 
 
 class DisableFastSnapshotRestoresRequest(ServiceRequest):
-    AvailabilityZones: AvailabilityZoneStringList
+    AvailabilityZones: AvailabilityZoneStringList | None
+    AvailabilityZoneIds: AvailabilityZoneIdStringList | None
     SourceSnapshotIds: SnapshotIdStringList
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableFastSnapshotRestoresResult(TypedDict, total=False):
-    Successful: Optional[DisableFastSnapshotRestoreSuccessSet]
-    Unsuccessful: Optional[DisableFastSnapshotRestoreErrorSet]
+    Successful: DisableFastSnapshotRestoreSuccessSet | None
+    Unsuccessful: DisableFastSnapshotRestoreErrorSet | None
 
 
 class DisableImageBlockPublicAccessRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableImageBlockPublicAccessResult(TypedDict, total=False):
-    ImageBlockPublicAccessState: Optional[ImageBlockPublicAccessDisabledState]
+    ImageBlockPublicAccessState: ImageBlockPublicAccessDisabledState | None
 
 
 class DisableImageDeprecationRequest(ServiceRequest):
     ImageId: ImageId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableImageDeprecationResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DisableImageDeregistrationProtectionRequest(ServiceRequest):
     ImageId: ImageId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableImageDeregistrationProtectionResult(TypedDict, total=False):
-    Return: Optional[String]
+    Return: String | None
 
 
 class DisableImageRequest(ServiceRequest):
     ImageId: ImageId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableImageResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DisableIpamOrganizationAdminAccountRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     DelegatedAdminAccountId: String
 
 
 class DisableIpamOrganizationAdminAccountResult(TypedDict, total=False):
-    Success: Optional[Boolean]
+    Success: Boolean | None
 
 
 class DisableRouteServerPropagationRequest(ServiceRequest):
     RouteServerId: RouteServerId
     RouteTableId: RouteTableId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class RouteServerPropagation(TypedDict, total=False):
-    RouteServerId: Optional[RouteServerId]
-    RouteTableId: Optional[RouteTableId]
-    State: Optional[RouteServerPropagationState]
+    RouteServerId: RouteServerId | None
+    RouteTableId: RouteTableId | None
+    State: RouteServerPropagationState | None
 
 
 class DisableRouteServerPropagationResult(TypedDict, total=False):
-    RouteServerPropagation: Optional[RouteServerPropagation]
+    RouteServerPropagation: RouteServerPropagation | None
 
 
 class DisableSerialConsoleAccessRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableSerialConsoleAccessResult(TypedDict, total=False):
-    SerialConsoleAccessEnabled: Optional[Boolean]
+    SerialConsoleAccessEnabled: Boolean | None
 
 
 class DisableSnapshotBlockPublicAccessRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableSnapshotBlockPublicAccessResult(TypedDict, total=False):
-    State: Optional[SnapshotBlockPublicAccessState]
+    State: SnapshotBlockPublicAccessState | None
 
 
 class DisableTransitGatewayRouteTablePropagationRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    DryRun: Optional[Boolean]
-    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    DryRun: Boolean | None
+    TransitGatewayRouteTableAnnouncementId: TransitGatewayRouteTableAnnouncementId | None
 
 
 class TransitGatewayPropagation(TypedDict, total=False):
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    ResourceId: Optional[String]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
-    TransitGatewayRouteTableId: Optional[String]
-    State: Optional[TransitGatewayPropagationState]
-    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    ResourceId: String | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
+    TransitGatewayRouteTableId: String | None
+    State: TransitGatewayPropagationState | None
+    TransitGatewayRouteTableAnnouncementId: TransitGatewayRouteTableAnnouncementId | None
 
 
 class DisableTransitGatewayRouteTablePropagationResult(TypedDict, total=False):
-    Propagation: Optional[TransitGatewayPropagation]
+    Propagation: TransitGatewayPropagation | None
 
 
 class DisableVgwRoutePropagationRequest(ServiceRequest):
     GatewayId: VpnGatewayId
     RouteTableId: RouteTableId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisableVpcClassicLinkDnsSupportRequest(ServiceRequest):
-    VpcId: Optional[VpcId]
+    VpcId: VpcId | None
 
 
 class DisableVpcClassicLinkDnsSupportResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DisableVpcClassicLinkRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     VpcId: VpcId
 
 
 class DisableVpcClassicLinkResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DisassociateAddressRequest(ServiceRequest):
-    AssociationId: Optional[ElasticIpAssociationId]
-    PublicIp: Optional[EipAllocationPublicIp]
-    DryRun: Optional[Boolean]
+    AssociationId: ElasticIpAssociationId | None
+    PublicIp: EipAllocationPublicIp | None
+    DryRun: Boolean | None
 
 
 class DisassociateCapacityReservationBillingOwnerRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     CapacityReservationId: CapacityReservationId
     UnusedReservationBillingOwnerId: AccountID
 
 
 class DisassociateCapacityReservationBillingOwnerResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DisassociateClientVpnTargetNetworkRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
     AssociationId: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisassociateClientVpnTargetNetworkResult(TypedDict, total=False):
-    AssociationId: Optional[String]
-    Status: Optional[AssociationStatus]
+    AssociationId: String | None
+    Status: AssociationStatus | None
 
 
 class DisassociateEnclaveCertificateIamRoleRequest(ServiceRequest):
     CertificateArn: CertificateId
     RoleArn: RoleId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisassociateEnclaveCertificateIamRoleResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class DisassociateIamInstanceProfileRequest(ServiceRequest):
@@ -17413,82 +17442,82 @@ class DisassociateIamInstanceProfileRequest(ServiceRequest):
 
 
 class DisassociateIamInstanceProfileResult(TypedDict, total=False):
-    IamInstanceProfileAssociation: Optional[IamInstanceProfileAssociation]
+    IamInstanceProfileAssociation: IamInstanceProfileAssociation | None
 
 
 class InstanceEventWindowDisassociationRequest(TypedDict, total=False):
-    InstanceIds: Optional[InstanceIdList]
-    InstanceTags: Optional[TagList]
-    DedicatedHostIds: Optional[DedicatedHostIdList]
+    InstanceIds: InstanceIdList | None
+    InstanceTags: TagList | None
+    DedicatedHostIds: DedicatedHostIdList | None
 
 
 class DisassociateInstanceEventWindowRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceEventWindowId: InstanceEventWindowId
     AssociationTarget: InstanceEventWindowDisassociationRequest
 
 
 class DisassociateInstanceEventWindowResult(TypedDict, total=False):
-    InstanceEventWindow: Optional[InstanceEventWindow]
+    InstanceEventWindow: InstanceEventWindow | None
 
 
 class DisassociateIpamByoasnRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     Asn: String
     Cidr: String
 
 
 class DisassociateIpamByoasnResult(TypedDict, total=False):
-    AsnAssociation: Optional[AsnAssociation]
+    AsnAssociation: AsnAssociation | None
 
 
 class DisassociateIpamResourceDiscoveryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamResourceDiscoveryAssociationId: IpamResourceDiscoveryAssociationId
 
 
 class DisassociateIpamResourceDiscoveryResult(TypedDict, total=False):
-    IpamResourceDiscoveryAssociation: Optional[IpamResourceDiscoveryAssociation]
+    IpamResourceDiscoveryAssociation: IpamResourceDiscoveryAssociation | None
 
 
-EipAssociationIdList = List[ElasticIpAssociationId]
+EipAssociationIdList = list[ElasticIpAssociationId]
 
 
 class DisassociateNatGatewayAddressRequest(ServiceRequest):
     NatGatewayId: NatGatewayId
     AssociationIds: EipAssociationIdList
-    MaxDrainDurationSeconds: Optional[DrainSeconds]
-    DryRun: Optional[Boolean]
+    MaxDrainDurationSeconds: DrainSeconds | None
+    DryRun: Boolean | None
 
 
 class DisassociateNatGatewayAddressResult(TypedDict, total=False):
-    NatGatewayId: Optional[NatGatewayId]
-    NatGatewayAddresses: Optional[NatGatewayAddressList]
+    NatGatewayId: NatGatewayId | None
+    NatGatewayAddresses: NatGatewayAddressList | None
 
 
 class DisassociateRouteServerRequest(ServiceRequest):
     RouteServerId: RouteServerId
     VpcId: VpcId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisassociateRouteServerResult(TypedDict, total=False):
-    RouteServerAssociation: Optional[RouteServerAssociation]
+    RouteServerAssociation: RouteServerAssociation | None
 
 
 class DisassociateRouteTableRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     AssociationId: RouteTableAssociationId
 
 
 class DisassociateSecurityGroupVpcRequest(ServiceRequest):
     GroupId: DisassociateSecurityGroupVpcSecurityGroupId
     VpcId: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisassociateSecurityGroupVpcResult(TypedDict, total=False):
-    State: Optional[SecurityGroupVpcAssociationState]
+    State: SecurityGroupVpcAssociationState | None
 
 
 class DisassociateSubnetCidrBlockRequest(ServiceRequest):
@@ -17496,50 +17525,50 @@ class DisassociateSubnetCidrBlockRequest(ServiceRequest):
 
 
 class DisassociateSubnetCidrBlockResult(TypedDict, total=False):
-    Ipv6CidrBlockAssociation: Optional[SubnetIpv6CidrBlockAssociation]
-    SubnetId: Optional[String]
+    Ipv6CidrBlockAssociation: SubnetIpv6CidrBlockAssociation | None
+    SubnetId: String | None
 
 
 class DisassociateTransitGatewayMulticastDomainRequest(ServiceRequest):
     TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
     SubnetIds: TransitGatewaySubnetIdList
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisassociateTransitGatewayMulticastDomainResult(TypedDict, total=False):
-    Associations: Optional[TransitGatewayMulticastDomainAssociations]
+    Associations: TransitGatewayMulticastDomainAssociations | None
 
 
 class DisassociateTransitGatewayPolicyTableRequest(ServiceRequest):
     TransitGatewayPolicyTableId: TransitGatewayPolicyTableId
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisassociateTransitGatewayPolicyTableResult(TypedDict, total=False):
-    Association: Optional[TransitGatewayPolicyTableAssociation]
+    Association: TransitGatewayPolicyTableAssociation | None
 
 
 class DisassociateTransitGatewayRouteTableRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class DisassociateTransitGatewayRouteTableResult(TypedDict, total=False):
-    Association: Optional[TransitGatewayAssociation]
+    Association: TransitGatewayAssociation | None
 
 
 class DisassociateTrunkInterfaceRequest(ServiceRequest):
     AssociationId: TrunkInterfaceAssociationId
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ClientToken: String | None
+    DryRun: Boolean | None
 
 
 class DisassociateTrunkInterfaceResult(TypedDict, total=False):
-    Return: Optional[Boolean]
-    ClientToken: Optional[String]
+    Return: Boolean | None
+    ClientToken: String | None
 
 
 class DisassociateVpcCidrBlockRequest(ServiceRequest):
@@ -17547,9 +17576,9 @@ class DisassociateVpcCidrBlockRequest(ServiceRequest):
 
 
 class DisassociateVpcCidrBlockResult(TypedDict, total=False):
-    Ipv6CidrBlockAssociation: Optional[VpcIpv6CidrBlockAssociation]
-    CidrBlockAssociation: Optional[VpcCidrBlockAssociation]
-    VpcId: Optional[String]
+    Ipv6CidrBlockAssociation: VpcIpv6CidrBlockAssociation | None
+    CidrBlockAssociation: VpcCidrBlockAssociation | None
+    VpcId: String | None
 
 
 class VolumeDetail(TypedDict, total=False):
@@ -17563,490 +17592,493 @@ class DiskImageDetail(TypedDict, total=False):
 
 
 class DiskImage(TypedDict, total=False):
-    Description: Optional[String]
-    Image: Optional[DiskImageDetail]
-    Volume: Optional[VolumeDetail]
+    Description: String | None
+    Image: DiskImageDetail | None
+    Volume: VolumeDetail | None
 
 
-DiskImageList = List[DiskImage]
+DiskImageList = list[DiskImage]
 
 
 class DnsServersOptionsModifyStructure(TypedDict, total=False):
-    CustomDnsServers: Optional[ValueStringList]
-    Enabled: Optional[Boolean]
+    CustomDnsServers: ValueStringList | None
+    Enabled: Boolean | None
 
 
 class EbsInstanceBlockDeviceSpecification(TypedDict, total=False):
-    VolumeId: Optional[VolumeId]
-    DeleteOnTermination: Optional[Boolean]
+    VolumeId: VolumeId | None
+    DeleteOnTermination: Boolean | None
 
 
-ElasticGpuSpecifications = List[ElasticGpuSpecification]
+ElasticGpuSpecifications = list[ElasticGpuSpecification]
 
 
 class ElasticInferenceAccelerator(TypedDict, total=False):
     Type: String
-    Count: Optional[ElasticInferenceAcceleratorCount]
+    Count: ElasticInferenceAcceleratorCount | None
 
 
-ElasticInferenceAccelerators = List[ElasticInferenceAccelerator]
+ElasticInferenceAccelerators = list[ElasticInferenceAccelerator]
 
 
 class EnableAddressTransferRequest(ServiceRequest):
     AllocationId: AllocationId
     TransferAccountId: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableAddressTransferResult(TypedDict, total=False):
-    AddressTransfer: Optional[AddressTransfer]
+    AddressTransfer: AddressTransfer | None
 
 
 class EnableAllowedImagesSettingsRequest(ServiceRequest):
     AllowedImagesSettingsState: AllowedImagesSettingsEnabledState
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableAllowedImagesSettingsResult(TypedDict, total=False):
-    AllowedImagesSettingsState: Optional[AllowedImagesSettingsEnabledState]
+    AllowedImagesSettingsState: AllowedImagesSettingsEnabledState | None
 
 
 class EnableAwsNetworkPerformanceMetricSubscriptionRequest(ServiceRequest):
-    Source: Optional[String]
-    Destination: Optional[String]
-    Metric: Optional[MetricType]
-    Statistic: Optional[StatisticType]
-    DryRun: Optional[Boolean]
+    Source: String | None
+    Destination: String | None
+    Metric: MetricType | None
+    Statistic: StatisticType | None
+    DryRun: Boolean | None
 
 
 class EnableAwsNetworkPerformanceMetricSubscriptionResult(TypedDict, total=False):
-    Output: Optional[Boolean]
+    Output: Boolean | None
 
 
 class EnableCapacityManagerRequest(ServiceRequest):
-    OrganizationsAccess: Optional[Boolean]
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    OrganizationsAccess: Boolean | None
+    DryRun: Boolean | None
+    ClientToken: String | None
 
 
 class EnableCapacityManagerResult(TypedDict, total=False):
-    CapacityManagerStatus: Optional[CapacityManagerStatus]
-    OrganizationsAccess: Optional[Boolean]
+    CapacityManagerStatus: CapacityManagerStatus | None
+    OrganizationsAccess: Boolean | None
 
 
 class EnableEbsEncryptionByDefaultRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableEbsEncryptionByDefaultResult(TypedDict, total=False):
-    EbsEncryptionByDefault: Optional[Boolean]
+    EbsEncryptionByDefault: Boolean | None
 
 
 class FastLaunchLaunchTemplateSpecificationRequest(TypedDict, total=False):
-    LaunchTemplateId: Optional[LaunchTemplateId]
-    LaunchTemplateName: Optional[String]
+    LaunchTemplateId: LaunchTemplateId | None
+    LaunchTemplateName: String | None
     Version: String
 
 
 class FastLaunchSnapshotConfigurationRequest(TypedDict, total=False):
-    TargetResourceCount: Optional[Integer]
+    TargetResourceCount: Integer | None
 
 
 class EnableFastLaunchRequest(ServiceRequest):
     ImageId: ImageId
-    ResourceType: Optional[String]
-    SnapshotConfiguration: Optional[FastLaunchSnapshotConfigurationRequest]
-    LaunchTemplate: Optional[FastLaunchLaunchTemplateSpecificationRequest]
-    MaxParallelLaunches: Optional[Integer]
-    DryRun: Optional[Boolean]
+    ResourceType: String | None
+    SnapshotConfiguration: FastLaunchSnapshotConfigurationRequest | None
+    LaunchTemplate: FastLaunchLaunchTemplateSpecificationRequest | None
+    MaxParallelLaunches: Integer | None
+    DryRun: Boolean | None
 
 
 class EnableFastLaunchResult(TypedDict, total=False):
-    ImageId: Optional[ImageId]
-    ResourceType: Optional[FastLaunchResourceType]
-    SnapshotConfiguration: Optional[FastLaunchSnapshotConfigurationResponse]
-    LaunchTemplate: Optional[FastLaunchLaunchTemplateSpecificationResponse]
-    MaxParallelLaunches: Optional[Integer]
-    OwnerId: Optional[String]
-    State: Optional[FastLaunchStateCode]
-    StateTransitionReason: Optional[String]
-    StateTransitionTime: Optional[MillisecondDateTime]
+    ImageId: ImageId | None
+    ResourceType: FastLaunchResourceType | None
+    SnapshotConfiguration: FastLaunchSnapshotConfigurationResponse | None
+    LaunchTemplate: FastLaunchLaunchTemplateSpecificationResponse | None
+    MaxParallelLaunches: Integer | None
+    OwnerId: String | None
+    State: FastLaunchStateCode | None
+    StateTransitionReason: String | None
+    StateTransitionTime: MillisecondDateTime | None
 
 
 class EnableFastSnapshotRestoreStateError(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
+    Code: String | None
+    Message: String | None
 
 
 class EnableFastSnapshotRestoreStateErrorItem(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    Error: Optional[EnableFastSnapshotRestoreStateError]
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    Error: EnableFastSnapshotRestoreStateError | None
 
 
-EnableFastSnapshotRestoreStateErrorSet = List[EnableFastSnapshotRestoreStateErrorItem]
+EnableFastSnapshotRestoreStateErrorSet = list[EnableFastSnapshotRestoreStateErrorItem]
 
 
 class EnableFastSnapshotRestoreErrorItem(TypedDict, total=False):
-    SnapshotId: Optional[String]
-    FastSnapshotRestoreStateErrors: Optional[EnableFastSnapshotRestoreStateErrorSet]
+    SnapshotId: String | None
+    FastSnapshotRestoreStateErrors: EnableFastSnapshotRestoreStateErrorSet | None
 
 
-EnableFastSnapshotRestoreErrorSet = List[EnableFastSnapshotRestoreErrorItem]
+EnableFastSnapshotRestoreErrorSet = list[EnableFastSnapshotRestoreErrorItem]
 
 
 class EnableFastSnapshotRestoreSuccessItem(TypedDict, total=False):
-    SnapshotId: Optional[String]
-    AvailabilityZone: Optional[String]
-    State: Optional[FastSnapshotRestoreStateCode]
-    StateTransitionReason: Optional[String]
-    OwnerId: Optional[String]
-    OwnerAlias: Optional[String]
-    EnablingTime: Optional[MillisecondDateTime]
-    OptimizingTime: Optional[MillisecondDateTime]
-    EnabledTime: Optional[MillisecondDateTime]
-    DisablingTime: Optional[MillisecondDateTime]
-    DisabledTime: Optional[MillisecondDateTime]
+    SnapshotId: String | None
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    State: FastSnapshotRestoreStateCode | None
+    StateTransitionReason: String | None
+    OwnerId: String | None
+    OwnerAlias: String | None
+    EnablingTime: MillisecondDateTime | None
+    OptimizingTime: MillisecondDateTime | None
+    EnabledTime: MillisecondDateTime | None
+    DisablingTime: MillisecondDateTime | None
+    DisabledTime: MillisecondDateTime | None
 
 
-EnableFastSnapshotRestoreSuccessSet = List[EnableFastSnapshotRestoreSuccessItem]
+EnableFastSnapshotRestoreSuccessSet = list[EnableFastSnapshotRestoreSuccessItem]
 
 
 class EnableFastSnapshotRestoresRequest(ServiceRequest):
-    AvailabilityZones: AvailabilityZoneStringList
+    AvailabilityZones: AvailabilityZoneStringList | None
+    AvailabilityZoneIds: AvailabilityZoneIdStringList | None
     SourceSnapshotIds: SnapshotIdStringList
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableFastSnapshotRestoresResult(TypedDict, total=False):
-    Successful: Optional[EnableFastSnapshotRestoreSuccessSet]
-    Unsuccessful: Optional[EnableFastSnapshotRestoreErrorSet]
+    Successful: EnableFastSnapshotRestoreSuccessSet | None
+    Unsuccessful: EnableFastSnapshotRestoreErrorSet | None
 
 
 class EnableImageBlockPublicAccessRequest(ServiceRequest):
     ImageBlockPublicAccessState: ImageBlockPublicAccessEnabledState
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableImageBlockPublicAccessResult(TypedDict, total=False):
-    ImageBlockPublicAccessState: Optional[ImageBlockPublicAccessEnabledState]
+    ImageBlockPublicAccessState: ImageBlockPublicAccessEnabledState | None
 
 
 class EnableImageDeprecationRequest(ServiceRequest):
     ImageId: ImageId
     DeprecateAt: MillisecondDateTime
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableImageDeprecationResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class EnableImageDeregistrationProtectionRequest(ServiceRequest):
     ImageId: ImageId
-    WithCooldown: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    WithCooldown: Boolean | None
+    DryRun: Boolean | None
 
 
 class EnableImageDeregistrationProtectionResult(TypedDict, total=False):
-    Return: Optional[String]
+    Return: String | None
 
 
 class EnableImageRequest(ServiceRequest):
     ImageId: ImageId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableImageResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class EnableIpamOrganizationAdminAccountRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     DelegatedAdminAccountId: String
 
 
 class EnableIpamOrganizationAdminAccountResult(TypedDict, total=False):
-    Success: Optional[Boolean]
+    Success: Boolean | None
 
 
 class EnableReachabilityAnalyzerOrganizationSharingRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableReachabilityAnalyzerOrganizationSharingResult(TypedDict, total=False):
-    ReturnValue: Optional[Boolean]
+    ReturnValue: Boolean | None
 
 
 class EnableRouteServerPropagationRequest(ServiceRequest):
     RouteServerId: RouteServerId
     RouteTableId: RouteTableId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableRouteServerPropagationResult(TypedDict, total=False):
-    RouteServerPropagation: Optional[RouteServerPropagation]
+    RouteServerPropagation: RouteServerPropagation | None
 
 
 class EnableSerialConsoleAccessRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableSerialConsoleAccessResult(TypedDict, total=False):
-    SerialConsoleAccessEnabled: Optional[Boolean]
+    SerialConsoleAccessEnabled: Boolean | None
 
 
 class EnableSnapshotBlockPublicAccessRequest(ServiceRequest):
     State: SnapshotBlockPublicAccessState
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableSnapshotBlockPublicAccessResult(TypedDict, total=False):
-    State: Optional[SnapshotBlockPublicAccessState]
+    State: SnapshotBlockPublicAccessState | None
 
 
 class EnableTransitGatewayRouteTablePropagationRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    DryRun: Optional[Boolean]
-    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    DryRun: Boolean | None
+    TransitGatewayRouteTableAnnouncementId: TransitGatewayRouteTableAnnouncementId | None
 
 
 class EnableTransitGatewayRouteTablePropagationResult(TypedDict, total=False):
-    Propagation: Optional[TransitGatewayPropagation]
+    Propagation: TransitGatewayPropagation | None
 
 
 class EnableVgwRoutePropagationRequest(ServiceRequest):
     GatewayId: VpnGatewayId
     RouteTableId: RouteTableId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class EnableVolumeIORequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     VolumeId: VolumeId
 
 
 class EnableVpcClassicLinkDnsSupportRequest(ServiceRequest):
-    VpcId: Optional[VpcId]
+    VpcId: VpcId | None
 
 
 class EnableVpcClassicLinkDnsSupportResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class EnableVpcClassicLinkRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     VpcId: VpcId
 
 
 class EnableVpcClassicLinkResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class EnclaveOptionsRequest(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class ExportClientVpnClientCertificateRevocationListRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ExportClientVpnClientCertificateRevocationListResult(TypedDict, total=False):
-    CertificateRevocationList: Optional[String]
-    Status: Optional[ClientCertificateRevocationListStatus]
+    CertificateRevocationList: String | None
+    Status: ClientCertificateRevocationListStatus | None
 
 
 class ExportClientVpnClientConfigurationRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ExportClientVpnClientConfigurationResult(TypedDict, total=False):
-    ClientConfiguration: Optional[String]
+    ClientConfiguration: String | None
 
 
 class ExportTaskS3LocationRequest(TypedDict, total=False):
     S3Bucket: String
-    S3Prefix: Optional[String]
+    S3Prefix: String | None
 
 
 class ExportImageRequest(ServiceRequest):
-    ClientToken: Optional[String]
-    Description: Optional[String]
+    ClientToken: String | None
+    Description: String | None
     DiskImageFormat: DiskImageFormat
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ImageId: ImageId
     S3ExportLocation: ExportTaskS3LocationRequest
-    RoleName: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
+    RoleName: String | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class ExportImageResult(TypedDict, total=False):
-    Description: Optional[String]
-    DiskImageFormat: Optional[DiskImageFormat]
-    ExportImageTaskId: Optional[String]
-    ImageId: Optional[String]
-    RoleName: Optional[String]
-    Progress: Optional[String]
-    S3ExportLocation: Optional[ExportTaskS3Location]
-    Status: Optional[String]
-    StatusMessage: Optional[String]
-    Tags: Optional[TagList]
+    Description: String | None
+    DiskImageFormat: DiskImageFormat | None
+    ExportImageTaskId: String | None
+    ImageId: String | None
+    RoleName: String | None
+    Progress: String | None
+    S3ExportLocation: ExportTaskS3Location | None
+    Status: String | None
+    StatusMessage: String | None
+    Tags: TagList | None
 
 
 class ExportTransitGatewayRoutesRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    Filters: Optional[FilterList]
+    Filters: FilterList | None
     S3Bucket: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ExportTransitGatewayRoutesResult(TypedDict, total=False):
-    S3Location: Optional[String]
+    S3Location: String | None
 
 
 class ExportVerifiedAccessInstanceClientConfigurationRequest(ServiceRequest):
     VerifiedAccessInstanceId: VerifiedAccessInstanceId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class VerifiedAccessInstanceOpenVpnClientConfigurationRoute(TypedDict, total=False):
-    Cidr: Optional[String]
+    Cidr: String | None
 
 
-VerifiedAccessInstanceOpenVpnClientConfigurationRouteList = List[
+VerifiedAccessInstanceOpenVpnClientConfigurationRouteList = list[
     VerifiedAccessInstanceOpenVpnClientConfigurationRoute
 ]
 
 
 class VerifiedAccessInstanceOpenVpnClientConfiguration(TypedDict, total=False):
-    Config: Optional[String]
-    Routes: Optional[VerifiedAccessInstanceOpenVpnClientConfigurationRouteList]
+    Config: String | None
+    Routes: VerifiedAccessInstanceOpenVpnClientConfigurationRouteList | None
 
 
-VerifiedAccessInstanceOpenVpnClientConfigurationList = List[
+VerifiedAccessInstanceOpenVpnClientConfigurationList = list[
     VerifiedAccessInstanceOpenVpnClientConfiguration
 ]
 
 
 class VerifiedAccessInstanceUserTrustProviderClientConfiguration(TypedDict, total=False):
-    Type: Optional[UserTrustProviderType]
-    Scopes: Optional[String]
-    Issuer: Optional[String]
-    AuthorizationEndpoint: Optional[String]
-    PublicSigningKeyEndpoint: Optional[String]
-    TokenEndpoint: Optional[String]
-    UserInfoEndpoint: Optional[String]
-    ClientId: Optional[String]
-    ClientSecret: Optional[ClientSecretType]
-    PkceEnabled: Optional[Boolean]
+    Type: UserTrustProviderType | None
+    Scopes: String | None
+    Issuer: String | None
+    AuthorizationEndpoint: String | None
+    PublicSigningKeyEndpoint: String | None
+    TokenEndpoint: String | None
+    UserInfoEndpoint: String | None
+    ClientId: String | None
+    ClientSecret: ClientSecretType | None
+    PkceEnabled: Boolean | None
 
 
 class ExportVerifiedAccessInstanceClientConfigurationResult(TypedDict, total=False):
-    Version: Optional[String]
-    VerifiedAccessInstanceId: Optional[String]
-    Region: Optional[String]
-    DeviceTrustProviders: Optional[DeviceTrustProviderTypeList]
-    UserTrustProvider: Optional[VerifiedAccessInstanceUserTrustProviderClientConfiguration]
-    OpenVpnConfigurations: Optional[VerifiedAccessInstanceOpenVpnClientConfigurationList]
+    Version: String | None
+    VerifiedAccessInstanceId: String | None
+    Region: String | None
+    DeviceTrustProviders: DeviceTrustProviderTypeList | None
+    UserTrustProvider: VerifiedAccessInstanceUserTrustProviderClientConfiguration | None
+    OpenVpnConfigurations: VerifiedAccessInstanceOpenVpnClientConfigurationList | None
 
 
 class GetActiveVpnTunnelStatusRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
     VpnTunnelOutsideIpAddress: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetActiveVpnTunnelStatusResult(TypedDict, total=False):
-    ActiveVpnTunnelStatus: Optional[ActiveVpnTunnelStatus]
+    ActiveVpnTunnelStatus: ActiveVpnTunnelStatus | None
 
 
 class GetAllowedImagesSettingsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
-ImageNameList = List[ImageName]
-MarketplaceProductCodeList = List[MarketplaceProductCode]
-ImageProviderList = List[ImageProvider]
+ImageNameList = list[ImageName]
+MarketplaceProductCodeList = list[MarketplaceProductCode]
+ImageProviderList = list[ImageProvider]
 
 
 class ImageCriterion(TypedDict, total=False):
-    ImageProviders: Optional[ImageProviderList]
-    MarketplaceProductCodes: Optional[MarketplaceProductCodeList]
-    ImageNames: Optional[ImageNameList]
-    DeprecationTimeCondition: Optional[DeprecationTimeCondition]
-    CreationDateCondition: Optional[CreationDateCondition]
+    ImageProviders: ImageProviderList | None
+    MarketplaceProductCodes: MarketplaceProductCodeList | None
+    ImageNames: ImageNameList | None
+    DeprecationTimeCondition: DeprecationTimeCondition | None
+    CreationDateCondition: CreationDateCondition | None
 
 
-ImageCriterionList = List[ImageCriterion]
+ImageCriterionList = list[ImageCriterion]
 
 
 class GetAllowedImagesSettingsResult(TypedDict, total=False):
-    State: Optional[String]
-    ImageCriteria: Optional[ImageCriterionList]
-    ManagedBy: Optional[ManagedBy]
+    State: String | None
+    ImageCriteria: ImageCriterionList | None
+    ManagedBy: ManagedBy | None
 
 
 class GetAssociatedEnclaveCertificateIamRolesRequest(ServiceRequest):
     CertificateArn: CertificateId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetAssociatedEnclaveCertificateIamRolesResult(TypedDict, total=False):
-    AssociatedRoles: Optional[AssociatedRolesList]
+    AssociatedRoles: AssociatedRolesList | None
 
 
 class GetAssociatedIpv6PoolCidrsRequest(ServiceRequest):
     PoolId: Ipv6PoolEc2Id
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[Ipv6PoolMaxResults]
-    DryRun: Optional[Boolean]
+    NextToken: NextToken | None
+    MaxResults: Ipv6PoolMaxResults | None
+    DryRun: Boolean | None
 
 
 class Ipv6CidrAssociation(TypedDict, total=False):
-    Ipv6Cidr: Optional[String]
-    AssociatedResource: Optional[String]
+    Ipv6Cidr: String | None
+    AssociatedResource: String | None
 
 
-Ipv6CidrAssociationSet = List[Ipv6CidrAssociation]
+Ipv6CidrAssociationSet = list[Ipv6CidrAssociation]
 
 
 class GetAssociatedIpv6PoolCidrsResult(TypedDict, total=False):
-    Ipv6CidrAssociations: Optional[Ipv6CidrAssociationSet]
-    NextToken: Optional[String]
+    Ipv6CidrAssociations: Ipv6CidrAssociationSet | None
+    NextToken: String | None
 
 
 class GetAwsNetworkPerformanceDataRequest(ServiceRequest):
-    DataQueries: Optional[DataQueries]
-    StartTime: Optional[MillisecondDateTime]
-    EndTime: Optional[MillisecondDateTime]
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    DataQueries: DataQueries | None
+    StartTime: MillisecondDateTime | None
+    EndTime: MillisecondDateTime | None
+    MaxResults: Integer | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class GetAwsNetworkPerformanceDataResult(TypedDict, total=False):
-    DataResponses: Optional[DataResponses]
-    NextToken: Optional[String]
+    DataResponses: DataResponses | None
+    NextToken: String | None
 
 
 class GetCapacityManagerAttributesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetCapacityManagerAttributesResult(TypedDict, total=False):
-    CapacityManagerStatus: Optional[CapacityManagerStatus]
-    OrganizationsAccess: Optional[Boolean]
-    DataExportCount: Optional[Integer]
-    IngestionStatus: Optional[IngestionStatus]
-    IngestionStatusMessage: Optional[String]
-    EarliestDatapointTimestamp: Optional[MillisecondDateTime]
-    LatestDatapointTimestamp: Optional[MillisecondDateTime]
+    CapacityManagerStatus: CapacityManagerStatus | None
+    OrganizationsAccess: Boolean | None
+    DataExportCount: Integer | None
+    IngestionStatus: IngestionStatus | None
+    IngestionStatusMessage: String | None
+    EarliestDatapointTimestamp: MillisecondDateTime | None
+    LatestDatapointTimestamp: MillisecondDateTime | None
 
 
-GroupBySet = List[GroupBy]
-MetricSet = List[Metric]
+GroupBySet = list[GroupBy]
+MetricSet = list[Metric]
 
 
 class GetCapacityManagerMetricDataRequest(ServiceRequest):
@@ -18054,193 +18086,193 @@ class GetCapacityManagerMetricDataRequest(ServiceRequest):
     StartTime: MillisecondDateTime
     EndTime: MillisecondDateTime
     Period: Period
-    GroupBy: Optional[GroupBySet]
-    FilterBy: Optional[CapacityManagerConditionSet]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    DryRun: Optional[Boolean]
+    GroupBy: GroupBySet | None
+    FilterBy: CapacityManagerConditionSet | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    DryRun: Boolean | None
 
 
 class MetricValue(TypedDict, total=False):
-    Metric: Optional[Metric]
-    Value: Optional[Double]
+    Metric: Metric | None
+    Value: Double | None
 
 
-MetricValueSet = List[MetricValue]
+MetricValueSet = list[MetricValue]
 
 
 class MetricDataResult(TypedDict, total=False):
-    Dimension: Optional[CapacityManagerDimension]
-    Timestamp: Optional[MillisecondDateTime]
-    MetricValues: Optional[MetricValueSet]
+    Dimension: CapacityManagerDimension | None
+    Timestamp: MillisecondDateTime | None
+    MetricValues: MetricValueSet | None
 
 
-MetricDataResultSet = List[MetricDataResult]
+MetricDataResultSet = list[MetricDataResult]
 
 
 class GetCapacityManagerMetricDataResult(TypedDict, total=False):
-    MetricDataResults: Optional[MetricDataResultSet]
-    NextToken: Optional[NextToken]
+    MetricDataResults: MetricDataResultSet | None
+    NextToken: NextToken | None
 
 
 class GetCapacityManagerMetricDimensionsRequest(ServiceRequest):
     GroupBy: GroupBySet
-    FilterBy: Optional[CapacityManagerConditionSet]
+    FilterBy: CapacityManagerConditionSet | None
     StartTime: MillisecondDateTime
     EndTime: MillisecondDateTime
     MetricNames: MetricSet
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    DryRun: Optional[Boolean]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    DryRun: Boolean | None
 
 
-MetricDimensionResultSet = List[CapacityManagerDimension]
+MetricDimensionResultSet = list[CapacityManagerDimension]
 
 
 class GetCapacityManagerMetricDimensionsResult(TypedDict, total=False):
-    MetricDimensionResults: Optional[MetricDimensionResultSet]
-    NextToken: Optional[NextToken]
+    MetricDimensionResults: MetricDimensionResultSet | None
+    NextToken: NextToken | None
 
 
 class GetCapacityReservationUsageRequest(ServiceRequest):
     CapacityReservationId: CapacityReservationId
-    NextToken: Optional[String]
-    MaxResults: Optional[GetCapacityReservationUsageRequestMaxResults]
-    DryRun: Optional[Boolean]
+    NextToken: String | None
+    MaxResults: GetCapacityReservationUsageRequestMaxResults | None
+    DryRun: Boolean | None
 
 
 class InstanceUsage(TypedDict, total=False):
-    AccountId: Optional[String]
-    UsedInstanceCount: Optional[Integer]
+    AccountId: String | None
+    UsedInstanceCount: Integer | None
 
 
-InstanceUsageSet = List[InstanceUsage]
+InstanceUsageSet = list[InstanceUsage]
 
 
 class GetCapacityReservationUsageResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    CapacityReservationId: Optional[String]
-    InstanceType: Optional[String]
-    TotalInstanceCount: Optional[Integer]
-    AvailableInstanceCount: Optional[Integer]
-    State: Optional[CapacityReservationState]
-    InstanceUsages: Optional[InstanceUsageSet]
+    NextToken: String | None
+    CapacityReservationId: String | None
+    InstanceType: String | None
+    TotalInstanceCount: Integer | None
+    AvailableInstanceCount: Integer | None
+    State: CapacityReservationState | None
+    InstanceUsages: InstanceUsageSet | None
 
 
 class GetCoipPoolUsageRequest(ServiceRequest):
     PoolId: Ipv4PoolCoipId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[CoipPoolMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: CoipPoolMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class GetCoipPoolUsageResult(TypedDict, total=False):
-    CoipPoolId: Optional[String]
-    CoipAddressUsages: Optional[CoipAddressUsageSet]
-    LocalGatewayRouteTableId: Optional[String]
-    NextToken: Optional[String]
+    CoipPoolId: String | None
+    CoipAddressUsages: CoipAddressUsageSet | None
+    LocalGatewayRouteTableId: String | None
+    NextToken: String | None
 
 
 class GetConsoleOutputRequest(ServiceRequest):
     InstanceId: InstanceId
-    Latest: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    Latest: Boolean | None
+    DryRun: Boolean | None
 
 
 class GetConsoleOutputResult(TypedDict, total=False):
-    InstanceId: Optional[String]
-    Timestamp: Optional[DateTime]
-    Output: Optional[String]
+    InstanceId: String | None
+    Timestamp: DateTime | None
+    Output: String | None
 
 
 class GetConsoleScreenshotRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceId: InstanceId
-    WakeUp: Optional[Boolean]
+    WakeUp: Boolean | None
 
 
 class GetConsoleScreenshotResult(TypedDict, total=False):
-    ImageData: Optional[String]
-    InstanceId: Optional[String]
+    ImageData: String | None
+    InstanceId: String | None
 
 
 class GetDeclarativePoliciesReportSummaryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ReportId: DeclarativePoliciesReportId
 
 
 class GetDeclarativePoliciesReportSummaryResult(TypedDict, total=False):
-    ReportId: Optional[String]
-    S3Bucket: Optional[String]
-    S3Prefix: Optional[String]
-    TargetId: Optional[String]
-    StartTime: Optional[MillisecondDateTime]
-    EndTime: Optional[MillisecondDateTime]
-    NumberOfAccounts: Optional[Integer]
-    NumberOfFailedAccounts: Optional[Integer]
-    AttributeSummaries: Optional[AttributeSummaryList]
+    ReportId: String | None
+    S3Bucket: String | None
+    S3Prefix: String | None
+    TargetId: String | None
+    StartTime: MillisecondDateTime | None
+    EndTime: MillisecondDateTime | None
+    NumberOfAccounts: Integer | None
+    NumberOfFailedAccounts: Integer | None
+    AttributeSummaries: AttributeSummaryList | None
 
 
 class GetDefaultCreditSpecificationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceFamily: UnlimitedSupportedInstanceFamily
 
 
 class InstanceFamilyCreditSpecification(TypedDict, total=False):
-    InstanceFamily: Optional[UnlimitedSupportedInstanceFamily]
-    CpuCredits: Optional[String]
+    InstanceFamily: UnlimitedSupportedInstanceFamily | None
+    CpuCredits: String | None
 
 
 class GetDefaultCreditSpecificationResult(TypedDict, total=False):
-    InstanceFamilyCreditSpecification: Optional[InstanceFamilyCreditSpecification]
+    InstanceFamilyCreditSpecification: InstanceFamilyCreditSpecification | None
 
 
 class GetEbsDefaultKmsKeyIdRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetEbsDefaultKmsKeyIdResult(TypedDict, total=False):
-    KmsKeyId: Optional[String]
+    KmsKeyId: String | None
 
 
 class GetEbsEncryptionByDefaultRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetEbsEncryptionByDefaultResult(TypedDict, total=False):
-    EbsEncryptionByDefault: Optional[Boolean]
-    SseType: Optional[SSEType]
+    EbsEncryptionByDefault: Boolean | None
+    SseType: SSEType | None
 
 
 class IntegrateServices(TypedDict, total=False):
-    AthenaIntegrations: Optional[AthenaIntegrationsSet]
+    AthenaIntegrations: AthenaIntegrationsSet | None
 
 
 class GetFlowLogsIntegrationTemplateRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     FlowLogId: VpcFlowLogId
     ConfigDeliveryS3DestinationArn: String
     IntegrateServices: IntegrateServices
 
 
 class GetFlowLogsIntegrationTemplateResult(TypedDict, total=False):
-    Result: Optional[String]
+    Result: String | None
 
 
 class GetGroupsForCapacityReservationRequest(ServiceRequest):
     CapacityReservationId: CapacityReservationId
-    NextToken: Optional[String]
-    MaxResults: Optional[GetGroupsForCapacityReservationRequestMaxResults]
-    DryRun: Optional[Boolean]
+    NextToken: String | None
+    MaxResults: GetGroupsForCapacityReservationRequestMaxResults | None
+    DryRun: Boolean | None
 
 
 class GetGroupsForCapacityReservationResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    CapacityReservationGroups: Optional[CapacityReservationGroupSet]
+    NextToken: String | None
+    CapacityReservationGroups: CapacityReservationGroupSet | None
 
 
-RequestHostIdSet = List[DedicatedHostId]
+RequestHostIdSet = list[DedicatedHostId]
 
 
 class GetHostReservationPurchasePreviewRequest(ServiceRequest):
@@ -18249,1493 +18281,1493 @@ class GetHostReservationPurchasePreviewRequest(ServiceRequest):
 
 
 class Purchase(TypedDict, total=False):
-    CurrencyCode: Optional[CurrencyCodeValues]
-    Duration: Optional[Integer]
-    HostIdSet: Optional[ResponseHostIdSet]
-    HostReservationId: Optional[HostReservationId]
-    HourlyPrice: Optional[String]
-    InstanceFamily: Optional[String]
-    PaymentOption: Optional[PaymentOption]
-    UpfrontPrice: Optional[String]
+    CurrencyCode: CurrencyCodeValues | None
+    Duration: Integer | None
+    HostIdSet: ResponseHostIdSet | None
+    HostReservationId: HostReservationId | None
+    HourlyPrice: String | None
+    InstanceFamily: String | None
+    PaymentOption: PaymentOption | None
+    UpfrontPrice: String | None
 
 
-PurchaseSet = List[Purchase]
+PurchaseSet = list[Purchase]
 
 
 class GetHostReservationPurchasePreviewResult(TypedDict, total=False):
-    CurrencyCode: Optional[CurrencyCodeValues]
-    Purchase: Optional[PurchaseSet]
-    TotalHourlyPrice: Optional[String]
-    TotalUpfrontPrice: Optional[String]
+    CurrencyCode: CurrencyCodeValues | None
+    Purchase: PurchaseSet | None
+    TotalHourlyPrice: String | None
+    TotalUpfrontPrice: String | None
 
 
 class GetImageBlockPublicAccessStateRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetImageBlockPublicAccessStateResult(TypedDict, total=False):
-    ImageBlockPublicAccessState: Optional[String]
-    ManagedBy: Optional[ManagedBy]
+    ImageBlockPublicAccessState: String | None
+    ManagedBy: ManagedBy | None
 
 
 class GetInstanceMetadataDefaultsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class InstanceMetadataDefaultsResponse(TypedDict, total=False):
-    HttpTokens: Optional[HttpTokensState]
-    HttpPutResponseHopLimit: Optional[BoxedInteger]
-    HttpEndpoint: Optional[InstanceMetadataEndpointState]
-    InstanceMetadataTags: Optional[InstanceMetadataTagsState]
-    ManagedBy: Optional[ManagedBy]
-    ManagedExceptionMessage: Optional[String]
+    HttpTokens: HttpTokensState | None
+    HttpPutResponseHopLimit: BoxedInteger | None
+    HttpEndpoint: InstanceMetadataEndpointState | None
+    InstanceMetadataTags: InstanceMetadataTagsState | None
+    ManagedBy: ManagedBy | None
+    ManagedExceptionMessage: String | None
 
 
 class GetInstanceMetadataDefaultsResult(TypedDict, total=False):
-    AccountLevel: Optional[InstanceMetadataDefaultsResponse]
+    AccountLevel: InstanceMetadataDefaultsResponse | None
 
 
 class GetInstanceTpmEkPubRequest(ServiceRequest):
     InstanceId: InstanceId
     KeyType: EkPubKeyType
     KeyFormat: EkPubKeyFormat
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetInstanceTpmEkPubResult(TypedDict, total=False):
-    InstanceId: Optional[InstanceId]
-    KeyType: Optional[EkPubKeyType]
-    KeyFormat: Optional[EkPubKeyFormat]
-    KeyValue: Optional[EkPubKeyValue]
+    InstanceId: InstanceId | None
+    KeyType: EkPubKeyType | None
+    KeyFormat: EkPubKeyFormat | None
+    KeyValue: EkPubKeyValue | None
 
 
-VirtualizationTypeSet = List[VirtualizationType]
+VirtualizationTypeSet = list[VirtualizationType]
 
 
 class GetInstanceTypesFromInstanceRequirementsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ArchitectureTypes: ArchitectureTypeSet
     VirtualizationTypes: VirtualizationTypeSet
     InstanceRequirements: InstanceRequirementsRequest
-    MaxResults: Optional[Integer]
-    NextToken: Optional[String]
-    Context: Optional[String]
+    MaxResults: Integer | None
+    NextToken: String | None
+    Context: String | None
 
 
 class InstanceTypeInfoFromInstanceRequirements(TypedDict, total=False):
-    InstanceType: Optional[String]
+    InstanceType: String | None
 
 
-InstanceTypeInfoFromInstanceRequirementsSet = List[InstanceTypeInfoFromInstanceRequirements]
+InstanceTypeInfoFromInstanceRequirementsSet = list[InstanceTypeInfoFromInstanceRequirements]
 
 
 class GetInstanceTypesFromInstanceRequirementsResult(TypedDict, total=False):
-    InstanceTypes: Optional[InstanceTypeInfoFromInstanceRequirementsSet]
-    NextToken: Optional[String]
+    InstanceTypes: InstanceTypeInfoFromInstanceRequirementsSet | None
+    NextToken: String | None
 
 
 class GetInstanceUefiDataRequest(ServiceRequest):
     InstanceId: InstanceId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetInstanceUefiDataResult(TypedDict, total=False):
-    InstanceId: Optional[InstanceId]
-    UefiData: Optional[String]
+    InstanceId: InstanceId | None
+    UefiData: String | None
 
 
 class GetIpamAddressHistoryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     Cidr: String
     IpamScopeId: IpamScopeId
-    VpcId: Optional[String]
-    StartTime: Optional[MillisecondDateTime]
-    EndTime: Optional[MillisecondDateTime]
-    MaxResults: Optional[IpamAddressHistoryMaxResults]
-    NextToken: Optional[NextToken]
+    VpcId: String | None
+    StartTime: MillisecondDateTime | None
+    EndTime: MillisecondDateTime | None
+    MaxResults: IpamAddressHistoryMaxResults | None
+    NextToken: NextToken | None
 
 
 class IpamAddressHistoryRecord(TypedDict, total=False):
-    ResourceOwnerId: Optional[String]
-    ResourceRegion: Optional[String]
-    ResourceType: Optional[IpamAddressHistoryResourceType]
-    ResourceId: Optional[String]
-    ResourceCidr: Optional[String]
-    ResourceName: Optional[String]
-    ResourceComplianceStatus: Optional[IpamComplianceStatus]
-    ResourceOverlapStatus: Optional[IpamOverlapStatus]
-    VpcId: Optional[String]
-    SampledStartTime: Optional[MillisecondDateTime]
-    SampledEndTime: Optional[MillisecondDateTime]
+    ResourceOwnerId: String | None
+    ResourceRegion: String | None
+    ResourceType: IpamAddressHistoryResourceType | None
+    ResourceId: String | None
+    ResourceCidr: String | None
+    ResourceName: String | None
+    ResourceComplianceStatus: IpamComplianceStatus | None
+    ResourceOverlapStatus: IpamOverlapStatus | None
+    VpcId: String | None
+    SampledStartTime: MillisecondDateTime | None
+    SampledEndTime: MillisecondDateTime | None
 
 
-IpamAddressHistoryRecordSet = List[IpamAddressHistoryRecord]
+IpamAddressHistoryRecordSet = list[IpamAddressHistoryRecord]
 
 
 class GetIpamAddressHistoryResult(TypedDict, total=False):
-    HistoryRecords: Optional[IpamAddressHistoryRecordSet]
-    NextToken: Optional[NextToken]
+    HistoryRecords: IpamAddressHistoryRecordSet | None
+    NextToken: NextToken | None
 
 
 class GetIpamDiscoveredAccountsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamResourceDiscoveryId: IpamResourceDiscoveryId
     DiscoveryRegion: String
-    Filters: Optional[FilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[IpamMaxResults]
+    Filters: FilterList | None
+    NextToken: NextToken | None
+    MaxResults: IpamMaxResults | None
 
 
 class IpamDiscoveryFailureReason(TypedDict, total=False):
-    Code: Optional[IpamDiscoveryFailureCode]
-    Message: Optional[String]
+    Code: IpamDiscoveryFailureCode | None
+    Message: String | None
 
 
 class IpamDiscoveredAccount(TypedDict, total=False):
-    AccountId: Optional[String]
-    DiscoveryRegion: Optional[String]
-    FailureReason: Optional[IpamDiscoveryFailureReason]
-    LastAttemptedDiscoveryTime: Optional[MillisecondDateTime]
-    LastSuccessfulDiscoveryTime: Optional[MillisecondDateTime]
-    OrganizationalUnitId: Optional[String]
+    AccountId: String | None
+    DiscoveryRegion: String | None
+    FailureReason: IpamDiscoveryFailureReason | None
+    LastAttemptedDiscoveryTime: MillisecondDateTime | None
+    LastSuccessfulDiscoveryTime: MillisecondDateTime | None
+    OrganizationalUnitId: String | None
 
 
-IpamDiscoveredAccountSet = List[IpamDiscoveredAccount]
+IpamDiscoveredAccountSet = list[IpamDiscoveredAccount]
 
 
 class GetIpamDiscoveredAccountsResult(TypedDict, total=False):
-    IpamDiscoveredAccounts: Optional[IpamDiscoveredAccountSet]
-    NextToken: Optional[NextToken]
+    IpamDiscoveredAccounts: IpamDiscoveredAccountSet | None
+    NextToken: NextToken | None
 
 
 class GetIpamDiscoveredPublicAddressesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamResourceDiscoveryId: IpamResourceDiscoveryId
     AddressRegion: String
-    Filters: Optional[FilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[IpamMaxResults]
+    Filters: FilterList | None
+    NextToken: NextToken | None
+    MaxResults: IpamMaxResults | None
 
 
 class IpamPublicAddressSecurityGroup(TypedDict, total=False):
-    GroupName: Optional[String]
-    GroupId: Optional[String]
+    GroupName: String | None
+    GroupId: String | None
 
 
-IpamPublicAddressSecurityGroupList = List[IpamPublicAddressSecurityGroup]
+IpamPublicAddressSecurityGroupList = list[IpamPublicAddressSecurityGroup]
 
 
 class IpamPublicAddressTag(TypedDict, total=False):
-    Key: Optional[String]
-    Value: Optional[String]
+    Key: String | None
+    Value: String | None
 
 
-IpamPublicAddressTagList = List[IpamPublicAddressTag]
+IpamPublicAddressTagList = list[IpamPublicAddressTag]
 
 
 class IpamPublicAddressTags(TypedDict, total=False):
-    EipTags: Optional[IpamPublicAddressTagList]
+    EipTags: IpamPublicAddressTagList | None
 
 
 class IpamDiscoveredPublicAddress(TypedDict, total=False):
-    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
-    AddressRegion: Optional[String]
-    Address: Optional[String]
-    AddressOwnerId: Optional[String]
-    AddressAllocationId: Optional[String]
-    AssociationStatus: Optional[IpamPublicAddressAssociationStatus]
-    AddressType: Optional[IpamPublicAddressType]
-    Service: Optional[IpamPublicAddressAwsService]
-    ServiceResource: Optional[String]
-    VpcId: Optional[String]
-    SubnetId: Optional[String]
-    PublicIpv4PoolId: Optional[String]
-    NetworkInterfaceId: Optional[String]
-    NetworkInterfaceDescription: Optional[String]
-    InstanceId: Optional[String]
-    Tags: Optional[IpamPublicAddressTags]
-    NetworkBorderGroup: Optional[String]
-    SecurityGroups: Optional[IpamPublicAddressSecurityGroupList]
-    SampleTime: Optional[MillisecondDateTime]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId | None
+    AddressRegion: String | None
+    Address: String | None
+    AddressOwnerId: String | None
+    AddressAllocationId: String | None
+    AssociationStatus: IpamPublicAddressAssociationStatus | None
+    AddressType: IpamPublicAddressType | None
+    Service: IpamPublicAddressAwsService | None
+    ServiceResource: String | None
+    VpcId: String | None
+    SubnetId: String | None
+    PublicIpv4PoolId: String | None
+    NetworkInterfaceId: String | None
+    NetworkInterfaceDescription: String | None
+    InstanceId: String | None
+    Tags: IpamPublicAddressTags | None
+    NetworkBorderGroup: String | None
+    SecurityGroups: IpamPublicAddressSecurityGroupList | None
+    SampleTime: MillisecondDateTime | None
 
 
-IpamDiscoveredPublicAddressSet = List[IpamDiscoveredPublicAddress]
+IpamDiscoveredPublicAddressSet = list[IpamDiscoveredPublicAddress]
 
 
 class GetIpamDiscoveredPublicAddressesResult(TypedDict, total=False):
-    IpamDiscoveredPublicAddresses: Optional[IpamDiscoveredPublicAddressSet]
-    OldestSampleTime: Optional[MillisecondDateTime]
-    NextToken: Optional[NextToken]
+    IpamDiscoveredPublicAddresses: IpamDiscoveredPublicAddressSet | None
+    OldestSampleTime: MillisecondDateTime | None
+    NextToken: NextToken | None
 
 
 class GetIpamDiscoveredResourceCidrsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamResourceDiscoveryId: IpamResourceDiscoveryId
     ResourceRegion: String
-    Filters: Optional[FilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[IpamMaxResults]
+    Filters: FilterList | None
+    NextToken: NextToken | None
+    MaxResults: IpamMaxResults | None
 
 
 class IpamDiscoveredResourceCidr(TypedDict, total=False):
-    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
-    ResourceRegion: Optional[String]
-    ResourceId: Optional[String]
-    ResourceOwnerId: Optional[String]
-    ResourceCidr: Optional[String]
-    IpSource: Optional[IpamResourceCidrIpSource]
-    ResourceType: Optional[IpamResourceType]
-    ResourceTags: Optional[IpamResourceTagList]
-    IpUsage: Optional[BoxedDouble]
-    VpcId: Optional[String]
-    SubnetId: Optional[String]
-    NetworkInterfaceAttachmentStatus: Optional[IpamNetworkInterfaceAttachmentStatus]
-    SampleTime: Optional[MillisecondDateTime]
-    AvailabilityZoneId: Optional[String]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId | None
+    ResourceRegion: String | None
+    ResourceId: String | None
+    ResourceOwnerId: String | None
+    ResourceCidr: String | None
+    IpSource: IpamResourceCidrIpSource | None
+    ResourceType: IpamResourceType | None
+    ResourceTags: IpamResourceTagList | None
+    IpUsage: BoxedDouble | None
+    VpcId: String | None
+    SubnetId: String | None
+    NetworkInterfaceAttachmentStatus: IpamNetworkInterfaceAttachmentStatus | None
+    SampleTime: MillisecondDateTime | None
+    AvailabilityZoneId: String | None
 
 
-IpamDiscoveredResourceCidrSet = List[IpamDiscoveredResourceCidr]
+IpamDiscoveredResourceCidrSet = list[IpamDiscoveredResourceCidr]
 
 
 class GetIpamDiscoveredResourceCidrsResult(TypedDict, total=False):
-    IpamDiscoveredResourceCidrs: Optional[IpamDiscoveredResourceCidrSet]
-    NextToken: Optional[NextToken]
+    IpamDiscoveredResourceCidrs: IpamDiscoveredResourceCidrSet | None
+    NextToken: NextToken | None
 
 
 class GetIpamPoolAllocationsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPoolId: IpamPoolId
-    IpamPoolAllocationId: Optional[IpamPoolAllocationId]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[GetIpamPoolAllocationsMaxResults]
-    NextToken: Optional[NextToken]
+    IpamPoolAllocationId: IpamPoolAllocationId | None
+    Filters: FilterList | None
+    MaxResults: GetIpamPoolAllocationsMaxResults | None
+    NextToken: NextToken | None
 
 
-IpamPoolAllocationSet = List[IpamPoolAllocation]
+IpamPoolAllocationSet = list[IpamPoolAllocation]
 
 
 class GetIpamPoolAllocationsResult(TypedDict, total=False):
-    IpamPoolAllocations: Optional[IpamPoolAllocationSet]
-    NextToken: Optional[NextToken]
+    IpamPoolAllocations: IpamPoolAllocationSet | None
+    NextToken: NextToken | None
 
 
 class GetIpamPoolCidrsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPoolId: IpamPoolId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[IpamMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: FilterList | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
 
 
-IpamPoolCidrSet = List[IpamPoolCidr]
+IpamPoolCidrSet = list[IpamPoolCidr]
 
 
 class GetIpamPoolCidrsResult(TypedDict, total=False):
-    IpamPoolCidrs: Optional[IpamPoolCidrSet]
-    NextToken: Optional[NextToken]
+    IpamPoolCidrs: IpamPoolCidrSet | None
+    NextToken: NextToken | None
 
 
 class GetIpamPrefixListResolverRulesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPrefixListResolverId: IpamPrefixListResolverId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[IpamMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: FilterList | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
 
 
 class IpamPrefixListResolverRuleCondition(TypedDict, total=False):
-    Operation: Optional[IpamPrefixListResolverRuleConditionOperation]
-    IpamPoolId: Optional[String]
-    ResourceId: Optional[String]
-    ResourceOwner: Optional[String]
-    ResourceRegion: Optional[String]
-    ResourceTag: Optional[IpamResourceTag]
-    Cidr: Optional[String]
+    Operation: IpamPrefixListResolverRuleConditionOperation | None
+    IpamPoolId: String | None
+    ResourceId: String | None
+    ResourceOwner: String | None
+    ResourceRegion: String | None
+    ResourceTag: IpamResourceTag | None
+    Cidr: String | None
 
 
-IpamPrefixListResolverRuleConditionSet = List[IpamPrefixListResolverRuleCondition]
+IpamPrefixListResolverRuleConditionSet = list[IpamPrefixListResolverRuleCondition]
 
 
 class IpamPrefixListResolverRule(TypedDict, total=False):
-    RuleType: Optional[IpamPrefixListResolverRuleType]
-    StaticCidr: Optional[String]
-    IpamScopeId: Optional[IpamScopeId]
-    ResourceType: Optional[IpamResourceType]
-    Conditions: Optional[IpamPrefixListResolverRuleConditionSet]
+    RuleType: IpamPrefixListResolverRuleType | None
+    StaticCidr: String | None
+    IpamScopeId: IpamScopeId | None
+    ResourceType: IpamResourceType | None
+    Conditions: IpamPrefixListResolverRuleConditionSet | None
 
 
-IpamPrefixListResolverRuleSet = List[IpamPrefixListResolverRule]
+IpamPrefixListResolverRuleSet = list[IpamPrefixListResolverRule]
 
 
 class GetIpamPrefixListResolverRulesResult(TypedDict, total=False):
-    Rules: Optional[IpamPrefixListResolverRuleSet]
-    NextToken: Optional[NextToken]
+    Rules: IpamPrefixListResolverRuleSet | None
+    NextToken: NextToken | None
 
 
 class GetIpamPrefixListResolverVersionEntriesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPrefixListResolverId: IpamPrefixListResolverId
     IpamPrefixListResolverVersion: Long
-    MaxResults: Optional[IpamMaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
 
 
 class IpamPrefixListResolverVersionEntry(TypedDict, total=False):
-    Cidr: Optional[String]
+    Cidr: String | None
 
 
-IpamPrefixListResolverVersionEntrySet = List[IpamPrefixListResolverVersionEntry]
+IpamPrefixListResolverVersionEntrySet = list[IpamPrefixListResolverVersionEntry]
 
 
 class GetIpamPrefixListResolverVersionEntriesResult(TypedDict, total=False):
-    Entries: Optional[IpamPrefixListResolverVersionEntrySet]
-    NextToken: Optional[NextToken]
+    Entries: IpamPrefixListResolverVersionEntrySet | None
+    NextToken: NextToken | None
 
 
-IpamPrefixListResolverVersionNumberSet = List[Long]
+IpamPrefixListResolverVersionNumberSet = list[Long]
 
 
 class GetIpamPrefixListResolverVersionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPrefixListResolverId: IpamPrefixListResolverId
-    IpamPrefixListResolverVersions: Optional[IpamPrefixListResolverVersionNumberSet]
-    MaxResults: Optional[IpamMaxResults]
-    Filters: Optional[FilterList]
-    NextToken: Optional[NextToken]
+    IpamPrefixListResolverVersions: IpamPrefixListResolverVersionNumberSet | None
+    MaxResults: IpamMaxResults | None
+    Filters: FilterList | None
+    NextToken: NextToken | None
 
 
 class IpamPrefixListResolverVersion(TypedDict, total=False):
-    Version: Optional[Long]
+    Version: Long | None
 
 
-IpamPrefixListResolverVersionSet = List[IpamPrefixListResolverVersion]
+IpamPrefixListResolverVersionSet = list[IpamPrefixListResolverVersion]
 
 
 class GetIpamPrefixListResolverVersionsResult(TypedDict, total=False):
-    IpamPrefixListResolverVersions: Optional[IpamPrefixListResolverVersionSet]
-    NextToken: Optional[NextToken]
+    IpamPrefixListResolverVersions: IpamPrefixListResolverVersionSet | None
+    NextToken: NextToken | None
 
 
 class GetIpamResourceCidrsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
-    MaxResults: Optional[IpamMaxResults]
-    NextToken: Optional[NextToken]
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
     IpamScopeId: IpamScopeId
-    IpamPoolId: Optional[IpamPoolId]
-    ResourceId: Optional[String]
-    ResourceType: Optional[IpamResourceType]
-    ResourceTag: Optional[RequestIpamResourceTag]
-    ResourceOwner: Optional[String]
+    IpamPoolId: IpamPoolId | None
+    ResourceId: String | None
+    ResourceType: IpamResourceType | None
+    ResourceTag: RequestIpamResourceTag | None
+    ResourceOwner: String | None
 
 
 class IpamResourceCidr(TypedDict, total=False):
-    IpamId: Optional[IpamId]
-    IpamScopeId: Optional[IpamScopeId]
-    IpamPoolId: Optional[IpamPoolId]
-    ResourceRegion: Optional[String]
-    ResourceOwnerId: Optional[String]
-    ResourceId: Optional[String]
-    ResourceName: Optional[String]
-    ResourceCidr: Optional[String]
-    ResourceType: Optional[IpamResourceType]
-    ResourceTags: Optional[IpamResourceTagList]
-    IpUsage: Optional[BoxedDouble]
-    ComplianceStatus: Optional[IpamComplianceStatus]
-    ManagementState: Optional[IpamManagementState]
-    OverlapStatus: Optional[IpamOverlapStatus]
-    VpcId: Optional[String]
-    AvailabilityZoneId: Optional[String]
+    IpamId: IpamId | None
+    IpamScopeId: IpamScopeId | None
+    IpamPoolId: IpamPoolId | None
+    ResourceRegion: String | None
+    ResourceOwnerId: String | None
+    ResourceId: String | None
+    ResourceName: String | None
+    ResourceCidr: String | None
+    ResourceType: IpamResourceType | None
+    ResourceTags: IpamResourceTagList | None
+    IpUsage: BoxedDouble | None
+    ComplianceStatus: IpamComplianceStatus | None
+    ManagementState: IpamManagementState | None
+    OverlapStatus: IpamOverlapStatus | None
+    VpcId: String | None
+    AvailabilityZoneId: String | None
 
 
-IpamResourceCidrSet = List[IpamResourceCidr]
+IpamResourceCidrSet = list[IpamResourceCidr]
 
 
 class GetIpamResourceCidrsResult(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    IpamResourceCidrs: Optional[IpamResourceCidrSet]
+    NextToken: NextToken | None
+    IpamResourceCidrs: IpamResourceCidrSet | None
 
 
 class GetLaunchTemplateDataRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceId: InstanceId
 
 
 class GetLaunchTemplateDataResult(TypedDict, total=False):
-    LaunchTemplateData: Optional[ResponseLaunchTemplateData]
+    LaunchTemplateData: ResponseLaunchTemplateData | None
 
 
 class GetManagedPrefixListAssociationsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     PrefixListId: PrefixListResourceId
-    MaxResults: Optional[GetManagedPrefixListAssociationsMaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: GetManagedPrefixListAssociationsMaxResults | None
+    NextToken: NextToken | None
 
 
 class PrefixListAssociation(TypedDict, total=False):
-    ResourceId: Optional[String]
-    ResourceOwner: Optional[String]
+    ResourceId: String | None
+    ResourceOwner: String | None
 
 
-PrefixListAssociationSet = List[PrefixListAssociation]
+PrefixListAssociationSet = list[PrefixListAssociation]
 
 
 class GetManagedPrefixListAssociationsResult(TypedDict, total=False):
-    PrefixListAssociations: Optional[PrefixListAssociationSet]
-    NextToken: Optional[String]
+    PrefixListAssociations: PrefixListAssociationSet | None
+    NextToken: String | None
 
 
 class GetManagedPrefixListEntriesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     PrefixListId: PrefixListResourceId
-    TargetVersion: Optional[Long]
-    MaxResults: Optional[PrefixListMaxResults]
-    NextToken: Optional[NextToken]
+    TargetVersion: Long | None
+    MaxResults: PrefixListMaxResults | None
+    NextToken: NextToken | None
 
 
 class PrefixListEntry(TypedDict, total=False):
-    Cidr: Optional[String]
-    Description: Optional[String]
+    Cidr: String | None
+    Description: String | None
 
 
-PrefixListEntrySet = List[PrefixListEntry]
+PrefixListEntrySet = list[PrefixListEntry]
 
 
 class GetManagedPrefixListEntriesResult(TypedDict, total=False):
-    Entries: Optional[PrefixListEntrySet]
-    NextToken: Optional[NextToken]
+    Entries: PrefixListEntrySet | None
+    NextToken: NextToken | None
 
 
 class GetNetworkInsightsAccessScopeAnalysisFindingsRequest(ServiceRequest):
     NetworkInsightsAccessScopeAnalysisId: NetworkInsightsAccessScopeAnalysisId
-    MaxResults: Optional[GetNetworkInsightsAccessScopeAnalysisFindingsMaxResults]
-    NextToken: Optional[NextToken]
-    DryRun: Optional[Boolean]
+    MaxResults: GetNetworkInsightsAccessScopeAnalysisFindingsMaxResults | None
+    NextToken: NextToken | None
+    DryRun: Boolean | None
 
 
 class GetNetworkInsightsAccessScopeAnalysisFindingsResult(TypedDict, total=False):
-    NetworkInsightsAccessScopeAnalysisId: Optional[NetworkInsightsAccessScopeAnalysisId]
-    AnalysisStatus: Optional[AnalysisStatus]
-    AnalysisFindings: Optional[AccessScopeAnalysisFindingList]
-    NextToken: Optional[String]
+    NetworkInsightsAccessScopeAnalysisId: NetworkInsightsAccessScopeAnalysisId | None
+    AnalysisStatus: AnalysisStatus | None
+    AnalysisFindings: AccessScopeAnalysisFindingList | None
+    NextToken: String | None
 
 
 class GetNetworkInsightsAccessScopeContentRequest(ServiceRequest):
     NetworkInsightsAccessScopeId: NetworkInsightsAccessScopeId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetNetworkInsightsAccessScopeContentResult(TypedDict, total=False):
-    NetworkInsightsAccessScopeContent: Optional[NetworkInsightsAccessScopeContent]
+    NetworkInsightsAccessScopeContent: NetworkInsightsAccessScopeContent | None
 
 
 class GetPasswordDataRequest(ServiceRequest):
     InstanceId: InstanceId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetPasswordDataResult(TypedDict, total=False):
-    InstanceId: Optional[String]
-    Timestamp: Optional[DateTime]
-    PasswordData: Optional[PasswordData]
+    InstanceId: String | None
+    Timestamp: DateTime | None
+    PasswordData: PasswordData | None
 
 
 class GetReservedInstancesExchangeQuoteRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ReservedInstanceIds: ReservedInstanceIdSet
-    TargetConfigurations: Optional[TargetConfigurationRequestSet]
+    TargetConfigurations: TargetConfigurationRequestSet | None
 
 
 class TargetConfiguration(TypedDict, total=False):
-    InstanceCount: Optional[Integer]
-    OfferingId: Optional[String]
+    InstanceCount: Integer | None
+    OfferingId: String | None
 
 
 class ReservationValue(TypedDict, total=False):
-    HourlyPrice: Optional[String]
-    RemainingTotalValue: Optional[String]
-    RemainingUpfrontValue: Optional[String]
+    HourlyPrice: String | None
+    RemainingTotalValue: String | None
+    RemainingUpfrontValue: String | None
 
 
 class TargetReservationValue(TypedDict, total=False):
-    ReservationValue: Optional[ReservationValue]
-    TargetConfiguration: Optional[TargetConfiguration]
+    ReservationValue: ReservationValue | None
+    TargetConfiguration: TargetConfiguration | None
 
 
-TargetReservationValueSet = List[TargetReservationValue]
+TargetReservationValueSet = list[TargetReservationValue]
 
 
 class ReservedInstanceReservationValue(TypedDict, total=False):
-    ReservationValue: Optional[ReservationValue]
-    ReservedInstanceId: Optional[String]
+    ReservationValue: ReservationValue | None
+    ReservedInstanceId: String | None
 
 
-ReservedInstanceReservationValueSet = List[ReservedInstanceReservationValue]
+ReservedInstanceReservationValueSet = list[ReservedInstanceReservationValue]
 
 
 class GetReservedInstancesExchangeQuoteResult(TypedDict, total=False):
-    CurrencyCode: Optional[String]
-    IsValidExchange: Optional[Boolean]
-    OutputReservedInstancesWillExpireAt: Optional[DateTime]
-    PaymentDue: Optional[String]
-    ReservedInstanceValueRollup: Optional[ReservationValue]
-    ReservedInstanceValueSet: Optional[ReservedInstanceReservationValueSet]
-    TargetConfigurationValueRollup: Optional[ReservationValue]
-    TargetConfigurationValueSet: Optional[TargetReservationValueSet]
-    ValidationFailureReason: Optional[String]
+    CurrencyCode: String | None
+    IsValidExchange: Boolean | None
+    OutputReservedInstancesWillExpireAt: DateTime | None
+    PaymentDue: String | None
+    ReservedInstanceValueRollup: ReservationValue | None
+    ReservedInstanceValueSet: ReservedInstanceReservationValueSet | None
+    TargetConfigurationValueRollup: ReservationValue | None
+    TargetConfigurationValueSet: TargetReservationValueSet | None
+    ValidationFailureReason: String | None
 
 
 class GetRouteServerAssociationsRequest(ServiceRequest):
     RouteServerId: RouteServerId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
-RouteServerAssociationsList = List[RouteServerAssociation]
+RouteServerAssociationsList = list[RouteServerAssociation]
 
 
 class GetRouteServerAssociationsResult(TypedDict, total=False):
-    RouteServerAssociations: Optional[RouteServerAssociationsList]
+    RouteServerAssociations: RouteServerAssociationsList | None
 
 
 class GetRouteServerPropagationsRequest(ServiceRequest):
     RouteServerId: RouteServerId
-    RouteTableId: Optional[RouteTableId]
-    DryRun: Optional[Boolean]
+    RouteTableId: RouteTableId | None
+    DryRun: Boolean | None
 
 
-RouteServerPropagationsList = List[RouteServerPropagation]
+RouteServerPropagationsList = list[RouteServerPropagation]
 
 
 class GetRouteServerPropagationsResult(TypedDict, total=False):
-    RouteServerPropagations: Optional[RouteServerPropagationsList]
+    RouteServerPropagations: RouteServerPropagationsList | None
 
 
 class GetRouteServerRoutingDatabaseRequest(ServiceRequest):
     RouteServerId: RouteServerId
-    NextToken: Optional[String]
-    MaxResults: Optional[RouteServerMaxResults]
-    DryRun: Optional[Boolean]
-    Filters: Optional[FilterList]
+    NextToken: String | None
+    MaxResults: RouteServerMaxResults | None
+    DryRun: Boolean | None
+    Filters: FilterList | None
 
 
 class RouteServerRouteInstallationDetail(TypedDict, total=False):
-    RouteTableId: Optional[RouteTableId]
-    RouteInstallationStatus: Optional[RouteServerRouteInstallationStatus]
-    RouteInstallationStatusReason: Optional[String]
+    RouteTableId: RouteTableId | None
+    RouteInstallationStatus: RouteServerRouteInstallationStatus | None
+    RouteInstallationStatusReason: String | None
 
 
-RouteServerRouteInstallationDetails = List[RouteServerRouteInstallationDetail]
+RouteServerRouteInstallationDetails = list[RouteServerRouteInstallationDetail]
 
 
 class RouteServerRoute(TypedDict, total=False):
-    RouteServerEndpointId: Optional[RouteServerEndpointId]
-    RouteServerPeerId: Optional[RouteServerPeerId]
-    RouteInstallationDetails: Optional[RouteServerRouteInstallationDetails]
-    RouteStatus: Optional[RouteServerRouteStatus]
-    Prefix: Optional[String]
-    AsPaths: Optional[AsPath]
-    Med: Optional[Integer]
-    NextHopIp: Optional[String]
+    RouteServerEndpointId: RouteServerEndpointId | None
+    RouteServerPeerId: RouteServerPeerId | None
+    RouteInstallationDetails: RouteServerRouteInstallationDetails | None
+    RouteStatus: RouteServerRouteStatus | None
+    Prefix: String | None
+    AsPaths: AsPath | None
+    Med: Integer | None
+    NextHopIp: String | None
 
 
-RouteServerRouteList = List[RouteServerRoute]
+RouteServerRouteList = list[RouteServerRoute]
 
 
 class GetRouteServerRoutingDatabaseResult(TypedDict, total=False):
-    AreRoutesPersisted: Optional[Boolean]
-    Routes: Optional[RouteServerRouteList]
-    NextToken: Optional[String]
+    AreRoutesPersisted: Boolean | None
+    Routes: RouteServerRouteList | None
+    NextToken: String | None
 
 
 class GetSecurityGroupsForVpcRequest(ServiceRequest):
     VpcId: VpcId
-    NextToken: Optional[String]
-    MaxResults: Optional[GetSecurityGroupsForVpcRequestMaxResults]
-    Filters: Optional[FilterList]
-    DryRun: Optional[Boolean]
+    NextToken: String | None
+    MaxResults: GetSecurityGroupsForVpcRequestMaxResults | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
 
 
 class SecurityGroupForVpc(TypedDict, total=False):
-    Description: Optional[String]
-    GroupName: Optional[String]
-    OwnerId: Optional[String]
-    GroupId: Optional[String]
-    Tags: Optional[TagList]
-    PrimaryVpcId: Optional[String]
+    Description: String | None
+    GroupName: String | None
+    OwnerId: String | None
+    GroupId: String | None
+    Tags: TagList | None
+    PrimaryVpcId: String | None
 
 
-SecurityGroupForVpcList = List[SecurityGroupForVpc]
+SecurityGroupForVpcList = list[SecurityGroupForVpc]
 
 
 class GetSecurityGroupsForVpcResult(TypedDict, total=False):
-    NextToken: Optional[String]
-    SecurityGroupForVpcs: Optional[SecurityGroupForVpcList]
+    NextToken: String | None
+    SecurityGroupForVpcs: SecurityGroupForVpcList | None
 
 
 class GetSerialConsoleAccessStatusRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetSerialConsoleAccessStatusResult(TypedDict, total=False):
-    SerialConsoleAccessEnabled: Optional[Boolean]
-    ManagedBy: Optional[ManagedBy]
+    SerialConsoleAccessEnabled: Boolean | None
+    ManagedBy: ManagedBy | None
 
 
 class GetSnapshotBlockPublicAccessStateRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetSnapshotBlockPublicAccessStateResult(TypedDict, total=False):
-    State: Optional[SnapshotBlockPublicAccessState]
-    ManagedBy: Optional[ManagedBy]
+    State: SnapshotBlockPublicAccessState | None
+    ManagedBy: ManagedBy | None
 
 
 class InstanceRequirementsWithMetadataRequest(TypedDict, total=False):
-    ArchitectureTypes: Optional[ArchitectureTypeSet]
-    VirtualizationTypes: Optional[VirtualizationTypeSet]
-    InstanceRequirements: Optional[InstanceRequirementsRequest]
+    ArchitectureTypes: ArchitectureTypeSet | None
+    VirtualizationTypes: VirtualizationTypeSet | None
+    InstanceRequirements: InstanceRequirementsRequest | None
 
 
-RegionNames = List[String]
-InstanceTypes = List[String]
+RegionNames = list[String]
+InstanceTypes = list[String]
 
 
 class GetSpotPlacementScoresRequest(ServiceRequest):
-    InstanceTypes: Optional[InstanceTypes]
+    InstanceTypes: InstanceTypes | None
     TargetCapacity: SpotPlacementScoresTargetCapacity
-    TargetCapacityUnitType: Optional[TargetCapacityUnitType]
-    SingleAvailabilityZone: Optional[Boolean]
-    RegionNames: Optional[RegionNames]
-    InstanceRequirementsWithMetadata: Optional[InstanceRequirementsWithMetadataRequest]
-    DryRun: Optional[Boolean]
-    MaxResults: Optional[SpotPlacementScoresMaxResults]
-    NextToken: Optional[String]
+    TargetCapacityUnitType: TargetCapacityUnitType | None
+    SingleAvailabilityZone: Boolean | None
+    RegionNames: RegionNames | None
+    InstanceRequirementsWithMetadata: InstanceRequirementsWithMetadataRequest | None
+    DryRun: Boolean | None
+    MaxResults: SpotPlacementScoresMaxResults | None
+    NextToken: String | None
 
 
 class SpotPlacementScore(TypedDict, total=False):
-    Region: Optional[String]
-    AvailabilityZoneId: Optional[String]
-    Score: Optional[Integer]
+    Region: String | None
+    AvailabilityZoneId: String | None
+    Score: Integer | None
 
 
-SpotPlacementScores = List[SpotPlacementScore]
+SpotPlacementScores = list[SpotPlacementScore]
 
 
 class GetSpotPlacementScoresResult(TypedDict, total=False):
-    SpotPlacementScores: Optional[SpotPlacementScores]
-    NextToken: Optional[String]
+    SpotPlacementScores: SpotPlacementScores | None
+    NextToken: String | None
 
 
 class GetSubnetCidrReservationsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
+    Filters: FilterList | None
     SubnetId: SubnetId
-    DryRun: Optional[Boolean]
-    NextToken: Optional[String]
-    MaxResults: Optional[GetSubnetCidrReservationsMaxResults]
+    DryRun: Boolean | None
+    NextToken: String | None
+    MaxResults: GetSubnetCidrReservationsMaxResults | None
 
 
-SubnetCidrReservationList = List[SubnetCidrReservation]
+SubnetCidrReservationList = list[SubnetCidrReservation]
 
 
 class GetSubnetCidrReservationsResult(TypedDict, total=False):
-    SubnetIpv4CidrReservations: Optional[SubnetCidrReservationList]
-    SubnetIpv6CidrReservations: Optional[SubnetCidrReservationList]
-    NextToken: Optional[String]
+    SubnetIpv4CidrReservations: SubnetCidrReservationList | None
+    SubnetIpv6CidrReservations: SubnetCidrReservationList | None
+    NextToken: String | None
 
 
 class GetTransitGatewayAttachmentPropagationsRequest(ServiceRequest):
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayAttachmentPropagation(TypedDict, total=False):
-    TransitGatewayRouteTableId: Optional[String]
-    State: Optional[TransitGatewayPropagationState]
+    TransitGatewayRouteTableId: String | None
+    State: TransitGatewayPropagationState | None
 
 
-TransitGatewayAttachmentPropagationList = List[TransitGatewayAttachmentPropagation]
+TransitGatewayAttachmentPropagationList = list[TransitGatewayAttachmentPropagation]
 
 
 class GetTransitGatewayAttachmentPropagationsResult(TypedDict, total=False):
-    TransitGatewayAttachmentPropagations: Optional[TransitGatewayAttachmentPropagationList]
-    NextToken: Optional[String]
+    TransitGatewayAttachmentPropagations: TransitGatewayAttachmentPropagationList | None
+    NextToken: String | None
 
 
 class GetTransitGatewayMulticastDomainAssociationsRequest(ServiceRequest):
     TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayMulticastDomainAssociation(TypedDict, total=False):
-    TransitGatewayAttachmentId: Optional[String]
-    ResourceId: Optional[String]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
-    ResourceOwnerId: Optional[String]
-    Subnet: Optional[SubnetAssociation]
+    TransitGatewayAttachmentId: String | None
+    ResourceId: String | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
+    ResourceOwnerId: String | None
+    Subnet: SubnetAssociation | None
 
 
-TransitGatewayMulticastDomainAssociationList = List[TransitGatewayMulticastDomainAssociation]
+TransitGatewayMulticastDomainAssociationList = list[TransitGatewayMulticastDomainAssociation]
 
 
 class GetTransitGatewayMulticastDomainAssociationsResult(TypedDict, total=False):
-    MulticastDomainAssociations: Optional[TransitGatewayMulticastDomainAssociationList]
-    NextToken: Optional[String]
+    MulticastDomainAssociations: TransitGatewayMulticastDomainAssociationList | None
+    NextToken: String | None
 
 
 class GetTransitGatewayPolicyTableAssociationsRequest(ServiceRequest):
     TransitGatewayPolicyTableId: TransitGatewayPolicyTableId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayPolicyTableAssociationList = List[TransitGatewayPolicyTableAssociation]
+TransitGatewayPolicyTableAssociationList = list[TransitGatewayPolicyTableAssociation]
 
 
 class GetTransitGatewayPolicyTableAssociationsResult(TypedDict, total=False):
-    Associations: Optional[TransitGatewayPolicyTableAssociationList]
-    NextToken: Optional[String]
+    Associations: TransitGatewayPolicyTableAssociationList | None
+    NextToken: String | None
 
 
 class GetTransitGatewayPolicyTableEntriesRequest(ServiceRequest):
     TransitGatewayPolicyTableId: TransitGatewayPolicyTableId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayPolicyRuleMetaData(TypedDict, total=False):
-    MetaDataKey: Optional[String]
-    MetaDataValue: Optional[String]
+    MetaDataKey: String | None
+    MetaDataValue: String | None
 
 
 class TransitGatewayPolicyRule(TypedDict, total=False):
-    SourceCidrBlock: Optional[String]
-    SourcePortRange: Optional[String]
-    DestinationCidrBlock: Optional[String]
-    DestinationPortRange: Optional[String]
-    Protocol: Optional[String]
-    MetaData: Optional[TransitGatewayPolicyRuleMetaData]
+    SourceCidrBlock: String | None
+    SourcePortRange: String | None
+    DestinationCidrBlock: String | None
+    DestinationPortRange: String | None
+    Protocol: String | None
+    MetaData: TransitGatewayPolicyRuleMetaData | None
 
 
 class TransitGatewayPolicyTableEntry(TypedDict, total=False):
-    PolicyRuleNumber: Optional[String]
-    PolicyRule: Optional[TransitGatewayPolicyRule]
-    TargetRouteTableId: Optional[TransitGatewayRouteTableId]
+    PolicyRuleNumber: String | None
+    PolicyRule: TransitGatewayPolicyRule | None
+    TargetRouteTableId: TransitGatewayRouteTableId | None
 
 
-TransitGatewayPolicyTableEntryList = List[TransitGatewayPolicyTableEntry]
+TransitGatewayPolicyTableEntryList = list[TransitGatewayPolicyTableEntry]
 
 
 class GetTransitGatewayPolicyTableEntriesResult(TypedDict, total=False):
-    TransitGatewayPolicyTableEntries: Optional[TransitGatewayPolicyTableEntryList]
+    TransitGatewayPolicyTableEntries: TransitGatewayPolicyTableEntryList | None
 
 
 class GetTransitGatewayPrefixListReferencesRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
-TransitGatewayPrefixListReferenceSet = List[TransitGatewayPrefixListReference]
+TransitGatewayPrefixListReferenceSet = list[TransitGatewayPrefixListReference]
 
 
 class GetTransitGatewayPrefixListReferencesResult(TypedDict, total=False):
-    TransitGatewayPrefixListReferences: Optional[TransitGatewayPrefixListReferenceSet]
-    NextToken: Optional[String]
+    TransitGatewayPrefixListReferences: TransitGatewayPrefixListReferenceSet | None
+    NextToken: String | None
 
 
 class GetTransitGatewayRouteTableAssociationsRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayRouteTableAssociation(TypedDict, total=False):
-    TransitGatewayAttachmentId: Optional[String]
-    ResourceId: Optional[String]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
-    State: Optional[TransitGatewayAssociationState]
+    TransitGatewayAttachmentId: String | None
+    ResourceId: String | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
+    State: TransitGatewayAssociationState | None
 
 
-TransitGatewayRouteTableAssociationList = List[TransitGatewayRouteTableAssociation]
+TransitGatewayRouteTableAssociationList = list[TransitGatewayRouteTableAssociation]
 
 
 class GetTransitGatewayRouteTableAssociationsResult(TypedDict, total=False):
-    Associations: Optional[TransitGatewayRouteTableAssociationList]
-    NextToken: Optional[String]
+    Associations: TransitGatewayRouteTableAssociationList | None
+    NextToken: String | None
 
 
 class GetTransitGatewayRouteTablePropagationsRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayRouteTablePropagation(TypedDict, total=False):
-    TransitGatewayAttachmentId: Optional[String]
-    ResourceId: Optional[String]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
-    State: Optional[TransitGatewayPropagationState]
-    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
+    TransitGatewayAttachmentId: String | None
+    ResourceId: String | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
+    State: TransitGatewayPropagationState | None
+    TransitGatewayRouteTableAnnouncementId: TransitGatewayRouteTableAnnouncementId | None
 
 
-TransitGatewayRouteTablePropagationList = List[TransitGatewayRouteTablePropagation]
+TransitGatewayRouteTablePropagationList = list[TransitGatewayRouteTablePropagation]
 
 
 class GetTransitGatewayRouteTablePropagationsResult(TypedDict, total=False):
-    TransitGatewayRouteTablePropagations: Optional[TransitGatewayRouteTablePropagationList]
-    NextToken: Optional[String]
+    TransitGatewayRouteTablePropagations: TransitGatewayRouteTablePropagationList | None
+    NextToken: String | None
 
 
 class GetVerifiedAccessEndpointPolicyRequest(ServiceRequest):
     VerifiedAccessEndpointId: VerifiedAccessEndpointId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetVerifiedAccessEndpointPolicyResult(TypedDict, total=False):
-    PolicyEnabled: Optional[Boolean]
-    PolicyDocument: Optional[String]
+    PolicyEnabled: Boolean | None
+    PolicyDocument: String | None
 
 
 class GetVerifiedAccessEndpointTargetsRequest(ServiceRequest):
     VerifiedAccessEndpointId: VerifiedAccessEndpointId
-    MaxResults: Optional[GetVerifiedAccessEndpointTargetsMaxResults]
-    NextToken: Optional[NextToken]
-    DryRun: Optional[Boolean]
+    MaxResults: GetVerifiedAccessEndpointTargetsMaxResults | None
+    NextToken: NextToken | None
+    DryRun: Boolean | None
 
 
 class VerifiedAccessEndpointTarget(TypedDict, total=False):
-    VerifiedAccessEndpointId: Optional[VerifiedAccessEndpointId]
-    VerifiedAccessEndpointTargetIpAddress: Optional[String]
-    VerifiedAccessEndpointTargetDns: Optional[String]
+    VerifiedAccessEndpointId: VerifiedAccessEndpointId | None
+    VerifiedAccessEndpointTargetIpAddress: String | None
+    VerifiedAccessEndpointTargetDns: String | None
 
 
-VerifiedAccessEndpointTargetList = List[VerifiedAccessEndpointTarget]
+VerifiedAccessEndpointTargetList = list[VerifiedAccessEndpointTarget]
 
 
 class GetVerifiedAccessEndpointTargetsResult(TypedDict, total=False):
-    VerifiedAccessEndpointTargets: Optional[VerifiedAccessEndpointTargetList]
-    NextToken: Optional[NextToken]
+    VerifiedAccessEndpointTargets: VerifiedAccessEndpointTargetList | None
+    NextToken: NextToken | None
 
 
 class GetVerifiedAccessGroupPolicyRequest(ServiceRequest):
     VerifiedAccessGroupId: VerifiedAccessGroupId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class GetVerifiedAccessGroupPolicyResult(TypedDict, total=False):
-    PolicyEnabled: Optional[Boolean]
-    PolicyDocument: Optional[String]
+    PolicyEnabled: Boolean | None
+    PolicyDocument: String | None
 
 
 class GetVpnConnectionDeviceSampleConfigurationRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
     VpnConnectionDeviceTypeId: VpnConnectionDeviceTypeId
-    InternetKeyExchangeVersion: Optional[String]
-    SampleType: Optional[String]
-    DryRun: Optional[Boolean]
+    InternetKeyExchangeVersion: String | None
+    SampleType: String | None
+    DryRun: Boolean | None
 
 
 class GetVpnConnectionDeviceSampleConfigurationResult(TypedDict, total=False):
-    VpnConnectionDeviceSampleConfiguration: Optional[VpnConnectionDeviceSampleConfiguration]
+    VpnConnectionDeviceSampleConfiguration: VpnConnectionDeviceSampleConfiguration | None
 
 
 class GetVpnConnectionDeviceTypesRequest(ServiceRequest):
-    MaxResults: Optional[GVCDMaxResults]
-    NextToken: Optional[NextToken]
-    DryRun: Optional[Boolean]
+    MaxResults: GVCDMaxResults | None
+    NextToken: NextToken | None
+    DryRun: Boolean | None
 
 
 class VpnConnectionDeviceType(TypedDict, total=False):
-    VpnConnectionDeviceTypeId: Optional[String]
-    Vendor: Optional[String]
-    Platform: Optional[String]
-    Software: Optional[String]
+    VpnConnectionDeviceTypeId: String | None
+    Vendor: String | None
+    Platform: String | None
+    Software: String | None
 
 
-VpnConnectionDeviceTypeList = List[VpnConnectionDeviceType]
+VpnConnectionDeviceTypeList = list[VpnConnectionDeviceType]
 
 
 class GetVpnConnectionDeviceTypesResult(TypedDict, total=False):
-    VpnConnectionDeviceTypes: Optional[VpnConnectionDeviceTypeList]
-    NextToken: Optional[NextToken]
+    VpnConnectionDeviceTypes: VpnConnectionDeviceTypeList | None
+    NextToken: NextToken | None
 
 
 class GetVpnTunnelReplacementStatusRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
     VpnTunnelOutsideIpAddress: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class MaintenanceDetails(TypedDict, total=False):
-    PendingMaintenance: Optional[String]
-    MaintenanceAutoAppliedAfter: Optional[MillisecondDateTime]
-    LastMaintenanceApplied: Optional[MillisecondDateTime]
+    PendingMaintenance: String | None
+    MaintenanceAutoAppliedAfter: MillisecondDateTime | None
+    LastMaintenanceApplied: MillisecondDateTime | None
 
 
 class GetVpnTunnelReplacementStatusResult(TypedDict, total=False):
-    VpnConnectionId: Optional[VpnConnectionId]
-    TransitGatewayId: Optional[TransitGatewayId]
-    CustomerGatewayId: Optional[CustomerGatewayId]
-    VpnGatewayId: Optional[VpnGatewayId]
-    VpnTunnelOutsideIpAddress: Optional[String]
-    MaintenanceDetails: Optional[MaintenanceDetails]
+    VpnConnectionId: VpnConnectionId | None
+    TransitGatewayId: TransitGatewayId | None
+    CustomerGatewayId: CustomerGatewayId | None
+    VpnGatewayId: VpnGatewayId | None
+    VpnTunnelOutsideIpAddress: String | None
+    MaintenanceDetails: MaintenanceDetails | None
 
 
 class HibernationOptionsRequest(TypedDict, total=False):
-    Configured: Optional[Boolean]
+    Configured: Boolean | None
 
 
 class LaunchPermission(TypedDict, total=False):
-    OrganizationArn: Optional[String]
-    OrganizationalUnitArn: Optional[String]
-    UserId: Optional[String]
-    Group: Optional[PermissionGroup]
+    OrganizationArn: String | None
+    OrganizationalUnitArn: String | None
+    UserId: String | None
+    Group: PermissionGroup | None
 
 
-LaunchPermissionList = List[LaunchPermission]
+LaunchPermissionList = list[LaunchPermission]
 
 
 class ImageAttribute(TypedDict, total=False):
-    Description: Optional[AttributeValue]
-    KernelId: Optional[AttributeValue]
-    RamdiskId: Optional[AttributeValue]
-    SriovNetSupport: Optional[AttributeValue]
-    BootMode: Optional[AttributeValue]
-    TpmSupport: Optional[AttributeValue]
-    UefiData: Optional[AttributeValue]
-    LastLaunchedTime: Optional[AttributeValue]
-    ImdsSupport: Optional[AttributeValue]
-    DeregistrationProtection: Optional[AttributeValue]
-    ImageId: Optional[String]
-    LaunchPermissions: Optional[LaunchPermissionList]
-    ProductCodes: Optional[ProductCodeList]
-    BlockDeviceMappings: Optional[BlockDeviceMappingList]
+    Description: AttributeValue | None
+    KernelId: AttributeValue | None
+    RamdiskId: AttributeValue | None
+    SriovNetSupport: AttributeValue | None
+    BootMode: AttributeValue | None
+    TpmSupport: AttributeValue | None
+    UefiData: AttributeValue | None
+    LastLaunchedTime: AttributeValue | None
+    ImdsSupport: AttributeValue | None
+    DeregistrationProtection: AttributeValue | None
+    ImageId: String | None
+    LaunchPermissions: LaunchPermissionList | None
+    ProductCodes: ProductCodeList | None
+    BlockDeviceMappings: BlockDeviceMappingList | None
 
 
-ImageNameRequestList = List[ImageNameRequest]
-MarketplaceProductCodeRequestList = List[MarketplaceProductCodeRequest]
-ImageProviderRequestList = List[ImageProviderRequest]
+ImageNameRequestList = list[ImageNameRequest]
+MarketplaceProductCodeRequestList = list[MarketplaceProductCodeRequest]
+ImageProviderRequestList = list[ImageProviderRequest]
 
 
 class ImageCriterionRequest(TypedDict, total=False):
-    ImageProviders: Optional[ImageProviderRequestList]
-    MarketplaceProductCodes: Optional[MarketplaceProductCodeRequestList]
-    ImageNames: Optional[ImageNameRequestList]
-    DeprecationTimeCondition: Optional[DeprecationTimeConditionRequest]
-    CreationDateCondition: Optional[CreationDateConditionRequest]
+    ImageProviders: ImageProviderRequestList | None
+    MarketplaceProductCodes: MarketplaceProductCodeRequestList | None
+    ImageNames: ImageNameRequestList | None
+    DeprecationTimeCondition: DeprecationTimeConditionRequest | None
+    CreationDateCondition: CreationDateConditionRequest | None
 
 
-ImageCriterionRequestList = List[ImageCriterionRequest]
+ImageCriterionRequestList = list[ImageCriterionRequest]
 
 
 class UserBucket(TypedDict, total=False):
-    S3Bucket: Optional[String]
-    S3Key: Optional[String]
+    S3Bucket: String | None
+    S3Key: String | None
 
 
 class ImageDiskContainer(TypedDict, total=False):
-    Description: Optional[String]
-    DeviceName: Optional[String]
-    Format: Optional[String]
-    SnapshotId: Optional[SnapshotId]
-    Url: Optional[SensitiveUrl]
-    UserBucket: Optional[UserBucket]
+    Description: String | None
+    DeviceName: String | None
+    Format: String | None
+    SnapshotId: SnapshotId | None
+    Url: SensitiveUrl | None
+    UserBucket: UserBucket | None
 
 
-ImageDiskContainerList = List[ImageDiskContainer]
+ImageDiskContainerList = list[ImageDiskContainer]
 
 
 class ImageRecycleBinInfo(TypedDict, total=False):
-    ImageId: Optional[String]
-    Name: Optional[String]
-    Description: Optional[String]
-    RecycleBinEnterTime: Optional[MillisecondDateTime]
-    RecycleBinExitTime: Optional[MillisecondDateTime]
+    ImageId: String | None
+    Name: String | None
+    Description: String | None
+    RecycleBinEnterTime: MillisecondDateTime | None
+    RecycleBinExitTime: MillisecondDateTime | None
 
 
-ImageRecycleBinInfoList = List[ImageRecycleBinInfo]
+ImageRecycleBinInfoList = list[ImageRecycleBinInfo]
 
 
 class ImportClientVpnClientCertificateRevocationListRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
     CertificateRevocationList: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ImportClientVpnClientCertificateRevocationListResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ImportImageLicenseConfigurationRequest(TypedDict, total=False):
-    LicenseConfigurationArn: Optional[String]
+    LicenseConfigurationArn: String | None
 
 
-ImportImageLicenseSpecificationListRequest = List[ImportImageLicenseConfigurationRequest]
+ImportImageLicenseSpecificationListRequest = list[ImportImageLicenseConfigurationRequest]
 
 
 class ImportImageRequest(ServiceRequest):
-    Architecture: Optional[String]
-    ClientData: Optional[ClientData]
-    ClientToken: Optional[String]
-    Description: Optional[String]
-    DiskContainers: Optional[ImageDiskContainerList]
-    DryRun: Optional[Boolean]
-    Encrypted: Optional[Boolean]
-    Hypervisor: Optional[String]
-    KmsKeyId: Optional[KmsKeyId]
-    LicenseType: Optional[String]
-    Platform: Optional[String]
-    RoleName: Optional[String]
-    LicenseSpecifications: Optional[ImportImageLicenseSpecificationListRequest]
-    TagSpecifications: Optional[TagSpecificationList]
-    UsageOperation: Optional[String]
-    BootMode: Optional[BootModeValues]
+    Architecture: String | None
+    ClientData: ClientData | None
+    ClientToken: String | None
+    Description: String | None
+    DiskContainers: ImageDiskContainerList | None
+    DryRun: Boolean | None
+    Encrypted: Boolean | None
+    Hypervisor: String | None
+    KmsKeyId: KmsKeyId | None
+    LicenseType: String | None
+    Platform: String | None
+    RoleName: String | None
+    LicenseSpecifications: ImportImageLicenseSpecificationListRequest | None
+    TagSpecifications: TagSpecificationList | None
+    UsageOperation: String | None
+    BootMode: BootModeValues | None
 
 
 class ImportImageResult(TypedDict, total=False):
-    Architecture: Optional[String]
-    Description: Optional[String]
-    Encrypted: Optional[Boolean]
-    Hypervisor: Optional[String]
-    ImageId: Optional[String]
-    ImportTaskId: Optional[ImportImageTaskId]
-    KmsKeyId: Optional[KmsKeyId]
-    LicenseType: Optional[String]
-    Platform: Optional[String]
-    Progress: Optional[String]
-    SnapshotDetails: Optional[SnapshotDetailList]
-    Status: Optional[String]
-    StatusMessage: Optional[String]
-    LicenseSpecifications: Optional[ImportImageLicenseSpecificationListResponse]
-    Tags: Optional[TagList]
-    UsageOperation: Optional[String]
+    Architecture: String | None
+    Description: String | None
+    Encrypted: Boolean | None
+    Hypervisor: String | None
+    ImageId: String | None
+    ImportTaskId: ImportImageTaskId | None
+    KmsKeyId: KmsKeyId | None
+    LicenseType: String | None
+    Platform: String | None
+    Progress: String | None
+    SnapshotDetails: SnapshotDetailList | None
+    Status: String | None
+    StatusMessage: String | None
+    LicenseSpecifications: ImportImageLicenseSpecificationListResponse | None
+    Tags: TagList | None
+    UsageOperation: String | None
 
 
 class UserData(TypedDict, total=False):
-    Data: Optional[String]
+    Data: String | None
 
 
 class ImportInstanceLaunchSpecification(TypedDict, total=False):
-    Architecture: Optional[ArchitectureValues]
-    GroupNames: Optional[SecurityGroupStringList]
-    GroupIds: Optional[SecurityGroupIdStringList]
-    AdditionalInfo: Optional[String]
-    UserData: Optional[UserData]
-    InstanceType: Optional[InstanceType]
-    Placement: Optional[Placement]
-    Monitoring: Optional[Boolean]
-    SubnetId: Optional[SubnetId]
-    InstanceInitiatedShutdownBehavior: Optional[ShutdownBehavior]
-    PrivateIpAddress: Optional[String]
+    Architecture: ArchitectureValues | None
+    GroupNames: SecurityGroupStringList | None
+    GroupIds: SecurityGroupIdStringList | None
+    AdditionalInfo: String | None
+    UserData: UserData | None
+    InstanceType: InstanceType | None
+    Placement: Placement | None
+    Monitoring: Boolean | None
+    SubnetId: SubnetId | None
+    InstanceInitiatedShutdownBehavior: ShutdownBehavior | None
+    PrivateIpAddress: String | None
 
 
 class ImportInstanceRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Description: Optional[String]
-    LaunchSpecification: Optional[ImportInstanceLaunchSpecification]
-    DiskImages: Optional[DiskImageList]
+    DryRun: Boolean | None
+    Description: String | None
+    LaunchSpecification: ImportInstanceLaunchSpecification | None
+    DiskImages: DiskImageList | None
     Platform: PlatformValues
 
 
 class ImportInstanceResult(TypedDict, total=False):
-    ConversionTask: Optional[ConversionTask]
+    ConversionTask: ConversionTask | None
 
 
 class ImportKeyPairRequest(ServiceRequest):
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
     KeyName: String
     PublicKeyMaterial: Blob
 
 
 class ImportKeyPairResult(TypedDict, total=False):
-    KeyFingerprint: Optional[String]
-    KeyName: Optional[String]
-    KeyPairId: Optional[String]
-    Tags: Optional[TagList]
+    KeyFingerprint: String | None
+    KeyName: String | None
+    KeyPairId: String | None
+    Tags: TagList | None
 
 
 class SnapshotDiskContainer(TypedDict, total=False):
-    Description: Optional[String]
-    Format: Optional[String]
-    Url: Optional[SensitiveUrl]
-    UserBucket: Optional[UserBucket]
+    Description: String | None
+    Format: String | None
+    Url: SensitiveUrl | None
+    UserBucket: UserBucket | None
 
 
 class ImportSnapshotRequest(ServiceRequest):
-    ClientData: Optional[ClientData]
-    ClientToken: Optional[String]
-    Description: Optional[String]
-    DiskContainer: Optional[SnapshotDiskContainer]
-    DryRun: Optional[Boolean]
-    Encrypted: Optional[Boolean]
-    KmsKeyId: Optional[KmsKeyId]
-    RoleName: Optional[String]
-    TagSpecifications: Optional[TagSpecificationList]
+    ClientData: ClientData | None
+    ClientToken: String | None
+    Description: String | None
+    DiskContainer: SnapshotDiskContainer | None
+    DryRun: Boolean | None
+    Encrypted: Boolean | None
+    KmsKeyId: KmsKeyId | None
+    RoleName: String | None
+    TagSpecifications: TagSpecificationList | None
 
 
 class ImportSnapshotResult(TypedDict, total=False):
-    Description: Optional[String]
-    ImportTaskId: Optional[String]
-    SnapshotTaskDetail: Optional[SnapshotTaskDetail]
-    Tags: Optional[TagList]
+    Description: String | None
+    ImportTaskId: String | None
+    SnapshotTaskDetail: SnapshotTaskDetail | None
+    Tags: TagList | None
 
 
 class ImportVolumeRequest(ServiceRequest):
-    AvailabilityZoneId: Optional[AvailabilityZoneId]
-    DryRun: Optional[Boolean]
-    AvailabilityZone: Optional[String]
+    AvailabilityZoneId: AvailabilityZoneId | None
+    DryRun: Boolean | None
+    AvailabilityZone: String | None
     Image: DiskImageDetail
-    Description: Optional[String]
+    Description: String | None
     Volume: VolumeDetail
 
 
 class ImportVolumeResult(TypedDict, total=False):
-    ConversionTask: Optional[ConversionTask]
+    ConversionTask: ConversionTask | None
 
 
 class InstanceAttribute(TypedDict, total=False):
-    BlockDeviceMappings: Optional[InstanceBlockDeviceMappingList]
-    DisableApiTermination: Optional[AttributeBooleanValue]
-    EnaSupport: Optional[AttributeBooleanValue]
-    EnclaveOptions: Optional[EnclaveOptions]
-    EbsOptimized: Optional[AttributeBooleanValue]
-    InstanceId: Optional[String]
-    InstanceInitiatedShutdownBehavior: Optional[AttributeValue]
-    InstanceType: Optional[AttributeValue]
-    KernelId: Optional[AttributeValue]
-    ProductCodes: Optional[ProductCodeList]
-    RamdiskId: Optional[AttributeValue]
-    RootDeviceName: Optional[AttributeValue]
-    SourceDestCheck: Optional[AttributeBooleanValue]
-    SriovNetSupport: Optional[AttributeValue]
-    UserData: Optional[AttributeValue]
-    DisableApiStop: Optional[AttributeBooleanValue]
-    Groups: Optional[GroupIdentifierList]
+    BlockDeviceMappings: InstanceBlockDeviceMappingList | None
+    DisableApiTermination: AttributeBooleanValue | None
+    EnaSupport: AttributeBooleanValue | None
+    EnclaveOptions: EnclaveOptions | None
+    EbsOptimized: AttributeBooleanValue | None
+    InstanceId: String | None
+    InstanceInitiatedShutdownBehavior: AttributeValue | None
+    InstanceType: AttributeValue | None
+    KernelId: AttributeValue | None
+    ProductCodes: ProductCodeList | None
+    RamdiskId: AttributeValue | None
+    RootDeviceName: AttributeValue | None
+    SourceDestCheck: AttributeBooleanValue | None
+    SriovNetSupport: AttributeValue | None
+    UserData: AttributeValue | None
+    DisableApiStop: AttributeBooleanValue | None
+    Groups: GroupIdentifierList | None
 
 
 class InstanceBlockDeviceMappingSpecification(TypedDict, total=False):
-    DeviceName: Optional[String]
-    Ebs: Optional[EbsInstanceBlockDeviceSpecification]
-    VirtualName: Optional[String]
-    NoDevice: Optional[String]
+    DeviceName: String | None
+    Ebs: EbsInstanceBlockDeviceSpecification | None
+    VirtualName: String | None
+    NoDevice: String | None
 
 
-InstanceBlockDeviceMappingSpecificationList = List[InstanceBlockDeviceMappingSpecification]
+InstanceBlockDeviceMappingSpecificationList = list[InstanceBlockDeviceMappingSpecification]
 
 
 class InstanceCreditSpecificationRequest(TypedDict, total=False):
     InstanceId: InstanceId
-    CpuCredits: Optional[String]
+    CpuCredits: String | None
 
 
-InstanceCreditSpecificationListRequest = List[InstanceCreditSpecificationRequest]
-InstanceIdSet = List[InstanceId]
+InstanceCreditSpecificationListRequest = list[InstanceCreditSpecificationRequest]
+InstanceIdSet = list[InstanceId]
 
 
 class InstanceMaintenanceOptionsRequest(TypedDict, total=False):
-    AutoRecovery: Optional[InstanceAutoRecoveryState]
+    AutoRecovery: InstanceAutoRecoveryState | None
 
 
 class SpotMarketOptions(TypedDict, total=False):
-    MaxPrice: Optional[String]
-    SpotInstanceType: Optional[SpotInstanceType]
-    BlockDurationMinutes: Optional[Integer]
-    ValidUntil: Optional[DateTime]
-    InstanceInterruptionBehavior: Optional[InstanceInterruptionBehavior]
+    MaxPrice: String | None
+    SpotInstanceType: SpotInstanceType | None
+    BlockDurationMinutes: Integer | None
+    ValidUntil: DateTime | None
+    InstanceInterruptionBehavior: InstanceInterruptionBehavior | None
 
 
 class InstanceMarketOptionsRequest(TypedDict, total=False):
-    MarketType: Optional[MarketType]
-    SpotOptions: Optional[SpotMarketOptions]
+    MarketType: MarketType | None
+    SpotOptions: SpotMarketOptions | None
 
 
 class InstanceMetadataOptionsRequest(TypedDict, total=False):
-    HttpTokens: Optional[HttpTokensState]
-    HttpPutResponseHopLimit: Optional[Integer]
-    HttpEndpoint: Optional[InstanceMetadataEndpointState]
-    HttpProtocolIpv6: Optional[InstanceMetadataProtocolState]
-    InstanceMetadataTags: Optional[InstanceMetadataTagsState]
+    HttpTokens: HttpTokensState | None
+    HttpPutResponseHopLimit: Integer | None
+    HttpEndpoint: InstanceMetadataEndpointState | None
+    HttpProtocolIpv6: InstanceMetadataProtocolState | None
+    InstanceMetadataTags: InstanceMetadataTagsState | None
 
 
 class InstanceMonitoring(TypedDict, total=False):
-    InstanceId: Optional[String]
-    Monitoring: Optional[Monitoring]
+    InstanceId: String | None
+    Monitoring: Monitoring | None
 
 
-InstanceMonitoringList = List[InstanceMonitoring]
+InstanceMonitoringList = list[InstanceMonitoring]
 
 
 class InstanceNetworkPerformanceOptionsRequest(TypedDict, total=False):
-    BandwidthWeighting: Optional[InstanceBandwidthWeighting]
+    BandwidthWeighting: InstanceBandwidthWeighting | None
 
 
 class InstanceStateChange(TypedDict, total=False):
-    InstanceId: Optional[String]
-    CurrentState: Optional[InstanceState]
-    PreviousState: Optional[InstanceState]
+    InstanceId: String | None
+    CurrentState: InstanceState | None
+    PreviousState: InstanceState | None
 
 
-InstanceStateChangeList = List[InstanceStateChange]
+InstanceStateChangeList = list[InstanceStateChange]
 
 
 class IpamCidrAuthorizationContext(TypedDict, total=False):
-    Message: Optional[String]
-    Signature: Optional[String]
+    Message: String | None
+    Signature: String | None
 
 
 class KeyPair(TypedDict, total=False):
-    KeyPairId: Optional[String]
-    Tags: Optional[TagList]
-    KeyName: Optional[String]
-    KeyFingerprint: Optional[String]
-    KeyMaterial: Optional[SensitiveUserData]
+    KeyPairId: String | None
+    Tags: TagList | None
+    KeyName: String | None
+    KeyFingerprint: String | None
+    KeyMaterial: SensitiveUserData | None
 
 
 class LaunchPermissionModifications(TypedDict, total=False):
-    Add: Optional[LaunchPermissionList]
-    Remove: Optional[LaunchPermissionList]
+    Add: LaunchPermissionList | None
+    Remove: LaunchPermissionList | None
 
 
 class LaunchTemplateSpecification(TypedDict, total=False):
-    LaunchTemplateId: Optional[LaunchTemplateId]
-    LaunchTemplateName: Optional[String]
-    Version: Optional[String]
+    LaunchTemplateId: LaunchTemplateId | None
+    LaunchTemplateName: String | None
+    Version: String | None
 
 
 class LicenseConfigurationRequest(TypedDict, total=False):
-    LicenseConfigurationArn: Optional[String]
+    LicenseConfigurationArn: String | None
 
 
-LicenseSpecificationListRequest = List[LicenseConfigurationRequest]
+LicenseSpecificationListRequest = list[LicenseConfigurationRequest]
 
 
 class ListImagesInRecycleBinRequest(ServiceRequest):
-    ImageIds: Optional[ImageIdStringList]
-    NextToken: Optional[String]
-    MaxResults: Optional[ListImagesInRecycleBinMaxResults]
-    DryRun: Optional[Boolean]
+    ImageIds: ImageIdStringList | None
+    NextToken: String | None
+    MaxResults: ListImagesInRecycleBinMaxResults | None
+    DryRun: Boolean | None
 
 
 class ListImagesInRecycleBinResult(TypedDict, total=False):
-    Images: Optional[ImageRecycleBinInfoList]
-    NextToken: Optional[String]
+    Images: ImageRecycleBinInfoList | None
+    NextToken: String | None
 
 
 class ListSnapshotsInRecycleBinRequest(ServiceRequest):
-    MaxResults: Optional[ListSnapshotsInRecycleBinMaxResults]
-    NextToken: Optional[String]
-    SnapshotIds: Optional[SnapshotIdStringList]
-    DryRun: Optional[Boolean]
+    MaxResults: ListSnapshotsInRecycleBinMaxResults | None
+    NextToken: String | None
+    SnapshotIds: SnapshotIdStringList | None
+    DryRun: Boolean | None
 
 
 class SnapshotRecycleBinInfo(TypedDict, total=False):
-    SnapshotId: Optional[String]
-    RecycleBinEnterTime: Optional[MillisecondDateTime]
-    RecycleBinExitTime: Optional[MillisecondDateTime]
-    Description: Optional[String]
-    VolumeId: Optional[String]
+    SnapshotId: String | None
+    RecycleBinEnterTime: MillisecondDateTime | None
+    RecycleBinExitTime: MillisecondDateTime | None
+    Description: String | None
+    VolumeId: String | None
 
 
-SnapshotRecycleBinInfoList = List[SnapshotRecycleBinInfo]
+SnapshotRecycleBinInfoList = list[SnapshotRecycleBinInfo]
 
 
 class ListSnapshotsInRecycleBinResult(TypedDict, total=False):
-    Snapshots: Optional[SnapshotRecycleBinInfoList]
-    NextToken: Optional[String]
+    Snapshots: SnapshotRecycleBinInfoList | None
+    NextToken: String | None
 
 
 class LoadPermissionRequest(TypedDict, total=False):
-    Group: Optional[PermissionGroup]
-    UserId: Optional[String]
+    Group: PermissionGroup | None
+    UserId: String | None
 
 
-LoadPermissionListRequest = List[LoadPermissionRequest]
+LoadPermissionListRequest = list[LoadPermissionRequest]
 
 
 class LoadPermissionModifications(TypedDict, total=False):
-    Add: Optional[LoadPermissionListRequest]
-    Remove: Optional[LoadPermissionListRequest]
+    Add: LoadPermissionListRequest | None
+    Remove: LoadPermissionListRequest | None
 
 
-LocalGatewayRouteList = List[LocalGatewayRoute]
+LocalGatewayRouteList = list[LocalGatewayRoute]
 
 
 class LockSnapshotRequest(ServiceRequest):
     SnapshotId: SnapshotId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     LockMode: LockMode
-    CoolOffPeriod: Optional[CoolOffPeriodRequestHours]
-    LockDuration: Optional[RetentionPeriodRequestDays]
-    ExpirationDate: Optional[MillisecondDateTime]
+    CoolOffPeriod: CoolOffPeriodRequestHours | None
+    LockDuration: RetentionPeriodRequestDays | None
+    ExpirationDate: MillisecondDateTime | None
 
 
 class LockSnapshotResult(TypedDict, total=False):
-    SnapshotId: Optional[String]
-    LockState: Optional[LockState]
-    LockDuration: Optional[RetentionPeriodResponseDays]
-    CoolOffPeriod: Optional[CoolOffPeriodResponseHours]
-    CoolOffPeriodExpiresOn: Optional[MillisecondDateTime]
-    LockCreatedOn: Optional[MillisecondDateTime]
-    LockExpiresOn: Optional[MillisecondDateTime]
-    LockDurationStartTime: Optional[MillisecondDateTime]
+    SnapshotId: String | None
+    LockState: LockState | None
+    LockDuration: RetentionPeriodResponseDays | None
+    CoolOffPeriod: CoolOffPeriodResponseHours | None
+    CoolOffPeriodExpiresOn: MillisecondDateTime | None
+    LockCreatedOn: MillisecondDateTime | None
+    LockExpiresOn: MillisecondDateTime | None
+    LockDurationStartTime: MillisecondDateTime | None
 
 
 class ModifyAddressAttributeRequest(ServiceRequest):
     AllocationId: AllocationId
-    DomainName: Optional[String]
-    DryRun: Optional[Boolean]
+    DomainName: String | None
+    DryRun: Boolean | None
 
 
 class ModifyAddressAttributeResult(TypedDict, total=False):
-    Address: Optional[AddressAttribute]
+    Address: AddressAttribute | None
 
 
 class ModifyAvailabilityZoneGroupRequest(ServiceRequest):
     GroupName: String
     OptInStatus: ModifyAvailabilityZoneOptInStatus
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ModifyAvailabilityZoneGroupResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyCapacityReservationFleetRequest(ServiceRequest):
     CapacityReservationFleetId: CapacityReservationFleetId
-    TotalTargetCapacity: Optional[Integer]
-    EndDate: Optional[MillisecondDateTime]
-    DryRun: Optional[Boolean]
-    RemoveEndDate: Optional[Boolean]
+    TotalTargetCapacity: Integer | None
+    EndDate: MillisecondDateTime | None
+    DryRun: Boolean | None
+    RemoveEndDate: Boolean | None
 
 
 class ModifyCapacityReservationFleetResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyCapacityReservationRequest(ServiceRequest):
     CapacityReservationId: CapacityReservationId
-    InstanceCount: Optional[Integer]
-    EndDate: Optional[DateTime]
-    EndDateType: Optional[EndDateType]
-    Accept: Optional[Boolean]
-    DryRun: Optional[Boolean]
-    AdditionalInfo: Optional[String]
-    InstanceMatchCriteria: Optional[InstanceMatchCriteria]
+    InstanceCount: Integer | None
+    EndDate: DateTime | None
+    EndDateType: EndDateType | None
+    Accept: Boolean | None
+    DryRun: Boolean | None
+    AdditionalInfo: String | None
+    InstanceMatchCriteria: InstanceMatchCriteria | None
 
 
 class ModifyCapacityReservationResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyClientVpnEndpointRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    ServerCertificateArn: Optional[String]
-    ConnectionLogOptions: Optional[ConnectionLogOptions]
-    DnsServers: Optional[DnsServersOptionsModifyStructure]
-    VpnPort: Optional[Integer]
-    Description: Optional[String]
-    SplitTunnel: Optional[Boolean]
-    DryRun: Optional[Boolean]
-    SecurityGroupIds: Optional[ClientVpnSecurityGroupIdSet]
-    VpcId: Optional[VpcId]
-    SelfServicePortal: Optional[SelfServicePortal]
-    ClientConnectOptions: Optional[ClientConnectOptions]
-    SessionTimeoutHours: Optional[Integer]
-    ClientLoginBannerOptions: Optional[ClientLoginBannerOptions]
-    ClientRouteEnforcementOptions: Optional[ClientRouteEnforcementOptions]
-    DisconnectOnSessionTimeout: Optional[Boolean]
+    ServerCertificateArn: String | None
+    ConnectionLogOptions: ConnectionLogOptions | None
+    DnsServers: DnsServersOptionsModifyStructure | None
+    VpnPort: Integer | None
+    Description: String | None
+    SplitTunnel: Boolean | None
+    DryRun: Boolean | None
+    SecurityGroupIds: ClientVpnSecurityGroupIdSet | None
+    VpcId: VpcId | None
+    SelfServicePortal: SelfServicePortal | None
+    ClientConnectOptions: ClientConnectOptions | None
+    SessionTimeoutHours: Integer | None
+    ClientLoginBannerOptions: ClientLoginBannerOptions | None
+    ClientRouteEnforcementOptions: ClientRouteEnforcementOptions | None
+    DisconnectOnSessionTimeout: Boolean | None
 
 
 class ModifyClientVpnEndpointResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyDefaultCreditSpecificationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceFamily: UnlimitedSupportedInstanceFamily
     CpuCredits: String
 
 
 class ModifyDefaultCreditSpecificationResult(TypedDict, total=False):
-    InstanceFamilyCreditSpecification: Optional[InstanceFamilyCreditSpecification]
+    InstanceFamilyCreditSpecification: InstanceFamilyCreditSpecification | None
 
 
 class ModifyEbsDefaultKmsKeyIdRequest(ServiceRequest):
     KmsKeyId: KmsKeyId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ModifyEbsDefaultKmsKeyIdResult(TypedDict, total=False):
-    KmsKeyId: Optional[String]
+    KmsKeyId: String | None
 
 
 class ModifyFleetRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ExcessCapacityTerminationPolicy: Optional[FleetExcessCapacityTerminationPolicy]
-    LaunchTemplateConfigs: Optional[FleetLaunchTemplateConfigListRequest]
+    DryRun: Boolean | None
+    ExcessCapacityTerminationPolicy: FleetExcessCapacityTerminationPolicy | None
+    LaunchTemplateConfigs: FleetLaunchTemplateConfigListRequest | None
     FleetId: FleetId
-    TargetCapacitySpecification: Optional[TargetCapacitySpecificationRequest]
-    Context: Optional[String]
+    TargetCapacitySpecification: TargetCapacitySpecificationRequest | None
+    Context: String | None
 
 
 class ModifyFleetResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
-ProductCodeStringList = List[String]
-UserGroupStringList = List[String]
-UserIdStringList = List[String]
+ProductCodeStringList = list[String]
+UserGroupStringList = list[String]
+UserIdStringList = list[String]
 
 
 class ModifyFpgaImageAttributeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     FpgaImageId: FpgaImageId
-    Attribute: Optional[FpgaImageAttributeName]
-    OperationType: Optional[OperationType]
-    UserIds: Optional[UserIdStringList]
-    UserGroups: Optional[UserGroupStringList]
-    ProductCodes: Optional[ProductCodeStringList]
-    LoadPermission: Optional[LoadPermissionModifications]
-    Description: Optional[String]
-    Name: Optional[String]
+    Attribute: FpgaImageAttributeName | None
+    OperationType: OperationType | None
+    UserIds: UserIdStringList | None
+    UserGroups: UserGroupStringList | None
+    ProductCodes: ProductCodeStringList | None
+    LoadPermission: LoadPermissionModifications | None
+    Description: String | None
+    Name: String | None
 
 
 class ModifyFpgaImageAttributeResult(TypedDict, total=False):
-    FpgaImageAttribute: Optional[FpgaImageAttribute]
+    FpgaImageAttribute: FpgaImageAttribute | None
 
 
 class ModifyHostsRequest(ServiceRequest):
-    HostRecovery: Optional[HostRecovery]
-    InstanceType: Optional[String]
-    InstanceFamily: Optional[String]
-    HostMaintenance: Optional[HostMaintenance]
+    HostRecovery: HostRecovery | None
+    InstanceType: String | None
+    InstanceFamily: String | None
+    HostMaintenance: HostMaintenance | None
     HostIds: RequestHostIdList
-    AutoPlacement: Optional[AutoPlacement]
+    AutoPlacement: AutoPlacement | None
 
 
-UnsuccessfulItemList = List[UnsuccessfulItem]
+UnsuccessfulItemList = list[UnsuccessfulItem]
 
 
 class ModifyHostsResult(TypedDict, total=False):
-    Successful: Optional[ResponseHostIdList]
-    Unsuccessful: Optional[UnsuccessfulItemList]
+    Successful: ResponseHostIdList | None
+    Unsuccessful: UnsuccessfulItemList | None
 
 
 class ModifyIdFormatRequest(ServiceRequest):
@@ -19749,1165 +19781,1167 @@ class ModifyIdentityIdFormatRequest(ServiceRequest):
     PrincipalArn: String
 
 
-OrganizationalUnitArnStringList = List[String]
-OrganizationArnStringList = List[String]
+OrganizationalUnitArnStringList = list[String]
+OrganizationArnStringList = list[String]
 
 
 class ModifyImageAttributeRequest(ServiceRequest):
-    Attribute: Optional[String]
-    Description: Optional[AttributeValue]
+    Attribute: String | None
+    Description: AttributeValue | None
     ImageId: ImageId
-    LaunchPermission: Optional[LaunchPermissionModifications]
-    OperationType: Optional[OperationType]
-    ProductCodes: Optional[ProductCodeStringList]
-    UserGroups: Optional[UserGroupStringList]
-    UserIds: Optional[UserIdStringList]
-    Value: Optional[String]
-    OrganizationArns: Optional[OrganizationArnStringList]
-    OrganizationalUnitArns: Optional[OrganizationalUnitArnStringList]
-    ImdsSupport: Optional[AttributeValue]
-    DryRun: Optional[Boolean]
+    LaunchPermission: LaunchPermissionModifications | None
+    OperationType: OperationType | None
+    ProductCodes: ProductCodeStringList | None
+    UserGroups: UserGroupStringList | None
+    UserIds: UserIdStringList | None
+    Value: String | None
+    OrganizationArns: OrganizationArnStringList | None
+    OrganizationalUnitArns: OrganizationalUnitArnStringList | None
+    ImdsSupport: AttributeValue | None
+    DryRun: Boolean | None
 
 
 class ModifyInstanceAttributeRequest(ServiceRequest):
-    SourceDestCheck: Optional[AttributeBooleanValue]
-    DisableApiStop: Optional[AttributeBooleanValue]
-    DryRun: Optional[Boolean]
+    SourceDestCheck: AttributeBooleanValue | None
+    DisableApiStop: AttributeBooleanValue | None
+    DryRun: Boolean | None
     InstanceId: InstanceId
-    Attribute: Optional[InstanceAttributeName]
-    Value: Optional[String]
-    BlockDeviceMappings: Optional[InstanceBlockDeviceMappingSpecificationList]
-    DisableApiTermination: Optional[AttributeBooleanValue]
-    InstanceType: Optional[AttributeValue]
-    Kernel: Optional[AttributeValue]
-    Ramdisk: Optional[AttributeValue]
-    UserData: Optional[BlobAttributeValue]
-    InstanceInitiatedShutdownBehavior: Optional[AttributeValue]
-    Groups: Optional[GroupIdStringList]
-    EbsOptimized: Optional[AttributeBooleanValue]
-    SriovNetSupport: Optional[AttributeValue]
-    EnaSupport: Optional[AttributeBooleanValue]
+    Attribute: InstanceAttributeName | None
+    Value: String | None
+    BlockDeviceMappings: InstanceBlockDeviceMappingSpecificationList | None
+    DisableApiTermination: AttributeBooleanValue | None
+    InstanceType: AttributeValue | None
+    Kernel: AttributeValue | None
+    Ramdisk: AttributeValue | None
+    UserData: BlobAttributeValue | None
+    InstanceInitiatedShutdownBehavior: AttributeValue | None
+    Groups: GroupIdStringList | None
+    EbsOptimized: AttributeBooleanValue | None
+    SriovNetSupport: AttributeValue | None
+    EnaSupport: AttributeBooleanValue | None
 
 
 class ModifyInstanceCapacityReservationAttributesRequest(ServiceRequest):
     InstanceId: InstanceId
     CapacityReservationSpecification: CapacityReservationSpecification
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ModifyInstanceCapacityReservationAttributesResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyInstanceConnectEndpointRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceConnectEndpointId: InstanceConnectEndpointId
-    IpAddressType: Optional[IpAddressType]
-    SecurityGroupIds: Optional[SecurityGroupIdStringListRequest]
-    PreserveClientIp: Optional[Boolean]
+    IpAddressType: IpAddressType | None
+    SecurityGroupIds: SecurityGroupIdStringListRequest | None
+    PreserveClientIp: Boolean | None
 
 
 class ModifyInstanceConnectEndpointResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyInstanceCpuOptionsRequest(ServiceRequest):
     InstanceId: InstanceId
     CoreCount: Integer
     ThreadsPerCore: Integer
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ModifyInstanceCpuOptionsResult(TypedDict, total=False):
-    InstanceId: Optional[InstanceId]
-    CoreCount: Optional[Integer]
-    ThreadsPerCore: Optional[Integer]
+    InstanceId: InstanceId | None
+    CoreCount: Integer | None
+    ThreadsPerCore: Integer | None
 
 
 class ModifyInstanceCreditSpecificationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
     InstanceCreditSpecifications: InstanceCreditSpecificationListRequest
 
 
 class UnsuccessfulInstanceCreditSpecificationItemError(TypedDict, total=False):
-    Code: Optional[UnsuccessfulInstanceCreditSpecificationErrorCode]
-    Message: Optional[String]
+    Code: UnsuccessfulInstanceCreditSpecificationErrorCode | None
+    Message: String | None
 
 
 class UnsuccessfulInstanceCreditSpecificationItem(TypedDict, total=False):
-    InstanceId: Optional[String]
-    Error: Optional[UnsuccessfulInstanceCreditSpecificationItemError]
+    InstanceId: String | None
+    Error: UnsuccessfulInstanceCreditSpecificationItemError | None
 
 
-UnsuccessfulInstanceCreditSpecificationSet = List[UnsuccessfulInstanceCreditSpecificationItem]
+UnsuccessfulInstanceCreditSpecificationSet = list[UnsuccessfulInstanceCreditSpecificationItem]
 
 
 class SuccessfulInstanceCreditSpecificationItem(TypedDict, total=False):
-    InstanceId: Optional[String]
+    InstanceId: String | None
 
 
-SuccessfulInstanceCreditSpecificationSet = List[SuccessfulInstanceCreditSpecificationItem]
+SuccessfulInstanceCreditSpecificationSet = list[SuccessfulInstanceCreditSpecificationItem]
 
 
 class ModifyInstanceCreditSpecificationResult(TypedDict, total=False):
-    SuccessfulInstanceCreditSpecifications: Optional[SuccessfulInstanceCreditSpecificationSet]
-    UnsuccessfulInstanceCreditSpecifications: Optional[UnsuccessfulInstanceCreditSpecificationSet]
+    SuccessfulInstanceCreditSpecifications: SuccessfulInstanceCreditSpecificationSet | None
+    UnsuccessfulInstanceCreditSpecifications: UnsuccessfulInstanceCreditSpecificationSet | None
 
 
 class ModifyInstanceEventStartTimeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceId: InstanceId
     InstanceEventId: String
     NotBefore: DateTime
 
 
 class ModifyInstanceEventStartTimeResult(TypedDict, total=False):
-    Event: Optional[InstanceStatusEvent]
+    Event: InstanceStatusEvent | None
 
 
 class ModifyInstanceEventWindowRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    Name: Optional[String]
+    DryRun: Boolean | None
+    Name: String | None
     InstanceEventWindowId: InstanceEventWindowId
-    TimeRanges: Optional[InstanceEventWindowTimeRangeRequestSet]
-    CronExpression: Optional[InstanceEventWindowCronExpression]
+    TimeRanges: InstanceEventWindowTimeRangeRequestSet | None
+    CronExpression: InstanceEventWindowCronExpression | None
 
 
 class ModifyInstanceEventWindowResult(TypedDict, total=False):
-    InstanceEventWindow: Optional[InstanceEventWindow]
+    InstanceEventWindow: InstanceEventWindow | None
 
 
 class ModifyInstanceMaintenanceOptionsRequest(ServiceRequest):
     InstanceId: InstanceId
-    AutoRecovery: Optional[InstanceAutoRecoveryState]
-    RebootMigration: Optional[InstanceRebootMigrationState]
-    DryRun: Optional[Boolean]
+    AutoRecovery: InstanceAutoRecoveryState | None
+    RebootMigration: InstanceRebootMigrationState | None
+    DryRun: Boolean | None
 
 
 class ModifyInstanceMaintenanceOptionsResult(TypedDict, total=False):
-    InstanceId: Optional[String]
-    AutoRecovery: Optional[InstanceAutoRecoveryState]
-    RebootMigration: Optional[InstanceRebootMigrationState]
+    InstanceId: String | None
+    AutoRecovery: InstanceAutoRecoveryState | None
+    RebootMigration: InstanceRebootMigrationState | None
 
 
 class ModifyInstanceMetadataDefaultsRequest(ServiceRequest):
-    HttpTokens: Optional[MetadataDefaultHttpTokensState]
-    HttpPutResponseHopLimit: Optional[BoxedInteger]
-    HttpEndpoint: Optional[DefaultInstanceMetadataEndpointState]
-    InstanceMetadataTags: Optional[DefaultInstanceMetadataTagsState]
-    DryRun: Optional[Boolean]
+    HttpTokens: MetadataDefaultHttpTokensState | None
+    HttpPutResponseHopLimit: BoxedInteger | None
+    HttpEndpoint: DefaultInstanceMetadataEndpointState | None
+    InstanceMetadataTags: DefaultInstanceMetadataTagsState | None
+    DryRun: Boolean | None
 
 
 class ModifyInstanceMetadataDefaultsResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyInstanceMetadataOptionsRequest(ServiceRequest):
     InstanceId: InstanceId
-    HttpTokens: Optional[HttpTokensState]
-    HttpPutResponseHopLimit: Optional[Integer]
-    HttpEndpoint: Optional[InstanceMetadataEndpointState]
-    DryRun: Optional[Boolean]
-    HttpProtocolIpv6: Optional[InstanceMetadataProtocolState]
-    InstanceMetadataTags: Optional[InstanceMetadataTagsState]
+    HttpTokens: HttpTokensState | None
+    HttpPutResponseHopLimit: Integer | None
+    HttpEndpoint: InstanceMetadataEndpointState | None
+    DryRun: Boolean | None
+    HttpProtocolIpv6: InstanceMetadataProtocolState | None
+    InstanceMetadataTags: InstanceMetadataTagsState | None
 
 
 class ModifyInstanceMetadataOptionsResult(TypedDict, total=False):
-    InstanceId: Optional[String]
-    InstanceMetadataOptions: Optional[InstanceMetadataOptionsResponse]
+    InstanceId: String | None
+    InstanceMetadataOptions: InstanceMetadataOptionsResponse | None
 
 
 class ModifyInstanceNetworkPerformanceRequest(ServiceRequest):
     InstanceId: InstanceId
     BandwidthWeighting: InstanceBandwidthWeighting
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ModifyInstanceNetworkPerformanceResult(TypedDict, total=False):
-    InstanceId: Optional[InstanceId]
-    BandwidthWeighting: Optional[InstanceBandwidthWeighting]
+    InstanceId: InstanceId | None
+    BandwidthWeighting: InstanceBandwidthWeighting | None
 
 
 class ModifyInstancePlacementRequest(ServiceRequest):
-    GroupName: Optional[PlacementGroupName]
-    PartitionNumber: Optional[Integer]
-    HostResourceGroupArn: Optional[String]
-    GroupId: Optional[PlacementGroupId]
+    GroupName: PlacementGroupName | None
+    PartitionNumber: Integer | None
+    HostResourceGroupArn: String | None
+    GroupId: PlacementGroupId | None
     InstanceId: InstanceId
-    Tenancy: Optional[HostTenancy]
-    Affinity: Optional[Affinity]
-    HostId: Optional[DedicatedHostId]
+    Tenancy: HostTenancy | None
+    Affinity: Affinity | None
+    HostId: DedicatedHostId | None
 
 
 class ModifyInstancePlacementResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyIpamPoolRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPoolId: IpamPoolId
-    Description: Optional[String]
-    AutoImport: Optional[Boolean]
-    AllocationMinNetmaskLength: Optional[IpamNetmaskLength]
-    AllocationMaxNetmaskLength: Optional[IpamNetmaskLength]
-    AllocationDefaultNetmaskLength: Optional[IpamNetmaskLength]
-    ClearAllocationDefaultNetmaskLength: Optional[Boolean]
-    AddAllocationResourceTags: Optional[RequestIpamResourceTagList]
-    RemoveAllocationResourceTags: Optional[RequestIpamResourceTagList]
+    Description: String | None
+    AutoImport: Boolean | None
+    AllocationMinNetmaskLength: IpamNetmaskLength | None
+    AllocationMaxNetmaskLength: IpamNetmaskLength | None
+    AllocationDefaultNetmaskLength: IpamNetmaskLength | None
+    ClearAllocationDefaultNetmaskLength: Boolean | None
+    AddAllocationResourceTags: RequestIpamResourceTagList | None
+    RemoveAllocationResourceTags: RequestIpamResourceTagList | None
 
 
 class ModifyIpamPoolResult(TypedDict, total=False):
-    IpamPool: Optional[IpamPool]
+    IpamPool: IpamPool | None
 
 
 class ModifyIpamPrefixListResolverRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPrefixListResolverId: IpamPrefixListResolverId
-    Description: Optional[String]
-    Rules: Optional[IpamPrefixListResolverRuleRequestSet]
+    Description: String | None
+    Rules: IpamPrefixListResolverRuleRequestSet | None
 
 
 class ModifyIpamPrefixListResolverResult(TypedDict, total=False):
-    IpamPrefixListResolver: Optional[IpamPrefixListResolver]
+    IpamPrefixListResolver: IpamPrefixListResolver | None
 
 
 class ModifyIpamPrefixListResolverTargetRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPrefixListResolverTargetId: IpamPrefixListResolverTargetId
-    DesiredVersion: Optional[BoxedLong]
-    TrackLatestVersion: Optional[BoxedBoolean]
-    ClientToken: Optional[String]
+    DesiredVersion: BoxedLong | None
+    TrackLatestVersion: BoxedBoolean | None
+    ClientToken: String | None
 
 
 class ModifyIpamPrefixListResolverTargetResult(TypedDict, total=False):
-    IpamPrefixListResolverTarget: Optional[IpamPrefixListResolverTarget]
+    IpamPrefixListResolverTarget: IpamPrefixListResolverTarget | None
 
 
 class RemoveIpamOperatingRegion(TypedDict, total=False):
-    RegionName: Optional[String]
+    RegionName: String | None
 
 
-RemoveIpamOperatingRegionSet = List[RemoveIpamOperatingRegion]
+RemoveIpamOperatingRegionSet = list[RemoveIpamOperatingRegion]
 
 
 class ModifyIpamRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamId: IpamId
-    Description: Optional[String]
-    AddOperatingRegions: Optional[AddIpamOperatingRegionSet]
-    RemoveOperatingRegions: Optional[RemoveIpamOperatingRegionSet]
-    Tier: Optional[IpamTier]
-    EnablePrivateGua: Optional[Boolean]
-    MeteredAccount: Optional[IpamMeteredAccount]
+    Description: String | None
+    AddOperatingRegions: AddIpamOperatingRegionSet | None
+    RemoveOperatingRegions: RemoveIpamOperatingRegionSet | None
+    Tier: IpamTier | None
+    EnablePrivateGua: Boolean | None
+    MeteredAccount: IpamMeteredAccount | None
 
 
 class ModifyIpamResourceCidrRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ResourceId: String
     ResourceCidr: String
     ResourceRegion: String
     CurrentIpamScopeId: IpamScopeId
-    DestinationIpamScopeId: Optional[IpamScopeId]
+    DestinationIpamScopeId: IpamScopeId | None
     Monitored: Boolean
 
 
 class ModifyIpamResourceCidrResult(TypedDict, total=False):
-    IpamResourceCidr: Optional[IpamResourceCidr]
+    IpamResourceCidr: IpamResourceCidr | None
 
 
 class RemoveIpamOrganizationalUnitExclusion(TypedDict, total=False):
-    OrganizationsEntityPath: Optional[String]
+    OrganizationsEntityPath: String | None
 
 
-RemoveIpamOrganizationalUnitExclusionSet = List[RemoveIpamOrganizationalUnitExclusion]
+RemoveIpamOrganizationalUnitExclusionSet = list[RemoveIpamOrganizationalUnitExclusion]
 
 
 class ModifyIpamResourceDiscoveryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamResourceDiscoveryId: IpamResourceDiscoveryId
-    Description: Optional[String]
-    AddOperatingRegions: Optional[AddIpamOperatingRegionSet]
-    RemoveOperatingRegions: Optional[RemoveIpamOperatingRegionSet]
-    AddOrganizationalUnitExclusions: Optional[AddIpamOrganizationalUnitExclusionSet]
-    RemoveOrganizationalUnitExclusions: Optional[RemoveIpamOrganizationalUnitExclusionSet]
+    Description: String | None
+    AddOperatingRegions: AddIpamOperatingRegionSet | None
+    RemoveOperatingRegions: RemoveIpamOperatingRegionSet | None
+    AddOrganizationalUnitExclusions: AddIpamOrganizationalUnitExclusionSet | None
+    RemoveOrganizationalUnitExclusions: RemoveIpamOrganizationalUnitExclusionSet | None
 
 
 class ModifyIpamResourceDiscoveryResult(TypedDict, total=False):
-    IpamResourceDiscovery: Optional[IpamResourceDiscovery]
+    IpamResourceDiscovery: IpamResourceDiscovery | None
 
 
 class ModifyIpamResult(TypedDict, total=False):
-    Ipam: Optional[Ipam]
+    Ipam: Ipam | None
 
 
 class ModifyIpamScopeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamScopeId: IpamScopeId
-    Description: Optional[String]
+    Description: String | None
+    ExternalAuthorityConfiguration: ExternalAuthorityConfiguration | None
+    RemoveExternalAuthorityConfiguration: Boolean | None
 
 
 class ModifyIpamScopeResult(TypedDict, total=False):
-    IpamScope: Optional[IpamScope]
+    IpamScope: IpamScope | None
 
 
 class ModifyLaunchTemplateRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
-    LaunchTemplateId: Optional[LaunchTemplateId]
-    LaunchTemplateName: Optional[LaunchTemplateName]
-    DefaultVersion: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
+    LaunchTemplateId: LaunchTemplateId | None
+    LaunchTemplateName: LaunchTemplateName | None
+    DefaultVersion: String | None
 
 
 class ModifyLaunchTemplateResult(TypedDict, total=False):
-    LaunchTemplate: Optional[LaunchTemplate]
+    LaunchTemplate: LaunchTemplate | None
 
 
 class ModifyLocalGatewayRouteRequest(ServiceRequest):
-    DestinationCidrBlock: Optional[String]
+    DestinationCidrBlock: String | None
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
-    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    DryRun: Optional[Boolean]
-    DestinationPrefixListId: Optional[PrefixListResourceId]
+    LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId | None
+    NetworkInterfaceId: NetworkInterfaceId | None
+    DryRun: Boolean | None
+    DestinationPrefixListId: PrefixListResourceId | None
 
 
 class ModifyLocalGatewayRouteResult(TypedDict, total=False):
-    Route: Optional[LocalGatewayRoute]
+    Route: LocalGatewayRoute | None
 
 
 class RemovePrefixListEntry(TypedDict, total=False):
     Cidr: String
 
 
-RemovePrefixListEntries = List[RemovePrefixListEntry]
+RemovePrefixListEntries = list[RemovePrefixListEntry]
 
 
 class ModifyManagedPrefixListRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     PrefixListId: PrefixListResourceId
-    CurrentVersion: Optional[Long]
-    PrefixListName: Optional[String]
-    AddEntries: Optional[AddPrefixListEntries]
-    RemoveEntries: Optional[RemovePrefixListEntries]
-    MaxEntries: Optional[Integer]
-    IpamPrefixListResolverSyncEnabled: Optional[BoxedBoolean]
+    CurrentVersion: Long | None
+    PrefixListName: String | None
+    AddEntries: AddPrefixListEntries | None
+    RemoveEntries: RemovePrefixListEntries | None
+    MaxEntries: Integer | None
+    IpamPrefixListResolverSyncEnabled: BoxedBoolean | None
 
 
 class ModifyManagedPrefixListResult(TypedDict, total=False):
-    PrefixList: Optional[ManagedPrefixList]
+    PrefixList: ManagedPrefixList | None
 
 
 class NetworkInterfaceAttachmentChanges(TypedDict, total=False):
-    DefaultEnaQueueCount: Optional[Boolean]
-    EnaQueueCount: Optional[Integer]
-    AttachmentId: Optional[NetworkInterfaceAttachmentId]
-    DeleteOnTermination: Optional[Boolean]
+    DefaultEnaQueueCount: Boolean | None
+    EnaQueueCount: Integer | None
+    AttachmentId: NetworkInterfaceAttachmentId | None
+    DeleteOnTermination: Boolean | None
 
 
-SubnetIdList = List[SubnetId]
+SubnetIdList = list[SubnetId]
 
 
 class ModifyNetworkInterfaceAttributeRequest(ServiceRequest):
-    EnaSrdSpecification: Optional[EnaSrdSpecification]
-    EnablePrimaryIpv6: Optional[Boolean]
-    ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
-    AssociatePublicIpAddress: Optional[Boolean]
-    AssociatedSubnetIds: Optional[SubnetIdList]
-    DryRun: Optional[Boolean]
+    EnaSrdSpecification: EnaSrdSpecification | None
+    EnablePrimaryIpv6: Boolean | None
+    ConnectionTrackingSpecification: ConnectionTrackingSpecificationRequest | None
+    AssociatePublicIpAddress: Boolean | None
+    AssociatedSubnetIds: SubnetIdList | None
+    DryRun: Boolean | None
     NetworkInterfaceId: NetworkInterfaceId
-    Description: Optional[AttributeValue]
-    SourceDestCheck: Optional[AttributeBooleanValue]
-    Groups: Optional[SecurityGroupIdStringList]
-    Attachment: Optional[NetworkInterfaceAttachmentChanges]
+    Description: AttributeValue | None
+    SourceDestCheck: AttributeBooleanValue | None
+    Groups: SecurityGroupIdStringList | None
+    Attachment: NetworkInterfaceAttachmentChanges | None
 
 
 class ModifyPrivateDnsNameOptionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceId: InstanceId
-    PrivateDnsHostnameType: Optional[HostnameType]
-    EnableResourceNameDnsARecord: Optional[Boolean]
-    EnableResourceNameDnsAAAARecord: Optional[Boolean]
+    PrivateDnsHostnameType: HostnameType | None
+    EnableResourceNameDnsARecord: Boolean | None
+    EnableResourceNameDnsAAAARecord: Boolean | None
 
 
 class ModifyPrivateDnsNameOptionsResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyPublicIpDnsNameOptionsRequest(ServiceRequest):
     NetworkInterfaceId: NetworkInterfaceId
     HostnameType: PublicIpDnsOption
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ModifyPublicIpDnsNameOptionsResult(TypedDict, total=False):
-    Successful: Optional[Boolean]
+    Successful: Boolean | None
 
 
-ReservedInstancesConfigurationList = List[ReservedInstancesConfiguration]
+ReservedInstancesConfigurationList = list[ReservedInstancesConfiguration]
 
 
 class ModifyReservedInstancesRequest(ServiceRequest):
     ReservedInstancesIds: ReservedInstancesIdStringList
-    ClientToken: Optional[String]
+    ClientToken: String | None
     TargetConfigurations: ReservedInstancesConfigurationList
 
 
 class ModifyReservedInstancesResult(TypedDict, total=False):
-    ReservedInstancesModificationId: Optional[String]
+    ReservedInstancesModificationId: String | None
 
 
 class ModifyRouteServerRequest(ServiceRequest):
     RouteServerId: RouteServerId
-    PersistRoutes: Optional[RouteServerPersistRoutesAction]
-    PersistRoutesDuration: Optional[BoxedLong]
-    SnsNotificationsEnabled: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    PersistRoutes: RouteServerPersistRoutesAction | None
+    PersistRoutesDuration: BoxedLong | None
+    SnsNotificationsEnabled: Boolean | None
+    DryRun: Boolean | None
 
 
 class ModifyRouteServerResult(TypedDict, total=False):
-    RouteServer: Optional[RouteServer]
+    RouteServer: RouteServer | None
 
 
 class SecurityGroupRuleRequest(TypedDict, total=False):
-    IpProtocol: Optional[String]
-    FromPort: Optional[Integer]
-    ToPort: Optional[Integer]
-    CidrIpv4: Optional[String]
-    CidrIpv6: Optional[String]
-    PrefixListId: Optional[PrefixListResourceId]
-    ReferencedGroupId: Optional[SecurityGroupId]
-    Description: Optional[String]
+    IpProtocol: String | None
+    FromPort: Integer | None
+    ToPort: Integer | None
+    CidrIpv4: String | None
+    CidrIpv6: String | None
+    PrefixListId: PrefixListResourceId | None
+    ReferencedGroupId: SecurityGroupId | None
+    Description: String | None
 
 
 class SecurityGroupRuleUpdate(TypedDict, total=False):
     SecurityGroupRuleId: SecurityGroupRuleId
-    SecurityGroupRule: Optional[SecurityGroupRuleRequest]
+    SecurityGroupRule: SecurityGroupRuleRequest | None
 
 
-SecurityGroupRuleUpdateList = List[SecurityGroupRuleUpdate]
+SecurityGroupRuleUpdateList = list[SecurityGroupRuleUpdate]
 
 
 class ModifySecurityGroupRulesRequest(ServiceRequest):
     GroupId: SecurityGroupId
     SecurityGroupRules: SecurityGroupRuleUpdateList
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ModifySecurityGroupRulesResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifySnapshotAttributeRequest(ServiceRequest):
-    Attribute: Optional[SnapshotAttributeName]
-    CreateVolumePermission: Optional[CreateVolumePermissionModifications]
-    GroupNames: Optional[GroupNameStringList]
-    OperationType: Optional[OperationType]
+    Attribute: SnapshotAttributeName | None
+    CreateVolumePermission: CreateVolumePermissionModifications | None
+    GroupNames: GroupNameStringList | None
+    OperationType: OperationType | None
     SnapshotId: SnapshotId
-    UserIds: Optional[UserIdStringList]
-    DryRun: Optional[Boolean]
+    UserIds: UserIdStringList | None
+    DryRun: Boolean | None
 
 
 class ModifySnapshotTierRequest(ServiceRequest):
     SnapshotId: SnapshotId
-    StorageTier: Optional[TargetStorageTier]
-    DryRun: Optional[Boolean]
+    StorageTier: TargetStorageTier | None
+    DryRun: Boolean | None
 
 
 class ModifySnapshotTierResult(TypedDict, total=False):
-    SnapshotId: Optional[String]
-    TieringStartTime: Optional[MillisecondDateTime]
+    SnapshotId: String | None
+    TieringStartTime: MillisecondDateTime | None
 
 
 class ModifySpotFleetRequestRequest(ServiceRequest):
-    LaunchTemplateConfigs: Optional[LaunchTemplateConfigList]
-    OnDemandTargetCapacity: Optional[Integer]
-    Context: Optional[String]
+    LaunchTemplateConfigs: LaunchTemplateConfigList | None
+    OnDemandTargetCapacity: Integer | None
+    Context: String | None
     SpotFleetRequestId: SpotFleetRequestId
-    TargetCapacity: Optional[Integer]
-    ExcessCapacityTerminationPolicy: Optional[ExcessCapacityTerminationPolicy]
+    TargetCapacity: Integer | None
+    ExcessCapacityTerminationPolicy: ExcessCapacityTerminationPolicy | None
 
 
 class ModifySpotFleetRequestResponse(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifySubnetAttributeRequest(ServiceRequest):
-    AssignIpv6AddressOnCreation: Optional[AttributeBooleanValue]
-    MapPublicIpOnLaunch: Optional[AttributeBooleanValue]
+    AssignIpv6AddressOnCreation: AttributeBooleanValue | None
+    MapPublicIpOnLaunch: AttributeBooleanValue | None
     SubnetId: SubnetId
-    MapCustomerOwnedIpOnLaunch: Optional[AttributeBooleanValue]
-    CustomerOwnedIpv4Pool: Optional[CoipPoolId]
-    EnableDns64: Optional[AttributeBooleanValue]
-    PrivateDnsHostnameTypeOnLaunch: Optional[HostnameType]
-    EnableResourceNameDnsARecordOnLaunch: Optional[AttributeBooleanValue]
-    EnableResourceNameDnsAAAARecordOnLaunch: Optional[AttributeBooleanValue]
-    EnableLniAtDeviceIndex: Optional[Integer]
-    DisableLniAtDeviceIndex: Optional[AttributeBooleanValue]
+    MapCustomerOwnedIpOnLaunch: AttributeBooleanValue | None
+    CustomerOwnedIpv4Pool: CoipPoolId | None
+    EnableDns64: AttributeBooleanValue | None
+    PrivateDnsHostnameTypeOnLaunch: HostnameType | None
+    EnableResourceNameDnsARecordOnLaunch: AttributeBooleanValue | None
+    EnableResourceNameDnsAAAARecordOnLaunch: AttributeBooleanValue | None
+    EnableLniAtDeviceIndex: Integer | None
+    DisableLniAtDeviceIndex: AttributeBooleanValue | None
 
 
 class ModifyTrafficMirrorFilterNetworkServicesRequest(ServiceRequest):
     TrafficMirrorFilterId: TrafficMirrorFilterId
-    AddNetworkServices: Optional[TrafficMirrorNetworkServiceList]
-    RemoveNetworkServices: Optional[TrafficMirrorNetworkServiceList]
-    DryRun: Optional[Boolean]
+    AddNetworkServices: TrafficMirrorNetworkServiceList | None
+    RemoveNetworkServices: TrafficMirrorNetworkServiceList | None
+    DryRun: Boolean | None
 
 
 class ModifyTrafficMirrorFilterNetworkServicesResult(TypedDict, total=False):
-    TrafficMirrorFilter: Optional[TrafficMirrorFilter]
+    TrafficMirrorFilter: TrafficMirrorFilter | None
 
 
-TrafficMirrorFilterRuleFieldList = List[TrafficMirrorFilterRuleField]
+TrafficMirrorFilterRuleFieldList = list[TrafficMirrorFilterRuleField]
 
 
 class ModifyTrafficMirrorFilterRuleRequest(ServiceRequest):
     TrafficMirrorFilterRuleId: TrafficMirrorFilterRuleIdWithResolver
-    TrafficDirection: Optional[TrafficDirection]
-    RuleNumber: Optional[Integer]
-    RuleAction: Optional[TrafficMirrorRuleAction]
-    DestinationPortRange: Optional[TrafficMirrorPortRangeRequest]
-    SourcePortRange: Optional[TrafficMirrorPortRangeRequest]
-    Protocol: Optional[Integer]
-    DestinationCidrBlock: Optional[String]
-    SourceCidrBlock: Optional[String]
-    Description: Optional[String]
-    RemoveFields: Optional[TrafficMirrorFilterRuleFieldList]
-    DryRun: Optional[Boolean]
+    TrafficDirection: TrafficDirection | None
+    RuleNumber: Integer | None
+    RuleAction: TrafficMirrorRuleAction | None
+    DestinationPortRange: TrafficMirrorPortRangeRequest | None
+    SourcePortRange: TrafficMirrorPortRangeRequest | None
+    Protocol: Integer | None
+    DestinationCidrBlock: String | None
+    SourceCidrBlock: String | None
+    Description: String | None
+    RemoveFields: TrafficMirrorFilterRuleFieldList | None
+    DryRun: Boolean | None
 
 
 class ModifyTrafficMirrorFilterRuleResult(TypedDict, total=False):
-    TrafficMirrorFilterRule: Optional[TrafficMirrorFilterRule]
+    TrafficMirrorFilterRule: TrafficMirrorFilterRule | None
 
 
-TrafficMirrorSessionFieldList = List[TrafficMirrorSessionField]
+TrafficMirrorSessionFieldList = list[TrafficMirrorSessionField]
 
 
 class ModifyTrafficMirrorSessionRequest(ServiceRequest):
     TrafficMirrorSessionId: TrafficMirrorSessionId
-    TrafficMirrorTargetId: Optional[TrafficMirrorTargetId]
-    TrafficMirrorFilterId: Optional[TrafficMirrorFilterId]
-    PacketLength: Optional[Integer]
-    SessionNumber: Optional[Integer]
-    VirtualNetworkId: Optional[Integer]
-    Description: Optional[String]
-    RemoveFields: Optional[TrafficMirrorSessionFieldList]
-    DryRun: Optional[Boolean]
+    TrafficMirrorTargetId: TrafficMirrorTargetId | None
+    TrafficMirrorFilterId: TrafficMirrorFilterId | None
+    PacketLength: Integer | None
+    SessionNumber: Integer | None
+    VirtualNetworkId: Integer | None
+    Description: String | None
+    RemoveFields: TrafficMirrorSessionFieldList | None
+    DryRun: Boolean | None
 
 
 class ModifyTrafficMirrorSessionResult(TypedDict, total=False):
-    TrafficMirrorSession: Optional[TrafficMirrorSession]
+    TrafficMirrorSession: TrafficMirrorSession | None
 
 
 class ModifyTransitGatewayOptions(TypedDict, total=False):
-    AddTransitGatewayCidrBlocks: Optional[TransitGatewayCidrBlockStringList]
-    RemoveTransitGatewayCidrBlocks: Optional[TransitGatewayCidrBlockStringList]
-    VpnEcmpSupport: Optional[VpnEcmpSupportValue]
-    DnsSupport: Optional[DnsSupportValue]
-    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
-    AutoAcceptSharedAttachments: Optional[AutoAcceptSharedAttachmentsValue]
-    DefaultRouteTableAssociation: Optional[DefaultRouteTableAssociationValue]
-    AssociationDefaultRouteTableId: Optional[TransitGatewayRouteTableId]
-    DefaultRouteTablePropagation: Optional[DefaultRouteTablePropagationValue]
-    PropagationDefaultRouteTableId: Optional[TransitGatewayRouteTableId]
-    AmazonSideAsn: Optional[Long]
+    AddTransitGatewayCidrBlocks: TransitGatewayCidrBlockStringList | None
+    RemoveTransitGatewayCidrBlocks: TransitGatewayCidrBlockStringList | None
+    VpnEcmpSupport: VpnEcmpSupportValue | None
+    DnsSupport: DnsSupportValue | None
+    SecurityGroupReferencingSupport: SecurityGroupReferencingSupportValue | None
+    AutoAcceptSharedAttachments: AutoAcceptSharedAttachmentsValue | None
+    DefaultRouteTableAssociation: DefaultRouteTableAssociationValue | None
+    AssociationDefaultRouteTableId: TransitGatewayRouteTableId | None
+    DefaultRouteTablePropagation: DefaultRouteTablePropagationValue | None
+    PropagationDefaultRouteTableId: TransitGatewayRouteTableId | None
+    AmazonSideAsn: Long | None
 
 
 class ModifyTransitGatewayPrefixListReferenceRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     PrefixListId: PrefixListResourceId
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    Blackhole: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    Blackhole: Boolean | None
+    DryRun: Boolean | None
 
 
 class ModifyTransitGatewayPrefixListReferenceResult(TypedDict, total=False):
-    TransitGatewayPrefixListReference: Optional[TransitGatewayPrefixListReference]
+    TransitGatewayPrefixListReference: TransitGatewayPrefixListReference | None
 
 
 class ModifyTransitGatewayRequest(ServiceRequest):
     TransitGatewayId: TransitGatewayId
-    Description: Optional[String]
-    Options: Optional[ModifyTransitGatewayOptions]
-    DryRun: Optional[Boolean]
+    Description: String | None
+    Options: ModifyTransitGatewayOptions | None
+    DryRun: Boolean | None
 
 
 class ModifyTransitGatewayResult(TypedDict, total=False):
-    TransitGateway: Optional[TransitGateway]
+    TransitGateway: TransitGateway | None
 
 
 class ModifyTransitGatewayVpcAttachmentRequestOptions(TypedDict, total=False):
-    DnsSupport: Optional[DnsSupportValue]
-    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
-    Ipv6Support: Optional[Ipv6SupportValue]
-    ApplianceModeSupport: Optional[ApplianceModeSupportValue]
+    DnsSupport: DnsSupportValue | None
+    SecurityGroupReferencingSupport: SecurityGroupReferencingSupportValue | None
+    Ipv6Support: Ipv6SupportValue | None
+    ApplianceModeSupport: ApplianceModeSupportValue | None
 
 
 class ModifyTransitGatewayVpcAttachmentRequest(ServiceRequest):
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    AddSubnetIds: Optional[TransitGatewaySubnetIdList]
-    RemoveSubnetIds: Optional[TransitGatewaySubnetIdList]
-    Options: Optional[ModifyTransitGatewayVpcAttachmentRequestOptions]
-    DryRun: Optional[Boolean]
+    AddSubnetIds: TransitGatewaySubnetIdList | None
+    RemoveSubnetIds: TransitGatewaySubnetIdList | None
+    Options: ModifyTransitGatewayVpcAttachmentRequestOptions | None
+    DryRun: Boolean | None
 
 
 class ModifyTransitGatewayVpcAttachmentResult(TypedDict, total=False):
-    TransitGatewayVpcAttachment: Optional[TransitGatewayVpcAttachment]
+    TransitGatewayVpcAttachment: TransitGatewayVpcAttachment | None
 
 
 class ModifyVerifiedAccessEndpointPortRange(TypedDict, total=False):
-    FromPort: Optional[VerifiedAccessEndpointPortNumber]
-    ToPort: Optional[VerifiedAccessEndpointPortNumber]
+    FromPort: VerifiedAccessEndpointPortNumber | None
+    ToPort: VerifiedAccessEndpointPortNumber | None
 
 
-ModifyVerifiedAccessEndpointPortRangeList = List[ModifyVerifiedAccessEndpointPortRange]
+ModifyVerifiedAccessEndpointPortRangeList = list[ModifyVerifiedAccessEndpointPortRange]
 
 
 class ModifyVerifiedAccessEndpointCidrOptions(TypedDict, total=False):
-    PortRanges: Optional[ModifyVerifiedAccessEndpointPortRangeList]
+    PortRanges: ModifyVerifiedAccessEndpointPortRangeList | None
 
 
 class ModifyVerifiedAccessEndpointEniOptions(TypedDict, total=False):
-    Protocol: Optional[VerifiedAccessEndpointProtocol]
-    Port: Optional[VerifiedAccessEndpointPortNumber]
-    PortRanges: Optional[ModifyVerifiedAccessEndpointPortRangeList]
+    Protocol: VerifiedAccessEndpointProtocol | None
+    Port: VerifiedAccessEndpointPortNumber | None
+    PortRanges: ModifyVerifiedAccessEndpointPortRangeList | None
 
 
-ModifyVerifiedAccessEndpointSubnetIdList = List[SubnetId]
+ModifyVerifiedAccessEndpointSubnetIdList = list[SubnetId]
 
 
 class ModifyVerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
-    SubnetIds: Optional[ModifyVerifiedAccessEndpointSubnetIdList]
-    Protocol: Optional[VerifiedAccessEndpointProtocol]
-    Port: Optional[VerifiedAccessEndpointPortNumber]
-    PortRanges: Optional[ModifyVerifiedAccessEndpointPortRangeList]
+    SubnetIds: ModifyVerifiedAccessEndpointSubnetIdList | None
+    Protocol: VerifiedAccessEndpointProtocol | None
+    Port: VerifiedAccessEndpointPortNumber | None
+    PortRanges: ModifyVerifiedAccessEndpointPortRangeList | None
 
 
 class ModifyVerifiedAccessEndpointPolicyRequest(ServiceRequest):
     VerifiedAccessEndpointId: VerifiedAccessEndpointId
-    PolicyEnabled: Optional[Boolean]
-    PolicyDocument: Optional[String]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
+    PolicyEnabled: Boolean | None
+    PolicyDocument: String | None
+    ClientToken: String | None
+    DryRun: Boolean | None
+    SseSpecification: VerifiedAccessSseSpecificationRequest | None
 
 
 class ModifyVerifiedAccessEndpointPolicyResult(TypedDict, total=False):
-    PolicyEnabled: Optional[Boolean]
-    PolicyDocument: Optional[String]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
+    PolicyEnabled: Boolean | None
+    PolicyDocument: String | None
+    SseSpecification: VerifiedAccessSseSpecificationResponse | None
 
 
 class ModifyVerifiedAccessEndpointRdsOptions(TypedDict, total=False):
-    SubnetIds: Optional[ModifyVerifiedAccessEndpointSubnetIdList]
-    Port: Optional[VerifiedAccessEndpointPortNumber]
-    RdsEndpoint: Optional[String]
+    SubnetIds: ModifyVerifiedAccessEndpointSubnetIdList | None
+    Port: VerifiedAccessEndpointPortNumber | None
+    RdsEndpoint: String | None
 
 
 class ModifyVerifiedAccessEndpointRequest(ServiceRequest):
     VerifiedAccessEndpointId: VerifiedAccessEndpointId
-    VerifiedAccessGroupId: Optional[VerifiedAccessGroupId]
-    LoadBalancerOptions: Optional[ModifyVerifiedAccessEndpointLoadBalancerOptions]
-    NetworkInterfaceOptions: Optional[ModifyVerifiedAccessEndpointEniOptions]
-    Description: Optional[String]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    RdsOptions: Optional[ModifyVerifiedAccessEndpointRdsOptions]
-    CidrOptions: Optional[ModifyVerifiedAccessEndpointCidrOptions]
+    VerifiedAccessGroupId: VerifiedAccessGroupId | None
+    LoadBalancerOptions: ModifyVerifiedAccessEndpointLoadBalancerOptions | None
+    NetworkInterfaceOptions: ModifyVerifiedAccessEndpointEniOptions | None
+    Description: String | None
+    ClientToken: String | None
+    DryRun: Boolean | None
+    RdsOptions: ModifyVerifiedAccessEndpointRdsOptions | None
+    CidrOptions: ModifyVerifiedAccessEndpointCidrOptions | None
 
 
 class ModifyVerifiedAccessEndpointResult(TypedDict, total=False):
-    VerifiedAccessEndpoint: Optional[VerifiedAccessEndpoint]
+    VerifiedAccessEndpoint: VerifiedAccessEndpoint | None
 
 
 class ModifyVerifiedAccessGroupPolicyRequest(ServiceRequest):
     VerifiedAccessGroupId: VerifiedAccessGroupId
-    PolicyEnabled: Optional[Boolean]
-    PolicyDocument: Optional[String]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
+    PolicyEnabled: Boolean | None
+    PolicyDocument: String | None
+    ClientToken: String | None
+    DryRun: Boolean | None
+    SseSpecification: VerifiedAccessSseSpecificationRequest | None
 
 
 class ModifyVerifiedAccessGroupPolicyResult(TypedDict, total=False):
-    PolicyEnabled: Optional[Boolean]
-    PolicyDocument: Optional[String]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
+    PolicyEnabled: Boolean | None
+    PolicyDocument: String | None
+    SseSpecification: VerifiedAccessSseSpecificationResponse | None
 
 
 class ModifyVerifiedAccessGroupRequest(ServiceRequest):
     VerifiedAccessGroupId: VerifiedAccessGroupId
-    VerifiedAccessInstanceId: Optional[VerifiedAccessInstanceId]
-    Description: Optional[String]
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    VerifiedAccessInstanceId: VerifiedAccessInstanceId | None
+    Description: String | None
+    ClientToken: String | None
+    DryRun: Boolean | None
 
 
 class ModifyVerifiedAccessGroupResult(TypedDict, total=False):
-    VerifiedAccessGroup: Optional[VerifiedAccessGroup]
+    VerifiedAccessGroup: VerifiedAccessGroup | None
 
 
 class VerifiedAccessLogKinesisDataFirehoseDestinationOptions(TypedDict, total=False):
     Enabled: Boolean
-    DeliveryStream: Optional[String]
+    DeliveryStream: String | None
 
 
 class VerifiedAccessLogCloudWatchLogsDestinationOptions(TypedDict, total=False):
     Enabled: Boolean
-    LogGroup: Optional[String]
+    LogGroup: String | None
 
 
 class VerifiedAccessLogS3DestinationOptions(TypedDict, total=False):
     Enabled: Boolean
-    BucketName: Optional[String]
-    Prefix: Optional[String]
-    BucketOwner: Optional[String]
+    BucketName: String | None
+    Prefix: String | None
+    BucketOwner: String | None
 
 
 class VerifiedAccessLogOptions(TypedDict, total=False):
-    S3: Optional[VerifiedAccessLogS3DestinationOptions]
-    CloudWatchLogs: Optional[VerifiedAccessLogCloudWatchLogsDestinationOptions]
-    KinesisDataFirehose: Optional[VerifiedAccessLogKinesisDataFirehoseDestinationOptions]
-    LogVersion: Optional[String]
-    IncludeTrustContext: Optional[Boolean]
+    S3: VerifiedAccessLogS3DestinationOptions | None
+    CloudWatchLogs: VerifiedAccessLogCloudWatchLogsDestinationOptions | None
+    KinesisDataFirehose: VerifiedAccessLogKinesisDataFirehoseDestinationOptions | None
+    LogVersion: String | None
+    IncludeTrustContext: Boolean | None
 
 
 class ModifyVerifiedAccessInstanceLoggingConfigurationRequest(ServiceRequest):
     VerifiedAccessInstanceId: VerifiedAccessInstanceId
     AccessLogs: VerifiedAccessLogOptions
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
 
 
 class ModifyVerifiedAccessInstanceLoggingConfigurationResult(TypedDict, total=False):
-    LoggingConfiguration: Optional[VerifiedAccessInstanceLoggingConfiguration]
+    LoggingConfiguration: VerifiedAccessInstanceLoggingConfiguration | None
 
 
 class ModifyVerifiedAccessInstanceRequest(ServiceRequest):
     VerifiedAccessInstanceId: VerifiedAccessInstanceId
-    Description: Optional[String]
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
-    CidrEndpointsCustomSubDomain: Optional[String]
+    Description: String | None
+    DryRun: Boolean | None
+    ClientToken: String | None
+    CidrEndpointsCustomSubDomain: String | None
 
 
 class ModifyVerifiedAccessInstanceResult(TypedDict, total=False):
-    VerifiedAccessInstance: Optional[VerifiedAccessInstance]
+    VerifiedAccessInstance: VerifiedAccessInstance | None
 
 
 class ModifyVerifiedAccessNativeApplicationOidcOptions(TypedDict, total=False):
-    PublicSigningKeyEndpoint: Optional[String]
-    Issuer: Optional[String]
-    AuthorizationEndpoint: Optional[String]
-    TokenEndpoint: Optional[String]
-    UserInfoEndpoint: Optional[String]
-    ClientId: Optional[String]
-    ClientSecret: Optional[ClientSecretType]
-    Scope: Optional[String]
+    PublicSigningKeyEndpoint: String | None
+    Issuer: String | None
+    AuthorizationEndpoint: String | None
+    TokenEndpoint: String | None
+    UserInfoEndpoint: String | None
+    ClientId: String | None
+    ClientSecret: ClientSecretType | None
+    Scope: String | None
 
 
 class ModifyVerifiedAccessTrustProviderDeviceOptions(TypedDict, total=False):
-    PublicSigningKeyUrl: Optional[String]
+    PublicSigningKeyUrl: String | None
 
 
 class ModifyVerifiedAccessTrustProviderOidcOptions(TypedDict, total=False):
-    Issuer: Optional[String]
-    AuthorizationEndpoint: Optional[String]
-    TokenEndpoint: Optional[String]
-    UserInfoEndpoint: Optional[String]
-    ClientId: Optional[String]
-    ClientSecret: Optional[ClientSecretType]
-    Scope: Optional[String]
+    Issuer: String | None
+    AuthorizationEndpoint: String | None
+    TokenEndpoint: String | None
+    UserInfoEndpoint: String | None
+    ClientId: String | None
+    ClientSecret: ClientSecretType | None
+    Scope: String | None
 
 
 class ModifyVerifiedAccessTrustProviderRequest(ServiceRequest):
     VerifiedAccessTrustProviderId: VerifiedAccessTrustProviderId
-    OidcOptions: Optional[ModifyVerifiedAccessTrustProviderOidcOptions]
-    DeviceOptions: Optional[ModifyVerifiedAccessTrustProviderDeviceOptions]
-    Description: Optional[String]
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
-    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
-    NativeApplicationOidcOptions: Optional[ModifyVerifiedAccessNativeApplicationOidcOptions]
+    OidcOptions: ModifyVerifiedAccessTrustProviderOidcOptions | None
+    DeviceOptions: ModifyVerifiedAccessTrustProviderDeviceOptions | None
+    Description: String | None
+    DryRun: Boolean | None
+    ClientToken: String | None
+    SseSpecification: VerifiedAccessSseSpecificationRequest | None
+    NativeApplicationOidcOptions: ModifyVerifiedAccessNativeApplicationOidcOptions | None
 
 
 class ModifyVerifiedAccessTrustProviderResult(TypedDict, total=False):
-    VerifiedAccessTrustProvider: Optional[VerifiedAccessTrustProvider]
+    VerifiedAccessTrustProvider: VerifiedAccessTrustProvider | None
 
 
 class ModifyVolumeAttributeRequest(ServiceRequest):
-    AutoEnableIO: Optional[AttributeBooleanValue]
+    AutoEnableIO: AttributeBooleanValue | None
     VolumeId: VolumeId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ModifyVolumeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     VolumeId: VolumeId
-    Size: Optional[Integer]
-    VolumeType: Optional[VolumeType]
-    Iops: Optional[Integer]
-    Throughput: Optional[Integer]
-    MultiAttachEnabled: Optional[Boolean]
+    Size: Integer | None
+    VolumeType: VolumeType | None
+    Iops: Integer | None
+    Throughput: Integer | None
+    MultiAttachEnabled: Boolean | None
 
 
 class ModifyVolumeResult(TypedDict, total=False):
-    VolumeModification: Optional[VolumeModification]
+    VolumeModification: VolumeModification | None
 
 
 class ModifyVpcAttributeRequest(ServiceRequest):
-    EnableDnsHostnames: Optional[AttributeBooleanValue]
-    EnableDnsSupport: Optional[AttributeBooleanValue]
+    EnableDnsHostnames: AttributeBooleanValue | None
+    EnableDnsSupport: AttributeBooleanValue | None
     VpcId: VpcId
-    EnableNetworkAddressUsageMetrics: Optional[AttributeBooleanValue]
+    EnableNetworkAddressUsageMetrics: AttributeBooleanValue | None
 
 
 class ModifyVpcBlockPublicAccessExclusionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ExclusionId: VpcBlockPublicAccessExclusionId
     InternetGatewayExclusionMode: InternetGatewayExclusionMode
 
 
 class ModifyVpcBlockPublicAccessExclusionResult(TypedDict, total=False):
-    VpcBlockPublicAccessExclusion: Optional[VpcBlockPublicAccessExclusion]
+    VpcBlockPublicAccessExclusion: VpcBlockPublicAccessExclusion | None
 
 
 class ModifyVpcBlockPublicAccessOptionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InternetGatewayBlockMode: InternetGatewayBlockMode
 
 
 class ModifyVpcBlockPublicAccessOptionsResult(TypedDict, total=False):
-    VpcBlockPublicAccessOptions: Optional[VpcBlockPublicAccessOptions]
+    VpcBlockPublicAccessOptions: VpcBlockPublicAccessOptions | None
 
 
 class ModifyVpcEndpointConnectionNotificationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ConnectionNotificationId: ConnectionNotificationId
-    ConnectionNotificationArn: Optional[String]
-    ConnectionEvents: Optional[ValueStringList]
+    ConnectionNotificationArn: String | None
+    ConnectionEvents: ValueStringList | None
 
 
 class ModifyVpcEndpointConnectionNotificationResult(TypedDict, total=False):
-    ReturnValue: Optional[Boolean]
+    ReturnValue: Boolean | None
 
 
 class ModifyVpcEndpointRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     VpcEndpointId: VpcEndpointId
-    ResetPolicy: Optional[Boolean]
-    PolicyDocument: Optional[String]
-    AddRouteTableIds: Optional[VpcEndpointRouteTableIdList]
-    RemoveRouteTableIds: Optional[VpcEndpointRouteTableIdList]
-    AddSubnetIds: Optional[VpcEndpointSubnetIdList]
-    RemoveSubnetIds: Optional[VpcEndpointSubnetIdList]
-    AddSecurityGroupIds: Optional[VpcEndpointSecurityGroupIdList]
-    RemoveSecurityGroupIds: Optional[VpcEndpointSecurityGroupIdList]
-    IpAddressType: Optional[IpAddressType]
-    DnsOptions: Optional[DnsOptionsSpecification]
-    PrivateDnsEnabled: Optional[Boolean]
-    SubnetConfigurations: Optional[SubnetConfigurationsList]
+    ResetPolicy: Boolean | None
+    PolicyDocument: String | None
+    AddRouteTableIds: VpcEndpointRouteTableIdList | None
+    RemoveRouteTableIds: VpcEndpointRouteTableIdList | None
+    AddSubnetIds: VpcEndpointSubnetIdList | None
+    RemoveSubnetIds: VpcEndpointSubnetIdList | None
+    AddSecurityGroupIds: VpcEndpointSecurityGroupIdList | None
+    RemoveSecurityGroupIds: VpcEndpointSecurityGroupIdList | None
+    IpAddressType: IpAddressType | None
+    DnsOptions: DnsOptionsSpecification | None
+    PrivateDnsEnabled: Boolean | None
+    SubnetConfigurations: SubnetConfigurationsList | None
 
 
 class ModifyVpcEndpointResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyVpcEndpointServiceConfigurationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ServiceId: VpcEndpointServiceId
-    PrivateDnsName: Optional[String]
-    RemovePrivateDnsName: Optional[Boolean]
-    AcceptanceRequired: Optional[Boolean]
-    AddNetworkLoadBalancerArns: Optional[ValueStringList]
-    RemoveNetworkLoadBalancerArns: Optional[ValueStringList]
-    AddGatewayLoadBalancerArns: Optional[ValueStringList]
-    RemoveGatewayLoadBalancerArns: Optional[ValueStringList]
-    AddSupportedIpAddressTypes: Optional[ValueStringList]
-    RemoveSupportedIpAddressTypes: Optional[ValueStringList]
-    AddSupportedRegions: Optional[ValueStringList]
-    RemoveSupportedRegions: Optional[ValueStringList]
+    PrivateDnsName: String | None
+    RemovePrivateDnsName: Boolean | None
+    AcceptanceRequired: Boolean | None
+    AddNetworkLoadBalancerArns: ValueStringList | None
+    RemoveNetworkLoadBalancerArns: ValueStringList | None
+    AddGatewayLoadBalancerArns: ValueStringList | None
+    RemoveGatewayLoadBalancerArns: ValueStringList | None
+    AddSupportedIpAddressTypes: ValueStringList | None
+    RemoveSupportedIpAddressTypes: ValueStringList | None
+    AddSupportedRegions: ValueStringList | None
+    RemoveSupportedRegions: ValueStringList | None
 
 
 class ModifyVpcEndpointServiceConfigurationResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ModifyVpcEndpointServicePayerResponsibilityRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ServiceId: VpcEndpointServiceId
     PayerResponsibility: PayerResponsibility
 
 
 class ModifyVpcEndpointServicePayerResponsibilityResult(TypedDict, total=False):
-    ReturnValue: Optional[Boolean]
+    ReturnValue: Boolean | None
 
 
 class ModifyVpcEndpointServicePermissionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ServiceId: VpcEndpointServiceId
-    AddAllowedPrincipals: Optional[ValueStringList]
-    RemoveAllowedPrincipals: Optional[ValueStringList]
+    AddAllowedPrincipals: ValueStringList | None
+    RemoveAllowedPrincipals: ValueStringList | None
 
 
 class ModifyVpcEndpointServicePermissionsResult(TypedDict, total=False):
-    AddedPrincipals: Optional[AddedPrincipalSet]
-    ReturnValue: Optional[Boolean]
+    AddedPrincipals: AddedPrincipalSet | None
+    ReturnValue: Boolean | None
 
 
 class PeeringConnectionOptionsRequest(TypedDict, total=False):
-    AllowDnsResolutionFromRemoteVpc: Optional[Boolean]
-    AllowEgressFromLocalClassicLinkToRemoteVpc: Optional[Boolean]
-    AllowEgressFromLocalVpcToRemoteClassicLink: Optional[Boolean]
+    AllowDnsResolutionFromRemoteVpc: Boolean | None
+    AllowEgressFromLocalClassicLinkToRemoteVpc: Boolean | None
+    AllowEgressFromLocalVpcToRemoteClassicLink: Boolean | None
 
 
 class ModifyVpcPeeringConnectionOptionsRequest(ServiceRequest):
-    AccepterPeeringConnectionOptions: Optional[PeeringConnectionOptionsRequest]
-    DryRun: Optional[Boolean]
-    RequesterPeeringConnectionOptions: Optional[PeeringConnectionOptionsRequest]
+    AccepterPeeringConnectionOptions: PeeringConnectionOptionsRequest | None
+    DryRun: Boolean | None
+    RequesterPeeringConnectionOptions: PeeringConnectionOptionsRequest | None
     VpcPeeringConnectionId: VpcPeeringConnectionId
 
 
 class PeeringConnectionOptions(TypedDict, total=False):
-    AllowDnsResolutionFromRemoteVpc: Optional[Boolean]
-    AllowEgressFromLocalClassicLinkToRemoteVpc: Optional[Boolean]
-    AllowEgressFromLocalVpcToRemoteClassicLink: Optional[Boolean]
+    AllowDnsResolutionFromRemoteVpc: Boolean | None
+    AllowEgressFromLocalClassicLinkToRemoteVpc: Boolean | None
+    AllowEgressFromLocalVpcToRemoteClassicLink: Boolean | None
 
 
 class ModifyVpcPeeringConnectionOptionsResult(TypedDict, total=False):
-    AccepterPeeringConnectionOptions: Optional[PeeringConnectionOptions]
-    RequesterPeeringConnectionOptions: Optional[PeeringConnectionOptions]
+    AccepterPeeringConnectionOptions: PeeringConnectionOptions | None
+    RequesterPeeringConnectionOptions: PeeringConnectionOptions | None
 
 
 class ModifyVpcTenancyRequest(ServiceRequest):
     VpcId: VpcId
     InstanceTenancy: VpcTenancy
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ModifyVpcTenancyResult(TypedDict, total=False):
-    ReturnValue: Optional[Boolean]
+    ReturnValue: Boolean | None
 
 
 class ModifyVpnConnectionOptionsRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
-    LocalIpv4NetworkCidr: Optional[String]
-    RemoteIpv4NetworkCidr: Optional[String]
-    LocalIpv6NetworkCidr: Optional[String]
-    RemoteIpv6NetworkCidr: Optional[String]
-    DryRun: Optional[Boolean]
+    LocalIpv4NetworkCidr: String | None
+    RemoteIpv4NetworkCidr: String | None
+    LocalIpv6NetworkCidr: String | None
+    RemoteIpv6NetworkCidr: String | None
+    DryRun: Boolean | None
 
 
 class ModifyVpnConnectionOptionsResult(TypedDict, total=False):
-    VpnConnection: Optional[VpnConnection]
+    VpnConnection: VpnConnection | None
 
 
 class ModifyVpnConnectionRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
-    TransitGatewayId: Optional[TransitGatewayId]
-    CustomerGatewayId: Optional[CustomerGatewayId]
-    VpnGatewayId: Optional[VpnGatewayId]
-    DryRun: Optional[Boolean]
+    TransitGatewayId: TransitGatewayId | None
+    CustomerGatewayId: CustomerGatewayId | None
+    VpnGatewayId: VpnGatewayId | None
+    DryRun: Boolean | None
 
 
 class ModifyVpnConnectionResult(TypedDict, total=False):
-    VpnConnection: Optional[VpnConnection]
+    VpnConnection: VpnConnection | None
 
 
 class ModifyVpnTunnelCertificateRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
     VpnTunnelOutsideIpAddress: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ModifyVpnTunnelCertificateResult(TypedDict, total=False):
-    VpnConnection: Optional[VpnConnection]
+    VpnConnection: VpnConnection | None
 
 
 class ModifyVpnTunnelOptionsSpecification(TypedDict, total=False):
-    TunnelInsideCidr: Optional[String]
-    TunnelInsideIpv6Cidr: Optional[String]
-    PreSharedKey: Optional[preSharedKey]
-    Phase1LifetimeSeconds: Optional[Integer]
-    Phase2LifetimeSeconds: Optional[Integer]
-    RekeyMarginTimeSeconds: Optional[Integer]
-    RekeyFuzzPercentage: Optional[Integer]
-    ReplayWindowSize: Optional[Integer]
-    DPDTimeoutSeconds: Optional[Integer]
-    DPDTimeoutAction: Optional[String]
-    Phase1EncryptionAlgorithms: Optional[Phase1EncryptionAlgorithmsRequestList]
-    Phase2EncryptionAlgorithms: Optional[Phase2EncryptionAlgorithmsRequestList]
-    Phase1IntegrityAlgorithms: Optional[Phase1IntegrityAlgorithmsRequestList]
-    Phase2IntegrityAlgorithms: Optional[Phase2IntegrityAlgorithmsRequestList]
-    Phase1DHGroupNumbers: Optional[Phase1DHGroupNumbersRequestList]
-    Phase2DHGroupNumbers: Optional[Phase2DHGroupNumbersRequestList]
-    IKEVersions: Optional[IKEVersionsRequestList]
-    StartupAction: Optional[String]
-    LogOptions: Optional[VpnTunnelLogOptionsSpecification]
-    EnableTunnelLifecycleControl: Optional[Boolean]
+    TunnelInsideCidr: String | None
+    TunnelInsideIpv6Cidr: String | None
+    PreSharedKey: preSharedKey | None
+    Phase1LifetimeSeconds: Integer | None
+    Phase2LifetimeSeconds: Integer | None
+    RekeyMarginTimeSeconds: Integer | None
+    RekeyFuzzPercentage: Integer | None
+    ReplayWindowSize: Integer | None
+    DPDTimeoutSeconds: Integer | None
+    DPDTimeoutAction: String | None
+    Phase1EncryptionAlgorithms: Phase1EncryptionAlgorithmsRequestList | None
+    Phase2EncryptionAlgorithms: Phase2EncryptionAlgorithmsRequestList | None
+    Phase1IntegrityAlgorithms: Phase1IntegrityAlgorithmsRequestList | None
+    Phase2IntegrityAlgorithms: Phase2IntegrityAlgorithmsRequestList | None
+    Phase1DHGroupNumbers: Phase1DHGroupNumbersRequestList | None
+    Phase2DHGroupNumbers: Phase2DHGroupNumbersRequestList | None
+    IKEVersions: IKEVersionsRequestList | None
+    StartupAction: String | None
+    LogOptions: VpnTunnelLogOptionsSpecification | None
+    EnableTunnelLifecycleControl: Boolean | None
 
 
 class ModifyVpnTunnelOptionsRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
     VpnTunnelOutsideIpAddress: String
     TunnelOptions: ModifyVpnTunnelOptionsSpecification
-    DryRun: Optional[Boolean]
-    SkipTunnelReplacement: Optional[Boolean]
-    PreSharedKeyStorage: Optional[String]
+    DryRun: Boolean | None
+    SkipTunnelReplacement: Boolean | None
+    PreSharedKeyStorage: String | None
 
 
 class ModifyVpnTunnelOptionsResult(TypedDict, total=False):
-    VpnConnection: Optional[VpnConnection]
+    VpnConnection: VpnConnection | None
 
 
 class MonitorInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class MonitorInstancesResult(TypedDict, total=False):
-    InstanceMonitorings: Optional[InstanceMonitoringList]
+    InstanceMonitorings: InstanceMonitoringList | None
 
 
 class MoveAddressToVpcRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     PublicIp: String
 
 
 class MoveAddressToVpcResult(TypedDict, total=False):
-    AllocationId: Optional[String]
-    Status: Optional[Status]
+    AllocationId: String | None
+    Status: Status | None
 
 
 class MoveByoipCidrToIpamRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     Cidr: String
     IpamPoolId: IpamPoolId
     IpamPoolOwner: String
 
 
 class MoveByoipCidrToIpamResult(TypedDict, total=False):
-    ByoipCidr: Optional[ByoipCidr]
+    ByoipCidr: ByoipCidr | None
 
 
 class MoveCapacityReservationInstancesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
     SourceCapacityReservationId: CapacityReservationId
     DestinationCapacityReservationId: CapacityReservationId
     InstanceCount: Integer
 
 
 class MoveCapacityReservationInstancesResult(TypedDict, total=False):
-    SourceCapacityReservation: Optional[CapacityReservation]
-    DestinationCapacityReservation: Optional[CapacityReservation]
-    InstanceCount: Optional[Integer]
+    SourceCapacityReservation: CapacityReservation | None
+    DestinationCapacityReservation: CapacityReservation | None
+    InstanceCount: Integer | None
 
 
 class PrivateDnsNameOptionsRequest(TypedDict, total=False):
-    HostnameType: Optional[HostnameType]
-    EnableResourceNameDnsARecord: Optional[Boolean]
-    EnableResourceNameDnsAAAARecord: Optional[Boolean]
+    HostnameType: HostnameType | None
+    EnableResourceNameDnsARecord: Boolean | None
+    EnableResourceNameDnsAAAARecord: Boolean | None
 
 
 class ScheduledInstancesPrivateIpAddressConfig(TypedDict, total=False):
-    Primary: Optional[Boolean]
-    PrivateIpAddress: Optional[String]
+    Primary: Boolean | None
+    PrivateIpAddress: String | None
 
 
-PrivateIpAddressConfigSet = List[ScheduledInstancesPrivateIpAddressConfig]
+PrivateIpAddressConfigSet = list[ScheduledInstancesPrivateIpAddressConfig]
 
 
 class ProvisionByoipCidrRequest(ServiceRequest):
     Cidr: String
-    CidrAuthorizationContext: Optional[CidrAuthorizationContext]
-    PubliclyAdvertisable: Optional[Boolean]
-    Description: Optional[String]
-    DryRun: Optional[Boolean]
-    PoolTagSpecifications: Optional[TagSpecificationList]
-    MultiRegion: Optional[Boolean]
-    NetworkBorderGroup: Optional[String]
+    CidrAuthorizationContext: CidrAuthorizationContext | None
+    PubliclyAdvertisable: Boolean | None
+    Description: String | None
+    DryRun: Boolean | None
+    PoolTagSpecifications: TagSpecificationList | None
+    MultiRegion: Boolean | None
+    NetworkBorderGroup: String | None
 
 
 class ProvisionByoipCidrResult(TypedDict, total=False):
-    ByoipCidr: Optional[ByoipCidr]
+    ByoipCidr: ByoipCidr | None
 
 
 class ProvisionIpamByoasnRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamId: IpamId
     Asn: String
     AsnAuthorizationContext: AsnAuthorizationContext
 
 
 class ProvisionIpamByoasnResult(TypedDict, total=False):
-    Byoasn: Optional[Byoasn]
+    Byoasn: Byoasn | None
 
 
 class ProvisionIpamPoolCidrRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPoolId: IpamPoolId
-    Cidr: Optional[String]
-    CidrAuthorizationContext: Optional[IpamCidrAuthorizationContext]
-    NetmaskLength: Optional[Integer]
-    ClientToken: Optional[String]
-    VerificationMethod: Optional[VerificationMethod]
-    IpamExternalResourceVerificationTokenId: Optional[IpamExternalResourceVerificationTokenId]
+    Cidr: String | None
+    CidrAuthorizationContext: IpamCidrAuthorizationContext | None
+    NetmaskLength: Integer | None
+    ClientToken: String | None
+    VerificationMethod: VerificationMethod | None
+    IpamExternalResourceVerificationTokenId: IpamExternalResourceVerificationTokenId | None
 
 
 class ProvisionIpamPoolCidrResult(TypedDict, total=False):
-    IpamPoolCidr: Optional[IpamPoolCidr]
+    IpamPoolCidr: IpamPoolCidr | None
 
 
 class ProvisionPublicIpv4PoolCidrRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPoolId: IpamPoolId
     PoolId: Ipv4PoolEc2Id
     NetmaskLength: Integer
-    NetworkBorderGroup: Optional[String]
+    NetworkBorderGroup: String | None
 
 
 class ProvisionPublicIpv4PoolCidrResult(TypedDict, total=False):
-    PoolId: Optional[Ipv4PoolEc2Id]
-    PoolAddressRange: Optional[PublicIpv4PoolRange]
+    PoolId: Ipv4PoolEc2Id | None
+    PoolAddressRange: PublicIpv4PoolRange | None
 
 
 class PurchaseCapacityBlockExtensionRequest(ServiceRequest):
     CapacityBlockExtensionOfferingId: OfferingId
     CapacityReservationId: CapacityReservationId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class PurchaseCapacityBlockExtensionResult(TypedDict, total=False):
-    CapacityBlockExtensions: Optional[CapacityBlockExtensionSet]
+    CapacityBlockExtensions: CapacityBlockExtensionSet | None
 
 
 class PurchaseCapacityBlockRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
     CapacityBlockOfferingId: OfferingId
     InstancePlatform: CapacityReservationInstancePlatform
 
 
 class PurchaseCapacityBlockResult(TypedDict, total=False):
-    CapacityReservation: Optional[CapacityReservation]
-    CapacityBlocks: Optional[CapacityBlockSet]
+    CapacityReservation: CapacityReservation | None
+    CapacityBlocks: CapacityBlockSet | None
 
 
 class PurchaseHostReservationRequest(ServiceRequest):
-    ClientToken: Optional[String]
-    CurrencyCode: Optional[CurrencyCodeValues]
+    ClientToken: String | None
+    CurrencyCode: CurrencyCodeValues | None
     HostIdSet: RequestHostIdSet
-    LimitPrice: Optional[String]
+    LimitPrice: String | None
     OfferingId: OfferingId
-    TagSpecifications: Optional[TagSpecificationList]
+    TagSpecifications: TagSpecificationList | None
 
 
 class PurchaseHostReservationResult(TypedDict, total=False):
-    ClientToken: Optional[String]
-    CurrencyCode: Optional[CurrencyCodeValues]
-    Purchase: Optional[PurchaseSet]
-    TotalHourlyPrice: Optional[String]
-    TotalUpfrontPrice: Optional[String]
+    ClientToken: String | None
+    CurrencyCode: CurrencyCodeValues | None
+    Purchase: PurchaseSet | None
+    TotalHourlyPrice: String | None
+    TotalUpfrontPrice: String | None
 
 
 class PurchaseRequest(TypedDict, total=False):
@@ -20915,182 +20949,182 @@ class PurchaseRequest(TypedDict, total=False):
     PurchaseToken: String
 
 
-PurchaseRequestSet = List[PurchaseRequest]
+PurchaseRequestSet = list[PurchaseRequest]
 
 
 class ReservedInstanceLimitPrice(TypedDict, total=False):
-    Amount: Optional[Double]
-    CurrencyCode: Optional[CurrencyCodeValues]
+    Amount: Double | None
+    CurrencyCode: CurrencyCodeValues | None
 
 
 class PurchaseReservedInstancesOfferingRequest(ServiceRequest):
     InstanceCount: Integer
     ReservedInstancesOfferingId: ReservedInstancesOfferingId
-    PurchaseTime: Optional[DateTime]
-    DryRun: Optional[Boolean]
-    LimitPrice: Optional[ReservedInstanceLimitPrice]
+    PurchaseTime: DateTime | None
+    DryRun: Boolean | None
+    LimitPrice: ReservedInstanceLimitPrice | None
 
 
 class PurchaseReservedInstancesOfferingResult(TypedDict, total=False):
-    ReservedInstancesId: Optional[String]
+    ReservedInstancesId: String | None
 
 
 class PurchaseScheduledInstancesRequest(ServiceRequest):
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
+    ClientToken: String | None
+    DryRun: Boolean | None
     PurchaseRequests: PurchaseRequestSet
 
 
-PurchasedScheduledInstanceSet = List[ScheduledInstance]
+PurchasedScheduledInstanceSet = list[ScheduledInstance]
 
 
 class PurchaseScheduledInstancesResult(TypedDict, total=False):
-    ScheduledInstanceSet: Optional[PurchasedScheduledInstanceSet]
+    ScheduledInstanceSet: PurchasedScheduledInstanceSet | None
 
 
-ReasonCodesList = List[ReportInstanceReasonCodes]
+ReasonCodesList = list[ReportInstanceReasonCodes]
 
 
 class RebootInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class RegisterImageRequest(ServiceRequest):
-    ImageLocation: Optional[String]
-    BillingProducts: Optional[BillingProductList]
-    BootMode: Optional[BootModeValues]
-    TpmSupport: Optional[TpmSupportValues]
-    UefiData: Optional[StringType]
-    ImdsSupport: Optional[ImdsSupportValues]
-    TagSpecifications: Optional[TagSpecificationList]
-    DryRun: Optional[Boolean]
+    ImageLocation: String | None
+    BillingProducts: BillingProductList | None
+    BootMode: BootModeValues | None
+    TpmSupport: TpmSupportValues | None
+    UefiData: StringType | None
+    ImdsSupport: ImdsSupportValues | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
     Name: String
-    Description: Optional[String]
-    Architecture: Optional[ArchitectureValues]
-    KernelId: Optional[KernelId]
-    RamdiskId: Optional[RamdiskId]
-    RootDeviceName: Optional[String]
-    BlockDeviceMappings: Optional[BlockDeviceMappingRequestList]
-    VirtualizationType: Optional[String]
-    SriovNetSupport: Optional[String]
-    EnaSupport: Optional[Boolean]
+    Description: String | None
+    Architecture: ArchitectureValues | None
+    KernelId: KernelId | None
+    RamdiskId: RamdiskId | None
+    RootDeviceName: String | None
+    BlockDeviceMappings: BlockDeviceMappingRequestList | None
+    VirtualizationType: String | None
+    SriovNetSupport: String | None
+    EnaSupport: Boolean | None
 
 
 class RegisterImageResult(TypedDict, total=False):
-    ImageId: Optional[String]
+    ImageId: String | None
 
 
 class RegisterInstanceTagAttributeRequest(TypedDict, total=False):
-    IncludeAllTagsOfInstance: Optional[Boolean]
-    InstanceTagKeys: Optional[InstanceTagKeySet]
+    IncludeAllTagsOfInstance: Boolean | None
+    InstanceTagKeys: InstanceTagKeySet | None
 
 
 class RegisterInstanceEventNotificationAttributesRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceTagAttribute: RegisterInstanceTagAttributeRequest
 
 
 class RegisterInstanceEventNotificationAttributesResult(TypedDict, total=False):
-    InstanceTagAttribute: Optional[InstanceTagNotificationAttribute]
+    InstanceTagAttribute: InstanceTagNotificationAttribute | None
 
 
 class RegisterTransitGatewayMulticastGroupMembersRequest(ServiceRequest):
     TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
-    GroupIpAddress: Optional[String]
+    GroupIpAddress: String | None
     NetworkInterfaceIds: TransitGatewayNetworkInterfaceIdList
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class TransitGatewayMulticastRegisteredGroupMembers(TypedDict, total=False):
-    TransitGatewayMulticastDomainId: Optional[String]
-    RegisteredNetworkInterfaceIds: Optional[ValueStringList]
-    GroupIpAddress: Optional[String]
+    TransitGatewayMulticastDomainId: String | None
+    RegisteredNetworkInterfaceIds: ValueStringList | None
+    GroupIpAddress: String | None
 
 
 class RegisterTransitGatewayMulticastGroupMembersResult(TypedDict, total=False):
-    RegisteredMulticastGroupMembers: Optional[TransitGatewayMulticastRegisteredGroupMembers]
+    RegisteredMulticastGroupMembers: TransitGatewayMulticastRegisteredGroupMembers | None
 
 
 class RegisterTransitGatewayMulticastGroupSourcesRequest(ServiceRequest):
     TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
-    GroupIpAddress: Optional[String]
+    GroupIpAddress: String | None
     NetworkInterfaceIds: TransitGatewayNetworkInterfaceIdList
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class TransitGatewayMulticastRegisteredGroupSources(TypedDict, total=False):
-    TransitGatewayMulticastDomainId: Optional[String]
-    RegisteredNetworkInterfaceIds: Optional[ValueStringList]
-    GroupIpAddress: Optional[String]
+    TransitGatewayMulticastDomainId: String | None
+    RegisteredNetworkInterfaceIds: ValueStringList | None
+    GroupIpAddress: String | None
 
 
 class RegisterTransitGatewayMulticastGroupSourcesResult(TypedDict, total=False):
-    RegisteredMulticastGroupSources: Optional[TransitGatewayMulticastRegisteredGroupSources]
+    RegisteredMulticastGroupSources: TransitGatewayMulticastRegisteredGroupSources | None
 
 
 class RejectCapacityReservationBillingOwnershipRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     CapacityReservationId: CapacityReservationId
 
 
 class RejectCapacityReservationBillingOwnershipResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class RejectTransitGatewayMulticastDomainAssociationsRequest(ServiceRequest):
-    TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    SubnetIds: Optional[ValueStringList]
-    DryRun: Optional[Boolean]
+    TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId | None
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    SubnetIds: ValueStringList | None
+    DryRun: Boolean | None
 
 
 class RejectTransitGatewayMulticastDomainAssociationsResult(TypedDict, total=False):
-    Associations: Optional[TransitGatewayMulticastDomainAssociations]
+    Associations: TransitGatewayMulticastDomainAssociations | None
 
 
 class RejectTransitGatewayPeeringAttachmentRequest(ServiceRequest):
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class RejectTransitGatewayPeeringAttachmentResult(TypedDict, total=False):
-    TransitGatewayPeeringAttachment: Optional[TransitGatewayPeeringAttachment]
+    TransitGatewayPeeringAttachment: TransitGatewayPeeringAttachment | None
 
 
 class RejectTransitGatewayVpcAttachmentRequest(ServiceRequest):
     TransitGatewayAttachmentId: TransitGatewayAttachmentId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class RejectTransitGatewayVpcAttachmentResult(TypedDict, total=False):
-    TransitGatewayVpcAttachment: Optional[TransitGatewayVpcAttachment]
+    TransitGatewayVpcAttachment: TransitGatewayVpcAttachment | None
 
 
 class RejectVpcEndpointConnectionsRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ServiceId: VpcEndpointServiceId
     VpcEndpointIds: VpcEndpointIdList
 
 
 class RejectVpcEndpointConnectionsResult(TypedDict, total=False):
-    Unsuccessful: Optional[UnsuccessfulItemSet]
+    Unsuccessful: UnsuccessfulItemSet | None
 
 
 class RejectVpcPeeringConnectionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     VpcPeeringConnectionId: VpcPeeringConnectionId
 
 
 class RejectVpcPeeringConnectionResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ReleaseAddressRequest(ServiceRequest):
-    AllocationId: Optional[AllocationId]
-    PublicIp: Optional[String]
-    NetworkBorderGroup: Optional[String]
-    DryRun: Optional[Boolean]
+    AllocationId: AllocationId | None
+    PublicIp: String | None
+    NetworkBorderGroup: String | None
+    DryRun: Boolean | None
 
 
 class ReleaseHostsRequest(ServiceRequest):
@@ -21098,19 +21132,19 @@ class ReleaseHostsRequest(ServiceRequest):
 
 
 class ReleaseHostsResult(TypedDict, total=False):
-    Successful: Optional[ResponseHostIdList]
-    Unsuccessful: Optional[UnsuccessfulItemList]
+    Successful: ResponseHostIdList | None
+    Unsuccessful: UnsuccessfulItemList | None
 
 
 class ReleaseIpamPoolAllocationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     IpamPoolId: IpamPoolId
     Cidr: String
     IpamPoolAllocationId: IpamPoolAllocationId
 
 
 class ReleaseIpamPoolAllocationResult(TypedDict, total=False):
-    Success: Optional[Boolean]
+    Success: Boolean | None
 
 
 class ReplaceIamInstanceProfileAssociationRequest(ServiceRequest):
@@ -21119,744 +21153,744 @@ class ReplaceIamInstanceProfileAssociationRequest(ServiceRequest):
 
 
 class ReplaceIamInstanceProfileAssociationResult(TypedDict, total=False):
-    IamInstanceProfileAssociation: Optional[IamInstanceProfileAssociation]
+    IamInstanceProfileAssociation: IamInstanceProfileAssociation | None
 
 
 class ReplaceImageCriteriaInAllowedImagesSettingsRequest(ServiceRequest):
-    ImageCriteria: Optional[ImageCriterionRequestList]
-    DryRun: Optional[Boolean]
+    ImageCriteria: ImageCriterionRequestList | None
+    DryRun: Boolean | None
 
 
 class ReplaceImageCriteriaInAllowedImagesSettingsResult(TypedDict, total=False):
-    ReturnValue: Optional[Boolean]
+    ReturnValue: Boolean | None
 
 
 class ReplaceNetworkAclAssociationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     AssociationId: NetworkAclAssociationId
     NetworkAclId: NetworkAclId
 
 
 class ReplaceNetworkAclAssociationResult(TypedDict, total=False):
-    NewAssociationId: Optional[String]
+    NewAssociationId: String | None
 
 
 class ReplaceNetworkAclEntryRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NetworkAclId: NetworkAclId
     RuleNumber: Integer
     Protocol: String
     RuleAction: RuleAction
     Egress: Boolean
-    CidrBlock: Optional[String]
-    Ipv6CidrBlock: Optional[String]
-    IcmpTypeCode: Optional[IcmpTypeCode]
-    PortRange: Optional[PortRange]
+    CidrBlock: String | None
+    Ipv6CidrBlock: String | None
+    IcmpTypeCode: IcmpTypeCode | None
+    PortRange: PortRange | None
 
 
 class ReplaceRouteRequest(ServiceRequest):
-    DestinationPrefixListId: Optional[PrefixListResourceId]
-    VpcEndpointId: Optional[VpcEndpointId]
-    LocalTarget: Optional[Boolean]
-    TransitGatewayId: Optional[TransitGatewayId]
-    LocalGatewayId: Optional[LocalGatewayId]
-    CarrierGatewayId: Optional[CarrierGatewayId]
-    CoreNetworkArn: Optional[CoreNetworkArn]
-    OdbNetworkArn: Optional[OdbNetworkArn]
-    DryRun: Optional[Boolean]
+    DestinationPrefixListId: PrefixListResourceId | None
+    VpcEndpointId: VpcEndpointId | None
+    LocalTarget: Boolean | None
+    TransitGatewayId: TransitGatewayId | None
+    LocalGatewayId: LocalGatewayId | None
+    CarrierGatewayId: CarrierGatewayId | None
+    CoreNetworkArn: CoreNetworkArn | None
+    OdbNetworkArn: OdbNetworkArn | None
+    DryRun: Boolean | None
     RouteTableId: RouteTableId
-    DestinationCidrBlock: Optional[String]
-    GatewayId: Optional[RouteGatewayId]
-    DestinationIpv6CidrBlock: Optional[String]
-    EgressOnlyInternetGatewayId: Optional[EgressOnlyInternetGatewayId]
-    InstanceId: Optional[InstanceId]
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    VpcPeeringConnectionId: Optional[VpcPeeringConnectionId]
-    NatGatewayId: Optional[NatGatewayId]
+    DestinationCidrBlock: String | None
+    GatewayId: RouteGatewayId | None
+    DestinationIpv6CidrBlock: String | None
+    EgressOnlyInternetGatewayId: EgressOnlyInternetGatewayId | None
+    InstanceId: InstanceId | None
+    NetworkInterfaceId: NetworkInterfaceId | None
+    VpcPeeringConnectionId: VpcPeeringConnectionId | None
+    NatGatewayId: NatGatewayId | None
 
 
 class ReplaceRouteTableAssociationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     AssociationId: RouteTableAssociationId
     RouteTableId: RouteTableId
 
 
 class ReplaceRouteTableAssociationResult(TypedDict, total=False):
-    NewAssociationId: Optional[String]
-    AssociationState: Optional[RouteTableAssociationState]
+    NewAssociationId: String | None
+    AssociationState: RouteTableAssociationState | None
 
 
 class ReplaceTransitGatewayRouteRequest(ServiceRequest):
     DestinationCidrBlock: String
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    Blackhole: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    Blackhole: Boolean | None
+    DryRun: Boolean | None
 
 
 class ReplaceTransitGatewayRouteResult(TypedDict, total=False):
-    Route: Optional[TransitGatewayRoute]
+    Route: TransitGatewayRoute | None
 
 
 class ReplaceVpnTunnelRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
     VpnTunnelOutsideIpAddress: String
-    ApplyPendingMaintenance: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    ApplyPendingMaintenance: Boolean | None
+    DryRun: Boolean | None
 
 
 class ReplaceVpnTunnelResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ReportInstanceStatusRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     Instances: InstanceIdStringList
     Status: ReportStatusType
-    StartTime: Optional[DateTime]
-    EndTime: Optional[DateTime]
+    StartTime: DateTime | None
+    EndTime: DateTime | None
     ReasonCodes: ReasonCodesList
-    Description: Optional[ReportInstanceStatusRequestDescription]
+    Description: ReportInstanceStatusRequestDescription | None
 
 
 class RequestSpotFleetRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     SpotFleetRequestConfig: SpotFleetRequestConfigData
 
 
 class RequestSpotFleetResponse(TypedDict, total=False):
-    SpotFleetRequestId: Optional[String]
+    SpotFleetRequestId: String | None
 
 
-RequestSpotLaunchSpecificationSecurityGroupList = List[String]
-RequestSpotLaunchSpecificationSecurityGroupIdList = List[SecurityGroupId]
+RequestSpotLaunchSpecificationSecurityGroupList = list[String]
+RequestSpotLaunchSpecificationSecurityGroupIdList = list[SecurityGroupId]
 
 
 class RequestSpotLaunchSpecification(TypedDict, total=False):
-    SecurityGroupIds: Optional[RequestSpotLaunchSpecificationSecurityGroupIdList]
-    SecurityGroups: Optional[RequestSpotLaunchSpecificationSecurityGroupList]
-    AddressingType: Optional[String]
-    BlockDeviceMappings: Optional[BlockDeviceMappingList]
-    EbsOptimized: Optional[Boolean]
-    IamInstanceProfile: Optional[IamInstanceProfileSpecification]
-    ImageId: Optional[ImageId]
-    InstanceType: Optional[InstanceType]
-    KernelId: Optional[KernelId]
-    KeyName: Optional[KeyPairNameWithResolver]
-    Monitoring: Optional[RunInstancesMonitoringEnabled]
-    NetworkInterfaces: Optional[InstanceNetworkInterfaceSpecificationList]
-    Placement: Optional[SpotPlacement]
-    RamdiskId: Optional[RamdiskId]
-    SubnetId: Optional[SubnetId]
-    UserData: Optional[SensitiveUserData]
+    SecurityGroupIds: RequestSpotLaunchSpecificationSecurityGroupIdList | None
+    SecurityGroups: RequestSpotLaunchSpecificationSecurityGroupList | None
+    AddressingType: String | None
+    BlockDeviceMappings: BlockDeviceMappingList | None
+    EbsOptimized: Boolean | None
+    IamInstanceProfile: IamInstanceProfileSpecification | None
+    ImageId: ImageId | None
+    InstanceType: InstanceType | None
+    KernelId: KernelId | None
+    KeyName: KeyPairNameWithResolver | None
+    Monitoring: RunInstancesMonitoringEnabled | None
+    NetworkInterfaces: InstanceNetworkInterfaceSpecificationList | None
+    Placement: SpotPlacement | None
+    RamdiskId: RamdiskId | None
+    SubnetId: SubnetId | None
+    UserData: SensitiveUserData | None
 
 
 class RequestSpotInstancesRequest(ServiceRequest):
-    LaunchSpecification: Optional[RequestSpotLaunchSpecification]
-    TagSpecifications: Optional[TagSpecificationList]
-    InstanceInterruptionBehavior: Optional[InstanceInterruptionBehavior]
-    DryRun: Optional[Boolean]
-    SpotPrice: Optional[String]
-    ClientToken: Optional[String]
-    InstanceCount: Optional[Integer]
-    Type: Optional[SpotInstanceType]
-    ValidFrom: Optional[DateTime]
-    ValidUntil: Optional[DateTime]
-    LaunchGroup: Optional[String]
-    AvailabilityZoneGroup: Optional[String]
-    BlockDurationMinutes: Optional[Integer]
+    LaunchSpecification: RequestSpotLaunchSpecification | None
+    TagSpecifications: TagSpecificationList | None
+    InstanceInterruptionBehavior: InstanceInterruptionBehavior | None
+    DryRun: Boolean | None
+    SpotPrice: String | None
+    ClientToken: String | None
+    InstanceCount: Integer | None
+    Type: SpotInstanceType | None
+    ValidFrom: DateTime | None
+    ValidUntil: DateTime | None
+    LaunchGroup: String | None
+    AvailabilityZoneGroup: String | None
+    BlockDurationMinutes: Integer | None
 
 
 class RequestSpotInstancesResult(TypedDict, total=False):
-    SpotInstanceRequests: Optional[SpotInstanceRequestList]
+    SpotInstanceRequests: SpotInstanceRequestList | None
 
 
 class ResetAddressAttributeRequest(ServiceRequest):
     AllocationId: AllocationId
     Attribute: AddressAttributeName
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ResetAddressAttributeResult(TypedDict, total=False):
-    Address: Optional[AddressAttribute]
+    Address: AddressAttribute | None
 
 
 class ResetEbsDefaultKmsKeyIdRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ResetEbsDefaultKmsKeyIdResult(TypedDict, total=False):
-    KmsKeyId: Optional[String]
+    KmsKeyId: String | None
 
 
 class ResetFpgaImageAttributeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     FpgaImageId: FpgaImageId
-    Attribute: Optional[ResetFpgaImageAttributeName]
+    Attribute: ResetFpgaImageAttributeName | None
 
 
 class ResetFpgaImageAttributeResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class ResetImageAttributeRequest(ServiceRequest):
     Attribute: ResetImageAttributeName
     ImageId: ImageId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class ResetInstanceAttributeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     InstanceId: InstanceId
     Attribute: InstanceAttributeName
 
 
 class ResetNetworkInterfaceAttributeRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     NetworkInterfaceId: NetworkInterfaceId
-    SourceDestCheck: Optional[String]
+    SourceDestCheck: String | None
 
 
 class ResetSnapshotAttributeRequest(ServiceRequest):
     Attribute: SnapshotAttributeName
     SnapshotId: SnapshotId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class RestoreAddressToClassicRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     PublicIp: String
 
 
 class RestoreAddressToClassicResult(TypedDict, total=False):
-    PublicIp: Optional[String]
-    Status: Optional[Status]
+    PublicIp: String | None
+    Status: Status | None
 
 
 class RestoreImageFromRecycleBinRequest(ServiceRequest):
     ImageId: ImageId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class RestoreImageFromRecycleBinResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class RestoreManagedPrefixListVersionRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     PrefixListId: PrefixListResourceId
     PreviousVersion: Long
     CurrentVersion: Long
 
 
 class RestoreManagedPrefixListVersionResult(TypedDict, total=False):
-    PrefixList: Optional[ManagedPrefixList]
+    PrefixList: ManagedPrefixList | None
 
 
 class RestoreSnapshotFromRecycleBinRequest(ServiceRequest):
     SnapshotId: SnapshotId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class RestoreSnapshotFromRecycleBinResult(TypedDict, total=False):
-    SnapshotId: Optional[String]
-    OutpostArn: Optional[String]
-    Description: Optional[String]
-    Encrypted: Optional[Boolean]
-    OwnerId: Optional[String]
-    Progress: Optional[String]
-    StartTime: Optional[MillisecondDateTime]
-    State: Optional[SnapshotState]
-    VolumeId: Optional[String]
-    VolumeSize: Optional[Integer]
-    SseType: Optional[SSEType]
+    SnapshotId: String | None
+    OutpostArn: String | None
+    Description: String | None
+    Encrypted: Boolean | None
+    OwnerId: String | None
+    Progress: String | None
+    StartTime: MillisecondDateTime | None
+    State: SnapshotState | None
+    VolumeId: String | None
+    VolumeSize: Integer | None
+    SseType: SSEType | None
 
 
 class RestoreSnapshotTierRequest(ServiceRequest):
     SnapshotId: SnapshotId
-    TemporaryRestoreDays: Optional[RestoreSnapshotTierRequestTemporaryRestoreDays]
-    PermanentRestore: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    TemporaryRestoreDays: RestoreSnapshotTierRequestTemporaryRestoreDays | None
+    PermanentRestore: Boolean | None
+    DryRun: Boolean | None
 
 
 class RestoreSnapshotTierResult(TypedDict, total=False):
-    SnapshotId: Optional[String]
-    RestoreStartTime: Optional[MillisecondDateTime]
-    RestoreDuration: Optional[Integer]
-    IsPermanentRestore: Optional[Boolean]
+    SnapshotId: String | None
+    RestoreStartTime: MillisecondDateTime | None
+    RestoreDuration: Integer | None
+    IsPermanentRestore: Boolean | None
 
 
 class RevokeClientVpnIngressRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
     TargetNetworkCidr: String
-    AccessGroupId: Optional[String]
-    RevokeAllGroups: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    AccessGroupId: String | None
+    RevokeAllGroups: Boolean | None
+    DryRun: Boolean | None
 
 
 class RevokeClientVpnIngressResult(TypedDict, total=False):
-    Status: Optional[ClientVpnAuthorizationRuleStatus]
+    Status: ClientVpnAuthorizationRuleStatus | None
 
 
 class RevokeSecurityGroupEgressRequest(ServiceRequest):
-    SecurityGroupRuleIds: Optional[SecurityGroupRuleIdList]
-    DryRun: Optional[Boolean]
+    SecurityGroupRuleIds: SecurityGroupRuleIdList | None
+    DryRun: Boolean | None
     GroupId: SecurityGroupId
-    SourceSecurityGroupName: Optional[String]
-    SourceSecurityGroupOwnerId: Optional[String]
-    IpProtocol: Optional[String]
-    FromPort: Optional[Integer]
-    ToPort: Optional[Integer]
-    CidrIp: Optional[String]
-    IpPermissions: Optional[IpPermissionList]
+    SourceSecurityGroupName: String | None
+    SourceSecurityGroupOwnerId: String | None
+    IpProtocol: String | None
+    FromPort: Integer | None
+    ToPort: Integer | None
+    CidrIp: String | None
+    IpPermissions: IpPermissionList | None
 
 
 class RevokedSecurityGroupRule(TypedDict, total=False):
-    SecurityGroupRuleId: Optional[SecurityGroupRuleId]
-    GroupId: Optional[SecurityGroupId]
-    IsEgress: Optional[Boolean]
-    IpProtocol: Optional[String]
-    FromPort: Optional[Integer]
-    ToPort: Optional[Integer]
-    CidrIpv4: Optional[String]
-    CidrIpv6: Optional[String]
-    PrefixListId: Optional[PrefixListResourceId]
-    ReferencedGroupId: Optional[SecurityGroupId]
-    Description: Optional[String]
+    SecurityGroupRuleId: SecurityGroupRuleId | None
+    GroupId: SecurityGroupId | None
+    IsEgress: Boolean | None
+    IpProtocol: String | None
+    FromPort: Integer | None
+    ToPort: Integer | None
+    CidrIpv4: String | None
+    CidrIpv6: String | None
+    PrefixListId: PrefixListResourceId | None
+    ReferencedGroupId: SecurityGroupId | None
+    Description: String | None
 
 
-RevokedSecurityGroupRuleList = List[RevokedSecurityGroupRule]
+RevokedSecurityGroupRuleList = list[RevokedSecurityGroupRule]
 
 
 class RevokeSecurityGroupEgressResult(TypedDict, total=False):
-    Return: Optional[Boolean]
-    UnknownIpPermissions: Optional[IpPermissionList]
-    RevokedSecurityGroupRules: Optional[RevokedSecurityGroupRuleList]
+    Return: Boolean | None
+    UnknownIpPermissions: IpPermissionList | None
+    RevokedSecurityGroupRules: RevokedSecurityGroupRuleList | None
 
 
 class RevokeSecurityGroupIngressRequest(ServiceRequest):
-    CidrIp: Optional[String]
-    FromPort: Optional[Integer]
-    GroupId: Optional[SecurityGroupId]
-    GroupName: Optional[SecurityGroupName]
-    IpPermissions: Optional[IpPermissionList]
-    IpProtocol: Optional[String]
-    SourceSecurityGroupName: Optional[String]
-    SourceSecurityGroupOwnerId: Optional[String]
-    ToPort: Optional[Integer]
-    SecurityGroupRuleIds: Optional[SecurityGroupRuleIdList]
-    DryRun: Optional[Boolean]
+    CidrIp: String | None
+    FromPort: Integer | None
+    GroupId: SecurityGroupId | None
+    GroupName: SecurityGroupName | None
+    IpPermissions: IpPermissionList | None
+    IpProtocol: String | None
+    SourceSecurityGroupName: String | None
+    SourceSecurityGroupOwnerId: String | None
+    ToPort: Integer | None
+    SecurityGroupRuleIds: SecurityGroupRuleIdList | None
+    DryRun: Boolean | None
 
 
 class RevokeSecurityGroupIngressResult(TypedDict, total=False):
-    Return: Optional[Boolean]
-    UnknownIpPermissions: Optional[IpPermissionList]
-    RevokedSecurityGroupRules: Optional[RevokedSecurityGroupRuleList]
+    Return: Boolean | None
+    UnknownIpPermissions: IpPermissionList | None
+    RevokedSecurityGroupRules: RevokedSecurityGroupRuleList | None
 
 
 class RunInstancesRequest(ServiceRequest):
-    BlockDeviceMappings: Optional[BlockDeviceMappingRequestList]
-    ImageId: Optional[ImageId]
-    InstanceType: Optional[InstanceType]
-    Ipv6AddressCount: Optional[Integer]
-    Ipv6Addresses: Optional[InstanceIpv6AddressList]
-    KernelId: Optional[KernelId]
-    KeyName: Optional[KeyPairName]
+    BlockDeviceMappings: BlockDeviceMappingRequestList | None
+    ImageId: ImageId | None
+    InstanceType: InstanceType | None
+    Ipv6AddressCount: Integer | None
+    Ipv6Addresses: InstanceIpv6AddressList | None
+    KernelId: KernelId | None
+    KeyName: KeyPairName | None
     MaxCount: Integer
     MinCount: Integer
-    Monitoring: Optional[RunInstancesMonitoringEnabled]
-    Placement: Optional[Placement]
-    RamdiskId: Optional[RamdiskId]
-    SecurityGroupIds: Optional[SecurityGroupIdStringList]
-    SecurityGroups: Optional[SecurityGroupStringList]
-    SubnetId: Optional[SubnetId]
-    UserData: Optional[RunInstancesUserData]
-    ElasticGpuSpecification: Optional[ElasticGpuSpecifications]
-    ElasticInferenceAccelerators: Optional[ElasticInferenceAccelerators]
-    TagSpecifications: Optional[TagSpecificationList]
-    LaunchTemplate: Optional[LaunchTemplateSpecification]
-    InstanceMarketOptions: Optional[InstanceMarketOptionsRequest]
-    CreditSpecification: Optional[CreditSpecificationRequest]
-    CpuOptions: Optional[CpuOptionsRequest]
-    CapacityReservationSpecification: Optional[CapacityReservationSpecification]
-    HibernationOptions: Optional[HibernationOptionsRequest]
-    LicenseSpecifications: Optional[LicenseSpecificationListRequest]
-    MetadataOptions: Optional[InstanceMetadataOptionsRequest]
-    EnclaveOptions: Optional[EnclaveOptionsRequest]
-    PrivateDnsNameOptions: Optional[PrivateDnsNameOptionsRequest]
-    MaintenanceOptions: Optional[InstanceMaintenanceOptionsRequest]
-    DisableApiStop: Optional[Boolean]
-    EnablePrimaryIpv6: Optional[Boolean]
-    NetworkPerformanceOptions: Optional[InstanceNetworkPerformanceOptionsRequest]
-    Operator: Optional[OperatorRequest]
-    DryRun: Optional[Boolean]
-    DisableApiTermination: Optional[Boolean]
-    InstanceInitiatedShutdownBehavior: Optional[ShutdownBehavior]
-    PrivateIpAddress: Optional[String]
-    ClientToken: Optional[String]
-    AdditionalInfo: Optional[String]
-    NetworkInterfaces: Optional[InstanceNetworkInterfaceSpecificationList]
-    IamInstanceProfile: Optional[IamInstanceProfileSpecification]
-    EbsOptimized: Optional[Boolean]
+    Monitoring: RunInstancesMonitoringEnabled | None
+    Placement: Placement | None
+    RamdiskId: RamdiskId | None
+    SecurityGroupIds: SecurityGroupIdStringList | None
+    SecurityGroups: SecurityGroupStringList | None
+    SubnetId: SubnetId | None
+    UserData: RunInstancesUserData | None
+    ElasticGpuSpecification: ElasticGpuSpecifications | None
+    ElasticInferenceAccelerators: ElasticInferenceAccelerators | None
+    TagSpecifications: TagSpecificationList | None
+    LaunchTemplate: LaunchTemplateSpecification | None
+    InstanceMarketOptions: InstanceMarketOptionsRequest | None
+    CreditSpecification: CreditSpecificationRequest | None
+    CpuOptions: CpuOptionsRequest | None
+    CapacityReservationSpecification: CapacityReservationSpecification | None
+    HibernationOptions: HibernationOptionsRequest | None
+    LicenseSpecifications: LicenseSpecificationListRequest | None
+    MetadataOptions: InstanceMetadataOptionsRequest | None
+    EnclaveOptions: EnclaveOptionsRequest | None
+    PrivateDnsNameOptions: PrivateDnsNameOptionsRequest | None
+    MaintenanceOptions: InstanceMaintenanceOptionsRequest | None
+    DisableApiStop: Boolean | None
+    EnablePrimaryIpv6: Boolean | None
+    NetworkPerformanceOptions: InstanceNetworkPerformanceOptionsRequest | None
+    Operator: OperatorRequest | None
+    DryRun: Boolean | None
+    DisableApiTermination: Boolean | None
+    InstanceInitiatedShutdownBehavior: ShutdownBehavior | None
+    PrivateIpAddress: String | None
+    ClientToken: String | None
+    AdditionalInfo: String | None
+    NetworkInterfaces: InstanceNetworkInterfaceSpecificationList | None
+    IamInstanceProfile: IamInstanceProfileSpecification | None
+    EbsOptimized: Boolean | None
 
 
-ScheduledInstancesSecurityGroupIdSet = List[SecurityGroupId]
+ScheduledInstancesSecurityGroupIdSet = list[SecurityGroupId]
 
 
 class ScheduledInstancesPlacement(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    GroupName: Optional[PlacementGroupName]
+    AvailabilityZone: String | None
+    GroupName: PlacementGroupName | None
 
 
 class ScheduledInstancesIpv6Address(TypedDict, total=False):
-    Ipv6Address: Optional[Ipv6Address]
+    Ipv6Address: Ipv6Address | None
 
 
-ScheduledInstancesIpv6AddressList = List[ScheduledInstancesIpv6Address]
+ScheduledInstancesIpv6AddressList = list[ScheduledInstancesIpv6Address]
 
 
 class ScheduledInstancesNetworkInterface(TypedDict, total=False):
-    AssociatePublicIpAddress: Optional[Boolean]
-    DeleteOnTermination: Optional[Boolean]
-    Description: Optional[String]
-    DeviceIndex: Optional[Integer]
-    Groups: Optional[ScheduledInstancesSecurityGroupIdSet]
-    Ipv6AddressCount: Optional[Integer]
-    Ipv6Addresses: Optional[ScheduledInstancesIpv6AddressList]
-    NetworkInterfaceId: Optional[NetworkInterfaceId]
-    PrivateIpAddress: Optional[String]
-    PrivateIpAddressConfigs: Optional[PrivateIpAddressConfigSet]
-    SecondaryPrivateIpAddressCount: Optional[Integer]
-    SubnetId: Optional[SubnetId]
+    AssociatePublicIpAddress: Boolean | None
+    DeleteOnTermination: Boolean | None
+    Description: String | None
+    DeviceIndex: Integer | None
+    Groups: ScheduledInstancesSecurityGroupIdSet | None
+    Ipv6AddressCount: Integer | None
+    Ipv6Addresses: ScheduledInstancesIpv6AddressList | None
+    NetworkInterfaceId: NetworkInterfaceId | None
+    PrivateIpAddress: String | None
+    PrivateIpAddressConfigs: PrivateIpAddressConfigSet | None
+    SecondaryPrivateIpAddressCount: Integer | None
+    SubnetId: SubnetId | None
 
 
-ScheduledInstancesNetworkInterfaceSet = List[ScheduledInstancesNetworkInterface]
+ScheduledInstancesNetworkInterfaceSet = list[ScheduledInstancesNetworkInterface]
 
 
 class ScheduledInstancesMonitoring(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class ScheduledInstancesIamInstanceProfile(TypedDict, total=False):
-    Arn: Optional[String]
-    Name: Optional[String]
+    Arn: String | None
+    Name: String | None
 
 
 class ScheduledInstancesEbs(TypedDict, total=False):
-    DeleteOnTermination: Optional[Boolean]
-    Encrypted: Optional[Boolean]
-    Iops: Optional[Integer]
-    SnapshotId: Optional[SnapshotId]
-    VolumeSize: Optional[Integer]
-    VolumeType: Optional[String]
+    DeleteOnTermination: Boolean | None
+    Encrypted: Boolean | None
+    Iops: Integer | None
+    SnapshotId: SnapshotId | None
+    VolumeSize: Integer | None
+    VolumeType: String | None
 
 
 class ScheduledInstancesBlockDeviceMapping(TypedDict, total=False):
-    DeviceName: Optional[String]
-    Ebs: Optional[ScheduledInstancesEbs]
-    NoDevice: Optional[String]
-    VirtualName: Optional[String]
+    DeviceName: String | None
+    Ebs: ScheduledInstancesEbs | None
+    NoDevice: String | None
+    VirtualName: String | None
 
 
-ScheduledInstancesBlockDeviceMappingSet = List[ScheduledInstancesBlockDeviceMapping]
+ScheduledInstancesBlockDeviceMappingSet = list[ScheduledInstancesBlockDeviceMapping]
 
 
 class ScheduledInstancesLaunchSpecification(TypedDict, total=False):
-    BlockDeviceMappings: Optional[ScheduledInstancesBlockDeviceMappingSet]
-    EbsOptimized: Optional[Boolean]
-    IamInstanceProfile: Optional[ScheduledInstancesIamInstanceProfile]
+    BlockDeviceMappings: ScheduledInstancesBlockDeviceMappingSet | None
+    EbsOptimized: Boolean | None
+    IamInstanceProfile: ScheduledInstancesIamInstanceProfile | None
     ImageId: ImageId
-    InstanceType: Optional[String]
-    KernelId: Optional[KernelId]
-    KeyName: Optional[KeyPairName]
-    Monitoring: Optional[ScheduledInstancesMonitoring]
-    NetworkInterfaces: Optional[ScheduledInstancesNetworkInterfaceSet]
-    Placement: Optional[ScheduledInstancesPlacement]
-    RamdiskId: Optional[RamdiskId]
-    SecurityGroupIds: Optional[ScheduledInstancesSecurityGroupIdSet]
-    SubnetId: Optional[SubnetId]
-    UserData: Optional[String]
+    InstanceType: String | None
+    KernelId: KernelId | None
+    KeyName: KeyPairName | None
+    Monitoring: ScheduledInstancesMonitoring | None
+    NetworkInterfaces: ScheduledInstancesNetworkInterfaceSet | None
+    Placement: ScheduledInstancesPlacement | None
+    RamdiskId: RamdiskId | None
+    SecurityGroupIds: ScheduledInstancesSecurityGroupIdSet | None
+    SubnetId: SubnetId | None
+    UserData: String | None
 
 
 class RunScheduledInstancesRequest(ServiceRequest):
-    ClientToken: Optional[String]
-    DryRun: Optional[Boolean]
-    InstanceCount: Optional[Integer]
+    ClientToken: String | None
+    DryRun: Boolean | None
+    InstanceCount: Integer | None
     LaunchSpecification: ScheduledInstancesLaunchSpecification
     ScheduledInstanceId: ScheduledInstanceId
 
 
 class RunScheduledInstancesResult(TypedDict, total=False):
-    InstanceIdSet: Optional[InstanceIdSet]
+    InstanceIdSet: InstanceIdSet | None
 
 
 class SearchLocalGatewayRoutesRequest(ServiceRequest):
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: MaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class SearchLocalGatewayRoutesResult(TypedDict, total=False):
-    Routes: Optional[LocalGatewayRouteList]
-    NextToken: Optional[String]
+    Routes: LocalGatewayRouteList | None
+    NextToken: String | None
 
 
 class SearchTransitGatewayMulticastGroupsRequest(ServiceRequest):
     TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
-    Filters: Optional[FilterList]
-    MaxResults: Optional[TransitGatewayMaxResults]
-    NextToken: Optional[String]
-    DryRun: Optional[Boolean]
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
 
 
 class TransitGatewayMulticastGroup(TypedDict, total=False):
-    GroupIpAddress: Optional[String]
-    TransitGatewayAttachmentId: Optional[String]
-    SubnetId: Optional[String]
-    ResourceId: Optional[String]
-    ResourceType: Optional[TransitGatewayAttachmentResourceType]
-    ResourceOwnerId: Optional[String]
-    NetworkInterfaceId: Optional[String]
-    GroupMember: Optional[Boolean]
-    GroupSource: Optional[Boolean]
-    MemberType: Optional[MembershipType]
-    SourceType: Optional[MembershipType]
+    GroupIpAddress: String | None
+    TransitGatewayAttachmentId: String | None
+    SubnetId: String | None
+    ResourceId: String | None
+    ResourceType: TransitGatewayAttachmentResourceType | None
+    ResourceOwnerId: String | None
+    NetworkInterfaceId: String | None
+    GroupMember: Boolean | None
+    GroupSource: Boolean | None
+    MemberType: MembershipType | None
+    SourceType: MembershipType | None
 
 
-TransitGatewayMulticastGroupList = List[TransitGatewayMulticastGroup]
+TransitGatewayMulticastGroupList = list[TransitGatewayMulticastGroup]
 
 
 class SearchTransitGatewayMulticastGroupsResult(TypedDict, total=False):
-    MulticastGroups: Optional[TransitGatewayMulticastGroupList]
-    NextToken: Optional[String]
+    MulticastGroups: TransitGatewayMulticastGroupList | None
+    NextToken: String | None
 
 
 class SearchTransitGatewayRoutesRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     Filters: FilterList
-    MaxResults: Optional[TransitGatewayMaxResults]
-    DryRun: Optional[Boolean]
+    MaxResults: TransitGatewayMaxResults | None
+    DryRun: Boolean | None
 
 
-TransitGatewayRouteList = List[TransitGatewayRoute]
+TransitGatewayRouteList = list[TransitGatewayRoute]
 
 
 class SearchTransitGatewayRoutesResult(TypedDict, total=False):
-    Routes: Optional[TransitGatewayRouteList]
-    AdditionalRoutesAvailable: Optional[Boolean]
+    Routes: TransitGatewayRouteList | None
+    AdditionalRoutesAvailable: Boolean | None
 
 
 class SecurityGroupRuleDescription(TypedDict, total=False):
-    SecurityGroupRuleId: Optional[String]
-    Description: Optional[String]
+    SecurityGroupRuleId: String | None
+    Description: String | None
 
 
-SecurityGroupRuleDescriptionList = List[SecurityGroupRuleDescription]
+SecurityGroupRuleDescriptionList = list[SecurityGroupRuleDescription]
 
 
 class SendDiagnosticInterruptRequest(ServiceRequest):
     InstanceId: InstanceId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class StartDeclarativePoliciesReportRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     S3Bucket: String
-    S3Prefix: Optional[String]
+    S3Prefix: String | None
     TargetId: String
-    TagSpecifications: Optional[TagSpecificationList]
+    TagSpecifications: TagSpecificationList | None
 
 
 class StartDeclarativePoliciesReportResult(TypedDict, total=False):
-    ReportId: Optional[String]
+    ReportId: String | None
 
 
 class StartInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
-    AdditionalInfo: Optional[String]
-    DryRun: Optional[Boolean]
+    AdditionalInfo: String | None
+    DryRun: Boolean | None
 
 
 class StartInstancesResult(TypedDict, total=False):
-    StartingInstances: Optional[InstanceStateChangeList]
+    StartingInstances: InstanceStateChangeList | None
 
 
 class StartNetworkInsightsAccessScopeAnalysisRequest(ServiceRequest):
     NetworkInsightsAccessScopeId: NetworkInsightsAccessScopeId
-    DryRun: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
     ClientToken: String
 
 
 class StartNetworkInsightsAccessScopeAnalysisResult(TypedDict, total=False):
-    NetworkInsightsAccessScopeAnalysis: Optional[NetworkInsightsAccessScopeAnalysis]
+    NetworkInsightsAccessScopeAnalysis: NetworkInsightsAccessScopeAnalysis | None
 
 
 class StartNetworkInsightsAnalysisRequest(ServiceRequest):
     NetworkInsightsPathId: NetworkInsightsPathId
-    AdditionalAccounts: Optional[ValueStringList]
-    FilterInArns: Optional[ArnList]
-    FilterOutArns: Optional[ArnList]
-    DryRun: Optional[Boolean]
-    TagSpecifications: Optional[TagSpecificationList]
+    AdditionalAccounts: ValueStringList | None
+    FilterInArns: ArnList | None
+    FilterOutArns: ArnList | None
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
     ClientToken: String
 
 
 class StartNetworkInsightsAnalysisResult(TypedDict, total=False):
-    NetworkInsightsAnalysis: Optional[NetworkInsightsAnalysis]
+    NetworkInsightsAnalysis: NetworkInsightsAnalysis | None
 
 
 class StartVpcEndpointServicePrivateDnsVerificationRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
     ServiceId: VpcEndpointServiceId
 
 
 class StartVpcEndpointServicePrivateDnsVerificationResult(TypedDict, total=False):
-    ReturnValue: Optional[Boolean]
+    ReturnValue: Boolean | None
 
 
 class StopInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
-    Hibernate: Optional[Boolean]
-    SkipOsShutdown: Optional[Boolean]
-    DryRun: Optional[Boolean]
-    Force: Optional[Boolean]
+    Hibernate: Boolean | None
+    SkipOsShutdown: Boolean | None
+    DryRun: Boolean | None
+    Force: Boolean | None
 
 
 class StopInstancesResult(TypedDict, total=False):
-    StoppingInstances: Optional[InstanceStateChangeList]
+    StoppingInstances: InstanceStateChangeList | None
 
 
 class TerminateClientVpnConnectionsRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    ConnectionId: Optional[String]
-    Username: Optional[String]
-    DryRun: Optional[Boolean]
+    ConnectionId: String | None
+    Username: String | None
+    DryRun: Boolean | None
 
 
 class TerminateConnectionStatus(TypedDict, total=False):
-    ConnectionId: Optional[String]
-    PreviousStatus: Optional[ClientVpnConnectionStatus]
-    CurrentStatus: Optional[ClientVpnConnectionStatus]
+    ConnectionId: String | None
+    PreviousStatus: ClientVpnConnectionStatus | None
+    CurrentStatus: ClientVpnConnectionStatus | None
 
 
-TerminateConnectionStatusSet = List[TerminateConnectionStatus]
+TerminateConnectionStatusSet = list[TerminateConnectionStatus]
 
 
 class TerminateClientVpnConnectionsResult(TypedDict, total=False):
-    ClientVpnEndpointId: Optional[String]
-    Username: Optional[String]
-    ConnectionStatuses: Optional[TerminateConnectionStatusSet]
+    ClientVpnEndpointId: String | None
+    Username: String | None
+    ConnectionStatuses: TerminateConnectionStatusSet | None
 
 
 class TerminateInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
-    Force: Optional[Boolean]
-    SkipOsShutdown: Optional[Boolean]
-    DryRun: Optional[Boolean]
+    Force: Boolean | None
+    SkipOsShutdown: Boolean | None
+    DryRun: Boolean | None
 
 
 class TerminateInstancesResult(TypedDict, total=False):
-    TerminatingInstances: Optional[InstanceStateChangeList]
+    TerminatingInstances: InstanceStateChangeList | None
 
 
 class UnassignIpv6AddressesRequest(ServiceRequest):
-    Ipv6Prefixes: Optional[IpPrefixList]
+    Ipv6Prefixes: IpPrefixList | None
     NetworkInterfaceId: NetworkInterfaceId
-    Ipv6Addresses: Optional[Ipv6AddressList]
+    Ipv6Addresses: Ipv6AddressList | None
 
 
 class UnassignIpv6AddressesResult(TypedDict, total=False):
-    NetworkInterfaceId: Optional[String]
-    UnassignedIpv6Addresses: Optional[Ipv6AddressList]
-    UnassignedIpv6Prefixes: Optional[IpPrefixList]
+    NetworkInterfaceId: String | None
+    UnassignedIpv6Addresses: Ipv6AddressList | None
+    UnassignedIpv6Prefixes: IpPrefixList | None
 
 
 class UnassignPrivateIpAddressesRequest(ServiceRequest):
-    Ipv4Prefixes: Optional[IpPrefixList]
+    Ipv4Prefixes: IpPrefixList | None
     NetworkInterfaceId: NetworkInterfaceId
-    PrivateIpAddresses: Optional[PrivateIpAddressStringList]
+    PrivateIpAddresses: PrivateIpAddressStringList | None
 
 
 class UnassignPrivateNatGatewayAddressRequest(ServiceRequest):
     NatGatewayId: NatGatewayId
     PrivateIpAddresses: IpList
-    MaxDrainDurationSeconds: Optional[DrainSeconds]
-    DryRun: Optional[Boolean]
+    MaxDrainDurationSeconds: DrainSeconds | None
+    DryRun: Boolean | None
 
 
 class UnassignPrivateNatGatewayAddressResult(TypedDict, total=False):
-    NatGatewayId: Optional[NatGatewayId]
-    NatGatewayAddresses: Optional[NatGatewayAddressList]
+    NatGatewayId: NatGatewayId | None
+    NatGatewayAddresses: NatGatewayAddressList | None
 
 
 class UnlockSnapshotRequest(ServiceRequest):
     SnapshotId: SnapshotId
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class UnlockSnapshotResult(TypedDict, total=False):
-    SnapshotId: Optional[String]
+    SnapshotId: String | None
 
 
 class UnmonitorInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class UnmonitorInstancesResult(TypedDict, total=False):
-    InstanceMonitorings: Optional[InstanceMonitoringList]
+    InstanceMonitorings: InstanceMonitoringList | None
 
 
 class UpdateCapacityManagerOrganizationsAccessRequest(ServiceRequest):
     OrganizationsAccess: BoxedBoolean
-    DryRun: Optional[Boolean]
-    ClientToken: Optional[String]
+    DryRun: Boolean | None
+    ClientToken: String | None
 
 
 class UpdateCapacityManagerOrganizationsAccessResult(TypedDict, total=False):
-    CapacityManagerStatus: Optional[CapacityManagerStatus]
-    OrganizationsAccess: Optional[Boolean]
+    CapacityManagerStatus: CapacityManagerStatus | None
+    OrganizationsAccess: Boolean | None
 
 
 class UpdateSecurityGroupRuleDescriptionsEgressRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    GroupId: Optional[SecurityGroupId]
-    GroupName: Optional[SecurityGroupName]
-    IpPermissions: Optional[IpPermissionList]
-    SecurityGroupRuleDescriptions: Optional[SecurityGroupRuleDescriptionList]
+    DryRun: Boolean | None
+    GroupId: SecurityGroupId | None
+    GroupName: SecurityGroupName | None
+    IpPermissions: IpPermissionList | None
+    SecurityGroupRuleDescriptions: SecurityGroupRuleDescriptionList | None
 
 
 class UpdateSecurityGroupRuleDescriptionsEgressResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class UpdateSecurityGroupRuleDescriptionsIngressRequest(ServiceRequest):
-    DryRun: Optional[Boolean]
-    GroupId: Optional[SecurityGroupId]
-    GroupName: Optional[SecurityGroupName]
-    IpPermissions: Optional[IpPermissionList]
-    SecurityGroupRuleDescriptions: Optional[SecurityGroupRuleDescriptionList]
+    DryRun: Boolean | None
+    GroupId: SecurityGroupId | None
+    GroupName: SecurityGroupName | None
+    IpPermissions: IpPermissionList | None
+    SecurityGroupRuleDescriptions: SecurityGroupRuleDescriptionList | None
 
 
 class UpdateSecurityGroupRuleDescriptionsIngressResult(TypedDict, total=False):
-    Return: Optional[Boolean]
+    Return: Boolean | None
 
 
 class WithdrawByoipCidrRequest(ServiceRequest):
     Cidr: String
-    DryRun: Optional[Boolean]
+    DryRun: Boolean | None
 
 
 class WithdrawByoipCidrResult(TypedDict, total=False):
-    ByoipCidr: Optional[ByoipCidr]
+    ByoipCidr: ByoipCidr | None
 
 
 class Ec2Api:
-    service = "ec2"
-    version = "2016-11-15"
+    service: str = "ec2"
+    version: str = "2016-11-15"
 
     @handler("AcceptAddressTransfer")
     def accept_address_transfer(
@@ -23049,6 +23083,7 @@ class Ec2Api:
         description: String | None = None,
         tag_specifications: TagSpecificationList | None = None,
         client_token: String | None = None,
+        external_authority_configuration: ExternalAuthorityConfiguration | None = None,
         **kwargs,
     ) -> CreateIpamScopeResult:
         raise NotImplementedError
@@ -27335,8 +27370,9 @@ class Ec2Api:
     def disable_fast_snapshot_restores(
         self,
         context: RequestContext,
-        availability_zones: AvailabilityZoneStringList,
         source_snapshot_ids: SnapshotIdStringList,
+        availability_zones: AvailabilityZoneStringList | None = None,
+        availability_zone_ids: AvailabilityZoneIdStringList | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> DisableFastSnapshotRestoresResult:
@@ -27687,8 +27723,9 @@ class Ec2Api:
     def enable_fast_snapshot_restores(
         self,
         context: RequestContext,
-        availability_zones: AvailabilityZoneStringList,
         source_snapshot_ids: SnapshotIdStringList,
+        availability_zones: AvailabilityZoneStringList | None = None,
+        availability_zone_ids: AvailabilityZoneIdStringList | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> EnableFastSnapshotRestoresResult:
@@ -29153,6 +29190,8 @@ class Ec2Api:
         ipam_scope_id: IpamScopeId,
         dry_run: Boolean | None = None,
         description: String | None = None,
+        external_authority_configuration: ExternalAuthorityConfiguration | None = None,
+        remove_external_authority_configuration: Boolean | None = None,
         **kwargs,
     ) -> ModifyIpamScopeResult:
         raise NotImplementedError

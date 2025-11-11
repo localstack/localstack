@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -900,17 +900,17 @@ class TypeNotFoundException(ServiceException):
 
 
 class AccountGateResult(TypedDict, total=False):
-    Status: Optional[AccountGateStatus]
-    StatusReason: Optional[AccountGateStatusReason]
+    Status: AccountGateStatus | None
+    StatusReason: AccountGateStatusReason | None
 
 
 class AccountLimit(TypedDict, total=False):
-    Name: Optional[LimitName]
-    Value: Optional[LimitValue]
+    Name: LimitName | None
+    Value: LimitValue | None
 
 
-AccountLimitList = List[AccountLimit]
-AccountList = List[Account]
+AccountLimitList = list[AccountLimit]
+AccountList = list[Account]
 
 
 class ActivateOrganizationsAccessInput(ServiceRequest):
@@ -930,46 +930,46 @@ class LoggingConfig(TypedDict, total=False):
 
 
 class ActivateTypeInput(ServiceRequest):
-    Type: Optional[ThirdPartyType]
-    PublicTypeArn: Optional[ThirdPartyTypeArn]
-    PublisherId: Optional[PublisherId]
-    TypeName: Optional[TypeName]
-    TypeNameAlias: Optional[TypeName]
-    AutoUpdate: Optional[AutoUpdate]
-    LoggingConfig: Optional[LoggingConfig]
-    ExecutionRoleArn: Optional[RoleArn]
-    VersionBump: Optional[VersionBump]
-    MajorVersion: Optional[MajorVersion]
+    Type: ThirdPartyType | None
+    PublicTypeArn: ThirdPartyTypeArn | None
+    PublisherId: PublisherId | None
+    TypeName: TypeName | None
+    TypeNameAlias: TypeName | None
+    AutoUpdate: AutoUpdate | None
+    LoggingConfig: LoggingConfig | None
+    ExecutionRoleArn: RoleArn | None
+    VersionBump: VersionBump | None
+    MajorVersion: MajorVersion | None
 
 
 class ActivateTypeOutput(TypedDict, total=False):
-    Arn: Optional[PrivateTypeArn]
+    Arn: PrivateTypeArn | None
 
 
-AllowedValues = List[AllowedValue]
+AllowedValues = list[AllowedValue]
 
 
 class AutoDeployment(TypedDict, total=False):
-    Enabled: Optional[AutoDeploymentNullable]
-    RetainStacksOnAccountRemoval: Optional[RetainStacksOnAccountRemovalNullable]
+    Enabled: AutoDeploymentNullable | None
+    RetainStacksOnAccountRemoval: RetainStacksOnAccountRemovalNullable | None
 
 
 class TypeConfigurationIdentifier(TypedDict, total=False):
-    TypeArn: Optional[TypeArn]
-    TypeConfigurationAlias: Optional[TypeConfigurationAlias]
-    TypeConfigurationArn: Optional[TypeConfigurationArn]
-    Type: Optional[ThirdPartyType]
-    TypeName: Optional[TypeName]
+    TypeArn: TypeArn | None
+    TypeConfigurationAlias: TypeConfigurationAlias | None
+    TypeConfigurationArn: TypeConfigurationArn | None
+    Type: ThirdPartyType | None
+    TypeName: TypeName | None
 
 
 class BatchDescribeTypeConfigurationsError(TypedDict, total=False):
-    ErrorCode: Optional[ErrorCode]
-    ErrorMessage: Optional[ErrorMessage]
-    TypeConfigurationIdentifier: Optional[TypeConfigurationIdentifier]
+    ErrorCode: ErrorCode | None
+    ErrorMessage: ErrorMessage | None
+    TypeConfigurationIdentifier: TypeConfigurationIdentifier | None
 
 
-BatchDescribeTypeConfigurationsErrors = List[BatchDescribeTypeConfigurationsError]
-TypeConfigurationIdentifiers = List[TypeConfigurationIdentifier]
+BatchDescribeTypeConfigurationsErrors = list[BatchDescribeTypeConfigurationsError]
+TypeConfigurationIdentifiers = list[TypeConfigurationIdentifier]
 
 
 class BatchDescribeTypeConfigurationsInput(ServiceRequest):
@@ -980,137 +980,137 @@ Timestamp = datetime
 
 
 class TypeConfigurationDetails(TypedDict, total=False):
-    Arn: Optional[TypeConfigurationArn]
-    Alias: Optional[TypeConfigurationAlias]
-    Configuration: Optional[TypeConfiguration]
-    LastUpdated: Optional[Timestamp]
-    TypeArn: Optional[TypeArn]
-    TypeName: Optional[TypeName]
-    IsDefaultConfiguration: Optional[IsDefaultConfiguration]
+    Arn: TypeConfigurationArn | None
+    Alias: TypeConfigurationAlias | None
+    Configuration: TypeConfiguration | None
+    LastUpdated: Timestamp | None
+    TypeArn: TypeArn | None
+    TypeName: TypeName | None
+    IsDefaultConfiguration: IsDefaultConfiguration | None
 
 
-TypeConfigurationDetailsList = List[TypeConfigurationDetails]
-UnprocessedTypeConfigurations = List[TypeConfigurationIdentifier]
+TypeConfigurationDetailsList = list[TypeConfigurationDetails]
+UnprocessedTypeConfigurations = list[TypeConfigurationIdentifier]
 
 
 class BatchDescribeTypeConfigurationsOutput(TypedDict, total=False):
-    Errors: Optional[BatchDescribeTypeConfigurationsErrors]
-    UnprocessedTypeConfigurations: Optional[UnprocessedTypeConfigurations]
-    TypeConfigurations: Optional[TypeConfigurationDetailsList]
+    Errors: BatchDescribeTypeConfigurationsErrors | None
+    UnprocessedTypeConfigurations: UnprocessedTypeConfigurations | None
+    TypeConfigurations: TypeConfigurationDetailsList | None
 
 
 class CancelUpdateStackInput(ServiceRequest):
     StackName: StackName
-    ClientRequestToken: Optional[ClientRequestToken]
+    ClientRequestToken: ClientRequestToken | None
 
 
-Capabilities = List[Capability]
+Capabilities = list[Capability]
 
 
 class ModuleInfo(TypedDict, total=False):
-    TypeHierarchy: Optional[TypeHierarchy]
-    LogicalIdHierarchy: Optional[LogicalIdHierarchy]
+    TypeHierarchy: TypeHierarchy | None
+    LogicalIdHierarchy: LogicalIdHierarchy | None
 
 
 class ResourceTargetDefinition(TypedDict, total=False):
-    Attribute: Optional[ResourceAttribute]
-    Name: Optional[PropertyName]
-    RequiresRecreation: Optional[RequiresRecreation]
-    Path: Optional[ResourcePropertyPath]
-    BeforeValue: Optional[BeforeValue]
-    AfterValue: Optional[AfterValue]
-    AttributeChangeType: Optional[AttributeChangeType]
+    Attribute: ResourceAttribute | None
+    Name: PropertyName | None
+    RequiresRecreation: RequiresRecreation | None
+    Path: ResourcePropertyPath | None
+    BeforeValue: BeforeValue | None
+    AfterValue: AfterValue | None
+    AttributeChangeType: AttributeChangeType | None
 
 
 class ResourceChangeDetail(TypedDict, total=False):
-    Target: Optional[ResourceTargetDefinition]
-    Evaluation: Optional[EvaluationType]
-    ChangeSource: Optional[ChangeSource]
-    CausingEntity: Optional[CausingEntity]
+    Target: ResourceTargetDefinition | None
+    Evaluation: EvaluationType | None
+    ChangeSource: ChangeSource | None
+    CausingEntity: CausingEntity | None
 
 
-ResourceChangeDetails = List[ResourceChangeDetail]
-Scope = List[ResourceAttribute]
+ResourceChangeDetails = list[ResourceChangeDetail]
+Scope = list[ResourceAttribute]
 
 
 class ResourceChange(TypedDict, total=False):
-    PolicyAction: Optional[PolicyAction]
-    Action: Optional[ChangeAction]
-    LogicalResourceId: Optional[LogicalResourceId]
-    PhysicalResourceId: Optional[PhysicalResourceId]
-    ResourceType: Optional[ResourceType]
-    Replacement: Optional[Replacement]
-    Scope: Optional[Scope]
-    Details: Optional[ResourceChangeDetails]
-    ChangeSetId: Optional[ChangeSetId]
-    ModuleInfo: Optional[ModuleInfo]
-    BeforeContext: Optional[BeforeContext]
-    AfterContext: Optional[AfterContext]
+    PolicyAction: PolicyAction | None
+    Action: ChangeAction | None
+    LogicalResourceId: LogicalResourceId | None
+    PhysicalResourceId: PhysicalResourceId | None
+    ResourceType: ResourceType | None
+    Replacement: Replacement | None
+    Scope: Scope | None
+    Details: ResourceChangeDetails | None
+    ChangeSetId: ChangeSetId | None
+    ModuleInfo: ModuleInfo | None
+    BeforeContext: BeforeContext | None
+    AfterContext: AfterContext | None
 
 
 class Change(TypedDict, total=False):
-    Type: Optional[ChangeType]
-    HookInvocationCount: Optional[HookInvocationCount]
-    ResourceChange: Optional[ResourceChange]
+    Type: ChangeType | None
+    HookInvocationCount: HookInvocationCount | None
+    ResourceChange: ResourceChange | None
 
 
 class ChangeSetHookResourceTargetDetails(TypedDict, total=False):
-    LogicalResourceId: Optional[LogicalResourceId]
-    ResourceType: Optional[HookTargetTypeName]
-    ResourceAction: Optional[ChangeAction]
+    LogicalResourceId: LogicalResourceId | None
+    ResourceType: HookTargetTypeName | None
+    ResourceAction: ChangeAction | None
 
 
 class ChangeSetHookTargetDetails(TypedDict, total=False):
-    TargetType: Optional[HookTargetType]
-    ResourceTargetDetails: Optional[ChangeSetHookResourceTargetDetails]
+    TargetType: HookTargetType | None
+    ResourceTargetDetails: ChangeSetHookResourceTargetDetails | None
 
 
 class ChangeSetHook(TypedDict, total=False):
-    InvocationPoint: Optional[HookInvocationPoint]
-    FailureMode: Optional[HookFailureMode]
-    TypeName: Optional[HookTypeName]
-    TypeVersionId: Optional[HookTypeVersionId]
-    TypeConfigurationVersionId: Optional[HookTypeConfigurationVersionId]
-    TargetDetails: Optional[ChangeSetHookTargetDetails]
+    InvocationPoint: HookInvocationPoint | None
+    FailureMode: HookFailureMode | None
+    TypeName: HookTypeName | None
+    TypeVersionId: HookTypeVersionId | None
+    TypeConfigurationVersionId: HookTypeConfigurationVersionId | None
+    TargetDetails: ChangeSetHookTargetDetails | None
 
 
-ChangeSetHooks = List[ChangeSetHook]
+ChangeSetHooks = list[ChangeSetHook]
 CreationTime = datetime
 
 
 class ChangeSetSummary(TypedDict, total=False):
-    StackId: Optional[StackId]
-    StackName: Optional[StackName]
-    ChangeSetId: Optional[ChangeSetId]
-    ChangeSetName: Optional[ChangeSetName]
-    ExecutionStatus: Optional[ExecutionStatus]
-    Status: Optional[ChangeSetStatus]
-    StatusReason: Optional[ChangeSetStatusReason]
-    CreationTime: Optional[CreationTime]
-    Description: Optional[Description]
-    IncludeNestedStacks: Optional[IncludeNestedStacks]
-    ParentChangeSetId: Optional[ChangeSetId]
-    RootChangeSetId: Optional[ChangeSetId]
-    ImportExistingResources: Optional[ImportExistingResources]
+    StackId: StackId | None
+    StackName: StackName | None
+    ChangeSetId: ChangeSetId | None
+    ChangeSetName: ChangeSetName | None
+    ExecutionStatus: ExecutionStatus | None
+    Status: ChangeSetStatus | None
+    StatusReason: ChangeSetStatusReason | None
+    CreationTime: CreationTime | None
+    Description: Description | None
+    IncludeNestedStacks: IncludeNestedStacks | None
+    ParentChangeSetId: ChangeSetId | None
+    RootChangeSetId: ChangeSetId | None
+    ImportExistingResources: ImportExistingResources | None
 
 
-ChangeSetSummaries = List[ChangeSetSummary]
-Changes = List[Change]
-ResourcesToSkip = List[ResourceToSkip]
+ChangeSetSummaries = list[ChangeSetSummary]
+Changes = list[Change]
+ResourcesToSkip = list[ResourceToSkip]
 
 
 class ContinueUpdateRollbackInput(ServiceRequest):
     StackName: StackNameOrId
-    RoleARN: Optional[RoleARN]
-    ResourcesToSkip: Optional[ResourcesToSkip]
-    ClientRequestToken: Optional[ClientRequestToken]
+    RoleARN: RoleARN | None
+    ResourcesToSkip: ResourcesToSkip | None
+    ClientRequestToken: ClientRequestToken | None
 
 
 class ContinueUpdateRollbackOutput(TypedDict, total=False):
     pass
 
 
-ResourceIdentifierProperties = Dict[ResourceIdentifierPropertyKey, ResourceIdentifierPropertyValue]
+ResourceIdentifierProperties = dict[ResourceIdentifierPropertyKey, ResourceIdentifierPropertyValue]
 
 
 class ResourceToImport(TypedDict, total=False):
@@ -1119,7 +1119,7 @@ class ResourceToImport(TypedDict, total=False):
     ResourceIdentifier: ResourceIdentifierProperties
 
 
-ResourcesToImport = List[ResourceToImport]
+ResourcesToImport = list[ResourceToImport]
 
 
 class Tag(TypedDict, total=False):
@@ -1127,8 +1127,8 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-Tags = List[Tag]
-NotificationARNs = List[NotificationARN]
+Tags = list[Tag]
+NotificationARNs = list[NotificationARN]
 
 
 class RollbackTrigger(TypedDict, total=False):
@@ -1136,149 +1136,149 @@ class RollbackTrigger(TypedDict, total=False):
     Type: Type
 
 
-RollbackTriggers = List[RollbackTrigger]
+RollbackTriggers = list[RollbackTrigger]
 
 
 class RollbackConfiguration(TypedDict, total=False):
-    RollbackTriggers: Optional[RollbackTriggers]
-    MonitoringTimeInMinutes: Optional[MonitoringTimeInMinutes]
+    RollbackTriggers: RollbackTriggers | None
+    MonitoringTimeInMinutes: MonitoringTimeInMinutes | None
 
 
-ResourceTypes = List[ResourceType]
+ResourceTypes = list[ResourceType]
 
 
 class Parameter(TypedDict, total=False):
-    ParameterKey: Optional[ParameterKey]
-    ParameterValue: Optional[ParameterValue]
-    UsePreviousValue: Optional[UsePreviousValue]
-    ResolvedValue: Optional[ParameterValue]
+    ParameterKey: ParameterKey | None
+    ParameterValue: ParameterValue | None
+    UsePreviousValue: UsePreviousValue | None
+    ResolvedValue: ParameterValue | None
 
 
-Parameters = List[Parameter]
+Parameters = list[Parameter]
 
 
 class CreateChangeSetInput(ServiceRequest):
     StackName: StackNameOrId
-    TemplateBody: Optional[TemplateBody]
-    TemplateURL: Optional[TemplateURL]
-    UsePreviousTemplate: Optional[UsePreviousTemplate]
-    Parameters: Optional[Parameters]
-    Capabilities: Optional[Capabilities]
-    ResourceTypes: Optional[ResourceTypes]
-    RoleARN: Optional[RoleARN]
-    RollbackConfiguration: Optional[RollbackConfiguration]
-    NotificationARNs: Optional[NotificationARNs]
-    Tags: Optional[Tags]
+    TemplateBody: TemplateBody | None
+    TemplateURL: TemplateURL | None
+    UsePreviousTemplate: UsePreviousTemplate | None
+    Parameters: Parameters | None
+    Capabilities: Capabilities | None
+    ResourceTypes: ResourceTypes | None
+    RoleARN: RoleARN | None
+    RollbackConfiguration: RollbackConfiguration | None
+    NotificationARNs: NotificationARNs | None
+    Tags: Tags | None
     ChangeSetName: ChangeSetName
-    ClientToken: Optional[ClientToken]
-    Description: Optional[Description]
-    ChangeSetType: Optional[ChangeSetType]
-    ResourcesToImport: Optional[ResourcesToImport]
-    IncludeNestedStacks: Optional[IncludeNestedStacks]
-    OnStackFailure: Optional[OnStackFailure]
-    ImportExistingResources: Optional[ImportExistingResources]
+    ClientToken: ClientToken | None
+    Description: Description | None
+    ChangeSetType: ChangeSetType | None
+    ResourcesToImport: ResourcesToImport | None
+    IncludeNestedStacks: IncludeNestedStacks | None
+    OnStackFailure: OnStackFailure | None
+    ImportExistingResources: ImportExistingResources | None
 
 
 class CreateChangeSetOutput(TypedDict, total=False):
-    Id: Optional[ChangeSetId]
-    StackId: Optional[StackId]
+    Id: ChangeSetId | None
+    StackId: StackId | None
 
 
 class TemplateConfiguration(TypedDict, total=False):
-    DeletionPolicy: Optional[GeneratedTemplateDeletionPolicy]
-    UpdateReplacePolicy: Optional[GeneratedTemplateUpdateReplacePolicy]
+    DeletionPolicy: GeneratedTemplateDeletionPolicy | None
+    UpdateReplacePolicy: GeneratedTemplateUpdateReplacePolicy | None
 
 
 class ResourceDefinition(TypedDict, total=False):
     ResourceType: ResourceType
-    LogicalResourceId: Optional[LogicalResourceId]
+    LogicalResourceId: LogicalResourceId | None
     ResourceIdentifier: ResourceIdentifierProperties
 
 
-ResourceDefinitions = List[ResourceDefinition]
+ResourceDefinitions = list[ResourceDefinition]
 
 
 class CreateGeneratedTemplateInput(ServiceRequest):
-    Resources: Optional[ResourceDefinitions]
+    Resources: ResourceDefinitions | None
     GeneratedTemplateName: GeneratedTemplateName
-    StackName: Optional[StackName]
-    TemplateConfiguration: Optional[TemplateConfiguration]
+    StackName: StackName | None
+    TemplateConfiguration: TemplateConfiguration | None
 
 
 class CreateGeneratedTemplateOutput(TypedDict, total=False):
-    GeneratedTemplateId: Optional[GeneratedTemplateId]
+    GeneratedTemplateId: GeneratedTemplateId | None
 
 
 class CreateStackInput(ServiceRequest):
     StackName: StackName
-    TemplateBody: Optional[TemplateBody]
-    TemplateURL: Optional[TemplateURL]
-    Parameters: Optional[Parameters]
-    DisableRollback: Optional[DisableRollback]
-    RollbackConfiguration: Optional[RollbackConfiguration]
-    TimeoutInMinutes: Optional[TimeoutMinutes]
-    NotificationARNs: Optional[NotificationARNs]
-    Capabilities: Optional[Capabilities]
-    ResourceTypes: Optional[ResourceTypes]
-    RoleARN: Optional[RoleARN]
-    OnFailure: Optional[OnFailure]
-    StackPolicyBody: Optional[StackPolicyBody]
-    StackPolicyURL: Optional[StackPolicyURL]
-    Tags: Optional[Tags]
-    ClientRequestToken: Optional[ClientRequestToken]
-    EnableTerminationProtection: Optional[EnableTerminationProtection]
-    RetainExceptOnCreate: Optional[RetainExceptOnCreate]
+    TemplateBody: TemplateBody | None
+    TemplateURL: TemplateURL | None
+    Parameters: Parameters | None
+    DisableRollback: DisableRollback | None
+    RollbackConfiguration: RollbackConfiguration | None
+    TimeoutInMinutes: TimeoutMinutes | None
+    NotificationARNs: NotificationARNs | None
+    Capabilities: Capabilities | None
+    ResourceTypes: ResourceTypes | None
+    RoleARN: RoleARN | None
+    OnFailure: OnFailure | None
+    StackPolicyBody: StackPolicyBody | None
+    StackPolicyURL: StackPolicyURL | None
+    Tags: Tags | None
+    ClientRequestToken: ClientRequestToken | None
+    EnableTerminationProtection: EnableTerminationProtection | None
+    RetainExceptOnCreate: RetainExceptOnCreate | None
 
 
-RegionList = List[Region]
+RegionList = list[Region]
 
 
 class StackSetOperationPreferences(TypedDict, total=False):
-    RegionConcurrencyType: Optional[RegionConcurrencyType]
-    RegionOrder: Optional[RegionList]
-    FailureToleranceCount: Optional[FailureToleranceCount]
-    FailureTolerancePercentage: Optional[FailureTolerancePercentage]
-    MaxConcurrentCount: Optional[MaxConcurrentCount]
-    MaxConcurrentPercentage: Optional[MaxConcurrentPercentage]
-    ConcurrencyMode: Optional[ConcurrencyMode]
+    RegionConcurrencyType: RegionConcurrencyType | None
+    RegionOrder: RegionList | None
+    FailureToleranceCount: FailureToleranceCount | None
+    FailureTolerancePercentage: FailureTolerancePercentage | None
+    MaxConcurrentCount: MaxConcurrentCount | None
+    MaxConcurrentPercentage: MaxConcurrentPercentage | None
+    ConcurrencyMode: ConcurrencyMode | None
 
 
-OrganizationalUnitIdList = List[OrganizationalUnitId]
+OrganizationalUnitIdList = list[OrganizationalUnitId]
 
 
 class DeploymentTargets(TypedDict, total=False):
-    Accounts: Optional[AccountList]
-    AccountsUrl: Optional[AccountsUrl]
-    OrganizationalUnitIds: Optional[OrganizationalUnitIdList]
-    AccountFilterType: Optional[AccountFilterType]
+    Accounts: AccountList | None
+    AccountsUrl: AccountsUrl | None
+    OrganizationalUnitIds: OrganizationalUnitIdList | None
+    AccountFilterType: AccountFilterType | None
 
 
 class CreateStackInstancesInput(ServiceRequest):
     StackSetName: StackSetName
-    Accounts: Optional[AccountList]
-    DeploymentTargets: Optional[DeploymentTargets]
+    Accounts: AccountList | None
+    DeploymentTargets: DeploymentTargets | None
     Regions: RegionList
-    ParameterOverrides: Optional[Parameters]
-    OperationPreferences: Optional[StackSetOperationPreferences]
-    OperationId: Optional[ClientRequestToken]
-    CallAs: Optional[CallAs]
+    ParameterOverrides: Parameters | None
+    OperationPreferences: StackSetOperationPreferences | None
+    OperationId: ClientRequestToken | None
+    CallAs: CallAs | None
 
 
 class CreateStackInstancesOutput(TypedDict, total=False):
-    OperationId: Optional[ClientRequestToken]
+    OperationId: ClientRequestToken | None
 
 
 class CreateStackOutput(TypedDict, total=False):
-    StackId: Optional[StackId]
+    StackId: StackId | None
 
 
 class StackDefinition(TypedDict, total=False):
-    StackName: Optional[StackName]
-    TemplateBody: Optional[TemplateBody]
-    TemplateURL: Optional[TemplateURL]
+    StackName: StackName | None
+    TemplateBody: TemplateBody | None
+    TemplateURL: TemplateURL | None
 
 
-StackDefinitions = List[StackDefinition]
+StackDefinitions = list[StackDefinition]
 
 
 class ResourceLocation(TypedDict, total=False):
@@ -1291,13 +1291,13 @@ class ResourceMapping(TypedDict, total=False):
     Destination: ResourceLocation
 
 
-ResourceMappings = List[ResourceMapping]
+ResourceMappings = list[ResourceMapping]
 
 
 class CreateStackRefactorInput(ServiceRequest):
-    Description: Optional[Description]
-    EnableStackCreation: Optional[EnableStackCreation]
-    ResourceMappings: Optional[ResourceMappings]
+    Description: Description | None
+    EnableStackCreation: EnableStackCreation | None
+    ResourceMappings: ResourceMappings | None
     StackDefinitions: StackDefinitions
 
 
@@ -1306,29 +1306,29 @@ class CreateStackRefactorOutput(TypedDict, total=False):
 
 
 class ManagedExecution(TypedDict, total=False):
-    Active: Optional[ManagedExecutionNullable]
+    Active: ManagedExecutionNullable | None
 
 
 class CreateStackSetInput(ServiceRequest):
     StackSetName: StackSetName
-    Description: Optional[Description]
-    TemplateBody: Optional[TemplateBody]
-    TemplateURL: Optional[TemplateURL]
-    StackId: Optional[StackId]
-    Parameters: Optional[Parameters]
-    Capabilities: Optional[Capabilities]
-    Tags: Optional[Tags]
-    AdministrationRoleARN: Optional[RoleARN]
-    ExecutionRoleName: Optional[ExecutionRoleName]
-    PermissionModel: Optional[PermissionModels]
-    AutoDeployment: Optional[AutoDeployment]
-    CallAs: Optional[CallAs]
-    ClientRequestToken: Optional[ClientRequestToken]
-    ManagedExecution: Optional[ManagedExecution]
+    Description: Description | None
+    TemplateBody: TemplateBody | None
+    TemplateURL: TemplateURL | None
+    StackId: StackId | None
+    Parameters: Parameters | None
+    Capabilities: Capabilities | None
+    Tags: Tags | None
+    AdministrationRoleARN: RoleARN | None
+    ExecutionRoleName: ExecutionRoleName | None
+    PermissionModel: PermissionModels | None
+    AutoDeployment: AutoDeployment | None
+    CallAs: CallAs | None
+    ClientRequestToken: ClientRequestToken | None
+    ManagedExecution: ManagedExecution | None
 
 
 class CreateStackSetOutput(TypedDict, total=False):
-    StackSetId: Optional[StackSetId]
+    StackSetId: StackSetId | None
 
 
 class DeactivateOrganizationsAccessInput(ServiceRequest):
@@ -1340,9 +1340,9 @@ class DeactivateOrganizationsAccessOutput(TypedDict, total=False):
 
 
 class DeactivateTypeInput(ServiceRequest):
-    TypeName: Optional[TypeName]
-    Type: Optional[ThirdPartyType]
-    Arn: Optional[PrivateTypeArn]
+    TypeName: TypeName | None
+    Type: ThirdPartyType | None
+    Arn: PrivateTypeArn | None
 
 
 class DeactivateTypeOutput(TypedDict, total=False):
@@ -1351,7 +1351,7 @@ class DeactivateTypeOutput(TypedDict, total=False):
 
 class DeleteChangeSetInput(ServiceRequest):
     ChangeSetName: ChangeSetNameOrId
-    StackName: Optional[StackNameOrId]
+    StackName: StackNameOrId | None
 
 
 class DeleteChangeSetOutput(TypedDict, total=False):
@@ -1362,35 +1362,35 @@ class DeleteGeneratedTemplateInput(ServiceRequest):
     GeneratedTemplateName: GeneratedTemplateName
 
 
-RetainResources = List[LogicalResourceId]
+RetainResources = list[LogicalResourceId]
 
 
 class DeleteStackInput(ServiceRequest):
     StackName: StackName
-    RetainResources: Optional[RetainResources]
-    RoleARN: Optional[RoleARN]
-    ClientRequestToken: Optional[ClientRequestToken]
-    DeletionMode: Optional[DeletionMode]
+    RetainResources: RetainResources | None
+    RoleARN: RoleARN | None
+    ClientRequestToken: ClientRequestToken | None
+    DeletionMode: DeletionMode | None
 
 
 class DeleteStackInstancesInput(ServiceRequest):
     StackSetName: StackSetName
-    Accounts: Optional[AccountList]
-    DeploymentTargets: Optional[DeploymentTargets]
+    Accounts: AccountList | None
+    DeploymentTargets: DeploymentTargets | None
     Regions: RegionList
-    OperationPreferences: Optional[StackSetOperationPreferences]
+    OperationPreferences: StackSetOperationPreferences | None
     RetainStacks: RetainStacks
-    OperationId: Optional[ClientRequestToken]
-    CallAs: Optional[CallAs]
+    OperationId: ClientRequestToken | None
+    CallAs: CallAs | None
 
 
 class DeleteStackInstancesOutput(TypedDict, total=False):
-    OperationId: Optional[ClientRequestToken]
+    OperationId: ClientRequestToken | None
 
 
 class DeleteStackSetInput(ServiceRequest):
     StackSetName: StackSetName
-    CallAs: Optional[CallAs]
+    CallAs: CallAs | None
 
 
 class DeleteStackSetOutput(TypedDict, total=False):
@@ -1401,10 +1401,10 @@ DeletionTime = datetime
 
 
 class DeregisterTypeInput(ServiceRequest):
-    Arn: Optional[PrivateTypeArn]
-    Type: Optional[RegistryType]
-    TypeName: Optional[TypeName]
-    VersionId: Optional[TypeVersionId]
+    Arn: PrivateTypeArn | None
+    Type: RegistryType | None
+    TypeName: TypeName | None
+    VersionId: TypeVersionId | None
 
 
 class DeregisterTypeOutput(TypedDict, total=False):
@@ -1412,60 +1412,60 @@ class DeregisterTypeOutput(TypedDict, total=False):
 
 
 class DescribeAccountLimitsInput(ServiceRequest):
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class DescribeAccountLimitsOutput(TypedDict, total=False):
-    AccountLimits: Optional[AccountLimitList]
-    NextToken: Optional[NextToken]
+    AccountLimits: AccountLimitList | None
+    NextToken: NextToken | None
 
 
 class DescribeChangeSetHooksInput(ServiceRequest):
     ChangeSetName: ChangeSetNameOrId
-    StackName: Optional[StackNameOrId]
-    NextToken: Optional[NextToken]
-    LogicalResourceId: Optional[LogicalResourceId]
+    StackName: StackNameOrId | None
+    NextToken: NextToken | None
+    LogicalResourceId: LogicalResourceId | None
 
 
 class DescribeChangeSetHooksOutput(TypedDict, total=False):
-    ChangeSetId: Optional[ChangeSetId]
-    ChangeSetName: Optional[ChangeSetName]
-    Hooks: Optional[ChangeSetHooks]
-    Status: Optional[ChangeSetHooksStatus]
-    NextToken: Optional[NextToken]
-    StackId: Optional[StackId]
-    StackName: Optional[StackName]
+    ChangeSetId: ChangeSetId | None
+    ChangeSetName: ChangeSetName | None
+    Hooks: ChangeSetHooks | None
+    Status: ChangeSetHooksStatus | None
+    NextToken: NextToken | None
+    StackId: StackId | None
+    StackName: StackName | None
 
 
 class DescribeChangeSetInput(ServiceRequest):
     ChangeSetName: ChangeSetNameOrId
-    StackName: Optional[StackNameOrId]
-    NextToken: Optional[NextToken]
-    IncludePropertyValues: Optional[IncludePropertyValues]
+    StackName: StackNameOrId | None
+    NextToken: NextToken | None
+    IncludePropertyValues: IncludePropertyValues | None
 
 
 class DescribeChangeSetOutput(TypedDict, total=False):
-    ChangeSetName: Optional[ChangeSetName]
-    ChangeSetId: Optional[ChangeSetId]
-    StackId: Optional[StackId]
-    StackName: Optional[StackName]
-    Description: Optional[Description]
-    Parameters: Optional[Parameters]
-    CreationTime: Optional[CreationTime]
-    ExecutionStatus: Optional[ExecutionStatus]
-    Status: Optional[ChangeSetStatus]
-    StatusReason: Optional[ChangeSetStatusReason]
-    NotificationARNs: Optional[NotificationARNs]
-    RollbackConfiguration: Optional[RollbackConfiguration]
-    Capabilities: Optional[Capabilities]
-    Tags: Optional[Tags]
-    Changes: Optional[Changes]
-    NextToken: Optional[NextToken]
-    IncludeNestedStacks: Optional[IncludeNestedStacks]
-    ParentChangeSetId: Optional[ChangeSetId]
-    RootChangeSetId: Optional[ChangeSetId]
-    OnStackFailure: Optional[OnStackFailure]
-    ImportExistingResources: Optional[ImportExistingResources]
+    ChangeSetName: ChangeSetName | None
+    ChangeSetId: ChangeSetId | None
+    StackId: StackId | None
+    StackName: StackName | None
+    Description: Description | None
+    Parameters: Parameters | None
+    CreationTime: CreationTime | None
+    ExecutionStatus: ExecutionStatus | None
+    Status: ChangeSetStatus | None
+    StatusReason: ChangeSetStatusReason | None
+    NotificationARNs: NotificationARNs | None
+    RollbackConfiguration: RollbackConfiguration | None
+    Capabilities: Capabilities | None
+    Tags: Tags | None
+    Changes: Changes | None
+    NextToken: NextToken | None
+    IncludeNestedStacks: IncludeNestedStacks | None
+    ParentChangeSetId: ChangeSetId | None
+    RootChangeSetId: ChangeSetId | None
+    OnStackFailure: OnStackFailure | None
+    ImportExistingResources: ImportExistingResources | None
 
 
 class DescribeGeneratedTemplateInput(ServiceRequest):
@@ -1473,102 +1473,102 @@ class DescribeGeneratedTemplateInput(ServiceRequest):
 
 
 class TemplateProgress(TypedDict, total=False):
-    ResourcesSucceeded: Optional[ResourcesSucceeded]
-    ResourcesFailed: Optional[ResourcesFailed]
-    ResourcesProcessing: Optional[ResourcesProcessing]
-    ResourcesPending: Optional[ResourcesPending]
+    ResourcesSucceeded: ResourcesSucceeded | None
+    ResourcesFailed: ResourcesFailed | None
+    ResourcesProcessing: ResourcesProcessing | None
+    ResourcesPending: ResourcesPending | None
 
 
 LastUpdatedTime = datetime
 
 
 class WarningProperty(TypedDict, total=False):
-    PropertyPath: Optional[PropertyPath]
-    Required: Optional[RequiredProperty]
-    Description: Optional[PropertyDescription]
+    PropertyPath: PropertyPath | None
+    Required: RequiredProperty | None
+    Description: PropertyDescription | None
 
 
-WarningProperties = List[WarningProperty]
+WarningProperties = list[WarningProperty]
 
 
 class WarningDetail(TypedDict, total=False):
-    Type: Optional[WarningType]
-    Properties: Optional[WarningProperties]
+    Type: WarningType | None
+    Properties: WarningProperties | None
 
 
-WarningDetails = List[WarningDetail]
+WarningDetails = list[WarningDetail]
 
 
 class ResourceDetail(TypedDict, total=False):
-    ResourceType: Optional[ResourceType]
-    LogicalResourceId: Optional[LogicalResourceId]
-    ResourceIdentifier: Optional[ResourceIdentifierProperties]
-    ResourceStatus: Optional[GeneratedTemplateResourceStatus]
-    ResourceStatusReason: Optional[ResourceStatusReason]
-    Warnings: Optional[WarningDetails]
+    ResourceType: ResourceType | None
+    LogicalResourceId: LogicalResourceId | None
+    ResourceIdentifier: ResourceIdentifierProperties | None
+    ResourceStatus: GeneratedTemplateResourceStatus | None
+    ResourceStatusReason: ResourceStatusReason | None
+    Warnings: WarningDetails | None
 
 
-ResourceDetails = List[ResourceDetail]
+ResourceDetails = list[ResourceDetail]
 
 
 class DescribeGeneratedTemplateOutput(TypedDict, total=False):
-    GeneratedTemplateId: Optional[GeneratedTemplateId]
-    GeneratedTemplateName: Optional[GeneratedTemplateName]
-    Resources: Optional[ResourceDetails]
-    Status: Optional[GeneratedTemplateStatus]
-    StatusReason: Optional[TemplateStatusReason]
-    CreationTime: Optional[CreationTime]
-    LastUpdatedTime: Optional[LastUpdatedTime]
-    Progress: Optional[TemplateProgress]
-    StackId: Optional[StackId]
-    TemplateConfiguration: Optional[TemplateConfiguration]
-    TotalWarnings: Optional[TotalWarnings]
+    GeneratedTemplateId: GeneratedTemplateId | None
+    GeneratedTemplateName: GeneratedTemplateName | None
+    Resources: ResourceDetails | None
+    Status: GeneratedTemplateStatus | None
+    StatusReason: TemplateStatusReason | None
+    CreationTime: CreationTime | None
+    LastUpdatedTime: LastUpdatedTime | None
+    Progress: TemplateProgress | None
+    StackId: StackId | None
+    TemplateConfiguration: TemplateConfiguration | None
+    TotalWarnings: TotalWarnings | None
 
 
 class DescribeOrganizationsAccessInput(ServiceRequest):
-    CallAs: Optional[CallAs]
+    CallAs: CallAs | None
 
 
 class DescribeOrganizationsAccessOutput(TypedDict, total=False):
-    Status: Optional[OrganizationStatus]
+    Status: OrganizationStatus | None
 
 
 class DescribePublisherInput(ServiceRequest):
-    PublisherId: Optional[PublisherId]
+    PublisherId: PublisherId | None
 
 
 class DescribePublisherOutput(TypedDict, total=False):
-    PublisherId: Optional[PublisherId]
-    PublisherStatus: Optional[PublisherStatus]
-    IdentityProvider: Optional[IdentityProvider]
-    PublisherProfile: Optional[PublisherProfile]
+    PublisherId: PublisherId | None
+    PublisherStatus: PublisherStatus | None
+    IdentityProvider: IdentityProvider | None
+    PublisherProfile: PublisherProfile | None
 
 
 class DescribeResourceScanInput(ServiceRequest):
     ResourceScanId: ResourceScanId
 
 
-ResourceTypeFilters = List[ResourceTypeFilter]
+ResourceTypeFilters = list[ResourceTypeFilter]
 
 
 class ScanFilter(TypedDict, total=False):
-    Types: Optional[ResourceTypeFilters]
+    Types: ResourceTypeFilters | None
 
 
-ScanFilters = List[ScanFilter]
+ScanFilters = list[ScanFilter]
 
 
 class DescribeResourceScanOutput(TypedDict, total=False):
-    ResourceScanId: Optional[ResourceScanId]
-    Status: Optional[ResourceScanStatus]
-    StatusReason: Optional[ResourceScanStatusReason]
-    StartTime: Optional[Timestamp]
-    EndTime: Optional[Timestamp]
-    PercentageCompleted: Optional[PercentageCompleted]
-    ResourceTypes: Optional[ResourceTypes]
-    ResourcesScanned: Optional[ResourcesScanned]
-    ResourcesRead: Optional[ResourcesRead]
-    ScanFilters: Optional[ScanFilters]
+    ResourceScanId: ResourceScanId | None
+    Status: ResourceScanStatus | None
+    StatusReason: ResourceScanStatusReason | None
+    StartTime: Timestamp | None
+    EndTime: Timestamp | None
+    PercentageCompleted: PercentageCompleted | None
+    ResourceTypes: ResourceTypes | None
+    ResourcesScanned: ResourcesScanned | None
+    ResourcesRead: ResourcesRead | None
+    ScanFilters: ScanFilters | None
 
 
 class DescribeStackDriftDetectionStatusInput(ServiceRequest):
@@ -1578,102 +1578,102 @@ class DescribeStackDriftDetectionStatusInput(ServiceRequest):
 class DescribeStackDriftDetectionStatusOutput(TypedDict, total=False):
     StackId: StackId
     StackDriftDetectionId: StackDriftDetectionId
-    StackDriftStatus: Optional[StackDriftStatus]
+    StackDriftStatus: StackDriftStatus | None
     DetectionStatus: StackDriftDetectionStatus
-    DetectionStatusReason: Optional[StackDriftDetectionStatusReason]
-    DriftedStackResourceCount: Optional[BoxedInteger]
+    DetectionStatusReason: StackDriftDetectionStatusReason | None
+    DriftedStackResourceCount: BoxedInteger | None
     Timestamp: Timestamp
 
 
 class DescribeStackEventsInput(ServiceRequest):
-    StackName: Optional[StackName]
-    NextToken: Optional[NextToken]
+    StackName: StackName | None
+    NextToken: NextToken | None
 
 
 class StackEvent(TypedDict, total=False):
     StackId: StackId
     EventId: EventId
     StackName: StackName
-    LogicalResourceId: Optional[LogicalResourceId]
-    PhysicalResourceId: Optional[PhysicalResourceId]
-    ResourceType: Optional[ResourceType]
+    LogicalResourceId: LogicalResourceId | None
+    PhysicalResourceId: PhysicalResourceId | None
+    ResourceType: ResourceType | None
     Timestamp: Timestamp
-    ResourceStatus: Optional[ResourceStatus]
-    ResourceStatusReason: Optional[ResourceStatusReason]
-    ResourceProperties: Optional[ResourceProperties]
-    ClientRequestToken: Optional[ClientRequestToken]
-    HookType: Optional[HookType]
-    HookStatus: Optional[HookStatus]
-    HookStatusReason: Optional[HookStatusReason]
-    HookInvocationPoint: Optional[HookInvocationPoint]
-    HookInvocationId: Optional[HookInvocationId]
-    HookFailureMode: Optional[HookFailureMode]
-    DetailedStatus: Optional[DetailedStatus]
+    ResourceStatus: ResourceStatus | None
+    ResourceStatusReason: ResourceStatusReason | None
+    ResourceProperties: ResourceProperties | None
+    ClientRequestToken: ClientRequestToken | None
+    HookType: HookType | None
+    HookStatus: HookStatus | None
+    HookStatusReason: HookStatusReason | None
+    HookInvocationPoint: HookInvocationPoint | None
+    HookInvocationId: HookInvocationId | None
+    HookFailureMode: HookFailureMode | None
+    DetailedStatus: DetailedStatus | None
 
 
-StackEvents = List[StackEvent]
+StackEvents = list[StackEvent]
 
 
 class DescribeStackEventsOutput(TypedDict, total=False):
-    StackEvents: Optional[StackEvents]
-    NextToken: Optional[NextToken]
+    StackEvents: StackEvents | None
+    NextToken: NextToken | None
 
 
 class DescribeStackInstanceInput(ServiceRequest):
     StackSetName: StackSetName
     StackInstanceAccount: Account
     StackInstanceRegion: Region
-    CallAs: Optional[CallAs]
+    CallAs: CallAs | None
 
 
 class StackInstanceComprehensiveStatus(TypedDict, total=False):
-    DetailedStatus: Optional[StackInstanceDetailedStatus]
+    DetailedStatus: StackInstanceDetailedStatus | None
 
 
 class StackInstance(TypedDict, total=False):
-    StackSetId: Optional[StackSetId]
-    Region: Optional[Region]
-    Account: Optional[Account]
-    StackId: Optional[StackId]
-    ParameterOverrides: Optional[Parameters]
-    Status: Optional[StackInstanceStatus]
-    StackInstanceStatus: Optional[StackInstanceComprehensiveStatus]
-    StatusReason: Optional[Reason]
-    OrganizationalUnitId: Optional[OrganizationalUnitId]
-    DriftStatus: Optional[StackDriftStatus]
-    LastDriftCheckTimestamp: Optional[Timestamp]
-    LastOperationId: Optional[ClientRequestToken]
+    StackSetId: StackSetId | None
+    Region: Region | None
+    Account: Account | None
+    StackId: StackId | None
+    ParameterOverrides: Parameters | None
+    Status: StackInstanceStatus | None
+    StackInstanceStatus: StackInstanceComprehensiveStatus | None
+    StatusReason: Reason | None
+    OrganizationalUnitId: OrganizationalUnitId | None
+    DriftStatus: StackDriftStatus | None
+    LastDriftCheckTimestamp: Timestamp | None
+    LastOperationId: ClientRequestToken | None
 
 
 class DescribeStackInstanceOutput(TypedDict, total=False):
-    StackInstance: Optional[StackInstance]
+    StackInstance: StackInstance | None
 
 
 class DescribeStackRefactorInput(ServiceRequest):
     StackRefactorId: StackRefactorId
 
 
-StackIds = List[StackId]
+StackIds = list[StackId]
 
 
 class DescribeStackRefactorOutput(TypedDict, total=False):
-    Description: Optional[Description]
-    StackRefactorId: Optional[StackRefactorId]
-    StackIds: Optional[StackIds]
-    ExecutionStatus: Optional[StackRefactorExecutionStatus]
-    ExecutionStatusReason: Optional[ExecutionStatusReason]
-    Status: Optional[StackRefactorStatus]
-    StatusReason: Optional[StackRefactorStatusReason]
+    Description: Description | None
+    StackRefactorId: StackRefactorId | None
+    StackIds: StackIds | None
+    ExecutionStatus: StackRefactorExecutionStatus | None
+    ExecutionStatusReason: ExecutionStatusReason | None
+    Status: StackRefactorStatus | None
+    StatusReason: StackRefactorStatusReason | None
 
 
-StackResourceDriftStatusFilters = List[StackResourceDriftStatus]
+StackResourceDriftStatusFilters = list[StackResourceDriftStatus]
 
 
 class DescribeStackResourceDriftsInput(ServiceRequest):
     StackName: StackNameOrId
-    StackResourceDriftStatusFilters: Optional[StackResourceDriftStatusFilters]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[BoxedMaxResults]
+    StackResourceDriftStatusFilters: StackResourceDriftStatusFilters | None
+    NextToken: NextToken | None
+    MaxResults: BoxedMaxResults | None
 
 
 class PropertyDifference(TypedDict, total=False):
@@ -1683,7 +1683,7 @@ class PropertyDifference(TypedDict, total=False):
     DifferenceType: DifferenceType
 
 
-PropertyDifferences = List[PropertyDifference]
+PropertyDifferences = list[PropertyDifference]
 
 
 class PhysicalResourceIdContextKeyValuePair(TypedDict, total=False):
@@ -1691,30 +1691,30 @@ class PhysicalResourceIdContextKeyValuePair(TypedDict, total=False):
     Value: Value
 
 
-PhysicalResourceIdContext = List[PhysicalResourceIdContextKeyValuePair]
+PhysicalResourceIdContext = list[PhysicalResourceIdContextKeyValuePair]
 
 
 class StackResourceDrift(TypedDict, total=False):
     StackId: StackId
     LogicalResourceId: LogicalResourceId
-    PhysicalResourceId: Optional[PhysicalResourceId]
-    PhysicalResourceIdContext: Optional[PhysicalResourceIdContext]
+    PhysicalResourceId: PhysicalResourceId | None
+    PhysicalResourceIdContext: PhysicalResourceIdContext | None
     ResourceType: ResourceType
-    ExpectedProperties: Optional[Properties]
-    ActualProperties: Optional[Properties]
-    PropertyDifferences: Optional[PropertyDifferences]
+    ExpectedProperties: Properties | None
+    ActualProperties: Properties | None
+    PropertyDifferences: PropertyDifferences | None
     StackResourceDriftStatus: StackResourceDriftStatus
     Timestamp: Timestamp
-    ModuleInfo: Optional[ModuleInfo]
-    DriftStatusReason: Optional[StackResourceDriftStatusReason]
+    ModuleInfo: ModuleInfo | None
+    DriftStatusReason: StackResourceDriftStatusReason | None
 
 
-StackResourceDrifts = List[StackResourceDrift]
+StackResourceDrifts = list[StackResourceDrift]
 
 
 class DescribeStackResourceDriftsOutput(TypedDict, total=False):
     StackResourceDrifts: StackResourceDrifts
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class DescribeStackResourceInput(ServiceRequest):
@@ -1724,232 +1724,232 @@ class DescribeStackResourceInput(ServiceRequest):
 
 class StackResourceDriftInformation(TypedDict, total=False):
     StackResourceDriftStatus: StackResourceDriftStatus
-    LastCheckTimestamp: Optional[Timestamp]
+    LastCheckTimestamp: Timestamp | None
 
 
 class StackResourceDetail(TypedDict, total=False):
-    StackName: Optional[StackName]
-    StackId: Optional[StackId]
+    StackName: StackName | None
+    StackId: StackId | None
     LogicalResourceId: LogicalResourceId
-    PhysicalResourceId: Optional[PhysicalResourceId]
+    PhysicalResourceId: PhysicalResourceId | None
     ResourceType: ResourceType
     LastUpdatedTimestamp: Timestamp
     ResourceStatus: ResourceStatus
-    ResourceStatusReason: Optional[ResourceStatusReason]
-    Description: Optional[Description]
-    Metadata: Optional[Metadata]
-    DriftInformation: Optional[StackResourceDriftInformation]
-    ModuleInfo: Optional[ModuleInfo]
+    ResourceStatusReason: ResourceStatusReason | None
+    Description: Description | None
+    Metadata: Metadata | None
+    DriftInformation: StackResourceDriftInformation | None
+    ModuleInfo: ModuleInfo | None
 
 
 class DescribeStackResourceOutput(TypedDict, total=False):
-    StackResourceDetail: Optional[StackResourceDetail]
+    StackResourceDetail: StackResourceDetail | None
 
 
 class DescribeStackResourcesInput(ServiceRequest):
-    StackName: Optional[StackName]
-    LogicalResourceId: Optional[LogicalResourceId]
-    PhysicalResourceId: Optional[PhysicalResourceId]
+    StackName: StackName | None
+    LogicalResourceId: LogicalResourceId | None
+    PhysicalResourceId: PhysicalResourceId | None
 
 
 class StackResource(TypedDict, total=False):
-    StackName: Optional[StackName]
-    StackId: Optional[StackId]
+    StackName: StackName | None
+    StackId: StackId | None
     LogicalResourceId: LogicalResourceId
-    PhysicalResourceId: Optional[PhysicalResourceId]
+    PhysicalResourceId: PhysicalResourceId | None
     ResourceType: ResourceType
     Timestamp: Timestamp
     ResourceStatus: ResourceStatus
-    ResourceStatusReason: Optional[ResourceStatusReason]
-    Description: Optional[Description]
-    DriftInformation: Optional[StackResourceDriftInformation]
-    ModuleInfo: Optional[ModuleInfo]
+    ResourceStatusReason: ResourceStatusReason | None
+    Description: Description | None
+    DriftInformation: StackResourceDriftInformation | None
+    ModuleInfo: ModuleInfo | None
 
 
-StackResources = List[StackResource]
+StackResources = list[StackResource]
 
 
 class DescribeStackResourcesOutput(TypedDict, total=False):
-    StackResources: Optional[StackResources]
+    StackResources: StackResources | None
 
 
 class DescribeStackSetInput(ServiceRequest):
     StackSetName: StackSetName
-    CallAs: Optional[CallAs]
+    CallAs: CallAs | None
 
 
 class DescribeStackSetOperationInput(ServiceRequest):
     StackSetName: StackSetName
     OperationId: ClientRequestToken
-    CallAs: Optional[CallAs]
+    CallAs: CallAs | None
 
 
 class StackSetOperationStatusDetails(TypedDict, total=False):
-    FailedStackInstancesCount: Optional[FailedStackInstancesCount]
+    FailedStackInstancesCount: FailedStackInstancesCount | None
 
 
 class StackSetDriftDetectionDetails(TypedDict, total=False):
-    DriftStatus: Optional[StackSetDriftStatus]
-    DriftDetectionStatus: Optional[StackSetDriftDetectionStatus]
-    LastDriftCheckTimestamp: Optional[Timestamp]
-    TotalStackInstancesCount: Optional[TotalStackInstancesCount]
-    DriftedStackInstancesCount: Optional[DriftedStackInstancesCount]
-    InSyncStackInstancesCount: Optional[InSyncStackInstancesCount]
-    InProgressStackInstancesCount: Optional[InProgressStackInstancesCount]
-    FailedStackInstancesCount: Optional[FailedStackInstancesCount]
+    DriftStatus: StackSetDriftStatus | None
+    DriftDetectionStatus: StackSetDriftDetectionStatus | None
+    LastDriftCheckTimestamp: Timestamp | None
+    TotalStackInstancesCount: TotalStackInstancesCount | None
+    DriftedStackInstancesCount: DriftedStackInstancesCount | None
+    InSyncStackInstancesCount: InSyncStackInstancesCount | None
+    InProgressStackInstancesCount: InProgressStackInstancesCount | None
+    FailedStackInstancesCount: FailedStackInstancesCount | None
 
 
 class StackSetOperation(TypedDict, total=False):
-    OperationId: Optional[ClientRequestToken]
-    StackSetId: Optional[StackSetId]
-    Action: Optional[StackSetOperationAction]
-    Status: Optional[StackSetOperationStatus]
-    OperationPreferences: Optional[StackSetOperationPreferences]
-    RetainStacks: Optional[RetainStacksNullable]
-    AdministrationRoleARN: Optional[RoleARN]
-    ExecutionRoleName: Optional[ExecutionRoleName]
-    CreationTimestamp: Optional[Timestamp]
-    EndTimestamp: Optional[Timestamp]
-    DeploymentTargets: Optional[DeploymentTargets]
-    StackSetDriftDetectionDetails: Optional[StackSetDriftDetectionDetails]
-    StatusReason: Optional[StackSetOperationStatusReason]
-    StatusDetails: Optional[StackSetOperationStatusDetails]
+    OperationId: ClientRequestToken | None
+    StackSetId: StackSetId | None
+    Action: StackSetOperationAction | None
+    Status: StackSetOperationStatus | None
+    OperationPreferences: StackSetOperationPreferences | None
+    RetainStacks: RetainStacksNullable | None
+    AdministrationRoleARN: RoleARN | None
+    ExecutionRoleName: ExecutionRoleName | None
+    CreationTimestamp: Timestamp | None
+    EndTimestamp: Timestamp | None
+    DeploymentTargets: DeploymentTargets | None
+    StackSetDriftDetectionDetails: StackSetDriftDetectionDetails | None
+    StatusReason: StackSetOperationStatusReason | None
+    StatusDetails: StackSetOperationStatusDetails | None
 
 
 class DescribeStackSetOperationOutput(TypedDict, total=False):
-    StackSetOperation: Optional[StackSetOperation]
+    StackSetOperation: StackSetOperation | None
 
 
 class StackSet(TypedDict, total=False):
-    StackSetName: Optional[StackSetName]
-    StackSetId: Optional[StackSetId]
-    Description: Optional[Description]
-    Status: Optional[StackSetStatus]
-    TemplateBody: Optional[TemplateBody]
-    Parameters: Optional[Parameters]
-    Capabilities: Optional[Capabilities]
-    Tags: Optional[Tags]
-    StackSetARN: Optional[StackSetARN]
-    AdministrationRoleARN: Optional[RoleARN]
-    ExecutionRoleName: Optional[ExecutionRoleName]
-    StackSetDriftDetectionDetails: Optional[StackSetDriftDetectionDetails]
-    AutoDeployment: Optional[AutoDeployment]
-    PermissionModel: Optional[PermissionModels]
-    OrganizationalUnitIds: Optional[OrganizationalUnitIdList]
-    ManagedExecution: Optional[ManagedExecution]
-    Regions: Optional[RegionList]
+    StackSetName: StackSetName | None
+    StackSetId: StackSetId | None
+    Description: Description | None
+    Status: StackSetStatus | None
+    TemplateBody: TemplateBody | None
+    Parameters: Parameters | None
+    Capabilities: Capabilities | None
+    Tags: Tags | None
+    StackSetARN: StackSetARN | None
+    AdministrationRoleARN: RoleARN | None
+    ExecutionRoleName: ExecutionRoleName | None
+    StackSetDriftDetectionDetails: StackSetDriftDetectionDetails | None
+    AutoDeployment: AutoDeployment | None
+    PermissionModel: PermissionModels | None
+    OrganizationalUnitIds: OrganizationalUnitIdList | None
+    ManagedExecution: ManagedExecution | None
+    Regions: RegionList | None
 
 
 class DescribeStackSetOutput(TypedDict, total=False):
-    StackSet: Optional[StackSet]
+    StackSet: StackSet | None
 
 
 class DescribeStacksInput(ServiceRequest):
-    StackName: Optional[StackName]
-    NextToken: Optional[NextToken]
+    StackName: StackName | None
+    NextToken: NextToken | None
 
 
 class StackDriftInformation(TypedDict, total=False):
     StackDriftStatus: StackDriftStatus
-    LastCheckTimestamp: Optional[Timestamp]
+    LastCheckTimestamp: Timestamp | None
 
 
 class Output(TypedDict, total=False):
-    OutputKey: Optional[OutputKey]
-    OutputValue: Optional[OutputValue]
-    Description: Optional[Description]
-    ExportName: Optional[ExportName]
+    OutputKey: OutputKey | None
+    OutputValue: OutputValue | None
+    Description: Description | None
+    ExportName: ExportName | None
 
 
-Outputs = List[Output]
+Outputs = list[Output]
 
 
 class Stack(TypedDict, total=False):
-    StackId: Optional[StackId]
+    StackId: StackId | None
     StackName: StackName
-    ChangeSetId: Optional[ChangeSetId]
-    Description: Optional[Description]
-    Parameters: Optional[Parameters]
+    ChangeSetId: ChangeSetId | None
+    Description: Description | None
+    Parameters: Parameters | None
     CreationTime: CreationTime
-    DeletionTime: Optional[DeletionTime]
-    LastUpdatedTime: Optional[LastUpdatedTime]
-    RollbackConfiguration: Optional[RollbackConfiguration]
+    DeletionTime: DeletionTime | None
+    LastUpdatedTime: LastUpdatedTime | None
+    RollbackConfiguration: RollbackConfiguration | None
     StackStatus: StackStatus
-    StackStatusReason: Optional[StackStatusReason]
-    DisableRollback: Optional[DisableRollback]
-    NotificationARNs: Optional[NotificationARNs]
-    TimeoutInMinutes: Optional[TimeoutMinutes]
-    Capabilities: Optional[Capabilities]
-    Outputs: Optional[Outputs]
-    RoleARN: Optional[RoleARN]
-    Tags: Optional[Tags]
-    EnableTerminationProtection: Optional[EnableTerminationProtection]
-    ParentId: Optional[StackId]
-    RootId: Optional[StackId]
-    DriftInformation: Optional[StackDriftInformation]
-    RetainExceptOnCreate: Optional[RetainExceptOnCreate]
-    DeletionMode: Optional[DeletionMode]
-    DetailedStatus: Optional[DetailedStatus]
+    StackStatusReason: StackStatusReason | None
+    DisableRollback: DisableRollback | None
+    NotificationARNs: NotificationARNs | None
+    TimeoutInMinutes: TimeoutMinutes | None
+    Capabilities: Capabilities | None
+    Outputs: Outputs | None
+    RoleARN: RoleARN | None
+    Tags: Tags | None
+    EnableTerminationProtection: EnableTerminationProtection | None
+    ParentId: StackId | None
+    RootId: StackId | None
+    DriftInformation: StackDriftInformation | None
+    RetainExceptOnCreate: RetainExceptOnCreate | None
+    DeletionMode: DeletionMode | None
+    DetailedStatus: DetailedStatus | None
 
 
-Stacks = List[Stack]
+Stacks = list[Stack]
 
 
 class DescribeStacksOutput(TypedDict, total=False):
-    Stacks: Optional[Stacks]
-    NextToken: Optional[NextToken]
+    Stacks: Stacks | None
+    NextToken: NextToken | None
 
 
 class DescribeTypeInput(ServiceRequest):
-    Type: Optional[RegistryType]
-    TypeName: Optional[TypeName]
-    Arn: Optional[TypeArn]
-    VersionId: Optional[TypeVersionId]
-    PublisherId: Optional[PublisherId]
-    PublicVersionNumber: Optional[PublicVersionNumber]
+    Type: RegistryType | None
+    TypeName: TypeName | None
+    Arn: TypeArn | None
+    VersionId: TypeVersionId | None
+    PublisherId: PublisherId | None
+    PublicVersionNumber: PublicVersionNumber | None
 
 
-SupportedMajorVersions = List[SupportedMajorVersion]
+SupportedMajorVersions = list[SupportedMajorVersion]
 
 
 class RequiredActivatedType(TypedDict, total=False):
-    TypeNameAlias: Optional[TypeName]
-    OriginalTypeName: Optional[TypeName]
-    PublisherId: Optional[PublisherId]
-    SupportedMajorVersions: Optional[SupportedMajorVersions]
+    TypeNameAlias: TypeName | None
+    OriginalTypeName: TypeName | None
+    PublisherId: PublisherId | None
+    SupportedMajorVersions: SupportedMajorVersions | None
 
 
-RequiredActivatedTypes = List[RequiredActivatedType]
+RequiredActivatedTypes = list[RequiredActivatedType]
 
 
 class DescribeTypeOutput(TypedDict, total=False):
-    Arn: Optional[TypeArn]
-    Type: Optional[RegistryType]
-    TypeName: Optional[TypeName]
-    DefaultVersionId: Optional[TypeVersionId]
-    IsDefaultVersion: Optional[IsDefaultVersion]
-    TypeTestsStatus: Optional[TypeTestsStatus]
-    TypeTestsStatusDescription: Optional[TypeTestsStatusDescription]
-    Description: Optional[Description]
-    Schema: Optional[TypeSchema]
-    ProvisioningType: Optional[ProvisioningType]
-    DeprecatedStatus: Optional[DeprecatedStatus]
-    LoggingConfig: Optional[LoggingConfig]
-    RequiredActivatedTypes: Optional[RequiredActivatedTypes]
-    ExecutionRoleArn: Optional[RoleArn]
-    Visibility: Optional[Visibility]
-    SourceUrl: Optional[OptionalSecureUrl]
-    DocumentationUrl: Optional[OptionalSecureUrl]
-    LastUpdated: Optional[Timestamp]
-    TimeCreated: Optional[Timestamp]
-    ConfigurationSchema: Optional[ConfigurationSchema]
-    PublisherId: Optional[PublisherId]
-    OriginalTypeName: Optional[TypeName]
-    OriginalTypeArn: Optional[TypeArn]
-    PublicVersionNumber: Optional[PublicVersionNumber]
-    LatestPublicVersion: Optional[PublicVersionNumber]
-    IsActivated: Optional[IsActivated]
-    AutoUpdate: Optional[AutoUpdate]
+    Arn: TypeArn | None
+    Type: RegistryType | None
+    TypeName: TypeName | None
+    DefaultVersionId: TypeVersionId | None
+    IsDefaultVersion: IsDefaultVersion | None
+    TypeTestsStatus: TypeTestsStatus | None
+    TypeTestsStatusDescription: TypeTestsStatusDescription | None
+    Description: Description | None
+    Schema: TypeSchema | None
+    ProvisioningType: ProvisioningType | None
+    DeprecatedStatus: DeprecatedStatus | None
+    LoggingConfig: LoggingConfig | None
+    RequiredActivatedTypes: RequiredActivatedTypes | None
+    ExecutionRoleArn: RoleArn | None
+    Visibility: Visibility | None
+    SourceUrl: OptionalSecureUrl | None
+    DocumentationUrl: OptionalSecureUrl | None
+    LastUpdated: Timestamp | None
+    TimeCreated: Timestamp | None
+    ConfigurationSchema: ConfigurationSchema | None
+    PublisherId: PublisherId | None
+    OriginalTypeName: TypeName | None
+    OriginalTypeArn: TypeArn | None
+    PublicVersionNumber: PublicVersionNumber | None
+    LatestPublicVersion: PublicVersionNumber | None
+    IsActivated: IsActivated | None
+    AutoUpdate: AutoUpdate | None
 
 
 class DescribeTypeRegistrationInput(ServiceRequest):
@@ -1957,18 +1957,18 @@ class DescribeTypeRegistrationInput(ServiceRequest):
 
 
 class DescribeTypeRegistrationOutput(TypedDict, total=False):
-    ProgressStatus: Optional[RegistrationStatus]
-    Description: Optional[Description]
-    TypeArn: Optional[TypeArn]
-    TypeVersionArn: Optional[TypeArn]
+    ProgressStatus: RegistrationStatus | None
+    Description: Description | None
+    TypeArn: TypeArn | None
+    TypeVersionArn: TypeArn | None
 
 
-LogicalResourceIds = List[LogicalResourceId]
+LogicalResourceIds = list[LogicalResourceId]
 
 
 class DetectStackDriftInput(ServiceRequest):
     StackName: StackNameOrId
-    LogicalResourceIds: Optional[LogicalResourceIds]
+    LogicalResourceIds: LogicalResourceIds | None
 
 
 class DetectStackDriftOutput(TypedDict, total=False):
@@ -1986,31 +1986,31 @@ class DetectStackResourceDriftOutput(TypedDict, total=False):
 
 class DetectStackSetDriftInput(ServiceRequest):
     StackSetName: StackSetNameOrId
-    OperationPreferences: Optional[StackSetOperationPreferences]
-    OperationId: Optional[ClientRequestToken]
-    CallAs: Optional[CallAs]
+    OperationPreferences: StackSetOperationPreferences | None
+    OperationId: ClientRequestToken | None
+    CallAs: CallAs | None
 
 
 class DetectStackSetDriftOutput(TypedDict, total=False):
-    OperationId: Optional[ClientRequestToken]
+    OperationId: ClientRequestToken | None
 
 
 class EstimateTemplateCostInput(ServiceRequest):
-    TemplateBody: Optional[TemplateBody]
-    TemplateURL: Optional[TemplateURL]
-    Parameters: Optional[Parameters]
+    TemplateBody: TemplateBody | None
+    TemplateURL: TemplateURL | None
+    Parameters: Parameters | None
 
 
 class EstimateTemplateCostOutput(TypedDict, total=False):
-    Url: Optional[Url]
+    Url: Url | None
 
 
 class ExecuteChangeSetInput(ServiceRequest):
     ChangeSetName: ChangeSetNameOrId
-    StackName: Optional[StackNameOrId]
-    ClientRequestToken: Optional[ClientRequestToken]
-    DisableRollback: Optional[DisableRollback]
-    RetainExceptOnCreate: Optional[RetainExceptOnCreate]
+    StackName: StackNameOrId | None
+    ClientRequestToken: ClientRequestToken | None
+    DisableRollback: DisableRollback | None
+    RetainExceptOnCreate: RetainExceptOnCreate | None
 
 
 class ExecuteChangeSetOutput(TypedDict, total=False):
@@ -2022,22 +2022,22 @@ class ExecuteStackRefactorInput(ServiceRequest):
 
 
 class Export(TypedDict, total=False):
-    ExportingStackId: Optional[StackId]
-    Name: Optional[ExportName]
-    Value: Optional[ExportValue]
+    ExportingStackId: StackId | None
+    Name: ExportName | None
+    Value: ExportValue | None
 
 
-Exports = List[Export]
+Exports = list[Export]
 
 
 class GetGeneratedTemplateInput(ServiceRequest):
-    Format: Optional[TemplateFormat]
+    Format: TemplateFormat | None
     GeneratedTemplateName: GeneratedTemplateName
 
 
 class GetGeneratedTemplateOutput(TypedDict, total=False):
-    Status: Optional[GeneratedTemplateStatus]
-    TemplateBody: Optional[TemplateBody]
+    Status: GeneratedTemplateStatus | None
+    TemplateBody: TemplateBody | None
 
 
 class GetStackPolicyInput(ServiceRequest):
@@ -2045,188 +2045,188 @@ class GetStackPolicyInput(ServiceRequest):
 
 
 class GetStackPolicyOutput(TypedDict, total=False):
-    StackPolicyBody: Optional[StackPolicyBody]
+    StackPolicyBody: StackPolicyBody | None
 
 
 class GetTemplateInput(ServiceRequest):
-    StackName: Optional[StackName]
-    ChangeSetName: Optional[ChangeSetNameOrId]
-    TemplateStage: Optional[TemplateStage]
+    StackName: StackName | None
+    ChangeSetName: ChangeSetNameOrId | None
+    TemplateStage: TemplateStage | None
 
 
-StageList = List[TemplateStage]
+StageList = list[TemplateStage]
 
 
 class GetTemplateOutput(TypedDict, total=False):
-    TemplateBody: Optional[TemplateBody]
-    StagesAvailable: Optional[StageList]
+    TemplateBody: TemplateBody | None
+    StagesAvailable: StageList | None
 
 
 class TemplateSummaryConfig(TypedDict, total=False):
-    TreatUnrecognizedResourceTypesAsWarnings: Optional[TreatUnrecognizedResourceTypesAsWarnings]
+    TreatUnrecognizedResourceTypesAsWarnings: TreatUnrecognizedResourceTypesAsWarnings | None
 
 
 class GetTemplateSummaryInput(ServiceRequest):
-    TemplateBody: Optional[TemplateBody]
-    TemplateURL: Optional[TemplateURL]
-    StackName: Optional[StackNameOrId]
-    StackSetName: Optional[StackSetNameOrId]
-    CallAs: Optional[CallAs]
-    TemplateSummaryConfig: Optional[TemplateSummaryConfig]
+    TemplateBody: TemplateBody | None
+    TemplateURL: TemplateURL | None
+    StackName: StackNameOrId | None
+    StackSetName: StackSetNameOrId | None
+    CallAs: CallAs | None
+    TemplateSummaryConfig: TemplateSummaryConfig | None
 
 
 class Warnings(TypedDict, total=False):
-    UnrecognizedResourceTypes: Optional[ResourceTypes]
+    UnrecognizedResourceTypes: ResourceTypes | None
 
 
-ResourceIdentifiers = List[ResourceIdentifierPropertyKey]
+ResourceIdentifiers = list[ResourceIdentifierPropertyKey]
 
 
 class ResourceIdentifierSummary(TypedDict, total=False):
-    ResourceType: Optional[ResourceType]
-    LogicalResourceIds: Optional[LogicalResourceIds]
-    ResourceIdentifiers: Optional[ResourceIdentifiers]
+    ResourceType: ResourceType | None
+    LogicalResourceIds: LogicalResourceIds | None
+    ResourceIdentifiers: ResourceIdentifiers | None
 
 
-ResourceIdentifierSummaries = List[ResourceIdentifierSummary]
-TransformsList = List[TransformName]
+ResourceIdentifierSummaries = list[ResourceIdentifierSummary]
+TransformsList = list[TransformName]
 
 
 class ParameterConstraints(TypedDict, total=False):
-    AllowedValues: Optional[AllowedValues]
+    AllowedValues: AllowedValues | None
 
 
 class ParameterDeclaration(TypedDict, total=False):
-    ParameterKey: Optional[ParameterKey]
-    DefaultValue: Optional[ParameterValue]
-    ParameterType: Optional[ParameterType]
-    NoEcho: Optional[NoEcho]
-    Description: Optional[Description]
-    ParameterConstraints: Optional[ParameterConstraints]
+    ParameterKey: ParameterKey | None
+    DefaultValue: ParameterValue | None
+    ParameterType: ParameterType | None
+    NoEcho: NoEcho | None
+    Description: Description | None
+    ParameterConstraints: ParameterConstraints | None
 
 
-ParameterDeclarations = List[ParameterDeclaration]
+ParameterDeclarations = list[ParameterDeclaration]
 
 
 class GetTemplateSummaryOutput(TypedDict, total=False):
-    Parameters: Optional[ParameterDeclarations]
-    Description: Optional[Description]
-    Capabilities: Optional[Capabilities]
-    CapabilitiesReason: Optional[CapabilitiesReason]
-    ResourceTypes: Optional[ResourceTypes]
-    Version: Optional[Version]
-    Metadata: Optional[Metadata]
-    DeclaredTransforms: Optional[TransformsList]
-    ResourceIdentifierSummaries: Optional[ResourceIdentifierSummaries]
-    Warnings: Optional[Warnings]
+    Parameters: ParameterDeclarations | None
+    Description: Description | None
+    Capabilities: Capabilities | None
+    CapabilitiesReason: CapabilitiesReason | None
+    ResourceTypes: ResourceTypes | None
+    Version: Version | None
+    Metadata: Metadata | None
+    DeclaredTransforms: TransformsList | None
+    ResourceIdentifierSummaries: ResourceIdentifierSummaries | None
+    Warnings: Warnings | None
 
 
 class HookResultSummary(TypedDict, total=False):
-    HookResultId: Optional[HookInvocationId]
-    InvocationPoint: Optional[HookInvocationPoint]
-    FailureMode: Optional[HookFailureMode]
-    TypeName: Optional[HookTypeName]
-    TypeVersionId: Optional[HookTypeVersionId]
-    TypeConfigurationVersionId: Optional[HookTypeConfigurationVersionId]
-    Status: Optional[HookStatus]
-    HookStatusReason: Optional[HookStatusReason]
-    InvokedAt: Optional[Timestamp]
-    TargetType: Optional[ListHookResultsTargetType]
-    TargetId: Optional[HookResultId]
-    TypeArn: Optional[HookTypeArn]
-    HookExecutionTarget: Optional[HookResultId]
+    HookResultId: HookInvocationId | None
+    InvocationPoint: HookInvocationPoint | None
+    FailureMode: HookFailureMode | None
+    TypeName: HookTypeName | None
+    TypeVersionId: HookTypeVersionId | None
+    TypeConfigurationVersionId: HookTypeConfigurationVersionId | None
+    Status: HookStatus | None
+    HookStatusReason: HookStatusReason | None
+    InvokedAt: Timestamp | None
+    TargetType: ListHookResultsTargetType | None
+    TargetId: HookResultId | None
+    TypeArn: HookTypeArn | None
+    HookExecutionTarget: HookResultId | None
 
 
-HookResultSummaries = List[HookResultSummary]
-StackIdList = List[StackId]
+HookResultSummaries = list[HookResultSummary]
+StackIdList = list[StackId]
 
 
 class ImportStacksToStackSetInput(ServiceRequest):
     StackSetName: StackSetNameOrId
-    StackIds: Optional[StackIdList]
-    StackIdsUrl: Optional[StackIdsUrl]
-    OrganizationalUnitIds: Optional[OrganizationalUnitIdList]
-    OperationPreferences: Optional[StackSetOperationPreferences]
-    OperationId: Optional[ClientRequestToken]
-    CallAs: Optional[CallAs]
+    StackIds: StackIdList | None
+    StackIdsUrl: StackIdsUrl | None
+    OrganizationalUnitIds: OrganizationalUnitIdList | None
+    OperationPreferences: StackSetOperationPreferences | None
+    OperationId: ClientRequestToken | None
+    CallAs: CallAs | None
 
 
 class ImportStacksToStackSetOutput(TypedDict, total=False):
-    OperationId: Optional[ClientRequestToken]
+    OperationId: ClientRequestToken | None
 
 
-Imports = List[StackName]
-JazzLogicalResourceIds = List[LogicalResourceId]
-JazzResourceIdentifierProperties = Dict[
+Imports = list[StackName]
+JazzLogicalResourceIds = list[LogicalResourceId]
+JazzResourceIdentifierProperties = dict[
     JazzResourceIdentifierPropertyKey, JazzResourceIdentifierPropertyValue
 ]
 
 
 class ListChangeSetsInput(ServiceRequest):
     StackName: StackNameOrId
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListChangeSetsOutput(TypedDict, total=False):
-    Summaries: Optional[ChangeSetSummaries]
-    NextToken: Optional[NextToken]
+    Summaries: ChangeSetSummaries | None
+    NextToken: NextToken | None
 
 
 class ListExportsInput(ServiceRequest):
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListExportsOutput(TypedDict, total=False):
-    Exports: Optional[Exports]
-    NextToken: Optional[NextToken]
+    Exports: Exports | None
+    NextToken: NextToken | None
 
 
 class ListGeneratedTemplatesInput(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class TemplateSummary(TypedDict, total=False):
-    GeneratedTemplateId: Optional[GeneratedTemplateId]
-    GeneratedTemplateName: Optional[GeneratedTemplateName]
-    Status: Optional[GeneratedTemplateStatus]
-    StatusReason: Optional[TemplateStatusReason]
-    CreationTime: Optional[CreationTime]
-    LastUpdatedTime: Optional[LastUpdatedTime]
-    NumberOfResources: Optional[NumberOfResources]
+    GeneratedTemplateId: GeneratedTemplateId | None
+    GeneratedTemplateName: GeneratedTemplateName | None
+    Status: GeneratedTemplateStatus | None
+    StatusReason: TemplateStatusReason | None
+    CreationTime: CreationTime | None
+    LastUpdatedTime: LastUpdatedTime | None
+    NumberOfResources: NumberOfResources | None
 
 
-TemplateSummaries = List[TemplateSummary]
+TemplateSummaries = list[TemplateSummary]
 
 
 class ListGeneratedTemplatesOutput(TypedDict, total=False):
-    Summaries: Optional[TemplateSummaries]
-    NextToken: Optional[NextToken]
+    Summaries: TemplateSummaries | None
+    NextToken: NextToken | None
 
 
 class ListHookResultsInput(ServiceRequest):
-    TargetType: Optional[ListHookResultsTargetType]
-    TargetId: Optional[HookResultId]
-    TypeArn: Optional[HookTypeArn]
-    Status: Optional[HookStatus]
-    NextToken: Optional[NextToken]
+    TargetType: ListHookResultsTargetType | None
+    TargetId: HookResultId | None
+    TypeArn: HookTypeArn | None
+    Status: HookStatus | None
+    NextToken: NextToken | None
 
 
 class ListHookResultsOutput(TypedDict, total=False):
-    TargetType: Optional[ListHookResultsTargetType]
-    TargetId: Optional[HookResultId]
-    HookResults: Optional[HookResultSummaries]
-    NextToken: Optional[NextToken]
+    TargetType: ListHookResultsTargetType | None
+    TargetId: HookResultId | None
+    HookResults: HookResultSummaries | None
+    NextToken: NextToken | None
 
 
 class ListImportsInput(ServiceRequest):
     ExportName: ExportName
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListImportsOutput(TypedDict, total=False):
-    Imports: Optional[Imports]
-    NextToken: Optional[NextToken]
+    Imports: Imports | None
+    NextToken: NextToken | None
 
 
 class ScannedResourceIdentifier(TypedDict, total=False):
@@ -2234,475 +2234,475 @@ class ScannedResourceIdentifier(TypedDict, total=False):
     ResourceIdentifier: JazzResourceIdentifierProperties
 
 
-ScannedResourceIdentifiers = List[ScannedResourceIdentifier]
+ScannedResourceIdentifiers = list[ScannedResourceIdentifier]
 
 
 class ListResourceScanRelatedResourcesInput(ServiceRequest):
     ResourceScanId: ResourceScanId
     Resources: ScannedResourceIdentifiers
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[BoxedMaxResults]
+    NextToken: NextToken | None
+    MaxResults: BoxedMaxResults | None
 
 
 class ScannedResource(TypedDict, total=False):
-    ResourceType: Optional[ResourceType]
-    ResourceIdentifier: Optional[JazzResourceIdentifierProperties]
-    ManagedByStack: Optional[ManagedByStack]
+    ResourceType: ResourceType | None
+    ResourceIdentifier: JazzResourceIdentifierProperties | None
+    ManagedByStack: ManagedByStack | None
 
 
-RelatedResources = List[ScannedResource]
+RelatedResources = list[ScannedResource]
 
 
 class ListResourceScanRelatedResourcesOutput(TypedDict, total=False):
-    RelatedResources: Optional[RelatedResources]
-    NextToken: Optional[NextToken]
+    RelatedResources: RelatedResources | None
+    NextToken: NextToken | None
 
 
 class ListResourceScanResourcesInput(ServiceRequest):
     ResourceScanId: ResourceScanId
-    ResourceIdentifier: Optional[ResourceIdentifier]
-    ResourceTypePrefix: Optional[ResourceTypePrefix]
-    TagKey: Optional[TagKey]
-    TagValue: Optional[TagValue]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[ResourceScannerMaxResults]
+    ResourceIdentifier: ResourceIdentifier | None
+    ResourceTypePrefix: ResourceTypePrefix | None
+    TagKey: TagKey | None
+    TagValue: TagValue | None
+    NextToken: NextToken | None
+    MaxResults: ResourceScannerMaxResults | None
 
 
-ScannedResources = List[ScannedResource]
+ScannedResources = list[ScannedResource]
 
 
 class ListResourceScanResourcesOutput(TypedDict, total=False):
-    Resources: Optional[ScannedResources]
-    NextToken: Optional[NextToken]
+    Resources: ScannedResources | None
+    NextToken: NextToken | None
 
 
 class ListResourceScansInput(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[ResourceScannerMaxResults]
-    ScanTypeFilter: Optional[ScanType]
+    NextToken: NextToken | None
+    MaxResults: ResourceScannerMaxResults | None
+    ScanTypeFilter: ScanType | None
 
 
 class ResourceScanSummary(TypedDict, total=False):
-    ResourceScanId: Optional[ResourceScanId]
-    Status: Optional[ResourceScanStatus]
-    StatusReason: Optional[ResourceScanStatusReason]
-    StartTime: Optional[Timestamp]
-    EndTime: Optional[Timestamp]
-    PercentageCompleted: Optional[PercentageCompleted]
-    ScanType: Optional[ScanType]
+    ResourceScanId: ResourceScanId | None
+    Status: ResourceScanStatus | None
+    StatusReason: ResourceScanStatusReason | None
+    StartTime: Timestamp | None
+    EndTime: Timestamp | None
+    PercentageCompleted: PercentageCompleted | None
+    ScanType: ScanType | None
 
 
-ResourceScanSummaries = List[ResourceScanSummary]
+ResourceScanSummaries = list[ResourceScanSummary]
 
 
 class ListResourceScansOutput(TypedDict, total=False):
-    ResourceScanSummaries: Optional[ResourceScanSummaries]
-    NextToken: Optional[NextToken]
+    ResourceScanSummaries: ResourceScanSummaries | None
+    NextToken: NextToken | None
 
 
 class ListStackInstanceResourceDriftsInput(ServiceRequest):
     StackSetName: StackSetNameOrId
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    StackInstanceResourceDriftStatuses: Optional[StackResourceDriftStatusFilters]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    StackInstanceResourceDriftStatuses: StackResourceDriftStatusFilters | None
     StackInstanceAccount: Account
     StackInstanceRegion: Region
     OperationId: ClientRequestToken
-    CallAs: Optional[CallAs]
+    CallAs: CallAs | None
 
 
 class StackInstanceResourceDriftsSummary(TypedDict, total=False):
     StackId: StackId
     LogicalResourceId: LogicalResourceId
-    PhysicalResourceId: Optional[PhysicalResourceId]
-    PhysicalResourceIdContext: Optional[PhysicalResourceIdContext]
+    PhysicalResourceId: PhysicalResourceId | None
+    PhysicalResourceIdContext: PhysicalResourceIdContext | None
     ResourceType: ResourceType
-    PropertyDifferences: Optional[PropertyDifferences]
+    PropertyDifferences: PropertyDifferences | None
     StackResourceDriftStatus: StackResourceDriftStatus
     Timestamp: Timestamp
 
 
-StackInstanceResourceDriftsSummaries = List[StackInstanceResourceDriftsSummary]
+StackInstanceResourceDriftsSummaries = list[StackInstanceResourceDriftsSummary]
 
 
 class ListStackInstanceResourceDriftsOutput(TypedDict, total=False):
-    Summaries: Optional[StackInstanceResourceDriftsSummaries]
-    NextToken: Optional[NextToken]
+    Summaries: StackInstanceResourceDriftsSummaries | None
+    NextToken: NextToken | None
 
 
 class StackInstanceFilter(TypedDict, total=False):
-    Name: Optional[StackInstanceFilterName]
-    Values: Optional[StackInstanceFilterValues]
+    Name: StackInstanceFilterName | None
+    Values: StackInstanceFilterValues | None
 
 
-StackInstanceFilters = List[StackInstanceFilter]
+StackInstanceFilters = list[StackInstanceFilter]
 
 
 class ListStackInstancesInput(ServiceRequest):
     StackSetName: StackSetName
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    Filters: Optional[StackInstanceFilters]
-    StackInstanceAccount: Optional[Account]
-    StackInstanceRegion: Optional[Region]
-    CallAs: Optional[CallAs]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    Filters: StackInstanceFilters | None
+    StackInstanceAccount: Account | None
+    StackInstanceRegion: Region | None
+    CallAs: CallAs | None
 
 
 class StackInstanceSummary(TypedDict, total=False):
-    StackSetId: Optional[StackSetId]
-    Region: Optional[Region]
-    Account: Optional[Account]
-    StackId: Optional[StackId]
-    Status: Optional[StackInstanceStatus]
-    StatusReason: Optional[Reason]
-    StackInstanceStatus: Optional[StackInstanceComprehensiveStatus]
-    OrganizationalUnitId: Optional[OrganizationalUnitId]
-    DriftStatus: Optional[StackDriftStatus]
-    LastDriftCheckTimestamp: Optional[Timestamp]
-    LastOperationId: Optional[ClientRequestToken]
+    StackSetId: StackSetId | None
+    Region: Region | None
+    Account: Account | None
+    StackId: StackId | None
+    Status: StackInstanceStatus | None
+    StatusReason: Reason | None
+    StackInstanceStatus: StackInstanceComprehensiveStatus | None
+    OrganizationalUnitId: OrganizationalUnitId | None
+    DriftStatus: StackDriftStatus | None
+    LastDriftCheckTimestamp: Timestamp | None
+    LastOperationId: ClientRequestToken | None
 
 
-StackInstanceSummaries = List[StackInstanceSummary]
+StackInstanceSummaries = list[StackInstanceSummary]
 
 
 class ListStackInstancesOutput(TypedDict, total=False):
-    Summaries: Optional[StackInstanceSummaries]
-    NextToken: Optional[NextToken]
+    Summaries: StackInstanceSummaries | None
+    NextToken: NextToken | None
 
 
 class ListStackRefactorActionsInput(ServiceRequest):
     StackRefactorId: StackRefactorId
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
-StackRefactorUntagResources = List[TagKey]
-StackRefactorTagResources = List[Tag]
+StackRefactorUntagResources = list[TagKey]
+StackRefactorTagResources = list[Tag]
 
 
 class StackRefactorAction(TypedDict, total=False):
-    Action: Optional[StackRefactorActionType]
-    Entity: Optional[StackRefactorActionEntity]
-    PhysicalResourceId: Optional[PhysicalResourceId]
-    ResourceIdentifier: Optional[StackRefactorResourceIdentifier]
-    Description: Optional[Description]
-    Detection: Optional[StackRefactorDetection]
-    DetectionReason: Optional[DetectionReason]
-    TagResources: Optional[StackRefactorTagResources]
-    UntagResources: Optional[StackRefactorUntagResources]
-    ResourceMapping: Optional[ResourceMapping]
+    Action: StackRefactorActionType | None
+    Entity: StackRefactorActionEntity | None
+    PhysicalResourceId: PhysicalResourceId | None
+    ResourceIdentifier: StackRefactorResourceIdentifier | None
+    Description: Description | None
+    Detection: StackRefactorDetection | None
+    DetectionReason: DetectionReason | None
+    TagResources: StackRefactorTagResources | None
+    UntagResources: StackRefactorUntagResources | None
+    ResourceMapping: ResourceMapping | None
 
 
-StackRefactorActions = List[StackRefactorAction]
+StackRefactorActions = list[StackRefactorAction]
 
 
 class ListStackRefactorActionsOutput(TypedDict, total=False):
     StackRefactorActions: StackRefactorActions
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
-StackRefactorExecutionStatusFilter = List[StackRefactorExecutionStatus]
+StackRefactorExecutionStatusFilter = list[StackRefactorExecutionStatus]
 
 
 class ListStackRefactorsInput(ServiceRequest):
-    ExecutionStatusFilter: Optional[StackRefactorExecutionStatusFilter]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    ExecutionStatusFilter: StackRefactorExecutionStatusFilter | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class StackRefactorSummary(TypedDict, total=False):
-    StackRefactorId: Optional[StackRefactorId]
-    Description: Optional[Description]
-    ExecutionStatus: Optional[StackRefactorExecutionStatus]
-    ExecutionStatusReason: Optional[ExecutionStatusReason]
-    Status: Optional[StackRefactorStatus]
-    StatusReason: Optional[StackRefactorStatusReason]
+    StackRefactorId: StackRefactorId | None
+    Description: Description | None
+    ExecutionStatus: StackRefactorExecutionStatus | None
+    ExecutionStatusReason: ExecutionStatusReason | None
+    Status: StackRefactorStatus | None
+    StatusReason: StackRefactorStatusReason | None
 
 
-StackRefactorSummaries = List[StackRefactorSummary]
+StackRefactorSummaries = list[StackRefactorSummary]
 
 
 class ListStackRefactorsOutput(TypedDict, total=False):
     StackRefactorSummaries: StackRefactorSummaries
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListStackResourcesInput(ServiceRequest):
     StackName: StackName
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class StackResourceDriftInformationSummary(TypedDict, total=False):
     StackResourceDriftStatus: StackResourceDriftStatus
-    LastCheckTimestamp: Optional[Timestamp]
+    LastCheckTimestamp: Timestamp | None
 
 
 class StackResourceSummary(TypedDict, total=False):
     LogicalResourceId: LogicalResourceId
-    PhysicalResourceId: Optional[PhysicalResourceId]
+    PhysicalResourceId: PhysicalResourceId | None
     ResourceType: ResourceType
     LastUpdatedTimestamp: Timestamp
     ResourceStatus: ResourceStatus
-    ResourceStatusReason: Optional[ResourceStatusReason]
-    DriftInformation: Optional[StackResourceDriftInformationSummary]
-    ModuleInfo: Optional[ModuleInfo]
+    ResourceStatusReason: ResourceStatusReason | None
+    DriftInformation: StackResourceDriftInformationSummary | None
+    ModuleInfo: ModuleInfo | None
 
 
-StackResourceSummaries = List[StackResourceSummary]
+StackResourceSummaries = list[StackResourceSummary]
 
 
 class ListStackResourcesOutput(TypedDict, total=False):
-    StackResourceSummaries: Optional[StackResourceSummaries]
-    NextToken: Optional[NextToken]
+    StackResourceSummaries: StackResourceSummaries | None
+    NextToken: NextToken | None
 
 
 class ListStackSetAutoDeploymentTargetsInput(ServiceRequest):
     StackSetName: StackSetNameOrId
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    CallAs: Optional[CallAs]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    CallAs: CallAs | None
 
 
 class StackSetAutoDeploymentTargetSummary(TypedDict, total=False):
-    OrganizationalUnitId: Optional[OrganizationalUnitId]
-    Regions: Optional[RegionList]
+    OrganizationalUnitId: OrganizationalUnitId | None
+    Regions: RegionList | None
 
 
-StackSetAutoDeploymentTargetSummaries = List[StackSetAutoDeploymentTargetSummary]
+StackSetAutoDeploymentTargetSummaries = list[StackSetAutoDeploymentTargetSummary]
 
 
 class ListStackSetAutoDeploymentTargetsOutput(TypedDict, total=False):
-    Summaries: Optional[StackSetAutoDeploymentTargetSummaries]
-    NextToken: Optional[NextToken]
+    Summaries: StackSetAutoDeploymentTargetSummaries | None
+    NextToken: NextToken | None
 
 
 class OperationResultFilter(TypedDict, total=False):
-    Name: Optional[OperationResultFilterName]
-    Values: Optional[OperationResultFilterValues]
+    Name: OperationResultFilterName | None
+    Values: OperationResultFilterValues | None
 
 
-OperationResultFilters = List[OperationResultFilter]
+OperationResultFilters = list[OperationResultFilter]
 
 
 class ListStackSetOperationResultsInput(ServiceRequest):
     StackSetName: StackSetName
     OperationId: ClientRequestToken
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    CallAs: Optional[CallAs]
-    Filters: Optional[OperationResultFilters]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    CallAs: CallAs | None
+    Filters: OperationResultFilters | None
 
 
 class StackSetOperationResultSummary(TypedDict, total=False):
-    Account: Optional[Account]
-    Region: Optional[Region]
-    Status: Optional[StackSetOperationResultStatus]
-    StatusReason: Optional[Reason]
-    AccountGateResult: Optional[AccountGateResult]
-    OrganizationalUnitId: Optional[OrganizationalUnitId]
+    Account: Account | None
+    Region: Region | None
+    Status: StackSetOperationResultStatus | None
+    StatusReason: Reason | None
+    AccountGateResult: AccountGateResult | None
+    OrganizationalUnitId: OrganizationalUnitId | None
 
 
-StackSetOperationResultSummaries = List[StackSetOperationResultSummary]
+StackSetOperationResultSummaries = list[StackSetOperationResultSummary]
 
 
 class ListStackSetOperationResultsOutput(TypedDict, total=False):
-    Summaries: Optional[StackSetOperationResultSummaries]
-    NextToken: Optional[NextToken]
+    Summaries: StackSetOperationResultSummaries | None
+    NextToken: NextToken | None
 
 
 class ListStackSetOperationsInput(ServiceRequest):
     StackSetName: StackSetName
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    CallAs: Optional[CallAs]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    CallAs: CallAs | None
 
 
 class StackSetOperationSummary(TypedDict, total=False):
-    OperationId: Optional[ClientRequestToken]
-    Action: Optional[StackSetOperationAction]
-    Status: Optional[StackSetOperationStatus]
-    CreationTimestamp: Optional[Timestamp]
-    EndTimestamp: Optional[Timestamp]
-    StatusReason: Optional[StackSetOperationStatusReason]
-    StatusDetails: Optional[StackSetOperationStatusDetails]
-    OperationPreferences: Optional[StackSetOperationPreferences]
+    OperationId: ClientRequestToken | None
+    Action: StackSetOperationAction | None
+    Status: StackSetOperationStatus | None
+    CreationTimestamp: Timestamp | None
+    EndTimestamp: Timestamp | None
+    StatusReason: StackSetOperationStatusReason | None
+    StatusDetails: StackSetOperationStatusDetails | None
+    OperationPreferences: StackSetOperationPreferences | None
 
 
-StackSetOperationSummaries = List[StackSetOperationSummary]
+StackSetOperationSummaries = list[StackSetOperationSummary]
 
 
 class ListStackSetOperationsOutput(TypedDict, total=False):
-    Summaries: Optional[StackSetOperationSummaries]
-    NextToken: Optional[NextToken]
+    Summaries: StackSetOperationSummaries | None
+    NextToken: NextToken | None
 
 
 class ListStackSetsInput(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    Status: Optional[StackSetStatus]
-    CallAs: Optional[CallAs]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    Status: StackSetStatus | None
+    CallAs: CallAs | None
 
 
 class StackSetSummary(TypedDict, total=False):
-    StackSetName: Optional[StackSetName]
-    StackSetId: Optional[StackSetId]
-    Description: Optional[Description]
-    Status: Optional[StackSetStatus]
-    AutoDeployment: Optional[AutoDeployment]
-    PermissionModel: Optional[PermissionModels]
-    DriftStatus: Optional[StackDriftStatus]
-    LastDriftCheckTimestamp: Optional[Timestamp]
-    ManagedExecution: Optional[ManagedExecution]
+    StackSetName: StackSetName | None
+    StackSetId: StackSetId | None
+    Description: Description | None
+    Status: StackSetStatus | None
+    AutoDeployment: AutoDeployment | None
+    PermissionModel: PermissionModels | None
+    DriftStatus: StackDriftStatus | None
+    LastDriftCheckTimestamp: Timestamp | None
+    ManagedExecution: ManagedExecution | None
 
 
-StackSetSummaries = List[StackSetSummary]
+StackSetSummaries = list[StackSetSummary]
 
 
 class ListStackSetsOutput(TypedDict, total=False):
-    Summaries: Optional[StackSetSummaries]
-    NextToken: Optional[NextToken]
+    Summaries: StackSetSummaries | None
+    NextToken: NextToken | None
 
 
-StackStatusFilter = List[StackStatus]
+StackStatusFilter = list[StackStatus]
 
 
 class ListStacksInput(ServiceRequest):
-    NextToken: Optional[NextToken]
-    StackStatusFilter: Optional[StackStatusFilter]
+    NextToken: NextToken | None
+    StackStatusFilter: StackStatusFilter | None
 
 
 class StackDriftInformationSummary(TypedDict, total=False):
     StackDriftStatus: StackDriftStatus
-    LastCheckTimestamp: Optional[Timestamp]
+    LastCheckTimestamp: Timestamp | None
 
 
 class StackSummary(TypedDict, total=False):
-    StackId: Optional[StackId]
+    StackId: StackId | None
     StackName: StackName
-    TemplateDescription: Optional[TemplateDescription]
+    TemplateDescription: TemplateDescription | None
     CreationTime: CreationTime
-    LastUpdatedTime: Optional[LastUpdatedTime]
-    DeletionTime: Optional[DeletionTime]
+    LastUpdatedTime: LastUpdatedTime | None
+    DeletionTime: DeletionTime | None
     StackStatus: StackStatus
-    StackStatusReason: Optional[StackStatusReason]
-    ParentId: Optional[StackId]
-    RootId: Optional[StackId]
-    DriftInformation: Optional[StackDriftInformationSummary]
+    StackStatusReason: StackStatusReason | None
+    ParentId: StackId | None
+    RootId: StackId | None
+    DriftInformation: StackDriftInformationSummary | None
 
 
-StackSummaries = List[StackSummary]
+StackSummaries = list[StackSummary]
 
 
 class ListStacksOutput(TypedDict, total=False):
-    StackSummaries: Optional[StackSummaries]
-    NextToken: Optional[NextToken]
+    StackSummaries: StackSummaries | None
+    NextToken: NextToken | None
 
 
 class ListTypeRegistrationsInput(ServiceRequest):
-    Type: Optional[RegistryType]
-    TypeName: Optional[TypeName]
-    TypeArn: Optional[TypeArn]
-    RegistrationStatusFilter: Optional[RegistrationStatus]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Type: RegistryType | None
+    TypeName: TypeName | None
+    TypeArn: TypeArn | None
+    RegistrationStatusFilter: RegistrationStatus | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-RegistrationTokenList = List[RegistrationToken]
+RegistrationTokenList = list[RegistrationToken]
 
 
 class ListTypeRegistrationsOutput(TypedDict, total=False):
-    RegistrationTokenList: Optional[RegistrationTokenList]
-    NextToken: Optional[NextToken]
+    RegistrationTokenList: RegistrationTokenList | None
+    NextToken: NextToken | None
 
 
 class ListTypeVersionsInput(ServiceRequest):
-    Type: Optional[RegistryType]
-    TypeName: Optional[TypeName]
-    Arn: Optional[TypeArn]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    DeprecatedStatus: Optional[DeprecatedStatus]
-    PublisherId: Optional[PublisherId]
+    Type: RegistryType | None
+    TypeName: TypeName | None
+    Arn: TypeArn | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    DeprecatedStatus: DeprecatedStatus | None
+    PublisherId: PublisherId | None
 
 
 class TypeVersionSummary(TypedDict, total=False):
-    Type: Optional[RegistryType]
-    TypeName: Optional[TypeName]
-    VersionId: Optional[TypeVersionId]
-    IsDefaultVersion: Optional[IsDefaultVersion]
-    Arn: Optional[TypeArn]
-    TimeCreated: Optional[Timestamp]
-    Description: Optional[Description]
-    PublicVersionNumber: Optional[PublicVersionNumber]
+    Type: RegistryType | None
+    TypeName: TypeName | None
+    VersionId: TypeVersionId | None
+    IsDefaultVersion: IsDefaultVersion | None
+    Arn: TypeArn | None
+    TimeCreated: Timestamp | None
+    Description: Description | None
+    PublicVersionNumber: PublicVersionNumber | None
 
 
-TypeVersionSummaries = List[TypeVersionSummary]
+TypeVersionSummaries = list[TypeVersionSummary]
 
 
 class ListTypeVersionsOutput(TypedDict, total=False):
-    TypeVersionSummaries: Optional[TypeVersionSummaries]
-    NextToken: Optional[NextToken]
+    TypeVersionSummaries: TypeVersionSummaries | None
+    NextToken: NextToken | None
 
 
 class TypeFilters(TypedDict, total=False):
-    Category: Optional[Category]
-    PublisherId: Optional[PublisherId]
-    TypeNamePrefix: Optional[TypeNamePrefix]
+    Category: Category | None
+    PublisherId: PublisherId | None
+    TypeNamePrefix: TypeNamePrefix | None
 
 
 class ListTypesInput(ServiceRequest):
-    Visibility: Optional[Visibility]
-    ProvisioningType: Optional[ProvisioningType]
-    DeprecatedStatus: Optional[DeprecatedStatus]
-    Type: Optional[RegistryType]
-    Filters: Optional[TypeFilters]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Visibility: Visibility | None
+    ProvisioningType: ProvisioningType | None
+    DeprecatedStatus: DeprecatedStatus | None
+    Type: RegistryType | None
+    Filters: TypeFilters | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class TypeSummary(TypedDict, total=False):
-    Type: Optional[RegistryType]
-    TypeName: Optional[TypeName]
-    DefaultVersionId: Optional[TypeVersionId]
-    TypeArn: Optional[TypeArn]
-    LastUpdated: Optional[Timestamp]
-    Description: Optional[Description]
-    PublisherId: Optional[PublisherId]
-    OriginalTypeName: Optional[TypeName]
-    PublicVersionNumber: Optional[PublicVersionNumber]
-    LatestPublicVersion: Optional[PublicVersionNumber]
-    PublisherIdentity: Optional[IdentityProvider]
-    PublisherName: Optional[PublisherName]
-    IsActivated: Optional[IsActivated]
+    Type: RegistryType | None
+    TypeName: TypeName | None
+    DefaultVersionId: TypeVersionId | None
+    TypeArn: TypeArn | None
+    LastUpdated: Timestamp | None
+    Description: Description | None
+    PublisherId: PublisherId | None
+    OriginalTypeName: TypeName | None
+    PublicVersionNumber: PublicVersionNumber | None
+    LatestPublicVersion: PublicVersionNumber | None
+    PublisherIdentity: IdentityProvider | None
+    PublisherName: PublisherName | None
+    IsActivated: IsActivated | None
 
 
-TypeSummaries = List[TypeSummary]
+TypeSummaries = list[TypeSummary]
 
 
 class ListTypesOutput(TypedDict, total=False):
-    TypeSummaries: Optional[TypeSummaries]
-    NextToken: Optional[NextToken]
+    TypeSummaries: TypeSummaries | None
+    NextToken: NextToken | None
 
 
 class PublishTypeInput(ServiceRequest):
-    Type: Optional[ThirdPartyType]
-    Arn: Optional[PrivateTypeArn]
-    TypeName: Optional[TypeName]
-    PublicVersionNumber: Optional[PublicVersionNumber]
+    Type: ThirdPartyType | None
+    Arn: PrivateTypeArn | None
+    TypeName: TypeName | None
+    PublicVersionNumber: PublicVersionNumber | None
 
 
 class PublishTypeOutput(TypedDict, total=False):
-    PublicTypeArn: Optional[TypeArn]
+    PublicTypeArn: TypeArn | None
 
 
 class RecordHandlerProgressInput(ServiceRequest):
     BearerToken: ClientToken
     OperationStatus: OperationStatus
-    CurrentOperationStatus: Optional[OperationStatus]
-    StatusMessage: Optional[StatusMessage]
-    ErrorCode: Optional[HandlerErrorCode]
-    ResourceModel: Optional[ResourceModel]
-    ClientRequestToken: Optional[ClientRequestToken]
+    CurrentOperationStatus: OperationStatus | None
+    StatusMessage: StatusMessage | None
+    ErrorCode: HandlerErrorCode | None
+    ResourceModel: ResourceModel | None
+    ClientRequestToken: ClientRequestToken | None
 
 
 class RecordHandlerProgressOutput(TypedDict, total=False):
@@ -2710,61 +2710,61 @@ class RecordHandlerProgressOutput(TypedDict, total=False):
 
 
 class RegisterPublisherInput(ServiceRequest):
-    AcceptTermsAndConditions: Optional[AcceptTermsAndConditions]
-    ConnectionArn: Optional[ConnectionArn]
+    AcceptTermsAndConditions: AcceptTermsAndConditions | None
+    ConnectionArn: ConnectionArn | None
 
 
 class RegisterPublisherOutput(TypedDict, total=False):
-    PublisherId: Optional[PublisherId]
+    PublisherId: PublisherId | None
 
 
 class RegisterTypeInput(ServiceRequest):
-    Type: Optional[RegistryType]
+    Type: RegistryType | None
     TypeName: TypeName
     SchemaHandlerPackage: S3Url
-    LoggingConfig: Optional[LoggingConfig]
-    ExecutionRoleArn: Optional[RoleArn]
-    ClientRequestToken: Optional[RequestToken]
+    LoggingConfig: LoggingConfig | None
+    ExecutionRoleArn: RoleArn | None
+    ClientRequestToken: RequestToken | None
 
 
 class RegisterTypeOutput(TypedDict, total=False):
-    RegistrationToken: Optional[RegistrationToken]
+    RegistrationToken: RegistrationToken | None
 
 
 class RollbackStackInput(ServiceRequest):
     StackName: StackNameOrId
-    RoleARN: Optional[RoleARN]
-    ClientRequestToken: Optional[ClientRequestToken]
-    RetainExceptOnCreate: Optional[RetainExceptOnCreate]
+    RoleARN: RoleARN | None
+    ClientRequestToken: ClientRequestToken | None
+    RetainExceptOnCreate: RetainExceptOnCreate | None
 
 
 class RollbackStackOutput(TypedDict, total=False):
-    StackId: Optional[StackId]
+    StackId: StackId | None
 
 
 class SetStackPolicyInput(ServiceRequest):
     StackName: StackName
-    StackPolicyBody: Optional[StackPolicyBody]
-    StackPolicyURL: Optional[StackPolicyURL]
+    StackPolicyBody: StackPolicyBody | None
+    StackPolicyURL: StackPolicyURL | None
 
 
 class SetTypeConfigurationInput(ServiceRequest):
-    TypeArn: Optional[TypeArn]
+    TypeArn: TypeArn | None
     Configuration: TypeConfiguration
-    ConfigurationAlias: Optional[TypeConfigurationAlias]
-    TypeName: Optional[TypeName]
-    Type: Optional[ThirdPartyType]
+    ConfigurationAlias: TypeConfigurationAlias | None
+    TypeName: TypeName | None
+    Type: ThirdPartyType | None
 
 
 class SetTypeConfigurationOutput(TypedDict, total=False):
-    ConfigurationArn: Optional[TypeConfigurationArn]
+    ConfigurationArn: TypeConfigurationArn | None
 
 
 class SetTypeDefaultVersionInput(ServiceRequest):
-    Arn: Optional[PrivateTypeArn]
-    Type: Optional[RegistryType]
-    TypeName: Optional[TypeName]
-    VersionId: Optional[TypeVersionId]
+    Arn: PrivateTypeArn | None
+    Type: RegistryType | None
+    TypeName: TypeName | None
+    VersionId: TypeVersionId | None
 
 
 class SetTypeDefaultVersionOutput(TypedDict, total=False):
@@ -2779,18 +2779,18 @@ class SignalResourceInput(ServiceRequest):
 
 
 class StartResourceScanInput(ServiceRequest):
-    ClientRequestToken: Optional[ClientRequestToken]
-    ScanFilters: Optional[ScanFilters]
+    ClientRequestToken: ClientRequestToken | None
+    ScanFilters: ScanFilters | None
 
 
 class StartResourceScanOutput(TypedDict, total=False):
-    ResourceScanId: Optional[ResourceScanId]
+    ResourceScanId: ResourceScanId | None
 
 
 class StopStackSetOperationInput(ServiceRequest):
     StackSetName: StackSetName
     OperationId: ClientRequestToken
-    CallAs: Optional[CallAs]
+    CallAs: CallAs | None
 
 
 class StopStackSetOperationOutput(TypedDict, total=False):
@@ -2798,104 +2798,104 @@ class StopStackSetOperationOutput(TypedDict, total=False):
 
 
 class TemplateParameter(TypedDict, total=False):
-    ParameterKey: Optional[ParameterKey]
-    DefaultValue: Optional[ParameterValue]
-    NoEcho: Optional[NoEcho]
-    Description: Optional[Description]
+    ParameterKey: ParameterKey | None
+    DefaultValue: ParameterValue | None
+    NoEcho: NoEcho | None
+    Description: Description | None
 
 
-TemplateParameters = List[TemplateParameter]
+TemplateParameters = list[TemplateParameter]
 
 
 class TestTypeInput(ServiceRequest):
-    Arn: Optional[TypeArn]
-    Type: Optional[ThirdPartyType]
-    TypeName: Optional[TypeName]
-    VersionId: Optional[TypeVersionId]
-    LogDeliveryBucket: Optional[S3Bucket]
+    Arn: TypeArn | None
+    Type: ThirdPartyType | None
+    TypeName: TypeName | None
+    VersionId: TypeVersionId | None
+    LogDeliveryBucket: S3Bucket | None
 
 
 class TestTypeOutput(TypedDict, total=False):
-    TypeVersionArn: Optional[TypeArn]
+    TypeVersionArn: TypeArn | None
 
 
 class UpdateGeneratedTemplateInput(ServiceRequest):
     GeneratedTemplateName: GeneratedTemplateName
-    NewGeneratedTemplateName: Optional[GeneratedTemplateName]
-    AddResources: Optional[ResourceDefinitions]
-    RemoveResources: Optional[JazzLogicalResourceIds]
-    RefreshAllResources: Optional[RefreshAllResources]
-    TemplateConfiguration: Optional[TemplateConfiguration]
+    NewGeneratedTemplateName: GeneratedTemplateName | None
+    AddResources: ResourceDefinitions | None
+    RemoveResources: JazzLogicalResourceIds | None
+    RefreshAllResources: RefreshAllResources | None
+    TemplateConfiguration: TemplateConfiguration | None
 
 
 class UpdateGeneratedTemplateOutput(TypedDict, total=False):
-    GeneratedTemplateId: Optional[GeneratedTemplateId]
+    GeneratedTemplateId: GeneratedTemplateId | None
 
 
 class UpdateStackInput(ServiceRequest):
     StackName: StackName
-    TemplateBody: Optional[TemplateBody]
-    TemplateURL: Optional[TemplateURL]
-    UsePreviousTemplate: Optional[UsePreviousTemplate]
-    StackPolicyDuringUpdateBody: Optional[StackPolicyDuringUpdateBody]
-    StackPolicyDuringUpdateURL: Optional[StackPolicyDuringUpdateURL]
-    Parameters: Optional[Parameters]
-    Capabilities: Optional[Capabilities]
-    ResourceTypes: Optional[ResourceTypes]
-    RoleARN: Optional[RoleARN]
-    RollbackConfiguration: Optional[RollbackConfiguration]
-    StackPolicyBody: Optional[StackPolicyBody]
-    StackPolicyURL: Optional[StackPolicyURL]
-    NotificationARNs: Optional[NotificationARNs]
-    Tags: Optional[Tags]
-    DisableRollback: Optional[DisableRollback]
-    ClientRequestToken: Optional[ClientRequestToken]
-    RetainExceptOnCreate: Optional[RetainExceptOnCreate]
+    TemplateBody: TemplateBody | None
+    TemplateURL: TemplateURL | None
+    UsePreviousTemplate: UsePreviousTemplate | None
+    StackPolicyDuringUpdateBody: StackPolicyDuringUpdateBody | None
+    StackPolicyDuringUpdateURL: StackPolicyDuringUpdateURL | None
+    Parameters: Parameters | None
+    Capabilities: Capabilities | None
+    ResourceTypes: ResourceTypes | None
+    RoleARN: RoleARN | None
+    RollbackConfiguration: RollbackConfiguration | None
+    StackPolicyBody: StackPolicyBody | None
+    StackPolicyURL: StackPolicyURL | None
+    NotificationARNs: NotificationARNs | None
+    Tags: Tags | None
+    DisableRollback: DisableRollback | None
+    ClientRequestToken: ClientRequestToken | None
+    RetainExceptOnCreate: RetainExceptOnCreate | None
 
 
 class UpdateStackInstancesInput(ServiceRequest):
     StackSetName: StackSetNameOrId
-    Accounts: Optional[AccountList]
-    DeploymentTargets: Optional[DeploymentTargets]
+    Accounts: AccountList | None
+    DeploymentTargets: DeploymentTargets | None
     Regions: RegionList
-    ParameterOverrides: Optional[Parameters]
-    OperationPreferences: Optional[StackSetOperationPreferences]
-    OperationId: Optional[ClientRequestToken]
-    CallAs: Optional[CallAs]
+    ParameterOverrides: Parameters | None
+    OperationPreferences: StackSetOperationPreferences | None
+    OperationId: ClientRequestToken | None
+    CallAs: CallAs | None
 
 
 class UpdateStackInstancesOutput(TypedDict, total=False):
-    OperationId: Optional[ClientRequestToken]
+    OperationId: ClientRequestToken | None
 
 
 class UpdateStackOutput(TypedDict, total=False):
-    StackId: Optional[StackId]
+    StackId: StackId | None
 
 
 class UpdateStackSetInput(ServiceRequest):
     StackSetName: StackSetName
-    Description: Optional[Description]
-    TemplateBody: Optional[TemplateBody]
-    TemplateURL: Optional[TemplateURL]
-    UsePreviousTemplate: Optional[UsePreviousTemplate]
-    Parameters: Optional[Parameters]
-    Capabilities: Optional[Capabilities]
-    Tags: Optional[Tags]
-    OperationPreferences: Optional[StackSetOperationPreferences]
-    AdministrationRoleARN: Optional[RoleARN]
-    ExecutionRoleName: Optional[ExecutionRoleName]
-    DeploymentTargets: Optional[DeploymentTargets]
-    PermissionModel: Optional[PermissionModels]
-    AutoDeployment: Optional[AutoDeployment]
-    OperationId: Optional[ClientRequestToken]
-    Accounts: Optional[AccountList]
-    Regions: Optional[RegionList]
-    CallAs: Optional[CallAs]
-    ManagedExecution: Optional[ManagedExecution]
+    Description: Description | None
+    TemplateBody: TemplateBody | None
+    TemplateURL: TemplateURL | None
+    UsePreviousTemplate: UsePreviousTemplate | None
+    Parameters: Parameters | None
+    Capabilities: Capabilities | None
+    Tags: Tags | None
+    OperationPreferences: StackSetOperationPreferences | None
+    AdministrationRoleARN: RoleARN | None
+    ExecutionRoleName: ExecutionRoleName | None
+    DeploymentTargets: DeploymentTargets | None
+    PermissionModel: PermissionModels | None
+    AutoDeployment: AutoDeployment | None
+    OperationId: ClientRequestToken | None
+    Accounts: AccountList | None
+    Regions: RegionList | None
+    CallAs: CallAs | None
+    ManagedExecution: ManagedExecution | None
 
 
 class UpdateStackSetOutput(TypedDict, total=False):
-    OperationId: Optional[ClientRequestToken]
+    OperationId: ClientRequestToken | None
 
 
 class UpdateTerminationProtectionInput(ServiceRequest):
@@ -2904,25 +2904,25 @@ class UpdateTerminationProtectionInput(ServiceRequest):
 
 
 class UpdateTerminationProtectionOutput(TypedDict, total=False):
-    StackId: Optional[StackId]
+    StackId: StackId | None
 
 
 class ValidateTemplateInput(ServiceRequest):
-    TemplateBody: Optional[TemplateBody]
-    TemplateURL: Optional[TemplateURL]
+    TemplateBody: TemplateBody | None
+    TemplateURL: TemplateURL | None
 
 
 class ValidateTemplateOutput(TypedDict, total=False):
-    Parameters: Optional[TemplateParameters]
-    Description: Optional[Description]
-    Capabilities: Optional[Capabilities]
-    CapabilitiesReason: Optional[CapabilitiesReason]
-    DeclaredTransforms: Optional[TransformsList]
+    Parameters: TemplateParameters | None
+    Description: Description | None
+    Capabilities: Capabilities | None
+    CapabilitiesReason: CapabilitiesReason | None
+    DeclaredTransforms: TransformsList | None
 
 
 class CloudformationApi:
-    service = "cloudformation"
-    version = "2010-05-15"
+    service: str = "cloudformation"
+    version: str = "2010-05-15"
 
     @handler("ActivateOrganizationsAccess")
     def activate_organizations_access(

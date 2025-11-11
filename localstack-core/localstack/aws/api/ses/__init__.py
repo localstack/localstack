@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -189,35 +189,35 @@ class AlreadyExistsException(ServiceException):
     code: str = "AlreadyExists"
     sender_fault: bool = True
     status_code: int = 400
-    Name: Optional[RuleOrRuleSetName]
+    Name: RuleOrRuleSetName | None
 
 
 class CannotDeleteException(ServiceException):
     code: str = "CannotDelete"
     sender_fault: bool = True
     status_code: int = 400
-    Name: Optional[RuleOrRuleSetName]
+    Name: RuleOrRuleSetName | None
 
 
 class ConfigurationSetAlreadyExistsException(ServiceException):
     code: str = "ConfigurationSetAlreadyExists"
     sender_fault: bool = True
     status_code: int = 400
-    ConfigurationSetName: Optional[ConfigurationSetName]
+    ConfigurationSetName: ConfigurationSetName | None
 
 
 class ConfigurationSetDoesNotExistException(ServiceException):
     code: str = "ConfigurationSetDoesNotExist"
     sender_fault: bool = True
     status_code: int = 400
-    ConfigurationSetName: Optional[ConfigurationSetName]
+    ConfigurationSetName: ConfigurationSetName | None
 
 
 class ConfigurationSetSendingPausedException(ServiceException):
     code: str = "ConfigurationSetSendingPausedException"
     sender_fault: bool = True
     status_code: int = 400
-    ConfigurationSetName: Optional[ConfigurationSetName]
+    ConfigurationSetName: ConfigurationSetName | None
 
 
 class CustomVerificationEmailInvalidContentException(ServiceException):
@@ -230,45 +230,45 @@ class CustomVerificationEmailTemplateAlreadyExistsException(ServiceException):
     code: str = "CustomVerificationEmailTemplateAlreadyExists"
     sender_fault: bool = True
     status_code: int = 400
-    CustomVerificationEmailTemplateName: Optional[TemplateName]
+    CustomVerificationEmailTemplateName: TemplateName | None
 
 
 class CustomVerificationEmailTemplateDoesNotExistException(ServiceException):
     code: str = "CustomVerificationEmailTemplateDoesNotExist"
     sender_fault: bool = True
     status_code: int = 400
-    CustomVerificationEmailTemplateName: Optional[TemplateName]
+    CustomVerificationEmailTemplateName: TemplateName | None
 
 
 class EventDestinationAlreadyExistsException(ServiceException):
     code: str = "EventDestinationAlreadyExists"
     sender_fault: bool = True
     status_code: int = 400
-    ConfigurationSetName: Optional[ConfigurationSetName]
-    EventDestinationName: Optional[EventDestinationName]
+    ConfigurationSetName: ConfigurationSetName | None
+    EventDestinationName: EventDestinationName | None
 
 
 class EventDestinationDoesNotExistException(ServiceException):
     code: str = "EventDestinationDoesNotExist"
     sender_fault: bool = True
     status_code: int = 400
-    ConfigurationSetName: Optional[ConfigurationSetName]
-    EventDestinationName: Optional[EventDestinationName]
+    ConfigurationSetName: ConfigurationSetName | None
+    EventDestinationName: EventDestinationName | None
 
 
 class FromEmailAddressNotVerifiedException(ServiceException):
     code: str = "FromEmailAddressNotVerified"
     sender_fault: bool = True
     status_code: int = 400
-    FromEmailAddress: Optional[FromAddress]
+    FromEmailAddress: FromAddress | None
 
 
 class InvalidCloudWatchDestinationException(ServiceException):
     code: str = "InvalidCloudWatchDestination"
     sender_fault: bool = True
     status_code: int = 400
-    ConfigurationSetName: Optional[ConfigurationSetName]
-    EventDestinationName: Optional[EventDestinationName]
+    ConfigurationSetName: ConfigurationSetName | None
+    EventDestinationName: EventDestinationName | None
 
 
 class InvalidConfigurationSetException(ServiceException):
@@ -287,15 +287,15 @@ class InvalidFirehoseDestinationException(ServiceException):
     code: str = "InvalidFirehoseDestination"
     sender_fault: bool = True
     status_code: int = 400
-    ConfigurationSetName: Optional[ConfigurationSetName]
-    EventDestinationName: Optional[EventDestinationName]
+    ConfigurationSetName: ConfigurationSetName | None
+    EventDestinationName: EventDestinationName | None
 
 
 class InvalidLambdaFunctionException(ServiceException):
     code: str = "InvalidLambdaFunction"
     sender_fault: bool = True
     status_code: int = 400
-    FunctionArn: Optional[AmazonResourceName]
+    FunctionArn: AmazonResourceName | None
 
 
 class InvalidPolicyException(ServiceException):
@@ -308,36 +308,36 @@ class InvalidRenderingParameterException(ServiceException):
     code: str = "InvalidRenderingParameter"
     sender_fault: bool = True
     status_code: int = 400
-    TemplateName: Optional[TemplateName]
+    TemplateName: TemplateName | None
 
 
 class InvalidS3ConfigurationException(ServiceException):
     code: str = "InvalidS3Configuration"
     sender_fault: bool = True
     status_code: int = 400
-    Bucket: Optional[S3BucketName]
+    Bucket: S3BucketName | None
 
 
 class InvalidSNSDestinationException(ServiceException):
     code: str = "InvalidSNSDestination"
     sender_fault: bool = True
     status_code: int = 400
-    ConfigurationSetName: Optional[ConfigurationSetName]
-    EventDestinationName: Optional[EventDestinationName]
+    ConfigurationSetName: ConfigurationSetName | None
+    EventDestinationName: EventDestinationName | None
 
 
 class InvalidSnsTopicException(ServiceException):
     code: str = "InvalidSnsTopic"
     sender_fault: bool = True
     status_code: int = 400
-    Topic: Optional[AmazonResourceName]
+    Topic: AmazonResourceName | None
 
 
 class InvalidTemplateException(ServiceException):
     code: str = "InvalidTemplate"
     sender_fault: bool = True
     status_code: int = 400
-    TemplateName: Optional[TemplateName]
+    TemplateName: TemplateName | None
 
 
 class InvalidTrackingOptionsException(ServiceException):
@@ -368,7 +368,7 @@ class MissingRenderingAttributeException(ServiceException):
     code: str = "MissingRenderingAttribute"
     sender_fault: bool = True
     status_code: int = 400
-    TemplateName: Optional[TemplateName]
+    TemplateName: TemplateName | None
 
 
 class ProductionAccessNotGrantedException(ServiceException):
@@ -381,35 +381,35 @@ class RuleDoesNotExistException(ServiceException):
     code: str = "RuleDoesNotExist"
     sender_fault: bool = True
     status_code: int = 400
-    Name: Optional[RuleOrRuleSetName]
+    Name: RuleOrRuleSetName | None
 
 
 class RuleSetDoesNotExistException(ServiceException):
     code: str = "RuleSetDoesNotExist"
     sender_fault: bool = True
     status_code: int = 400
-    Name: Optional[RuleOrRuleSetName]
+    Name: RuleOrRuleSetName | None
 
 
 class TemplateDoesNotExistException(ServiceException):
     code: str = "TemplateDoesNotExist"
     sender_fault: bool = True
     status_code: int = 400
-    TemplateName: Optional[TemplateName]
+    TemplateName: TemplateName | None
 
 
 class TrackingOptionsAlreadyExistsException(ServiceException):
     code: str = "TrackingOptionsAlreadyExistsException"
     sender_fault: bool = True
     status_code: int = 400
-    ConfigurationSetName: Optional[ConfigurationSetName]
+    ConfigurationSetName: ConfigurationSetName | None
 
 
 class TrackingOptionsDoesNotExistException(ServiceException):
     code: str = "TrackingOptionsDoesNotExistException"
     sender_fault: bool = True
     status_code: int = 400
-    ConfigurationSetName: Optional[ConfigurationSetName]
+    ConfigurationSetName: ConfigurationSetName | None
 
 
 class AddHeaderAction(TypedDict, total=False):
@@ -417,24 +417,24 @@ class AddHeaderAction(TypedDict, total=False):
     HeaderValue: HeaderValue
 
 
-AddressList = List[Address]
+AddressList = list[Address]
 ArrivalDate = datetime
 
 
 class Content(TypedDict, total=False):
     Data: MessageData
-    Charset: Optional[Charset]
+    Charset: Charset | None
 
 
 class Body(TypedDict, total=False):
-    Text: Optional[Content]
-    Html: Optional[Content]
+    Text: Content | None
+    Html: Content | None
 
 
 class BounceAction(TypedDict, total=False):
-    TopicArn: Optional[AmazonResourceName]
+    TopicArn: AmazonResourceName | None
     SmtpReplyCode: BounceSmtpReplyCode
-    StatusCode: Optional[BounceStatusCode]
+    StatusCode: BounceStatusCode | None
     Message: BounceMessage
     Sender: Address
 
@@ -444,28 +444,28 @@ class ExtensionField(TypedDict, total=False):
     Value: ExtensionFieldValue
 
 
-ExtensionFieldList = List[ExtensionField]
+ExtensionFieldList = list[ExtensionField]
 LastAttemptDate = datetime
 
 
 class RecipientDsnFields(TypedDict, total=False):
-    FinalRecipient: Optional[Address]
+    FinalRecipient: Address | None
     Action: DsnAction
-    RemoteMta: Optional[RemoteMta]
+    RemoteMta: RemoteMta | None
     Status: DsnStatus
-    DiagnosticCode: Optional[DiagnosticCode]
-    LastAttemptDate: Optional[LastAttemptDate]
-    ExtensionFields: Optional[ExtensionFieldList]
+    DiagnosticCode: DiagnosticCode | None
+    LastAttemptDate: LastAttemptDate | None
+    ExtensionFields: ExtensionFieldList | None
 
 
 class BouncedRecipientInfo(TypedDict, total=False):
     Recipient: Address
-    RecipientArn: Optional[AmazonResourceName]
-    BounceType: Optional[BounceType]
-    RecipientDsnFields: Optional[RecipientDsnFields]
+    RecipientArn: AmazonResourceName | None
+    BounceType: BounceType | None
+    RecipientDsnFields: RecipientDsnFields | None
 
 
-BouncedRecipientInfoList = List[BouncedRecipientInfo]
+BouncedRecipientInfoList = list[BouncedRecipientInfo]
 
 
 class MessageTag(TypedDict, total=False):
@@ -473,31 +473,31 @@ class MessageTag(TypedDict, total=False):
     Value: MessageTagValue
 
 
-MessageTagList = List[MessageTag]
+MessageTagList = list[MessageTag]
 
 
 class Destination(TypedDict, total=False):
-    ToAddresses: Optional[AddressList]
-    CcAddresses: Optional[AddressList]
-    BccAddresses: Optional[AddressList]
+    ToAddresses: AddressList | None
+    CcAddresses: AddressList | None
+    BccAddresses: AddressList | None
 
 
 class BulkEmailDestination(TypedDict, total=False):
     Destination: Destination
-    ReplacementTags: Optional[MessageTagList]
-    ReplacementTemplateData: Optional[TemplateData]
+    ReplacementTags: MessageTagList | None
+    ReplacementTemplateData: TemplateData | None
 
 
-BulkEmailDestinationList = List[BulkEmailDestination]
+BulkEmailDestinationList = list[BulkEmailDestination]
 
 
 class BulkEmailDestinationStatus(TypedDict, total=False):
-    Status: Optional[BulkEmailStatus]
-    Error: Optional[Error]
-    MessageId: Optional[MessageId]
+    Status: BulkEmailStatus | None
+    Error: Error | None
+    MessageId: MessageId | None
 
 
-BulkEmailDestinationStatusList = List[BulkEmailDestinationStatus]
+BulkEmailDestinationStatusList = list[BulkEmailDestinationStatus]
 
 
 class CloneReceiptRuleSetRequest(ServiceRequest):
@@ -515,7 +515,7 @@ class CloudWatchDimensionConfiguration(TypedDict, total=False):
     DefaultDimensionValue: DefaultDimensionValue
 
 
-CloudWatchDimensionConfigurations = List[CloudWatchDimensionConfiguration]
+CloudWatchDimensionConfigurations = list[CloudWatchDimensionConfiguration]
 
 
 class CloudWatchDestination(TypedDict, total=False):
@@ -526,8 +526,8 @@ class ConfigurationSet(TypedDict, total=False):
     Name: ConfigurationSetName
 
 
-ConfigurationSetAttributeList = List[ConfigurationSetAttribute]
-ConfigurationSets = List[ConfigurationSet]
+ConfigurationSetAttributeList = list[ConfigurationSetAttribute]
+ConfigurationSets = list[ConfigurationSet]
 
 
 class ConnectAction(TypedDict, total=False):
@@ -547,16 +547,16 @@ class KinesisFirehoseDestination(TypedDict, total=False):
     DeliveryStreamARN: AmazonResourceName
 
 
-EventTypes = List[EventType]
+EventTypes = list[EventType]
 
 
 class EventDestination(TypedDict, total=False):
     Name: EventDestinationName
-    Enabled: Optional[Enabled]
+    Enabled: Enabled | None
     MatchingEventTypes: EventTypes
-    KinesisFirehoseDestination: Optional[KinesisFirehoseDestination]
-    CloudWatchDestination: Optional[CloudWatchDestination]
-    SNSDestination: Optional[SNSDestination]
+    KinesisFirehoseDestination: KinesisFirehoseDestination | None
+    CloudWatchDestination: CloudWatchDestination | None
+    SNSDestination: SNSDestination | None
 
 
 class CreateConfigurationSetEventDestinationRequest(ServiceRequest):
@@ -577,7 +577,7 @@ class CreateConfigurationSetResponse(TypedDict, total=False):
 
 
 class TrackingOptions(TypedDict, total=False):
-    CustomRedirectDomain: Optional[CustomRedirectDomain]
+    CustomRedirectDomain: CustomRedirectDomain | None
 
 
 class CreateConfigurationSetTrackingOptionsRequest(ServiceRequest):
@@ -618,60 +618,60 @@ class CreateReceiptFilterResponse(TypedDict, total=False):
 
 class SNSAction(TypedDict, total=False):
     TopicArn: AmazonResourceName
-    Encoding: Optional[SNSActionEncoding]
+    Encoding: SNSActionEncoding | None
 
 
 class StopAction(TypedDict, total=False):
     Scope: StopScope
-    TopicArn: Optional[AmazonResourceName]
+    TopicArn: AmazonResourceName | None
 
 
 class LambdaAction(TypedDict, total=False):
-    TopicArn: Optional[AmazonResourceName]
+    TopicArn: AmazonResourceName | None
     FunctionArn: AmazonResourceName
-    InvocationType: Optional[InvocationType]
+    InvocationType: InvocationType | None
 
 
 class WorkmailAction(TypedDict, total=False):
-    TopicArn: Optional[AmazonResourceName]
+    TopicArn: AmazonResourceName | None
     OrganizationArn: AmazonResourceName
 
 
 class S3Action(TypedDict, total=False):
-    TopicArn: Optional[AmazonResourceName]
+    TopicArn: AmazonResourceName | None
     BucketName: S3BucketName
-    ObjectKeyPrefix: Optional[S3KeyPrefix]
-    KmsKeyArn: Optional[AmazonResourceName]
-    IamRoleArn: Optional[IAMRoleARN]
+    ObjectKeyPrefix: S3KeyPrefix | None
+    KmsKeyArn: AmazonResourceName | None
+    IamRoleArn: IAMRoleARN | None
 
 
 class ReceiptAction(TypedDict, total=False):
-    S3Action: Optional[S3Action]
-    BounceAction: Optional[BounceAction]
-    WorkmailAction: Optional[WorkmailAction]
-    LambdaAction: Optional[LambdaAction]
-    StopAction: Optional[StopAction]
-    AddHeaderAction: Optional[AddHeaderAction]
-    SNSAction: Optional[SNSAction]
-    ConnectAction: Optional[ConnectAction]
+    S3Action: S3Action | None
+    BounceAction: BounceAction | None
+    WorkmailAction: WorkmailAction | None
+    LambdaAction: LambdaAction | None
+    StopAction: StopAction | None
+    AddHeaderAction: AddHeaderAction | None
+    SNSAction: SNSAction | None
+    ConnectAction: ConnectAction | None
 
 
-ReceiptActionsList = List[ReceiptAction]
-RecipientsList = List[Recipient]
+ReceiptActionsList = list[ReceiptAction]
+RecipientsList = list[Recipient]
 
 
 class ReceiptRule(TypedDict, total=False):
     Name: ReceiptRuleName
-    Enabled: Optional[Enabled]
-    TlsPolicy: Optional[TlsPolicy]
-    Recipients: Optional[RecipientsList]
-    Actions: Optional[ReceiptActionsList]
-    ScanEnabled: Optional[Enabled]
+    Enabled: Enabled | None
+    TlsPolicy: TlsPolicy | None
+    Recipients: RecipientsList | None
+    Actions: ReceiptActionsList | None
+    ScanEnabled: Enabled | None
 
 
 class CreateReceiptRuleRequest(ServiceRequest):
     RuleSetName: ReceiptRuleSetName
-    After: Optional[ReceiptRuleName]
+    After: ReceiptRuleName | None
     Rule: ReceiptRule
 
 
@@ -689,9 +689,9 @@ class CreateReceiptRuleSetResponse(TypedDict, total=False):
 
 class Template(TypedDict, total=False):
     TemplateName: TemplateName
-    SubjectPart: Optional[SubjectPart]
-    TextPart: Optional[TextPart]
-    HtmlPart: Optional[HtmlPart]
+    SubjectPart: SubjectPart | None
+    TextPart: TextPart | None
+    HtmlPart: HtmlPart | None
 
 
 class CreateTemplateRequest(ServiceRequest):
@@ -703,14 +703,14 @@ class CreateTemplateResponse(TypedDict, total=False):
 
 
 class CustomVerificationEmailTemplate(TypedDict, total=False):
-    TemplateName: Optional[TemplateName]
-    FromEmailAddress: Optional[FromAddress]
-    TemplateSubject: Optional[Subject]
-    SuccessRedirectionURL: Optional[SuccessRedirectionURL]
-    FailureRedirectionURL: Optional[FailureRedirectionURL]
+    TemplateName: TemplateName | None
+    FromEmailAddress: FromAddress | None
+    TemplateSubject: Subject | None
+    SuccessRedirectionURL: SuccessRedirectionURL | None
+    FailureRedirectionURL: FailureRedirectionURL | None
 
 
-CustomVerificationEmailTemplates = List[CustomVerificationEmailTemplate]
+CustomVerificationEmailTemplates = list[CustomVerificationEmailTemplate]
 
 
 class DeleteConfigurationSetEventDestinationRequest(ServiceRequest):
@@ -797,50 +797,50 @@ class DeleteVerifiedEmailAddressRequest(ServiceRequest):
 
 
 class DeliveryOptions(TypedDict, total=False):
-    TlsPolicy: Optional[TlsPolicy]
+    TlsPolicy: TlsPolicy | None
 
 
 class DescribeActiveReceiptRuleSetRequest(ServiceRequest):
     pass
 
 
-ReceiptRulesList = List[ReceiptRule]
+ReceiptRulesList = list[ReceiptRule]
 Timestamp = datetime
 
 
 class ReceiptRuleSetMetadata(TypedDict, total=False):
-    Name: Optional[ReceiptRuleSetName]
-    CreatedTimestamp: Optional[Timestamp]
+    Name: ReceiptRuleSetName | None
+    CreatedTimestamp: Timestamp | None
 
 
 class DescribeActiveReceiptRuleSetResponse(TypedDict, total=False):
-    Metadata: Optional[ReceiptRuleSetMetadata]
-    Rules: Optional[ReceiptRulesList]
+    Metadata: ReceiptRuleSetMetadata | None
+    Rules: ReceiptRulesList | None
 
 
 class DescribeConfigurationSetRequest(ServiceRequest):
     ConfigurationSetName: ConfigurationSetName
-    ConfigurationSetAttributeNames: Optional[ConfigurationSetAttributeList]
+    ConfigurationSetAttributeNames: ConfigurationSetAttributeList | None
 
 
 LastFreshStart = datetime
 
 
 class ReputationOptions(TypedDict, total=False):
-    SendingEnabled: Optional[Enabled]
-    ReputationMetricsEnabled: Optional[Enabled]
-    LastFreshStart: Optional[LastFreshStart]
+    SendingEnabled: Enabled | None
+    ReputationMetricsEnabled: Enabled | None
+    LastFreshStart: LastFreshStart | None
 
 
-EventDestinations = List[EventDestination]
+EventDestinations = list[EventDestination]
 
 
 class DescribeConfigurationSetResponse(TypedDict, total=False):
-    ConfigurationSet: Optional[ConfigurationSet]
-    EventDestinations: Optional[EventDestinations]
-    TrackingOptions: Optional[TrackingOptions]
-    DeliveryOptions: Optional[DeliveryOptions]
-    ReputationOptions: Optional[ReputationOptions]
+    ConfigurationSet: ConfigurationSet | None
+    EventDestinations: EventDestinations | None
+    TrackingOptions: TrackingOptions | None
+    DeliveryOptions: DeliveryOptions | None
+    ReputationOptions: ReputationOptions | None
 
 
 class DescribeReceiptRuleRequest(ServiceRequest):
@@ -849,7 +849,7 @@ class DescribeReceiptRuleRequest(ServiceRequest):
 
 
 class DescribeReceiptRuleResponse(TypedDict, total=False):
-    Rule: Optional[ReceiptRule]
+    Rule: ReceiptRule | None
 
 
 class DescribeReceiptRuleSetRequest(ServiceRequest):
@@ -857,24 +857,24 @@ class DescribeReceiptRuleSetRequest(ServiceRequest):
 
 
 class DescribeReceiptRuleSetResponse(TypedDict, total=False):
-    Metadata: Optional[ReceiptRuleSetMetadata]
-    Rules: Optional[ReceiptRulesList]
+    Metadata: ReceiptRuleSetMetadata | None
+    Rules: ReceiptRulesList | None
 
 
-VerificationTokenList = List[VerificationToken]
+VerificationTokenList = list[VerificationToken]
 
 
 class IdentityDkimAttributes(TypedDict, total=False):
     DkimEnabled: Enabled
     DkimVerificationStatus: VerificationStatus
-    DkimTokens: Optional[VerificationTokenList]
+    DkimTokens: VerificationTokenList | None
 
 
-DkimAttributes = Dict[Identity, IdentityDkimAttributes]
+DkimAttributes = dict[Identity, IdentityDkimAttributes]
 
 
 class GetAccountSendingEnabledResponse(TypedDict, total=False):
-    Enabled: Optional[Enabled]
+    Enabled: Enabled | None
 
 
 class GetCustomVerificationEmailTemplateRequest(ServiceRequest):
@@ -882,15 +882,15 @@ class GetCustomVerificationEmailTemplateRequest(ServiceRequest):
 
 
 class GetCustomVerificationEmailTemplateResponse(TypedDict, total=False):
-    TemplateName: Optional[TemplateName]
-    FromEmailAddress: Optional[FromAddress]
-    TemplateSubject: Optional[Subject]
-    TemplateContent: Optional[TemplateContent]
-    SuccessRedirectionURL: Optional[SuccessRedirectionURL]
-    FailureRedirectionURL: Optional[FailureRedirectionURL]
+    TemplateName: TemplateName | None
+    FromEmailAddress: FromAddress | None
+    TemplateSubject: Subject | None
+    TemplateContent: TemplateContent | None
+    SuccessRedirectionURL: SuccessRedirectionURL | None
+    FailureRedirectionURL: FailureRedirectionURL | None
 
 
-IdentityList = List[Identity]
+IdentityList = list[Identity]
 
 
 class GetIdentityDkimAttributesRequest(ServiceRequest):
@@ -911,7 +911,7 @@ class IdentityMailFromDomainAttributes(TypedDict, total=False):
     BehaviorOnMXFailure: BehaviorOnMXFailure
 
 
-MailFromDomainAttributes = Dict[Identity, IdentityMailFromDomainAttributes]
+MailFromDomainAttributes = dict[Identity, IdentityMailFromDomainAttributes]
 
 
 class GetIdentityMailFromDomainAttributesResponse(TypedDict, total=False):
@@ -927,19 +927,19 @@ class IdentityNotificationAttributes(TypedDict, total=False):
     ComplaintTopic: NotificationTopic
     DeliveryTopic: NotificationTopic
     ForwardingEnabled: Enabled
-    HeadersInBounceNotificationsEnabled: Optional[Enabled]
-    HeadersInComplaintNotificationsEnabled: Optional[Enabled]
-    HeadersInDeliveryNotificationsEnabled: Optional[Enabled]
+    HeadersInBounceNotificationsEnabled: Enabled | None
+    HeadersInComplaintNotificationsEnabled: Enabled | None
+    HeadersInDeliveryNotificationsEnabled: Enabled | None
 
 
-NotificationAttributes = Dict[Identity, IdentityNotificationAttributes]
+NotificationAttributes = dict[Identity, IdentityNotificationAttributes]
 
 
 class GetIdentityNotificationAttributesResponse(TypedDict, total=False):
     NotificationAttributes: NotificationAttributes
 
 
-PolicyNameList = List[PolicyName]
+PolicyNameList = list[PolicyName]
 
 
 class GetIdentityPoliciesRequest(ServiceRequest):
@@ -947,7 +947,7 @@ class GetIdentityPoliciesRequest(ServiceRequest):
     PolicyNames: PolicyNameList
 
 
-PolicyMap = Dict[PolicyName, Policy]
+PolicyMap = dict[PolicyName, Policy]
 
 
 class GetIdentityPoliciesResponse(TypedDict, total=False):
@@ -960,10 +960,10 @@ class GetIdentityVerificationAttributesRequest(ServiceRequest):
 
 class IdentityVerificationAttributes(TypedDict, total=False):
     VerificationStatus: VerificationStatus
-    VerificationToken: Optional[VerificationToken]
+    VerificationToken: VerificationToken | None
 
 
-VerificationAttributes = Dict[Identity, IdentityVerificationAttributes]
+VerificationAttributes = dict[Identity, IdentityVerificationAttributes]
 
 
 class GetIdentityVerificationAttributesResponse(TypedDict, total=False):
@@ -971,24 +971,24 @@ class GetIdentityVerificationAttributesResponse(TypedDict, total=False):
 
 
 class GetSendQuotaResponse(TypedDict, total=False):
-    Max24HourSend: Optional[Max24HourSend]
-    MaxSendRate: Optional[MaxSendRate]
-    SentLast24Hours: Optional[SentLast24Hours]
+    Max24HourSend: Max24HourSend | None
+    MaxSendRate: MaxSendRate | None
+    SentLast24Hours: SentLast24Hours | None
 
 
 class SendDataPoint(TypedDict, total=False):
-    Timestamp: Optional[Timestamp]
-    DeliveryAttempts: Optional[Counter]
-    Bounces: Optional[Counter]
-    Complaints: Optional[Counter]
-    Rejects: Optional[Counter]
+    Timestamp: Timestamp | None
+    DeliveryAttempts: Counter | None
+    Bounces: Counter | None
+    Complaints: Counter | None
+    Rejects: Counter | None
 
 
-SendDataPointList = List[SendDataPoint]
+SendDataPointList = list[SendDataPoint]
 
 
 class GetSendStatisticsResponse(TypedDict, total=False):
-    SendDataPoints: Optional[SendDataPointList]
+    SendDataPoints: SendDataPointList | None
 
 
 class GetTemplateRequest(ServiceRequest):
@@ -996,38 +996,38 @@ class GetTemplateRequest(ServiceRequest):
 
 
 class GetTemplateResponse(TypedDict, total=False):
-    Template: Optional[Template]
+    Template: Template | None
 
 
 class ListConfigurationSetsRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxItems: Optional[MaxItems]
+    NextToken: NextToken | None
+    MaxItems: MaxItems | None
 
 
 class ListConfigurationSetsResponse(TypedDict, total=False):
-    ConfigurationSets: Optional[ConfigurationSets]
-    NextToken: Optional[NextToken]
+    ConfigurationSets: ConfigurationSets | None
+    NextToken: NextToken | None
 
 
 class ListCustomVerificationEmailTemplatesRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class ListCustomVerificationEmailTemplatesResponse(TypedDict, total=False):
-    CustomVerificationEmailTemplates: Optional[CustomVerificationEmailTemplates]
-    NextToken: Optional[NextToken]
+    CustomVerificationEmailTemplates: CustomVerificationEmailTemplates | None
+    NextToken: NextToken | None
 
 
 class ListIdentitiesRequest(ServiceRequest):
-    IdentityType: Optional[IdentityType]
-    NextToken: Optional[NextToken]
-    MaxItems: Optional[MaxItems]
+    IdentityType: IdentityType | None
+    NextToken: NextToken | None
+    MaxItems: MaxItems | None
 
 
 class ListIdentitiesResponse(TypedDict, total=False):
     Identities: IdentityList
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListIdentityPoliciesRequest(ServiceRequest):
@@ -1042,45 +1042,45 @@ class ListReceiptFiltersRequest(ServiceRequest):
     pass
 
 
-ReceiptFilterList = List[ReceiptFilter]
+ReceiptFilterList = list[ReceiptFilter]
 
 
 class ListReceiptFiltersResponse(TypedDict, total=False):
-    Filters: Optional[ReceiptFilterList]
+    Filters: ReceiptFilterList | None
 
 
 class ListReceiptRuleSetsRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
-ReceiptRuleSetsLists = List[ReceiptRuleSetMetadata]
+ReceiptRuleSetsLists = list[ReceiptRuleSetMetadata]
 
 
 class ListReceiptRuleSetsResponse(TypedDict, total=False):
-    RuleSets: Optional[ReceiptRuleSetsLists]
-    NextToken: Optional[NextToken]
+    RuleSets: ReceiptRuleSetsLists | None
+    NextToken: NextToken | None
 
 
 class ListTemplatesRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxItems: Optional[MaxItems]
+    NextToken: NextToken | None
+    MaxItems: MaxItems | None
 
 
 class TemplateMetadata(TypedDict, total=False):
-    Name: Optional[TemplateName]
-    CreatedTimestamp: Optional[Timestamp]
+    Name: TemplateName | None
+    CreatedTimestamp: Timestamp | None
 
 
-TemplateMetadataList = List[TemplateMetadata]
+TemplateMetadataList = list[TemplateMetadata]
 
 
 class ListTemplatesResponse(TypedDict, total=False):
-    TemplatesMetadata: Optional[TemplateMetadataList]
-    NextToken: Optional[NextToken]
+    TemplatesMetadata: TemplateMetadataList | None
+    NextToken: NextToken | None
 
 
 class ListVerifiedEmailAddressesResponse(TypedDict, total=False):
-    VerifiedEmailAddresses: Optional[AddressList]
+    VerifiedEmailAddresses: AddressList | None
 
 
 class Message(TypedDict, total=False):
@@ -1090,13 +1090,13 @@ class Message(TypedDict, total=False):
 
 class MessageDsn(TypedDict, total=False):
     ReportingMta: ReportingMta
-    ArrivalDate: Optional[ArrivalDate]
-    ExtensionFields: Optional[ExtensionFieldList]
+    ArrivalDate: ArrivalDate | None
+    ExtensionFields: ExtensionFieldList | None
 
 
 class PutConfigurationSetDeliveryOptionsRequest(ServiceRequest):
     ConfigurationSetName: ConfigurationSetName
-    DeliveryOptions: Optional[DeliveryOptions]
+    DeliveryOptions: DeliveryOptions | None
 
 
 class PutConfigurationSetDeliveryOptionsResponse(TypedDict, total=False):
@@ -1120,7 +1120,7 @@ class RawMessage(TypedDict, total=False):
     Data: RawMessageData
 
 
-ReceiptRuleNamesList = List[ReceiptRuleName]
+ReceiptRuleNamesList = list[ReceiptRuleName]
 
 
 class ReorderReceiptRuleSetRequest(ServiceRequest):
@@ -1135,26 +1135,26 @@ class ReorderReceiptRuleSetResponse(TypedDict, total=False):
 class SendBounceRequest(ServiceRequest):
     OriginalMessageId: MessageId
     BounceSender: Address
-    Explanation: Optional[Explanation]
-    MessageDsn: Optional[MessageDsn]
+    Explanation: Explanation | None
+    MessageDsn: MessageDsn | None
     BouncedRecipientInfoList: BouncedRecipientInfoList
-    BounceSenderArn: Optional[AmazonResourceName]
+    BounceSenderArn: AmazonResourceName | None
 
 
 class SendBounceResponse(TypedDict, total=False):
-    MessageId: Optional[MessageId]
+    MessageId: MessageId | None
 
 
 class SendBulkTemplatedEmailRequest(ServiceRequest):
     Source: Address
-    SourceArn: Optional[AmazonResourceName]
-    ReplyToAddresses: Optional[AddressList]
-    ReturnPath: Optional[Address]
-    ReturnPathArn: Optional[AmazonResourceName]
-    ConfigurationSetName: Optional[ConfigurationSetName]
-    DefaultTags: Optional[MessageTagList]
+    SourceArn: AmazonResourceName | None
+    ReplyToAddresses: AddressList | None
+    ReturnPath: Address | None
+    ReturnPathArn: AmazonResourceName | None
+    ConfigurationSetName: ConfigurationSetName | None
+    DefaultTags: MessageTagList | None
     Template: TemplateName
-    TemplateArn: Optional[AmazonResourceName]
+    TemplateArn: AmazonResourceName | None
     DefaultTemplateData: TemplateData
     Destinations: BulkEmailDestinationList
 
@@ -1166,23 +1166,23 @@ class SendBulkTemplatedEmailResponse(TypedDict, total=False):
 class SendCustomVerificationEmailRequest(ServiceRequest):
     EmailAddress: Address
     TemplateName: TemplateName
-    ConfigurationSetName: Optional[ConfigurationSetName]
+    ConfigurationSetName: ConfigurationSetName | None
 
 
 class SendCustomVerificationEmailResponse(TypedDict, total=False):
-    MessageId: Optional[MessageId]
+    MessageId: MessageId | None
 
 
 class SendEmailRequest(ServiceRequest):
     Source: Address
     Destination: Destination
     Message: Message
-    ReplyToAddresses: Optional[AddressList]
-    ReturnPath: Optional[Address]
-    SourceArn: Optional[AmazonResourceName]
-    ReturnPathArn: Optional[AmazonResourceName]
-    Tags: Optional[MessageTagList]
-    ConfigurationSetName: Optional[ConfigurationSetName]
+    ReplyToAddresses: AddressList | None
+    ReturnPath: Address | None
+    SourceArn: AmazonResourceName | None
+    ReturnPathArn: AmazonResourceName | None
+    Tags: MessageTagList | None
+    ConfigurationSetName: ConfigurationSetName | None
 
 
 class SendEmailResponse(TypedDict, total=False):
@@ -1190,14 +1190,14 @@ class SendEmailResponse(TypedDict, total=False):
 
 
 class SendRawEmailRequest(ServiceRequest):
-    Source: Optional[Address]
-    Destinations: Optional[AddressList]
+    Source: Address | None
+    Destinations: AddressList | None
     RawMessage: RawMessage
-    FromArn: Optional[AmazonResourceName]
-    SourceArn: Optional[AmazonResourceName]
-    ReturnPathArn: Optional[AmazonResourceName]
-    Tags: Optional[MessageTagList]
-    ConfigurationSetName: Optional[ConfigurationSetName]
+    FromArn: AmazonResourceName | None
+    SourceArn: AmazonResourceName | None
+    ReturnPathArn: AmazonResourceName | None
+    Tags: MessageTagList | None
+    ConfigurationSetName: ConfigurationSetName | None
 
 
 class SendRawEmailResponse(TypedDict, total=False):
@@ -1207,14 +1207,14 @@ class SendRawEmailResponse(TypedDict, total=False):
 class SendTemplatedEmailRequest(ServiceRequest):
     Source: Address
     Destination: Destination
-    ReplyToAddresses: Optional[AddressList]
-    ReturnPath: Optional[Address]
-    SourceArn: Optional[AmazonResourceName]
-    ReturnPathArn: Optional[AmazonResourceName]
-    Tags: Optional[MessageTagList]
-    ConfigurationSetName: Optional[ConfigurationSetName]
+    ReplyToAddresses: AddressList | None
+    ReturnPath: Address | None
+    SourceArn: AmazonResourceName | None
+    ReturnPathArn: AmazonResourceName | None
+    Tags: MessageTagList | None
+    ConfigurationSetName: ConfigurationSetName | None
     Template: TemplateName
-    TemplateArn: Optional[AmazonResourceName]
+    TemplateArn: AmazonResourceName | None
     TemplateData: TemplateData
 
 
@@ -1223,7 +1223,7 @@ class SendTemplatedEmailResponse(TypedDict, total=False):
 
 
 class SetActiveReceiptRuleSetRequest(ServiceRequest):
-    RuleSetName: Optional[ReceiptRuleSetName]
+    RuleSetName: ReceiptRuleSetName | None
 
 
 class SetActiveReceiptRuleSetResponse(TypedDict, total=False):
@@ -1260,8 +1260,8 @@ class SetIdentityHeadersInNotificationsEnabledResponse(TypedDict, total=False):
 
 class SetIdentityMailFromDomainRequest(ServiceRequest):
     Identity: Identity
-    MailFromDomain: Optional[MailFromDomainName]
-    BehaviorOnMXFailure: Optional[BehaviorOnMXFailure]
+    MailFromDomain: MailFromDomainName | None
+    BehaviorOnMXFailure: BehaviorOnMXFailure | None
 
 
 class SetIdentityMailFromDomainResponse(TypedDict, total=False):
@@ -1271,7 +1271,7 @@ class SetIdentityMailFromDomainResponse(TypedDict, total=False):
 class SetIdentityNotificationTopicRequest(ServiceRequest):
     Identity: Identity
     NotificationType: NotificationType
-    SnsTopic: Optional[NotificationTopic]
+    SnsTopic: NotificationTopic | None
 
 
 class SetIdentityNotificationTopicResponse(TypedDict, total=False):
@@ -1281,7 +1281,7 @@ class SetIdentityNotificationTopicResponse(TypedDict, total=False):
 class SetReceiptRulePositionRequest(ServiceRequest):
     RuleSetName: ReceiptRuleSetName
     RuleName: ReceiptRuleName
-    After: Optional[ReceiptRuleName]
+    After: ReceiptRuleName | None
 
 
 class SetReceiptRulePositionResponse(TypedDict, total=False):
@@ -1294,11 +1294,11 @@ class TestRenderTemplateRequest(ServiceRequest):
 
 
 class TestRenderTemplateResponse(TypedDict, total=False):
-    RenderedTemplate: Optional[RenderedTemplate]
+    RenderedTemplate: RenderedTemplate | None
 
 
 class UpdateAccountSendingEnabledRequest(ServiceRequest):
-    Enabled: Optional[Enabled]
+    Enabled: Enabled | None
 
 
 class UpdateConfigurationSetEventDestinationRequest(ServiceRequest):
@@ -1331,11 +1331,11 @@ class UpdateConfigurationSetTrackingOptionsResponse(TypedDict, total=False):
 
 class UpdateCustomVerificationEmailTemplateRequest(ServiceRequest):
     TemplateName: TemplateName
-    FromEmailAddress: Optional[FromAddress]
-    TemplateSubject: Optional[Subject]
-    TemplateContent: Optional[TemplateContent]
-    SuccessRedirectionURL: Optional[SuccessRedirectionURL]
-    FailureRedirectionURL: Optional[FailureRedirectionURL]
+    FromEmailAddress: FromAddress | None
+    TemplateSubject: Subject | None
+    TemplateContent: TemplateContent | None
+    SuccessRedirectionURL: SuccessRedirectionURL | None
+    FailureRedirectionURL: FailureRedirectionURL | None
 
 
 class UpdateReceiptRuleRequest(ServiceRequest):
@@ -1384,8 +1384,8 @@ class VerifyEmailIdentityResponse(TypedDict, total=False):
 
 
 class SesApi:
-    service = "ses"
-    version = "2010-12-01"
+    service: str = "ses"
+    version: str = "2010-12-01"
 
     @handler("CloneReceiptRuleSet")
     def clone_receipt_rule_set(

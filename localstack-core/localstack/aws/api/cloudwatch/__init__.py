@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -222,18 +222,18 @@ class ConflictException(ServiceException):
 
 
 class DashboardValidationMessage(TypedDict, total=False):
-    DataPath: Optional[DataPath]
-    Message: Optional[Message]
+    DataPath: DataPath | None
+    Message: Message | None
 
 
-DashboardValidationMessages = List[DashboardValidationMessage]
+DashboardValidationMessages = list[DashboardValidationMessage]
 
 
 class DashboardInvalidInputError(ServiceException):
     code: str = "InvalidParameterInput"
     sender_fault: bool = True
     status_code: int = 400
-    dashboardValidationMessages: Optional[DashboardValidationMessages]
+    dashboardValidationMessages: DashboardValidationMessages | None
 
 
 class DashboardNotFoundError(ServiceException):
@@ -300,38 +300,38 @@ class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
     sender_fault: bool = True
     status_code: int = 404
-    ResourceType: Optional[ResourceType]
-    ResourceId: Optional[ResourceId]
+    ResourceType: ResourceType | None
+    ResourceId: ResourceId | None
 
 
 Timestamp = datetime
-ContributorAttributes = Dict[AttributeName, AttributeValue]
+ContributorAttributes = dict[AttributeName, AttributeValue]
 
 
 class AlarmContributor(TypedDict, total=False):
     ContributorId: ContributorId
     ContributorAttributes: ContributorAttributes
     StateReason: StateReason
-    StateTransitionedTimestamp: Optional[Timestamp]
+    StateTransitionedTimestamp: Timestamp | None
 
 
-AlarmContributors = List[AlarmContributor]
+AlarmContributors = list[AlarmContributor]
 
 
 class AlarmHistoryItem(TypedDict, total=False):
-    AlarmName: Optional[AlarmName]
-    AlarmContributorId: Optional[ContributorId]
-    AlarmType: Optional[AlarmType]
-    Timestamp: Optional[Timestamp]
-    HistoryItemType: Optional[HistoryItemType]
-    HistorySummary: Optional[HistorySummary]
-    HistoryData: Optional[HistoryData]
-    AlarmContributorAttributes: Optional[ContributorAttributes]
+    AlarmName: AlarmName | None
+    AlarmContributorId: ContributorId | None
+    AlarmType: AlarmType | None
+    Timestamp: Timestamp | None
+    HistoryItemType: HistoryItemType | None
+    HistorySummary: HistorySummary | None
+    HistoryData: HistoryData | None
+    AlarmContributorAttributes: ContributorAttributes | None
 
 
-AlarmHistoryItems = List[AlarmHistoryItem]
-AlarmNames = List[AlarmName]
-AlarmTypes = List[AlarmType]
+AlarmHistoryItems = list[AlarmHistoryItem]
+AlarmNames = list[AlarmName]
+AlarmTypes = list[AlarmType]
 
 
 class Dimension(TypedDict, total=False):
@@ -339,49 +339,49 @@ class Dimension(TypedDict, total=False):
     Value: DimensionValue
 
 
-Dimensions = List[Dimension]
+Dimensions = list[Dimension]
 
 
 class Metric(TypedDict, total=False):
-    Namespace: Optional[Namespace]
-    MetricName: Optional[MetricName]
-    Dimensions: Optional[Dimensions]
+    Namespace: Namespace | None
+    MetricName: MetricName | None
+    Dimensions: Dimensions | None
 
 
 class MetricStat(TypedDict, total=False):
     Metric: Metric
     Period: Period
     Stat: Stat
-    Unit: Optional[StandardUnit]
+    Unit: StandardUnit | None
 
 
 class MetricDataQuery(TypedDict, total=False):
     Id: MetricId
-    MetricStat: Optional[MetricStat]
-    Expression: Optional[MetricExpression]
-    Label: Optional[MetricLabel]
-    ReturnData: Optional[ReturnData]
-    Period: Optional[Period]
-    AccountId: Optional[AccountId]
+    MetricStat: MetricStat | None
+    Expression: MetricExpression | None
+    Label: MetricLabel | None
+    ReturnData: ReturnData | None
+    Period: Period | None
+    AccountId: AccountId | None
 
 
-MetricDataQueries = List[MetricDataQuery]
+MetricDataQueries = list[MetricDataQuery]
 
 
 class MetricMathAnomalyDetector(TypedDict, total=False):
-    MetricDataQueries: Optional[MetricDataQueries]
+    MetricDataQueries: MetricDataQueries | None
 
 
 class SingleMetricAnomalyDetector(TypedDict, total=False):
-    AccountId: Optional[AccountId]
-    Namespace: Optional[Namespace]
-    MetricName: Optional[MetricName]
-    Dimensions: Optional[Dimensions]
-    Stat: Optional[AnomalyDetectorMetricStat]
+    AccountId: AccountId | None
+    Namespace: Namespace | None
+    MetricName: MetricName | None
+    Dimensions: Dimensions | None
+    Stat: AnomalyDetectorMetricStat | None
 
 
 class MetricCharacteristics(TypedDict, total=False):
-    PeriodicSpikes: Optional[PeriodicSpikes]
+    PeriodicSpikes: PeriodicSpikes | None
 
 
 class Range(TypedDict, total=False):
@@ -389,94 +389,94 @@ class Range(TypedDict, total=False):
     EndTime: Timestamp
 
 
-AnomalyDetectorExcludedTimeRanges = List[Range]
+AnomalyDetectorExcludedTimeRanges = list[Range]
 
 
 class AnomalyDetectorConfiguration(TypedDict, total=False):
-    ExcludedTimeRanges: Optional[AnomalyDetectorExcludedTimeRanges]
-    MetricTimezone: Optional[AnomalyDetectorMetricTimezone]
+    ExcludedTimeRanges: AnomalyDetectorExcludedTimeRanges | None
+    MetricTimezone: AnomalyDetectorMetricTimezone | None
 
 
 class AnomalyDetector(TypedDict, total=False):
-    Namespace: Optional[Namespace]
-    MetricName: Optional[MetricName]
-    Dimensions: Optional[Dimensions]
-    Stat: Optional[AnomalyDetectorMetricStat]
-    Configuration: Optional[AnomalyDetectorConfiguration]
-    StateValue: Optional[AnomalyDetectorStateValue]
-    MetricCharacteristics: Optional[MetricCharacteristics]
-    SingleMetricAnomalyDetector: Optional[SingleMetricAnomalyDetector]
-    MetricMathAnomalyDetector: Optional[MetricMathAnomalyDetector]
+    Namespace: Namespace | None
+    MetricName: MetricName | None
+    Dimensions: Dimensions | None
+    Stat: AnomalyDetectorMetricStat | None
+    Configuration: AnomalyDetectorConfiguration | None
+    StateValue: AnomalyDetectorStateValue | None
+    MetricCharacteristics: MetricCharacteristics | None
+    SingleMetricAnomalyDetector: SingleMetricAnomalyDetector | None
+    MetricMathAnomalyDetector: MetricMathAnomalyDetector | None
 
 
-AnomalyDetectorTypes = List[AnomalyDetectorType]
-AnomalyDetectors = List[AnomalyDetector]
+AnomalyDetectorTypes = list[AnomalyDetectorType]
+AnomalyDetectors = list[AnomalyDetector]
 
 
 class PartialFailure(TypedDict, total=False):
-    FailureResource: Optional[FailureResource]
-    ExceptionType: Optional[ExceptionType]
-    FailureCode: Optional[FailureCode]
-    FailureDescription: Optional[FailureDescription]
+    FailureResource: FailureResource | None
+    ExceptionType: ExceptionType | None
+    FailureCode: FailureCode | None
+    FailureDescription: FailureDescription | None
 
 
-BatchFailures = List[PartialFailure]
-ResourceList = List[ResourceName]
+BatchFailures = list[PartialFailure]
+ResourceList = list[ResourceName]
 
 
 class CompositeAlarm(TypedDict, total=False):
-    ActionsEnabled: Optional[ActionsEnabled]
-    AlarmActions: Optional[ResourceList]
-    AlarmArn: Optional[AlarmArn]
-    AlarmConfigurationUpdatedTimestamp: Optional[Timestamp]
-    AlarmDescription: Optional[AlarmDescription]
-    AlarmName: Optional[AlarmName]
-    AlarmRule: Optional[AlarmRule]
-    InsufficientDataActions: Optional[ResourceList]
-    OKActions: Optional[ResourceList]
-    StateReason: Optional[StateReason]
-    StateReasonData: Optional[StateReasonData]
-    StateUpdatedTimestamp: Optional[Timestamp]
-    StateValue: Optional[StateValue]
-    StateTransitionedTimestamp: Optional[Timestamp]
-    ActionsSuppressedBy: Optional[ActionsSuppressedBy]
-    ActionsSuppressedReason: Optional[ActionsSuppressedReason]
-    ActionsSuppressor: Optional[AlarmArn]
-    ActionsSuppressorWaitPeriod: Optional[SuppressorPeriod]
-    ActionsSuppressorExtensionPeriod: Optional[SuppressorPeriod]
+    ActionsEnabled: ActionsEnabled | None
+    AlarmActions: ResourceList | None
+    AlarmArn: AlarmArn | None
+    AlarmConfigurationUpdatedTimestamp: Timestamp | None
+    AlarmDescription: AlarmDescription | None
+    AlarmName: AlarmName | None
+    AlarmRule: AlarmRule | None
+    InsufficientDataActions: ResourceList | None
+    OKActions: ResourceList | None
+    StateReason: StateReason | None
+    StateReasonData: StateReasonData | None
+    StateUpdatedTimestamp: Timestamp | None
+    StateValue: StateValue | None
+    StateTransitionedTimestamp: Timestamp | None
+    ActionsSuppressedBy: ActionsSuppressedBy | None
+    ActionsSuppressedReason: ActionsSuppressedReason | None
+    ActionsSuppressor: AlarmArn | None
+    ActionsSuppressorWaitPeriod: SuppressorPeriod | None
+    ActionsSuppressorExtensionPeriod: SuppressorPeriod | None
 
 
-CompositeAlarms = List[CompositeAlarm]
-Counts = List[DatapointValue]
+CompositeAlarms = list[CompositeAlarm]
+Counts = list[DatapointValue]
 Size = int
 LastModified = datetime
 
 
 class DashboardEntry(TypedDict, total=False):
-    DashboardName: Optional[DashboardName]
-    DashboardArn: Optional[DashboardArn]
-    LastModified: Optional[LastModified]
-    Size: Optional[Size]
+    DashboardName: DashboardName | None
+    DashboardArn: DashboardArn | None
+    LastModified: LastModified | None
+    Size: Size | None
 
 
-DashboardEntries = List[DashboardEntry]
-DashboardNames = List[DashboardName]
-DatapointValueMap = Dict[ExtendedStatistic, DatapointValue]
+DashboardEntries = list[DashboardEntry]
+DashboardNames = list[DashboardName]
+DatapointValueMap = dict[ExtendedStatistic, DatapointValue]
 
 
 class Datapoint(TypedDict, total=False):
-    Timestamp: Optional[Timestamp]
-    SampleCount: Optional[DatapointValue]
-    Average: Optional[DatapointValue]
-    Sum: Optional[DatapointValue]
-    Minimum: Optional[DatapointValue]
-    Maximum: Optional[DatapointValue]
-    Unit: Optional[StandardUnit]
-    ExtendedStatistics: Optional[DatapointValueMap]
+    Timestamp: Timestamp | None
+    SampleCount: DatapointValue | None
+    Average: DatapointValue | None
+    Sum: DatapointValue | None
+    Minimum: DatapointValue | None
+    Maximum: DatapointValue | None
+    Unit: StandardUnit | None
+    ExtendedStatistics: DatapointValueMap | None
 
 
-DatapointValues = List[DatapointValue]
-Datapoints = List[Datapoint]
+DatapointValues = list[DatapointValue]
+Datapoints = list[Datapoint]
 
 
 class DeleteAlarmsInput(ServiceRequest):
@@ -484,12 +484,12 @@ class DeleteAlarmsInput(ServiceRequest):
 
 
 class DeleteAnomalyDetectorInput(ServiceRequest):
-    Namespace: Optional[Namespace]
-    MetricName: Optional[MetricName]
-    Dimensions: Optional[Dimensions]
-    Stat: Optional[AnomalyDetectorMetricStat]
-    SingleMetricAnomalyDetector: Optional[SingleMetricAnomalyDetector]
-    MetricMathAnomalyDetector: Optional[MetricMathAnomalyDetector]
+    Namespace: Namespace | None
+    MetricName: MetricName | None
+    Dimensions: Dimensions | None
+    Stat: AnomalyDetectorMetricStat | None
+    SingleMetricAnomalyDetector: SingleMetricAnomalyDetector | None
+    MetricMathAnomalyDetector: MetricMathAnomalyDetector | None
 
 
 class DeleteAnomalyDetectorOutput(TypedDict, total=False):
@@ -504,7 +504,7 @@ class DeleteDashboardsOutput(TypedDict, total=False):
     pass
 
 
-InsightRuleNames = List[InsightRuleName]
+InsightRuleNames = list[InsightRuleName]
 
 
 class DeleteInsightRulesInput(ServiceRequest):
@@ -512,7 +512,7 @@ class DeleteInsightRulesInput(ServiceRequest):
 
 
 class DeleteInsightRulesOutput(TypedDict, total=False):
-    Failures: Optional[BatchFailures]
+    Failures: BatchFailures | None
 
 
 class DeleteMetricStreamInput(ServiceRequest):
@@ -525,115 +525,115 @@ class DeleteMetricStreamOutput(TypedDict, total=False):
 
 class DescribeAlarmContributorsInput(ServiceRequest):
     AlarmName: AlarmName
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class DescribeAlarmContributorsOutput(TypedDict, total=False):
     AlarmContributors: AlarmContributors
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class DescribeAlarmHistoryInput(ServiceRequest):
-    AlarmName: Optional[AlarmName]
-    AlarmContributorId: Optional[ContributorId]
-    AlarmTypes: Optional[AlarmTypes]
-    HistoryItemType: Optional[HistoryItemType]
-    StartDate: Optional[Timestamp]
-    EndDate: Optional[Timestamp]
-    MaxRecords: Optional[MaxRecords]
-    NextToken: Optional[NextToken]
-    ScanBy: Optional[ScanBy]
+    AlarmName: AlarmName | None
+    AlarmContributorId: ContributorId | None
+    AlarmTypes: AlarmTypes | None
+    HistoryItemType: HistoryItemType | None
+    StartDate: Timestamp | None
+    EndDate: Timestamp | None
+    MaxRecords: MaxRecords | None
+    NextToken: NextToken | None
+    ScanBy: ScanBy | None
 
 
 class DescribeAlarmHistoryOutput(TypedDict, total=False):
-    AlarmHistoryItems: Optional[AlarmHistoryItems]
-    NextToken: Optional[NextToken]
+    AlarmHistoryItems: AlarmHistoryItems | None
+    NextToken: NextToken | None
 
 
 class DescribeAlarmsForMetricInput(ServiceRequest):
     MetricName: MetricName
     Namespace: Namespace
-    Statistic: Optional[Statistic]
-    ExtendedStatistic: Optional[ExtendedStatistic]
-    Dimensions: Optional[Dimensions]
-    Period: Optional[Period]
-    Unit: Optional[StandardUnit]
+    Statistic: Statistic | None
+    ExtendedStatistic: ExtendedStatistic | None
+    Dimensions: Dimensions | None
+    Period: Period | None
+    Unit: StandardUnit | None
 
 
 class MetricAlarm(TypedDict, total=False):
-    AlarmName: Optional[AlarmName]
-    AlarmArn: Optional[AlarmArn]
-    AlarmDescription: Optional[AlarmDescription]
-    AlarmConfigurationUpdatedTimestamp: Optional[Timestamp]
-    ActionsEnabled: Optional[ActionsEnabled]
-    OKActions: Optional[ResourceList]
-    AlarmActions: Optional[ResourceList]
-    InsufficientDataActions: Optional[ResourceList]
-    StateValue: Optional[StateValue]
-    StateReason: Optional[StateReason]
-    StateReasonData: Optional[StateReasonData]
-    StateUpdatedTimestamp: Optional[Timestamp]
-    MetricName: Optional[MetricName]
-    Namespace: Optional[Namespace]
-    Statistic: Optional[Statistic]
-    ExtendedStatistic: Optional[ExtendedStatistic]
-    Dimensions: Optional[Dimensions]
-    Period: Optional[Period]
-    Unit: Optional[StandardUnit]
-    EvaluationPeriods: Optional[EvaluationPeriods]
-    DatapointsToAlarm: Optional[DatapointsToAlarm]
-    Threshold: Optional[Threshold]
-    ComparisonOperator: Optional[ComparisonOperator]
-    TreatMissingData: Optional[TreatMissingData]
-    EvaluateLowSampleCountPercentile: Optional[EvaluateLowSampleCountPercentile]
-    Metrics: Optional[MetricDataQueries]
-    ThresholdMetricId: Optional[MetricId]
-    EvaluationState: Optional[EvaluationState]
-    StateTransitionedTimestamp: Optional[Timestamp]
+    AlarmName: AlarmName | None
+    AlarmArn: AlarmArn | None
+    AlarmDescription: AlarmDescription | None
+    AlarmConfigurationUpdatedTimestamp: Timestamp | None
+    ActionsEnabled: ActionsEnabled | None
+    OKActions: ResourceList | None
+    AlarmActions: ResourceList | None
+    InsufficientDataActions: ResourceList | None
+    StateValue: StateValue | None
+    StateReason: StateReason | None
+    StateReasonData: StateReasonData | None
+    StateUpdatedTimestamp: Timestamp | None
+    MetricName: MetricName | None
+    Namespace: Namespace | None
+    Statistic: Statistic | None
+    ExtendedStatistic: ExtendedStatistic | None
+    Dimensions: Dimensions | None
+    Period: Period | None
+    Unit: StandardUnit | None
+    EvaluationPeriods: EvaluationPeriods | None
+    DatapointsToAlarm: DatapointsToAlarm | None
+    Threshold: Threshold | None
+    ComparisonOperator: ComparisonOperator | None
+    TreatMissingData: TreatMissingData | None
+    EvaluateLowSampleCountPercentile: EvaluateLowSampleCountPercentile | None
+    Metrics: MetricDataQueries | None
+    ThresholdMetricId: MetricId | None
+    EvaluationState: EvaluationState | None
+    StateTransitionedTimestamp: Timestamp | None
 
 
-MetricAlarms = List[MetricAlarm]
+MetricAlarms = list[MetricAlarm]
 
 
 class DescribeAlarmsForMetricOutput(TypedDict, total=False):
-    MetricAlarms: Optional[MetricAlarms]
+    MetricAlarms: MetricAlarms | None
 
 
 class DescribeAlarmsInput(ServiceRequest):
-    AlarmNames: Optional[AlarmNames]
-    AlarmNamePrefix: Optional[AlarmNamePrefix]
-    AlarmTypes: Optional[AlarmTypes]
-    ChildrenOfAlarmName: Optional[AlarmName]
-    ParentsOfAlarmName: Optional[AlarmName]
-    StateValue: Optional[StateValue]
-    ActionPrefix: Optional[ActionPrefix]
-    MaxRecords: Optional[MaxRecords]
-    NextToken: Optional[NextToken]
+    AlarmNames: AlarmNames | None
+    AlarmNamePrefix: AlarmNamePrefix | None
+    AlarmTypes: AlarmTypes | None
+    ChildrenOfAlarmName: AlarmName | None
+    ParentsOfAlarmName: AlarmName | None
+    StateValue: StateValue | None
+    ActionPrefix: ActionPrefix | None
+    MaxRecords: MaxRecords | None
+    NextToken: NextToken | None
 
 
 class DescribeAlarmsOutput(TypedDict, total=False):
-    CompositeAlarms: Optional[CompositeAlarms]
-    MetricAlarms: Optional[MetricAlarms]
-    NextToken: Optional[NextToken]
+    CompositeAlarms: CompositeAlarms | None
+    MetricAlarms: MetricAlarms | None
+    NextToken: NextToken | None
 
 
 class DescribeAnomalyDetectorsInput(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxReturnedResultsCount]
-    Namespace: Optional[Namespace]
-    MetricName: Optional[MetricName]
-    Dimensions: Optional[Dimensions]
-    AnomalyDetectorTypes: Optional[AnomalyDetectorTypes]
+    NextToken: NextToken | None
+    MaxResults: MaxReturnedResultsCount | None
+    Namespace: Namespace | None
+    MetricName: MetricName | None
+    Dimensions: Dimensions | None
+    AnomalyDetectorTypes: AnomalyDetectorTypes | None
 
 
 class DescribeAnomalyDetectorsOutput(TypedDict, total=False):
-    AnomalyDetectors: Optional[AnomalyDetectors]
-    NextToken: Optional[NextToken]
+    AnomalyDetectors: AnomalyDetectors | None
+    NextToken: NextToken | None
 
 
 class DescribeInsightRulesInput(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[InsightRuleMaxResults]
+    NextToken: NextToken | None
+    MaxResults: InsightRuleMaxResults | None
 
 
 class InsightRule(TypedDict, total=False):
@@ -641,24 +641,24 @@ class InsightRule(TypedDict, total=False):
     State: InsightRuleState
     Schema: InsightRuleSchema
     Definition: InsightRuleDefinition
-    ManagedRule: Optional[InsightRuleIsManaged]
-    ApplyOnTransformedLogs: Optional[InsightRuleOnTransformedLogs]
+    ManagedRule: InsightRuleIsManaged | None
+    ApplyOnTransformedLogs: InsightRuleOnTransformedLogs | None
 
 
-InsightRules = List[InsightRule]
+InsightRules = list[InsightRule]
 
 
 class DescribeInsightRulesOutput(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    InsightRules: Optional[InsightRules]
+    NextToken: NextToken | None
+    InsightRules: InsightRules | None
 
 
 class DimensionFilter(TypedDict, total=False):
     Name: DimensionName
-    Value: Optional[DimensionValue]
+    Value: DimensionValue | None
 
 
-DimensionFilters = List[DimensionFilter]
+DimensionFilters = list[DimensionFilter]
 
 
 class DisableAlarmActionsInput(ServiceRequest):
@@ -670,7 +670,7 @@ class DisableInsightRulesInput(ServiceRequest):
 
 
 class DisableInsightRulesOutput(TypedDict, total=False):
-    Failures: Optional[BatchFailures]
+    Failures: BatchFailures | None
 
 
 class EnableAlarmActionsInput(ServiceRequest):
@@ -682,19 +682,19 @@ class EnableInsightRulesInput(ServiceRequest):
 
 
 class EnableInsightRulesOutput(TypedDict, total=False):
-    Failures: Optional[BatchFailures]
+    Failures: BatchFailures | None
 
 
-EntityAttributesMap = Dict[EntityAttributesMapKeyString, EntityAttributesMapValueString]
-EntityKeyAttributesMap = Dict[EntityKeyAttributesMapKeyString, EntityKeyAttributesMapValueString]
+EntityAttributesMap = dict[EntityAttributesMapKeyString, EntityAttributesMapValueString]
+EntityKeyAttributesMap = dict[EntityKeyAttributesMapKeyString, EntityKeyAttributesMapValueString]
 
 
 class Entity(TypedDict, total=False):
-    KeyAttributes: Optional[EntityKeyAttributesMap]
-    Attributes: Optional[EntityAttributesMap]
+    KeyAttributes: EntityKeyAttributesMap | None
+    Attributes: EntityAttributesMap | None
 
 
-Values = List[DatapointValue]
+Values = list[DatapointValue]
 
 
 class StatisticSet(TypedDict, total=False):
@@ -706,26 +706,26 @@ class StatisticSet(TypedDict, total=False):
 
 class MetricDatum(TypedDict, total=False):
     MetricName: MetricName
-    Dimensions: Optional[Dimensions]
-    Timestamp: Optional[Timestamp]
-    Value: Optional[DatapointValue]
-    StatisticValues: Optional[StatisticSet]
-    Values: Optional[Values]
-    Counts: Optional[Counts]
-    Unit: Optional[StandardUnit]
-    StorageResolution: Optional[StorageResolution]
+    Dimensions: Dimensions | None
+    Timestamp: Timestamp | None
+    Value: DatapointValue | None
+    StatisticValues: StatisticSet | None
+    Values: Values | None
+    Counts: Counts | None
+    Unit: StandardUnit | None
+    StorageResolution: StorageResolution | None
 
 
-MetricData = List[MetricDatum]
+MetricData = list[MetricDatum]
 
 
 class EntityMetricData(TypedDict, total=False):
-    Entity: Optional[Entity]
-    MetricData: Optional[MetricData]
+    Entity: Entity | None
+    MetricData: MetricData | None
 
 
-EntityMetricDataList = List[EntityMetricData]
-ExtendedStatistics = List[ExtendedStatistic]
+EntityMetricDataList = list[EntityMetricData]
+ExtendedStatistics = list[ExtendedStatistic]
 
 
 class GetDashboardInput(ServiceRequest):
@@ -733,12 +733,12 @@ class GetDashboardInput(ServiceRequest):
 
 
 class GetDashboardOutput(TypedDict, total=False):
-    DashboardArn: Optional[DashboardArn]
-    DashboardBody: Optional[DashboardBody]
-    DashboardName: Optional[DashboardName]
+    DashboardArn: DashboardArn | None
+    DashboardBody: DashboardBody | None
+    DashboardName: DashboardName | None
 
 
-InsightRuleMetricList = List[InsightRuleMetricName]
+InsightRuleMetricList = list[InsightRuleMetricName]
 
 
 class GetInsightRuleReportInput(ServiceRequest):
@@ -746,23 +746,23 @@ class GetInsightRuleReportInput(ServiceRequest):
     StartTime: Timestamp
     EndTime: Timestamp
     Period: Period
-    MaxContributorCount: Optional[InsightRuleUnboundInteger]
-    Metrics: Optional[InsightRuleMetricList]
-    OrderBy: Optional[InsightRuleOrderBy]
+    MaxContributorCount: InsightRuleUnboundInteger | None
+    Metrics: InsightRuleMetricList | None
+    OrderBy: InsightRuleOrderBy | None
 
 
 class InsightRuleMetricDatapoint(TypedDict, total=False):
     Timestamp: Timestamp
-    UniqueContributors: Optional[InsightRuleUnboundDouble]
-    MaxContributorValue: Optional[InsightRuleUnboundDouble]
-    SampleCount: Optional[InsightRuleUnboundDouble]
-    Average: Optional[InsightRuleUnboundDouble]
-    Sum: Optional[InsightRuleUnboundDouble]
-    Minimum: Optional[InsightRuleUnboundDouble]
-    Maximum: Optional[InsightRuleUnboundDouble]
+    UniqueContributors: InsightRuleUnboundDouble | None
+    MaxContributorValue: InsightRuleUnboundDouble | None
+    SampleCount: InsightRuleUnboundDouble | None
+    Average: InsightRuleUnboundDouble | None
+    Sum: InsightRuleUnboundDouble | None
+    Minimum: InsightRuleUnboundDouble | None
+    Maximum: InsightRuleUnboundDouble | None
 
 
-InsightRuleMetricDatapoints = List[InsightRuleMetricDatapoint]
+InsightRuleMetricDatapoints = list[InsightRuleMetricDatapoint]
 
 
 class InsightRuleContributorDatapoint(TypedDict, total=False):
@@ -770,8 +770,8 @@ class InsightRuleContributorDatapoint(TypedDict, total=False):
     ApproximateValue: InsightRuleUnboundDouble
 
 
-InsightRuleContributorDatapoints = List[InsightRuleContributorDatapoint]
-InsightRuleContributorKeys = List[InsightRuleContributorKey]
+InsightRuleContributorDatapoints = list[InsightRuleContributorDatapoint]
+InsightRuleContributorKeys = list[InsightRuleContributorKey]
 
 
 class InsightRuleContributor(TypedDict, total=False):
@@ -780,86 +780,86 @@ class InsightRuleContributor(TypedDict, total=False):
     Datapoints: InsightRuleContributorDatapoints
 
 
-InsightRuleContributors = List[InsightRuleContributor]
+InsightRuleContributors = list[InsightRuleContributor]
 InsightRuleUnboundLong = int
-InsightRuleContributorKeyLabels = List[InsightRuleContributorKeyLabel]
+InsightRuleContributorKeyLabels = list[InsightRuleContributorKeyLabel]
 
 
 class GetInsightRuleReportOutput(TypedDict, total=False):
-    KeyLabels: Optional[InsightRuleContributorKeyLabels]
-    AggregationStatistic: Optional[InsightRuleAggregationStatistic]
-    AggregateValue: Optional[InsightRuleUnboundDouble]
-    ApproximateUniqueCount: Optional[InsightRuleUnboundLong]
-    Contributors: Optional[InsightRuleContributors]
-    MetricDatapoints: Optional[InsightRuleMetricDatapoints]
+    KeyLabels: InsightRuleContributorKeyLabels | None
+    AggregationStatistic: InsightRuleAggregationStatistic | None
+    AggregateValue: InsightRuleUnboundDouble | None
+    ApproximateUniqueCount: InsightRuleUnboundLong | None
+    Contributors: InsightRuleContributors | None
+    MetricDatapoints: InsightRuleMetricDatapoints | None
 
 
 class LabelOptions(TypedDict, total=False):
-    Timezone: Optional[GetMetricDataLabelTimezone]
+    Timezone: GetMetricDataLabelTimezone | None
 
 
 class GetMetricDataInput(ServiceRequest):
     MetricDataQueries: MetricDataQueries
     StartTime: Timestamp
     EndTime: Timestamp
-    NextToken: Optional[NextToken]
-    ScanBy: Optional[ScanBy]
-    MaxDatapoints: Optional[GetMetricDataMaxDatapoints]
-    LabelOptions: Optional[LabelOptions]
+    NextToken: NextToken | None
+    ScanBy: ScanBy | None
+    MaxDatapoints: GetMetricDataMaxDatapoints | None
+    LabelOptions: LabelOptions | None
 
 
 class MessageData(TypedDict, total=False):
-    Code: Optional[MessageDataCode]
-    Value: Optional[MessageDataValue]
+    Code: MessageDataCode | None
+    Value: MessageDataValue | None
 
 
-MetricDataResultMessages = List[MessageData]
-Timestamps = List[Timestamp]
+MetricDataResultMessages = list[MessageData]
+Timestamps = list[Timestamp]
 
 
 class MetricDataResult(TypedDict, total=False):
-    Id: Optional[MetricId]
-    Label: Optional[MetricLabel]
-    Timestamps: Optional[Timestamps]
-    Values: Optional[DatapointValues]
-    StatusCode: Optional[StatusCode]
-    Messages: Optional[MetricDataResultMessages]
+    Id: MetricId | None
+    Label: MetricLabel | None
+    Timestamps: Timestamps | None
+    Values: DatapointValues | None
+    StatusCode: StatusCode | None
+    Messages: MetricDataResultMessages | None
 
 
-MetricDataResults = List[MetricDataResult]
+MetricDataResults = list[MetricDataResult]
 
 
 class GetMetricDataOutput(TypedDict, total=False):
-    MetricDataResults: Optional[MetricDataResults]
-    NextToken: Optional[NextToken]
-    Messages: Optional[MetricDataResultMessages]
+    MetricDataResults: MetricDataResults | None
+    NextToken: NextToken | None
+    Messages: MetricDataResultMessages | None
 
 
-Statistics = List[Statistic]
+Statistics = list[Statistic]
 
 
 class GetMetricStatisticsInput(ServiceRequest):
     Namespace: Namespace
     MetricName: MetricName
-    Dimensions: Optional[Dimensions]
+    Dimensions: Dimensions | None
     StartTime: Timestamp
     EndTime: Timestamp
     Period: Period
-    Statistics: Optional[Statistics]
-    ExtendedStatistics: Optional[ExtendedStatistics]
-    Unit: Optional[StandardUnit]
+    Statistics: Statistics | None
+    ExtendedStatistics: ExtendedStatistics | None
+    Unit: StandardUnit | None
 
 
 class GetMetricStatisticsOutput(TypedDict, total=False):
-    Label: Optional[MetricLabel]
-    Datapoints: Optional[Datapoints]
+    Label: MetricLabel | None
+    Datapoints: Datapoints | None
 
 
 class GetMetricStreamInput(ServiceRequest):
     Name: MetricStreamName
 
 
-MetricStreamStatisticsAdditionalStatistics = List[MetricStreamStatistic]
+MetricStreamStatisticsAdditionalStatistics = list[MetricStreamStatistic]
 
 
 class MetricStreamStatisticsMetric(TypedDict, total=False):
@@ -867,7 +867,7 @@ class MetricStreamStatisticsMetric(TypedDict, total=False):
     MetricName: MetricName
 
 
-MetricStreamStatisticsIncludeMetrics = List[MetricStreamStatisticsMetric]
+MetricStreamStatisticsIncludeMetrics = list[MetricStreamStatisticsMetric]
 
 
 class MetricStreamStatisticsConfiguration(TypedDict, total=False):
@@ -875,59 +875,59 @@ class MetricStreamStatisticsConfiguration(TypedDict, total=False):
     AdditionalStatistics: MetricStreamStatisticsAdditionalStatistics
 
 
-MetricStreamStatisticsConfigurations = List[MetricStreamStatisticsConfiguration]
-MetricStreamFilterMetricNames = List[MetricName]
+MetricStreamStatisticsConfigurations = list[MetricStreamStatisticsConfiguration]
+MetricStreamFilterMetricNames = list[MetricName]
 
 
 class MetricStreamFilter(TypedDict, total=False):
-    Namespace: Optional[Namespace]
-    MetricNames: Optional[MetricStreamFilterMetricNames]
+    Namespace: Namespace | None
+    MetricNames: MetricStreamFilterMetricNames | None
 
 
-MetricStreamFilters = List[MetricStreamFilter]
+MetricStreamFilters = list[MetricStreamFilter]
 
 
 class GetMetricStreamOutput(TypedDict, total=False):
-    Arn: Optional[AmazonResourceName]
-    Name: Optional[MetricStreamName]
-    IncludeFilters: Optional[MetricStreamFilters]
-    ExcludeFilters: Optional[MetricStreamFilters]
-    FirehoseArn: Optional[AmazonResourceName]
-    RoleArn: Optional[AmazonResourceName]
-    State: Optional[MetricStreamState]
-    CreationDate: Optional[Timestamp]
-    LastUpdateDate: Optional[Timestamp]
-    OutputFormat: Optional[MetricStreamOutputFormat]
-    StatisticsConfigurations: Optional[MetricStreamStatisticsConfigurations]
-    IncludeLinkedAccountsMetrics: Optional[IncludeLinkedAccountsMetrics]
+    Arn: AmazonResourceName | None
+    Name: MetricStreamName | None
+    IncludeFilters: MetricStreamFilters | None
+    ExcludeFilters: MetricStreamFilters | None
+    FirehoseArn: AmazonResourceName | None
+    RoleArn: AmazonResourceName | None
+    State: MetricStreamState | None
+    CreationDate: Timestamp | None
+    LastUpdateDate: Timestamp | None
+    OutputFormat: MetricStreamOutputFormat | None
+    StatisticsConfigurations: MetricStreamStatisticsConfigurations | None
+    IncludeLinkedAccountsMetrics: IncludeLinkedAccountsMetrics | None
 
 
 class GetMetricWidgetImageInput(ServiceRequest):
     MetricWidget: MetricWidget
-    OutputFormat: Optional[OutputFormat]
+    OutputFormat: OutputFormat | None
 
 
 MetricWidgetImage = bytes
 
 
 class GetMetricWidgetImageOutput(TypedDict, total=False):
-    MetricWidgetImage: Optional[MetricWidgetImage]
+    MetricWidgetImage: MetricWidgetImage | None
 
 
 class ListDashboardsInput(ServiceRequest):
-    DashboardNamePrefix: Optional[DashboardNamePrefix]
-    NextToken: Optional[NextToken]
+    DashboardNamePrefix: DashboardNamePrefix | None
+    NextToken: NextToken | None
 
 
 class ListDashboardsOutput(TypedDict, total=False):
-    DashboardEntries: Optional[DashboardEntries]
-    NextToken: Optional[NextToken]
+    DashboardEntries: DashboardEntries | None
+    NextToken: NextToken | None
 
 
 class ListManagedInsightRulesInput(ServiceRequest):
     ResourceARN: AmazonResourceName
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[InsightRuleMaxResults]
+    NextToken: NextToken | None
+    MaxResults: InsightRuleMaxResults | None
 
 
 class ManagedRuleState(TypedDict, total=False):
@@ -936,60 +936,60 @@ class ManagedRuleState(TypedDict, total=False):
 
 
 class ManagedRuleDescription(TypedDict, total=False):
-    TemplateName: Optional[TemplateName]
-    ResourceARN: Optional[AmazonResourceName]
-    RuleState: Optional[ManagedRuleState]
+    TemplateName: TemplateName | None
+    ResourceARN: AmazonResourceName | None
+    RuleState: ManagedRuleState | None
 
 
-ManagedRuleDescriptions = List[ManagedRuleDescription]
+ManagedRuleDescriptions = list[ManagedRuleDescription]
 
 
 class ListManagedInsightRulesOutput(TypedDict, total=False):
-    ManagedRules: Optional[ManagedRuleDescriptions]
-    NextToken: Optional[NextToken]
+    ManagedRules: ManagedRuleDescriptions | None
+    NextToken: NextToken | None
 
 
 class ListMetricStreamsInput(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[ListMetricStreamsMaxResults]
+    NextToken: NextToken | None
+    MaxResults: ListMetricStreamsMaxResults | None
 
 
 class MetricStreamEntry(TypedDict, total=False):
-    Arn: Optional[AmazonResourceName]
-    CreationDate: Optional[Timestamp]
-    LastUpdateDate: Optional[Timestamp]
-    Name: Optional[MetricStreamName]
-    FirehoseArn: Optional[AmazonResourceName]
-    State: Optional[MetricStreamState]
-    OutputFormat: Optional[MetricStreamOutputFormat]
+    Arn: AmazonResourceName | None
+    CreationDate: Timestamp | None
+    LastUpdateDate: Timestamp | None
+    Name: MetricStreamName | None
+    FirehoseArn: AmazonResourceName | None
+    State: MetricStreamState | None
+    OutputFormat: MetricStreamOutputFormat | None
 
 
-MetricStreamEntries = List[MetricStreamEntry]
+MetricStreamEntries = list[MetricStreamEntry]
 
 
 class ListMetricStreamsOutput(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    Entries: Optional[MetricStreamEntries]
+    NextToken: NextToken | None
+    Entries: MetricStreamEntries | None
 
 
 class ListMetricsInput(ServiceRequest):
-    Namespace: Optional[Namespace]
-    MetricName: Optional[MetricName]
-    Dimensions: Optional[DimensionFilters]
-    NextToken: Optional[NextToken]
-    RecentlyActive: Optional[RecentlyActive]
-    IncludeLinkedAccounts: Optional[IncludeLinkedAccounts]
-    OwningAccount: Optional[AccountId]
+    Namespace: Namespace | None
+    MetricName: MetricName | None
+    Dimensions: DimensionFilters | None
+    NextToken: NextToken | None
+    RecentlyActive: RecentlyActive | None
+    IncludeLinkedAccounts: IncludeLinkedAccounts | None
+    OwningAccount: AccountId | None
 
 
-OwningAccounts = List[AccountId]
-Metrics = List[Metric]
+OwningAccounts = list[AccountId]
+Metrics = list[Metric]
 
 
 class ListMetricsOutput(TypedDict, total=False):
-    Metrics: Optional[Metrics]
-    NextToken: Optional[NextToken]
-    OwningAccounts: Optional[OwningAccounts]
+    Metrics: Metrics | None
+    NextToken: NextToken | None
+    OwningAccounts: OwningAccounts | None
 
 
 class ListTagsForResourceInput(ServiceRequest):
@@ -1001,32 +1001,32 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class ListTagsForResourceOutput(TypedDict, total=False):
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class ManagedRule(TypedDict, total=False):
     TemplateName: TemplateName
     ResourceARN: AmazonResourceName
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
-ManagedRules = List[ManagedRule]
-MetricStreamNames = List[MetricStreamName]
+ManagedRules = list[ManagedRule]
+MetricStreamNames = list[MetricStreamName]
 
 
 class PutAnomalyDetectorInput(ServiceRequest):
-    Namespace: Optional[Namespace]
-    MetricName: Optional[MetricName]
-    Dimensions: Optional[Dimensions]
-    Stat: Optional[AnomalyDetectorMetricStat]
-    Configuration: Optional[AnomalyDetectorConfiguration]
-    MetricCharacteristics: Optional[MetricCharacteristics]
-    SingleMetricAnomalyDetector: Optional[SingleMetricAnomalyDetector]
-    MetricMathAnomalyDetector: Optional[MetricMathAnomalyDetector]
+    Namespace: Namespace | None
+    MetricName: MetricName | None
+    Dimensions: Dimensions | None
+    Stat: AnomalyDetectorMetricStat | None
+    Configuration: AnomalyDetectorConfiguration | None
+    MetricCharacteristics: MetricCharacteristics | None
+    SingleMetricAnomalyDetector: SingleMetricAnomalyDetector | None
+    MetricMathAnomalyDetector: MetricMathAnomalyDetector | None
 
 
 class PutAnomalyDetectorOutput(TypedDict, total=False):
@@ -1034,17 +1034,17 @@ class PutAnomalyDetectorOutput(TypedDict, total=False):
 
 
 class PutCompositeAlarmInput(ServiceRequest):
-    ActionsEnabled: Optional[ActionsEnabled]
-    AlarmActions: Optional[ResourceList]
-    AlarmDescription: Optional[AlarmDescription]
+    ActionsEnabled: ActionsEnabled | None
+    AlarmActions: ResourceList | None
+    AlarmDescription: AlarmDescription | None
     AlarmName: AlarmName
     AlarmRule: AlarmRule
-    InsufficientDataActions: Optional[ResourceList]
-    OKActions: Optional[ResourceList]
-    Tags: Optional[TagList]
-    ActionsSuppressor: Optional[AlarmArn]
-    ActionsSuppressorWaitPeriod: Optional[SuppressorPeriod]
-    ActionsSuppressorExtensionPeriod: Optional[SuppressorPeriod]
+    InsufficientDataActions: ResourceList | None
+    OKActions: ResourceList | None
+    Tags: TagList | None
+    ActionsSuppressor: AlarmArn | None
+    ActionsSuppressorWaitPeriod: SuppressorPeriod | None
+    ActionsSuppressorExtensionPeriod: SuppressorPeriod | None
 
 
 class PutDashboardInput(ServiceRequest):
@@ -1053,15 +1053,15 @@ class PutDashboardInput(ServiceRequest):
 
 
 class PutDashboardOutput(TypedDict, total=False):
-    DashboardValidationMessages: Optional[DashboardValidationMessages]
+    DashboardValidationMessages: DashboardValidationMessages | None
 
 
 class PutInsightRuleInput(ServiceRequest):
     RuleName: InsightRuleName
-    RuleState: Optional[InsightRuleState]
+    RuleState: InsightRuleState | None
     RuleDefinition: InsightRuleDefinition
-    Tags: Optional[TagList]
-    ApplyOnTransformedLogs: Optional[InsightRuleOnTransformedLogs]
+    Tags: TagList | None
+    ApplyOnTransformedLogs: InsightRuleOnTransformedLogs | None
 
 
 class PutInsightRuleOutput(TypedDict, total=False):
@@ -1073,62 +1073,62 @@ class PutManagedInsightRulesInput(ServiceRequest):
 
 
 class PutManagedInsightRulesOutput(TypedDict, total=False):
-    Failures: Optional[BatchFailures]
+    Failures: BatchFailures | None
 
 
 class PutMetricAlarmInput(ServiceRequest):
     AlarmName: AlarmName
-    AlarmDescription: Optional[AlarmDescription]
-    ActionsEnabled: Optional[ActionsEnabled]
-    OKActions: Optional[ResourceList]
-    AlarmActions: Optional[ResourceList]
-    InsufficientDataActions: Optional[ResourceList]
-    MetricName: Optional[MetricName]
-    Namespace: Optional[Namespace]
-    Statistic: Optional[Statistic]
-    ExtendedStatistic: Optional[ExtendedStatistic]
-    Dimensions: Optional[Dimensions]
-    Period: Optional[Period]
-    Unit: Optional[StandardUnit]
+    AlarmDescription: AlarmDescription | None
+    ActionsEnabled: ActionsEnabled | None
+    OKActions: ResourceList | None
+    AlarmActions: ResourceList | None
+    InsufficientDataActions: ResourceList | None
+    MetricName: MetricName | None
+    Namespace: Namespace | None
+    Statistic: Statistic | None
+    ExtendedStatistic: ExtendedStatistic | None
+    Dimensions: Dimensions | None
+    Period: Period | None
+    Unit: StandardUnit | None
     EvaluationPeriods: EvaluationPeriods
-    DatapointsToAlarm: Optional[DatapointsToAlarm]
-    Threshold: Optional[Threshold]
+    DatapointsToAlarm: DatapointsToAlarm | None
+    Threshold: Threshold | None
     ComparisonOperator: ComparisonOperator
-    TreatMissingData: Optional[TreatMissingData]
-    EvaluateLowSampleCountPercentile: Optional[EvaluateLowSampleCountPercentile]
-    Metrics: Optional[MetricDataQueries]
-    Tags: Optional[TagList]
-    ThresholdMetricId: Optional[MetricId]
+    TreatMissingData: TreatMissingData | None
+    EvaluateLowSampleCountPercentile: EvaluateLowSampleCountPercentile | None
+    Metrics: MetricDataQueries | None
+    Tags: TagList | None
+    ThresholdMetricId: MetricId | None
 
 
 class PutMetricDataInput(ServiceRequest):
     Namespace: Namespace
-    MetricData: Optional[MetricData]
-    EntityMetricData: Optional[EntityMetricDataList]
-    StrictEntityValidation: Optional[StrictEntityValidation]
+    MetricData: MetricData | None
+    EntityMetricData: EntityMetricDataList | None
+    StrictEntityValidation: StrictEntityValidation | None
 
 
 class PutMetricStreamInput(ServiceRequest):
     Name: MetricStreamName
-    IncludeFilters: Optional[MetricStreamFilters]
-    ExcludeFilters: Optional[MetricStreamFilters]
+    IncludeFilters: MetricStreamFilters | None
+    ExcludeFilters: MetricStreamFilters | None
     FirehoseArn: AmazonResourceName
     RoleArn: AmazonResourceName
     OutputFormat: MetricStreamOutputFormat
-    Tags: Optional[TagList]
-    StatisticsConfigurations: Optional[MetricStreamStatisticsConfigurations]
-    IncludeLinkedAccountsMetrics: Optional[IncludeLinkedAccountsMetrics]
+    Tags: TagList | None
+    StatisticsConfigurations: MetricStreamStatisticsConfigurations | None
+    IncludeLinkedAccountsMetrics: IncludeLinkedAccountsMetrics | None
 
 
 class PutMetricStreamOutput(TypedDict, total=False):
-    Arn: Optional[AmazonResourceName]
+    Arn: AmazonResourceName | None
 
 
 class SetAlarmStateInput(ServiceRequest):
     AlarmName: AlarmName
     StateValue: StateValue
     StateReason: StateReason
-    StateReasonData: Optional[StateReasonData]
+    StateReasonData: StateReasonData | None
 
 
 class StartMetricStreamsInput(ServiceRequest):
@@ -1147,7 +1147,7 @@ class StopMetricStreamsOutput(TypedDict, total=False):
     pass
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagResourceInput(ServiceRequest):
@@ -1169,8 +1169,8 @@ class UntagResourceOutput(TypedDict, total=False):
 
 
 class CloudwatchApi:
-    service = "cloudwatch"
-    version = "2010-08-01"
+    service: str = "cloudwatch"
+    version: str = "2010-08-01"
 
     @handler("DeleteAlarms")
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames, **kwargs) -> None:
