@@ -88,15 +88,15 @@ def user_arn(aws_client):
 
 def _get_all_key_ids(kms_client):
     ids = set()
-    next_token = None
+    next_marker = None
     while True:
-        kwargs = {"nextToken": next_token} if next_token else {}
+        kwargs = {"Marker": next_marker } if next_marker else {}
         response = kms_client.list_keys(**kwargs)
         for key in response["Keys"]:
             ids.add(key["KeyId"])
-        if "nextToken" not in response:
+        if "NextMarker" not in response:
             break
-        next_token = response["nextToken"]
+        next_marker = response["NextMarker"]
     return ids
 
 
