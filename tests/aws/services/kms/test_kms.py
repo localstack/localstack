@@ -1490,9 +1490,6 @@ class TestKMS:
     def test_rotate_key_on_demand_updates_current_key_material_for_external_keys(
         self, kms_create_key, aws_client, snapshot
     ):
-        snapshot.add_transformer(snapshot.transform.key_value("KeyId"))
-        snapshot.add_transformer(snapshot.transform.key_value("KeyMaterialId"))
-        snapshot.add_transformer(snapshot.transform.key_value("CurrentKeyMaterialId"))
         snapshot.add_transformer(
             snapshot.transform.key_value("ImportToken", reference_replacement=False)
         )
