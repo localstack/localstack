@@ -90,7 +90,7 @@ def _get_all_key_ids(kms_client):
     ids = set()
     next_marker = None
     while True:
-        kwargs = {"Marker": next_marker } if next_marker else {}
+        kwargs = {"Marker": next_marker} if next_marker else {}
         response = kms_client.list_keys(**kwargs)
         for key in response["Keys"]:
             ids.add(key["KeyId"])
