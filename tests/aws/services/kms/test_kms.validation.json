@@ -395,6 +395,15 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_revoke_grant": {
     "last_validated_date": "2024-04-11T15:52:44+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_for_external_keys_decrypts_with_previous_material": {
+    "last_validated_date": "2025-11-12T21:00:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.91,
+      "call": 66.22,
+      "teardown": 0.05,
+      "total": 67.18
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_modifies_key_material": {
     "last_validated_date": "2025-03-08T09:24:15+00:00"
   },

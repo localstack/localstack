@@ -3524,5 +3524,52 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_for_external_keys_decrypts_with_previous_material": {
+    "recorded-date": "12-11-2025, 21:00:07",
+    "recorded-content": {
+      "create-kms-external-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test-key",
+        "Enabled": false,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "PendingImport",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL"
+      },
+      "import-key-material-response": {
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "KeyMaterialId": "<key-material-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "kms-encrypt-initial-response": {
+        "CiphertextBlob": "ciphertext-blob",
+        "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rotate-key-on-demand-response": {
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
