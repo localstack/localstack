@@ -85,8 +85,7 @@ jobs:
           bin/release-helper.sh set-dep-ver awscli "==$AWSCLI_VERSION"
 
           # upgrade the requirements files only for the botocore package
-          # TODO: Avoid pip 25.3 for now due to https://github.com/jazzband/pip-tools/issues/2252
-          python3 -m pip install --upgrade "pip!=25.3" pip-tools
+          python3 -m pip install --upgrade pip pip-tools
           pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
           pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --extra runtime -o requirements-runtime.txt pyproject.toml
           pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --extra test -o requirements-test.txt pyproject.toml
