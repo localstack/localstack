@@ -2,6 +2,24 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_availability": {
     "last_validated_date": "2025-01-21T18:30:41+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_constraint_aws_global[us-east-1]": {
+    "last_validated_date": "2025-11-07T16:16:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 0.46,
+      "teardown": 0.01,
+      "total": 0.94
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_constraint_aws_global[us-west-1]": {
+    "last_validated_date": "2025-11-07T16:16:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.67,
+      "teardown": 0.01,
+      "total": 0.68
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_does_not_exist": {
     "last_validated_date": "2025-01-21T18:34:13+00:00"
   },

@@ -18335,5 +18335,36 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_constraint_aws_global[us-east-1]": {
+    "recorded-date": "07-11-2025, 16:16:25",
+    "recorded-content": {
+      "aws-global-constraint": {
+        "Error": {
+          "Code": "InvalidLocationConstraint",
+          "LocationConstraint": "aws-global",
+          "Message": "The specified location-constraint is not valid"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_constraint_aws_global[us-west-1]": {
+    "recorded-date": "07-11-2025, 16:16:26",
+    "recorded-content": {
+      "aws-global-constraint": {
+        "Error": {
+          "Code": "IllegalLocationConstraintException",
+          "Message": "The aws-global location constraint is incompatible for the region specific endpoint this request was sent to."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

@@ -4235,6 +4235,22 @@ class TestS3:
         assert not head_response.content
 
     @markers.aws.validated
+    @pytest.mark.parametrize("client_region", [AWS_REGION_US_EAST_1, "us-west-1"])
+    def test_bucket_constraint_aws_global(
+        self, s3_create_bucket_with_client, snapshot, aws_client_factory, client_region
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-{short_uid()}"
+        us_east_1_client = aws_client_factory(region_name=client_region).s3
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                us_east_1_client,
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"LocationConstraint": "aws-global"},
+            )
+        snapshot.match("aws-global-constraint", e.value.response)
+
+    @markers.aws.validated
     def test_bucket_does_not_exist(self, s3_vhost_client, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = f"bucket-does-not-exist-{short_uid()}"
