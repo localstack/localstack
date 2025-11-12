@@ -329,7 +329,7 @@ class KmsKey:
         self._internal_key_id = uuid.uuid4()
 
         # The KMS implementation always provides a crypto key with key material which doesn't suit scenarios where a
-        # KMS Key may have no key material e.g. for external keys. Don't the CurrentKeyMaterialId in those cases.
+        # KMS Key may have no key material e.g. for external keys. Don't expose the CurrentKeyMaterialId in those cases.
         if custom_key_material or (
             self.metadata["Origin"] == "AWS_KMS"
             and self.metadata["KeySpec"] == KeySpec.SYMMETRIC_DEFAULT
