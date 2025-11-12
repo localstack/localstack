@@ -23,8 +23,8 @@ class TestS3CopySourcePreconditions:
         head_obj = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("head-object", head_obj)
 
-        # wait a bit for the `unmodified_since` value so that it's unvalid.
-        # S3 compares it the last-modified field, but you can't set the value in the future otherwise it ignores it
+        # wait a bit for the `modified_since` value so that it's invalid.
+        # S3 compares it the last-modified field, but you can't set the value in the future otherwise it ignores it.
         # It needs to be now or less, but the object needs to be a bit more recent than that.
         time.sleep(3)
 
@@ -104,3 +104,82 @@ class TestS3CopySourcePreconditions:
             CopySourceIfUnmodifiedSince=now,
         )
         snapshot.match("copy-success", copy_obj_all_positive)
+
+    @markers.aws.validated
+    def test_s3_copy_object_if_source_modified_since_versioned(
+        self, s3_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        object_key = "source-object"
+        dest_key = "dest-object"
+        # create key with no checksum
+        aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body=b"data",
+        )
+        head_obj = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object", head_obj)
+        object_last_modified = head_obj["LastModified"]
+
+        if_modified_since = object_last_modified - datetime.timedelta(minutes=1)
+
+        copy_object = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=dest_key,
+            CopySourceIfModifiedSince=if_modified_since,
+        )
+        snapshot.match("copy-if-modified-since", copy_object)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key=dest_key,
+                CopySourceIfModifiedSince=object_last_modified,
+            )
+        snapshot.match("copy-if-modified-since-last-modified", e.value.response)
+
+    @markers.aws.validated
+    def test_s3_copy_object_if_source_unmodified_since_versioned(
+        self, s3_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        object_key = "source-object"
+        dest_key = "dest-object"
+        # create key with no checksum
+        aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body=b"data",
+        )
+        head_obj = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object", head_obj)
+        last_modified = head_obj["LastModified"]
+
+        copy_object = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=dest_key,
+            CopySourceIfUnmodifiedSince=last_modified,
+        )
+        snapshot.match("copy-if-unmodified-since", copy_object)
+
+        now = datetime.datetime.now().astimezone(tz=ZoneInfo("GMT"))
+        wrong_unmodified_since = now - datetime.timedelta(days=1)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key=dest_key,
+                CopySourceIfUnmodifiedSince=wrong_unmodified_since,
+            )
+        snapshot.match("copy-past-if-unmodified-since", e.value.response)
