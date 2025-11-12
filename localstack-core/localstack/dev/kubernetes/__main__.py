@@ -189,15 +189,7 @@ def generate_k8s_cluster_config(
                 "nodeFilters": [
                     "server:0",
                 ],
-                "port": f"{dns_port}:{EDGE_SERVICE_DNS_PORT}/udp",
-            }
-        )
-        ports.append(
-            {
-                "nodeFilters": [
-                    "server:0",
-                ],
-                "port": f"{dns_port}:{EDGE_SERVICE_DNS_PORT}/tcp",
+                "port": f"{dns_port}:{EDGE_SERVICE_DNS_PORT}",
             }
         )
 
