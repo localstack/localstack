@@ -326,10 +326,10 @@ class KmsKey:
             # remove the _custom_key_material_ tag from the tags to not readily expose the custom key material
             del self.tags[TAG_KEY_CUSTOM_KEY_MATERIAL]
         self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"), custom_key_material)
+        self._internal_key_id = uuid.uuid4()
 
-        # The KMS Crypto Key implementation always provides a crypto key with key material which doesn't suit scenarios
-        # where a KMS Key may have no key material i.e. with external keys, and hence no key material ID.
-        # In the scenarios where we do want to expose a CurrentKeyMaterialId we should update it in the key metadata.
+        # The KMS implementation always provides a crypto key with key material which doesn't suit scenarios where a
+        # KMS Key may have no key material e.g. for external keys. Don't the CurrentKeyMaterialId in those cases.
         if custom_key_material or (
             self.metadata["Origin"] == "AWS_KMS"
             and self.metadata["KeySpec"] == KeySpec.SYMMETRIC_DEFAULT
@@ -340,13 +340,12 @@ class KmsKey:
 
         self.rotation_period_in_days = 365
         self.next_rotation_date = None
-        self._internal_uuid = uuid.uuid4()
 
     def generate_key_material_id(self, key_material: bytes) -> str:
         # The KeyMaterialId depends on the key material and the KeyId. Use an internal ID to prevent brute forcing
         # the value of the key material from the public KeyId and KeyMaterialId.
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_ImportKeyMaterial.html
-        key_material_id_hex = uuid.uuid5(self._internal_uuid, key_material).hex
+        key_material_id_hex = uuid.uuid5(self._internal_key_id, key_material).hex
         return str(key_material_id_hex) * 2
 
     def calculate_and_set_arn(self, account_id, region):
