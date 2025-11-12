@@ -250,14 +250,15 @@ class KmsCryptoKey:
         self._serialize_key(key)
 
     def load_key_material(self, material: bytes):
-        if self.key_spec in [
-            KeySpec.SYMMETRIC_DEFAULT,
+        if self.key_spec == KeySpec.SYMMETRIC_DEFAULT:
+            self.pending_key_material = material
+        elif self.key_spec in [
             KeySpec.HMAC_224,
             KeySpec.HMAC_256,
             KeySpec.HMAC_384,
             KeySpec.HMAC_512,
         ]:
-            self.pending_key_material = material
+            self.key_material = material
         else:
             key = crypto_serialization.load_der_private_key(material, password=None)
             self._serialize_key(key)
