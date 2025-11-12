@@ -101,19 +101,18 @@ def _get_all_key_ids(kms_client):
 
 
 def _get_alias(kms_client, alias_name, key_id=None):
-    next_token = None
-    # TODO potential bug on pagination on "nextToken" attribute key
+    next_marker = None
     while True:
-        kwargs = {"nextToken": next_token} if next_token else {}
+        kwargs = {"Marker": next_marker} if next_marker else {}
         if key_id:
             kwargs["KeyId"] = key_id
         response = kms_client.list_aliases(**kwargs)
         for alias in response["Aliases"]:
             if alias["AliasName"] == alias_name:
                 return alias
-        if "nextToken" not in response:
+        if "NextMarker" not in response:
             break
-        next_token = response["nextToken"]
+        next_marker = response["NextMarker"]
     return None
 
 
