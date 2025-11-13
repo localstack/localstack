@@ -7,6 +7,7 @@ from collections import defaultdict
 from typing import Any
 
 from botocore.model import OperationModel, ServiceModel
+from plux.core.plugin import PluginDisabled
 
 from localstack import config
 from localstack.http import Response
@@ -224,11 +225,12 @@ class ServiceExceptionSerializer(ExceptionHandler):
 
             # Check for license restricted plugin message and set status code to 501
             if (
-                hasattr(exception, "reason")
+                isinstance(exception, PluginDisabled)
                 and "not part of the active license agreement"
                 in str(getattr(exception, "reason", "")).lower()
             ):
                 status_code = 501
+                msg = f"exception while calling {service_name}.{operation.name}: {str(getattr(exception, 'reason', ''))}"
             else:
                 status_code = 501 if config.FAIL_FAST else 500
 
