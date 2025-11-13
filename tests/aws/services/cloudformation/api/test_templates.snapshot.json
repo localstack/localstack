@@ -243,5 +243,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_no_arguments": {
+    "recorded-date": "13-11-2025, 16:48:31",
+    "recorded-content": {
+      "stack-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "StackName is required if ChangeSetName is not specified.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

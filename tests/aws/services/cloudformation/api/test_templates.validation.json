@@ -47,6 +47,15 @@
       "total": 1.19
     }
   },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_no_arguments": {
+    "last_validated_date": "2025-11-13T16:48:31+00:00",
+    "durations_in_seconds": {
+      "setup": 1.54,
+      "call": 0.19,
+      "teardown": 0.0,
+      "total": 1.73
+    }
+  },
   "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_summary": {
     "last_validated_date": "2023-05-24T13:05:00+00:00"
   },
