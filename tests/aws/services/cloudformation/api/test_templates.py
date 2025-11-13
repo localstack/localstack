@@ -224,3 +224,29 @@ def test_get_template_missing_resources_change_set_id(aws_client, snapshot):
     with pytest.raises(ClientError) as exc_info:
         aws_client.cloudformation.get_template(ChangeSetName=change_set_id)
     snapshot.match("change-set-error", exc_info.value.response)
+
+
+@markers.aws.validated
+def test_create_stack_invalid_yaml_template_should_fail(aws_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    # add transformer to ignore the error location
+    # TODO: add this information back in to improve the UX
+    snapshot.add_transformer(snapshot.transform.regex(r"\s+\([^)]+\)", ""))
+
+    stack_name = f"stack-{short_uid()}"
+    invalid_yaml = textwrap.dedent(
+        """\
+        Resources:
+          MyBucket:
+            Type: AWS::S3::Bucket
+            Properties:
+                BucketName: test
+              VersioningConfiguration:
+                Status: Enabled
+        """
+    )
+
+    with pytest.raises(ClientError) as ctx:
+        aws_client.cloudformation.create_stack(StackName=stack_name, TemplateBody=invalid_yaml)
+
+    snapshot.match("create-invalid-yaml", ctx.value.response)

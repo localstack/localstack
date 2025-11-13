@@ -259,5 +259,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_invalid_yaml_template_should_fail": {
+    "recorded-date": "13-11-2025, 11:36:51",
+    "recorded-content": {
+      "create-invalid-yaml": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: YAML not well-formed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

@@ -6,6 +6,7 @@ from localstack.services.cloudformation.engine.transformers import (
     apply_global_transformations,
     apply_intrinsic_transformations,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.utils.json import clone_safe
 
 LOG = logging.getLogger(__name__)
@@ -17,9 +18,12 @@ def parse_template(template: str) -> dict:
     except Exception:
         try:
             return clone_safe(yaml_parser.parse_yaml(template))
-        except Exception as e:
-            LOG.debug("Unable to parse CloudFormation template (%s): %s", e, template)
+        except ValidationError:
+            # The error is handled in the yaml parsing helper
             raise
+        except Exception:
+            # TODO: present the user with a better error message including error location
+            raise ValidationError("Template format error: YAML not well-formed.")
 
 
 def template_to_json(template: str) -> str:
