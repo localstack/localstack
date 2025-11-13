@@ -191,6 +191,14 @@ def test_validate_invalid_json_template_should_fail(aws_client, snapshot):
     snapshot.match("validate-invalid-json", ctx.value.response)
 
 
+@skip_if_legacy_engine()
+@markers.aws.validated
+def test_get_template_no_arguments(aws_client, snapshot):
+    with pytest.raises(ClientError) as exc_info:
+        aws_client.cloudformation.get_template()
+    snapshot.match("stack-error", exc_info.value.response)
+
+
 @markers.aws.validated
 def test_get_template_missing_resources_stack(aws_client, snapshot):
     with pytest.raises(ClientError) as exc_info:

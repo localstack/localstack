@@ -135,15 +135,15 @@ SSM_PARAMETER_TYPE_RE = re.compile(
 
 
 def is_stack_arn(stack_name_or_id: str) -> bool:
-    return ARN_STACK_REGEX.match(stack_name_or_id) is not None
+    return stack_name_or_id and ARN_STACK_REGEX.match(stack_name_or_id) is not None
 
 
 def is_changeset_arn(change_set_name_or_id: str) -> bool:
-    return ARN_CHANGESET_REGEX.match(change_set_name_or_id) is not None
+    return change_set_name_or_id and ARN_CHANGESET_REGEX.match(change_set_name_or_id) is not None
 
 
 def is_stack_set_arn(stack_set_name_or_id: str) -> bool:
-    return ARN_STACK_SET_REGEX.match(stack_set_name_or_id) is not None
+    return stack_set_name_or_id and ARN_STACK_SET_REGEX.match(stack_set_name_or_id) is not None
 
 
 class StackNotFoundError(ValidationError):
@@ -1388,7 +1388,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                     stack_name, message_override=f"Stack with id {stack_name} does not exist"
                 )
         else:
-            raise StackNotFoundError(stack_name)
+            raise ValidationError("StackName is required if ChangeSetName is not specified.")
 
         if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
             template_body = json.dumps(stack.processed_template)
