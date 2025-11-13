@@ -140,6 +140,7 @@ from localstack.services.stepfunctions.asl.static_analyser.usage_metrics_static_
 from localstack.services.stepfunctions.backend.activity import Activity, ActivityTask
 from localstack.services.stepfunctions.backend.alias import Alias
 from localstack.services.stepfunctions.backend.execution import (
+    EXEC_ARN_TO_WORKER,
     Execution,
     SyncExecution,
     get_exec_worker,
@@ -881,7 +882,15 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         store.executions[exec_arn] = execution
 
-        execution.start()
+        if get_exec_worker(exec_arn):
+            raise InvalidName()  # TODO
+
+        exec_worker = execution._get_start_execution_worker()
+        execution.exec_status = ExecutionStatus.RUNNING
+        execution.publish_execution_status_change_event()
+        exec_worker.start()
+        EXEC_ARN_TO_WORKER[exec_arn] = exec_worker
+
         return execution.to_start_output()
 
     def start_sync_execution(
@@ -955,7 +964,15 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
         self.get_store(context).executions[exec_arn] = execution
 
-        execution.start()
+        if get_exec_worker(exec_arn):
+            raise InvalidName()  # TODO
+
+        exec_worker = execution._get_start_execution_worker()
+        execution.exec_status = ExecutionStatus.RUNNING
+        execution.publish_execution_status_change_event()
+        exec_worker.start()
+        EXEC_ARN_TO_WORKER[exec_arn] = exec_worker
+
         return execution.to_start_sync_execution_output()
 
     def describe_execution(
@@ -1272,7 +1289,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             self._raise_resource_type_not_in_context(resource_type=execution.sm_type)
 
         stop_date = datetime.datetime.now(tz=datetime.UTC)
-        execution.stop(stop_date=stop_date, cause=cause, error=error)
+
+        if exec_worker := get_exec_worker(execution.exec_arn):
+            exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
         return StopExecutionOutput(stopDate=stop_date)
 
     def update_state_machine(
@@ -1525,7 +1544,15 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             input_data=input_json,
             activity_store=self.get_store(context).activities,
         )
-        execution.start()
+
+        if get_exec_worker(exec_arn):
+            raise InvalidName()  # TODO
+
+        exec_worker = execution._get_start_execution_worker()
+        execution.exec_status = ExecutionStatus.RUNNING
+        execution.publish_execution_status_change_event()
+        exec_worker.start()
+        EXEC_ARN_TO_WORKER[exec_arn] = exec_worker
 
         test_state_output = execution.to_test_state_output(
             inspection_level=inspection_level or InspectionLevel.INFO
