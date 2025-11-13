@@ -1,7 +1,7 @@
 from abc import ABC
 
-from localstack.aws.api.resourcegroupstaggingapi import ResourcegroupstaggingapiApi
+from localstack.aws.api.resourcegroupstaggingapi import ResourcegroupstaggingapiApi as ResourceGroupsTaggingApiApi
 
 
-class ResourcegroupstaggingapiProvider(ResourcegroupstaggingapiApi, ABC):
+class ResourceGroupsTaggingApiProvider(ResourceGroupsTaggingApiApi):
     pass

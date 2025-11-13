@@ -404,14 +404,14 @@ def swf():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider()
+@aws_provider(api="resourcegroupstaggingapi", name="legacy")
 def resourcegroupstaggingapi():
     from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.resourcegroupstaggingapi.provider import (
-        ResourcegroupstaggingapiProvider,
+        ResourceGroupsTaggingApiProvider,
     )
 
-    provider = ResourcegroupstaggingapiProvider()
+    provider = ResourceGroupsTaggingApiProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
