@@ -94,6 +94,13 @@ class BaseExecutionWorkerCommunication(ExecutionWorkerCommunication):
         self.execution.publish_execution_status_change_event()
 
 
+EXEC_ARN_TO_WORKER: dict[str, ExecutionWorker] = {}
+
+
+def get_exec_worker(arn: str) -> ExecutionWorker | None:
+    return EXEC_ARN_TO_WORKER.get(arn)
+
+
 class Execution:
     name: Final[str]
     sm_type: Final[StateMachineType]

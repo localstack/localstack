@@ -139,7 +139,11 @@ from localstack.services.stepfunctions.asl.static_analyser.usage_metrics_static_
 )
 from localstack.services.stepfunctions.backend.activity import Activity, ActivityTask
 from localstack.services.stepfunctions.backend.alias import Alias
-from localstack.services.stepfunctions.backend.execution import Execution, SyncExecution
+from localstack.services.stepfunctions.backend.execution import (
+    Execution,
+    SyncExecution,
+    get_exec_worker,
+)
 from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
     StateMachineRevision,
@@ -710,7 +714,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
         for execution in running_executions:
             try:
-                if execution.exec_worker.env.callback_pool_manager.heartbeat(
+                if get_exec_worker(execution.exec_arn).env.callback_pool_manager.heartbeat(
                     callback_id=task_token
                 ):
                     return SendTaskHeartbeatOutput()
@@ -732,7 +736,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
         for execution in running_executions:
             try:
-                if execution.exec_worker.env.callback_pool_manager.notify(
+                if get_exec_worker(execution.exec_arn).env.callback_pool_manager.notify(
                     callback_id=task_token, outcome=outcome
                 ):
                     return SendTaskSuccessOutput()
@@ -755,7 +759,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         for execution in store.executions.values():
             try:
-                if execution.exec_worker.env.callback_pool_manager.notify(
+                if get_exec_worker(execution.exec_arn).env.callback_pool_manager.notify(
                     callback_id=task_token, outcome=outcome
                 ):
                     return SendTaskFailureOutput()
@@ -1427,9 +1431,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     ) -> DescribeMapRunOutput:
         store = self.get_store(context)
         for execution in store.executions.values():
-            map_run_record: MapRunRecord | None = (
-                execution.exec_worker.env.map_run_record_pool_manager.get(map_run_arn)
-            )
+            map_run_record: MapRunRecord | None = get_exec_worker(
+                execution.exec_arn
+            ).env.map_run_record_pool_manager.get(map_run_arn)
             if map_run_record is not None:
                 return map_run_record.describe()
         raise ResourceNotFound()
@@ -1444,9 +1448,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     ) -> ListMapRunsOutput:
         # TODO: add support for paging.
         execution = self._get_execution(context=context, execution_arn=execution_arn)
-        map_run_records: list[MapRunRecord] = (
-            execution.exec_worker.env.map_run_record_pool_manager.get_all()
-        )
+        map_run_records: list[MapRunRecord] = get_exec_worker(
+            execution.exec_arn
+        ).env.map_run_record_pool_manager.get_all()
         return ListMapRunsOutput(
             mapRuns=[map_run_record.list_item() for map_run_record in map_run_records]
         )
@@ -1467,9 +1471,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         # TODO: investigate behaviour of empty requests.
         store = self.get_store(context)
         for execution in store.executions.values():
-            map_run_record: MapRunRecord | None = (
-                execution.exec_worker.env.map_run_record_pool_manager.get(map_run_arn)
-            )
+            map_run_record: MapRunRecord | None = get_exec_worker(
+                execution.exec_arn
+            ).env.map_run_record_pool_manager.get(map_run_arn)
             if map_run_record is not None:
                 map_run_record.update(
                     max_concurrency=max_concurrency,
@@ -1585,7 +1589,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     ) -> None:
         executions: list[Execution] = self._get_executions(context)
         for execution in executions:
-            callback_endpoint = execution.exec_worker.env.callback_pool_manager.get(
+            callback_endpoint = get_exec_worker(execution.exec_arn).env.callback_pool_manager.get(
                 callback_id=task_token
             )
             if isinstance(callback_endpoint, ActivityCallbackEndpoint):
