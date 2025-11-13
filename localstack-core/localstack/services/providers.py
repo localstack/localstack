@@ -405,7 +405,7 @@ def swf():
 
 
 @aws_provider(api="resourcegroupstaggingapi", name="legacy")
-def resourcegroupstaggingapi():
+def resourcegroupstaggingapi_legacy():
     from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.resourcegroupstaggingapi.provider import (
         ResourceGroupsTaggingApiProvider,
