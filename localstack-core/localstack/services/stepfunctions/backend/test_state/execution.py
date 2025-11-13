@@ -37,7 +37,6 @@ LOG = logging.getLogger(__name__)
 
 
 class TestStateExecution(Execution):
-    exec_worker: TestStateExecutionWorker | None
     next_state: str | None
 
     class TestCaseExecutionWorkerCommunication(BaseExecutionWorkerCommunication):
@@ -48,7 +47,7 @@ class TestStateExecution(Execution):
             exit_program_state: ProgramState = exec_worker.env.program_state()
             if isinstance(exit_program_state, ProgramChoiceSelected):
                 self.execution.exec_status = ExecutionStatus.SUCCEEDED
-                self.execution.output = self.execution.exec_worker.env.states.get_input()
+                self.execution.output = exec_worker.env.states.get_input()
                 self.execution.next_state = exit_program_state.next_state_name
             else:
                 self._reflect_execution_status()

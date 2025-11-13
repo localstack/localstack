@@ -174,7 +174,6 @@ class Execution:
         self.stop_date = None
         self.output = None
         self.output_details = CloudWatchEventsExecutionDataDetails(included=True)
-        self.exec_worker = None
         self.error = None
         self.cause = None
         self._activity_store = activity_store
