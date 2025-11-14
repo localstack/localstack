@@ -4,10 +4,13 @@ import datetime
 import logging
 import os
 
+from cbor2 import loads as cbor2_loads
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, keywrap
 from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.kms import (
@@ -138,6 +141,7 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import get_partition, kms_alias_arn, parse_arn
 from localstack.utils.collections import PaginatedList
 from localstack.utils.common import select_attributes
+from localstack.utils.crypto import pkcs7_envelope_encrypt
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -1075,6 +1079,25 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self._validate_key_for_encryption_decryption(context, key)
         self._validate_key_state_not_pending_import(key)
 
+        # Handle the recipient field.  This is used by AWS Nitro to re-encrypt the plaintext to the key specified
+        # by the enclave.  Proper support for this will take significant work to figure out how to model enforcing
+        # the attestation measurements; for now, if recipient is specified and has an attestation doc in it including
+        # a public key where it's expected to be, we encrypt to that public key.  This at least allows users to use
+        # localstack as a drop-in replacement for AWS when testing without having to skip the secondary decryption
+        # when using localstack.
+        recipient_pubkey = None
+        if recipient:
+            attestation_document = recipient["AttestationDocument"]
+            # We do all of this in a try/catch and warn if it fails so that if users are currently passing a nonsense
+            # value we don't break it for them.  In the future we could do a breaking change to require a valid attestation
+            # (or at least one that contains the public key).
+            try:
+                recipient_pubkey = self._extract_attestation_pubkey(attestation_document)
+            except Exception as e:
+                logging.warning(
+                    "Unable to extract public key from non-empty attestation document: %s", e
+                )
+
         try:
             # TODO: Extend the implementation to handle additional encryption/decryption scenarios
             # beyond the current support for offline encryption and online decryption using RSA keys if key id exists in
@@ -1088,19 +1111,26 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 plaintext = key.decrypt(ciphertext, encryption_context)
         except InvalidTag:
             raise InvalidCiphertextException()
+
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always
         # encrypts with symmetric encryption no matter the key settings.
         #
         # We return a key ARN instead of KeyId despite the name of the parameter, as this is what AWS does and states
         # in its docs.
-        # TODO add support for "recipient"
         #  https://docs.aws.amazon.com/kms/latest/APIReference/API_Decrypt.html#API_Decrypt_RequestSyntax
         # TODO add support for "dry_run"
-        return DecryptResponse(
+        response = DecryptResponse(
             KeyId=key.metadata.get("Arn"),
-            Plaintext=plaintext,
             EncryptionAlgorithm=encryption_algorithm,
         )
+
+        # Encrypt to the recipient pubkey if specified.  Otherwise, return the actual plaintext
+        if recipient_pubkey:
+            response["CiphertextForRecipient"] = pkcs7_envelope_encrypt(plaintext, recipient_pubkey)
+        else:
+            response["Plaintext"] = plaintext
+
+        return response
 
     def get_parameters_for_import(
         self,
@@ -1558,6 +1588,15 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                     f"Value {['Operations']} at 'operations' failed to satisfy constraint: Member must satisfy"
                     f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
                 )
+
+    def _extract_attestation_pubkey(self, attestation_document: bytes) -> RSAPublicKey:
+        # The attestation document comes as a COSE (CBOR Object Signing and Encryption) object: the CBOR
+        # attestation is signed and then the attestation and signature are again CBOR-encoded.  For now
+        # we don't bother validating the signature, though in the future we could.
+        cose_document = cbor2_loads(attestation_document)
+        attestation = cbor2_loads(cose_document[2])
+        public_key_bytes = attestation["public_key"]
+        return load_der_public_key(public_key_bytes)
 
     def _decrypt_wrapped_key_material(
         self,

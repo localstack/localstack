@@ -16,6 +16,10 @@ apispec==6.8.4
     # via localstack-core (pyproject.toml)
 argparse==1.4.0
     # via kclpy-ext
+asn1crypto==1.5.1
+    # via
+    #   localstack-core
+    #   localstack-core (pyproject.toml)
 attrs==25.4.0
     # via
     #   jsonschema

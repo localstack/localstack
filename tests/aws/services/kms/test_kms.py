@@ -6,12 +6,15 @@ import uuid
 from datetime import datetime
 from random import getrandbits
 
+import cbor2
 import pytest
+from asn1crypto import cms
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.keywrap import aes_key_wrap_with_padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
@@ -2095,6 +2098,107 @@ class TestKMS:
                 EncryptionContext=encryption_context,
             )
         snapshot.match("decrypt_response_with_invalid_ciphertext", e.value.response)
+
+    @markers.aws.only_localstack
+    def test_decrypt_recipient(self, kms_create_key, aws_client):
+        """
+        Test that decryption to a Nitro recipient creates a correct PKCS7 envelope to that recipient.  This is done
+        as an only-Localstack test because of the difficulty of spinning up a true Nitro enclave to generate a real
+        attestation for real AWS.
+        """
+
+        # Setup
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+        message = b"test message 123 !%$@ 1234567890"
+        ciphertext = aws_client.kms.encrypt(
+            KeyId=key_id,
+            Plaintext=base64.b64encode(message),
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+        )["CiphertextBlob"]
+
+        # Set up our fake attestation.  For now we just build a mini-attestation with only the public key, and
+        # skipping the other fields in it and the wrapping signature; in the future we could provide a more complete one.
+        rsa_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+            backend=default_backend(),
+        )
+        der_public_key = rsa_key.public_key().public_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        inner_attestation = cbor2.dumps({"public_key": der_public_key})
+        wrapped_attestation = cbor2.dumps(["", "", inner_attestation, ""])
+        recipient = {"AttestationDocument": wrapped_attestation}
+
+        # Do the KMS call
+        ciphertext_for_recipient = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+            Recipient=recipient,
+        )["CiphertextForRecipient"]
+
+        # Decrypt the PKCS7 envelope to recover the plaintext.  Hazmat's pkcs7_decrypt_pem() doesn't support the RSA-OAEP
+        # with SHA-256 that AWS uses, so we use as1ncrypto to unpack the envelope and then Hazmat to decrypt
+        # the session key and then the plaintext.
+
+        # Parse the PKCS7 envelope
+        content_info = cms.ContentInfo.load(ciphertext_for_recipient)
+        enveloped_data = content_info["content"]
+
+        # Extract the encrypted session key and encrypted content
+        recipient_info = enveloped_data["recipient_infos"][0].chosen
+        encrypted_session_key = recipient_info["encrypted_key"].native
+        encrypted_content_info = enveloped_data["encrypted_content_info"]
+        encrypted_content = encrypted_content_info["encrypted_content"].native
+
+        # Get the IV from the content encryption algorithm parameters
+        iv = encrypted_content_info["content_encryption_algorithm"]["parameters"].native
+
+        # Decrypt the session key
+        session_key = rsa_key.decrypt(
+            encrypted_session_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+            ),
+        )
+
+        # Decrypt the content using the session key and iv
+        cipher = Cipher(algorithms.AES(session_key), modes.CBC(iv), backend=default_backend())
+        decryptor = cipher.decryptor()
+        plaintext = decryptor.update(encrypted_content) + decryptor.finalize()
+
+        # Make sure we did the decryption correctly
+        assert base64.b64decode(plaintext) == message
+
+    @markers.aws.only_localstack
+    def test_decrypt_recipient_invalid_attestation(self, kms_create_key, aws_client):
+        """
+        Test that if we are unable to extract the public key from the attestation, we ignore the recipient
+        and provide the plaintext in the response.
+        """
+
+        # Setup
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+        message = b"test message 123 !%$@ 1234567890"
+        ciphertext = aws_client.kms.encrypt(
+            KeyId=key_id,
+            Plaintext=base64.b64encode(message),
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+        )["CiphertextBlob"]
+
+        # Invalid attestation document
+        recipient = {"AttestationDocument": base64.b64encode(b"invalidattestation")}
+        plaintext = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+            Recipient=recipient,
+        )["Plaintext"]
+
+        # Still get the plaintext back
+        assert base64.b64decode(plaintext) == message
 
     @markers.aws.validated
     def test_get_parameters_for_import(self, kms_create_key, snapshot, aws_client):

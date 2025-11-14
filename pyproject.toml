@@ -12,6 +12,7 @@ description = "The core library and runtime of LocalStack"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 dependencies = [
+    "asn1crypto>=1.5.1",
     "click>=7.1",
     "cachetools>=5.0",
     "cryptography",
