@@ -1370,6 +1370,7 @@ class TestS3BucketEncryption:
         ]
     )
     def test_s3_bucket_encryption_sse_kms_aws_managed_key(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("CurrentKeyMaterialId"))
         # if you don't provide a KMS key, AWS will use an AWS managed one.
         put_bucket_enc = aws_client.s3.put_bucket_encryption(
             Bucket=s3_bucket,
