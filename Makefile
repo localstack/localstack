@@ -36,8 +36,7 @@ freeze:                   ## Run pip freeze -l in the virtual environment
 	@$(VENV_RUN); pip freeze -l
 
 upgrade-pinned-dependencies: venv
-	# TODO: Avoid pip 25.3 for now due to https://github.com/jazzband/pip-tools/issues/2252
-	$(VENV_RUN); $(PIP_CMD) install --upgrade "pip!=25.3" pip-tools pre-commit
+	$(VENV_RUN); $(PIP_CMD) install --upgrade pip pip-tools pre-commit
 	$(VENV_RUN); pip-compile --strip-extras --upgrade -o requirements-basic.txt pyproject.toml
 	$(VENV_RUN); pip-compile --strip-extras --upgrade --extra runtime -o requirements-runtime.txt pyproject.toml
 	$(VENV_RUN); pip-compile --strip-extras --upgrade --extra test -o requirements-test.txt pyproject.toml
