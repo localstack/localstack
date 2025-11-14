@@ -4660,7 +4660,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_modified_non_express": {
-    "recorded-date": "23-06-2025, 09:05:52",
+    "recorded-date": "04-11-2025, 14:23:44",
     "recorded-content": {
       "delete-obj-if-match-last-modified": {
         "Error": {
@@ -4676,7 +4676,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_size_non_express": {
-    "recorded-date": "23-06-2025, 09:05:59",
+    "recorded-date": "04-11-2025, 14:23:49",
     "recorded-content": {
       "delete-obj-if-match-size": {
         "Error": {
@@ -5154,5 +5154,63 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_success": {
+    "recorded-date": "04-11-2025, 14:23:35",
+    "recorded-content": {
+      "put-object": {
+        "ChecksumCRC32": "V/RnXQ==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"9473fdd0d880a43c21b7778d34872157\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-obj-if-match-success": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "head-obj-after-delete": {
+        "Error": {
+          "Code": "404",
+          "Message": "Not Found"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_failed": {
+    "recorded-date": "04-11-2025, 14:23:39",
+    "recorded-content": {
+      "put-object": {
+        "ChecksumCRC32": "V/RnXQ==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"9473fdd0d880a43c21b7778d34872157\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-obj-if-match-failed": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
   }
 }
+
