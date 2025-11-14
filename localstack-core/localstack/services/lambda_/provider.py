@@ -1748,10 +1748,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description = description or ""
         with function.lock:
             if existing_alias := function.aliases.get(name):
-                raise ResourceConflictException(
-                    f"Alias already exists: {api_utils.map_alias_out(alias=existing_alias, function=function)['AliasArn']}",
-                    Type="User",
-                )
+                # If alias already exists and points to the same version with same config,
+                # treat as idempotent operation (common in CDK redeployments)
+                if (existing_alias.function_version == function_version and 
+                    existing_alias.description == (description or "") and
+                    existing_alias.routing_configuration == None if not routing_config else True):
+                    # Return existing alias without error for idempotent behavior
+                    return api_utils.map_alias_out(alias=existing_alias, function=function)
+                else:
+                    # Different configuration - this is truly a conflict
+                    raise ResourceConflictException(
+                        f"Alias already exists: {api_utils.map_alias_out(alias=existing_alias, function=function)['AliasArn']}",
+                        Type="User",
+                    )
             # checking if the version exists
             routing_configuration = None
             if routing_config and (

@@ -1,5 +1,6 @@
 import base64
 import functools
+import gzip
 import json
 import logging
 import os
@@ -7,7 +8,9 @@ import re
 import threading
 import time
 import uuid
+import zipfile
 from datetime import datetime
+from io import BytesIO
 from urllib.parse import urlparse
 
 import requests
@@ -851,6 +854,7 @@ class FirehoseProvider(FirehoseApi):
         bucket = s3_bucket_name(s3_destination_description["BucketARN"])
         prefix = s3_destination_description.get("Prefix", "")
         file_extension = s3_destination_description.get("FileExtension", "")
+        compression_format = s3_destination_description.get("CompressionFormat", "UNCOMPRESSED")
 
         if role_arn := s3_destination_description.get("RoleARN"):
             factory = connect_to.with_assumed_role(
@@ -862,6 +866,29 @@ class FirehoseProvider(FirehoseApi):
             source_arn=stream_name, service_principal=ServicePrincipal.firehose
         )
         batched_data = b"".join([base64.b64decode(r.get("Data") or r.get("data")) for r in records])
+
+        # Apply compression if specified
+        if compression_format == "GZIP":
+            batched_data = gzip.compress(batched_data)
+            if not file_extension:
+                file_extension = ".gz"
+        elif compression_format == "ZIP":
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                zip_file.writestr("data", batched_data)
+            batched_data = zip_buffer.getvalue()
+            if not file_extension:
+                file_extension = ".zip"
+        elif compression_format == "Snappy":
+            try:
+                import snappy
+                batched_data = snappy.compress(batched_data)
+                if not file_extension:
+                    file_extension = ".snappy"
+            except ImportError:
+                LOG.warning("Snappy compression requested but python-snappy is not installed. Storing uncompressed.")
+        elif compression_format != "UNCOMPRESSED":
+            LOG.warning(f"Unknown compression format '{compression_format}', storing uncompressed.")
 
         obj_path = self._get_s3_object_path(stream_name, prefix, file_extension)
         try:
