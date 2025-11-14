@@ -616,6 +616,7 @@ class ServicePluginManager(ServiceManager):
             api, provider = spec.name.split(
                 ":"
             )  # TODO: error handling, faulty plugins could break the runtime
+            print(api, provider)
             result[api].append(provider)
 
         return result
