@@ -34,7 +34,7 @@ class ServiceRequestAggregator:
         self._flush_interval = flush_interval
         self._flush_scheduler = Scheduler()
         self._mutex = threading.RLock()
-        self._period_start_time = datetime.datetime.utcnow()
+        self._period_start_time = datetime.datetime.now(datetime.UTC)
         self._is_started = False
         self._is_shutdown = False
 
@@ -101,12 +101,14 @@ class ServiceRequestAggregator:
                 self._emit_payload(analytics_payload)
                 self.counter.clear()
             finally:
-                self._period_start_time = datetime.datetime.utcnow()
+                self._period_start_time = datetime.datetime.now(datetime.UTC)
 
     def _create_analytics_payload(self):
         return {
-            "period_start_time": self._period_start_time.isoformat() + "Z",
-            "period_end_time": datetime.datetime.utcnow().isoformat() + "Z",
+            "period_start_time": self._period_start_time.isoformat().replace("+00:00", "Z"),
+            "period_end_time": datetime.datetime.now(datetime.UTC)
+            .isoformat()
+            .replace("+00:00", "Z"),
             "api_calls": self._aggregate_api_calls(self.counter),
         }
 
