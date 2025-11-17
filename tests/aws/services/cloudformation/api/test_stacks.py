@@ -878,9 +878,8 @@ def test_name_conflicts(aws_client, snapshot, cleanups):
 
 @markers.aws.validated
 def test_describe_stack_events_errors(aws_client, snapshot):
-    with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+    with pytest.raises(botocore.exceptions.ParamValidationError) as e:
         aws_client.cloudformation.describe_stack_events()
-    snapshot.match("describe_stack_events_no_stack_name", e.value.response)
     with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
         aws_client.cloudformation.describe_stack_events(StackName="does-not-exist")
     snapshot.match("describe_stack_events_stack_not_found", e.value.response)
