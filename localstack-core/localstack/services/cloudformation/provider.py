@@ -952,8 +952,8 @@ class CloudformationProvider(CloudformationApi):
     def describe_stack_events(
         self,
         context: RequestContext,
-        stack_name: StackName = None,
-        next_token: NextToken = None,
+        stack_name: StackName,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeStackEventsOutput:
         if stack_name is None:
