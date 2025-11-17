@@ -11,6 +11,8 @@ AccountsUrl = str
 AfterContext = str
 AfterValue = str
 AllowedValue = str
+AnnotationName = str
+AnnotationRemediationLink = str
 Arn = str
 AutoDeploymentNullable = bool
 AutoUpdate = bool
@@ -50,6 +52,7 @@ HookInvocationCount = int
 HookInvocationId = str
 HookResultId = str
 HookStatusReason = str
+HookTargetId = str
 HookTargetTypeName = str
 HookType = str
 HookTypeArn = str
@@ -107,6 +110,8 @@ Reason = str
 RefreshAllResources = bool
 Region = str
 RegistrationToken = str
+RemediationMessageRemediationMessage = str
+RemediationMessageStatusMessage = str
 RequestToken = str
 RequiredProperty = bool
 ResourceIdentifier = str
@@ -200,6 +205,20 @@ class AccountFilterType(StrEnum):
 
 class AccountGateStatus(StrEnum):
     SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+    SKIPPED = "SKIPPED"
+
+
+class AnnotationSeverityLevel(StrEnum):
+    INFORMATIONAL = "INFORMATIONAL"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
+class AnnotationStatus(StrEnum):
+    PASSED = "PASSED"
     FAILED = "FAILED"
     SKIPPED = "SKIPPED"
 
@@ -375,6 +394,13 @@ class HookStatus(StrEnum):
     HOOK_COMPLETE_SUCCEEDED = "HOOK_COMPLETE_SUCCEEDED"
     HOOK_COMPLETE_FAILED = "HOOK_COMPLETE_FAILED"
     HOOK_FAILED = "HOOK_FAILED"
+
+
+class HookTargetAction(StrEnum):
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+    DELETE = "DELETE"
+    IMPORT = "IMPORT"
 
 
 class HookTargetType(StrEnum):
@@ -947,6 +973,18 @@ class ActivateTypeOutput(TypedDict, total=False):
 
 
 AllowedValues = list[AllowedValue]
+
+
+class Annotation(TypedDict, total=False):
+    AnnotationName: AnnotationName | None
+    Status: AnnotationStatus | None
+    StatusMessage: RemediationMessageStatusMessage | None
+    RemediationMessage: RemediationMessageRemediationMessage | None
+    RemediationLink: AnnotationRemediationLink | None
+    SeverityLevel: AnnotationSeverityLevel | None
+
+
+AnnotationList = list[Annotation]
 
 
 class AutoDeployment(TypedDict, total=False):
@@ -1586,7 +1624,7 @@ class DescribeStackDriftDetectionStatusOutput(TypedDict, total=False):
 
 
 class DescribeStackEventsInput(ServiceRequest):
-    StackName: StackName | None
+    StackName: StackName
     NextToken: NextToken | None
 
 
@@ -2038,6 +2076,33 @@ class GetGeneratedTemplateInput(ServiceRequest):
 class GetGeneratedTemplateOutput(TypedDict, total=False):
     Status: GeneratedTemplateStatus | None
     TemplateBody: TemplateBody | None
+
+
+class GetHookResultInput(ServiceRequest):
+    HookResultId: HookInvocationId | None
+
+
+class HookTarget(TypedDict, total=False):
+    TargetType: HookTargetType
+    TargetTypeName: HookTargetTypeName
+    TargetId: HookTargetId
+    Action: HookTargetAction
+
+
+class GetHookResultOutput(TypedDict, total=False):
+    HookResultId: HookInvocationId | None
+    InvocationPoint: HookInvocationPoint | None
+    FailureMode: HookFailureMode | None
+    TypeName: HookTypeName | None
+    OriginalTypeName: HookTypeName | None
+    TypeVersionId: HookTypeVersionId | None
+    TypeConfigurationVersionId: HookTypeConfigurationVersionId | None
+    TypeArn: HookTypeArn | None
+    Status: HookStatus | None
+    HookStatusReason: HookStatusReason | None
+    InvokedAt: Timestamp | None
+    Target: HookTarget | None
+    Annotations: AnnotationList | None
 
 
 class GetStackPolicyInput(ServiceRequest):
@@ -3220,7 +3285,7 @@ class CloudformationApi:
     def describe_stack_events(
         self,
         context: RequestContext,
-        stack_name: StackName | None = None,
+        stack_name: StackName,
         next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeStackEventsOutput:
@@ -3390,6 +3455,12 @@ class CloudformationApi:
         format: TemplateFormat | None = None,
         **kwargs,
     ) -> GetGeneratedTemplateOutput:
+        raise NotImplementedError
+
+    @handler("GetHookResult")
+    def get_hook_result(
+        self, context: RequestContext, hook_result_id: HookInvocationId | None = None, **kwargs
+    ) -> GetHookResultOutput:
         raise NotImplementedError
 
     @handler("GetStackPolicy")

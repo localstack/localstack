@@ -22,6 +22,7 @@ decodedMessageType = str
 durationSecondsType = int
 encodedMessageType = str
 expiredIdentityTokenMessage = str
+expiredTradeInTokenExceptionMessage = str
 externalIdType = str
 federatedIdType = str
 idpCommunicationErrorMessage = str
@@ -41,6 +42,7 @@ tagKeyType = str
 tagValueType = str
 tokenCodeType = str
 tokenType = str
+tradeInTokenType = str
 unrestrictedSessionPolicyDocumentType = str
 urlType = str
 userIdType = str
@@ -50,6 +52,12 @@ webIdentitySubjectType = str
 
 class ExpiredTokenException(ServiceException):
     code: str = "ExpiredTokenException"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class ExpiredTradeInTokenException(ServiceException):
+    code: str = "ExpiredTradeInTokenException"
     sender_fault: bool = True
     status_code: int = 400
 
@@ -240,6 +248,16 @@ class GetCallerIdentityResponse(TypedDict, total=False):
     Arn: arnType | None
 
 
+class GetDelegatedAccessTokenRequest(ServiceRequest):
+    TradeInToken: tradeInTokenType
+
+
+class GetDelegatedAccessTokenResponse(TypedDict, total=False):
+    Credentials: Credentials | None
+    PackedPolicySize: nonNegativeIntegerType | None
+    AssumedPrincipal: arnType | None
+
+
 class GetFederationTokenRequest(ServiceRequest):
     Name: userNameType
     Policy: sessionPolicyDocumentType | None
@@ -342,6 +360,12 @@ class StsApi:
 
     @handler("GetCallerIdentity")
     def get_caller_identity(self, context: RequestContext, **kwargs) -> GetCallerIdentityResponse:
+        raise NotImplementedError
+
+    @handler("GetDelegatedAccessToken")
+    def get_delegated_access_token(
+        self, context: RequestContext, trade_in_token: tradeInTokenType, **kwargs
+    ) -> GetDelegatedAccessTokenResponse:
         raise NotImplementedError
 
     @handler("GetFederationToken")
