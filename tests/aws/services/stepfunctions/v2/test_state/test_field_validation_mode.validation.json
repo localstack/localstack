@@ -1,0 +1,155 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_kms_task[wrong_blob_length_less_than_minimum]": {
+    "last_validated_date": "2025-11-26T00:22:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.84,
+      "teardown": 0.94,
+      "total": 13.78
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_kms_task[wrong_blob_type_number]": {
+    "last_validated_date": "2025-11-26T00:22:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.82,
+      "teardown": 0.93,
+      "total": 13.75
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_lambda_get_function_task[integer_less_than_minimum_allowed]": {
+    "last_validated_date": "2025-11-26T00:22:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.76,
+      "teardown": 0.95,
+      "total": 13.71
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_lambda_get_function_task[integer_more_than_maximum_allowed]": {
+    "last_validated_date": "2025-11-26T00:22:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.08,
+      "teardown": 1.37,
+      "total": 13.45
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_s3_task[non_existent_enum_value]": {
+    "last_validated_date": "2025-11-26T00:22:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.77,
+      "teardown": 0.92,
+      "total": 13.69
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_s3_task[wrong_long_type_string]": {
+    "last_validated_date": "2025-11-26T00:21:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.93,
+      "teardown": 0.94,
+      "total": 13.87
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_dynamodb_task[wrong_float_type_string]": {
+    "last_validated_date": "2025-11-26T00:21:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.75,
+      "teardown": 0.9,
+      "total": 13.65
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_eventbridge_task[wrong_type_2nd_array_element]": {
+    "last_validated_date": "2025-11-26T00:20:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.78,
+      "teardown": 1.08,
+      "total": 13.86
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_eventbridge_task[wrong_type_nested_field]": {
+    "last_validated_date": "2025-11-26T00:19:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.06,
+      "teardown": 0.94,
+      "total": 14.0
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_eventbridge_task[wrong_type_top_level_field]": {
+    "last_validated_date": "2025-11-26T00:19:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.85,
+      "teardown": 1.13,
+      "total": 13.98
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_lambda_task[wrong_integer_type_string]": {
+    "last_validated_date": "2025-11-26T00:21:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.85,
+      "teardown": 0.92,
+      "total": 13.77
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_mock_result_field_not_in_api_spec[empty_json]": {
+    "last_validated_date": "2025-11-26T00:19:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.83,
+      "teardown": 0.94,
+      "total": 13.77
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_mock_result_field_not_in_api_spec[field_not_part_of_api_spec]": {
+    "last_validated_date": "2025-11-26T00:19:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 14.06,
+      "teardown": 0.97,
+      "total": 15.54
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_sfn_task[field_name_not_in_sfn_case]": {
+    "last_validated_date": "2025-11-26T00:20:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.06,
+      "teardown": 1.08,
+      "total": 14.14
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_sfn_task[missing_required_fields]": {
+    "last_validated_date": "2025-11-26T00:20:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.97,
+      "teardown": 1.06,
+      "total": 14.03
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_sfn_task[wrong_timestamp_type_bool]": {
+    "last_validated_date": "2025-11-26T00:20:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.97,
+      "teardown": 1.12,
+      "total": 14.09
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_sfn_task[wrong_timestamp_type_number]": {
+    "last_validated_date": "2025-11-26T00:21:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.9,
+      "teardown": 1.14,
+      "total": 14.04
+    }
+  }
+}
