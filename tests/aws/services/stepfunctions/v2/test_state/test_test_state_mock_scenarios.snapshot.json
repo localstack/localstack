@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_lambda_service_task_mock_success": {
-    "recorded-date": "12-11-2025, 16:33:17",
+    "recorded-date": "24-11-2025, 23:40:28",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -18,7 +18,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[base]": {
-    "recorded-date": "12-11-2025, 16:33:30",
+    "recorded-date": "24-11-2025, 23:40:46",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -35,7 +35,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[io]": {
-    "recorded-date": "12-11-2025, 16:33:49",
+    "recorded-date": "24-11-2025, 23:41:00",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -63,7 +63,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[io_output_path]": {
-    "recorded-date": "12-11-2025, 16:34:02",
+    "recorded-date": "24-11-2025, 23:41:14",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -80,7 +80,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_put_events_mock_success": {
-    "recorded-date": "12-11-2025, 16:34:15",
+    "recorded-date": "24-11-2025, 23:41:28",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -99,7 +99,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_send_sqs_message_success": {
-    "recorded-date": "12-11-2025, 17:54:05",
+    "recorded-date": "24-11-2025, 23:41:42",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -115,7 +115,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_sfn_start_execution_success": {
-    "recorded-date": "13-11-2025, 11:41:38",
+    "recorded-date": "25-11-2025, 00:48:49",
     "recorded-content": {
       "test_case_response": {
         "output": {

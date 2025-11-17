@@ -151,6 +151,7 @@ from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.services.stepfunctions.backend.test_state.execution import (
     TestStateExecution,
 )
+from localstack.services.stepfunctions.backend.test_state.test_state_mock import TestStateMock
 from localstack.services.stepfunctions.local_mocking.mock_config import (
     LocalMockTestCase,
     load_local_mock_test_case_for,
@@ -242,8 +243,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
 
     @staticmethod
-    def _validate_test_state_mock_input(mock: MockInput) -> None:
-        if {"result", "errorOutput"} <= mock.keys():
+    def _validate_test_state_mock_input(mock_input: MockInput) -> None:
+        if {"result", "errorOutput"} <= mock_input.keys():
             # FIXME create proper error
             raise ValidationException("Cannot define both 'result' and 'errorOutput'")
 
@@ -1512,12 +1513,17 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         ):
             raise ValidationException("State not found in definition")
 
-        if mock := request.get("mock"):
-            self._validate_test_state_mock_input(mock)
+        if mock_input := request.get("mock"):
+            self._validate_test_state_mock_input(mock_input)
 
         if state_configuration := request.get("stateConfiguration"):
             # TODO: Add validations for this i.e assert len(input) <= failureCount
             pass
+        mock = TestStateMock(mock_input=mock_input, state_configuration=state_configuration)
+
+        TestStateStaticAnalyser.validate_mock(
+            mock=mock, definition=definition, state_name=state_name
+        )
 
         name: Name | None = f"TestState-{short_uid()}"
         arn = stepfunctions_state_machine_arn(
@@ -1548,7 +1554,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             input_data=input_json,
             state_name=state_name,
             activity_store=self.get_store(context).activities,
-            mock=mock,
+            mock=mock_input,
             state_configuration=state_configuration,
         )
         execution.start()

@@ -75,3 +75,8 @@ class TestStateMock:
         if not self._result_stack:
             return None
         return self._result_stack.pop()
+
+    def peek_next_result(self) -> TestStateMockedResponse | None:
+        if not self._result_stack:
+            return None
+        return self._result_stack[-1]
