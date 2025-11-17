@@ -503,8 +503,8 @@ class SqsQueue:
 
             if standard_message not in self.inflight:
                 return
-
-            standard_message.update_visibility_timeout(visibility_timeout)
+            self._update_visiblity_timeout(standard_message, visibility_timeout)
+            # standard_message.update_visibility_timeout(visibility_timeout)
 
             if visibility_timeout == 0:
                 LOG.info(
@@ -775,6 +775,9 @@ class SqsQueue:
         :return: None. Potential violations raise errors.
         """
         pass
+
+    def _update_visiblity_timeout(self, standard_message, visibility_timeout):
+        standard_message.update_visibility_timeout(visibility_timeout)
 
 
 class StandardQueue(SqsQueue):
@@ -1294,6 +1297,10 @@ class FifoQueue(SqsQueue):
                 # delete a message.
                 pass
             self.update_message_group_visibility(message_group)
+
+    def _update_visiblity_timeout(self, standard_message, visibility_timeout):
+        super()._update_visiblity_timeout(standard_message, visibility_timeout)
+        pass
 
     def update_message_group_visibility(self, message_group: MessageGroup):
         """
