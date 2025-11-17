@@ -191,6 +191,11 @@
 # pipes
 /localstack-core/localstack/aws/api/pipes/ @tiurin @gregfurman @joe4dev
 
+# resourcegroupstaggingapi
+/localstack-core/localstack/aws/api/resourcegroupstaggingapi/ @aidehn
+/localstack-core/localstack/services/resourcegroupstaggingapi/ @aidehn
+/tests/aws/services/resourcegroupstaggingapi/ @aidehn
+
 # route53
 /localstack-core/localstack/aws/api/route53/ @giograno
 /localstack-core/localstack/services/route53/ @giograno
