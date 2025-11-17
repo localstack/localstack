@@ -1349,8 +1349,8 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
     def describe_stack_events(
         self,
         context: RequestContext,
-        stack_name: StackName = None,
-        next_token: NextToken = None,
+        stack_name: StackName,
+        next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeStackEventsOutput:
         if not stack_name:

@@ -27,6 +27,7 @@ SAMLProviderNameType = str
 accessKeyIdType = str
 accessKeySecretType = str
 accountAliasType = str
+accountIdType = str
 allUsers = bool
 arnType = str
 attachmentCountType = int
@@ -37,11 +38,14 @@ certificateBodyType = str
 certificateChainType = str
 certificateIdType = str
 clientIDType = str
+consoleDeepLinkType = str
 credentialAgeDays = int
 credentialReportExpiredExceptionMessage = str
 credentialReportNotPresentExceptionMessage = str
 credentialReportNotReadyExceptionMessage = str
 customSuffixType = str
+delegationRequestDescriptionType = str
+delegationRequestIdType = str
 deleteConflictMessage = str
 duplicateCertificateMessage = str
 duplicateSSHPublicKeyMessage = str
@@ -68,6 +72,7 @@ maxItemsType = int
 maxPasswordAgeType = int
 minimumPasswordLengthType = int
 noSuchEntityMessage = str
+notificationChannelType = str
 openIdIdpCommunicationErrorExceptionMessage = str
 organizationsEntityPathType = str
 organizationsPolicyIdType = str
@@ -81,6 +86,8 @@ policyDocumentType = str
 policyEvaluationErrorMessage = str
 policyNameType = str
 policyNotAttachableMessage = str
+policyParameterNameType = str
+policyParameterValueType = str
 policyPathType = str
 policyVersionIdType = str
 privateKeyIdType = str
@@ -88,7 +95,10 @@ privateKeyType = str
 publicKeyFingerprintType = str
 publicKeyIdType = str
 publicKeyMaterialType = str
+redirectUrlType = str
 reportGenerationLimitExceededMessage = str
+requestMessageType = str
+requestorWorkflowIdType = str
 responseMarkerType = str
 roleDescriptionType = str
 roleMaxSessionDurationType = int
@@ -105,6 +115,7 @@ serviceNotSupportedMessage = str
 servicePassword = str
 serviceSpecificCredentialId = str
 serviceUserName = str
+sessionDurationType = int
 stringType = str
 summaryValueType = int
 tagKeyType = str
@@ -164,6 +175,11 @@ class PolicyEvaluationDecisionType(StrEnum):
     allowed = "allowed"
     explicitDeny = "explicitDeny"
     implicitDeny = "implicitDeny"
+
+
+class PolicyParameterTypeEnum(StrEnum):
+    string = "string"
+    stringList = "stringList"
 
 
 class PolicySourceType(StrEnum):
@@ -597,6 +613,40 @@ class CreateAccessKeyResponse(TypedDict, total=False):
 
 class CreateAccountAliasRequest(ServiceRequest):
     AccountAlias: accountAliasType
+
+
+policyParameterValuesListType = list[policyParameterValueType]
+
+
+class PolicyParameter(TypedDict, total=False):
+    Name: policyParameterNameType | None
+    Values: policyParameterValuesListType | None
+    Type: PolicyParameterTypeEnum | None
+
+
+policyParameterListType = list[PolicyParameter]
+
+
+class DelegationPermission(TypedDict, total=False):
+    PolicyTemplateArn: arnType | None
+    Parameters: policyParameterListType | None
+
+
+class CreateDelegationRequestRequest(ServiceRequest):
+    OwnerAccountId: accountIdType | None
+    Description: delegationRequestDescriptionType
+    Permissions: DelegationPermission
+    RequestMessage: requestMessageType | None
+    RequestorWorkflowId: requestorWorkflowIdType
+    RedirectUrl: redirectUrlType | None
+    NotificationChannel: notificationChannelType
+    SessionDuration: sessionDurationType
+    OnlySendByOwner: booleanType | None
+
+
+class CreateDelegationRequestResponse(TypedDict, total=False):
+    ConsoleDeepLink: consoleDeepLinkType | None
+    DelegationRequestId: delegationRequestIdType | None
 
 
 class CreateGroupRequest(ServiceRequest):
@@ -2488,6 +2538,23 @@ class IamApi:
     def create_account_alias(
         self, context: RequestContext, account_alias: accountAliasType, **kwargs
     ) -> None:
+        raise NotImplementedError
+
+    @handler("CreateDelegationRequest")
+    def create_delegation_request(
+        self,
+        context: RequestContext,
+        description: delegationRequestDescriptionType,
+        permissions: DelegationPermission,
+        requestor_workflow_id: requestorWorkflowIdType,
+        notification_channel: notificationChannelType,
+        session_duration: sessionDurationType,
+        owner_account_id: accountIdType | None = None,
+        request_message: requestMessageType | None = None,
+        redirect_url: redirectUrlType | None = None,
+        only_send_by_owner: booleanType | None = None,
+        **kwargs,
+    ) -> CreateDelegationRequestResponse:
         raise NotImplementedError
 
     @handler("CreateGroup")

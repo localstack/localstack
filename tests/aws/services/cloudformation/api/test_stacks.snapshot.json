@@ -986,17 +986,6 @@
   "tests/aws/services/cloudformation/api/test_stacks.py::test_describe_stack_events_errors": {
     "recorded-date": "26-03-2024, 17:54:41",
     "recorded-content": {
-      "describe_stack_events_no_stack_name": {
-        "Error": {
-          "Code": "ValidationError",
-          "Message": "1 validation error detected: Value null at 'stackName' failed to satisfy constraint: Member must not be null",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
       "describe_stack_events_stack_not_found": {
         "Error": {
           "Code": "ValidationError",

@@ -844,6 +844,12 @@ class RedshiftIdcApplicationQuotaExceededFault(ServiceException):
     status_code: int = 400
 
 
+class RedshiftInvalidParameterFault(ServiceException):
+    code: str = "RedshiftInvalidParameter"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
 class ReservedNodeAlreadyExistsFault(ServiceException):
     code: str = "ReservedNodeAlreadyExists"
     sender_fault: bool = True
@@ -1660,6 +1666,7 @@ class ClusterExtendedCredentials(TypedDict, total=False):
     NextRefreshTime: TStamp | None
 
 
+ClusterIdentifierList = list[String]
 ClusterList = list[Cluster]
 
 
@@ -2863,6 +2870,15 @@ class GetClusterCredentialsWithIAMMessage(ServiceRequest):
     ClusterIdentifier: String | None
     DurationSeconds: IntegerOptional | None
     CustomDomainName: String | None
+
+
+class GetIdentityCenterAuthTokenRequest(ServiceRequest):
+    ClusterIds: ClusterIdentifierList
+
+
+class GetIdentityCenterAuthTokenResponse(TypedDict, total=False):
+    Token: SensitiveString | None
+    ExpirationTime: TStamp | None
 
 
 class GetReservedNodeExchangeConfigurationOptionsInputMessage(ServiceRequest):
@@ -4712,6 +4728,12 @@ class RedshiftApi:
         custom_domain_name: String | None = None,
         **kwargs,
     ) -> ClusterExtendedCredentials:
+        raise NotImplementedError
+
+    @handler("GetIdentityCenterAuthToken")
+    def get_identity_center_auth_token(
+        self, context: RequestContext, cluster_ids: ClusterIdentifierList, **kwargs
+    ) -> GetIdentityCenterAuthTokenResponse:
         raise NotImplementedError
 
     @handler("GetReservedNodeExchangeConfigurationOptions")

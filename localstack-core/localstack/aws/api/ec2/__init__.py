@@ -428,12 +428,20 @@ class AcceleratorName(StrEnum):
     a10g = "a10g"
     h100 = "h100"
     t4g = "t4g"
+    l40s = "l40s"
+    l4 = "l4"
+    gaudi_hl_205 = "gaudi-hl-205"
+    inferentia2 = "inferentia2"
+    trainium = "trainium"
+    trainium2 = "trainium2"
+    u30 = "u30"
 
 
 class AcceleratorType(StrEnum):
     gpu = "gpu"
     fpga = "fpga"
     inference = "inference"
+    media = "media"
 
 
 class AccountAttributeName(StrEnum):
@@ -4338,6 +4346,11 @@ class VpnStaticRouteSource(StrEnum):
     Static = "Static"
 
 
+class VpnTunnelBandwidth(StrEnum):
+    standard = "standard"
+    large = "large"
+
+
 class VpnTunnelProvisioningStatus(StrEnum):
     available = "available"
     pending = "pending"
@@ -7680,6 +7693,7 @@ class InstanceRequirements(TypedDict, total=False):
     AllowedInstanceTypes: AllowedInstanceTypeSet | None
     MaxSpotPriceAsPercentageOfOptimalOnDemandPrice: Integer | None
     BaselinePerformanceFactors: BaselinePerformanceFactors | None
+    RequireEncryptionInTransit: Boolean | None
 
 
 class PlacementResponse(TypedDict, total=False):
@@ -7796,6 +7810,7 @@ class InstanceRequirementsRequest(TypedDict, total=False):
     AllowedInstanceTypes: AllowedInstanceTypeSet | None
     MaxSpotPriceAsPercentageOfOptimalOnDemandPrice: Integer | None
     BaselinePerformanceFactors: BaselinePerformanceFactorsRequest | None
+    RequireEncryptionInTransit: Boolean | None
 
 
 class FleetEbsBlockDeviceRequest(TypedDict, total=False):
@@ -8059,6 +8074,7 @@ class Ec2InstanceConnectEndpoint(TypedDict, total=False):
     Tags: TagList | None
     IpAddressType: IpAddressType | None
     PublicDnsNames: InstanceConnectEndpointPublicDnsNames | None
+    AvailabilityZoneId: AvailabilityZoneId | None
 
 
 class CreateInstanceConnectEndpointResult(TypedDict, total=False):
@@ -11034,6 +11050,7 @@ class VpnConnectionOptionsSpecification(TypedDict, total=False):
     RemoteIpv6NetworkCidr: String | None
     OutsideIpAddressType: String | None
     TransportTransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    TunnelBandwidth: VpnTunnelBandwidth | None
     StaticRoutesOnly: Boolean | None
 
 
@@ -11160,6 +11177,7 @@ class VpnConnectionOptions(TypedDict, total=False):
     TransportTransitGatewayAttachmentId: String | None
     TunnelInsideIpVersion: TunnelInsideIpVersion | None
     TunnelOptions: TunnelOptionsList | None
+    TunnelBandwidth: VpnTunnelBandwidth | None
 
 
 class VpnConnection(TypedDict, total=False):
@@ -18299,6 +18317,26 @@ class GetHostReservationPurchasePreviewResult(TypedDict, total=False):
     Purchase: PurchaseSet | None
     TotalHourlyPrice: String | None
     TotalUpfrontPrice: String | None
+
+
+class GetImageAncestryRequest(ServiceRequest):
+    ImageId: ImageId
+    DryRun: Boolean | None
+
+
+class ImageAncestryEntry(TypedDict, total=False):
+    CreationDate: MillisecondDateTime | None
+    ImageId: ImageId | None
+    ImageOwnerAlias: String | None
+    SourceImageId: ImageId | None
+    SourceImageRegion: String | None
+
+
+ImageAncestryEntryList = list[ImageAncestryEntry]
+
+
+class GetImageAncestryResult(TypedDict, total=False):
+    ImageAncestryEntries: ImageAncestryEntryList | None
 
 
 class GetImageBlockPublicAccessStateRequest(ServiceRequest):
@@ -28115,6 +28153,12 @@ class Ec2Api:
         offering_id: OfferingId,
         **kwargs,
     ) -> GetHostReservationPurchasePreviewResult:
+        raise NotImplementedError
+
+    @handler("GetImageAncestry")
+    def get_image_ancestry(
+        self, context: RequestContext, image_id: ImageId, dry_run: Boolean | None = None, **kwargs
+    ) -> GetImageAncestryResult:
         raise NotImplementedError
 
     @handler("GetImageBlockPublicAccessState")
