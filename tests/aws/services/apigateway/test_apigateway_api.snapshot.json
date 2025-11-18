@@ -3833,7 +3833,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_lifecycle_integration_response": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_lifecycle_integration_response": {
     "recorded-date": "11-06-2025, 09:12:54",
     "recorded-content": {
       "put-integration-response": {
