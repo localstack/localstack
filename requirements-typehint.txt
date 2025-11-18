@@ -33,9 +33,9 @@ aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==48.18.0
+aws-cdk-cloud-assembly-schema==48.19.0
     # via aws-cdk-lib
-aws-cdk-lib==2.223.0
+aws-cdk-lib==2.225.0
     # via localstack-core
 aws-sam-translator==1.101.0
     # via
@@ -53,7 +53,7 @@ boto3==1.40.74
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.40.70
+boto3-stubs==1.40.75
     # via localstack-core (pyproject.toml)
 botocore==1.40.74
     # via
@@ -63,9 +63,9 @@ botocore==1.40.74
     #   localstack-core
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.40.70
+botocore-stubs==1.40.75
     # via boto3-stubs
-cachetools==6.2.1
+cachetools==6.2.2
     # via
     #   airspeed-ext
     #   localstack-core
@@ -74,7 +74,7 @@ cattrs==25.3.0
     # via jsii
 cbor2==5.7.1
     # via localstack-core
-certifi==2025.10.5
+certifi==2025.11.12
     # via
     #   httpcore
     #   httpx
@@ -88,7 +88,7 @@ cfn-lint==1.40.4
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
-click==8.3.0
+click==8.3.1
     # via
     #   deptry
     #   localstack-core
@@ -114,7 +114,7 @@ cryptography==46.0.3
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-cython==3.2.0
+cython==3.2.1
     # via localstack-core
 decorator==5.2.1
     # via jsonpath-rw
@@ -198,7 +198,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.4.1
+joserfc==1.4.2
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
@@ -260,7 +260,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.16.post15
+moto-ext==5.1.16.post39
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -290,15 +290,15 @@ mypy-boto3-athena==1.40.60
     # via boto3-stubs
 mypy-boto3-autoscaling==1.40.57
     # via boto3-stubs
-mypy-boto3-backup==1.40.70
+mypy-boto3-backup==1.40.75
     # via boto3-stubs
-mypy-boto3-batch==1.40.54
+mypy-boto3-batch==1.40.71
     # via boto3-stubs
 mypy-boto3-ce==1.40.60
     # via boto3-stubs
 mypy-boto3-cloudcontrol==1.40.63
     # via boto3-stubs
-mypy-boto3-cloudformation==1.40.57
+mypy-boto3-cloudformation==1.40.73
     # via boto3-stubs
 mypy-boto3-cloudfront==1.40.55
     # via boto3-stubs
@@ -322,7 +322,7 @@ mypy-boto3-cognito-identity==1.40.57
     # via boto3-stubs
 mypy-boto3-cognito-idp==1.40.60
     # via boto3-stubs
-mypy-boto3-dms==1.40.58
+mypy-boto3-dms==1.40.75
     # via boto3-stubs
 mypy-boto3-docdb==1.40.63
     # via boto3-stubs
@@ -330,9 +330,9 @@ mypy-boto3-dynamodb==1.40.56
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.40.59
     # via boto3-stubs
-mypy-boto3-ec2==1.40.70
+mypy-boto3-ec2==1.40.75
     # via boto3-stubs
-mypy-boto3-ecr==1.40.58
+mypy-boto3-ecr==1.40.73
     # via boto3-stubs
 mypy-boto3-ecs==1.40.63
     # via boto3-stubs
@@ -344,7 +344,7 @@ mypy-boto3-elasticache==1.40.63
     # via boto3-stubs
 mypy-boto3-elasticbeanstalk==1.40.60
     # via boto3-stubs
-mypy-boto3-elbv2==1.40.53
+mypy-boto3-elbv2==1.40.73
     # via boto3-stubs
 mypy-boto3-emr==1.40.64
     # via boto3-stubs
@@ -360,7 +360,7 @@ mypy-boto3-fis==1.40.59
     # via boto3-stubs
 mypy-boto3-glacier==1.40.61
     # via boto3-stubs
-mypy-boto3-glue==1.40.63
+mypy-boto3-glue==1.40.75
     # via boto3-stubs
 mypy-boto3-iam==1.40.70
     # via boto3-stubs
@@ -372,7 +372,7 @@ mypy-boto3-iot-data==1.40.55
     # via boto3-stubs
 mypy-boto3-iotanalytics==1.40.57
     # via boto3-stubs
-mypy-boto3-iotwireless==1.40.59
+mypy-boto3-iotwireless==1.40.73
     # via boto3-stubs
 mypy-boto3-kafka==1.40.70
     # via boto3-stubs
@@ -390,7 +390,7 @@ mypy-boto3-logs==1.40.64
     # via boto3-stubs
 mypy-boto3-managedblockchain==1.40.60
     # via boto3-stubs
-mypy-boto3-mediaconvert==1.40.64
+mypy-boto3-mediaconvert==1.40.73
     # via boto3-stubs
 mypy-boto3-mediastore==1.40.59
     # via boto3-stubs
@@ -400,7 +400,7 @@ mypy-boto3-mwaa==1.40.57
     # via boto3-stubs
 mypy-boto3-neptune==1.40.63
     # via boto3-stubs
-mypy-boto3-opensearch==1.40.69
+mypy-boto3-opensearch==1.40.75
     # via boto3-stubs
 mypy-boto3-organizations==1.40.61
     # via boto3-stubs
@@ -410,11 +410,11 @@ mypy-boto3-pinpoint==1.40.60
     # via boto3-stubs
 mypy-boto3-pipes==1.40.61
     # via boto3-stubs
-mypy-boto3-rds==1.40.50
+mypy-boto3-rds==1.40.73
     # via boto3-stubs
 mypy-boto3-rds-data==1.40.60
     # via boto3-stubs
-mypy-boto3-redshift==1.40.64
+mypy-boto3-redshift==1.40.72
     # via boto3-stubs
 mypy-boto3-redshift-data==1.40.57
     # via boto3-stubs
@@ -424,13 +424,13 @@ mypy-boto3-resourcegroupstaggingapi==1.40.64
     # via boto3-stubs
 mypy-boto3-route53==1.40.57
     # via boto3-stubs
-mypy-boto3-route53resolver==1.40.60
+mypy-boto3-route53resolver==1.40.75
     # via boto3-stubs
 mypy-boto3-s3==1.40.61
     # via boto3-stubs
 mypy-boto3-s3control==1.40.61
     # via boto3-stubs
-mypy-boto3-sagemaker==1.40.64
+mypy-boto3-sagemaker==1.40.73
     # via boto3-stubs
 mypy-boto3-sagemaker-runtime==1.40.63
     # via boto3-stubs
@@ -558,13 +558,13 @@ pygments==2.19.2
     # via
     #   pytest
     #   rich
-pymongo==4.15.3
+pymongo==4.15.4
     # via localstack-core
 pyopenssl==25.3.0
     # via
     #   localstack-core
     #   localstack-twisted
-pypandoc==1.16
+pypandoc==1.16.2
     # via localstack-core
 pyparsing==3.2.5
     # via moto-ext
@@ -641,7 +641,7 @@ rich==14.2.0
     #   localstack-core (pyproject.toml)
 rolo==0.7.6
     # via localstack-core
-rpds-py==0.28.0
+rpds-py==0.29.0
     # via
     #   jsonschema
     #   referencing
@@ -649,7 +649,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.14.4
+ruff==0.14.5
     # via localstack-core
 s3transfer==0.14.0
     # via
@@ -717,13 +717,13 @@ werkzeug==3.1.3
     #   rolo
 wrapt==2.0.1
     # via aws-xray-sdk
-wsproto==1.2.0
+wsproto==1.3.1
     # via hypercorn
 xmltodict==1.0.2
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==8.1
+zope-interface==8.1.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

@@ -33,9 +33,9 @@ aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==48.18.0
+aws-cdk-cloud-assembly-schema==48.19.0
     # via aws-cdk-lib
-aws-cdk-lib==2.223.0
+aws-cdk-lib==2.225.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.101.0
     # via
@@ -61,7 +61,7 @@ botocore==1.40.74
     #   localstack-core
     #   moto-ext
     #   s3transfer
-cachetools==6.2.1
+cachetools==6.2.2
     # via
     #   airspeed-ext
     #   localstack-core
@@ -70,7 +70,7 @@ cattrs==25.3.0
     # via jsii
 cbor2==5.7.1
     # via localstack-core
-certifi==2025.10.5
+certifi==2025.11.12
     # via
     #   httpcore
     #   httpx
@@ -82,7 +82,7 @@ cfn-lint==1.40.4
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
-click==8.3.0
+click==8.3.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -175,7 +175,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.4.1
+joserfc==1.4.2
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
@@ -237,7 +237,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.16.post15
+moto-ext==5.1.16.post39
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -313,7 +313,7 @@ pygments==2.19.2
     # via
     #   pytest
     #   rich
-pymongo==4.15.3
+pymongo==4.15.4
     # via localstack-core
 pyopenssl==25.3.0
     # via
@@ -390,7 +390,7 @@ rich==14.2.0
     #   localstack-core (pyproject.toml)
 rolo==0.7.6
     # via localstack-core
-rpds-py==0.28.0
+rpds-py==0.29.0
     # via
     #   jsonschema
     #   referencing
@@ -455,13 +455,13 @@ werkzeug==3.1.3
     #   rolo
 wrapt==2.0.1
     # via aws-xray-sdk
-wsproto==1.2.0
+wsproto==1.3.1
     # via hypercorn
 xmltodict==1.0.2
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==8.1
+zope-interface==8.1.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
