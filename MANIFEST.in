@@ -1,5 +1,4 @@
 exclude .github/**
-exclude .circleci/**
 exclude docs/**
 exclude tests/**
 exclude .test_durations
