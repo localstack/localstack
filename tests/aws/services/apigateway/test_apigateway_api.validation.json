@@ -254,7 +254,22 @@
       "total": 3.06
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_delete_integration_response_errors": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_get_integration_non_existent": {
+    "last_validated_date": "2025-11-18T17:03:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 1.6,
+      "teardown": 0.38,
+      "total": 2.81
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_request_parameter_bool_type": {
+    "last_validated_date": "2024-12-12T10:46:41+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_wrong_type": {
+    "last_validated_date": "2024-04-15T20:48:47+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_delete_integration_response_errors": {
     "last_validated_date": "2025-08-21T17:53:19+00:00",
     "durations_in_seconds": {
       "setup": 0.84,
@@ -263,7 +278,7 @@
       "total": 3.31
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_integration": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_invalid_integration": {
     "last_validated_date": "2025-06-26T11:21:05+00:00",
     "durations_in_seconds": {
       "setup": 1.63,
@@ -272,7 +287,7 @@
       "total": 3.2
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_responsetemplates": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_invalid_responsetemplates": {
     "last_validated_date": "2025-06-18T13:03:29+00:00",
     "durations_in_seconds": {
       "setup": 1.43,
@@ -281,7 +296,7 @@
       "total": 3.8
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_statuscode": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_invalid_statuscode": {
     "last_validated_date": "2025-06-18T11:51:51+00:00",
     "durations_in_seconds": {
       "setup": 1.61,
@@ -290,7 +305,7 @@
       "total": 3.33
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_api": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_wrong_api": {
     "last_validated_date": "2025-06-18T12:28:55+00:00",
     "durations_in_seconds": {
       "setup": 1.08,
@@ -299,7 +314,7 @@
       "total": 1.4
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_method": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_wrong_method": {
     "last_validated_date": "2025-06-18T11:47:00+00:00",
     "durations_in_seconds": {
       "setup": 1.42,
@@ -308,7 +323,7 @@
       "total": 2.96
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_resource": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_wrong_resource": {
     "last_validated_date": "2025-06-18T12:28:25+00:00",
     "durations_in_seconds": {
       "setup": 1.35,
@@ -317,7 +332,7 @@
       "total": 2.98
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_status_code": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_wrong_status_code": {
     "last_validated_date": "2025-06-26T11:21:43+00:00",
     "durations_in_seconds": {
       "setup": 1.58,
@@ -326,7 +341,7 @@
       "total": 3.4
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_lifecycle_integration_response": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_lifecycle_integration_response": {
     "last_validated_date": "2025-06-11T09:12:54+00:00",
     "durations_in_seconds": {
       "setup": 1.49,
@@ -335,7 +350,10 @@
       "total": 4.21
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_lifecycle_method_response": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_put_integration_response_validation": {
+    "last_validated_date": "2025-03-03T14:27:24+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_lifecycle_method_response": {
     "last_validated_date": "2025-07-01T15:48:02+00:00",
     "durations_in_seconds": {
       "setup": 1.38,
@@ -344,16 +362,7 @@
       "total": 4.55
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_request_parameter_bool_type": {
-    "last_validated_date": "2024-12-12T10:46:41+00:00"
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_response_validation": {
-    "last_validated_date": "2025-03-03T14:27:24+00:00"
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_wrong_type": {
-    "last_validated_date": "2024-04-15T20:48:47+00:00"
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_lack_response_parameters_and_models": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_update_method_lack_response_parameters_and_models": {
     "last_validated_date": "2025-07-01T15:48:38+00:00",
     "durations_in_seconds": {
       "setup": 1.4,
@@ -362,7 +371,7 @@
       "total": 3.77
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_update_method_response": {
     "last_validated_date": "2025-06-30T12:42:31+00:00",
     "durations_in_seconds": {
       "setup": 1.26,
@@ -371,7 +380,7 @@
       "total": 3.24
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response_negative_tests": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_update_method_response_negative_tests": {
     "last_validated_date": "2025-06-30T15:24:43+00:00",
     "durations_in_seconds": {
       "setup": 1.53,
@@ -380,7 +389,7 @@
       "total": 4.41
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response_wrong_operations": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_update_method_response_wrong_operations": {
     "last_validated_date": "2025-06-30T13:54:57+00:00",
     "durations_in_seconds": {
       "setup": 1.36,
@@ -389,7 +398,7 @@
       "total": 4.13
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_wrong_param_names": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_update_method_wrong_param_names": {
     "last_validated_date": "2025-07-01T15:49:16+00:00",
     "durations_in_seconds": {
       "setup": 1.44,

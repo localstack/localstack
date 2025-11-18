@@ -2053,12 +2053,20 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         **kwargs,
     ) -> Integration:
         try:
-            response: Integration = call_moto(context)
-        except CommonServiceException as e:
-            # the Exception raised by moto does not have the right message not status code
-            if e.code == "NotFoundException":
-                raise NotFoundException("Invalid Integration identifier specified")
-            raise
+            moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        except NotFoundException:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        if not (moto_resource := moto_rest_api.resources.get(resource_id)):
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        if not (moto_method := moto_resource.resource_methods.get(http_method)):
+            raise NotFoundException("Invalid Method identifier specified")
+
+        if not moto_method.method_integration:
+            raise NotFoundException("Invalid Integration identifier specified")
+
+        response: Integration = call_moto(context)
 
         if integration_responses := response.get("integrationResponses"):
             for integration_response in integration_responses.values():

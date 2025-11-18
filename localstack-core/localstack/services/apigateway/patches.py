@@ -5,7 +5,6 @@ import logging
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.exceptions import (
     DeploymentNotFoundException,
-    NoIntegrationDefined,
     RestAPINotFound,
     StageStillActive,
 )
@@ -112,14 +111,6 @@ def apply_patches():
             "requireAuthorizationForCacheControl", True
         )
         return result
-
-    # patch integration error responses
-    @patch(apigateway_models.Resource.get_integration)
-    def apigateway_models_resource_get_integration(fn, self, method_type):
-        resource_method = self.resource_methods.get(method_type, {})
-        if not resource_method.method_integration:
-            raise NoIntegrationDefined()
-        return resource_method.method_integration
 
     @patch(apigateway_models.RestAPI.to_dict)
     def apigateway_models_rest_api_to_dict(fn, self):
