@@ -30,7 +30,7 @@ LOG = logging.getLogger(__name__)
 _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 
 # TODO: refactor those to expose the needed methods maybe in another way that both can import
-add_default_headers = CorsResponseEnricher.add_cors_headers
+add_default_headers = CorsResponseEnricher.add_default_cors_headers
 is_origin_allowed_default = CorsEnforcer.is_cors_origin_allowed
 
 
