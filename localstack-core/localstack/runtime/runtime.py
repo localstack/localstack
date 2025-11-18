@@ -189,10 +189,22 @@ def create_from_environment() -> LocalstackRuntime:
     components = plugin_manager.load_all()
 
     if not components:
-        raise ValueError(
-            f"No component plugins found in namespace {Components.namespace}. Are entry points created "
-            f"correctly?"
+        # Fall back to the built-in AWS components when the entry point catalogue has not been generated yet.
+        try:
+            from localstack.aws.components import AwsComponents
+
+            fallback_components = AwsComponents()
+            fallback_components.load()
+        except Exception as e:  # pragma: no cover - defensive fallback in absence of entry points
+            raise ValueError(
+                f"No component plugins found in namespace {Components.namespace}. Are entry points created "
+                f"correctly?"
+            ) from e
+
+        LOG.debug(
+            "Falling back to AwsComponents because no runtime component plugins were discovered via entry points"
         )
+        return LocalstackRuntime(fallback_components)
 
     if len(components) > 1:
         LOG.warning(
