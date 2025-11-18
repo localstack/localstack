@@ -160,6 +160,12 @@ class TestS3ListBuckets:
 
         snapshot.match("list-objects-with-continuation", response)
 
+    @markers.aws.validated
+    def test_list_buckets_region_validation(self, aws_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.list_buckets(BucketRegion="eu-east-1")
+        snapshot.match("bad-region", e.value.response)
+
 
 class TestS3ListObjects:
     @markers.aws.validated

@@ -3368,5 +3368,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_region_validation": {
+    "recorded-date": "18-11-2025, 17:59:17",
+    "recorded-content": {
+      "bad-region": {
+        "Error": {
+          "ArgumentName": "bucket-region",
+          "Code": "InvalidArgument",
+          "Message": "Argument value eu-east-1 is not a valid AWS Region"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
