@@ -20,17 +20,17 @@ botocore==1.40.74
     #   boto3
     #   localstack-core (pyproject.toml)
     #   s3transfer
-cachetools==6.2.1
+cachetools==6.2.2
     # via localstack-core (pyproject.toml)
 cbor2==5.7.1
     # via localstack-core (pyproject.toml)
-certifi==2025.10.5
+certifi==2025.11.12
     # via requests
 cffi==2.0.0
     # via cryptography
 charset-normalizer==3.4.4
     # via requests
-click==8.3.0
+click==8.3.1
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
@@ -167,7 +167,7 @@ rich==14.2.0
     # via localstack-core (pyproject.toml)
 rolo==0.7.6
     # via localstack-core (pyproject.toml)
-rpds-py==0.28.0
+rpds-py==0.29.0
     # via
     #   jsonschema
     #   referencing
@@ -195,11 +195,11 @@ werkzeug==3.1.3
     #   localstack-core (pyproject.toml)
     #   openapi-core
     #   rolo
-wsproto==1.2.0
+wsproto==1.3.1
     # via hypercorn
 xmltodict==1.0.2
     # via localstack-core (pyproject.toml)
-zope-interface==8.1
+zope-interface==8.1.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
