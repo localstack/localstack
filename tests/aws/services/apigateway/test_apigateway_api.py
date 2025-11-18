@@ -2280,6 +2280,34 @@ class TestApiGatewayApiDocumentationPart:
         )
         snapshot.match("import-documentation-parts", response)
 
+    @markers.aws.validated
+    def test_import_documentation_parts_bad_file(self, aws_client, apigw_create_rest_api, snapshot):
+        rest_api_id = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test import documentation",
+        )["id"]
+
+        bad_yaml_string = """test:
+    value:
+        - "value ... \"escaped\": $var, \"dt\": $(var +"%a")}\"
+        """
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.import_documentation_parts(
+                restApiId=rest_api_id,
+                mode=PutMode.overwrite,
+                body=bad_yaml_string,
+            )
+        snapshot.match("import-documentation-parts-bad-yaml-file", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.import_documentation_parts(
+                restApiId=rest_api_id,
+                mode=PutMode.overwrite,
+                body="{'key:value}",
+            )
+        snapshot.match("import-documentation-parts-bad-json-file", e.value.response)
+
 
 class TestApiGatewayGatewayResponse:
     @markers.aws.validated

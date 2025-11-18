@@ -476,11 +476,19 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("PutRestApi", expand=False)
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
+        body_data = request["body"].read()
+        try:
+            openapi_spec = parse_json_or_yaml(to_str(body_data))
+        except Exception:
+            raise BadRequestException("Invalid OpenAPI input.")
         # TODO: take into account the mode: overwrite or merge
         # the default is now `merge`, but we are removing everything
         rest_api = get_moto_rest_api(context, request["restApiId"])
         rest_api, warnings = import_api_from_openapi_spec(
-            rest_api, context=context, request=request
+            rest_api,
+            context=context,
+            open_api_spec=openapi_spec,
+            mode=request.get("mode") or PutMode.merge,
         )
 
         rest_api.root_resource_id = get_moto_rest_api_root_resource(rest_api)
@@ -1512,7 +1520,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         **kwargs,
     ) -> DocumentationPartIds:
         body_data = body.read()
-        openapi_spec = parse_json_or_yaml(to_str(body_data))
+        try:
+            openapi_spec = parse_json_or_yaml(to_str(body_data))
+        except Exception:
+            raise BadRequestException("Unable to build importer with provided input.")
 
         rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
 
@@ -2012,7 +2023,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         body_data = body.read()
 
         # create rest api
-        openapi_spec = parse_json_or_yaml(to_str(body_data))
+        try:
+            openapi_spec = parse_json_or_yaml(to_str(body_data))
+        except Exception:
+            raise BadRequestException("Invalid OpenAPI input.")
+
         create_api_request = CreateRestApiRequest(name=openapi_spec.get("info").get("title"))
         create_api_context = create_custom_context(
             context,
