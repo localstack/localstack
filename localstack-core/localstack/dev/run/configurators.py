@@ -152,7 +152,7 @@ class SourceVolumeMountConfigurator:
 
         # mount local code checkouts if possible
         for package_name in self.chosen_packages:
-            # Unconditional lookup because the CLI rejects incorect items
+            # Unconditional lookup because the CLI rejects incorrect items
             extractor = HOST_PATH_MAPPINGS[package_name]
             self.try_mount_to_site_packages(cfg, extractor(self.host_paths))
 
@@ -342,7 +342,7 @@ class DependencyMountConfigurator:
 def _list_files_in_container_image(container_client: ContainerClient, image_name: str) -> list[str]:
     """
     Uses ``docker export | tar -t`` to list all files in a given docker image. It caches the result based on
-    the image ID into a gziped file into ``~/.cache/localstack-dev-cli`` to (significantly) speed up
+    the image ID into a gzipped file into ``~/.cache/localstack-dev-cli`` to (significantly) speed up
     subsequent calls.
 
     :param container_client: the container client to use
