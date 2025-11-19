@@ -3833,7 +3833,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_lifecycle_integration_response": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_lifecycle_integration_response": {
     "recorded-date": "11-06-2025, 09:12:54",
     "recorded-content": {
       "put-integration-response": {
@@ -3918,7 +3918,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_api": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_wrong_api": {
     "recorded-date": "18-06-2025, 12:28:55",
     "recorded-content": {
       "put-integration-response-wrong-api": {
@@ -3945,7 +3945,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_resource": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_wrong_resource": {
     "recorded-date": "18-06-2025, 12:28:25",
     "recorded-content": {
       "put-integration-response-wrong-resource": {
@@ -3972,7 +3972,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_method": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_wrong_method": {
     "recorded-date": "18-06-2025, 11:47:00",
     "recorded-content": {
       "put-integration-response-wrong-method": {
@@ -3999,7 +3999,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_statuscode": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_invalid_statuscode": {
     "recorded-date": "18-06-2025, 11:51:51",
     "recorded-content": {
       "put-integration-response-invalid-statusCode": {
@@ -4024,7 +4024,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_responsetemplates": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_invalid_responsetemplates": {
     "recorded-date": "18-06-2025, 13:03:29",
     "recorded-content": {
       "put-integration-response-invalid-responseTemplates-1": {
@@ -4050,7 +4050,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_integration": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_invalid_integration": {
     "recorded-date": "26-06-2025, 11:21:05",
     "recorded-content": {
       "get-integration-response-without-integration": {
@@ -4066,7 +4066,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_status_code": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_integration_response_wrong_status_code": {
     "recorded-date": "26-06-2025, 11:21:43",
     "recorded-content": {
       "get-integration-response-wrong-status-code": {
@@ -4082,7 +4082,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_lifecycle_method_response": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_lifecycle_method_response": {
     "recorded-date": "01-07-2025, 15:48:02",
     "recorded-content": {
       "put-method-response": {
@@ -4169,7 +4169,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_update_method_response": {
     "recorded-date": "30-06-2025, 12:42:31",
     "recorded-content": {
       "remove-update-method-response": {
@@ -4194,7 +4194,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response_wrong_operations": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_update_method_response_wrong_operations": {
     "recorded-date": "30-06-2025, 13:54:57",
     "recorded-content": {
       "update-method-response-wrong-operation-1": {
@@ -4249,7 +4249,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response_negative_tests": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_update_method_response_negative_tests": {
     "recorded-date": "30-06-2025, 15:24:43",
     "recorded-content": {
       "update-method-response-wrong-statuscode": {
@@ -4307,7 +4307,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_lack_response_parameters_and_models": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_update_method_lack_response_parameters_and_models": {
     "recorded-date": "01-07-2025, 15:48:38",
     "recorded-content": {
       "update-method-response-operation-without-response-parameters": {
@@ -4345,7 +4345,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_wrong_param_names": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayMethodResponse::test_update_method_wrong_param_names": {
     "recorded-date": "01-07-2025, 15:49:16",
     "recorded-content": {
       "update-method-response-operation-with-wrong-param-name-1": {
@@ -4775,7 +4775,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_delete_integration_response_errors": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegrationResponse::test_delete_integration_response_errors": {
     "recorded-date": "21-08-2025, 17:53:19",
     "recorded-content": {
       "put-integration-response": {
@@ -4970,6 +4970,55 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_get_integration_non_existent": {
+    "recorded-date": "18-11-2025, 17:03:33",
+    "recorded-content": {
+      "get-integration-no-api": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-integration-no-resource": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-integration-no-method": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-integration-no-integration": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Integration identifier specified"
+        },
+        "message": "Invalid Integration identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }

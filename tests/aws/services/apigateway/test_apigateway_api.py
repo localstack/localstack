@@ -3138,6 +3138,109 @@ class TestApigatewayIntegration:
         snapshot.match("put-integration-request-param-bool-value", e.value.response)
 
     @markers.aws.validated
+    def test_create_integration_with_vpc_link(
+        self, create_rest_apigw, aws_client, snapshot, region_name
+    ):
+        """
+        We cannot properly validate the CRUD logic of creating VPC Link, as they require an ELB Network Load Balancer
+        which are not implemented yet. But we can use stage variables to delay the evaluation of the real connection id
+        """
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        rest_api_id, _, root_resource_id = create_rest_apigw(name="test vpc link")
+
+        aws_client.apigateway.put_method(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+
+        # see example here:
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-api-with-vpclink-cli.html
+        put_integration = aws_client.apigateway.put_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="HTTP_PROXY",
+            uri=f"http://my-vpclink-test-nlb-1234567890abcdef.{region_name}.amazonaws.com",
+            integrationHttpMethod="GET",
+            connectionType="VPC_LINK",
+            connectionId="${stageVariables.vpcLinkId}",
+        )
+        snapshot.match("put-integration-vpc-link", put_integration)
+
+        get_integration = aws_client.apigateway.get_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+        )
+        snapshot.match("get-integration-vpc-link", get_integration)
+
+        update_integration = aws_client.apigateway.update_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            patchOperations=[
+                {
+                    "op": "replace",
+                    "path": "/connectionId",
+                    "value": "${stageVariables.vpcLinkIdBeta}",
+                }
+            ],
+        )
+        snapshot.match("update-integration-vpc-link", update_integration)
+
+        get_integration_update = aws_client.apigateway.get_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+        )
+        snapshot.match("get-integration-update-vpc-link", get_integration_update)
+
+    @markers.aws.validated
+    def test_get_integration_non_existent(
+        self, aws_client, apigw_create_rest_api, aws_client_factory, snapshot
+    ):
+        apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test PutIntegration Types",
+        )
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_integration(
+                restApiId=short_uid(), resourceId=root_resource_id, httpMethod="GET"
+            )
+        snapshot.match("get-integration-no-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_integration(restApiId=api_id, resourceId=short_uid(), httpMethod="GET")
+        snapshot.match("get-integration-no-resource", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_integration(
+                restApiId=api_id, resourceId=root_resource_id, httpMethod="GET"
+            )
+        snapshot.match("get-integration-no-method", e.value.response)
+
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_integration(
+                restApiId=api_id, resourceId=root_resource_id, httpMethod="GET"
+            )
+        snapshot.match("get-integration-no-integration", e.value.response)
+
+
+class TestApigatewayIntegrationResponse:
+    @markers.aws.validated
     def test_integration_response_wrong_api(self, aws_client, apigw_create_rest_api, snapshot):
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.put_integration_response(
@@ -3503,6 +3606,8 @@ class TestApigatewayIntegration:
             )
         snapshot.match("bad-method", e.value.response)
 
+
+class TestApigatewayMethodResponse:
     @markers.aws.validated
     def test_update_method_wrong_param_names(self, aws_client, apigw_create_rest_api, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
@@ -4098,63 +4203,3 @@ class TestApigatewayIntegration:
             statusCode="200",
         )
         snapshot.match("delete-method-response", delete_response)
-
-    @markers.aws.validated
-    def test_create_integration_with_vpc_link(
-        self, create_rest_apigw, aws_client, snapshot, region_name
-    ):
-        """
-        We cannot properly validate the CRUD logic of creating VPC Link, as they require an ELB Network Load Balancer
-        which are not implemented yet. But we can use stage variables to delay the evaluation of the real connection id
-        """
-        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
-        rest_api_id, _, root_resource_id = create_rest_apigw(name="test vpc link")
-
-        aws_client.apigateway.put_method(
-            restApiId=rest_api_id,
-            resourceId=root_resource_id,
-            httpMethod="GET",
-            authorizationType="NONE",
-        )
-
-        # see example here:
-        # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-api-with-vpclink-cli.html
-        put_integration = aws_client.apigateway.put_integration(
-            restApiId=rest_api_id,
-            resourceId=root_resource_id,
-            httpMethod="GET",
-            type="HTTP_PROXY",
-            uri=f"http://my-vpclink-test-nlb-1234567890abcdef.{region_name}.amazonaws.com",
-            integrationHttpMethod="GET",
-            connectionType="VPC_LINK",
-            connectionId="${stageVariables.vpcLinkId}",
-        )
-        snapshot.match("put-integration-vpc-link", put_integration)
-
-        get_integration = aws_client.apigateway.get_integration(
-            restApiId=rest_api_id,
-            resourceId=root_resource_id,
-            httpMethod="GET",
-        )
-        snapshot.match("get-integration-vpc-link", get_integration)
-
-        update_integration = aws_client.apigateway.update_integration(
-            restApiId=rest_api_id,
-            resourceId=root_resource_id,
-            httpMethod="GET",
-            patchOperations=[
-                {
-                    "op": "replace",
-                    "path": "/connectionId",
-                    "value": "${stageVariables.vpcLinkIdBeta}",
-                }
-            ],
-        )
-        snapshot.match("update-integration-vpc-link", update_integration)
-
-        get_integration_update = aws_client.apigateway.get_integration(
-            restApiId=rest_api_id,
-            resourceId=root_resource_id,
-            httpMethod="GET",
-        )
-        snapshot.match("get-integration-update-vpc-link", get_integration_update)
