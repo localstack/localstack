@@ -3571,5 +3571,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_for_no_pending_key_material": {
+    "recorded-date": "19-11-2025, 10:21:48",
+    "recorded-content": {
+      "rotate-key-on-demand-invalid-state-error": {
+        "Error": {
+          "Code": "KMSInvalidStateException",
+          "Message": "No available key material pending rotation for the key: <key-arn>."
+        },
+        "message": "No available key material pending rotation for the key: <key-arn>.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

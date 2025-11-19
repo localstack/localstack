@@ -1478,6 +1478,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
             raise UnsupportedOperationException()
         self._validate_key_state_not_pending_import(key)
+        self._validate_external_key_has_pending_material(key)
 
         key.rotate_key_on_demand()
 
@@ -1558,6 +1559,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def _validate_key_state_not_pending_import(self, key: KmsKey):
         if key.metadata["KeyState"] == KeyState.PendingImport:
             raise KMSInvalidStateException(f"{key.metadata['Arn']} is pending import.")
+
+    def _validate_external_key_has_pending_material(self, key: KmsKey):
+        if key.metadata["Origin"] == "EXTERNAL" and key.crypto_key.pending_key_material is None:
+            raise KMSInvalidStateException(f"No available key material pending rotation for the key: {key.metadata['Arn']}.")
 
     def _validate_key_for_encryption_decryption(self, context: RequestContext, key: KmsKey):
         key_usage = key.metadata["KeyUsage"]

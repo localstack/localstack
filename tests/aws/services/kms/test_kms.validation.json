@@ -437,6 +437,15 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_non_symmetric_key": {
     "last_validated_date": "2025-03-08T09:27:44+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_for_no_pending_key_material": {
+    "last_validated_date": "2025-11-19T10:21:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.78,
+      "call": 0.39,
+      "teardown": 0.05,
+      "total": 1.22
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_updates_current_key_material_for_external_keys": {
     "last_validated_date": "2025-11-09T16:21:58+00:00",
     "durations_in_seconds": {

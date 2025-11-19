@@ -1750,6 +1750,34 @@ class TestKMS:
         snapshot.match("existing-pending-material-error", e.value.response)
 
     @markers.aws.validated
+    def test_rotate_key_on_demand_raises_for_no_pending_key_material(self, kms_create_key, aws_client, snapshot):
+        create_key_response = kms_create_key(
+            Origin="EXTERNAL", KeyUsage="ENCRYPT_DECRYPT", Description="test-key"
+        )
+        key_id = create_key_response["KeyId"]
+
+        get_parameters_response = aws_client.kms.get_parameters_for_import(
+            KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_2048"
+        )
+        assert get_parameters_response["ImportToken"]
+        assert get_parameters_response["PublicKey"]
+
+        initial_key_material = generate_encrypted_symmetric_key_material(
+            get_parameters_response["PublicKey"]
+        )
+
+        aws_client.kms.import_key_material(
+            KeyId=key_id,
+            ImportToken=get_parameters_response["ImportToken"],
+            EncryptedKeyMaterial=initial_key_material,
+            ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        snapshot.match("rotate-key-on-demand-invalid-state-error", e.value.response)
+
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "key_spec", ["SYMMETRIC_DEFAULT", "RSA_4096"]
     )  # Check with a non-default key spec to test ordering of raised errors.
