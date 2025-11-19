@@ -773,11 +773,9 @@ class KmsKey:
 
         self.previous_keys.append(current_key_material)
 
-        if pending_key_material is not None:
-            self.metadata["CurrentKeyMaterialId"] = self.generate_key_material_id(
-                pending_key_material
-            )
+        # If there is no pending material stored on the key, then key material will be generated.
         self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT, pending_key_material)
+        self.metadata["CurrentKeyMaterialId"] = self.generate_key_material_id(self.crypto_key.key_material)
 
 
 class KmsGrant:
