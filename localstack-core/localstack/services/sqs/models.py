@@ -314,7 +314,7 @@ class SqsQueue:
     purge_timestamp: float | None
 
     delayed: set[SqsMessage]
-    # simulating an ordered set in python
+    # Simulating an ordered set in python. Only the keys are used and of interest.
     inflight: dict[SqsMessage, None]
     receipts: dict[str, SqsMessage]
 
@@ -609,6 +609,14 @@ class SqsQueue:
                 )
                 del self.inflight[standard_message]
                 self._put_message(standard_message)
+
+    def add_inflight_message(self, message: SqsMessage):
+        """
+        We are simulating an ordered set with a dict. When a value is added, it is added as key to the dict, which
+        is all we need. Hence all "values" in this ordered set are None
+        :param message: The message to put in flight
+        """
+        self.inflight[message] = None
 
     def enqueue_delayed_messages(self):
         if not self.delayed:
@@ -923,7 +931,7 @@ class StandardQueue(SqsQueue):
             if message.visibility_timeout == 0:
                 self.visible.put_nowait(message)
             else:
-                self.inflight[message] = None
+                self.add_inflight_message(message)
 
         return result
 
@@ -1299,8 +1307,7 @@ class FifoQueue(SqsQueue):
                 if message.visibility_timeout == 0:
                     self._put_message(message)
                 else:
-                    self.inflight[message] = None
-
+                    self.add_inflight_message(message)
         return result
 
     def _on_remove_message(self, message: SqsMessage):
