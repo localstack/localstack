@@ -332,6 +332,15 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotation_status": {
     "last_validated_date": "2024-04-11T15:53:48+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotation_updates_current_key_material_id_for_aws_symmetric_keys": {
+    "last_validated_date": "2025-11-19T10:55:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.92,
+      "call": 65.88,
+      "teardown": 0.05,
+      "total": 66.85
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_encryption_decryption": {
     "last_validated_date": "2025-04-03T09:34:47+00:00"
   },

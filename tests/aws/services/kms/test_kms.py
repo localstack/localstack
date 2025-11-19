@@ -1318,6 +1318,37 @@ class TestKMS:
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
 
     @markers.aws.validated
+    def test_key_rotation_updates_current_key_material_id_for_aws_symmetric_keys(
+        self, kms_create_key, aws_client, snapshot
+    ):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT", Description="test-key")["KeyId"]
+        describe_key_before = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-before-rotation", describe_key_before)
+
+        aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+
+        def _assert_on_demand_rotation_updates_material():
+            response = aws_client.kms.describe_key(KeyId=key_id)
+            return (
+                response["KeyMetadata"]["CurrentKeyMaterialId"]
+                != describe_key_before["KeyMetadata"]["CurrentKeyMaterialId"]
+            )
+
+        assert poll_condition(
+            condition=_assert_on_demand_rotation_updates_material,
+            timeout=90,
+            interval=5 if is_aws_cloud() else 0.5,
+        )
+
+        describe_key_after = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-rotation", describe_key_after)
+
+        assert (
+            describe_key_before["KeyMetadata"]["CurrentKeyMaterialId"]
+            != describe_key_after["KeyMetadata"]["CurrentKeyMaterialId"]
+        )
+
+    @markers.aws.validated
     def test_key_rotations_encryption_decryption(self, kms_create_key, aws_client, snapshot):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
