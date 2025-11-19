@@ -433,7 +433,7 @@ def _print_service_table(services: dict[str, str]) -> None:
 
 @localstack.command(name="start", short_help="Start LocalStack")
 @click.option("--docker", is_flag=True, help="Start LocalStack in a docker container [default]")
-@click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
+@click.option("--host", is_flag=True, help="Start LocalStack directly on the host", deprecated=True)
 @click.option("--no-banner", is_flag=True, help="Disable LocalStack banner", default=False)
 @click.option(
     "-d", "--detached", is_flag=True, help="Start LocalStack in the background", default=False
@@ -532,6 +532,11 @@ def cmd_start(
             console.log("starting LocalStack in Docker mode :whale:")
 
     if host:
+        console.log(
+            "Warning: Starting LocalStack in host mode from the LocalStack CLI has been deprecated!\nThis feature will be removed soon! Please use the Docker mode (default) instead!",
+            style="bold red",
+        )
+
         # call hooks to prepare host
         bootstrap.prepare_host(console)
 

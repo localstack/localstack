@@ -88,7 +88,7 @@ coveralls:         		  ## Publish coveralls metrics
 	$(VENV_RUN); coveralls
 
 start:             		  ## Manually start the local infrastructure for testing
-	($(VENV_RUN); exec bin/localstack start --host)
+	($(VENV_RUN); python3 -m localstack.runtime.main)
 
 docker-run-tests:		  ## Initializes the test environment and runs the tests in a docker container
 	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/.git:/opt/code/localstack/.git -v `pwd`/requirements-test.txt:/opt/code/localstack/requirements-test.txt -v `pwd`/.test_durations:/opt/code/localstack/.test_durations -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/dist/:/opt/code/localstack/dist/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack  \
