@@ -1321,7 +1321,9 @@ class TestKMS:
     def test_key_rotation_updates_current_key_material_id_for_aws_symmetric_keys(
         self, kms_create_key, aws_client, snapshot
     ):
-        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT", Description="test-key")["KeyId"]
+        key_id = kms_create_key(
+            KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT", Description="test-key"
+        )["KeyId"]
         describe_key_before = aws_client.kms.describe_key(KeyId=key_id)
         snapshot.match("describe-key-before-rotation", describe_key_before)
 
