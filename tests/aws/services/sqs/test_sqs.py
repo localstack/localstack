@@ -2109,22 +2109,25 @@ class TestSqsProvider:
         assert response["Messages"][1]["Body"] == "g1-m1"
         assert len(response["Messages"]) == 2
 
+    @pytest.mark.parametrize(
+        "message_position", [0, 1, 2], ids=["0-visible", "1-visible", "2-visible"]
+    )
     @markers.aws.validated
     def test_fifo_group_visibility_extends_with_change_message_visibility(
-        self, sqs_create_queue, aws_sqs_client
+        self, sqs_create_queue, aws_sqs_client, snapshot, message_position
     ):
-        # 1. Create fresh queue
-        queue_name = f"foo-{short_uid()}.fifo"
+        initial_visibility_timeout = 1
+        extended_visibility_timeout = 4
+        queue_name = f"test-queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(
             QueueName=queue_name,
             Attributes={
                 "FifoQueue": "true",
-                "VisibilityTimeout": "10",
-                "MessageRetentionPeriod": "14400",
+                "VisibilityTimeout": f"{initial_visibility_timeout}",
             },
         )
 
-        # 2. Send 3 messages
+        # Send 3 messages
         aws_sqs_client.send_message(
             QueueUrl=queue_url,
             MessageBody="foo",
@@ -2144,32 +2147,30 @@ class TestSqsProvider:
             MessageDeduplicationId="baz",
         )
 
-        # 3. Receive all messages
-        response_1 = aws_sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=5)
+        # Receive all messages
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=5)
 
         # We should have received all 3 messages from the group
-        assert len(response_1["Messages"]) == 3
-        assert response_1["Messages"][0]["Body"] == "foo"
+        snapshot.match("receive_all_messages", response)
 
-        # 4. Get ReceiptHandle of first message
-        receipt_handle = response_1["Messages"][0]["ReceiptHandle"]
-
-        # 5. Set visibility timeout of first message to 15 seconds
+        receipt_handle = response["Messages"][message_position]["ReceiptHandle"]
+        # extend visibility timeout of one message
         aws_sqs_client.change_message_visibility(
-            QueueUrl=queue_url, ReceiptHandle=receipt_handle, VisibilityTimeout=15
+            QueueUrl=queue_url,
+            ReceiptHandle=receipt_handle,
+            VisibilityTimeout=extended_visibility_timeout,
         )
 
-        # 6. Wait 12 seconds
-        # The original queue timeout was 10s, but we've extended the
-        # first message's timeout to 15s.
-        time.sleep(12)
+        # Wait until the other 2 message become visible again, but the extended message is still invisible
+        time.sleep(
+            initial_visibility_timeout
+            + (extended_visibility_timeout - initial_visibility_timeout) / 2
+        )
 
-        # 7. Get all messages again
-        response_2 = aws_sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=5)
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=5)
 
-        # We should get no messages because the first message of group "1"
-        # is still in-flight, blocking the entire group.
-        assert "Messages" not in response_2
+        # The extended message and all messages within the same group that come after it are invisible.
+        snapshot.match("some-messages-invisible", response)
 
     @markers.aws.validated
     def test_fifo_message_group_visibility_after_delete(self, sqs_create_queue, aws_sqs_client):

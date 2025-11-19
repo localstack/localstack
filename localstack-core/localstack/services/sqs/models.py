@@ -504,8 +504,8 @@ class SqsQueue:
 
             if standard_message not in self.inflight:
                 return
+
             standard_message.update_visibility_timeout(visibility_timeout)
-            # standard_message.update_visibility_timeout(visibility_timeout)
 
             if visibility_timeout == 0:
                 LOG.info(
@@ -1158,6 +1158,8 @@ class FifoQueue(SqsQueue):
             LOG.debug("Message Bodies: %s", [message.message["Body"] for message in messages])
             for standard_message in messages:
                 # in fifo, an invisible message blocks potentially visible messages afterwards
+                # this can happen for example if multiple message of the same group are received at once, then one
+                # message of this batch has its visibility timeout extended
                 if not standard_message.is_visible:
                     return
                 LOG.debug(
@@ -1254,17 +1256,6 @@ class FifoQueue(SqsQueue):
                         # this means the message was deleted with a receipt handle after its visibility
                         # timeout expired and the messages was re-queued in the meantime.
                         continue
-
-                    elif (
-                        message.visibility_deadline
-                        and message.visibility_deadline > start + visibility_timeout
-                    ):
-                        # This means that the group was visible, but this particular message is not. This results
-                        # in all messages before the invisible one to be visible, and all messages after to be
-                        # invisible.
-                        # This mainly happens when multiple message of a fifo group are received at once, and then
-                        # one message's timeout is extended via change_message_visibility
-                        break
 
                     # update message attributes
                     message.receive_count += 1

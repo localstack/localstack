@@ -4269,5 +4269,537 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-all-invisible]": {
+    "recorded-date": "19-11-2025, 10:45:24",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-1-invisible]": {
+    "recorded-date": "19-11-2025, 10:45:27",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-no-invisible]": {
+    "recorded-date": "19-11-2025, 10:45:30",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-all-invisible]": {
+    "recorded-date": "19-11-2025, 10:45:34",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-1-invisible]": {
+    "recorded-date": "19-11-2025, 10:45:37",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-no-invisible]": {
+    "recorded-date": "19-11-2025, 10:45:40",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-0-visible]": {
+    "recorded-date": "19-11-2025, 10:47:45",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-1-visible]": {
+    "recorded-date": "19-11-2025, 10:47:48",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-2-visible]": {
+    "recorded-date": "19-11-2025, 10:47:51",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-0-visible]": {
+    "recorded-date": "19-11-2025, 10:47:55",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-1-visible]": {
+    "recorded-date": "19-11-2025, 10:47:58",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-2-visible]": {
+    "recorded-date": "19-11-2025, 10:48:01",
+    "recorded-content": {
+      "receive_all_messages": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Body": "baz",
+            "MD5OfBody": "73feffa4b7f6bb68e44cf984c85f6e88",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "some-messages-invisible": {
+        "Messages": [
+          {
+            "Body": "foo",
+            "MD5OfBody": "acbd18db4cc2f85cedef654fccc4a4d8",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          },
+          {
+            "Body": "bar",
+            "MD5OfBody": "37b51d194a7513e45b56f6524f2d51f2",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
