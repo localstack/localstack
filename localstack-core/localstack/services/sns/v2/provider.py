@@ -69,7 +69,6 @@ from localstack.services.sns.constants import (
     VALID_APPLICATION_PLATFORMS,
 )
 from localstack.services.sns.filter import FilterPolicyValidator
-from localstack.services.sns.publisher import PublishDispatcher, SnsPublishContext
 from localstack.services.sns.v2.models import (
     SMS_ATTRIBUTE_NAMES,
     SMS_DEFAULT_SENDER_REGEX,
@@ -84,12 +83,14 @@ from localstack.services.sns.v2.models import (
     Topic,
     sns_stores,
 )
+from localstack.services.sns.v2.publisher import PublishDispatcher, SnsPublishContext
 from localstack.services.sns.v2.utils import (
     create_platform_endpoint_arn,
     create_subscription_arn,
     encode_subscription_token_with_region,
     get_next_page_token_from_arn,
     get_region_from_subscription_token,
+    get_topic_subscriptions,
     is_valid_e164_number,
     parse_and_validate_platform_application_arn,
     parse_and_validate_topic_arn,
@@ -551,11 +552,10 @@ class SnsProvider(SnsApi):
     def list_subscriptions_by_topic(
         self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs
     ) -> ListSubscriptionsByTopicResponse:
-        topic: Topic = self._get_topic(topic_arn, context)
+        self._get_topic(topic_arn, context)
         parsed_topic_arn = parse_and_validate_topic_arn(topic_arn)
         store = self.get_store(parsed_topic_arn["account"], parsed_topic_arn["region"])
-        sub_arns: list[str] = topic.get("subscriptions", [])
-        subscriptions = [store.subscriptions[k] for k in sub_arns if k in store.subscriptions]
+        subscriptions = get_topic_subscriptions(store, topic_arn)
 
         paginated_subscriptions = PaginatedList(subscriptions)
         page, next_token = paginated_subscriptions.get_page(
@@ -649,7 +649,7 @@ class SnsProvider(SnsApi):
         if not phone_number:
             # use the account to get the store from the TopicArn (you can only publish in the same region as the topic)
             parsed_arn = parse_and_validate_topic_arn(topic_or_target_arn)
-            store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
+            store = self.get_store(account_id=parsed_arn["account"], region=context.region)
             if is_endpoint_publish:
                 if not (platform_endpoint := store.platform_endpoints.get(target_arn)):
                     raise InvalidParameterException(
@@ -689,7 +689,7 @@ class SnsProvider(SnsApi):
             # beware if the subscription is FIFO, the order might not be guaranteed.
             # 2 quick call to this method in succession might not be executed in order in the executor?
             # TODO: test how this behaves in a FIFO context with a lot of threads.
-            publish_ctx.topic_attributes |= vars(topic_model)
+            publish_ctx.topic_attributes |= topic_model
             self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn)
 
         if is_fifo:

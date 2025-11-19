@@ -181,8 +181,14 @@ class SnsStore(BaseStore):
     # maps endpoint arns to platform endpoints
     platform_endpoints: dict[str, PlatformEndpoint] = LocalAttribute(default=dict)
 
+    # cache of topic ARN to platform endpoint messages (used primarily for testing)
+    platform_endpoint_messages: dict[str, list[dict]] = LocalAttribute(default=dict)
+
     # topic/subscription independent default values for sending sms messages
     sms_attributes: dict[str, str] = LocalAttribute(default=dict)
+
+    # list of sent SMS messages
+    sms_messages: list[dict] = LocalAttribute(default=list)
 
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 

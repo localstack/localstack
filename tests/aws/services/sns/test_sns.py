@@ -509,7 +509,6 @@ class TestSNSPublishCrud:
     """
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_by_path_parameters(
         self,
         sns_create_topic,

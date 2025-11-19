@@ -6,6 +6,7 @@ from botocore.utils import InvalidArnException
 
 from localstack.aws.api.sns import InvalidParameterException
 from localstack.services.sns.constants import E164_REGEX, VALID_SUBSCRIPTION_ATTR_NAME
+from localstack.services.sns.v2.models import SnsStore, SnsSubscription
 from localstack.utils.aws.arns import ArnData, parse_arn
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
@@ -136,3 +137,9 @@ def get_region_from_subscription_token(token: str) -> str:
         return bytes.fromhex(region).decode("utf-8")
     except (IndexError, ValueError, TypeError, UnicodeDecodeError):
         raise InvalidParameterException("Invalid parameter: Token")
+
+
+def get_topic_subscriptions(store: SnsStore, topic_arn: str) -> list[SnsSubscription]:
+    sub_arns: list[str] = store.topics[topic_arn].get("subscriptions", [])
+    subscriptions = [store.subscriptions[k] for k in sub_arns if k in store.subscriptions]
+    return subscriptions
