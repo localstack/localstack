@@ -533,7 +533,7 @@ def cmd_start(
 
     if host:
         console.log(
-            "Warning: Starting LocalStack in host mode from the LocalStack CLI has been deprecated!\nThis feature will be removed soon! Please use the Docker mode (default) instead!",
+            "Warning: Starting LocalStack in host mode from the CLI is deprecated and will be removed soon. Please use the default Docker mode instead.",
             style="bold red",
         )
 
