@@ -780,7 +780,6 @@ class SqsQueue:
 
 class StandardQueue(SqsQueue):
     visible: InterruptiblePriorityQueue[SqsMessage]
-    inflight: set[SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         super().__init__(name, region, account_id, attributes, tags)
@@ -924,13 +923,13 @@ class StandardQueue(SqsQueue):
             if message.visibility_timeout == 0:
                 self.visible.put_nowait(message)
             else:
-                self.inflight.add(message)
+                self.inflight[message] = None
 
         return result
 
     def _on_remove_message(self, message: SqsMessage):
         try:
-            self.inflight.remove(message)
+            del self.inflight[message]
         except KeyError:
             # this likely means the message was removed with an expired receipt handle unfortunately this
             # means we need to scan the queue for the element and remove it from there, and then re-heapify
