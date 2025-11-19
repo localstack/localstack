@@ -1163,7 +1163,6 @@ class FifoQueue(SqsQueue):
 
         with self.mutex:
             messages = list(self.inflight)
-            LOG.debug("Message Bodies: %s", [message.message["Body"] for message in messages])
             for standard_message in messages:
                 # in fifo, an invisible message blocks potentially visible messages afterwards
                 # this can happen for example if multiple message of the same group are received at once, then one
