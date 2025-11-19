@@ -567,7 +567,6 @@ class TestSNSPublishCrud:
         assert msg_body["Message"] == message
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_wrong_arn_format(self, snapshot, aws_client):
         message = "Good news everyone!"
         with pytest.raises(ClientError) as e:
@@ -586,7 +585,6 @@ class TestSNSPublishCrud:
         snapshot.match("empty-topic", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_message_by_target_arn(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -621,7 +619,6 @@ class TestSNSPublishCrud:
         snapshot.match("receive-target-arn", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_message_before_subscribe_topic(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -650,7 +647,6 @@ class TestSNSPublishCrud:
         snapshot.match("receive-messages", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_unknown_topic_publish(self, sns_create_topic, snapshot, aws_client):
         # create topic to get the basic arn structure
         # otherwise you get InvalidClientTokenId exception because of account id
@@ -670,7 +666,6 @@ class TestSNSPublishCrud:
         snapshot.match("error", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_topic_publish_another_region(
         self, sns_create_topic, snapshot, aws_client, aws_client_factory, secondary_region_name
     ):
@@ -710,7 +705,6 @@ class TestSNSPublishCrud:
         snapshot.match("error-batch", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client, region_name):
         topic_arn = sns_create_topic()["TopicArn"]
         account_id = parse_arn(topic_arn)["account"]
@@ -722,7 +716,6 @@ class TestSNSPublishCrud:
         snapshot.match("non-existent-endpoint", ex.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_with_empty_subject(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -743,7 +736,6 @@ class TestSNSPublishCrud:
         snapshot.match("response-with-empty-subject", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_empty_sns_message(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -762,7 +754,6 @@ class TestSNSPublishCrud:
         snapshot.match("queue-attrs", queue_attrs)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_too_long_message(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         # simulate payload over 256kb
@@ -794,7 +785,6 @@ class TestSNSPublishCrud:
         assert publish["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_batch_too_long_message(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         # simulate payload over 256kb
@@ -859,7 +849,6 @@ class TestSNSPublishCrud:
         assert publish_batch["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_message_structure_json_exc(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         # TODO: add batch
