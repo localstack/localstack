@@ -525,7 +525,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # CurrentKeyMaterialId is not returned in the ReplicaKeyMetadata. May be due to not being evaluated until
         # the key has been successfully replicated as it does not show up in DescribeKey immediately either.
         replica_key_metadata_response = copy.deepcopy(replica_key.metadata)
-        del replica_key_metadata_response["CurrentKeyMaterialId"]
+        replica_key_metadata_response.pop("CurrentKeyMaterialId", None)
 
         return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key_metadata_response)
 
