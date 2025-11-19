@@ -1750,7 +1750,9 @@ class TestKMS:
         snapshot.match("existing-pending-material-error", e.value.response)
 
     @markers.aws.validated
-    def test_rotate_key_on_demand_raises_for_no_pending_key_material(self, kms_create_key, aws_client, snapshot):
+    def test_rotate_key_on_demand_raises_for_no_pending_key_material(
+        self, kms_create_key, aws_client, snapshot
+    ):
         create_key_response = kms_create_key(
             Origin="EXTERNAL", KeyUsage="ENCRYPT_DECRYPT", Description="test-key"
         )

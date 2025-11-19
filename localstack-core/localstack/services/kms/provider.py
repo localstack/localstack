@@ -1562,7 +1562,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     def _validate_external_key_has_pending_material(self, key: KmsKey):
         if key.metadata["Origin"] == "EXTERNAL" and key.crypto_key.pending_key_material is None:
-            raise KMSInvalidStateException(f"No available key material pending rotation for the key: {key.metadata['Arn']}.")
+            raise KMSInvalidStateException(
+                f"No available key material pending rotation for the key: {key.metadata['Arn']}."
+            )
 
     def _validate_key_for_encryption_decryption(self, context: RequestContext, key: KmsKey):
         key_usage = key.metadata["KeyUsage"]
