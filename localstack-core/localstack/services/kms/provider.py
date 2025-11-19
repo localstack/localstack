@@ -522,7 +522,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         self.update_primary_key_with_replica_keys(primary_key, replica_key, replica_region)
 
-        return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key.metadata)
+        # CurrentKeyMaterialId is not returned in the ReplicaKeyMetadata. May be due to not being evaluated until
+        # the key has been successfully replicated as it does not show up in DescribeKey immediately either.
+        replica_key_metadata_response = copy.deepcopy(replica_key.metadata)
+        replica_key_metadata_response.pop("CurrentKeyMaterialId", None)
+
+        return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key_metadata_response)
 
     @staticmethod
     # Adds new multi region replica key to the primary key's metadata.
@@ -1206,13 +1211,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # TODO check if there was already a key imported for this kms key
         # if so, it has to be identical. We cannot change keys by reimporting after deletion/expiry
         key_material = self._decrypt_wrapped_key_material(import_state, encrypted_key_material)
-
-        if expiration_model:
-            key_to_import_material_to.metadata["ExpirationModel"] = expiration_model
-        else:
-            key_to_import_material_to.metadata["ExpirationModel"] = (
-                ExpirationModelType.KEY_MATERIAL_EXPIRES
-            )
+        key_material_id = key_to_import_material_to.generate_key_material_id(key_material)
+        key_to_import_material_to.metadata["ExpirationModel"] = (
+            expiration_model or ExpirationModelType.KEY_MATERIAL_EXPIRES
+        )
         if (
             key_to_import_material_to.metadata["ExpirationModel"]
             == ExpirationModelType.KEY_MATERIAL_EXPIRES
@@ -1221,12 +1223,42 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise ValidationException(
                 "A validTo date must be set if the ExpirationModel is KEY_MATERIAL_EXPIRES"
             )
+        if existing_pending_material := key_to_import_material_to.crypto_key.pending_key_material:
+            pending_key_material_id = key_to_import_material_to.generate_key_material_id(
+                existing_pending_material
+            )
+            raise KMSInvalidStateException(
+                f"New key material (id: {key_material_id}) cannot be imported into KMS key "
+                f"{key_to_import_material_to.metadata['Arn']}, because another key material "
+                f"(id: {pending_key_material_id}) is pending rotation."
+            )
+
         # TODO actually set validTo and make the key expire
         key_to_import_material_to.metadata["Enabled"] = True
         key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
         key_to_import_material_to.crypto_key.load_key_material(key_material)
 
-        return ImportKeyMaterialResponse()
+        # KeyMaterialId / CurrentKeyMaterialId is only exposed for symmetric encryption keys.
+        key_material_id_response = None
+        if key_to_import_material_to.metadata["KeySpec"] == KeySpec.SYMMETRIC_DEFAULT:
+            key_material_id_response = key_to_import_material_to.generate_key_material_id(
+                key_material
+            )
+
+            # If there is no CurrentKeyMaterialId, instantly promote the pending key material to the current.
+            if key_to_import_material_to.metadata.get("CurrentKeyMaterialId") is None:
+                key_to_import_material_to.metadata["CurrentKeyMaterialId"] = (
+                    key_material_id_response
+                )
+                key_to_import_material_to.crypto_key.key_material = (
+                    key_to_import_material_to.crypto_key.pending_key_material
+                )
+                key_to_import_material_to.crypto_key.pending_key_material = None
+
+        return ImportKeyMaterialResponse(
+            KeyId=key_to_import_material_to.metadata["Arn"],
+            KeyMaterialId=key_material_id_response,
+        )
 
     def delete_imported_key_material(
         self,
@@ -1353,7 +1385,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key = self._get_kms_key(account_id, region_name, key_id, any_key_state_allowed=True)
 
         response = GetKeyRotationStatusResponse(
-            KeyId=key_id,
+            KeyId=key.metadata["Arn"],
             KeyRotationEnabled=key.is_key_rotation_enabled,
             NextRotationDate=key.next_rotation_date,
         )
@@ -1445,13 +1477,13 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
             raise UnsupportedOperationException()
-        if key.metadata["Origin"] == OriginType.EXTERNAL:
-            raise NotImplementedError("Rotation of imported keys is not supported yet.")
+        self._validate_key_state_not_pending_import(key)
+        self._validate_external_key_has_pending_material(key)
 
         key.rotate_key_on_demand()
 
         return RotateKeyOnDemandResponse(
-            KeyId=key_id,
+            KeyId=key.metadata["Arn"],
         )
 
     @handler("TagResource", expand=False)
@@ -1527,6 +1559,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def _validate_key_state_not_pending_import(self, key: KmsKey):
         if key.metadata["KeyState"] == KeyState.PendingImport:
             raise KMSInvalidStateException(f"{key.metadata['Arn']} is pending import.")
+
+    def _validate_external_key_has_pending_material(self, key: KmsKey):
+        if key.metadata["Origin"] == "EXTERNAL" and key.crypto_key.pending_key_material is None:
+            raise KMSInvalidStateException(
+                f"No available key material pending rotation for the key: {key.metadata['Arn']}."
+            )
 
     def _validate_key_for_encryption_decryption(self, context: RequestContext, key: KmsKey):
         key_usage = key.metadata["KeyUsage"]
