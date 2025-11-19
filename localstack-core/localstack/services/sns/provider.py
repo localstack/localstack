@@ -972,7 +972,7 @@ def validate_message_attributes(
                 "Length of message attribute name must be less than 256 bytes."
             )
         validate_message_attribute_name(attr_name)
-        # `DataType` is a required validate_message_attribute_nfield for MessageAttributeValue
+        # `DataType` is a required field for MessageAttributeValue
         if (data_type := attr.get("DataType")) is None:
             if position:
                 at = f"publishBatchRequestEntries.{position}.member.messageAttributes.{attr_name}.member.dataType"
