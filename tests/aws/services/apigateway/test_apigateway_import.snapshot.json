@@ -5474,5 +5474,54 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_api_bad_file": {
+    "recorded-date": "18-11-2025, 17:29:30",
+    "recorded-content": {
+      "import-api-bad-yaml-file": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid OpenAPI input."
+        },
+        "message": "Invalid OpenAPI input.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "import-api-bad-json-file": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid OpenAPI input."
+        },
+        "message": "Invalid OpenAPI input.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-rest-api-bad-yaml-file": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid OpenAPI input."
+        },
+        "message": "Invalid OpenAPI input.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-rest-api-bad-json-file": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid OpenAPI input."
+        },
+        "message": "Invalid OpenAPI input.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

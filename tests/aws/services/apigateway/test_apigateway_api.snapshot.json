@@ -5022,5 +5022,32 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_import_documentation_parts_bad_file": {
+    "recorded-date": "18-11-2025, 17:21:35",
+    "recorded-content": {
+      "import-documentation-parts-bad-yaml-file": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Unable to build importer with provided input."
+        },
+        "message": "Unable to build importer with provided input.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "import-documentation-parts-bad-json-file": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Unable to build importer with provided input."
+        },
+        "message": "Unable to build importer with provided input.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

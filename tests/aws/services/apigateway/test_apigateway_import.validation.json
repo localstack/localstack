@@ -17,6 +17,15 @@
       "total": 22.98
     }
   },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_api_bad_file": {
+    "last_validated_date": "2025-11-18T17:29:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.97,
+      "teardown": 0.01,
+      "total": 1.49
+    }
+  },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api": {
     "last_validated_date": "2025-07-02T16:22:33+00:00",
     "durations_in_seconds": {

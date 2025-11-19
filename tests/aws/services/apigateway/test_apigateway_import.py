@@ -964,3 +964,28 @@ class TestApiGatewayImportRestApi:
         if is_aws_cloud():
             # waiting before cleaning up to avoid TooManyRequests, as we create multiple REST APIs
             time.sleep(15)
+
+    @markers.aws.validated
+    def test_import_api_bad_file(self, aws_client, import_apigw, apigw_create_rest_api, snapshot):
+        bad_yaml_string = """test:
+    value:
+        - "value ... \"escaped\": $var, \"dt\": $(var +"%a")}\"
+        """
+
+        bad_json_string = "{'key:value}"
+
+        with pytest.raises(ClientError) as e:
+            import_apigw(body=bad_yaml_string)
+        snapshot.match("import-api-bad-yaml-file", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            import_apigw(body=bad_json_string)
+        snapshot.match("import-api-bad-json-file", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_rest_api(restApiId=short_uid(), body=bad_yaml_string)
+        snapshot.match("put-rest-api-bad-yaml-file", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_rest_api(restApiId=short_uid(), body=bad_json_string)
+        snapshot.match("put-rest-api-bad-json-file", e.value.response)
