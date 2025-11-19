@@ -28,6 +28,7 @@ VALID_SUBSCRIPTION_ATTR_NAME: list[str] = [
 MSG_ATTR_NAME_REGEX = re.compile(r"^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9_\-.]+$")
 ATTR_TYPE_REGEX = re.compile(r"^(String|Number|Binary)\..+$")
 VALID_MSG_ATTR_NAME_CHARS = set(ascii_letters + digits + "." + "-" + "_")
+E164_REGEX = re.compile(r"^\+?[1-9]\d{1,14}$")
 
 
 GCM_URL = "https://fcm.googleapis.com/fcm/send"
@@ -42,6 +43,7 @@ SUBSCRIPTION_TOKENS_ENDPOINT = "/_aws/sns/subscription-tokens"
 SNS_CERT_ENDPOINT = "/_aws/sns/SimpleNotificationService-6c6f63616c737461636b69736e696365.pem"
 
 DUMMY_SUBSCRIPTION_PRINCIPAL = "arn:{partition}:iam::{account_id}:user/DummySNSPrincipal"
-E164_REGEX = re.compile(r"^\+?[1-9]\d{1,14}$")
 
 VALID_APPLICATION_PLATFORMS = list(get_args(SnsApplicationPlatforms))
+
+MAXIMUM_MESSAGE_LENGTH = 262144

@@ -14,12 +14,14 @@ from localstack.aws.api.sns import (
     CreatePlatformApplicationResponse,
     CreateTopicResponse,
     Endpoint,
+    EndpointDisabledException,
     GetEndpointAttributesResponse,
     GetPlatformApplicationAttributesResponse,
     GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
+    InvalidParameterValueException,
     ListEndpointsByPlatformApplicationResponse,
     ListPlatformApplicationsResponse,
     ListString,
@@ -28,8 +30,13 @@ from localstack.aws.api.sns import (
     ListTagsForResourceResponse,
     ListTopicsResponse,
     MapStringToString,
+    MessageAttributeMap,
     NotFoundException,
+    PhoneNumber,
     PlatformApplication,
+    PublishBatchRequestEntryList,
+    PublishBatchResponse,
+    PublishResponse,
     SetSMSAttributesResponse,
     SnsApi,
     String,
@@ -45,8 +52,11 @@ from localstack.aws.api.sns import (
     attributeValue,
     authenticateOnUnsubscribe,
     endpoint,
+    message,
+    messageStructure,
     nextToken,
     protocol,
+    subject,
     subscriptionARN,
     topicARN,
     topicName,
@@ -55,6 +65,7 @@ from localstack.services.sns import constants as sns_constants
 from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.constants import (
     DUMMY_SUBSCRIPTION_PRINCIPAL,
+    MAXIMUM_MESSAGE_LENGTH,
     VALID_APPLICATION_PLATFORMS,
 )
 from localstack.services.sns.filter import FilterPolicyValidator
@@ -91,6 +102,7 @@ from localstack.utils.aws.arns import (
     sns_topic_arn,
 )
 from localstack.utils.collections import PaginatedList, select_from_typed_dict
+from localstack.utils.strings import to_bytes
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -558,6 +570,145 @@ class SnsProvider(SnsApi):
         return response
 
     #
+    # Publish
+    #
+
+    def publish(
+        self,
+        context: RequestContext,
+        message: message,
+        topic_arn: topicARN | None = None,
+        target_arn: String | None = None,
+        phone_number: PhoneNumber | None = None,
+        subject: subject | None = None,
+        message_structure: messageStructure | None = None,
+        message_attributes: MessageAttributeMap | None = None,
+        message_deduplication_id: String | None = None,
+        message_group_id: String | None = None,
+        **kwargs,
+    ) -> PublishResponse:
+        if subject == "":
+            raise InvalidParameterException("Invalid parameter: Subject")
+        if not message or all(not m for m in message):
+            raise InvalidParameterException("Invalid parameter: Empty message")
+
+        # TODO: check for topic + target + phone number at the same time?
+        # TODO: more validation on phone, it might be opted out?
+        if phone_number and not is_valid_e164_number(phone_number):
+            raise InvalidParameterException(
+                f"Invalid parameter: PhoneNumber Reason: {phone_number} is not valid to publish to"
+            )
+
+        if message_attributes:
+            _validate_message_attributes(message_attributes)
+
+        if _get_total_publish_size(message, message_attributes) > MAXIMUM_MESSAGE_LENGTH:
+            raise InvalidParameterException("Invalid parameter: Message too long")
+
+        # for compatibility reasons, AWS allows users to use either TargetArn or TopicArn for publishing to a topic
+        # use any of them for topic validation
+        topic_or_target_arn = topic_arn or target_arn
+        topic_model = None
+
+        if is_fifo := (topic_or_target_arn and ".fifo" in topic_or_target_arn):
+            if not message_group_id:
+                raise InvalidParameterException(
+                    "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
+                )
+            topic_model = self._get_topic(topic_or_target_arn, context)
+            if topic_model.content_based_deduplication == "false":
+                if not message_deduplication_id:
+                    raise InvalidParameterException(
+                        "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+                    )
+        elif message_deduplication_id:
+            # this is the first one to raise if both are set while the topic is not fifo
+            raise InvalidParameterException(
+                "Invalid parameter: MessageDeduplicationId Reason: The request includes MessageDeduplicationId parameter that is not valid for this topic type"
+            )
+
+        is_endpoint_publish = target_arn and ":endpoint/" in target_arn
+        if message_structure == "json":
+            try:
+                message = json.loads(message)
+                # Keys in the JSON object that correspond to supported transport protocols must have
+                # simple JSON string values.
+                # Non-string values will cause the key to be ignored.
+                message = {key: field for key, field in message.items() if isinstance(field, str)}
+                # TODO: check no default key for direct TargetArn endpoint publish, need credentials
+                # see example: https://docs.aws.amazon.com/sns/latest/dg/sns-send-custom-platform-specific-payloads-mobile-devices.html
+                if "default" not in message and not is_endpoint_publish:
+                    raise InvalidParameterException(
+                        "Invalid parameter: Message Structure - No default entry in JSON message body"
+                    )
+            except json.JSONDecodeError:
+                raise InvalidParameterException(
+                    "Invalid parameter: Message Structure - JSON message body failed to parse"
+                )
+
+        if not phone_number:
+            # use the account to get the store from the TopicArn (you can only publish in the same region as the topic)
+            parsed_arn = parse_and_validate_topic_arn(topic_or_target_arn)
+            store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
+            if is_endpoint_publish:
+                if not (platform_endpoint := store.platform_endpoints.get(target_arn)):
+                    raise InvalidParameterException(
+                        "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
+                    )
+                elif not platform_endpoint.platform_endpoint["Attributes"].get(
+                    "Enabled"
+                ):  # TODO: double check enabled attribute
+                    raise EndpointDisabledException("Endpoint is disabled")
+            else:
+                topic_model = self._get_topic(topic_or_target_arn, context)
+        else:
+            # use the store from the request context
+            store = self.get_store(account_id=context.account_id, region=context.region)
+
+        message_ctx = SnsMessage(
+            type=SnsMessageType.Notification,
+            message=message,
+            message_attributes=message_attributes,
+            message_deduplication_id=message_deduplication_id,
+            message_group_id=message_group_id,
+            message_structure=message_structure,
+            subject=subject,
+            is_fifo=is_fifo,
+        )
+        publish_ctx = SnsPublishContext(
+            message=message_ctx, store=store, request_headers=context.request.headers
+        )
+
+        if is_endpoint_publish:
+            self._publisher.publish_to_application_endpoint(
+                ctx=publish_ctx, endpoint_arn=target_arn
+            )
+        elif phone_number:
+            self._publisher.publish_to_phone_number(ctx=publish_ctx, phone_number=phone_number)
+        else:
+            # beware if the subscription is FIFO, the order might not be guaranteed.
+            # 2 quick call to this method in succession might not be executed in order in the executor?
+            # TODO: test how this behaves in a FIFO context with a lot of threads.
+            publish_ctx.topic_attributes |= vars(topic_model)
+            self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn)
+
+        if is_fifo:
+            return PublishResponse(
+                MessageId=message_ctx.message_id, SequenceNumber=message_ctx.sequencer_number
+            )
+
+        return PublishResponse(MessageId=message_ctx.message_id)
+
+    def publish_batch(
+        self,
+        context: RequestContext,
+        topic_arn: topicARN,
+        publish_batch_request_entries: PublishBatchRequestEntryList,
+        **kwargs,
+    ) -> PublishBatchResponse:
+        pass
+
+    #
     # PlatformApplications
     #
     def create_platform_application(
@@ -921,6 +1072,94 @@ def _create_default_topic_policy(topic: Topic, context: RequestContext) -> str:
     )
 
 
+def _validate_message_attributes(
+    message_attributes: MessageAttributeMap, position: int | None = None
+) -> None:
+    """
+    Validate the message attributes, and raises an exception if those do not follow AWS validation
+    See: https://docs.aws.amazon.com/sns/latest/dg/sns-message-attributes.html
+    Regex from: https://stackoverflow.com/questions/40718851/regex-that-does-not-allow-consecutive-dots
+    :param message_attributes: the message attributes map for the message
+    :param position: given to give the Batch Entry position if coming from `publishBatch`
+    :raises: InvalidParameterValueException
+    :return: None
+    """
+    for attr_name, attr in message_attributes.items():
+        if len(attr_name) > 256:
+            raise InvalidParameterValueException(
+                "Length of message attribute name must be less than 256 bytes."
+            )
+        _validate_message_attribute_name(attr_name)
+        # `DataType` is a required field for MessageAttributeValue
+        if (data_type := attr.get("DataType")) is None:
+            if position:
+                at = f"publishBatchRequestEntries.{position}.member.messageAttributes.{attr_name}.member.dataType"
+            else:
+                at = f"messageAttributes.{attr_name}.member.dataType"
+
+            raise CommonServiceException(
+                code="ValidationError",
+                message=f"1 validation error detected: Value null at '{at}' failed to satisfy constraint: Member must not be null",
+                sender_fault=True,
+            )
+
+        if data_type not in (
+            "String",
+            "Number",
+            "Binary",
+        ) and not sns_constants.ATTR_TYPE_REGEX.match(data_type):
+            raise InvalidParameterValueException(
+                f"The message attribute '{attr_name}' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String."
+            )
+        if not any(attr_value.endswith("Value") for attr_value in attr):
+            raise InvalidParameterValueException(
+                f"The message attribute '{attr_name}' must contain non-empty message attribute value for message attribute type '{data_type}'."
+            )
+
+        value_key_data_type = "Binary" if data_type.startswith("Binary") else "String"
+        value_key = f"{value_key_data_type}Value"
+        if value_key not in attr:
+            raise InvalidParameterValueException(
+                f"The message attribute '{attr_name}' with type '{data_type}' must use field '{value_key_data_type}'."
+            )
+        elif not attr[value_key]:
+            raise InvalidParameterValueException(
+                f"The message attribute '{attr_name}' must contain non-empty message attribute value for message attribute type '{data_type}'.",
+            )
+
+
+def _validate_message_attribute_name(name: str) -> None:
+    """
+    Validate the message attribute name with the specification of AWS.
+    The message attribute name can contain the following characters: A-Z, a-z, 0-9, underscore(_), hyphen(-), and period (.). The name must not start or end with a period, and it should not have successive periods.
+    :param name: message attribute name
+    :raises InvalidParameterValueException: if the name does not conform to the spec
+    """
+    if not sns_constants.MSG_ATTR_NAME_REGEX.match(name):
+        # find the proper exception
+        if name[0] == ".":
+            raise InvalidParameterValueException(
+                "Invalid message attribute name starting with character '.' was found."
+            )
+        elif name[-1] == ".":
+            raise InvalidParameterValueException(
+                "Invalid message attribute name ending with character '.' was found."
+            )
+
+        for idx, char in enumerate(name):
+            if char not in sns_constants.VALID_MSG_ATTR_NAME_CHARS:
+                # change prefix from 0x to #x, without capitalizing the x
+                hex_char = "#x" + hex(ord(char)).upper()[2:]
+                raise InvalidParameterValueException(
+                    f"Invalid non-alphanumeric character '{hex_char}' was found in the message attribute name. Can only include alphanumeric characters, hyphens, underscores, or dots."
+                )
+            # even if we go negative index, it will be covered by starting/ending with dot
+            if char == "." and name[idx - 1] == ".":
+                raise InvalidParameterValueException(
+                    "Message attribute name can not have successive '.' character."
+                )
+
+
 def _validate_platform_application_name(name: str) -> None:
     reason = ""
     if not name:
@@ -997,3 +1236,26 @@ def _check_matching_tags(topic_arn: str, tags: TagList | None, store: SnsStore) 
             if existing_tags is not None and tag not in existing_tags:
                 return False
     return True
+
+
+def _get_total_publish_size(
+    message_body: str, message_attributes: MessageAttributeMap | None
+) -> int:
+    size = _get_byte_size(message_body)
+    if message_attributes:
+        # https://docs.aws.amazon.com/sns/latest/dg/sns-message-attributes.html
+        # All parts of the message attribute, including name, type, and value, are included in the message size
+        # restriction, which is 256 KB.
+        # iterate over the Keys and Attributes, adding the length of the Key to the length of all Attributes values
+        # (DataType and StringValue or BinaryValue)
+        size += sum(
+            _get_byte_size(key) + sum(_get_byte_size(attr_value) for attr_value in attr.values())
+            for key, attr in message_attributes.items()
+        )
+
+    return size
+
+
+def _get_byte_size(payload: str | bytes) -> int:
+    # Calculate the real length of the byte object if the object is a string
+    return len(to_bytes(payload))
