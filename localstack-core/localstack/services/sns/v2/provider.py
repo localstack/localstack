@@ -590,7 +590,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def list_subscriptions_by_topic(
         self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs
     ) -> ListSubscriptionsByTopicResponse:
-        self._get_topic(topic_arn, context)
+        self._get_topic(topic_arn, context)  # for validation purposes only
         parsed_topic_arn = parse_and_validate_topic_arn(topic_arn)
         store = self.get_store(parsed_topic_arn["account"], parsed_topic_arn["region"])
         subscriptions = get_topic_subscriptions(store, topic_arn)
