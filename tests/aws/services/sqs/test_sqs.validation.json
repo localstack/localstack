@@ -273,21 +273,21 @@
     "last_validated_date": "2024-04-30T13:46:34+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs]": {
-    "last_validated_date": "2025-11-17T08:56:48+00:00",
+    "last_validated_date": "2025-11-18T13:34:41+00:00",
     "durations_in_seconds": {
-      "setup": 0.89,
-      "call": 14.48,
-      "teardown": 0.31,
-      "total": 15.68
+      "setup": 0.9,
+      "call": 14.49,
+      "teardown": 0.28,
+      "total": 15.67
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query]": {
-    "last_validated_date": "2025-11-17T08:57:03+00:00",
+    "last_validated_date": "2025-11-18T13:34:56+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 14.74,
-      "teardown": 0.31,
-      "total": 15.05
+      "setup": 0.01,
+      "call": 14.52,
+      "teardown": 0.2,
+      "total": 14.73
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_high_throughput_ordering[sqs]": {

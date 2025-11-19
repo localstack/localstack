@@ -2139,7 +2139,7 @@ class TestSqsProvider:
         )
         aws_sqs_client.send_message(
             QueueUrl=queue_url,
-            MessageBody="bar",
+            MessageBody="baz",
             MessageGroupId="1",
             MessageDeduplicationId="baz",
         )

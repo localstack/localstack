@@ -314,7 +314,8 @@ class SqsQueue:
     purge_timestamp: float | None
 
     delayed: set[SqsMessage]
-    inflight: set[SqsMessage]
+    # simulating an ordered set in python
+    inflight: dict[SqsMessage, None]
     receipts: dict[str, SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
@@ -326,7 +327,7 @@ class SqsQueue:
         self.tags = tags or {}
 
         self.delayed = set()
-        self.inflight = set()
+        self.inflight = {}
         self.receipts = {}
 
         self.attributes = self.default_attributes()
@@ -503,7 +504,7 @@ class SqsQueue:
 
             if standard_message not in self.inflight:
                 return
-            self._update_visiblity_timeout(standard_message, visibility_timeout)
+            standard_message.update_visibility_timeout(visibility_timeout)
             # standard_message.update_visibility_timeout(visibility_timeout)
 
             if visibility_timeout == 0:
@@ -513,7 +514,7 @@ class SqsQueue:
                 )
                 # Terminating the visibility timeout for a message
                 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
-                self.inflight.remove(standard_message)
+                del self.inflight[standard_message]
                 self._put_message(standard_message)
 
     def remove(self, receipt_handle: str):
@@ -606,7 +607,7 @@ class SqsQueue:
                     standard_message,
                     self.arn,
                 )
-                self.inflight.remove(standard_message)
+                del self.inflight[standard_message]
                 self._put_message(standard_message)
 
     def enqueue_delayed_messages(self):
@@ -775,9 +776,6 @@ class SqsQueue:
         :return: None. Potential violations raise errors.
         """
         pass
-
-    def _update_visiblity_timeout(self, standard_message, visibility_timeout):
-        standard_message.update_visibility_timeout(visibility_timeout)
 
 
 class StandardQueue(SqsQueue):
@@ -1152,6 +1150,25 @@ class FifoQueue(SqsQueue):
             elif previously_empty:
                 self.message_group_queue.put_nowait(message_group)
 
+    def requeue_inflight_messages(self):
+        if not self.inflight:
+            return
+
+        with self.mutex:
+            messages = list(self.inflight)
+            LOG.debug("Message Bodies: %s", [message.message["Body"] for message in messages])
+            for standard_message in messages:
+                # in fifo, an invisible message blocks potentially visible messages afterwards
+                if not standard_message.is_visible:
+                    return
+                LOG.debug(
+                    "re-queueing inflight messages %s into queue %s",
+                    standard_message,
+                    self.arn,
+                )
+                del self.inflight[standard_message]
+                self._put_message(standard_message)
+
     def remove_expired_messages(self):
         with self.mutex:
             retention_period = self.message_retention_period
@@ -1239,6 +1256,17 @@ class FifoQueue(SqsQueue):
                         # timeout expired and the messages was re-queued in the meantime.
                         continue
 
+                    elif (
+                        message.visibility_deadline
+                        and message.visibility_deadline > start + visibility_timeout
+                    ):
+                        # This means that the group was visible, but this particular message is not. This results
+                        # in all messages before the invisible one to be visible, and all messages after to be
+                        # invisible.
+                        # This mainly happens when multiple message of a fifo group are received at once, and then
+                        # one message's timeout is extended via change_message_visibility
+                        break
+
                     # update message attributes
                     message.receive_count += 1
                     message.update_visibility_timeout(visibility_timeout)
@@ -1281,7 +1309,7 @@ class FifoQueue(SqsQueue):
                 if message.visibility_timeout == 0:
                     self._put_message(message)
                 else:
-                    self.inflight.add(message)
+                    self.inflight[message] = None
 
         return result
 
@@ -1291,16 +1319,12 @@ class FifoQueue(SqsQueue):
 
         with self.mutex:
             try:
-                self.inflight.remove(message)
+                del self.inflight[message]
             except KeyError:
                 # in FIFO queues, this should not happen, as expired receipt handles cannot be used to
                 # delete a message.
                 pass
             self.update_message_group_visibility(message_group)
-
-    def _update_visiblity_timeout(self, standard_message, visibility_timeout):
-        super()._update_visiblity_timeout(standard_message, visibility_timeout)
-        pass
 
     def update_message_group_visibility(self, message_group: MessageGroup):
         """
