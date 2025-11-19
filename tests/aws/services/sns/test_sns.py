@@ -1957,7 +1957,6 @@ class TestSNSSubscriptionLambda:
 
 class TestSNSSubscriptionSQS:
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_subscribe_sqs_queue(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1998,7 +1997,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("messages", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_unicode_chars(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -2017,7 +2015,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("received-message", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_attribute_raw_subscribe(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -2061,7 +2058,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("messages-response", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_sqs_topic_subscription_confirmation(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -2085,7 +2081,6 @@ class TestSNSSubscriptionSQS:
         assert poll_condition(check_subscription, timeout=5)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_sqs_from_sns(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -2153,7 +2148,6 @@ class TestSNSSubscriptionSQS:
         }
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_batch_messages_from_sns_to_sqs(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -2231,7 +2225,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("messages", {"Messages": messages})
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_batch_messages_without_topic(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         fake_topic_arn = topic_arn + "fake-topic"
@@ -2250,7 +2243,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("publish-batch-no-topic", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_batch_exceptions(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -2316,7 +2308,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("no-default-key-json", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_subscribe_to_sqs_with_queue_url(
         self, sns_create_topic, sqs_create_queue, sns_subscription, snapshot
     ):
@@ -2328,7 +2319,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("sub-queue-url", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_sqs_from_sns_with_xray_propagation(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -2367,7 +2357,6 @@ class TestSNSSubscriptionSQS:
 
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_redrive_policy_sqs_queue_subscription(
         self,
         sns_create_topic,
@@ -2442,7 +2431,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("messages", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_message_attributes_not_missing(
         self, sns_create_sqs_subscription, sns_create_topic, sqs_create_queue, snapshot, aws_client
     ):
@@ -2514,7 +2502,6 @@ class TestSNSSubscriptionSQS:
         # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_subscription_after_failure_to_deliver(
         self,
         sns_create_topic,
@@ -2613,7 +2600,6 @@ class TestSNSSubscriptionSQS:
             snapshot.match(f"message-{i}-after-delete", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_empty_or_wrong_message_attributes(
         self,
         sns_create_sqs_subscription,
@@ -2678,7 +2664,6 @@ class TestSNSSubscriptionSQS:
             snapshot.match(f"batch-{error_type}", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_message_attributes_prefixes(
         self, sns_create_sqs_subscription, sns_create_topic, sqs_create_queue, snapshot, aws_client
     ):
@@ -2724,7 +2709,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("publish-ok-2", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_message_structure_json_to_sqs(
         self, aws_client, sns_create_topic, sqs_create_queue, snapshot, sns_create_sqs_subscription
     ):
@@ -2761,7 +2745,6 @@ class TestSNSSubscriptionSQS:
 
     @markers.aws.validated
     @pytest.mark.parametrize("signature_version", ["1", "2"])
-    @skip_if_sns_v2
     def test_publish_sqs_verify_signature(
         self,
         aws_client,
@@ -2826,7 +2809,6 @@ class TestSNSSubscriptionSQS:
         assert is_valid is None
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_publish_message_group_id(
         self,
         aws_client,

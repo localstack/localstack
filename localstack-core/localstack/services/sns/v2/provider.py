@@ -1,10 +1,12 @@
 import contextlib
 import copy
+import functools
 import json
 import logging
 import re
 
 from botocore.utils import InvalidArnException
+from rolo import Request, Router, route
 
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sns import (
@@ -64,12 +66,25 @@ from localstack.aws.api.sns import (
     topicARN,
     topicName,
 )
-from localstack.services.sns import constants as sns_constants
+from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
+from localstack.http import Response
+from localstack.services.edge import ROUTER
+from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.sns.analytics import internal_api_calls
 from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.constants import (
+    ATTR_TYPE_REGEX,
     DUMMY_SUBSCRIPTION_PRINCIPAL,
     MAXIMUM_MESSAGE_LENGTH,
+    MSG_ATTR_NAME_REGEX,
+    PLATFORM_ENDPOINT_MSGS_ENDPOINT,
+    SMS_MSGS_ENDPOINT,
+    SNS_CERT_ENDPOINT,
+    SNS_PROTOCOLS,
+    SUBSCRIPTION_TOKENS_ENDPOINT,
     VALID_APPLICATION_PLATFORMS,
+    VALID_MSG_ATTR_NAME_CHARS,
+    VALID_SUBSCRIPTION_ATTR_NAME,
 )
 from localstack.services.sns.filter import FilterPolicyValidator
 from localstack.services.sns.v2.models import (
@@ -104,6 +119,8 @@ from localstack.services.sns.v2.utils import (
     validate_subscription_attribute,
 )
 from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
+    extract_region_from_arn,
     get_partition,
     parse_arn,
     sns_platform_application_arn,
@@ -119,11 +136,26 @@ SNS_TOPIC_NAME_PATTERN_FIFO = r"^[a-zA-Z0-9_-]{1,256}\.fifo$"
 SNS_TOPIC_NAME_PATTERN = r"^[a-zA-Z0-9_-]{1,256}$"
 
 
-class SnsProvider(SnsApi):
+class SnsProvider(SnsApi, ServiceLifecycleHook):
     def __init__(self) -> None:
         super().__init__()
         self._publisher = PublishDispatcher()
         self._signature_cert_pem: str = SNS_SERVER_CERT
+
+    def on_before_stop(self):
+        self._publisher.shutdown()
+
+    def on_after_init(self):
+        # Allow sent platform endpoint messages to be retrieved from the SNS endpoint
+        register_sns_api_resource(ROUTER)
+        # add the route to serve the certificate used to validate message signatures
+        ROUTER.add(self.get_signature_cert_pem_file)
+
+    @route(SNS_CERT_ENDPOINT, methods=["GET"])
+    def get_signature_cert_pem_file(self, request: Request):
+        # see http://sns-public-resources.s3.amazonaws.com/SNS_Message_Signing_Release_Note_Jan_25_2011.pdf
+        # see https://docs.aws.amazon.com/sns/latest/dg/sns-verify-signature-of-message.html
+        return Response(self._signature_cert_pem, 200)
 
     ## Topic Operations
 
@@ -155,7 +187,6 @@ class SnsProvider(SnsApi):
                 )
             return CreateTopicResponse(TopicArn=topic_arn)
 
-        attributes = attributes or {}
         if attributes.get("FifoTopic") and attributes["FifoTopic"].lower() == "true":
             fifo_match = re.match(SNS_TOPIC_NAME_PATTERN_FIFO, name)
             if not fifo_match:
@@ -246,7 +277,7 @@ class SnsProvider(SnsApi):
         if not endpoint:
             # TODO: check AWS behaviour (because endpoint is optional)
             raise NotFoundException("Endpoint not specified in subscription")
-        if protocol not in sns_constants.SNS_PROTOCOLS:
+        if protocol not in SNS_PROTOCOLS:
             raise InvalidParameterException(
                 f"Invalid parameter: Amazon SNS does not support this protocol string: {protocol}"
             )
@@ -296,7 +327,7 @@ class SnsProvider(SnsApi):
             if sub.get("Endpoint") == endpoint:
                 if sub_attributes:
                     # validate the subscription attributes aren't different
-                    for attr in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
+                    for attr in VALID_SUBSCRIPTION_ATTR_NAME:
                         # if a new attribute is present and different from an existent one, raise
                         if (new_attr := sub_attributes.get(attr)) and sub.get(attr) != new_attr:
                             raise InvalidParameterException(
@@ -359,7 +390,7 @@ class SnsProvider(SnsApi):
                 store=store,
                 request_headers=context.request.headers,
                 # TODO: add topic attributes once they are ported from moto to LocalStack
-                # topic_attributes=vars(self._get_topic(topic_arn, context)),
+                topic_attributes=self._get_topic(topic_arn, context)["attributes"],
             )
             self._publisher.publish_to_topic_subscriber(
                 ctx=publish_ctx,
@@ -696,7 +727,7 @@ class SnsProvider(SnsApi):
             # beware if the subscription is FIFO, the order might not be guaranteed.
             # 2 quick call to this method in succession might not be executed in order in the executor?
             # TODO: test how this behaves in a FIFO context with a lot of threads.
-            publish_ctx.topic_attributes |= topic_model
+            publish_ctx.topic_attributes |= topic_model["attributes"]
             self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn)
 
         if is_fifo:
@@ -770,7 +801,7 @@ class SnsProvider(SnsApi):
                     raise InvalidParameterException(
                         "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                     )
-                if topic["attributes"]["content_based_deduplication"] == "false":
+                if topic["attributes"]["ContentBasedDeduplication"] == "false":
                     if not all(
                         "MessageDeduplicationId" in entry for entry in publish_batch_request_entries
                     ):
@@ -1203,7 +1234,7 @@ def _validate_message_attributes(
             "String",
             "Number",
             "Binary",
-        ) and not sns_constants.ATTR_TYPE_REGEX.match(data_type):
+        ) and not ATTR_TYPE_REGEX.match(data_type):
             raise InvalidParameterValueException(
                 f"The message attribute '{attr_name}' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String."
             )
@@ -1231,7 +1262,7 @@ def _validate_message_attribute_name(name: str) -> None:
     :param name: message attribute name
     :raises InvalidParameterValueException: if the name does not conform to the spec
     """
-    if not sns_constants.MSG_ATTR_NAME_REGEX.match(name):
+    if not MSG_ATTR_NAME_REGEX.match(name):
         # find the proper exception
         if name[0] == ".":
             raise InvalidParameterValueException(
@@ -1243,7 +1274,7 @@ def _validate_message_attribute_name(name: str) -> None:
             )
 
         for idx, char in enumerate(name):
-            if char not in sns_constants.VALID_MSG_ATTR_NAME_CHARS:
+            if char not in VALID_MSG_ATTR_NAME_CHARS:
                 # change prefix from 0x to #x, without capitalizing the x
                 hex_char = "#x" + hex(ord(char)).upper()[2:]
                 raise InvalidParameterValueException(
@@ -1355,3 +1386,246 @@ def _get_total_publish_size(
 def _get_byte_size(payload: str | bytes) -> int:
     # Calculate the real length of the byte object if the object is a string
     return len(to_bytes(payload))
+
+
+def _register_sns_api_resource(router: Router):
+    """Register the retrospection endpoints as internal LocalStack endpoints."""
+    router.add(SNSServicePlatformEndpointMessagesApiResource())
+    router.add(SNSServiceSMSMessagesApiResource())
+    router.add(SNSServiceSubscriptionTokenApiResource())
+
+
+class SNSInternalResource:
+    resource_type: str
+    """Base class with helper to properly track usage of internal endpoints"""
+
+    def count_usage(self):
+        internal_api_calls.labels(resource_type=self.resource_type).increment()
+
+
+def count_usage(f):
+    @functools.wraps(f)
+    def _wrapper(self, *args, **kwargs):
+        self.count_usage()
+        return f(self, *args, **kwargs)
+
+    return _wrapper
+
+
+class SNSServicePlatformEndpointMessagesApiResource(SNSInternalResource):
+    resource_type = "platform-endpoint-message"
+    """Provides a REST API for retrospective access to platform endpoint messages sent via SNS.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint accepts:
+    - GET param `accountId`: selector for AWS account. If not specified, return fallback `000000000000` test ID
+    - GET param `region`: selector for AWS `region`. If not specified, return default "us-east-1"
+    - GET param `endpointArn`: filter for `endpointArn` resource in SNS
+    - DELETE param `accountId`: selector for AWS account
+    - DELETE param `region`: will delete saved messages for `region`
+    - DELETE param `endpointArn`: will delete saved messages for `endpointArn`
+    """
+
+    _PAYLOAD_FIELDS = [
+        "TargetArn",
+        "TopicArn",
+        "Message",
+        "MessageAttributes",
+        "MessageStructure",
+        "Subject",
+        "MessageId",
+    ]
+
+    @route(PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
+    @count_usage
+    def on_get(self, request: Request):
+        filter_endpoint_arn = request.args.get("endpointArn")
+        account_id = (
+            request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+            if not filter_endpoint_arn
+            else extract_account_id_from_arn(filter_endpoint_arn)
+        )
+        region = (
+            request.args.get("region", AWS_REGION_US_EAST_1)
+            if not filter_endpoint_arn
+            else extract_region_from_arn(filter_endpoint_arn)
+        )
+        store: SnsStore = sns_stores[account_id][region]
+        if filter_endpoint_arn:
+            messages = store.platform_endpoint_messages.get(filter_endpoint_arn, [])
+            messages = _format_messages(messages, self._PAYLOAD_FIELDS)
+            return {
+                "platform_endpoint_messages": {filter_endpoint_arn: messages},
+                "region": region,
+            }
+
+        platform_endpoint_messages = {
+            endpoint_arn: _format_messages(messages, self._PAYLOAD_FIELDS)
+            for endpoint_arn, messages in store.platform_endpoint_messages.items()
+        }
+        return {
+            "platform_endpoint_messages": platform_endpoint_messages,
+            "region": region,
+        }
+
+    @route(PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
+    @count_usage
+    def on_delete(self, request: Request) -> Response:
+        filter_endpoint_arn = request.args.get("endpointArn")
+        account_id = (
+            request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+            if not filter_endpoint_arn
+            else extract_account_id_from_arn(filter_endpoint_arn)
+        )
+        region = (
+            request.args.get("region", AWS_REGION_US_EAST_1)
+            if not filter_endpoint_arn
+            else extract_region_from_arn(filter_endpoint_arn)
+        )
+        store: SnsStore = sns_stores[account_id][region]
+        if filter_endpoint_arn:
+            store.platform_endpoint_messages.pop(filter_endpoint_arn, None)
+            return Response("", status=204)
+
+        store.platform_endpoint_messages.clear()
+        return Response("", status=204)
+
+
+def register_sns_api_resource(router: Router):
+    """Register the retrospection endpoints as internal LocalStack endpoints."""
+    router.add(SNSServicePlatformEndpointMessagesApiResource())
+    router.add(SNSServiceSMSMessagesApiResource())
+    router.add(SNSServiceSubscriptionTokenApiResource())
+
+
+def _format_messages(sent_messages: list[dict[str, str]], validated_keys: list[str]):
+    """
+    This method format the messages to be more readable and undo the format change that was needed for Moto
+    Should be removed once we refactor SNS.
+    """
+    formatted_messages = []
+    for sent_message in sent_messages:
+        msg = {
+            key: json.dumps(value)
+            if key == "Message" and sent_message.get("MessageStructure") == "json"
+            else value
+            for key, value in sent_message.items()
+            if key in validated_keys
+        }
+        formatted_messages.append(msg)
+
+    return formatted_messages
+
+
+class SNSServiceSMSMessagesApiResource(SNSInternalResource):
+    resource_type = "sms-message"
+    """Provides a REST API for retrospective access to SMS messages sent via SNS.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint accepts:
+    - GET param `accountId`: selector for AWS account. If not specified, return fallback `000000000000` test ID
+    - GET param `region`: selector for AWS `region`. If not specified, return default "us-east-1"
+    - GET param `phoneNumber`: filter for `phoneNumber` resource in SNS
+    """
+
+    _PAYLOAD_FIELDS = [
+        "PhoneNumber",
+        "TopicArn",
+        "SubscriptionArn",
+        "MessageId",
+        "Message",
+        "MessageAttributes",
+        "MessageStructure",
+        "Subject",
+    ]
+
+    @route(SMS_MSGS_ENDPOINT, methods=["GET"])
+    @count_usage
+    def on_get(self, request: Request):
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
+        filter_phone_number = request.args.get("phoneNumber")
+        store: SnsStore = sns_stores[account_id][region]
+        if filter_phone_number:
+            messages = [
+                m for m in store.sms_messages if m.get("PhoneNumber") == filter_phone_number
+            ]
+            messages = _format_messages(messages, self._PAYLOAD_FIELDS)
+            return {
+                "sms_messages": {filter_phone_number: messages},
+                "region": region,
+            }
+
+        sms_messages = {}
+
+        for m in _format_messages(store.sms_messages, self._PAYLOAD_FIELDS):
+            sms_messages.setdefault(m.get("PhoneNumber"), []).append(m)
+
+        return {
+            "sms_messages": sms_messages,
+            "region": region,
+        }
+
+    @route(SMS_MSGS_ENDPOINT, methods=["DELETE"])
+    @count_usage
+    def on_delete(self, request: Request) -> Response:
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
+        filter_phone_number = request.args.get("phoneNumber")
+        store: SnsStore = sns_stores[account_id][region]
+        if filter_phone_number:
+            store.sms_messages = [
+                m for m in store.sms_messages if m.get("PhoneNumber") != filter_phone_number
+            ]
+            return Response("", status=204)
+
+        store.sms_messages.clear()
+        return Response("", status=204)
+
+
+class SNSServiceSubscriptionTokenApiResource(SNSInternalResource):
+    resource_type = "subscription-token"
+    """Provides a REST API for retrospective access to Subscription Confirmation Tokens to confirm subscriptions.
+    Those are not sent for email, and sometimes inaccessible when working with external HTTPS endpoint which won't be
+    able to reach your local host.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint has the following parameter:
+    - GET `subscription_arn`: `subscriptionArn`resource in SNS for which you want the SubscriptionToken
+    """
+
+    @route(f"{SUBSCRIPTION_TOKENS_ENDPOINT}/<path:subscription_arn>", methods=["GET"])
+    @count_usage
+    def on_get(self, _request: Request, subscription_arn: str):
+        try:
+            parsed_arn = parse_arn(subscription_arn)
+        except InvalidArnException:
+            response = Response("", 400)
+            response.set_json(
+                {
+                    "error": "The provided SubscriptionARN is invalid",
+                    "subscription_arn": subscription_arn,
+                }
+            )
+            return response
+
+        store: SnsStore = sns_stores[parsed_arn["account"]][parsed_arn["region"]]
+
+        for token, sub_arn in store.subscription_tokens.items():
+            if sub_arn == subscription_arn:
+                return {
+                    "subscription_token": token,
+                    "subscription_arn": subscription_arn,
+                }
+
+        response = Response("", 404)
+        response.set_json(
+            {
+                "error": "The provided SubscriptionARN is not found",
+                "subscription_arn": subscription_arn,
+            }
+        )
+        return response

@@ -1010,7 +1010,7 @@ def create_sns_message_body(
     # FIFO topics do not add the signature in the message
     if not subscriber.get("TopicArn", "").endswith(".fifo"):
         signature_version = (
-            topic_attributes.get("signature_version", "1") if topic_attributes else "1"
+            topic_attributes.get("SignatureVersion", "1") if topic_attributes else "1"
         )
         canonical_string = compute_canonical_string(data, message_type)
         signature = get_message_signature(canonical_string, signature_version=signature_version)
