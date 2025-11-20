@@ -5,6 +5,15 @@
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
     "last_validated_date": "2025-05-14T09:11:11+00:00"
   },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_region_validation": {
+    "last_validated_date": "2025-11-18T17:59:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 0.34,
+      "teardown": 0.0,
+      "total": 0.82
+    }
+  },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
     "last_validated_date": "2025-05-14T09:11:17+00:00"
   },

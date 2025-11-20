@@ -323,6 +323,7 @@ from localstack.services.s3.validation import (
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import s3_bucket_name
+from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
@@ -607,6 +608,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket_region: BucketRegion = None,
         **kwargs,
     ) -> ListBucketsOutput:
+        if bucket_region and not config.ALLOW_NONSTANDARD_REGIONS:
+            if bucket_region not in get_valid_regions_for_service(self.service):
+                raise InvalidArgument(
+                    f"Argument value {bucket_region} is not a valid AWS Region",
+                    ArgumentName="bucket-region",
+                )
+
         owner = get_owner_for_account_id(context.account_id)
         store = self.get_store(context.account_id, context.region)
 
