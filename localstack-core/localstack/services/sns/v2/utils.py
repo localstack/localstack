@@ -140,6 +140,11 @@ def get_region_from_subscription_token(token: str) -> str:
 
 
 def get_topic_subscriptions(store: SnsStore, topic_arn: str) -> list[SnsSubscription]:
-    sub_arns: list[str] = store.topics[topic_arn].get("subscriptions", [])
+    # TODO: delete this once the legacy v1 implementation has been removed
+    if hasattr(store, "topic_subscriptions"):
+        sub_arns = store.topic_subscriptions.get(topic_arn, [])
+    else:
+        sub_arns: list[str] = store.topics[topic_arn].get("subscriptions", [])
+
     subscriptions = [store.subscriptions[k] for k in sub_arns if k in store.subscriptions]
     return subscriptions

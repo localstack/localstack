@@ -87,6 +87,11 @@ from localstack.services.sns.constants import (
     VALID_SUBSCRIPTION_ATTR_NAME,
 )
 from localstack.services.sns.filter import FilterPolicyValidator
+from localstack.services.sns.publisher import (
+    PublishDispatcher,
+    SnsBatchPublishContext,
+    SnsPublishContext,
+)
 from localstack.services.sns.v2.models import (
     SMS_ATTRIBUTE_NAMES,
     SMS_DEFAULT_SENDER_REGEX,
@@ -100,11 +105,6 @@ from localstack.services.sns.v2.models import (
     SnsSubscription,
     Topic,
     sns_stores,
-)
-from localstack.services.sns.v2.publisher import (
-    PublishDispatcher,
-    SnsBatchPublishContext,
-    SnsPublishContext,
 )
 from localstack.services.sns.v2.utils import (
     create_platform_endpoint_arn,
