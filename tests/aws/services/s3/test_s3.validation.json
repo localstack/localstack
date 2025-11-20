@@ -410,9 +410,6 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_with_encryption": {
     "last_validated_date": "2025-01-21T18:29:31+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_preconditions": {
-    "last_validated_date": "2025-01-21T18:29:56+00:00"
-  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_storage_class": {
     "last_validated_date": "2025-01-21T18:29:41+00:00"
   },

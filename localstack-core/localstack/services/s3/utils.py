@@ -421,6 +421,7 @@ def get_failed_upload_part_copy_source_preconditions(
     if_none_match = request.get("CopySourceIfNoneMatch")
     if_unmodified_since = request.get("CopySourceIfUnmodifiedSince")
     if_modified_since = request.get("CopySourceIfModifiedSince")
+    last_modified = second_resolution_datetime(last_modified)
 
     if if_match:
         if if_match.strip('"') != etag.strip('"'):
@@ -431,15 +432,15 @@ def get_failed_upload_part_copy_source_preconditions(
         if if_unmodified_since:
             return None
 
-    if if_unmodified_since and if_unmodified_since < last_modified:
+    if if_unmodified_since and second_resolution_datetime(if_unmodified_since) < last_modified:
         return "x-amz-copy-source-If-Unmodified-Since"
 
     if if_none_match and if_none_match.strip('"') == etag.strip('"'):
         return "x-amz-copy-source-If-None-Match"
 
-    if if_modified_since and last_modified < if_modified_since < datetime.datetime.now(
-        tz=_gmt_zone_info
-    ):
+    if if_modified_since and last_modified <= second_resolution_datetime(
+        if_modified_since
+    ) < datetime.datetime.now(tz=_gmt_zone_info):
         return "x-amz-copy-source-If-Modified-Since"
 
 
@@ -701,6 +702,10 @@ def str_to_rfc_1123_datetime(value: str) -> datetime.datetime:
     return datetime.datetime.strptime(value, RFC1123).replace(tzinfo=_gmt_zone_info)
 
 
+def second_resolution_datetime(src: datetime.datetime) -> datetime.datetime:
+    return src.replace(microsecond=0)
+
+
 def add_expiration_days_to_datetime(user_datatime: datetime.datetime, exp_days: int) -> str:
     """
     This adds expiration days to a datetime, rounding to the next day at midnight UTC.
@@ -908,6 +913,7 @@ def get_failed_precondition_copy_source(
     :param etag: source object ETag
     :return str: the failed precondition to raise
     """
+    last_modified = second_resolution_datetime(last_modified)
     if (cs_if_match := request.get("CopySourceIfMatch")) and etag.strip('"') != cs_if_match.strip(
         '"'
     ):
@@ -915,7 +921,7 @@ def get_failed_precondition_copy_source(
 
     elif (
         cs_if_unmodified_since := request.get("CopySourceIfUnmodifiedSince")
-    ) and last_modified > cs_if_unmodified_since:
+    ) and last_modified > second_resolution_datetime(cs_if_unmodified_since):
         return "x-amz-copy-source-If-Unmodified-Since"
 
     elif (cs_if_none_match := request.get("CopySourceIfNoneMatch")) and etag.strip(
@@ -925,7 +931,9 @@ def get_failed_precondition_copy_source(
 
     elif (
         cs_if_modified_since := request.get("CopySourceIfModifiedSince")
-    ) and last_modified < cs_if_modified_since < datetime.datetime.now(tz=_gmt_zone_info):
+    ) and last_modified <= second_resolution_datetime(cs_if_modified_since) < datetime.datetime.now(
+        tz=_gmt_zone_info
+    ):
         return "x-amz-copy-source-If-Modified-Since"
 
 
@@ -943,13 +951,13 @@ def validate_failed_precondition(
     """
     precondition_failed = None
     # last_modified needs to be rounded to a second so that strict equality can be enforced from a RFC1123 header
-    last_modified = last_modified.replace(microsecond=0)
+    last_modified = second_resolution_datetime(last_modified)
     if (if_match := request.get("IfMatch")) and etag != if_match.strip('"'):
         precondition_failed = "If-Match"
 
     elif (
         if_unmodified_since := request.get("IfUnmodifiedSince")
-    ) and last_modified > if_unmodified_since:
+    ) and last_modified > second_resolution_datetime(if_unmodified_since):
         precondition_failed = "If-Unmodified-Since"
 
     if precondition_failed:
@@ -960,7 +968,9 @@ def validate_failed_precondition(
 
     if ((if_none_match := request.get("IfNoneMatch")) and etag == if_none_match.strip('"')) or (
         (if_modified_since := request.get("IfModifiedSince"))
-        and last_modified <= if_modified_since < datetime.datetime.now(tz=_gmt_zone_info)
+        and last_modified
+        <= second_resolution_datetime(if_modified_since)
+        < datetime.datetime.now(tz=_gmt_zone_info)
     ):
         raise CommonServiceException(
             message="Not Modified",
