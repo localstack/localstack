@@ -2109,6 +2109,69 @@ class TestSqsProvider:
         assert response["Messages"][1]["Body"] == "g1-m1"
         assert len(response["Messages"]) == 2
 
+    @pytest.mark.parametrize(
+        "message_position", [0, 1, 2], ids=["0-visible", "1-visible", "2-visible"]
+    )
+    @markers.aws.validated
+    def test_fifo_group_visibility_extends_with_change_message_visibility(
+        self, sqs_create_queue, aws_sqs_client, snapshot, message_position
+    ):
+        initial_visibility_timeout = 1
+        extended_visibility_timeout = 4
+        queue_name = f"test-queue-{short_uid()}.fifo"
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "FifoQueue": "true",
+                "VisibilityTimeout": f"{initial_visibility_timeout}",
+            },
+        )
+
+        # Send 3 messages
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="foo",
+            MessageGroupId="1",
+            MessageDeduplicationId="foo",
+        )
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="bar",
+            MessageGroupId="1",
+            MessageDeduplicationId="bar",
+        )
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="baz",
+            MessageGroupId="1",
+            MessageDeduplicationId="baz",
+        )
+
+        # Receive all messages
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=5)
+
+        # We should have received all 3 messages from the group
+        snapshot.match("receive_all_messages", response)
+
+        receipt_handle = response["Messages"][message_position]["ReceiptHandle"]
+        # extend visibility timeout of one message
+        aws_sqs_client.change_message_visibility(
+            QueueUrl=queue_url,
+            ReceiptHandle=receipt_handle,
+            VisibilityTimeout=extended_visibility_timeout,
+        )
+
+        # Wait until the other 2 message become visible again, but the extended message is still invisible
+        time.sleep(
+            initial_visibility_timeout
+            + (extended_visibility_timeout - initial_visibility_timeout) / 2
+        )
+
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=5)
+
+        # The extended message and all messages within the same group that come after it are invisible.
+        snapshot.match("some-messages-invisible", response)
+
     @markers.aws.validated
     def test_fifo_message_group_visibility_after_delete(self, sqs_create_queue, aws_sqs_client):
         queue_url = sqs_create_queue(

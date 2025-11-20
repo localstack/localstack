@@ -272,6 +272,132 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs_query]": {
     "last_validated_date": "2024-04-30T13:46:34+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-0-visible]": {
+    "last_validated_date": "2025-11-19T10:47:45+00:00",
+    "durations_in_seconds": {
+      "setup": 1.24,
+      "call": 3.6,
+      "teardown": 0.24,
+      "total": 5.08
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-1-invisible]": {
+    "last_validated_date": "2025-11-19T10:45:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.76,
+      "teardown": 0.2,
+      "total": 2.96
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-1-visible]": {
+    "last_validated_date": "2025-11-19T10:47:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.87,
+      "teardown": 0.19,
+      "total": 3.06
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-2-visible]": {
+    "last_validated_date": "2025-11-19T10:47:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.77,
+      "teardown": 0.19,
+      "total": 2.96
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-all-invisible]": {
+    "last_validated_date": "2025-11-19T10:45:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.69,
+      "call": 3.4,
+      "teardown": 0.19,
+      "total": 4.28
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs-no-invisible]": {
+    "last_validated_date": "2025-11-19T10:45:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.97,
+      "teardown": 0.19,
+      "total": 3.16
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs]": {
+    "last_validated_date": "2025-11-18T13:34:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.9,
+      "call": 14.49,
+      "teardown": 0.28,
+      "total": 15.67
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-0-visible]": {
+    "last_validated_date": "2025-11-19T10:47:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 3.34,
+      "teardown": 0.24,
+      "total": 3.59
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-1-invisible]": {
+    "last_validated_date": "2025-11-19T10:45:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.68,
+      "teardown": 0.18,
+      "total": 2.86
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-1-visible]": {
+    "last_validated_date": "2025-11-19T10:47:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.88,
+      "teardown": 0.19,
+      "total": 3.07
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-2-visible]": {
+    "last_validated_date": "2025-11-19T10:48:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.88,
+      "teardown": 0.19,
+      "total": 3.07
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-all-invisible]": {
+    "last_validated_date": "2025-11-19T10:45:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 3.1,
+      "teardown": 0.18,
+      "total": 3.29
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query-no-invisible]": {
+    "last_validated_date": "2025-11-19T10:45:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.87,
+      "teardown": 0.19,
+      "total": 3.06
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_group_visibility_extends_with_change_message_visibility[sqs_query]": {
+    "last_validated_date": "2025-11-18T13:34:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 14.52,
+      "teardown": 0.2,
+      "total": 14.73
+    }
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_high_throughput_ordering[sqs]": {
     "last_validated_date": "2024-04-30T13:34:27+00:00"
   },
@@ -283,6 +409,24 @@
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_attributes[sqs_query]": {
     "last_validated_date": "2024-04-30T13:36:57+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility_after_change_message_visibility[sqs]": {
+    "last_validated_date": "2025-11-17T08:55:04+00:00",
+    "durations_in_seconds": {
+      "setup": 1.26,
+      "call": 4.38,
+      "teardown": 0.3,
+      "total": 5.94
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_group_visibility_after_change_message_visibility[sqs_query]": {
+    "last_validated_date": "2025-11-17T08:55:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.02,
+      "call": 4.77,
+      "teardown": 0.3,
+      "total": 5.09
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_delay_seconds_fails[sqs]": {
     "last_validated_date": "2024-04-30T13:33:33+00:00"
