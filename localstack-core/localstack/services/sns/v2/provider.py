@@ -270,10 +270,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         store = self.get_store(account_id=parsed_topic_arn["account"], region=context.region)
 
-        if topic_arn not in store.topics:
-            raise NotFoundException("Topic does not exist")
-
-        topic_subscriptions = store.topics[topic_arn]["subscriptions"]
+        topic = self._get_topic(arn=topic_arn, context=context)
+        topic_subscriptions = topic["subscriptions"]
         if not endpoint:
             # TODO: check AWS behaviour (because endpoint is optional)
             raise NotFoundException("Endpoint not specified in subscription")
@@ -389,8 +387,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 message=message_ctx,
                 store=store,
                 request_headers=context.request.headers,
-                # TODO: add topic attributes once they are ported from moto to LocalStack
-                topic_attributes=self._get_topic(topic_arn, context)["attributes"],
+                topic_attributes=topic(topic_arn, context)["attributes"],
             )
             self._publisher.publish_to_topic_subscriber(
                 ctx=publish_ctx,
@@ -646,15 +643,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # for compatibility reasons, AWS allows users to use either TargetArn or TopicArn for publishing to a topic
         # use any of them for topic validation
         topic_or_target_arn = topic_arn or target_arn
-        topic_model = None
+        topic = None
 
         if is_fifo := (topic_or_target_arn and ".fifo" in topic_or_target_arn):
             if not message_group_id:
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
-            topic_model = self._get_topic(topic_or_target_arn, context)
-            if topic_model.content_based_deduplication == "false":
+            topic = self._get_topic(topic_or_target_arn, context)
+            if topic["attributes"]["ContentBasedDeduplication"] == "false":
                 if not message_deduplication_id:
                     raise InvalidParameterException(
                         "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
@@ -698,7 +695,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 ):  # TODO: double check enabled attribute
                     raise EndpointDisabledException("Endpoint is disabled")
             else:
-                topic_model = self._get_topic(topic_or_target_arn, context)
+                topic = self._get_topic(topic_or_target_arn, context)
         else:
             # use the store from the request context
             store = self.get_store(account_id=context.account_id, region=context.region)
@@ -727,7 +724,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             # beware if the subscription is FIFO, the order might not be guaranteed.
             # 2 quick call to this method in succession might not be executed in order in the executor?
             # TODO: test how this behaves in a FIFO context with a lot of threads.
-            publish_ctx.topic_attributes |= topic_model["attributes"]
+            publish_ctx.topic_attributes |= topic["attributes"]
             self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn)
 
         if is_fifo:
