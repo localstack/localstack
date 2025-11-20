@@ -7,13 +7,17 @@ from antlr4.tree.Tree import ParseTree, TerminalNodeImpl
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
-from localstack.services.stepfunctions.asl.antlr.runtime.ASLParserVisitor import ASLParserVisitor
+from localstack.services.stepfunctions.asl.antlr.runtime.ASLParserVisitor import (
+    ASLParserVisitor,
+)
 from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import (
     from_string_literal,
     is_production,
     is_terminal,
 )
-from localstack.services.stepfunctions.asl.component.common.assign.assign_decl import AssignDecl
+from localstack.services.stepfunctions.asl.component.common.assign.assign_decl import (
+    AssignDecl,
+)
 from localstack.services.stepfunctions.asl.component.common.assign.assign_decl_binding import (
     AssignDeclBinding,
 )
@@ -36,9 +40,15 @@ from localstack.services.stepfunctions.asl.component.common.assign.assign_templa
     AssignTemplateValueTerminalLit,
     AssignTemplateValueTerminalStringJSONata,
 )
-from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
-from localstack.services.stepfunctions.asl.component.common.catch.catcher_decl import CatcherDecl
-from localstack.services.stepfunctions.asl.component.common.catch.catcher_props import CatcherProps
+from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import (
+    CatchDecl,
+)
+from localstack.services.stepfunctions.asl.component.common.catch.catcher_decl import (
+    CatcherDecl,
+)
+from localstack.services.stepfunctions.asl.component.common.catch.catcher_props import (
+    CatcherProps,
+)
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
@@ -46,7 +56,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.error_equals_decl import (
     ErrorEqualsDecl,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
+from localstack.services.stepfunctions.asl.component.common.error_name.error_name import (
+    ErrorName,
+)
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
     StatesErrorName,
 )
@@ -79,10 +91,18 @@ from localstack.services.stepfunctions.asl.component.common.parargs import (
     Parameters,
     Parargs,
 )
-from localstack.services.stepfunctions.asl.component.common.path.input_path import InputPath
-from localstack.services.stepfunctions.asl.component.common.path.items_path import ItemsPath
-from localstack.services.stepfunctions.asl.component.common.path.output_path import OutputPath
-from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
+from localstack.services.stepfunctions.asl.component.common.path.input_path import (
+    InputPath,
+)
+from localstack.services.stepfunctions.asl.component.common.path.items_path import (
+    ItemsPath,
+)
+from localstack.services.stepfunctions.asl.component.common.path.output_path import (
+    OutputPath,
+)
+from localstack.services.stepfunctions.asl.component.common.path.result_path import (
+    ResultPath,
+)
 from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue.payload_value import (
     PayloadValue,
 )
@@ -116,7 +136,9 @@ from localstack.services.stepfunctions.asl.component.common.query_language impor
     QueryLanguage,
     QueryLanguageMode,
 )
-from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
+from localstack.services.stepfunctions.asl.component.common.result_selector import (
+    ResultSelector,
+)
 from localstack.services.stepfunctions.asl.component.common.retry.backoff_rate_decl import (
     BackoffRateDecl,
 )
@@ -133,9 +155,15 @@ from localstack.services.stepfunctions.asl.component.common.retry.max_attempts_d
 from localstack.services.stepfunctions.asl.component.common.retry.max_delay_seconds_decl import (
     MaxDelaySecondsDecl,
 )
-from localstack.services.stepfunctions.asl.component.common.retry.retrier_decl import RetrierDecl
-from localstack.services.stepfunctions.asl.component.common.retry.retrier_props import RetrierProps
-from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
+from localstack.services.stepfunctions.asl.component.common.retry.retrier_decl import (
+    RetrierDecl,
+)
+from localstack.services.stepfunctions.asl.component.common.retry.retrier_props import (
+    RetrierProps,
+)
+from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import (
+    RetryDecl,
+)
 from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
     StringContextPath,
     StringExpression,
@@ -291,15 +319,23 @@ from localstack.services.stepfunctions.asl.component.state.state_fail.error_decl
     Error,
     ErrorPath,
 )
-from localstack.services.stepfunctions.asl.component.state.state_fail.state_fail import StateFail
-from localstack.services.stepfunctions.asl.component.state.state_pass.result import Result
-from localstack.services.stepfunctions.asl.component.state.state_pass.state_pass import StatePass
+from localstack.services.stepfunctions.asl.component.state.state_fail.state_fail import (
+    StateFail,
+)
+from localstack.services.stepfunctions.asl.component.state.state_pass.result import (
+    Result,
+)
+from localstack.services.stepfunctions.asl.component.state.state_pass.state_pass import (
+    StatePass,
+)
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.component.state.state_succeed.state_succeed import (
     StateSucceed,
 )
 from localstack.services.stepfunctions.asl.component.state.state_type import StateType
-from localstack.services.stepfunctions.asl.component.state.state_wait.state_wait import StateWait
+from localstack.services.stepfunctions.asl.component.state.state_wait.state_wait import (
+    StateWait,
+)
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.seconds import (
     Seconds,
     SecondsJSONata,
@@ -311,17 +347,23 @@ from localstack.services.stepfunctions.asl.component.state.state_wait.wait_funct
     Timestamp,
     TimestampPath,
 )
-from localstack.services.stepfunctions.asl.parse.intrinsic.intrinsic_parser import IntrinsicParser
+from localstack.services.stepfunctions.asl.parse.intrinsic.intrinsic_parser import (
+    IntrinsicParser,
+)
 from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
 LOG = logging.getLogger(__name__)
 
 
 class Preprocessor(ASLParserVisitor):
-    _query_language_per_scope: list[QueryLanguage] = []
+    def __init__(self):
+        self._query_language_per_scope: list[QueryLanguage] = []
 
     def _get_current_query_language(self) -> QueryLanguage:
         return self._query_language_per_scope[-1]
+
+    def _get_top_level_query_language(self) -> QueryLanguage:
+        return self._query_language_per_scope[0]
 
     def _open_query_language_scope(self, parse_tree: ParseTree) -> None:
         production = is_production(parse_tree)
@@ -347,11 +389,11 @@ class Preprocessor(ASLParserVisitor):
                 query_language = QueryLanguage()
         # Otherwise, check for logical conflicts and add the latest or inherited value to as the next scope.
         else:
-            current_query_language = self._get_current_query_language()
+            top_query_language = self._get_top_level_query_language()
             if query_language is None:
-                query_language = current_query_language
+                query_language = top_query_language
             if (
-                current_query_language.query_language_mode == QueryLanguageMode.JSONata
+                top_query_language.query_language_mode == QueryLanguageMode.JSONata
                 and query_language.query_language_mode == QueryLanguageMode.JSONPath
             ):
                 raise ValueError(
@@ -1507,5 +1549,6 @@ class Preprocessor(ASLParserVisitor):
         intrinsic_function_derivation = ctx.STRINGINTRINSICFUNC().getText()[1:-1]
         function, _ = IntrinsicParser.parse(intrinsic_function_derivation)
         return StringIntrinsicFunction(
-            intrinsic_function_derivation=intrinsic_function_derivation, function=function
+            intrinsic_function_derivation=intrinsic_function_derivation,
+            function=function,
         )

@@ -1,0 +1,24 @@
+{
+  "StartAt": "Map",
+  "QueryLanguage": "JSONPath",
+  "States": {
+    "Map": {
+      "Type": "Map",
+      "QueryLanguage": "JSONata",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Pass",
+        "States": {
+          "Pass": {
+            "QueryLanguage": "JSONPath",
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}
