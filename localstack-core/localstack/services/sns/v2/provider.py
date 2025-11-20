@@ -387,7 +387,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 message=message_ctx,
                 store=store,
                 request_headers=context.request.headers,
-                topic_attributes=topic(topic_arn, context)["attributes"],
+                topic_attributes=topic["attributes"],
             )
             self._publisher.publish_to_topic_subscriber(
                 ctx=publish_ctx,
