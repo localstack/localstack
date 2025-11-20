@@ -1,8 +1,10 @@
+import threading
 import time
+from queue import Queue
 
 import pytest
 
-from localstack.utils.batch_policy import Batcher
+from localstack.utils.batching import AsyncBatcher, Batcher
 
 
 class SimpleItem:
@@ -25,7 +27,7 @@ class TestBatcher:
         assert result == ["item1", "item2"]
         assert batcher.get_current_size() == 0
 
-    def test_add_multple_items(self):
+    def test_add_multiple_items(self):
         batcher = Batcher(max_count=3)
 
         assert not batcher.add(["item1", "item2"])
@@ -188,3 +190,71 @@ class TestBatcher:
 
         batch = batcher.flush()
         assert batch[0]["key"] == "value"
+
+
+class TestAsyncBatcher:
+    def test_basic(self):
+        calls = Queue()
+
+        def collect(_batch: list):
+            calls.put(_batch)
+
+        buffer = AsyncBatcher(collect, max_batch_size=2, max_flush_interval=1000)
+
+        t = threading.Thread(target=buffer.run)
+        t.start()
+
+        try:
+            e1 = "e1"
+            e2 = "e2"
+            e3 = "e3"
+
+            buffer.add(e1)
+            buffer.add(e2)
+
+            c1 = calls.get(timeout=2)
+            assert len(c1) == 2
+
+            buffer.add(e3)  # should flush after close despite flush_size = 2
+        finally:
+            buffer.close()
+
+        c2 = calls.get(timeout=2)
+        assert len(c2) == 1
+
+        assert c1[0] == e1
+        assert c1[1] == e2
+        assert c2[0] == e3
+
+        t.join(10)
+
+    def test_interval(self):
+        calls = Queue()
+
+        def collect(_batch: list):
+            calls.put(_batch)
+
+        buffer = AsyncBatcher(collect, max_batch_size=10, max_flush_interval=1)
+
+        t = threading.Thread(target=buffer.run)
+        t.start()
+
+        try:
+            e1 = "e1"
+            e2 = "e2"
+            e3 = "e3"
+            e4 = "e4"
+
+            buffer.add(e1)
+            buffer.add(e2)
+            c1 = calls.get(timeout=2)
+
+            buffer.add(e3)
+            buffer.add(e4)
+            c2 = calls.get(timeout=2)
+        finally:
+            buffer.close()
+
+        assert len(c1) == 2
+        assert len(c2) == 2
+        t.join(10)
