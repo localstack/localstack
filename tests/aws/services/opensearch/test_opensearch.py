@@ -15,6 +15,8 @@ from opensearchpy.exceptions import AuthorizationException
 from localstack import config
 from localstack.aws.api.opensearch import (
     AdvancedSecurityOptionsInput,
+    AutoTuneDesiredState,
+    AutoTuneState,
     ClusterConfig,
     DomainEndpointOptions,
     EBSOptions,
@@ -194,6 +196,7 @@ class TestOpensearchProvider:
             "$..SnapshotOptions.Options.AutomatedSnapshotStartHour",
             "$..SnapshotOptions.Status.UpdateVersion",
             "$..SoftwareUpdateOptions",
+            "$..Status.UpdateVersion",
             "$..VPCOptions.Status.UpdateVersion",
         ]
     )
@@ -286,6 +289,59 @@ class TestOpensearchProvider:
 
         delete_response = aws_client.opensearch.delete_domain(DomainName=domain_name)
         snapshot.match("delete-response", delete_response["DomainStatus"])
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Status.UpdateVersion",
+        ]
+    )
+    def test_autotune_state_transitions(self, opensearch_create_domain, aws_client, snapshot):
+        domain_name = opensearch_create_domain(
+            AutoTuneOptions={"DesiredState": AutoTuneDesiredState.ENABLED},
+            ClusterConfig={
+                "InstanceType": "m5.large.search",
+                "InstanceCount": 1,
+            },
+            EBSOptions={
+                "EBSEnabled": True,
+                "VolumeType": "gp2",
+                "VolumeSize": 10,
+            },
+        )
+
+        timeout = 25 * 60 if is_aws_cloud() else 2 * 60
+        interval = 10 if is_aws_cloud() else 0.5
+
+        def wait_for_autotune_state(expected_state: AutoTuneState) -> dict:
+            def _state_matches():
+                status = aws_client.opensearch.describe_domain(DomainName=domain_name)
+                autotune = status["DomainStatus"].get("AutoTuneOptions") or {}
+                return autotune.get("State") == expected_state
+
+            assert poll_condition(_state_matches, timeout=timeout, interval=interval)
+            final_status = aws_client.opensearch.describe_domain(DomainName=domain_name)
+            return final_status["DomainStatus"].get("AutoTuneOptions") or {}
+
+        enabled_status = wait_for_autotune_state(AutoTuneState.ENABLED)
+        snapshot.match("autotune_enabled_status", enabled_status)
+
+        aws_client.opensearch.update_domain_config(
+            DomainName=domain_name, AutoTuneOptions={"DesiredState": AutoTuneDesiredState.DISABLED}
+        )
+
+        disabled_status = wait_for_autotune_state(AutoTuneState.DISABLED)
+        snapshot.match("autotune_disabled_status", disabled_status)
+
+        def _config_matches():
+            config = aws_client.opensearch.describe_domain_config(DomainName=domain_name)
+            options = (config["DomainConfig"].get("AutoTuneOptions") or {}).get("Options") or {}
+            return options.get("DesiredState") == AutoTuneDesiredState.DISABLED
+
+        assert poll_condition(_config_matches, timeout=timeout, interval=interval)
+        final_config = aws_client.opensearch.describe_domain_config(DomainName=domain_name)
+        config_autotune = final_config["DomainConfig"].get("AutoTuneOptions") or {}
+        snapshot.match("autotune_domain_config", config_autotune)
 
     @markers.aws.only_localstack
     def test_security_plugin(self, opensearch_create_domain, aws_client):

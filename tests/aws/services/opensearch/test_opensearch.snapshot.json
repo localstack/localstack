@@ -1248,5 +1248,33 @@
         "UpgradeProcessing": false
       }
     }
+  },
+  "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_autotune_state_transitions": {
+    "recorded-date": "19-11-2025, 13:12:26",
+    "recorded-content": {
+      "autotune_enabled_status": {
+        "State": "ENABLED",
+        "UseOffPeakWindow": false
+      },
+      "autotune_disabled_status": {
+        "State": "DISABLED",
+        "UseOffPeakWindow": false
+      },
+      "autotune_domain_config": {
+        "Options": {
+          "DesiredState": "DISABLED",
+          "MaintenanceSchedules": [],
+          "RollbackOnDisable": "NO_ROLLBACK",
+          "UseOffPeakWindow": false
+        },
+        "Status": {
+          "CreationDate": "<datetime>",
+          "PendingDeletion": false,
+          "State": "DISABLED",
+          "UpdateDate": "<datetime>",
+          "UpdateVersion": 15
+        }
+      }
+    }
   }
 }
