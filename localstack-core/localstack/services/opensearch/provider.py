@@ -116,6 +116,11 @@ DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS = DomainEndpointOptions(
     CustomEndpointEnabled=False,
 )
 
+DEFAULT_AUTOTUNE_STATUS = AutoTuneOptionsOutput(
+    State=AutoTuneState.ENABLED,
+    UseOffPeakWindow=False,
+)
+
 
 def cluster_manager() -> ClusterManager:
     global __CLUSTER_MANAGER
@@ -203,6 +208,18 @@ def _status_to_config(status: DomainStatus) -> DomainConfig:
     cluster_cfg = status.get("ClusterConfig") or {}
     default_cfg = DEFAULT_OPENSEARCH_CLUSTER_CONFIG
     config_status = get_domain_config_status()
+    autotune_status = status.get("AutoTuneOptions") or DEFAULT_AUTOTUNE_STATUS
+    state_value = autotune_status.get("State") or AutoTuneState.ENABLED
+    if isinstance(state_value, AutoTuneState):
+        state_value = state_value.value
+    try:
+        desired_state = AutoTuneDesiredState(state_value)
+    except ValueError:
+        desired_state = AutoTuneDesiredState.ENABLED
+    try:
+        current_state = AutoTuneState(state_value)
+    except ValueError:
+        current_state = AutoTuneState.ENABLED
     return DomainConfig(
         AccessPolicies=AccessPoliciesStatus(
             Options=status.get("AccessPolicies", ""),
@@ -275,15 +292,16 @@ def _status_to_config(status: DomainStatus) -> DomainConfig:
         ),
         AutoTuneOptions=AutoTuneOptionsStatus(
             Options=AutoTuneOptions(
-                DesiredState=AutoTuneDesiredState.ENABLED,
+                DesiredState=desired_state,
                 RollbackOnDisable=RollbackOnDisable.NO_ROLLBACK,
                 MaintenanceSchedules=[],
+                UseOffPeakWindow=autotune_status.get("UseOffPeakWindow", False),
             ),
             Status=AutoTuneStatus(
                 CreationDate=config_status.get("CreationDate"),
                 UpdateDate=config_status.get("UpdateDate"),
                 UpdateVersion=config_status.get("UpdateVersion"),
-                State=AutoTuneState.ENABLED,
+                State=current_state,
                 PendingDeletion=config_status.get("PendingDeletion"),
             ),
         ),
@@ -315,11 +333,37 @@ def get_domain_status(
         stored_status.update(request)
         default_cfg.update(request.get("ClusterConfig", {}))
 
+    autotune_status = stored_status.get("AutoTuneOptions") or deepcopy(DEFAULT_AUTOTUNE_STATUS)
+    if request and (request_options := request.get("AutoTuneOptions")):
+        desired_state = request_options.get("DesiredState") or AutoTuneState.ENABLED
+        if isinstance(desired_state, AutoTuneDesiredState):
+            desired_state = desired_state.value
+        try:
+            desired_state = AutoTuneState(desired_state)
+        except ValueError:
+            desired_state = AutoTuneState.ENABLED
+        autotune_status = AutoTuneOptionsOutput(
+            State=desired_state,
+            UseOffPeakWindow=request_options.get(
+                "UseOffPeakWindow", autotune_status.get("UseOffPeakWindow", False)
+            ),
+        )
+    stored_status["AutoTuneOptions"] = autotune_status
+
     domain_processing_status = stored_status.get("DomainProcessingStatus", None)
     processing = stored_status.get("Processing", True)
     if deleted:
         domain_processing_status = DomainProcessingStatusType.Deleting
         processing = True
+
+    autotune_state = autotune_status.get("State") or AutoTuneState.ENABLED
+    if isinstance(autotune_state, AutoTuneState):
+        pass
+    else:
+        try:
+            autotune_state = AutoTuneState(autotune_state)
+        except ValueError:
+            autotune_state = AutoTuneState.ENABLED
 
     new_status = DomainStatus(
         ARN=domain_key.arn,
@@ -377,7 +421,9 @@ def get_domain_status(
         AdvancedSecurityOptions=AdvancedSecurityOptions(
             Enabled=False, InternalUserDatabaseEnabled=False
         ),
-        AutoTuneOptions=AutoTuneOptionsOutput(State=AutoTuneState.ENABLE_IN_PROGRESS),
+        AutoTuneOptions=AutoTuneOptionsOutput(
+            State=autotune_state, UseOffPeakWindow=autotune_status.get("UseOffPeakWindow", False)
+        ),
     )
     return new_status
 
@@ -582,6 +628,24 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
             if domain_status is None:
                 raise ResourceNotFoundException(f"Domain not found: {domain_key.domain_name}")
 
+            if payload.get("AutoTuneOptions"):
+                auto_request = payload["AutoTuneOptions"]
+                desired_state = auto_request.get("DesiredState") or AutoTuneState.ENABLED
+                if isinstance(desired_state, AutoTuneDesiredState):
+                    desired_state = desired_state.value
+                try:
+                    desired_state = AutoTuneState(desired_state)
+                except ValueError:
+                    desired_state = AutoTuneState.ENABLED
+                domain_status["AutoTuneOptions"] = AutoTuneOptionsOutput(
+                    State=desired_state,
+                    UseOffPeakWindow=auto_request.get(
+                        "UseOffPeakWindow",
+                        (domain_status.get("AutoTuneOptions") or DEFAULT_AUTOTUNE_STATUS).get(
+                            "UseOffPeakWindow", False
+                        ),
+                    ),
+                )
             status_update: dict = _update_domain_config_request_to_status(payload)
             domain_status.update(status_update)
 
