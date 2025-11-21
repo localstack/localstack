@@ -2192,7 +2192,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
 
     def _prepare_additional_traits_in_xml(self, root: ETree.Element | None, request_id: str):
         # some tools (Serverless) require a newline after the "<?xml ...>\n" preamble line, e.g., for LocationConstraint
-        if root and not root.tail:
+        if root is not None and not root.tail:
             root.tail = "\n"
 
         root.attrib["xmlns"] = self.XML_NAMESPACE
