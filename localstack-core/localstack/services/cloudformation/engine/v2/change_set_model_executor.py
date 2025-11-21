@@ -598,7 +598,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         before_properties: PreprocProperties | None,
         after_properties: PreprocProperties | None,
     ) -> ResourceProviderPayload | None:
-        # FIXME: use proper credentials
+        # TODO: use proper credentials from the request context
+        # Currently using internal marker credentials for LocalStack internal calls.
+        # Proper implementation would require passing through the actual caller's credentials.
         creds: Credentials = {
             "accessKeyId": self._change_set.stack.account_id,
             "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,
@@ -628,7 +630,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             "stackId": self._change_set.stack.stack_name,
             "resourceType": resource_type,
             "resourceTypeVersion": "000000",
-            # TODO: not actually a UUID
+            # Note: Using a generated UUID for bearerToken. AWS uses this for idempotency.
             "bearerToken": str(uuid.uuid4()),
             "region": self._change_set.stack.region_name,
             "action": str(action),

@@ -244,13 +244,38 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         label_additions = []
 
         for diff in LABEL_DIFFERENTIATORS:
-            non_unique = []
+            # only consider queries that contain a MetricStat block
+            non_unique: list = []
             for query in metric_data_queries:
-                non_unique.append(query["MetricStat"][diff])
-            if len(set(non_unique)) > 1:
+                metric_stat = query.get("MetricStat") or {}
+                non_unique.append(metric_stat.get(diff))
+            # exclude None values when checking uniqueness
+            filtered = [v for v in non_unique if v is not None]
+            if len(set(filtered)) > 1:
                 label_additions.append(diff)
 
         for query in metric_data_queries:
+            metric_stat = query.get("MetricStat")
+            # If the query uses Expression (metric math), we don't support it yet. Return an empty result with a message.
+            if not metric_stat and query.get("Expression"):
+                messages.append(
+                    {
+                        "Code": "ExpressionNotSupported",
+                        "Value": "Metric math expressions are not yet supported in LocalStack get_metric_data; returning empty result.",
+                    }
+                )
+
+                metric_data_result = {
+                    "Id": query.get("Id"),
+                    "Label": query.get("Label") or query.get("Id") or "Expression",
+                    "StatusCode": "Complete",
+                    "Timestamps": [],
+                    "Values": [],
+                }
+                results.append(MetricDataResult(**metric_data_result))
+                continue
+
+            # Default path for MetricStat queries
             query_result = self.cloudwatch_database.get_metric_data_stat(
                 account_id=context.account_id,
                 region=context.region,
@@ -262,10 +287,16 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             if query_result.get("messages"):
                 messages.extend(query_result.get("messages"))
 
-            label = query.get("Label") or f"{query['MetricStat']['Metric']['MetricName']}"
-            # TODO: does this happen even if a label is set in the query?
+            # build a safe label
+            if metric_stat and metric_stat.get("Metric"):
+                label = query.get("Label") or f"{metric_stat['Metric'].get('MetricName')}"
+            else:
+                label = query.get("Label") or query.get("Id") or "Metric"
+            # add differentiators only if present
             for label_addition in label_additions:
-                label = f"{label} {query['MetricStat'][label_addition]}"
+                add_val = (metric_stat or {}).get(label_addition)
+                if add_val is not None:
+                    label = f"{label} {add_val}"
 
             timestamps = query_result.get("timestamps", {})
             values = query_result.get("values", {})

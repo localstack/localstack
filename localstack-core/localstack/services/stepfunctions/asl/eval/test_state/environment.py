@@ -31,6 +31,7 @@ class TestStateEnvironment(Environment):
         event_history_context: EventHistoryContext,
         activity_store: dict[Arn, Activity],
         cloud_watch_logging_session: CloudWatchLoggingSession | None = None,
+        variable_store: VariableStore | None = None,
     ):
         super().__init__(
             aws_execution_details=aws_execution_details,
@@ -39,9 +40,11 @@ class TestStateEnvironment(Environment):
             event_history_context=event_history_context,
             cloud_watch_logging_session=cloud_watch_logging_session,
             activity_store=activity_store,
+            variable_store=variable_store,
         )
         self.inspection_data = InspectionData()
 
+    @classmethod
     def as_frame_of(
         cls,
         env: TestStateEnvironment,
@@ -51,6 +54,7 @@ class TestStateEnvironment(Environment):
         frame.inspection_data = env.inspection_data
         return frame
 
+    @classmethod
     def as_inner_frame_of(
         cls,
         env: TestStateEnvironment,

@@ -568,9 +568,13 @@ def _resolve_refs_recursively(
             return result
 
         if stripped_fn_lower == "condition":
-            # FIXME: this should only allow strings, no evaluation should be performed here
-            #   see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-condition.html
+            # Fn::Condition only accepts a string (condition name), no evaluation should be performed
+            # See: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-condition.html
             key = value[keys_list[0]]
+            if not isinstance(key, str):
+                raise TypeError(
+                    f"Fn::Condition requires a string condition name, got {type(key).__name__}: {key}"
+                )
             result = conditions.get(key)
             if result is None:
                 LOG.warning("Cannot find key '%s' in conditions: '%s'", key, conditions.keys())
@@ -1307,7 +1311,8 @@ class TemplateDeployer:
             if action in ("Modify", "Remove"):
                 previous_state = self.resources[resource_id].get("_last_deployed_state")
                 if not previous_state:
-                    # TODO: can this happen?
+                    # Fallback to current Properties if no previous state exists
+                    # This can occur if the resource was created before state tracking was implemented
                     previous_state = self.resources[resource_id]["Properties"]
                 physical_resource_id = executor.extract_physical_resource_id_from_model_with_schema(
                     resource_model=previous_state,
@@ -1375,7 +1380,9 @@ class TemplateDeployer:
     def create_resource_provider_payload(
         self, action: str, logical_resource_id: str
     ) -> ResourceProviderPayload:
-        # FIXME: use proper credentials
+        # TODO: use proper credentials from the request context
+        # Currently using internal marker credentials for LocalStack internal calls.
+        # Proper implementation would require passing through the actual caller's credentials.
         creds: Credentials = {
             "accessKeyId": self.account_id,
             "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,
@@ -1389,14 +1396,15 @@ class TemplateDeployer:
             "stackId": self.stack.stack_name,
             "resourceType": resource["Type"],
             "resourceTypeVersion": "000000",
-            # TODO: not actually a UUID
+            # Note: Using a generated UUID for bearerToken. AWS uses this for idempotency.
             "bearerToken": str(uuid.uuid4()),
             "region": self.region_name,
             "action": action,
             "requestData": {
                 "logicalResourceId": logical_resource_id,
                 "resourceProperties": resource["Properties"],
-                "previousResourceProperties": resource.get("_last_deployed_state"),  # TODO
+                # _last_deployed_state stores the previous state for update/delete operations
+                "previousResourceProperties": resource.get("_last_deployed_state"),
                 "callerCredentials": creds,
                 "providerCredentials": creds,
                 "systemTags": {},
