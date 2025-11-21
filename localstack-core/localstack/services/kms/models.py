@@ -20,7 +20,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.padding import PSS, PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.api.kms import (
@@ -442,17 +441,15 @@ class KmsKey:
 
     def derive_shared_secret(self, public_key: bytes) -> bytes:
         key_spec = self.metadata.get("KeySpec")
-        match key_spec:
-            case KeySpec.ECC_NIST_P256 | KeySpec.ECC_SECG_P256K1:
-                algorithm = hashes.SHA256()
-            case KeySpec.ECC_NIST_P384:
-                algorithm = hashes.SHA384()
-            case KeySpec.ECC_NIST_P521:
-                algorithm = hashes.SHA512()
-            case _:
-                raise InvalidKeyUsageException(
-                    f"{self.metadata['Arn']} key usage is {self.metadata['KeyUsage']} which is not valid for DeriveSharedSecret."
-                )
+        if key_spec not in (
+            KeySpec.ECC_NIST_P256,
+            KeySpec.ECC_SECG_P256K1,
+            KeySpec.ECC_NIST_P384,
+            KeySpec.ECC_NIST_P521,
+        ):
+            raise InvalidKeyUsageException(
+                f"{self.metadata['Arn']} key usage is {self.metadata['KeyUsage']} which is not valid for DeriveSharedSecret."
+            )
 
         # Deserialize public key from DER encoded data to EllipticCurvePublicKey.
         try:
@@ -460,14 +457,7 @@ class KmsKey:
         except (UnsupportedAlgorithm, ValueError):
             raise ValidationException("")
         shared_secret = self.crypto_key.key.exchange(ec.ECDH(), pub_key)
-        # Perform shared secret derivation.
-        return HKDF(
-            algorithm=algorithm,
-            salt=None,
-            info=b"",
-            length=algorithm.digest_size,
-            backend=default_backend(),
-        ).derive(shared_secret)
+        return shared_secret
 
     # This method gets called when a key is replicated to another region. It's meant to populate the required metadata
     # fields in a new replica key.

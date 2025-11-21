@@ -2653,6 +2653,41 @@ class TestKMS:
         snapshot.match("response-invalid-public-key", e.value.response)
 
     @markers.aws.validated
+    def test_derive_shared_secret_matches_openssl(self, kms_create_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("SharedSecret", reference_replacement=False)
+        )
+
+        create_key = kms_create_key(KeySpec="ECC_NIST_P256", KeyUsage="KEY_AGREEMENT")
+        key_id = create_key["KeyId"]
+
+        public_key = aws_client.kms.get_public_key(KeyId=key_id)
+        public_key_der = public_key["PublicKey"]
+
+        local_private_key = ec.generate_private_key(ec.SECP256R1())
+        local_public_key = local_private_key.public_key()
+
+        local_public_key_der = local_public_key.public_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        peer_public_key = load_der_public_key(public_key_der)
+        local_shared_secret = local_private_key.exchange(ec.ECDH(), peer_public_key)
+
+        derived_shared_secret_resp = aws_client.kms.derive_shared_secret(
+            KeyId=key_id,
+            KeyAgreementAlgorithm="ECDH",
+            PublicKey=local_public_key_der,
+        )
+        shared_secret = derived_shared_secret_resp["SharedSecret"]
+
+        assert shared_secret == local_shared_secret, (
+            f"KMS secret length: {len(shared_secret)}, OpenSSL secret length: {len(local_shared_secret)}"
+        )
+
+        snapshot.match("derived-shared-key-resp", derived_shared_secret_resp)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..CurrentKeyMaterialId"])
     def test_describe_with_alias_arn(self, kms_create_key, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("CurrentKeyMaterialId"))

@@ -3642,5 +3642,20 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_derive_shared_secret_matches_openssl": {
+    "recorded-date": "14-11-2025, 06:17:43",
+    "recorded-content": {
+      "derived-shared-key-resp": {
+        "KeyAgreementAlgorithm": "ECDH",
+        "KeyId": "<key-id:1>",
+        "KeyOrigin": "AWS_KMS",
+        "SharedSecret": "shared-secret",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
