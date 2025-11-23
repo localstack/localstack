@@ -63,7 +63,6 @@ from localstack.aws.api.stepfunctions import (
     Publish,
     PublishStateMachineVersionOutput,
     ResourceNotFound,
-    RevealSecrets,
     ReverseOrder,
     RevisionId,
     RoutingConfigurationList,
@@ -89,6 +88,7 @@ from localstack.aws.api.stepfunctions import (
     TaskDoesNotExist,
     TaskTimedOut,
     TaskToken,
+    TestStateInput,
     TestStateOutput,
     ToleratedFailureCount,
     ToleratedFailurePercentage,
@@ -1483,18 +1483,10 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         raise ResourceNotFound()
 
     def test_state(
-        self,
-        context: RequestContext,
-        definition: Definition,
-        role_arn: Arn = None,
-        input: SensitiveData = None,
-        inspection_level: InspectionLevel = None,
-        reveal_secrets: RevealSecrets = None,
-        variables: SensitiveData = None,
-        **kwargs,
+        self, context: RequestContext, request: TestStateInput, **kwargs
     ) -> TestStateOutput:
         StepFunctionsProvider._validate_definition(
-            definition=definition, static_analysers=[TestStateStaticAnalyser()]
+            definition=request["definition"], static_analysers=[TestStateStaticAnalyser()]
         )
 
         name: Name | None = f"TestState-{short_uid()}"
@@ -1504,15 +1496,15 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         state_machine = TestStateMachine(
             name=name,
             arn=arn,
-            role_arn=role_arn,
-            definition=definition,
+            role_arn=request["roleArn"],
+            definition=request["definition"],
         )
         exec_arn = stepfunctions_standard_execution_arn(state_machine.arn, name)
 
-        input_json = json.loads(input)
+        input_json = json.loads(request["input"])
         execution = TestStateExecution(
             name=name,
-            role_arn=role_arn,
+            role_arn=request["roleArn"],
             exec_arn=exec_arn,
             account_id=context.account_id,
             region_name=context.region,
@@ -1524,7 +1516,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         execution.start()
 
         test_state_output = execution.to_test_state_output(
-            inspection_level=inspection_level or InspectionLevel.INFO
+            inspection_level=request.get("inspectionLevel", InspectionLevel.INFO)
         )
 
         return test_state_output
