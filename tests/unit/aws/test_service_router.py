@@ -101,6 +101,7 @@ def _collect_operations() -> tuple[ServiceModel, OperationModel]:
                     "sagemaker-edge",
                     "sagemaker-featurestore-runtime",
                     "sagemaker-metrics",
+                    "signin",
                     "sms-voice",
                     "sso",
                     "sso-oidc",
