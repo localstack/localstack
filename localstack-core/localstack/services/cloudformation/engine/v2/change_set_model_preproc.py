@@ -677,6 +677,13 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             node_condition = self._get_node_condition_if_exists(
                 condition_name=condition_delta.before
             )
+            if is_nothing(node_condition):
+                # TODO: I don't think this is a possible state since for us to be evaluating the before state,
+                #  we must have successfully deployed the stack and as such this case was not reached before
+                raise ValidationError(
+                    f"Template error: unresolved condition dependency {condition_delta.before} in Fn::If"
+                )
+
             condition_value = self.visit(node_condition).before
             if condition_value:
                 arg_delta = self.visit(node_intrinsic_function.arguments.array[1])
@@ -688,6 +695,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             node_condition = self._get_node_condition_if_exists(
                 condition_name=condition_delta.after
             )
+            if is_nothing(node_condition):
+                raise ValidationError(
+                    f"Template error: unresolved condition dependency {condition_delta.after} in Fn::If"
+                )
+
             condition_value = self.visit(node_condition).after
             if condition_value:
                 arg_delta = self.visit(node_intrinsic_function.arguments.array[1])

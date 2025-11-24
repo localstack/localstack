@@ -10,5 +10,14 @@
   },
   "tests/aws/services/cloudformation/test_change_set_conditions.py::TestChangeSetConditions::test_condition_update_removes_resource": {
     "last_validated_date": "2025-04-15T13:51:50+00:00"
+  },
+  "tests/aws/services/cloudformation/test_change_set_conditions.py::TestChangeSetConditions::test_missing_condition": {
+    "last_validated_date": "2025-10-08T15:58:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.96,
+      "call": 0.3,
+      "teardown": 0.0,
+      "total": 1.26
+    }
   }
 }

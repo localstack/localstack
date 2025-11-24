@@ -1532,5 +1532,21 @@
         "Tags": []
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_change_set_conditions.py::TestChangeSetConditions::test_missing_condition": {
+    "recorded-date": "08-10-2025, 15:58:18",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: unresolved condition dependency MissingCondition in Fn::If",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
