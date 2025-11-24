@@ -15,11 +15,14 @@ ExcludeLowercaseType = bool
 ExcludeNumbersType = bool
 ExcludePunctuationType = bool
 ExcludeUppercaseType = bool
+ExternalSecretRotationMetadataItemKeyType = str
+ExternalSecretRotationMetadataItemValueType = str
 FilterValueStringType = str
 IncludeSpaceType = bool
 KmsKeyIdType = str
 MaxResultsBatchType = int
 MaxResultsType = int
+MedeaTypeType = str
 NameType = str
 NextTokenType = str
 NonEmptyResourcePolicyType = str
@@ -27,6 +30,7 @@ OwningServiceType = str
 RandomPasswordType = str
 RegionType = str
 RequireEachIncludedTypeType = bool
+RoleARNType = str
 RotationEnabledType = bool
 RotationLambdaARNType = str
 RotationTokenType = str
@@ -222,6 +226,7 @@ class CreateSecretRequest(ServiceRequest):
     Tags: TagListType | None
     AddReplicaRegions: AddReplicaRegionListType | None
     ForceOverwriteReplicaSecret: BooleanType | None
+    Type: MedeaTypeType | None
 
 
 LastAccessedDateType = datetime
@@ -286,6 +291,14 @@ LastChangedDateType = datetime
 LastRotatedDateType = datetime
 
 
+class ExternalSecretRotationMetadataItem(TypedDict, total=False):
+    Key: ExternalSecretRotationMetadataItemKeyType | None
+    Value: ExternalSecretRotationMetadataItemValueType | None
+
+
+ExternalSecretRotationMetadataType = list[ExternalSecretRotationMetadataItem]
+
+
 class RotationRulesType(TypedDict, total=False):
     AutomaticallyAfterDays: AutomaticallyRotateAfterDaysType | None
     Duration: DurationType | None
@@ -295,11 +308,14 @@ class RotationRulesType(TypedDict, total=False):
 class DescribeSecretResponse(TypedDict, total=False):
     ARN: SecretARNType | None
     Name: SecretNameType | None
+    Type: MedeaTypeType | None
     Description: DescriptionType | None
     KmsKeyId: KmsKeyIdType | None
     RotationEnabled: RotationEnabledType | None
     RotationLambdaARN: RotationLambdaARNType | None
     RotationRules: RotationRulesType | None
+    ExternalSecretRotationMetadata: ExternalSecretRotationMetadataType | None
+    ExternalSecretRotationRoleArn: RoleARNType | None
     LastRotatedDate: LastRotatedDateType | None
     LastChangedDate: LastChangedDateType | None
     LastAccessedDate: LastAccessedDateType | None
@@ -396,11 +412,14 @@ class ListSecretsRequest(ServiceRequest):
 class SecretListEntry(TypedDict, total=False):
     ARN: SecretARNType | None
     Name: SecretNameType | None
+    Type: MedeaTypeType | None
     Description: DescriptionType | None
     KmsKeyId: KmsKeyIdType | None
     RotationEnabled: RotationEnabledType | None
     RotationLambdaARN: RotationLambdaARNType | None
     RotationRules: RotationRulesType | None
+    ExternalSecretRotationMetadata: ExternalSecretRotationMetadataType | None
+    ExternalSecretRotationRoleArn: RoleARNType | None
     LastRotatedDate: LastRotatedDateType | None
     LastChangedDate: LastChangedDateType | None
     LastAccessedDate: LastAccessedDateType | None
@@ -486,6 +505,8 @@ class RotateSecretRequest(ServiceRequest):
     ClientRequestToken: ClientRequestTokenType | None
     RotationLambdaARN: RotationLambdaARNType | None
     RotationRules: RotationRulesType | None
+    ExternalSecretRotationMetadata: ExternalSecretRotationMetadataType | None
+    ExternalSecretRotationRoleArn: RoleARNType | None
     RotateImmediately: BooleanType | None
 
 
@@ -523,6 +544,7 @@ class UpdateSecretRequest(ServiceRequest):
     KmsKeyId: KmsKeyIdType | None
     SecretBinary: SecretBinaryType | None
     SecretString: SecretStringType | None
+    Type: MedeaTypeType | None
 
 
 class UpdateSecretResponse(TypedDict, total=False):
@@ -583,20 +605,9 @@ class SecretsmanagerApi:
     ) -> CancelRotateSecretResponse:
         raise NotImplementedError
 
-    @handler("CreateSecret")
+    @handler("CreateSecret", expand=False)
     def create_secret(
-        self,
-        context: RequestContext,
-        name: NameType,
-        client_request_token: ClientRequestTokenType | None = None,
-        description: DescriptionType | None = None,
-        kms_key_id: KmsKeyIdType | None = None,
-        secret_binary: SecretBinaryType | None = None,
-        secret_string: SecretStringType | None = None,
-        tags: TagListType | None = None,
-        add_replica_regions: AddReplicaRegionListType | None = None,
-        force_overwrite_replica_secret: BooleanType | None = None,
-        **kwargs,
+        self, context: RequestContext, request: CreateSecretRequest, **kwargs
     ) -> CreateSecretResponse:
         raise NotImplementedError
 
@@ -741,6 +752,8 @@ class SecretsmanagerApi:
         client_request_token: ClientRequestTokenType | None = None,
         rotation_lambda_arn: RotationLambdaARNType | None = None,
         rotation_rules: RotationRulesType | None = None,
+        external_secret_rotation_metadata: ExternalSecretRotationMetadataType | None = None,
+        external_secret_rotation_role_arn: RoleARNType | None = None,
         rotate_immediately: BooleanType | None = None,
         **kwargs,
     ) -> RotateSecretResponse:
@@ -764,17 +777,9 @@ class SecretsmanagerApi:
     ) -> None:
         raise NotImplementedError
 
-    @handler("UpdateSecret")
+    @handler("UpdateSecret", expand=False)
     def update_secret(
-        self,
-        context: RequestContext,
-        secret_id: SecretIdType,
-        client_request_token: ClientRequestTokenType | None = None,
-        description: DescriptionType | None = None,
-        kms_key_id: KmsKeyIdType | None = None,
-        secret_binary: SecretBinaryType | None = None,
-        secret_string: SecretStringType | None = None,
-        **kwargs,
+        self, context: RequestContext, request: UpdateSecretRequest, **kwargs
     ) -> UpdateSecretResponse:
         raise NotImplementedError
 

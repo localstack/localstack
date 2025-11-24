@@ -66,6 +66,7 @@ Flatten = bool
 Force = bool
 ForceUpdate = bool
 FromKey = str
+GetScheduledQueryHistoryMaxResults = int
 GrokMatch = str
 IncludeLinkedAccounts = bool
 InferredTokenName = str
@@ -83,6 +84,7 @@ ListAnomaliesLimit = int
 ListLimit = int
 ListLogAnomalyDetectorsLimit = int
 ListLogGroupsForQueryMaxResults = int
+ListScheduledQueriesMaxResults = int
 Locale = str
 LogEventIndex = int
 LogGroupArn = str
@@ -95,6 +97,7 @@ LogRecordPointer = str
 LogStreamName = str
 LogStreamSearchedCompletely = bool
 LogType = str
+MappingVersion = str
 MatchPattern = str
 Message = str
 MetricName = str
@@ -129,6 +132,12 @@ RequestId = str
 ResourceIdentifier = str
 ResourceType = str
 RoleArn = str
+S3Uri = str
+ScheduleExpression = str
+ScheduleTimezone = str
+ScheduledQueryDescription = str
+ScheduledQueryIdentifier = str
+ScheduledQueryName = str
 SelectionCriteria = str
 SequenceToken = str
 Service = str
@@ -138,6 +147,7 @@ SourceTimezone = str
 SplitStringDelimiter = str
 StartFromHead = bool
 StatsValue = float
+String = str
 Success = bool
 SystemField = str
 TagKey = str
@@ -155,6 +165,13 @@ Unmask = bool
 Value = str
 ValueKey = str
 WithKey = str
+
+
+class ActionStatus(StrEnum):
+    IN_PROGRESS = "IN_PROGRESS"
+    CLIENT_ERROR = "CLIENT_ERROR"
+    FAILED = "FAILED"
+    COMPLETE = "COMPLETE"
 
 
 class AnomalyDetectorStatus(StrEnum):
@@ -212,6 +229,14 @@ class EventSource(StrEnum):
     AWSWAF = "AWSWAF"
 
 
+class ExecutionStatus(StrEnum):
+    Running = "Running"
+    InvalidQuery = "InvalidQuery"
+    Complete = "Complete"
+    Failed = "Failed"
+    Timeout = "Timeout"
+
+
 class ExportTaskStatusCode(StrEnum):
     CANCELLED = "CANCELLED"
     COMPLETED = "COMPLETED"
@@ -253,6 +278,7 @@ class LogGroupClass(StrEnum):
 
 class OCSFVersion(StrEnum):
     V1_1 = "V1.1"
+    V1_5 = "V1.5"
 
 
 class OpenSearchResourceStatusType(StrEnum):
@@ -301,6 +327,15 @@ class QueryStatus(StrEnum):
     Cancelled = "Cancelled"
     Timeout = "Timeout"
     Unknown = "Unknown"
+
+
+class ScheduledQueryDestinationType(StrEnum):
+    S3 = "S3"
+
+
+class ScheduledQueryState(StrEnum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
 
 
 class Scope(StrEnum):
@@ -383,6 +418,12 @@ class DataAlreadyAcceptedException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     expectedSequenceToken: SequenceToken | None
+
+
+class InternalServerException(ServiceException):
+    code: str = "InternalServerException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InternalStreamingException(ServiceException):
@@ -747,6 +788,41 @@ class CreateLogStreamRequest(ServiceRequest):
     logStreamName: LogStreamName
 
 
+class S3Configuration(TypedDict, total=False):
+    destinationIdentifier: S3Uri
+    roleArn: RoleArn
+
+
+class DestinationConfiguration(TypedDict, total=False):
+    s3Configuration: S3Configuration
+
+
+StartTimeOffset = int
+ScheduledQueryLogGroupIdentifiers = list[LogGroupIdentifier]
+
+
+class CreateScheduledQueryRequest(ServiceRequest):
+    name: ScheduledQueryName
+    description: ScheduledQueryDescription | None
+    queryLanguage: QueryLanguage
+    queryString: QueryString
+    logGroupIdentifiers: ScheduledQueryLogGroupIdentifiers | None
+    scheduleExpression: ScheduleExpression
+    timezone: ScheduleTimezone | None
+    startTimeOffset: StartTimeOffset | None
+    destinationConfiguration: DestinationConfiguration | None
+    scheduleStartTime: Timestamp | None
+    scheduleEndTime: Timestamp | None
+    executionRoleArn: RoleArn
+    state: ScheduledQueryState | None
+    tags: Tags | None
+
+
+class CreateScheduledQueryResponse(TypedDict, total=False):
+    scheduledQueryArn: Arn | None
+    state: ScheduledQueryState | None
+
+
 DashboardViewerPrincipals = list[Arn]
 Data = bytes
 MatchPatterns = list[MatchPattern]
@@ -849,6 +925,14 @@ class DeleteResourcePolicyRequest(ServiceRequest):
 
 class DeleteRetentionPolicyRequest(ServiceRequest):
     logGroupName: LogGroupName
+
+
+class DeleteScheduledQueryRequest(ServiceRequest):
+    identifier: ScheduledQueryIdentifier
+
+
+class DeleteScheduledQueryResponse(TypedDict, total=False):
+    pass
 
 
 class DeleteSubscriptionFilterRequest(ServiceRequest):
@@ -1296,6 +1380,7 @@ class Entity(TypedDict, total=False):
 
 
 EventNumber = int
+ExecutionStatusList = list[ExecutionStatus]
 ExtractedValues = dict[Token, Value]
 
 
@@ -1582,6 +1667,69 @@ class GetQueryResultsResponse(TypedDict, total=False):
     encryptionKey: EncryptionKey | None
 
 
+class GetScheduledQueryHistoryRequest(ServiceRequest):
+    identifier: ScheduledQueryIdentifier
+    startTime: Timestamp
+    endTime: Timestamp
+    executionStatuses: ExecutionStatusList | None
+    maxResults: GetScheduledQueryHistoryMaxResults | None
+    nextToken: NextToken | None
+
+
+class ScheduledQueryDestination(TypedDict, total=False):
+    destinationType: ScheduledQueryDestinationType | None
+    destinationIdentifier: String | None
+    status: ActionStatus | None
+    processedIdentifier: String | None
+    errorMessage: String | None
+
+
+ScheduledQueryDestinationList = list[ScheduledQueryDestination]
+
+
+class TriggerHistoryRecord(TypedDict, total=False):
+    queryId: QueryId | None
+    executionStatus: ExecutionStatus | None
+    triggeredTimestamp: Timestamp | None
+    errorMessage: String | None
+    destinations: ScheduledQueryDestinationList | None
+
+
+TriggerHistoryRecordList = list[TriggerHistoryRecord]
+
+
+class GetScheduledQueryHistoryResponse(TypedDict, total=False):
+    name: ScheduledQueryName | None
+    scheduledQueryArn: Arn | None
+    triggerHistory: TriggerHistoryRecordList | None
+    nextToken: NextToken | None
+
+
+class GetScheduledQueryRequest(ServiceRequest):
+    identifier: ScheduledQueryIdentifier
+
+
+class GetScheduledQueryResponse(TypedDict, total=False):
+    scheduledQueryArn: Arn | None
+    name: ScheduledQueryName | None
+    description: ScheduledQueryDescription | None
+    queryLanguage: QueryLanguage | None
+    queryString: QueryString | None
+    logGroupIdentifiers: ScheduledQueryLogGroupIdentifiers | None
+    scheduleExpression: ScheduleExpression | None
+    timezone: ScheduleTimezone | None
+    startTimeOffset: StartTimeOffset | None
+    destinationConfiguration: DestinationConfiguration | None
+    state: ScheduledQueryState | None
+    lastTriggeredTime: Timestamp | None
+    lastExecutionStatus: ExecutionStatus | None
+    scheduleStartTime: Timestamp | None
+    scheduleEndTime: Timestamp | None
+    executionRoleArn: RoleArn | None
+    creationTime: Timestamp | None
+    lastUpdatedTime: Timestamp | None
+
+
 class GetTransformerRequest(ServiceRequest):
     logGroupIdentifier: LogGroupIdentifier
 
@@ -1669,6 +1817,7 @@ class ParseToOCSF(TypedDict, total=False):
     source: Source | None
     eventSource: EventSource
     ocsfVersion: OCSFVersion
+    mappingVersion: MappingVersion | None
 
 
 class ParseRoute53(TypedDict, total=False):
@@ -1849,6 +1998,33 @@ LogGroupSummaries = list[LogGroupSummary]
 class ListLogGroupsResponse(TypedDict, total=False):
     logGroups: LogGroupSummaries | None
     nextToken: NextToken | None
+
+
+class ListScheduledQueriesRequest(ServiceRequest):
+    maxResults: ListScheduledQueriesMaxResults | None
+    nextToken: NextToken | None
+    state: ScheduledQueryState | None
+
+
+class ScheduledQuerySummary(TypedDict, total=False):
+    scheduledQueryArn: Arn | None
+    name: ScheduledQueryName | None
+    state: ScheduledQueryState | None
+    lastTriggeredTime: Timestamp | None
+    lastExecutionStatus: ExecutionStatus | None
+    scheduleExpression: ScheduleExpression | None
+    timezone: ScheduleTimezone | None
+    destinationConfiguration: DestinationConfiguration | None
+    creationTime: Timestamp | None
+    lastUpdatedTime: Timestamp | None
+
+
+ScheduledQuerySummaryList = list[ScheduledQuerySummary]
+
+
+class ListScheduledQueriesResponse(TypedDict, total=False):
+    nextToken: NextToken | None
+    scheduledQueries: ScheduledQuerySummaryList | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
@@ -2219,6 +2395,43 @@ class UpdateLogAnomalyDetectorRequest(ServiceRequest):
     enabled: Boolean
 
 
+class UpdateScheduledQueryRequest(ServiceRequest):
+    identifier: ScheduledQueryIdentifier
+    description: ScheduledQueryDescription | None
+    queryLanguage: QueryLanguage
+    queryString: QueryString
+    logGroupIdentifiers: ScheduledQueryLogGroupIdentifiers | None
+    scheduleExpression: ScheduleExpression
+    timezone: ScheduleTimezone | None
+    startTimeOffset: StartTimeOffset | None
+    destinationConfiguration: DestinationConfiguration | None
+    scheduleStartTime: Timestamp | None
+    scheduleEndTime: Timestamp | None
+    executionRoleArn: RoleArn
+    state: ScheduledQueryState | None
+
+
+class UpdateScheduledQueryResponse(TypedDict, total=False):
+    scheduledQueryArn: Arn | None
+    name: ScheduledQueryName | None
+    description: ScheduledQueryDescription | None
+    queryLanguage: QueryLanguage | None
+    queryString: QueryString | None
+    logGroupIdentifiers: ScheduledQueryLogGroupIdentifiers | None
+    scheduleExpression: ScheduleExpression | None
+    timezone: ScheduleTimezone | None
+    startTimeOffset: StartTimeOffset | None
+    destinationConfiguration: DestinationConfiguration | None
+    state: ScheduledQueryState | None
+    lastTriggeredTime: Timestamp | None
+    lastExecutionStatus: ExecutionStatus | None
+    scheduleStartTime: Timestamp | None
+    scheduleEndTime: Timestamp | None
+    executionRoleArn: RoleArn | None
+    creationTime: Timestamp | None
+    lastUpdatedTime: Timestamp | None
+
+
 class LogsApi:
     service: str = "logs"
     version: str = "2014-03-28"
@@ -2293,6 +2506,28 @@ class LogsApi:
         log_stream_name: LogStreamName,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("CreateScheduledQuery")
+    def create_scheduled_query(
+        self,
+        context: RequestContext,
+        name: ScheduledQueryName,
+        query_language: QueryLanguage,
+        query_string: QueryString,
+        schedule_expression: ScheduleExpression,
+        execution_role_arn: RoleArn,
+        description: ScheduledQueryDescription | None = None,
+        log_group_identifiers: ScheduledQueryLogGroupIdentifiers | None = None,
+        timezone: ScheduleTimezone | None = None,
+        start_time_offset: StartTimeOffset | None = None,
+        destination_configuration: DestinationConfiguration | None = None,
+        schedule_start_time: Timestamp | None = None,
+        schedule_end_time: Timestamp | None = None,
+        state: ScheduledQueryState | None = None,
+        tags: Tags | None = None,
+        **kwargs,
+    ) -> CreateScheduledQueryResponse:
         raise NotImplementedError
 
     @handler("DeleteAccountPolicy")
@@ -2404,6 +2639,12 @@ class LogsApi:
     def delete_retention_policy(
         self, context: RequestContext, log_group_name: LogGroupName, **kwargs
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteScheduledQuery")
+    def delete_scheduled_query(
+        self, context: RequestContext, identifier: ScheduledQueryIdentifier, **kwargs
+    ) -> DeleteScheduledQueryResponse:
         raise NotImplementedError
 
     @handler("DeleteSubscriptionFilter")
@@ -2740,6 +2981,26 @@ class LogsApi:
     ) -> GetQueryResultsResponse:
         raise NotImplementedError
 
+    @handler("GetScheduledQuery")
+    def get_scheduled_query(
+        self, context: RequestContext, identifier: ScheduledQueryIdentifier, **kwargs
+    ) -> GetScheduledQueryResponse:
+        raise NotImplementedError
+
+    @handler("GetScheduledQueryHistory")
+    def get_scheduled_query_history(
+        self,
+        context: RequestContext,
+        identifier: ScheduledQueryIdentifier,
+        start_time: Timestamp,
+        end_time: Timestamp,
+        execution_statuses: ExecutionStatusList | None = None,
+        max_results: GetScheduledQueryHistoryMaxResults | None = None,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> GetScheduledQueryHistoryResponse:
+        raise NotImplementedError
+
     @handler("GetTransformer")
     def get_transformer(
         self, context: RequestContext, log_group_identifier: LogGroupIdentifier, **kwargs
@@ -2803,6 +3064,17 @@ class LogsApi:
         max_results: ListLogGroupsForQueryMaxResults | None = None,
         **kwargs,
     ) -> ListLogGroupsForQueryResponse:
+        raise NotImplementedError
+
+    @handler("ListScheduledQueries")
+    def list_scheduled_queries(
+        self,
+        context: RequestContext,
+        max_results: ListScheduledQueriesMaxResults | None = None,
+        next_token: NextToken | None = None,
+        state: ScheduledQueryState | None = None,
+        **kwargs,
+    ) -> ListScheduledQueriesResponse:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
@@ -3127,4 +3399,25 @@ class LogsApi:
         anomaly_visibility_time: AnomalyVisibilityTime | None = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateScheduledQuery")
+    def update_scheduled_query(
+        self,
+        context: RequestContext,
+        identifier: ScheduledQueryIdentifier,
+        query_language: QueryLanguage,
+        query_string: QueryString,
+        schedule_expression: ScheduleExpression,
+        execution_role_arn: RoleArn,
+        description: ScheduledQueryDescription | None = None,
+        log_group_identifiers: ScheduledQueryLogGroupIdentifiers | None = None,
+        timezone: ScheduleTimezone | None = None,
+        start_time_offset: StartTimeOffset | None = None,
+        destination_configuration: DestinationConfiguration | None = None,
+        schedule_start_time: Timestamp | None = None,
+        schedule_end_time: Timestamp | None = None,
+        state: ScheduledQueryState | None = None,
+        **kwargs,
+    ) -> UpdateScheduledQueryResponse:
         raise NotImplementedError

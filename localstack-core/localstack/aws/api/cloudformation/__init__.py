@@ -43,6 +43,7 @@ ExecutionRoleName = str
 ExecutionStatusReason = str
 ExportName = str
 ExportValue = str
+FailedEventsFilter = bool
 FailedStackInstancesCount = int
 FailureToleranceCount = int
 FailureTolerancePercentage = int
@@ -86,6 +87,7 @@ NextToken = str
 NoEcho = bool
 NotificationARN = str
 NumberOfResources = int
+OperationId = str
 OperationResultFilterValues = str
 OptionalSecureUrl = str
 OrganizationalUnitId = str
@@ -96,6 +98,7 @@ ParameterType = str
 ParameterValue = str
 PercentageCompleted = float
 PhysicalResourceId = str
+PreviousDeploymentContext = str
 PrivateTypeArn = str
 Properties = str
 PropertyDescription = str
@@ -114,6 +117,8 @@ RemediationMessageRemediationMessage = str
 RemediationMessageStatusMessage = str
 RequestToken = str
 RequiredProperty = bool
+ResourceDriftActualValue = str
+ResourceDriftPreviousValue = str
 ResourceIdentifier = str
 ResourceIdentifierPropertyKey = str
 ResourceIdentifierPropertyValue = str
@@ -192,6 +197,9 @@ TypeVersionId = str
 Url = str
 UsePreviousTemplate = bool
 UsePreviousValue = bool
+ValidationName = str
+ValidationPath = str
+ValidationStatusReason = str
 Value = str
 Version = str
 
@@ -207,6 +215,10 @@ class AccountGateStatus(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     SKIPPED = "SKIPPED"
+
+
+class AfterValueFrom(StrEnum):
+    TEMPLATE = "TEMPLATE"
 
 
 class AnnotationSeverityLevel(StrEnum):
@@ -227,6 +239,18 @@ class AttributeChangeType(StrEnum):
     Add = "Add"
     Remove = "Remove"
     Modify = "Modify"
+    SyncWithActual = "SyncWithActual"
+
+
+class BeaconStackOperationStatus(StrEnum):
+    IN_PROGRESS = "IN_PROGRESS"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+
+
+class BeforeValueFrom(StrEnum):
+    PREVIOUS_DEPLOYMENT_STATE = "PREVIOUS_DEPLOYMENT_STATE"
+    ACTUAL_STATE = "ACTUAL_STATE"
 
 
 class CallAs(StrEnum):
@@ -253,6 +277,7 @@ class ChangeAction(StrEnum):
     Remove = "Remove"
     Import = "Import"
     Dynamic = "Dynamic"
+    SyncWithActual = "SyncWithActual"
 
 
 class ChangeSetHooksStatus(StrEnum):
@@ -284,6 +309,7 @@ class ChangeSource(StrEnum):
     ResourceAttribute = "ResourceAttribute"
     DirectModification = "DirectModification"
     Automatic = "Automatic"
+    NoModification = "NoModification"
 
 
 class ChangeType(StrEnum):
@@ -298,6 +324,10 @@ class ConcurrencyMode(StrEnum):
 class DeletionMode(StrEnum):
     STANDARD = "STANDARD"
     FORCE_DELETE_STACK = "FORCE_DELETE_STACK"
+
+
+class DeploymentMode(StrEnum):
+    REVERT_DRIFT = "REVERT_DRIFT"
 
 
 class DeprecatedStatus(StrEnum):
@@ -316,9 +346,22 @@ class DifferenceType(StrEnum):
     NOT_EQUAL = "NOT_EQUAL"
 
 
+class DriftIgnoredReason(StrEnum):
+    MANAGED_BY_AWS = "MANAGED_BY_AWS"
+    WRITE_ONLY_PROPERTY = "WRITE_ONLY_PROPERTY"
+
+
 class EvaluationType(StrEnum):
     Static = "Static"
     Dynamic = "Dynamic"
+
+
+class EventType(StrEnum):
+    STACK_EVENT = "STACK_EVENT"
+    PROGRESS_EVENT = "PROGRESS_EVENT"
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    PROVISIONING_ERROR = "PROVISIONING_ERROR"
+    HOOK_INVOCATION_ERROR = "HOOK_INVOCATION_ERROR"
 
 
 class ExecutionStatus(StrEnum):
@@ -441,6 +484,15 @@ class OperationStatus(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
+
+
+class OperationType(StrEnum):
+    CREATE_STACK = "CREATE_STACK"
+    UPDATE_STACK = "UPDATE_STACK"
+    DELETE_STACK = "DELETE_STACK"
+    CONTINUE_ROLLBACK = "CONTINUE_ROLLBACK"
+    ROLLBACK = "ROLLBACK"
+    CREATE_CHANGESET = "CREATE_CHANGESET"
 
 
 class OrganizationStatus(StrEnum):
@@ -639,6 +691,7 @@ class StackResourceDriftStatus(StrEnum):
     DELETED = "DELETED"
     NOT_CHECKED = "NOT_CHECKED"
     UNKNOWN = "UNKNOWN"
+    UNSUPPORTED = "UNSUPPORTED"
 
 
 class StackSetDriftDetectionStatus(StrEnum):
@@ -731,6 +784,11 @@ class TypeTestsStatus(StrEnum):
     FAILED = "FAILED"
     IN_PROGRESS = "IN_PROGRESS"
     NOT_TESTED = "NOT_TESTED"
+
+
+class ValidationStatus(StrEnum):
+    FAILED = "FAILED"
+    SKIPPED = "SKIPPED"
 
 
 class VersionBump(StrEnum):
@@ -985,11 +1043,13 @@ class Annotation(TypedDict, total=False):
 
 
 AnnotationList = list[Annotation]
+StackSetARNList = list[StackSetARN]
 
 
 class AutoDeployment(TypedDict, total=False):
     Enabled: AutoDeploymentNullable | None
     RetainStacksOnAccountRemoval: RetainStacksOnAccountRemovalNullable | None
+    DependsOn: StackSetARNList | None
 
 
 class TypeConfigurationIdentifier(TypedDict, total=False):
@@ -1050,6 +1110,12 @@ class ModuleInfo(TypedDict, total=False):
     LogicalIdHierarchy: LogicalIdHierarchy | None
 
 
+class LiveResourceDrift(TypedDict, total=False):
+    PreviousValue: ResourceDriftPreviousValue | None
+    ActualValue: ResourceDriftActualValue | None
+    DriftDetectionTimestamp: Timestamp | None
+
+
 class ResourceTargetDefinition(TypedDict, total=False):
     Attribute: ResourceAttribute | None
     Name: PropertyName | None
@@ -1057,6 +1123,9 @@ class ResourceTargetDefinition(TypedDict, total=False):
     Path: ResourcePropertyPath | None
     BeforeValue: BeforeValue | None
     AfterValue: AfterValue | None
+    BeforeValueFrom: BeforeValueFrom | None
+    AfterValueFrom: AfterValueFrom | None
+    Drift: LiveResourceDrift | None
     AttributeChangeType: AttributeChangeType | None
 
 
@@ -1068,6 +1137,14 @@ class ResourceChangeDetail(TypedDict, total=False):
 
 
 ResourceChangeDetails = list[ResourceChangeDetail]
+
+
+class ResourceDriftIgnoredAttribute(TypedDict, total=False):
+    Path: ResourcePropertyPath | None
+    Reason: DriftIgnoredReason | None
+
+
+ResourceDriftIgnoredAttributes = list[ResourceDriftIgnoredAttribute]
 Scope = list[ResourceAttribute]
 
 
@@ -1079,11 +1156,14 @@ class ResourceChange(TypedDict, total=False):
     ResourceType: ResourceType | None
     Replacement: Replacement | None
     Scope: Scope | None
+    ResourceDriftStatus: StackResourceDriftStatus | None
+    ResourceDriftIgnoredAttributes: ResourceDriftIgnoredAttributes | None
     Details: ResourceChangeDetails | None
     ChangeSetId: ChangeSetId | None
     ModuleInfo: ModuleInfo | None
     BeforeContext: BeforeContext | None
     AfterContext: AfterContext | None
+    PreviousDeploymentContext: PreviousDeploymentContext | None
 
 
 class Change(TypedDict, total=False):
@@ -1215,6 +1295,7 @@ class CreateChangeSetInput(ServiceRequest):
     IncludeNestedStacks: IncludeNestedStacks | None
     OnStackFailure: OnStackFailure | None
     ImportExistingResources: ImportExistingResources | None
+    DeploymentMode: DeploymentMode | None
 
 
 class CreateChangeSetOutput(TypedDict, total=False):
@@ -1308,6 +1389,7 @@ class CreateStackInstancesOutput(TypedDict, total=False):
 
 class CreateStackOutput(TypedDict, total=False):
     StackId: StackId | None
+    OperationId: OperationId | None
 
 
 class StackDefinition(TypedDict, total=False):
@@ -1493,6 +1575,7 @@ class DescribeChangeSetOutput(TypedDict, total=False):
     ExecutionStatus: ExecutionStatus | None
     Status: ChangeSetStatus | None
     StatusReason: ChangeSetStatusReason | None
+    StackDriftStatus: StackDriftStatus | None
     NotificationARNs: NotificationARNs | None
     RollbackConfiguration: RollbackConfiguration | None
     Capabilities: Capabilities | None
@@ -1504,6 +1587,57 @@ class DescribeChangeSetOutput(TypedDict, total=False):
     RootChangeSetId: ChangeSetId | None
     OnStackFailure: OnStackFailure | None
     ImportExistingResources: ImportExistingResources | None
+    DeploymentMode: DeploymentMode | None
+
+
+class EventFilter(TypedDict, total=False):
+    FailedEvents: FailedEventsFilter | None
+
+
+class DescribeEventsInput(ServiceRequest):
+    StackName: StackNameOrId | None
+    ChangeSetName: ChangeSetNameOrId | None
+    OperationId: OperationId | None
+    Filters: EventFilter | None
+    NextToken: NextToken | None
+
+
+class OperationEvent(TypedDict, total=False):
+    EventId: EventId | None
+    StackId: StackId | None
+    OperationId: OperationId | None
+    OperationType: OperationType | None
+    OperationStatus: BeaconStackOperationStatus | None
+    EventType: EventType | None
+    LogicalResourceId: LogicalResourceId | None
+    PhysicalResourceId: PhysicalResourceId | None
+    ResourceType: ResourceType | None
+    Timestamp: Timestamp | None
+    StartTime: Timestamp | None
+    EndTime: Timestamp | None
+    ResourceStatus: ResourceStatus | None
+    ResourceStatusReason: ResourceStatusReason | None
+    ResourceProperties: ResourceProperties | None
+    ClientRequestToken: ClientRequestToken | None
+    HookType: HookType | None
+    HookStatus: HookStatus | None
+    HookStatusReason: HookStatusReason | None
+    HookInvocationPoint: HookInvocationPoint | None
+    HookFailureMode: HookFailureMode | None
+    DetailedStatus: DetailedStatus | None
+    ValidationFailureMode: HookFailureMode | None
+    ValidationName: ValidationName | None
+    ValidationStatus: ValidationStatus | None
+    ValidationStatusReason: ValidationStatusReason | None
+    ValidationPath: ValidationPath | None
+
+
+OperationEvents = list[OperationEvent]
+
+
+class DescribeEventsOutput(TypedDict, total=False):
+    OperationEvents: OperationEvents | None
+    NextToken: NextToken | None
 
 
 class DescribeGeneratedTemplateInput(ServiceRequest):
@@ -1632,6 +1766,7 @@ class StackEvent(TypedDict, total=False):
     StackId: StackId
     EventId: EventId
     StackName: StackName
+    OperationId: OperationId | None
     LogicalResourceId: LogicalResourceId | None
     PhysicalResourceId: PhysicalResourceId | None
     ResourceType: ResourceType | None
@@ -1887,6 +2022,14 @@ class DescribeStacksInput(ServiceRequest):
     NextToken: NextToken | None
 
 
+class OperationEntry(TypedDict, total=False):
+    OperationType: OperationType | None
+    OperationId: OperationId | None
+
+
+LastOperations = list[OperationEntry]
+
+
 class StackDriftInformation(TypedDict, total=False):
     StackDriftStatus: StackDriftStatus
     LastCheckTimestamp: Timestamp | None
@@ -1928,6 +2071,7 @@ class Stack(TypedDict, total=False):
     RetainExceptOnCreate: RetainExceptOnCreate | None
     DeletionMode: DeletionMode | None
     DetailedStatus: DetailedStatus | None
+    LastOperations: LastOperations | None
 
 
 Stacks = list[Stack]
@@ -2653,6 +2797,7 @@ class StackSummary(TypedDict, total=False):
     ParentId: StackId | None
     RootId: StackId | None
     DriftInformation: StackDriftInformationSummary | None
+    LastOperations: LastOperations | None
 
 
 StackSummaries = list[StackSummary]
@@ -2805,6 +2950,7 @@ class RollbackStackInput(ServiceRequest):
 
 class RollbackStackOutput(TypedDict, total=False):
     StackId: StackId | None
+    OperationId: OperationId | None
 
 
 class SetStackPolicyInput(ServiceRequest):
@@ -2935,6 +3081,7 @@ class UpdateStackInstancesOutput(TypedDict, total=False):
 
 class UpdateStackOutput(TypedDict, total=False):
     StackId: StackId | None
+    OperationId: OperationId | None
 
 
 class UpdateStackSetInput(ServiceRequest):
@@ -3055,6 +3202,7 @@ class CloudformationApi:
         include_nested_stacks: IncludeNestedStacks | None = None,
         on_stack_failure: OnStackFailure | None = None,
         import_existing_resources: ImportExistingResources | None = None,
+        deployment_mode: DeploymentMode | None = None,
         **kwargs,
     ) -> CreateChangeSetOutput:
         raise NotImplementedError
@@ -3249,6 +3397,19 @@ class CloudformationApi:
         logical_resource_id: LogicalResourceId | None = None,
         **kwargs,
     ) -> DescribeChangeSetHooksOutput:
+        raise NotImplementedError
+
+    @handler("DescribeEvents")
+    def describe_events(
+        self,
+        context: RequestContext,
+        stack_name: StackNameOrId | None = None,
+        change_set_name: ChangeSetNameOrId | None = None,
+        operation_id: OperationId | None = None,
+        filters: EventFilter | None = None,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> DescribeEventsOutput:
         raise NotImplementedError
 
     @handler("DescribeGeneratedTemplate")

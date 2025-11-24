@@ -7,6 +7,7 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 AuthenticationProfileNameString = str
 Boolean = bool
 BooleanOptional = bool
+CatalogNameString = str
 CustomDomainCertificateArnString = str
 CustomDomainNameString = str
 Description = str
@@ -37,6 +38,11 @@ class ActionType(StrEnum):
     restore_cluster = "restore-cluster"
     recommend_node_config = "recommend-node-config"
     resize_cluster = "resize-cluster"
+
+
+class ApplicationType(StrEnum):
+    None_ = "None"
+    Lakehouse = "Lakehouse"
 
 
 class AquaConfigurationStatus(StrEnum):
@@ -93,6 +99,16 @@ class ImpactRankingType(StrEnum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
+
+
+class LakehouseIdcRegistration(StrEnum):
+    Associate = "Associate"
+    Disassociate = "Disassociate"
+
+
+class LakehouseRegistration(StrEnum):
+    Register = "Register"
+    Deregister = "Deregister"
 
 
 class LogDestinationType(StrEnum):
@@ -1627,6 +1643,8 @@ class Cluster(TypedDict, total=False):
     IpAddressType: String | None
     MultiAZ: String | None
     MultiAZSecondary: SecondaryClusterInfo | None
+    LakehouseRegistrationStatus: String | None
+    CatalogArn: String | None
 
 
 class ClusterCredentials(TypedDict, total=False):
@@ -1768,6 +1786,10 @@ class ClustersMessage(TypedDict, total=False):
     Clusters: ClusterList | None
 
 
+class Connect(TypedDict, total=False):
+    Authorization: ServiceAuthorization
+
+
 ConsumerIdentifierList = list[String]
 
 
@@ -1836,6 +1858,7 @@ class CreateClusterMessage(ServiceRequest):
     IpAddressType: String | None
     MultiAZ: BooleanOptional | None
     RedshiftIdcApplicationArn: String | None
+    CatalogName: CatalogNameString | None
 
 
 class CreateClusterParameterGroupMessage(ServiceRequest):
@@ -1995,6 +2018,13 @@ class CreateIntegrationMessage(ServiceRequest):
 TagKeyList = list[String]
 
 
+class RedshiftScopeUnion(TypedDict, total=False):
+    Connect: Connect | None
+
+
+RedshiftServiceIntegrations = list[RedshiftScopeUnion]
+
+
 class ReadWriteAccess(TypedDict, total=False):
     Authorization: ServiceAuthorization
 
@@ -2020,6 +2050,7 @@ LakeFormationServiceIntegrations = list[LakeFormationScopeUnion]
 class ServiceIntegrationsUnion(TypedDict, total=False):
     LakeFormation: LakeFormationServiceIntegrations | None
     S3AccessGrants: S3AccessGrantsServiceIntegrations | None
+    Redshift: RedshiftServiceIntegrations | None
 
 
 ServiceIntegrationList = list[ServiceIntegrationsUnion]
@@ -2033,6 +2064,7 @@ class CreateRedshiftIdcApplicationMessage(ServiceRequest):
     IamRoleArn: String
     AuthorizedTokenIssuerList: AuthorizedTokenIssuerList | None
     ServiceIntegrations: ServiceIntegrationList | None
+    ApplicationType: ApplicationType | None
     Tags: TagList | None
     SsoTagKeys: TagKeyList | None
 
@@ -2048,6 +2080,7 @@ class RedshiftIdcApplication(TypedDict, total=False):
     IdcOnboardStatus: String | None
     AuthorizedTokenIssuerList: AuthorizedTokenIssuerList | None
     ServiceIntegrations: ServiceIntegrationList | None
+    ApplicationType: ApplicationType | None
     Tags: TagList | None
     SsoTagKeys: TagKeyList | None
 
@@ -3010,6 +3043,13 @@ class IntegrationsMessage(TypedDict, total=False):
     Integrations: IntegrationList | None
 
 
+class LakehouseConfiguration(TypedDict, total=False):
+    ClusterIdentifier: String | None
+    LakehouseIdcApplicationArn: String | None
+    LakehouseRegistrationStatus: String | None
+    CatalogArn: String | None
+
+
 class ListRecommendationsMessage(ServiceRequest):
     ClusterIdentifier: String | None
     NamespaceArn: String | None
@@ -3232,6 +3272,15 @@ class ModifyIntegrationMessage(ServiceRequest):
     IntegrationName: IntegrationName | None
 
 
+class ModifyLakehouseConfigurationMessage(ServiceRequest):
+    ClusterIdentifier: String
+    LakehouseRegistration: LakehouseRegistration | None
+    CatalogName: CatalogNameString | None
+    LakehouseIdcRegistration: LakehouseIdcRegistration | None
+    LakehouseIdcApplicationArn: String | None
+    DryRun: BooleanOptional | None
+
+
 class ModifyRedshiftIdcApplicationMessage(ServiceRequest):
     RedshiftIdcApplicationArn: String
     IdentityNamespace: IdentityNamespaceString | None
@@ -3442,6 +3491,8 @@ class RestoreFromClusterSnapshotMessage(ServiceRequest):
     MasterPasswordSecretKmsKeyId: String | None
     IpAddressType: String | None
     MultiAZ: BooleanOptional | None
+    CatalogName: CatalogNameString | None
+    RedshiftIdcApplicationArn: String | None
 
 
 class RestoreFromClusterSnapshotResult(TypedDict, total=False):
@@ -3792,6 +3843,7 @@ class RedshiftApi:
         ip_address_type: String | None = None,
         multi_az: BooleanOptional | None = None,
         redshift_idc_application_arn: String | None = None,
+        catalog_name: CatalogNameString | None = None,
         **kwargs,
     ) -> CreateClusterResult:
         raise NotImplementedError
@@ -3934,6 +3986,7 @@ class RedshiftApi:
         identity_namespace: IdentityNamespaceString | None = None,
         authorized_token_issuer_list: AuthorizedTokenIssuerList | None = None,
         service_integrations: ServiceIntegrationList | None = None,
+        application_type: ApplicationType | None = None,
         tags: TagList | None = None,
         sso_tag_keys: TagKeyList | None = None,
         **kwargs,
@@ -4957,6 +5010,20 @@ class RedshiftApi:
     ) -> Integration:
         raise NotImplementedError
 
+    @handler("ModifyLakehouseConfiguration")
+    def modify_lakehouse_configuration(
+        self,
+        context: RequestContext,
+        cluster_identifier: String,
+        lakehouse_registration: LakehouseRegistration | None = None,
+        catalog_name: CatalogNameString | None = None,
+        lakehouse_idc_registration: LakehouseIdcRegistration | None = None,
+        lakehouse_idc_application_arn: String | None = None,
+        dry_run: BooleanOptional | None = None,
+        **kwargs,
+    ) -> LakehouseConfiguration:
+        raise NotImplementedError
+
     @handler("ModifyRedshiftIdcApplication")
     def modify_redshift_idc_application(
         self,
@@ -5130,6 +5197,8 @@ class RedshiftApi:
         master_password_secret_kms_key_id: String | None = None,
         ip_address_type: String | None = None,
         multi_az: BooleanOptional | None = None,
+        catalog_name: CatalogNameString | None = None,
+        redshift_idc_application_arn: String | None = None,
         **kwargs,
     ) -> RestoreFromClusterSnapshotResult:
         raise NotImplementedError

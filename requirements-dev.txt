@@ -43,17 +43,17 @@ aws-sam-translator==1.101.0
     #   localstack-core
 aws-xray-sdk==2.15.0
     # via moto-ext
-awscli==1.42.74
+awscli==1.43.2
     # via localstack-core
 awscrt==0.28.4
     # via localstack-core
-boto3==1.40.74
+boto3==1.41.2
     # via
     #   aws-sam-translator
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-botocore==1.40.74
+botocore==1.41.2
     # via
     #   aws-xray-sdk
     #   awscli
@@ -447,7 +447,7 @@ rstr==3.2.2
     # via localstack-core (pyproject.toml)
 ruff==0.14.5
     # via localstack-core (pyproject.toml)
-s3transfer==0.14.0
+s3transfer==0.15.0
     # via
     #   awscli
     #   boto3

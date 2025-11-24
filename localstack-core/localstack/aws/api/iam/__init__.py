@@ -13,6 +13,8 @@ ContextKeyNameType = str
 ContextKeyValueType = str
 DeletionTaskIdType = str
 EvalDecisionSourceType = str
+FeatureDisabledMessage = str
+FeatureEnabledMessage = str
 LineNumber = int
 OpenIDConnectProviderUrlType = str
 OrganizationIdType = str
@@ -65,6 +67,7 @@ invalidUserTypeMessage = str
 jobIDType = str
 keyPairMismatchMessage = str
 limitExceededMessage = str
+localeType = str
 malformedCertificateMessage = str
 malformedPolicyDocumentMessage = str
 markerType = str
@@ -72,15 +75,18 @@ maxItemsType = int
 maxPasswordAgeType = int
 minimumPasswordLengthType = int
 noSuchEntityMessage = str
+notesType = str
 notificationChannelType = str
 openIdIdpCommunicationErrorExceptionMessage = str
 organizationsEntityPathType = str
 organizationsPolicyIdType = str
+ownerIdType = str
 passwordPolicyViolationMessage = str
 passwordReusePreventionType = int
 passwordType = str
 pathPrefixType = str
 pathType = str
+permissionType = str
 policyDescriptionType = str
 policyDocumentType = str
 policyEvaluationErrorMessage = str
@@ -98,6 +104,7 @@ publicKeyMaterialType = str
 redirectUrlType = str
 reportGenerationLimitExceededMessage = str
 requestMessageType = str
+requestorNameType = str
 requestorWorkflowIdType = str
 responseMarkerType = str
 roleDescriptionType = str
@@ -117,6 +124,7 @@ serviceSpecificCredentialId = str
 serviceUserName = str
 sessionDurationType = int
 stringType = str
+summaryContentType = str
 summaryValueType = int
 tagKeyType = str
 tagValueType = str
@@ -234,6 +242,18 @@ class jobStatusType(StrEnum):
     FAILED = "FAILED"
 
 
+class permissionCheckResultType(StrEnum):
+    ALLOWED = "ALLOWED"
+    DENIED = "DENIED"
+    UNSURE = "UNSURE"
+
+
+class permissionCheckStatusType(StrEnum):
+    COMPLETE = "COMPLETE"
+    IN_PROGRESS = "IN_PROGRESS"
+    FAILED = "FAILED"
+
+
 class policyOwnerEntityType(StrEnum):
     USER = "USER"
     ROLE = "ROLE"
@@ -256,6 +276,16 @@ class sortKeyType(StrEnum):
     SERVICE_NAMESPACE_DESCENDING = "SERVICE_NAMESPACE_DESCENDING"
     LAST_AUTHENTICATED_TIME_ASCENDING = "LAST_AUTHENTICATED_TIME_ASCENDING"
     LAST_AUTHENTICATED_TIME_DESCENDING = "LAST_AUTHENTICATED_TIME_DESCENDING"
+
+
+class stateType(StrEnum):
+    UNASSIGNED = "UNASSIGNED"
+    ASSIGNED = "ASSIGNED"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+    FINALIZED = "FINALIZED"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    EXPIRED = "EXPIRED"
 
 
 class statusType(StrEnum):
@@ -299,6 +329,13 @@ class summaryKeyType(StrEnum):
     RolePolicySizeQuota = "RolePolicySizeQuota"
     Roles = "Roles"
     RolesQuota = "RolesQuota"
+
+
+class summaryStateType(StrEnum):
+    AVAILABLE = "AVAILABLE"
+    NOT_AVAILABLE = "NOT_AVAILABLE"
+    NOT_SUPPORTED = "NOT_SUPPORTED"
+    FAILED = "FAILED"
 
 
 class AccountNotManagementOrDelegatedAdministratorException(ServiceException):
@@ -363,6 +400,18 @@ class EntityAlreadyExistsException(ServiceException):
 
 class EntityTemporarilyUnmodifiableException(ServiceException):
     code: str = "EntityTemporarilyUnmodifiable"
+    sender_fault: bool = True
+    status_code: int = 409
+
+
+class FeatureDisabledException(ServiceException):
+    code: str = "FeatureDisabled"
+    sender_fault: bool = True
+    status_code: int = 404
+
+
+class FeatureEnabledException(ServiceException):
+    code: str = "FeatureEnabled"
     sender_fault: bool = True
     status_code: int = 409
 
@@ -499,6 +548,10 @@ class UnrecognizedPublicKeyEncodingException(ServiceException):
     status_code: int = 400
 
 
+class AcceptDelegationRequestRequest(ServiceRequest):
+    DelegationRequestId: delegationRequestIdType
+
+
 dateType = datetime
 
 
@@ -554,6 +607,10 @@ class AddUserToGroupRequest(ServiceRequest):
 
 
 ArnListType = list[arnType]
+
+
+class AssociateDelegationRequestRequest(ServiceRequest):
+    DelegationRequestId: delegationRequestIdType
 
 
 class AttachGroupPolicyRequest(ServiceRequest):
@@ -898,6 +955,31 @@ class DeactivateMFADeviceRequest(ServiceRequest):
     SerialNumber: serialNumberType
 
 
+rolePermissionRestrictionArnListType = list[arnType]
+
+
+class DelegationRequest(TypedDict, total=False):
+    DelegationRequestId: delegationRequestIdType | None
+    OwnerAccountId: accountIdType | None
+    Description: delegationRequestDescriptionType | None
+    RequestMessage: requestMessageType | None
+    Permissions: DelegationPermission | None
+    PermissionPolicy: permissionType | None
+    RolePermissionRestrictionArns: rolePermissionRestrictionArnListType | None
+    OwnerId: ownerIdType | None
+    ApproverId: arnType | None
+    State: stateType | None
+    RequestorId: accountIdType | None
+    RequestorName: requestorNameType | None
+    CreateDate: dateType | None
+    SessionDuration: sessionDurationType | None
+    RedirectUrl: redirectUrlType | None
+    Notes: notesType | None
+    RejectionReason: notesType | None
+    OnlySendByOwner: booleanType | None
+    UpdatedTime: dateType | None
+
+
 class DeleteAccessKeyRequest(ServiceRequest):
     UserName: existingUserNameType | None
     AccessKeyId: accessKeyIdType
@@ -1070,6 +1152,10 @@ class EnableOrganizationsRootSessionsRequest(ServiceRequest):
 class EnableOrganizationsRootSessionsResponse(TypedDict, total=False):
     OrganizationId: OrganizationIdType | None
     EnabledFeatures: FeaturesListType | None
+
+
+class EnableOutboundWebIdentityFederationResponse(TypedDict, total=False):
+    IssuerIdentifier: stringType | None
 
 
 class EntityInfo(TypedDict, total=False):
@@ -1321,6 +1407,17 @@ class GetCredentialReportResponse(TypedDict, total=False):
     GeneratedTime: dateType | None
 
 
+class GetDelegationRequestRequest(ServiceRequest):
+    DelegationRequestId: delegationRequestIdType
+    DelegationPermissionCheck: booleanType | None
+
+
+class GetDelegationRequestResponse(TypedDict, total=False):
+    DelegationRequest: DelegationRequest | None
+    PermissionCheckStatus: permissionCheckStatusType | None
+    PermissionCheckResult: permissionCheckResultType | None
+
+
 class GetGroupPolicyRequest(ServiceRequest):
     GroupName: groupNameType
     PolicyName: policyNameType
@@ -1346,6 +1443,17 @@ class GetGroupResponse(TypedDict, total=False):
     Users: userListType
     IsTruncated: booleanType | None
     Marker: responseMarkerType | None
+
+
+class GetHumanReadableSummaryRequest(ServiceRequest):
+    EntityArn: arnType
+    Locale: localeType | None
+
+
+class GetHumanReadableSummaryResponse(TypedDict, total=False):
+    SummaryContent: summaryContentType | None
+    Locale: localeType | None
+    SummaryState: summaryStateType | None
 
 
 class GetInstanceProfileRequest(ServiceRequest):
@@ -1405,6 +1513,11 @@ class GetOrganizationsAccessReportResponse(TypedDict, total=False):
     IsTruncated: booleanType | None
     Marker: markerType | None
     ErrorDetails: ErrorDetails | None
+
+
+class GetOutboundWebIdentityFederationInfoResponse(TypedDict, total=False):
+    IssuerIdentifier: stringType | None
+    JwtVendingEnabled: booleanType | None
 
 
 class GetPolicyRequest(ServiceRequest):
@@ -1662,6 +1775,21 @@ class ListAttachedUserPoliciesResponse(TypedDict, total=False):
     AttachedPolicies: attachedPoliciesListType | None
     IsTruncated: booleanType | None
     Marker: responseMarkerType | None
+
+
+class ListDelegationRequestsRequest(ServiceRequest):
+    OwnerId: ownerIdType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
+
+
+delegationRequestsListType = list[DelegationRequest]
+
+
+class ListDelegationRequestsResponse(TypedDict, total=False):
+    DelegationRequests: delegationRequestsListType | None
+    Marker: markerType | None
+    isTruncated: booleanType | None
 
 
 class ListEntitiesForPolicyRequest(ServiceRequest):
@@ -2172,6 +2300,11 @@ class PutUserPolicyRequest(ServiceRequest):
     PolicyDocument: policyDocumentType
 
 
+class RejectDelegationRequestRequest(ServiceRequest):
+    DelegationRequestId: delegationRequestIdType
+    Notes: notesType | None
+
+
 class RemoveClientIDFromOpenIDConnectProviderRequest(ServiceRequest):
     OpenIDConnectProviderArn: arnType
     ClientID: clientIDType
@@ -2204,6 +2337,10 @@ class ResyncMFADeviceRequest(ServiceRequest):
     SerialNumber: serialNumberType
     AuthenticationCode1: authenticationCodeType
     AuthenticationCode2: authenticationCodeType
+
+
+class SendDelegationTokenRequest(ServiceRequest):
+    DelegationRequestId: delegationRequestIdType
 
 
 class SetDefaultPolicyVersionRequest(ServiceRequest):
@@ -2356,6 +2493,11 @@ class UpdateAssumeRolePolicyRequest(ServiceRequest):
     PolicyDocument: policyDocumentType
 
 
+class UpdateDelegationRequestRequest(ServiceRequest):
+    DelegationRequestId: delegationRequestIdType
+    Notes: notesType | None
+
+
 class UpdateGroupRequest(ServiceRequest):
     GroupName: groupNameType
     NewPath: pathType | None
@@ -2470,6 +2612,12 @@ class IamApi:
     service: str = "iam"
     version: str = "2010-05-08"
 
+    @handler("AcceptDelegationRequest")
+    def accept_delegation_request(
+        self, context: RequestContext, delegation_request_id: delegationRequestIdType, **kwargs
+    ) -> None:
+        raise NotImplementedError
+
     @handler("AddClientIDToOpenIDConnectProvider")
     def add_client_id_to_open_id_connect_provider(
         self,
@@ -2497,6 +2645,12 @@ class IamApi:
         group_name: groupNameType,
         user_name: existingUserNameType,
         **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("AssociateDelegationRequest")
+    def associate_delegation_request(
+        self, context: RequestContext, delegation_request_id: delegationRequestIdType, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2900,6 +3054,10 @@ class IamApi:
     ) -> DisableOrganizationsRootSessionsResponse:
         raise NotImplementedError
 
+    @handler("DisableOutboundWebIdentityFederation")
+    def disable_outbound_web_identity_federation(self, context: RequestContext, **kwargs) -> None:
+        raise NotImplementedError
+
     @handler("EnableMFADevice")
     def enable_mfa_device(
         self,
@@ -2922,6 +3080,12 @@ class IamApi:
     def enable_organizations_root_sessions(
         self, context: RequestContext, **kwargs
     ) -> EnableOrganizationsRootSessionsResponse:
+        raise NotImplementedError
+
+    @handler("EnableOutboundWebIdentityFederation")
+    def enable_outbound_web_identity_federation(
+        self, context: RequestContext, **kwargs
+    ) -> EnableOutboundWebIdentityFederationResponse:
         raise NotImplementedError
 
     @handler("GenerateCredentialReport")
@@ -2999,6 +3163,16 @@ class IamApi:
     ) -> GetCredentialReportResponse:
         raise NotImplementedError
 
+    @handler("GetDelegationRequest")
+    def get_delegation_request(
+        self,
+        context: RequestContext,
+        delegation_request_id: delegationRequestIdType,
+        delegation_permission_check: booleanType | None = None,
+        **kwargs,
+    ) -> GetDelegationRequestResponse:
+        raise NotImplementedError
+
     @handler("GetGroup")
     def get_group(
         self,
@@ -3018,6 +3192,16 @@ class IamApi:
         policy_name: policyNameType,
         **kwargs,
     ) -> GetGroupPolicyResponse:
+        raise NotImplementedError
+
+    @handler("GetHumanReadableSummary")
+    def get_human_readable_summary(
+        self,
+        context: RequestContext,
+        entity_arn: arnType,
+        locale: localeType | None = None,
+        **kwargs,
+    ) -> GetHumanReadableSummaryResponse:
         raise NotImplementedError
 
     @handler("GetInstanceProfile")
@@ -3058,6 +3242,12 @@ class IamApi:
         sort_key: sortKeyType | None = None,
         **kwargs,
     ) -> GetOrganizationsAccessReportResponse:
+        raise NotImplementedError
+
+    @handler("GetOutboundWebIdentityFederationInfo")
+    def get_outbound_web_identity_federation_info(
+        self, context: RequestContext, **kwargs
+    ) -> GetOutboundWebIdentityFederationInfoResponse:
         raise NotImplementedError
 
     @handler("GetPolicy")
@@ -3215,6 +3405,17 @@ class IamApi:
         max_items: maxItemsType | None = None,
         **kwargs,
     ) -> ListAttachedUserPoliciesResponse:
+        raise NotImplementedError
+
+    @handler("ListDelegationRequests")
+    def list_delegation_requests(
+        self,
+        context: RequestContext,
+        owner_id: ownerIdType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListDelegationRequestsResponse:
         raise NotImplementedError
 
     @handler("ListEntitiesForPolicy")
@@ -3591,6 +3792,16 @@ class IamApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("RejectDelegationRequest")
+    def reject_delegation_request(
+        self,
+        context: RequestContext,
+        delegation_request_id: delegationRequestIdType,
+        notes: notesType | None = None,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
     @handler("RemoveClientIDFromOpenIDConnectProvider")
     def remove_client_id_from_open_id_connect_provider(
         self,
@@ -3640,6 +3851,12 @@ class IamApi:
         authentication_code1: authenticationCodeType,
         authentication_code2: authenticationCodeType,
         **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("SendDelegationToken")
+    def send_delegation_token(
+        self, context: RequestContext, delegation_request_id: delegationRequestIdType, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3867,6 +4084,16 @@ class IamApi:
         context: RequestContext,
         role_name: roleNameType,
         policy_document: policyDocumentType,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateDelegationRequest")
+    def update_delegation_request(
+        self,
+        context: RequestContext,
+        delegation_request_id: delegationRequestIdType,
+        notes: notesType | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError

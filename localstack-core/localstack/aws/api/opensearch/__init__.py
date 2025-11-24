@@ -46,6 +46,7 @@ IdentityCenterApplicationARN = str
 IdentityCenterInstanceARN = str
 IdentityPoolId = str
 IdentityStoreId = str
+IndexName = str
 InstanceCount = int
 InstanceRole = str
 InstanceTypeString = str
@@ -259,6 +260,12 @@ class InboundConnectionStatusCode(StrEnum):
     REJECTING = "REJECTING"
     REJECTED = "REJECTED"
     DELETING = "DELETING"
+    DELETED = "DELETED"
+
+
+class IndexStatus(StrEnum):
+    CREATED = "CREATED"
+    UPDATED = "UPDATED"
     DELETED = "DELETED"
 
 
@@ -677,6 +684,12 @@ class SlotNotAvailableException(ServiceException):
     sender_fault: bool = False
     status_code: int = 409
     SlotSuggestions: SlotList | None
+
+
+class ThrottlingException(ServiceException):
+    code: str = "ThrottlingException"
+    sender_fault: bool = False
+    status_code: int = 429
 
 
 class ValidationException(ServiceException):
@@ -1466,6 +1479,20 @@ class CreateDomainResponse(TypedDict, total=False):
     DomainStatus: DomainStatus | None
 
 
+class IndexSchema(TypedDict, total=False):
+    pass
+
+
+class CreateIndexRequest(ServiceRequest):
+    DomainName: DomainName
+    IndexName: IndexName
+    IndexSchema: IndexSchema
+
+
+class CreateIndexResponse(TypedDict, total=False):
+    Status: IndexStatus
+
+
 class CreateOutboundConnectionRequest(ServiceRequest):
     LocalDomainInfo: DomainInformationContainer
     RemoteDomainInfo: DomainInformationContainer
@@ -1623,6 +1650,15 @@ class DeleteInboundConnectionRequest(ServiceRequest):
 
 class DeleteInboundConnectionResponse(TypedDict, total=False):
     Connection: InboundConnection | None
+
+
+class DeleteIndexRequest(ServiceRequest):
+    DomainName: DomainName
+    IndexName: IndexName
+
+
+class DeleteIndexResponse(TypedDict, total=False):
+    Status: IndexStatus
 
 
 class DeleteOutboundConnectionRequest(ServiceRequest):
@@ -2200,6 +2236,15 @@ class GetDomainMaintenanceStatusResponse(TypedDict, total=False):
     UpdatedAt: UpdateTimestamp | None
 
 
+class GetIndexRequest(ServiceRequest):
+    DomainName: DomainName
+    IndexName: IndexName
+
+
+class GetIndexResponse(TypedDict, total=False):
+    IndexSchema: IndexSchema
+
+
 class GetPackageVersionHistoryRequest(ServiceRequest):
     PackageID: PackageID
     MaxResults: MaxResults | None
@@ -2579,6 +2624,16 @@ class UpdateDomainConfigResponse(TypedDict, total=False):
     DryRunProgressStatus: DryRunProgressStatus | None
 
 
+class UpdateIndexRequest(ServiceRequest):
+    DomainName: DomainName
+    IndexName: IndexName
+    IndexSchema: IndexSchema
+
+
+class UpdateIndexResponse(TypedDict, total=False):
+    Status: IndexStatus
+
+
 class UpdatePackageRequest(ServiceRequest):
     PackageID: PackageID
     PackageSource: PackageSource
@@ -2772,6 +2827,17 @@ class OpensearchApi:
     ) -> CreateDomainResponse:
         raise NotImplementedError
 
+    @handler("CreateIndex")
+    def create_index(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        index_name: IndexName,
+        index_schema: IndexSchema,
+        **kwargs,
+    ) -> CreateIndexResponse:
+        raise NotImplementedError
+
     @handler("CreateOutboundConnection")
     def create_outbound_connection(
         self,
@@ -2840,6 +2906,12 @@ class OpensearchApi:
     def delete_inbound_connection(
         self, context: RequestContext, connection_id: ConnectionId, **kwargs
     ) -> DeleteInboundConnectionResponse:
+        raise NotImplementedError
+
+    @handler("DeleteIndex")
+    def delete_index(
+        self, context: RequestContext, domain_name: DomainName, index_name: IndexName, **kwargs
+    ) -> DeleteIndexResponse:
         raise NotImplementedError
 
     @handler("DeleteOutboundConnection")
@@ -3042,6 +3114,12 @@ class OpensearchApi:
     def get_domain_maintenance_status(
         self, context: RequestContext, domain_name: DomainName, maintenance_id: RequestId, **kwargs
     ) -> GetDomainMaintenanceStatusResponse:
+        raise NotImplementedError
+
+    @handler("GetIndex")
+    def get_index(
+        self, context: RequestContext, domain_name: DomainName, index_name: IndexName, **kwargs
+    ) -> GetIndexResponse:
         raise NotImplementedError
 
     @handler("GetPackageVersionHistory")
@@ -3326,6 +3404,17 @@ class OpensearchApi:
         aiml_options: AIMLOptionsInput | None = None,
         **kwargs,
     ) -> UpdateDomainConfigResponse:
+        raise NotImplementedError
+
+    @handler("UpdateIndex")
+    def update_index(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        index_name: IndexName,
+        index_schema: IndexSchema,
+        **kwargs,
+    ) -> UpdateIndexResponse:
         raise NotImplementedError
 
     @handler("UpdatePackage")

@@ -212,6 +212,11 @@ class ArchiveStatus(StrEnum):
     DEEP_ARCHIVE_ACCESS = "DEEP_ARCHIVE_ACCESS"
 
 
+class BucketAbacStatus(StrEnum):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
+
+
 class BucketAccelerateStatus(StrEnum):
     Enabled = "Enabled"
     Suspended = "Suspended"
@@ -311,6 +316,11 @@ class DeleteMarkerReplicationStatus(StrEnum):
 
 class EncodingType(StrEnum):
     url = "url"
+
+
+class EncryptionType(StrEnum):
+    NONE = "NONE"
+    SSE_C = "SSE-C"
 
 
 class Event(StrEnum):
@@ -1070,6 +1080,10 @@ class AuthorizationHeaderMalformed(ServiceException):
     HostId: HostId | None
 
 
+class AbacStatus(TypedDict, total=False):
+    Status: BucketAbacStatus | None
+
+
 AbortDate = datetime
 
 
@@ -1178,6 +1192,13 @@ class AnalyticsConfiguration(TypedDict, total=False):
 
 
 AnalyticsConfigurationList = list[AnalyticsConfiguration]
+EncryptionTypeList = list[EncryptionType]
+
+
+class BlockedEncryptionTypes(TypedDict, total=False):
+    EncryptionType: EncryptionTypeList | None
+
+
 Body = bytes
 CreationDate = datetime
 
@@ -1948,6 +1969,15 @@ class FilterRule(TypedDict, total=False):
 FilterRuleList = list[FilterRule]
 
 
+class GetBucketAbacOutput(TypedDict, total=False):
+    AbacStatus: AbacStatus | None
+
+
+class GetBucketAbacRequest(ServiceRequest):
+    Bucket: BucketName
+    ExpectedBucketOwner: AccountId | None
+
+
 class GetBucketAccelerateConfigurationOutput(TypedDict, total=False):
     Status: BucketAccelerateStatus | None
     RequestCharged: RequestCharged | None
@@ -1996,6 +2026,7 @@ class ServerSideEncryptionByDefault(TypedDict, total=False):
 class ServerSideEncryptionRule(TypedDict, total=False):
     ApplyServerSideEncryptionByDefault: ServerSideEncryptionByDefault | None
     BucketKeyEnabled: BucketKeyEnabled | None
+    BlockedEncryptionTypes: BlockedEncryptionTypes | None
 
 
 ServerSideEncryptionRules = list[ServerSideEncryptionRule]
@@ -3169,6 +3200,14 @@ class ProgressEvent(TypedDict, total=False):
     Details: Progress | None
 
 
+class PutBucketAbacRequest(ServiceRequest):
+    Bucket: BucketName
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+    ExpectedBucketOwner: AccountId | None
+    AbacStatus: AbacStatus
+
+
 class PutBucketAccelerateConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     AccelerateConfiguration: AccelerateConfiguration
@@ -4177,6 +4216,16 @@ class S3Api:
     ) -> None:
         raise NotImplementedError
 
+    @handler("GetBucketAbac")
+    def get_bucket_abac(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
+    ) -> GetBucketAbacOutput:
+        raise NotImplementedError
+
     @handler("GetBucketAccelerateConfiguration")
     def get_bucket_accelerate_configuration(
         self,
@@ -4746,6 +4795,19 @@ class S3Api:
         sse_customer_key_md5: SSECustomerKeyMD5 | None = None,
         **kwargs,
     ) -> ListPartsOutput:
+        raise NotImplementedError
+
+    @handler("PutBucketAbac")
+    def put_bucket_abac(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        abac_status: AbacStatus,
+        content_md5: ContentMD5 | None = None,
+        checksum_algorithm: ChecksumAlgorithm | None = None,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
+    ) -> None:
         raise NotImplementedError
 
     @handler("PutBucketAccelerateConfiguration")

@@ -92,6 +92,7 @@ DescribeImageUsageReportEntriesMaxResults = int
 DescribeImageUsageReportsMaxResults = int
 DescribeInstanceCreditSpecificationsMaxResults = int
 DescribeInstanceImageMetadataMaxResults = int
+DescribeInstanceSqlHaStatesRequestMaxResultsInteger = int
 DescribeInstanceTopologyMaxResults = int
 DescribeInternetGatewaysMaxResults = int
 DescribeIpamByoasnMaxResults = int
@@ -127,6 +128,7 @@ DescribeVerifiedAccessTrustProvidersMaxResults = int
 DescribeVpcBlockPublicAccessExclusionsMaxResults = int
 DescribeVpcClassicLinkDnsSupportMaxResults = int
 DescribeVpcClassicLinkDnsSupportNextToken = str
+DescribeVpcEncryptionControlsMaxResults = int
 DescribeVpcPeeringConnectionsMaxResults = int
 DescribeVpcsMaxResults = int
 DhcpOptionsId = str
@@ -166,6 +168,7 @@ GetNetworkInsightsAccessScopeAnalysisFindingsMaxResults = int
 GetSecurityGroupsForVpcRequestMaxResults = int
 GetSubnetCidrReservationsMaxResults = int
 GetVerifiedAccessEndpointTargetsMaxResults = int
+GetVpcResourcesBlockingEncryptionEnforcementMaxResults = int
 GpuDeviceCount = int
 GpuDeviceManufacturerName = str
 GpuDeviceMemorySize = int
@@ -210,6 +213,7 @@ IpamExternalResourceVerificationTokenId = str
 IpamId = str
 IpamMaxResults = int
 IpamNetmaskLength = int
+IpamPolicyId = str
 IpamPoolAllocationId = str
 IpamPoolCidrId = str
 IpamPoolId = str
@@ -337,6 +341,7 @@ RunInstancesUserData = str
 S3StorageUploadPolicy = str
 S3StorageUploadPolicySignature = str
 ScheduledInstanceId = str
+SecretArn = str
 SecurityGroupId = str
 SecurityGroupName = str
 SecurityGroupRuleId = str
@@ -372,6 +377,7 @@ TransitGatewayAttachmentId = str
 TransitGatewayConnectPeerId = str
 TransitGatewayId = str
 TransitGatewayMaxResults = int
+TransitGatewayMeteringPolicyId = str
 TransitGatewayMulticastDomainId = str
 TransitGatewayPolicyTableId = str
 TransitGatewayRouteTableAnnouncementId = str
@@ -395,6 +401,7 @@ VpcFlowLogId = str
 VpcId = str
 VpcPeeringConnectionId = str
 VpcPeeringConnectionIdWithResolver = str
+VpnConcentratorId = str
 VpnConnectionDeviceSampleConfiguration = str
 VpnConnectionDeviceTypeId = str
 VpnConnectionId = str
@@ -601,6 +608,21 @@ class AutoPlacement(StrEnum):
     off = "off"
 
 
+class AutoProvisionZonesState(StrEnum):
+    enabled = "enabled"
+    disabled = "disabled"
+
+
+class AutoScalingIpsState(StrEnum):
+    enabled = "enabled"
+    disabled = "disabled"
+
+
+class AvailabilityMode(StrEnum):
+    zonal = "zonal"
+    regional = "regional"
+
+
 class AvailabilityZoneOptInStatus(StrEnum):
     opt_in_not_required = "opt-in-not-required"
     opted_in = "opted-in"
@@ -680,8 +702,10 @@ class ByoipCidrState(StrEnum):
     deprovisioned = "deprovisioned"
     failed_deprovision = "failed-deprovision"
     failed_provision = "failed-provision"
+    pending_advertising = "pending-advertising"
     pending_deprovision = "pending-deprovision"
     pending_provision = "pending-provision"
+    pending_withdrawal = "pending-withdrawal"
     provisioned = "provisioned"
     provisioned_not_publicly_advertisable = "provisioned-not-publicly-advertisable"
 
@@ -1075,6 +1099,18 @@ class EnaSupport(StrEnum):
     required = "required"
 
 
+class EncryptionStateValue(StrEnum):
+    enabling = "enabling"
+    enabled = "enabled"
+    disabling = "disabling"
+    disabled = "disabled"
+
+
+class EncryptionSupportOptionValue(StrEnum):
+    enable = "enable"
+    disable = "disable"
+
+
 class EndDateType(StrEnum):
     unlimited = "unlimited"
     limited = "limited"
@@ -1239,6 +1275,7 @@ class FlowLogsResourceType(StrEnum):
     NetworkInterface = "NetworkInterface"
     TransitGateway = "TransitGateway"
     TransitGatewayAttachment = "TransitGatewayAttachment"
+    RegionalNatGateway = "RegionalNatGateway"
 
 
 class FpgaImageAttributeName(StrEnum):
@@ -1284,6 +1321,13 @@ class GroupBy(StrEnum):
     reservation_state = "reservation-state"
     reservation_instance_match_criteria = "reservation-instance-match-criteria"
     reservation_unused_financial_owner = "reservation-unused-financial-owner"
+
+
+class HaStatus(StrEnum):
+    processing = "processing"
+    active = "active"
+    standby = "standby"
+    invalid = "invalid"
 
 
 class HostMaintenance(StrEnum):
@@ -1466,6 +1510,7 @@ class InstanceLifecycleType(StrEnum):
     spot = "spot"
     scheduled = "scheduled"
     capacity_block = "capacity-block"
+    interruptible_capacity_reservation = "interruptible-capacity-reservation"
 
 
 class InstanceMatchCriteria(StrEnum):
@@ -2626,6 +2671,19 @@ class InternetGatewayExclusionMode(StrEnum):
     allow_egress = "allow-egress"
 
 
+class InterruptibleCapacityReservationAllocationStatus(StrEnum):
+    pending = "pending"
+    active = "active"
+    updating = "updating"
+    canceling = "canceling"
+    canceled = "canceled"
+    failed = "failed"
+
+
+class InterruptionType(StrEnum):
+    adhoc = "adhoc"
+
+
 class IpAddressType(StrEnum):
     ipv4 = "ipv4"
     dualstack = "dualstack"
@@ -2695,6 +2753,33 @@ class IpamOverlapStatus(StrEnum):
     ignored = "ignored"
 
 
+class IpamPolicyManagedBy(StrEnum):
+    account = "account"
+    delegated_administrator_for_ipam = "delegated-administrator-for-ipam"
+
+
+class IpamPolicyResourceType(StrEnum):
+    alb = "alb"
+    eip = "eip"
+    rds = "rds"
+    rnat = "rnat"
+
+
+class IpamPolicyState(StrEnum):
+    create_in_progress = "create-in-progress"
+    create_complete = "create-complete"
+    create_failed = "create-failed"
+    modify_in_progress = "modify-in-progress"
+    modify_complete = "modify-complete"
+    modify_failed = "modify-failed"
+    delete_in_progress = "delete-in-progress"
+    delete_complete = "delete-complete"
+    delete_failed = "delete-failed"
+    isolate_in_progress = "isolate-in-progress"
+    isolate_complete = "isolate-complete"
+    restore_in_progress = "restore-in-progress"
+
+
 class IpamPoolAllocationResourceType(StrEnum):
     ipam_pool = "ipam-pool"
     vpc = "vpc"
@@ -2702,10 +2787,12 @@ class IpamPoolAllocationResourceType(StrEnum):
     custom = "custom"
     subnet = "subnet"
     eip = "eip"
+    anycast_ip_list = "anycast-ip-list"
 
 
 class IpamPoolAwsService(StrEnum):
     ec2 = "ec2"
+    global_services = "global-services"
 
 
 class IpamPoolCidrFailureCode(StrEnum):
@@ -2813,6 +2900,7 @@ class IpamPublicAddressAwsService(StrEnum):
     site_to_site_vpn = "site-to-site-vpn"
     load_balancer = "load-balancer"
     global_accelerator = "global-accelerator"
+    cloudfront = "cloudfront"
     other = "other"
 
 
@@ -2823,6 +2911,7 @@ class IpamPublicAddressType(StrEnum):
     amazon_owned_contig = "amazon-owned-contig"
     byoip = "byoip"
     ec2_public_ip = "ec2-public-ip"
+    anycast_ip_list_ip = "anycast-ip-list-ip"
 
 
 class IpamResourceCidrIpSource(StrEnum):
@@ -2865,6 +2954,7 @@ class IpamResourceType(StrEnum):
     public_ipv4_pool = "public-ipv4-pool"
     ipv6_pool = "ipv6-pool"
     eni = "eni"
+    anycast_ip_list = "anycast-ip-list"
 
 
 class IpamScopeExternalAuthorityType(StrEnum):
@@ -3078,6 +3168,7 @@ class ManagedBy(StrEnum):
 class MarketType(StrEnum):
     spot = "spot"
     capacity_block = "capacity-block"
+    interruptible_capacity_reservation = "interruptible-capacity-reservation"
 
 
 class MembershipType(StrEnum):
@@ -3535,6 +3626,7 @@ class ResourceType(StrEnum):
     transit_gateway_connect_peer = "transit-gateway-connect-peer"
     transit_gateway_multicast_domain = "transit-gateway-multicast-domain"
     transit_gateway_policy_table = "transit-gateway-policy-table"
+    transit_gateway_metering_policy = "transit-gateway-metering-policy"
     transit_gateway_route_table = "transit-gateway-route-table"
     transit_gateway_route_table_announcement = "transit-gateway-route-table-announcement"
     volume = "volume"
@@ -3557,6 +3649,7 @@ class ResourceType(StrEnum):
     verified_access_trust_provider = "verified-access-trust-provider"
     vpn_connection_device_type = "vpn-connection-device-type"
     vpc_block_public_access_exclusion = "vpc-block-public-access-exclusion"
+    vpc_encryption_control = "vpc-encryption-control"
     route_server = "route-server"
     route_server_endpoint = "route-server-endpoint"
     route_server_peer = "route-server-peer"
@@ -3568,8 +3661,10 @@ class ResourceType(StrEnum):
     capacity_block = "capacity-block"
     mac_modification_task = "mac-modification-task"
     ipam_prefix_list_resolver = "ipam-prefix-list-resolver"
+    ipam_policy = "ipam-policy"
     ipam_prefix_list_resolver_target = "ipam-prefix-list-resolver-target"
     capacity_manager_data_export = "capacity-manager-data-export"
+    vpn_concentrator = "vpn-concentrator"
 
 
 class RootDeviceType(StrEnum):
@@ -3727,6 +3822,7 @@ class ServiceManaged(StrEnum):
     alb = "alb"
     nlb = "nlb"
     rnat = "rnat"
+    rds = "rds"
 
 
 class ServiceState(StrEnum):
@@ -3811,6 +3907,11 @@ class SpotInstanceType(StrEnum):
 class SpreadLevel(StrEnum):
     host = "host"
     rack = "rack"
+
+
+class SqlServerLicenseUsage(StrEnum):
+    full = "full"
+    waived = "waived"
 
 
 class State(StrEnum):
@@ -3992,6 +4093,7 @@ class TransitGatewayAssociationState(StrEnum):
 class TransitGatewayAttachmentResourceType(StrEnum):
     vpc = "vpc"
     vpn = "vpn"
+    vpn_concentrator = "vpn-concentrator"
     direct_connect_gateway = "direct-connect-gateway"
     connect = "connect"
     peering = "peering"
@@ -4020,6 +4122,25 @@ class TransitGatewayConnectPeerState(StrEnum):
     available = "available"
     deleting = "deleting"
     deleted = "deleted"
+
+
+class TransitGatewayMeteringPayerType(StrEnum):
+    source_attachment_owner = "source-attachment-owner"
+    destination_attachment_owner = "destination-attachment-owner"
+    transit_gateway_owner = "transit-gateway-owner"
+
+
+class TransitGatewayMeteringPolicyEntryState(StrEnum):
+    available = "available"
+    deleted = "deleted"
+
+
+class TransitGatewayMeteringPolicyState(StrEnum):
+    available = "available"
+    deleted = "deleted"
+    pending = "pending"
+    modifying = "modifying"
+    deleting = "deleting"
 
 
 class TransitGatewayMulitcastDomainAssociationState(StrEnum):
@@ -4280,6 +4401,11 @@ class VpcEncryptionControlExclusionState(StrEnum):
     disabled = "disabled"
 
 
+class VpcEncryptionControlExclusionStateInput(StrEnum):
+    enable = "enable"
+    disable = "disable"
+
+
 class VpcEncryptionControlMode(StrEnum):
     monitor = "monitor"
     enforce = "enforce"
@@ -4324,6 +4450,10 @@ class VpcState(StrEnum):
 
 class VpcTenancy(StrEnum):
     default = "default"
+
+
+class VpnConcentratorType(StrEnum):
+    ipsec_1 = "ipsec.1"
 
 
 class VpnEcmpSupportValue(StrEnum):
@@ -5095,6 +5225,7 @@ class ByoipCidr(TypedDict, total=False):
     StatusMessage: String | None
     State: ByoipCidrState | None
     NetworkBorderGroup: String | None
+    AdvertisementType: String | None
 
 
 class AdvertiseByoipCidrResult(TypedDict, total=False):
@@ -5294,6 +5425,8 @@ class NatGatewayAddress(TypedDict, total=False):
     IsPrimary: Boolean | None
     FailureMessage: String | None
     Status: NatGatewayAddressStatus | None
+    AvailabilityZone: AvailabilityZoneName | None
+    AvailabilityZoneId: AvailabilityZoneId | None
 
 
 NatGatewayAddressList = list[NatGatewayAddress]
@@ -5477,6 +5610,8 @@ class AssociateNatGatewayAddressRequest(ServiceRequest):
     AllocationIds: AllocationIdList
     PrivateIpAddresses: IpList | None
     DryRun: Boolean | None
+    AvailabilityZone: AvailabilityZoneName | None
+    AvailabilityZoneId: AvailabilityZoneId | None
 
 
 class AssociateNatGatewayAddressResult(TypedDict, total=False):
@@ -6051,6 +6186,13 @@ class AvailabilityZone(TypedDict, total=False):
     State: AvailabilityZoneState | None
 
 
+class AvailabilityZoneAddress(TypedDict, total=False):
+    AvailabilityZone: AvailabilityZoneName | None
+    AvailabilityZoneId: AvailabilityZoneId | None
+    AllocationIds: AllocationIdList | None
+
+
+AvailabilityZoneAddresses = list[AvailabilityZoneAddress]
 AvailabilityZoneIdStringList = list[String]
 AvailabilityZoneList = list[AvailabilityZone]
 AvailabilityZoneStringList = list[String]
@@ -6575,6 +6717,19 @@ class CapacityManagerDimension(TypedDict, total=False):
     ReservationUnusedFinancialOwner: String | None
 
 
+class InterruptionInfo(TypedDict, total=False):
+    SourceCapacityReservationId: String | None
+    InterruptionType: InterruptionType | None
+
+
+class InterruptibleCapacityAllocation(TypedDict, total=False):
+    InstanceCount: Integer | None
+    TargetInstanceCount: Integer | None
+    Status: InterruptibleCapacityReservationAllocationStatus | None
+    InterruptibleCapacityReservationId: String | None
+    InterruptionType: InterruptionType | None
+
+
 class CapacityReservationCommitmentInfo(TypedDict, total=False):
     CommittedInstanceCount: Integer | None
     CommitmentEndDate: MillisecondDateTime | None
@@ -6609,6 +6764,9 @@ class CapacityReservation(TypedDict, total=False):
     CommitmentInfo: CapacityReservationCommitmentInfo | None
     DeliveryPreference: CapacityReservationDeliveryPreference | None
     CapacityBlockId: CapacityBlockId | None
+    Interruptible: BoxedBoolean | None
+    InterruptibleCapacityAllocation: InterruptibleCapacityAllocation | None
+    InterruptionInfo: InterruptionInfo | None
 
 
 class CapacityReservationInfo(TypedDict, total=False):
@@ -6961,12 +7119,18 @@ class CloudWatchLogOptions(TypedDict, total=False):
     LogEnabled: Boolean | None
     LogGroupArn: String | None
     LogOutputFormat: String | None
+    BgpLogEnabled: Boolean | None
+    BgpLogGroupArn: String | None
+    BgpLogOutputFormat: String | None
 
 
 class CloudWatchLogOptionsSpecification(TypedDict, total=False):
     LogEnabled: Boolean | None
     LogGroupArn: CloudWatchLogGroupArn | None
     LogOutputFormat: String | None
+    BgpLogEnabled: Boolean | None
+    BgpLogGroupArn: CloudWatchLogGroupArn | None
+    BgpLogOutputFormat: String | None
 
 
 class CoipAddressUsage(TypedDict, total=False):
@@ -8161,6 +8325,21 @@ class CreateInternetGatewayResult(TypedDict, total=False):
     InternetGateway: InternetGateway | None
 
 
+class CreateInterruptibleCapacityReservationAllocationRequest(ServiceRequest):
+    CapacityReservationId: CapacityReservationId
+    InstanceCount: Integer
+    ClientToken: String | None
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
+
+
+class CreateInterruptibleCapacityReservationAllocationResult(TypedDict, total=False):
+    SourceCapacityReservationId: CapacityReservationId | None
+    TargetInstanceCount: Integer | None
+    Status: InterruptibleCapacityReservationAllocationStatus | None
+    InterruptionType: InterruptionType | None
+
+
 class CreateIpamExternalResourceVerificationTokenRequest(ServiceRequest):
     DryRun: Boolean | None
     IpamId: IpamId
@@ -8184,6 +8363,28 @@ class IpamExternalResourceVerificationToken(TypedDict, total=False):
 
 class CreateIpamExternalResourceVerificationTokenResult(TypedDict, total=False):
     IpamExternalResourceVerificationToken: IpamExternalResourceVerificationToken | None
+
+
+class CreateIpamPolicyRequest(ServiceRequest):
+    DryRun: Boolean | None
+    TagSpecifications: TagSpecificationList | None
+    ClientToken: String | None
+    IpamId: IpamId
+
+
+class IpamPolicy(TypedDict, total=False):
+    OwnerId: String | None
+    IpamPolicyId: IpamPolicyId | None
+    IpamPolicyArn: ResourceArn | None
+    IpamPolicyRegion: String | None
+    State: IpamPolicyState | None
+    StateMessage: String | None
+    Tags: TagList | None
+    IpamId: IpamId | None
+
+
+class CreateIpamPolicyResult(TypedDict, total=False):
+    IpamPolicy: IpamPolicy | None
 
 
 class IpamPoolSourceResourceRequest(TypedDict, total=False):
@@ -9233,10 +9434,13 @@ class CreateManagedPrefixListResult(TypedDict, total=False):
 
 
 class CreateNatGatewayRequest(ServiceRequest):
+    AvailabilityMode: AvailabilityMode | None
     AllocationId: AllocationId | None
     ClientToken: String | None
     DryRun: Boolean | None
-    SubnetId: SubnetId
+    SubnetId: SubnetId | None
+    VpcId: VpcId | None
+    AvailabilityZoneAddresses: AvailabilityZoneAddresses | None
     TagSpecifications: TagSpecificationList | None
     ConnectivityType: ConnectivityType | None
     PrivateIpAddress: String | None
@@ -9266,6 +9470,10 @@ class NatGateway(TypedDict, total=False):
     VpcId: String | None
     Tags: TagList | None
     ConnectivityType: ConnectivityType | None
+    AvailabilityMode: AvailabilityMode | None
+    AutoScalingIps: AutoScalingIpsState | None
+    AutoProvisionZones: AutoProvisionZonesState | None
+    RouteTableId: String | None
 
 
 class CreateNatGatewayResult(TypedDict, total=False):
@@ -10212,6 +10420,70 @@ class CreateTransitGatewayConnectResult(TypedDict, total=False):
     TransitGatewayConnect: TransitGatewayConnect | None
 
 
+class CreateTransitGatewayMeteringPolicyEntryRequest(ServiceRequest):
+    TransitGatewayMeteringPolicyId: TransitGatewayMeteringPolicyId
+    PolicyRuleNumber: Integer
+    SourceTransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    SourceTransitGatewayAttachmentType: TransitGatewayAttachmentResourceType | None
+    SourceCidrBlock: String | None
+    SourcePortRange: String | None
+    DestinationTransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    DestinationTransitGatewayAttachmentType: TransitGatewayAttachmentResourceType | None
+    DestinationCidrBlock: String | None
+    DestinationPortRange: String | None
+    Protocol: String | None
+    MeteredAccount: TransitGatewayMeteringPayerType
+    DryRun: Boolean | None
+
+
+class TransitGatewayMeteringPolicyRule(TypedDict, total=False):
+    SourceTransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    SourceTransitGatewayAttachmentType: TransitGatewayAttachmentResourceType | None
+    SourceCidrBlock: String | None
+    SourcePortRange: String | None
+    DestinationTransitGatewayAttachmentId: TransitGatewayAttachmentId | None
+    DestinationTransitGatewayAttachmentType: TransitGatewayAttachmentResourceType | None
+    DestinationCidrBlock: String | None
+    DestinationPortRange: String | None
+    Protocol: String | None
+
+
+class TransitGatewayMeteringPolicyEntry(TypedDict, total=False):
+    PolicyRuleNumber: String | None
+    MeteredAccount: TransitGatewayMeteringPayerType | None
+    State: TransitGatewayMeteringPolicyEntryState | None
+    UpdatedAt: MillisecondDateTime | None
+    UpdateEffectiveAt: MillisecondDateTime | None
+    MeteringPolicyRule: TransitGatewayMeteringPolicyRule | None
+
+
+class CreateTransitGatewayMeteringPolicyEntryResult(TypedDict, total=False):
+    TransitGatewayMeteringPolicyEntry: TransitGatewayMeteringPolicyEntry | None
+
+
+TransitGatewayAttachmentIdStringList = list[TransitGatewayAttachmentId]
+
+
+class CreateTransitGatewayMeteringPolicyRequest(ServiceRequest):
+    TransitGatewayId: TransitGatewayId
+    MiddleboxAttachmentIds: TransitGatewayAttachmentIdStringList | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
+
+
+class TransitGatewayMeteringPolicy(TypedDict, total=False):
+    TransitGatewayMeteringPolicyId: TransitGatewayMeteringPolicyId | None
+    TransitGatewayId: TransitGatewayId | None
+    MiddleboxAttachmentIds: ValueStringList | None
+    State: TransitGatewayMeteringPolicyState | None
+    UpdateEffectiveAt: MillisecondDateTime | None
+    Tags: TagList | None
+
+
+class CreateTransitGatewayMeteringPolicyResult(TypedDict, total=False):
+    TransitGatewayMeteringPolicy: TransitGatewayMeteringPolicy | None
+
+
 class CreateTransitGatewayMulticastDomainRequestOptions(TypedDict, total=False):
     Igmpv2Support: Igmpv2SupportValue | None
     StaticSourcesSupport: StaticSourcesSupportValue | None
@@ -10331,6 +10603,11 @@ class CreateTransitGatewayRequest(ServiceRequest):
     DryRun: Boolean | None
 
 
+class EncryptionSupport(TypedDict, total=False):
+    EncryptionState: EncryptionStateValue | None
+    StateMessage: String | None
+
+
 class TransitGatewayOptions(TypedDict, total=False):
     AmazonSideAsn: Long | None
     TransitGatewayCidrBlocks: ValueStringList | None
@@ -10343,6 +10620,7 @@ class TransitGatewayOptions(TypedDict, total=False):
     DnsSupport: DnsSupportValue | None
     SecurityGroupReferencingSupport: SecurityGroupReferencingSupportValue | None
     MulticastSupport: MulticastSupportValue | None
+    EncryptionSupport: EncryptionSupport | None
 
 
 class TransitGateway(TypedDict, total=False):
@@ -10741,6 +11019,16 @@ class CreateVpcBlockPublicAccessExclusionResult(TypedDict, total=False):
     VpcBlockPublicAccessExclusion: VpcBlockPublicAccessExclusion | None
 
 
+class CreateVpcEncryptionControlRequest(ServiceRequest):
+    DryRun: Boolean | None
+    VpcId: VpcId
+    TagSpecifications: TagSpecificationList | None
+
+
+class CreateVpcEncryptionControlResult(TypedDict, total=False):
+    VpcEncryptionControl: VpcEncryptionControl | None
+
+
 class CreateVpcEndpointConnectionNotificationRequest(ServiceRequest):
     DryRun: Boolean | None
     ServiceId: VpcEndpointServiceId | None
@@ -10942,6 +11230,18 @@ class CreateVpcPeeringConnectionResult(TypedDict, total=False):
     VpcPeeringConnection: VpcPeeringConnection | None
 
 
+class VpcEncryptionControlConfiguration(TypedDict, total=False):
+    Mode: VpcEncryptionControlMode
+    InternetGatewayExclusion: VpcEncryptionControlExclusionStateInput | None
+    EgressOnlyInternetGatewayExclusion: VpcEncryptionControlExclusionStateInput | None
+    NatGatewayExclusion: VpcEncryptionControlExclusionStateInput | None
+    VirtualPrivateGatewayExclusion: VpcEncryptionControlExclusionStateInput | None
+    VpcPeeringExclusion: VpcEncryptionControlExclusionStateInput | None
+    LambdaExclusion: VpcEncryptionControlExclusionStateInput | None
+    VpcLatticeExclusion: VpcEncryptionControlExclusionStateInput | None
+    ElasticFileSystemExclusion: VpcEncryptionControlExclusionStateInput | None
+
+
 class CreateVpcRequest(ServiceRequest):
     CidrBlock: String | None
     Ipv6Pool: Ipv6PoolEc2Id | None
@@ -10951,6 +11251,7 @@ class CreateVpcRequest(ServiceRequest):
     Ipv6IpamPoolId: IpamPoolId | None
     Ipv6NetmaskLength: NetmaskLength | None
     Ipv6CidrBlockNetworkBorderGroup: String | None
+    VpcEncryptionControl: VpcEncryptionControlConfiguration | None
     TagSpecifications: TagSpecificationList | None
     DryRun: Boolean | None
     InstanceTenancy: Tenancy | None
@@ -10959,6 +11260,26 @@ class CreateVpcRequest(ServiceRequest):
 
 class CreateVpcResult(TypedDict, total=False):
     Vpc: Vpc | None
+
+
+class CreateVpnConcentratorRequest(ServiceRequest):
+    Type: VpnConcentratorType
+    TransitGatewayId: TransitGatewayId | None
+    TagSpecifications: TagSpecificationList | None
+    DryRun: Boolean | None
+
+
+class VpnConcentrator(TypedDict, total=False):
+    VpnConcentratorId: String | None
+    State: String | None
+    TransitGatewayId: String | None
+    TransitGatewayAttachmentId: String | None
+    Type: String | None
+    Tags: TagList | None
+
+
+class CreateVpnConcentratorResult(TypedDict, total=False):
+    VpnConcentrator: VpnConcentrator | None
 
 
 class VpnTunnelLogOptionsSpecification(TypedDict, total=False):
@@ -11059,6 +11380,7 @@ class CreateVpnConnectionRequest(ServiceRequest):
     Type: String
     VpnGatewayId: VpnGatewayId | None
     TransitGatewayId: TransitGatewayId | None
+    VpnConcentratorId: VpnConcentratorId | None
     TagSpecifications: TagSpecificationList | None
     PreSharedKeyStorage: String | None
     DryRun: Boolean | None
@@ -11183,6 +11505,7 @@ class VpnConnectionOptions(TypedDict, total=False):
 class VpnConnection(TypedDict, total=False):
     Category: String | None
     TransitGatewayId: String | None
+    VpnConcentratorId: String | None
     CoreNetworkArn: String | None
     CoreNetworkAttachmentArn: String | None
     GatewayAssociationState: GatewayAssociationState | None
@@ -11470,6 +11793,15 @@ class DeleteIpamExternalResourceVerificationTokenRequest(ServiceRequest):
 
 class DeleteIpamExternalResourceVerificationTokenResult(TypedDict, total=False):
     IpamExternalResourceVerificationToken: IpamExternalResourceVerificationToken | None
+
+
+class DeleteIpamPolicyRequest(ServiceRequest):
+    DryRun: Boolean | None
+    IpamPolicyId: IpamPolicyId
+
+
+class DeleteIpamPolicyResult(TypedDict, total=False):
+    IpamPolicy: IpamPolicy | None
 
 
 class DeleteIpamPoolRequest(ServiceRequest):
@@ -11921,6 +12253,25 @@ class DeleteTransitGatewayConnectResult(TypedDict, total=False):
     TransitGatewayConnect: TransitGatewayConnect | None
 
 
+class DeleteTransitGatewayMeteringPolicyEntryRequest(ServiceRequest):
+    TransitGatewayMeteringPolicyId: TransitGatewayMeteringPolicyId
+    PolicyRuleNumber: Integer
+    DryRun: Boolean | None
+
+
+class DeleteTransitGatewayMeteringPolicyEntryResult(TypedDict, total=False):
+    TransitGatewayMeteringPolicyEntry: TransitGatewayMeteringPolicyEntry | None
+
+
+class DeleteTransitGatewayMeteringPolicyRequest(ServiceRequest):
+    TransitGatewayMeteringPolicyId: TransitGatewayMeteringPolicyId
+    DryRun: Boolean | None
+
+
+class DeleteTransitGatewayMeteringPolicyResult(TypedDict, total=False):
+    TransitGatewayMeteringPolicy: TransitGatewayMeteringPolicy | None
+
+
 class DeleteTransitGatewayMulticastDomainRequest(ServiceRequest):
     TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
     DryRun: Boolean | None
@@ -12058,6 +12409,15 @@ class DeleteVpcBlockPublicAccessExclusionResult(TypedDict, total=False):
     VpcBlockPublicAccessExclusion: VpcBlockPublicAccessExclusion | None
 
 
+class DeleteVpcEncryptionControlRequest(ServiceRequest):
+    DryRun: Boolean | None
+    VpcEncryptionControlId: VpcEncryptionControlId
+
+
+class DeleteVpcEncryptionControlResult(TypedDict, total=False):
+    VpcEncryptionControl: VpcEncryptionControl | None
+
+
 class DeleteVpcEndpointConnectionNotificationsRequest(ServiceRequest):
     DryRun: Boolean | None
     ConnectionNotificationIds: ConnectionNotificationIdsList
@@ -12100,6 +12460,15 @@ class DeleteVpcPeeringConnectionResult(TypedDict, total=False):
 class DeleteVpcRequest(ServiceRequest):
     VpcId: VpcId
     DryRun: Boolean | None
+
+
+class DeleteVpnConcentratorRequest(ServiceRequest):
+    VpnConcentratorId: VpnConcentratorId
+    DryRun: Boolean | None
+
+
+class DeleteVpnConcentratorResult(TypedDict, total=False):
+    Return: Boolean | None
 
 
 class DeleteVpnConnectionRequest(ServiceRequest):
@@ -13723,6 +14092,47 @@ class DescribeInstanceImageMetadataResult(TypedDict, total=False):
     NextToken: String | None
 
 
+class DescribeInstanceSqlHaHistoryStatesRequest(ServiceRequest):
+    InstanceIds: InstanceIdStringList | None
+    StartTime: MillisecondDateTime | None
+    EndTime: MillisecondDateTime | None
+    NextToken: NextToken | None
+    MaxResults: DescribeInstanceSqlHaStatesRequestMaxResultsInteger | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
+
+
+class RegisteredInstance(TypedDict, total=False):
+    InstanceId: InstanceId | None
+    SqlServerLicenseUsage: SqlServerLicenseUsage | None
+    HaStatus: HaStatus | None
+    ProcessingStatus: String | None
+    LastUpdatedTime: MillisecondDateTime | None
+    SqlServerCredentials: String | None
+    Tags: TagList | None
+
+
+RegisteredInstanceList = list[RegisteredInstance]
+
+
+class DescribeInstanceSqlHaHistoryStatesResult(TypedDict, total=False):
+    Instances: RegisteredInstanceList | None
+    NextToken: NextToken | None
+
+
+class DescribeInstanceSqlHaStatesRequest(ServiceRequest):
+    InstanceIds: InstanceIdStringList | None
+    NextToken: NextToken | None
+    MaxResults: DescribeInstanceSqlHaStatesRequestMaxResultsInteger | None
+    Filters: FilterList | None
+    DryRun: Boolean | None
+
+
+class DescribeInstanceSqlHaStatesResult(TypedDict, total=False):
+    Instances: RegisteredInstanceList | None
+    NextToken: NextToken | None
+
+
 class DescribeInstanceStatusRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList | None
     MaxResults: Integer | None
@@ -14415,6 +14825,22 @@ IpamExternalResourceVerificationTokenSet = list[IpamExternalResourceVerification
 class DescribeIpamExternalResourceVerificationTokensResult(TypedDict, total=False):
     NextToken: NextToken | None
     IpamExternalResourceVerificationTokens: IpamExternalResourceVerificationTokenSet | None
+
+
+class DescribeIpamPoliciesRequest(ServiceRequest):
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
+    IpamPolicyIds: ValueStringList | None
+
+
+IpamPolicySet = list[IpamPolicy]
+
+
+class DescribeIpamPoliciesResult(TypedDict, total=False):
+    NextToken: NextToken | None
+    IpamPolicies: IpamPolicySet | None
 
 
 class DescribeIpamPoolsRequest(ServiceRequest):
@@ -16325,9 +16751,6 @@ class DescribeTrafficMirrorTargetsResult(TypedDict, total=False):
     NextToken: String | None
 
 
-TransitGatewayAttachmentIdStringList = list[TransitGatewayAttachmentId]
-
-
 class DescribeTransitGatewayAttachmentsRequest(ServiceRequest):
     TransitGatewayAttachmentIds: TransitGatewayAttachmentIdStringList | None
     Filters: FilterList | None
@@ -16394,6 +16817,25 @@ TransitGatewayConnectList = list[TransitGatewayConnect]
 
 class DescribeTransitGatewayConnectsResult(TypedDict, total=False):
     TransitGatewayConnects: TransitGatewayConnectList | None
+    NextToken: String | None
+
+
+TransitGatewayMeteringPolicyIdStringList = list[TransitGatewayMeteringPolicyId]
+
+
+class DescribeTransitGatewayMeteringPoliciesRequest(ServiceRequest):
+    TransitGatewayMeteringPolicyIds: TransitGatewayMeteringPolicyIdStringList | None
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
+
+
+TransitGatewayMeteringPolicyList = list[TransitGatewayMeteringPolicy]
+
+
+class DescribeTransitGatewayMeteringPoliciesResult(TypedDict, total=False):
+    TransitGatewayMeteringPolicies: TransitGatewayMeteringPolicyList | None
     NextToken: String | None
 
 
@@ -16897,6 +17339,27 @@ class DescribeVpcClassicLinkResult(TypedDict, total=False):
     Vpcs: VpcClassicLinkList | None
 
 
+VpcIdStringList = list[VpcId]
+VpcEncryptionControlIdList = list[VpcEncryptionControlId]
+
+
+class DescribeVpcEncryptionControlsRequest(ServiceRequest):
+    DryRun: Boolean | None
+    Filters: FilterList | None
+    VpcEncryptionControlIds: VpcEncryptionControlIdList | None
+    VpcIds: VpcIdStringList | None
+    NextToken: String | None
+    MaxResults: DescribeVpcEncryptionControlsMaxResults | None
+
+
+VpcEncryptionControlList = list[VpcEncryptionControl]
+
+
+class DescribeVpcEncryptionControlsResult(TypedDict, total=False):
+    VpcEncryptionControls: VpcEncryptionControlList | None
+    NextToken: String | None
+
+
 class DescribeVpcEndpointAssociationsRequest(ServiceRequest):
     DryRun: Boolean | None
     VpcEndpointIds: VpcEndpointIdList | None
@@ -17080,9 +17543,6 @@ class DescribeVpcPeeringConnectionsResult(TypedDict, total=False):
     NextToken: String | None
 
 
-VpcIdStringList = list[VpcId]
-
-
 class DescribeVpcsRequest(ServiceRequest):
     Filters: FilterList | None
     VpcIds: VpcIdStringList | None
@@ -17097,6 +17557,25 @@ VpcList = list[Vpc]
 class DescribeVpcsResult(TypedDict, total=False):
     NextToken: String | None
     Vpcs: VpcList | None
+
+
+VpnConcentratorIdStringList = list[VpnConcentratorId]
+
+
+class DescribeVpnConcentratorsRequest(ServiceRequest):
+    VpnConcentratorIds: VpnConcentratorIdStringList | None
+    Filters: FilterList | None
+    MaxResults: GVCDMaxResults | None
+    NextToken: NextToken | None
+    DryRun: Boolean | None
+
+
+VpnConcentratorList = list[VpnConcentrator]
+
+
+class DescribeVpnConcentratorsResult(TypedDict, total=False):
+    VpnConcentrators: VpnConcentratorList | None
+    NextToken: NextToken | None
 
 
 VpnConnectionIdStringList = list[VpnConnectionId]
@@ -17334,6 +17813,18 @@ class DisableImageResult(TypedDict, total=False):
     Return: Boolean | None
 
 
+InstanceIdUpdateStringList = list[InstanceId]
+
+
+class DisableInstanceSqlHaStandbyDetectionsRequest(ServiceRequest):
+    InstanceIds: InstanceIdUpdateStringList
+    DryRun: Boolean | None
+
+
+class DisableInstanceSqlHaStandbyDetectionsResult(TypedDict, total=False):
+    Instances: RegisteredInstanceList | None
+
+
 class DisableIpamOrganizationAdminAccountRequest(ServiceRequest):
     DryRun: Boolean | None
     DelegatedAdminAccountId: String
@@ -17341,6 +17832,16 @@ class DisableIpamOrganizationAdminAccountRequest(ServiceRequest):
 
 class DisableIpamOrganizationAdminAccountResult(TypedDict, total=False):
     Success: Boolean | None
+
+
+class DisableIpamPolicyRequest(ServiceRequest):
+    DryRun: Boolean | None
+    IpamPolicyId: IpamPolicyId
+    OrganizationTargetId: String | None
+
+
+class DisableIpamPolicyResult(TypedDict, total=False):
+    Return: Boolean | None
 
 
 class DisableRouteServerPropagationRequest(ServiceRequest):
@@ -17810,6 +18311,16 @@ class EnableImageResult(TypedDict, total=False):
     Return: Boolean | None
 
 
+class EnableInstanceSqlHaStandbyDetectionsRequest(ServiceRequest):
+    InstanceIds: InstanceIdUpdateStringList
+    SqlServerCredentials: SecretArn | None
+    DryRun: Boolean | None
+
+
+class EnableInstanceSqlHaStandbyDetectionsResult(TypedDict, total=False):
+    Instances: RegisteredInstanceList | None
+
+
 class EnableIpamOrganizationAdminAccountRequest(ServiceRequest):
     DryRun: Boolean | None
     DelegatedAdminAccountId: String
@@ -17817,6 +18328,16 @@ class EnableIpamOrganizationAdminAccountRequest(ServiceRequest):
 
 class EnableIpamOrganizationAdminAccountResult(TypedDict, total=False):
     Success: Boolean | None
+
+
+class EnableIpamPolicyRequest(ServiceRequest):
+    DryRun: Boolean | None
+    IpamPolicyId: IpamPolicyId
+    OrganizationTargetId: String | None
+
+
+class EnableIpamPolicyResult(TypedDict, total=False):
+    IpamPolicyId: IpamPolicyId | None
 
 
 class EnableReachabilityAnalyzerOrganizationSharingRequest(ServiceRequest):
@@ -18175,6 +18696,9 @@ class GetCapacityReservationUsageResult(TypedDict, total=False):
     AvailableInstanceCount: Integer | None
     State: CapacityReservationState | None
     InstanceUsages: InstanceUsageSet | None
+    Interruptible: BoxedBoolean | None
+    InterruptibleCapacityAllocation: InterruptibleCapacityAllocation | None
+    InterruptionInfo: InterruptionInfo | None
 
 
 class GetCoipPoolUsageRequest(ServiceRequest):
@@ -18261,6 +18785,16 @@ class GetEbsEncryptionByDefaultRequest(ServiceRequest):
 class GetEbsEncryptionByDefaultResult(TypedDict, total=False):
     EbsEncryptionByDefault: Boolean | None
     SseType: SSEType | None
+
+
+class GetEnabledIpamPolicyRequest(ServiceRequest):
+    DryRun: Boolean | None
+
+
+class GetEnabledIpamPolicyResult(TypedDict, total=False):
+    IpamPolicyEnabled: Boolean | None
+    IpamPolicyId: IpamPolicyId | None
+    ManagedBy: IpamPolicyManagedBy | None
 
 
 class IntegrateServices(TypedDict, total=False):
@@ -18569,6 +19103,58 @@ IpamDiscoveredResourceCidrSet = list[IpamDiscoveredResourceCidr]
 
 class GetIpamDiscoveredResourceCidrsResult(TypedDict, total=False):
     IpamDiscoveredResourceCidrs: IpamDiscoveredResourceCidrSet | None
+    NextToken: NextToken | None
+
+
+class GetIpamPolicyAllocationRulesRequest(ServiceRequest):
+    DryRun: Boolean | None
+    IpamPolicyId: IpamPolicyId
+    Filters: FilterList | None
+    Locale: String | None
+    ResourceType: IpamPolicyResourceType | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
+
+
+class IpamPolicyAllocationRule(TypedDict, total=False):
+    SourceIpamPoolId: IpamPoolId | None
+
+
+IpamPolicyAllocationRuleList = list[IpamPolicyAllocationRule]
+
+
+class IpamPolicyDocument(TypedDict, total=False):
+    IpamPolicyId: IpamPolicyId | None
+    Locale: String | None
+    ResourceType: IpamPolicyResourceType | None
+    AllocationRules: IpamPolicyAllocationRuleList | None
+
+
+IpamPolicyDocumentSet = list[IpamPolicyDocument]
+
+
+class GetIpamPolicyAllocationRulesResult(TypedDict, total=False):
+    IpamPolicyDocuments: IpamPolicyDocumentSet | None
+    NextToken: NextToken | None
+
+
+class GetIpamPolicyOrganizationTargetsRequest(ServiceRequest):
+    DryRun: Boolean | None
+    MaxResults: IpamMaxResults | None
+    NextToken: NextToken | None
+    IpamPolicyId: IpamPolicyId
+    Filters: FilterList | None
+
+
+class IpamPolicyOrganizationTarget(TypedDict, total=False):
+    OrganizationTargetId: String | None
+
+
+IpamPolicyOrganizationTargetSet = list[IpamPolicyOrganizationTarget]
+
+
+class GetIpamPolicyOrganizationTargetsResult(TypedDict, total=False):
+    OrganizationTargets: IpamPolicyOrganizationTargetSet | None
     NextToken: NextToken | None
 
 
@@ -19034,6 +19620,22 @@ class GetTransitGatewayAttachmentPropagationsResult(TypedDict, total=False):
     NextToken: String | None
 
 
+class GetTransitGatewayMeteringPolicyEntriesRequest(ServiceRequest):
+    TransitGatewayMeteringPolicyId: TransitGatewayMeteringPolicyId
+    Filters: FilterList | None
+    MaxResults: TransitGatewayMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
+
+
+TransitGatewayMeteringPolicyEntryList = list[TransitGatewayMeteringPolicyEntry]
+
+
+class GetTransitGatewayMeteringPolicyEntriesResult(TypedDict, total=False):
+    TransitGatewayMeteringPolicyEntries: TransitGatewayMeteringPolicyEntryList | None
+    NextToken: String | None
+
+
 class GetTransitGatewayMulticastDomainAssociationsRequest(ServiceRequest):
     TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
     Filters: FilterList | None
@@ -19211,6 +19813,28 @@ class GetVerifiedAccessGroupPolicyRequest(ServiceRequest):
 class GetVerifiedAccessGroupPolicyResult(TypedDict, total=False):
     PolicyEnabled: Boolean | None
     PolicyDocument: String | None
+
+
+class GetVpcResourcesBlockingEncryptionEnforcementRequest(ServiceRequest):
+    VpcId: VpcId
+    MaxResults: GetVpcResourcesBlockingEncryptionEnforcementMaxResults | None
+    NextToken: String | None
+    DryRun: Boolean | None
+
+
+class VpcEncryptionNonCompliantResource(TypedDict, total=False):
+    Id: String | None
+    Type: String | None
+    Description: String | None
+    IsExcludable: Boolean | None
+
+
+VpcEncryptionNonCompliantResourceList = list[VpcEncryptionNonCompliantResource]
+
+
+class GetVpcResourcesBlockingEncryptionEnforcementResult(TypedDict, total=False):
+    NonCompliantResources: VpcEncryptionNonCompliantResourceList | None
+    NextToken: String | None
 
 
 class GetVpnConnectionDeviceSampleConfigurationRequest(ServiceRequest):
@@ -19570,6 +20194,13 @@ class IpamCidrAuthorizationContext(TypedDict, total=False):
     Signature: String | None
 
 
+class IpamPolicyAllocationRuleRequest(TypedDict, total=False):
+    SourceIpamPoolId: IpamPoolId | None
+
+
+IpamPolicyAllocationRuleListRequest = list[IpamPolicyAllocationRuleRequest]
+
+
 class KeyPair(TypedDict, total=False):
     KeyPairId: String | None
     Tags: TagList | None
@@ -19628,6 +20259,39 @@ SnapshotRecycleBinInfoList = list[SnapshotRecycleBinInfo]
 
 class ListSnapshotsInRecycleBinResult(TypedDict, total=False):
     Snapshots: SnapshotRecycleBinInfoList | None
+    NextToken: String | None
+
+
+class ListVolumesInRecycleBinRequest(ServiceRequest):
+    VolumeIds: VolumeIdStringList | None
+    DryRun: Boolean | None
+    MaxResults: Integer | None
+    NextToken: String | None
+
+
+class VolumeRecycleBinInfo(TypedDict, total=False):
+    VolumeId: VolumeId | None
+    VolumeType: VolumeType | None
+    State: VolumeState | None
+    Size: Integer | None
+    Iops: Integer | None
+    Throughput: Integer | None
+    OutpostArn: String | None
+    AvailabilityZone: String | None
+    AvailabilityZoneId: String | None
+    SourceVolumeId: String | None
+    SnapshotId: String | None
+    Operator: OperatorResponse | None
+    CreateTime: DateTime | None
+    RecycleBinEnterTime: MillisecondDateTime | None
+    RecycleBinExitTime: MillisecondDateTime | None
+
+
+VolumeRecycleBinInfoList = list[VolumeRecycleBinInfo]
+
+
+class ListVolumesInRecycleBinResult(TypedDict, total=False):
+    Volumes: VolumeRecycleBinInfoList | None
     NextToken: String | None
 
 
@@ -20014,6 +20678,18 @@ class ModifyInstancePlacementResult(TypedDict, total=False):
     Return: Boolean | None
 
 
+class ModifyIpamPolicyAllocationRulesRequest(ServiceRequest):
+    DryRun: Boolean | None
+    IpamPolicyId: IpamPolicyId
+    Locale: String
+    ResourceType: IpamPolicyResourceType
+    AllocationRules: IpamPolicyAllocationRuleListRequest | None
+
+
+class ModifyIpamPolicyAllocationRulesResult(TypedDict, total=False):
+    IpamPolicyDocument: IpamPolicyDocument | None
+
+
 class ModifyIpamPoolRequest(ServiceRequest):
     DryRun: Boolean | None
     IpamPoolId: IpamPoolId
@@ -20370,6 +21046,17 @@ class ModifyTrafficMirrorSessionResult(TypedDict, total=False):
     TrafficMirrorSession: TrafficMirrorSession | None
 
 
+class ModifyTransitGatewayMeteringPolicyRequest(ServiceRequest):
+    TransitGatewayMeteringPolicyId: TransitGatewayMeteringPolicyId
+    AddMiddleboxAttachmentIds: TransitGatewayAttachmentIdStringList | None
+    RemoveMiddleboxAttachmentIds: TransitGatewayAttachmentIdStringList | None
+    DryRun: Boolean | None
+
+
+class ModifyTransitGatewayMeteringPolicyResult(TypedDict, total=False):
+    TransitGatewayMeteringPolicy: TransitGatewayMeteringPolicy | None
+
+
 class ModifyTransitGatewayOptions(TypedDict, total=False):
     AddTransitGatewayCidrBlocks: TransitGatewayCidrBlockStringList | None
     RemoveTransitGatewayCidrBlocks: TransitGatewayCidrBlockStringList | None
@@ -20382,6 +21069,7 @@ class ModifyTransitGatewayOptions(TypedDict, total=False):
     DefaultRouteTablePropagation: DefaultRouteTablePropagationValue | None
     PropagationDefaultRouteTableId: TransitGatewayRouteTableId | None
     AmazonSideAsn: Long | None
+    EncryptionSupport: EncryptionSupportOptionValue | None
 
 
 class ModifyTransitGatewayPrefixListReferenceRequest(ServiceRequest):
@@ -20650,6 +21338,24 @@ class ModifyVpcBlockPublicAccessOptionsRequest(ServiceRequest):
 
 class ModifyVpcBlockPublicAccessOptionsResult(TypedDict, total=False):
     VpcBlockPublicAccessOptions: VpcBlockPublicAccessOptions | None
+
+
+class ModifyVpcEncryptionControlRequest(ServiceRequest):
+    DryRun: Boolean | None
+    VpcEncryptionControlId: VpcEncryptionControlId
+    Mode: VpcEncryptionControlMode | None
+    InternetGatewayExclusion: VpcEncryptionControlExclusionStateInput | None
+    EgressOnlyInternetGatewayExclusion: VpcEncryptionControlExclusionStateInput | None
+    NatGatewayExclusion: VpcEncryptionControlExclusionStateInput | None
+    VirtualPrivateGatewayExclusion: VpcEncryptionControlExclusionStateInput | None
+    VpcPeeringExclusion: VpcEncryptionControlExclusionStateInput | None
+    LambdaExclusion: VpcEncryptionControlExclusionStateInput | None
+    VpcLatticeExclusion: VpcEncryptionControlExclusionStateInput | None
+    ElasticFileSystemExclusion: VpcEncryptionControlExclusionStateInput | None
+
+
+class ModifyVpcEncryptionControlResult(TypedDict, total=False):
+    VpcEncryptionControl: VpcEncryptionControl | None
 
 
 class ModifyVpcEndpointConnectionNotificationRequest(ServiceRequest):
@@ -21458,6 +22164,15 @@ class RestoreSnapshotTierResult(TypedDict, total=False):
     IsPermanentRestore: Boolean | None
 
 
+class RestoreVolumeFromRecycleBinRequest(ServiceRequest):
+    VolumeId: VolumeId
+    DryRun: Boolean | None
+
+
+class RestoreVolumeFromRecycleBinResult(TypedDict, total=False):
+    Return: Boolean | None
+
+
 class RevokeClientVpnIngressRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
     TargetNetworkCidr: String
@@ -21893,6 +22608,21 @@ class UpdateCapacityManagerOrganizationsAccessResult(TypedDict, total=False):
     OrganizationsAccess: Boolean | None
 
 
+class UpdateInterruptibleCapacityReservationAllocationRequest(ServiceRequest):
+    CapacityReservationId: CapacityReservationId
+    TargetInstanceCount: Integer
+    DryRun: Boolean | None
+
+
+class UpdateInterruptibleCapacityReservationAllocationResult(TypedDict, total=False):
+    InterruptibleCapacityReservationId: CapacityReservationId | None
+    SourceCapacityReservationId: CapacityReservationId | None
+    InstanceCount: Integer | None
+    TargetInstanceCount: Integer | None
+    Status: InterruptibleCapacityReservationAllocationStatus | None
+    InterruptionType: InterruptionType | None
+
+
 class UpdateSecurityGroupRuleDescriptionsEgressRequest(ServiceRequest):
     DryRun: Boolean | None
     GroupId: SecurityGroupId | None
@@ -22244,6 +22974,8 @@ class Ec2Api:
         allocation_ids: AllocationIdList,
         private_ip_addresses: IpList | None = None,
         dry_run: Boolean | None = None,
+        availability_zone: AvailabilityZoneName | None = None,
+        availability_zone_id: AvailabilityZoneId | None = None,
         **kwargs,
     ) -> AssociateNatGatewayAddressResult:
         raise NotImplementedError
@@ -23015,6 +23747,19 @@ class Ec2Api:
     ) -> CreateInternetGatewayResult:
         raise NotImplementedError
 
+    @handler("CreateInterruptibleCapacityReservationAllocation")
+    def create_interruptible_capacity_reservation_allocation(
+        self,
+        context: RequestContext,
+        capacity_reservation_id: CapacityReservationId,
+        instance_count: Integer,
+        client_token: String | None = None,
+        dry_run: Boolean | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        **kwargs,
+    ) -> CreateInterruptibleCapacityReservationAllocationResult:
+        raise NotImplementedError
+
     @handler("CreateIpam")
     def create_ipam(
         self,
@@ -23041,6 +23786,18 @@ class Ec2Api:
         client_token: String | None = None,
         **kwargs,
     ) -> CreateIpamExternalResourceVerificationTokenResult:
+        raise NotImplementedError
+
+    @handler("CreateIpamPolicy")
+    def create_ipam_policy(
+        self,
+        context: RequestContext,
+        ipam_id: IpamId,
+        dry_run: Boolean | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        client_token: String | None = None,
+        **kwargs,
+    ) -> CreateIpamPolicyResult:
         raise NotImplementedError
 
     @handler("CreateIpamPool")
@@ -23285,10 +24042,13 @@ class Ec2Api:
     def create_nat_gateway(
         self,
         context: RequestContext,
-        subnet_id: SubnetId,
+        availability_mode: AvailabilityMode | None = None,
         allocation_id: AllocationId | None = None,
         client_token: String | None = None,
         dry_run: Boolean | None = None,
+        subnet_id: SubnetId | None = None,
+        vpc_id: VpcId | None = None,
+        availability_zone_addresses: AvailabilityZoneAddresses | None = None,
         tag_specifications: TagSpecificationList | None = None,
         connectivity_type: ConnectivityType | None = None,
         private_ip_address: String | None = None,
@@ -23761,6 +24521,40 @@ class Ec2Api:
     ) -> CreateTransitGatewayConnectPeerResult:
         raise NotImplementedError
 
+    @handler("CreateTransitGatewayMeteringPolicy")
+    def create_transit_gateway_metering_policy(
+        self,
+        context: RequestContext,
+        transit_gateway_id: TransitGatewayId,
+        middlebox_attachment_ids: TransitGatewayAttachmentIdStringList | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> CreateTransitGatewayMeteringPolicyResult:
+        raise NotImplementedError
+
+    @handler("CreateTransitGatewayMeteringPolicyEntry")
+    def create_transit_gateway_metering_policy_entry(
+        self,
+        context: RequestContext,
+        transit_gateway_metering_policy_id: TransitGatewayMeteringPolicyId,
+        policy_rule_number: Integer,
+        metered_account: TransitGatewayMeteringPayerType,
+        source_transit_gateway_attachment_id: TransitGatewayAttachmentId | None = None,
+        source_transit_gateway_attachment_type: TransitGatewayAttachmentResourceType | None = None,
+        source_cidr_block: String | None = None,
+        source_port_range: String | None = None,
+        destination_transit_gateway_attachment_id: TransitGatewayAttachmentId | None = None,
+        destination_transit_gateway_attachment_type: TransitGatewayAttachmentResourceType
+        | None = None,
+        destination_cidr_block: String | None = None,
+        destination_port_range: String | None = None,
+        protocol: String | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> CreateTransitGatewayMeteringPolicyEntryResult:
+        raise NotImplementedError
+
     @handler("CreateTransitGatewayMulticastDomain")
     def create_transit_gateway_multicast_domain(
         self,
@@ -23973,6 +24767,7 @@ class Ec2Api:
         ipv6_ipam_pool_id: IpamPoolId | None = None,
         ipv6_netmask_length: NetmaskLength | None = None,
         ipv6_cidr_block_network_border_group: String | None = None,
+        vpc_encryption_control: VpcEncryptionControlConfiguration | None = None,
         tag_specifications: TagSpecificationList | None = None,
         dry_run: Boolean | None = None,
         instance_tenancy: Tenancy | None = None,
@@ -23992,6 +24787,17 @@ class Ec2Api:
         tag_specifications: TagSpecificationList | None = None,
         **kwargs,
     ) -> CreateVpcBlockPublicAccessExclusionResult:
+        raise NotImplementedError
+
+    @handler("CreateVpcEncryptionControl")
+    def create_vpc_encryption_control(
+        self,
+        context: RequestContext,
+        vpc_id: VpcId,
+        dry_run: Boolean | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        **kwargs,
+    ) -> CreateVpcEncryptionControlResult:
         raise NotImplementedError
 
     @handler("CreateVpcEndpoint")
@@ -24062,6 +24868,12 @@ class Ec2Api:
         peer_owner_id: String | None = None,
         **kwargs,
     ) -> CreateVpcPeeringConnectionResult:
+        raise NotImplementedError
+
+    @handler("CreateVpnConcentrator", expand=False)
+    def create_vpn_concentrator(
+        self, context: RequestContext, request: CreateVpnConcentratorRequest, **kwargs
+    ) -> CreateVpnConcentratorResult:
         raise NotImplementedError
 
     @handler("CreateVpnConnection", expand=False)
@@ -24270,6 +25082,16 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> DeleteIpamExternalResourceVerificationTokenResult:
+        raise NotImplementedError
+
+    @handler("DeleteIpamPolicy")
+    def delete_ipam_policy(
+        self,
+        context: RequestContext,
+        ipam_policy_id: IpamPolicyId,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DeleteIpamPolicyResult:
         raise NotImplementedError
 
     @handler("DeleteIpamPool")
@@ -24730,6 +25552,27 @@ class Ec2Api:
     ) -> DeleteTransitGatewayConnectPeerResult:
         raise NotImplementedError
 
+    @handler("DeleteTransitGatewayMeteringPolicy")
+    def delete_transit_gateway_metering_policy(
+        self,
+        context: RequestContext,
+        transit_gateway_metering_policy_id: TransitGatewayMeteringPolicyId,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DeleteTransitGatewayMeteringPolicyResult:
+        raise NotImplementedError
+
+    @handler("DeleteTransitGatewayMeteringPolicyEntry")
+    def delete_transit_gateway_metering_policy_entry(
+        self,
+        context: RequestContext,
+        transit_gateway_metering_policy_id: TransitGatewayMeteringPolicyId,
+        policy_rule_number: Integer,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DeleteTransitGatewayMeteringPolicyEntryResult:
+        raise NotImplementedError
+
     @handler("DeleteTransitGatewayMulticastDomain")
     def delete_transit_gateway_multicast_domain(
         self,
@@ -24878,6 +25721,16 @@ class Ec2Api:
     ) -> DeleteVpcBlockPublicAccessExclusionResult:
         raise NotImplementedError
 
+    @handler("DeleteVpcEncryptionControl")
+    def delete_vpc_encryption_control(
+        self,
+        context: RequestContext,
+        vpc_encryption_control_id: VpcEncryptionControlId,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DeleteVpcEncryptionControlResult:
+        raise NotImplementedError
+
     @handler("DeleteVpcEndpointConnectionNotifications")
     def delete_vpc_endpoint_connection_notifications(
         self,
@@ -24916,6 +25769,16 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> DeleteVpcPeeringConnectionResult:
+        raise NotImplementedError
+
+    @handler("DeleteVpnConcentrator")
+    def delete_vpn_concentrator(
+        self,
+        context: RequestContext,
+        vpn_concentrator_id: VpnConcentratorId,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DeleteVpnConcentratorResult:
         raise NotImplementedError
 
     @handler("DeleteVpnConnection")
@@ -25802,6 +26665,34 @@ class Ec2Api:
     ) -> DescribeInstanceImageMetadataResult:
         raise NotImplementedError
 
+    @handler("DescribeInstanceSqlHaHistoryStates")
+    def describe_instance_sql_ha_history_states(
+        self,
+        context: RequestContext,
+        instance_ids: InstanceIdStringList | None = None,
+        start_time: MillisecondDateTime | None = None,
+        end_time: MillisecondDateTime | None = None,
+        next_token: NextToken | None = None,
+        max_results: DescribeInstanceSqlHaStatesRequestMaxResultsInteger | None = None,
+        filters: FilterList | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DescribeInstanceSqlHaHistoryStatesResult:
+        raise NotImplementedError
+
+    @handler("DescribeInstanceSqlHaStates")
+    def describe_instance_sql_ha_states(
+        self,
+        context: RequestContext,
+        instance_ids: InstanceIdStringList | None = None,
+        next_token: NextToken | None = None,
+        max_results: DescribeInstanceSqlHaStatesRequestMaxResultsInteger | None = None,
+        filters: FilterList | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DescribeInstanceSqlHaStatesResult:
+        raise NotImplementedError
+
     @handler("DescribeInstanceStatus")
     def describe_instance_status(
         self,
@@ -25904,6 +26795,19 @@ class Ec2Api:
         ipam_external_resource_verification_token_ids: ValueStringList | None = None,
         **kwargs,
     ) -> DescribeIpamExternalResourceVerificationTokensResult:
+        raise NotImplementedError
+
+    @handler("DescribeIpamPolicies")
+    def describe_ipam_policies(
+        self,
+        context: RequestContext,
+        dry_run: Boolean | None = None,
+        filters: FilterList | None = None,
+        max_results: IpamMaxResults | None = None,
+        next_token: NextToken | None = None,
+        ipam_policy_ids: ValueStringList | None = None,
+        **kwargs,
+    ) -> DescribeIpamPoliciesResult:
         raise NotImplementedError
 
     @handler("DescribeIpamPools")
@@ -26864,6 +27768,19 @@ class Ec2Api:
     ) -> DescribeTransitGatewayConnectsResult:
         raise NotImplementedError
 
+    @handler("DescribeTransitGatewayMeteringPolicies")
+    def describe_transit_gateway_metering_policies(
+        self,
+        context: RequestContext,
+        transit_gateway_metering_policy_ids: TransitGatewayMeteringPolicyIdStringList | None = None,
+        filters: FilterList | None = None,
+        max_results: TransitGatewayMaxResults | None = None,
+        next_token: String | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DescribeTransitGatewayMeteringPoliciesResult:
+        raise NotImplementedError
+
     @handler("DescribeTransitGatewayMulticastDomains")
     def describe_transit_gateway_multicast_domains(
         self,
@@ -27140,6 +28057,20 @@ class Ec2Api:
     ) -> DescribeVpcClassicLinkDnsSupportResult:
         raise NotImplementedError
 
+    @handler("DescribeVpcEncryptionControls")
+    def describe_vpc_encryption_controls(
+        self,
+        context: RequestContext,
+        dry_run: Boolean | None = None,
+        filters: FilterList | None = None,
+        vpc_encryption_control_ids: VpcEncryptionControlIdList | None = None,
+        vpc_ids: VpcIdStringList | None = None,
+        next_token: String | None = None,
+        max_results: DescribeVpcEncryptionControlsMaxResults | None = None,
+        **kwargs,
+    ) -> DescribeVpcEncryptionControlsResult:
+        raise NotImplementedError
+
     @handler("DescribeVpcEndpointAssociations")
     def describe_vpc_endpoint_associations(
         self,
@@ -27255,6 +28186,19 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> DescribeVpcsResult:
+        raise NotImplementedError
+
+    @handler("DescribeVpnConcentrators")
+    def describe_vpn_concentrators(
+        self,
+        context: RequestContext,
+        vpn_concentrator_ids: VpnConcentratorIdStringList | None = None,
+        filters: FilterList | None = None,
+        max_results: GVCDMaxResults | None = None,
+        next_token: NextToken | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DescribeVpnConcentratorsResult:
         raise NotImplementedError
 
     @handler("DescribeVpnConnections")
@@ -27440,6 +28384,16 @@ class Ec2Api:
     ) -> DisableImageDeregistrationProtectionResult:
         raise NotImplementedError
 
+    @handler("DisableInstanceSqlHaStandbyDetections")
+    def disable_instance_sql_ha_standby_detections(
+        self,
+        context: RequestContext,
+        instance_ids: InstanceIdUpdateStringList,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DisableInstanceSqlHaStandbyDetectionsResult:
+        raise NotImplementedError
+
     @handler("DisableIpamOrganizationAdminAccount")
     def disable_ipam_organization_admin_account(
         self,
@@ -27448,6 +28402,17 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> DisableIpamOrganizationAdminAccountResult:
+        raise NotImplementedError
+
+    @handler("DisableIpamPolicy")
+    def disable_ipam_policy(
+        self,
+        context: RequestContext,
+        ipam_policy_id: IpamPolicyId,
+        dry_run: Boolean | None = None,
+        organization_target_id: String | None = None,
+        **kwargs,
+    ) -> DisableIpamPolicyResult:
         raise NotImplementedError
 
     @handler("DisableRouteServerPropagation")
@@ -27807,6 +28772,17 @@ class Ec2Api:
     ) -> EnableImageDeregistrationProtectionResult:
         raise NotImplementedError
 
+    @handler("EnableInstanceSqlHaStandbyDetections")
+    def enable_instance_sql_ha_standby_detections(
+        self,
+        context: RequestContext,
+        instance_ids: InstanceIdUpdateStringList,
+        sql_server_credentials: SecretArn | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> EnableInstanceSqlHaStandbyDetectionsResult:
+        raise NotImplementedError
+
     @handler("EnableIpamOrganizationAdminAccount")
     def enable_ipam_organization_admin_account(
         self,
@@ -27815,6 +28791,17 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> EnableIpamOrganizationAdminAccountResult:
+        raise NotImplementedError
+
+    @handler("EnableIpamPolicy")
+    def enable_ipam_policy(
+        self,
+        context: RequestContext,
+        ipam_policy_id: IpamPolicyId,
+        dry_run: Boolean | None = None,
+        organization_target_id: String | None = None,
+        **kwargs,
+    ) -> EnableIpamPolicyResult:
         raise NotImplementedError
 
     @handler("EnableReachabilityAnalyzerOrganizationSharing")
@@ -28121,6 +29108,12 @@ class Ec2Api:
     ) -> GetEbsEncryptionByDefaultResult:
         raise NotImplementedError
 
+    @handler("GetEnabledIpamPolicy")
+    def get_enabled_ipam_policy(
+        self, context: RequestContext, dry_run: Boolean | None = None, **kwargs
+    ) -> GetEnabledIpamPolicyResult:
+        raise NotImplementedError
+
     @handler("GetFlowLogsIntegrationTemplate")
     def get_flow_logs_integration_template(
         self,
@@ -28260,6 +29253,34 @@ class Ec2Api:
         max_results: IpamMaxResults | None = None,
         **kwargs,
     ) -> GetIpamDiscoveredResourceCidrsResult:
+        raise NotImplementedError
+
+    @handler("GetIpamPolicyAllocationRules")
+    def get_ipam_policy_allocation_rules(
+        self,
+        context: RequestContext,
+        ipam_policy_id: IpamPolicyId,
+        dry_run: Boolean | None = None,
+        filters: FilterList | None = None,
+        locale: String | None = None,
+        resource_type: IpamPolicyResourceType | None = None,
+        max_results: IpamMaxResults | None = None,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> GetIpamPolicyAllocationRulesResult:
+        raise NotImplementedError
+
+    @handler("GetIpamPolicyOrganizationTargets")
+    def get_ipam_policy_organization_targets(
+        self,
+        context: RequestContext,
+        ipam_policy_id: IpamPolicyId,
+        dry_run: Boolean | None = None,
+        max_results: IpamMaxResults | None = None,
+        next_token: NextToken | None = None,
+        filters: FilterList | None = None,
+        **kwargs,
+    ) -> GetIpamPolicyOrganizationTargetsResult:
         raise NotImplementedError
 
     @handler("GetIpamPoolAllocations")
@@ -28527,6 +29548,19 @@ class Ec2Api:
     ) -> GetTransitGatewayAttachmentPropagationsResult:
         raise NotImplementedError
 
+    @handler("GetTransitGatewayMeteringPolicyEntries")
+    def get_transit_gateway_metering_policy_entries(
+        self,
+        context: RequestContext,
+        transit_gateway_metering_policy_id: TransitGatewayMeteringPolicyId,
+        filters: FilterList | None = None,
+        max_results: TransitGatewayMaxResults | None = None,
+        next_token: String | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> GetTransitGatewayMeteringPolicyEntriesResult:
+        raise NotImplementedError
+
     @handler("GetTransitGatewayMulticastDomainAssociations")
     def get_transit_gateway_multicast_domain_associations(
         self,
@@ -28635,6 +29669,18 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> GetVerifiedAccessGroupPolicyResult:
+        raise NotImplementedError
+
+    @handler("GetVpcResourcesBlockingEncryptionEnforcement")
+    def get_vpc_resources_blocking_encryption_enforcement(
+        self,
+        context: RequestContext,
+        vpc_id: VpcId,
+        max_results: GetVpcResourcesBlockingEncryptionEnforcementMaxResults | None = None,
+        next_token: String | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> GetVpcResourcesBlockingEncryptionEnforcementResult:
         raise NotImplementedError
 
     @handler("GetVpnConnectionDeviceSampleConfiguration")
@@ -28785,6 +29831,18 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> ListSnapshotsInRecycleBinResult:
+        raise NotImplementedError
+
+    @handler("ListVolumesInRecycleBin")
+    def list_volumes_in_recycle_bin(
+        self,
+        context: RequestContext,
+        volume_ids: VolumeIdStringList | None = None,
+        dry_run: Boolean | None = None,
+        max_results: Integer | None = None,
+        next_token: String | None = None,
+        **kwargs,
+    ) -> ListVolumesInRecycleBinResult:
         raise NotImplementedError
 
     @handler("LockSnapshot")
@@ -29153,6 +30211,19 @@ class Ec2Api:
     ) -> ModifyIpamResult:
         raise NotImplementedError
 
+    @handler("ModifyIpamPolicyAllocationRules")
+    def modify_ipam_policy_allocation_rules(
+        self,
+        context: RequestContext,
+        ipam_policy_id: IpamPolicyId,
+        locale: String,
+        resource_type: IpamPolicyResourceType,
+        dry_run: Boolean | None = None,
+        allocation_rules: IpamPolicyAllocationRuleListRequest | None = None,
+        **kwargs,
+    ) -> ModifyIpamPolicyAllocationRulesResult:
+        raise NotImplementedError
+
     @handler("ModifyIpamPool")
     def modify_ipam_pool(
         self,
@@ -29473,6 +30544,18 @@ class Ec2Api:
     ) -> ModifyTransitGatewayResult:
         raise NotImplementedError
 
+    @handler("ModifyTransitGatewayMeteringPolicy")
+    def modify_transit_gateway_metering_policy(
+        self,
+        context: RequestContext,
+        transit_gateway_metering_policy_id: TransitGatewayMeteringPolicyId,
+        add_middlebox_attachment_ids: TransitGatewayAttachmentIdStringList | None = None,
+        remove_middlebox_attachment_ids: TransitGatewayAttachmentIdStringList | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> ModifyTransitGatewayMeteringPolicyResult:
+        raise NotImplementedError
+
     @handler("ModifyTransitGatewayPrefixListReference")
     def modify_transit_gateway_prefix_list_reference(
         self,
@@ -29656,6 +30739,26 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> ModifyVpcBlockPublicAccessOptionsResult:
+        raise NotImplementedError
+
+    @handler("ModifyVpcEncryptionControl")
+    def modify_vpc_encryption_control(
+        self,
+        context: RequestContext,
+        vpc_encryption_control_id: VpcEncryptionControlId,
+        dry_run: Boolean | None = None,
+        mode: VpcEncryptionControlMode | None = None,
+        internet_gateway_exclusion: VpcEncryptionControlExclusionStateInput | None = None,
+        egress_only_internet_gateway_exclusion: VpcEncryptionControlExclusionStateInput
+        | None = None,
+        nat_gateway_exclusion: VpcEncryptionControlExclusionStateInput | None = None,
+        virtual_private_gateway_exclusion: VpcEncryptionControlExclusionStateInput | None = None,
+        vpc_peering_exclusion: VpcEncryptionControlExclusionStateInput | None = None,
+        lambda_exclusion: VpcEncryptionControlExclusionStateInput | None = None,
+        vpc_lattice_exclusion: VpcEncryptionControlExclusionStateInput | None = None,
+        elastic_file_system_exclusion: VpcEncryptionControlExclusionStateInput | None = None,
+        **kwargs,
+    ) -> ModifyVpcEncryptionControlResult:
         raise NotImplementedError
 
     @handler("ModifyVpcEndpoint")
@@ -30394,6 +31497,12 @@ class Ec2Api:
     ) -> RestoreSnapshotTierResult:
         raise NotImplementedError
 
+    @handler("RestoreVolumeFromRecycleBin")
+    def restore_volume_from_recycle_bin(
+        self, context: RequestContext, volume_id: VolumeId, dry_run: Boolean | None = None, **kwargs
+    ) -> RestoreVolumeFromRecycleBinResult:
+        raise NotImplementedError
+
     @handler("RevokeClientVpnIngress")
     def revoke_client_vpn_ingress(
         self,
@@ -30717,6 +31826,17 @@ class Ec2Api:
         client_token: String | None = None,
         **kwargs,
     ) -> UpdateCapacityManagerOrganizationsAccessResult:
+        raise NotImplementedError
+
+    @handler("UpdateInterruptibleCapacityReservationAllocation")
+    def update_interruptible_capacity_reservation_allocation(
+        self,
+        context: RequestContext,
+        capacity_reservation_id: CapacityReservationId,
+        target_instance_count: Integer,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> UpdateInterruptibleCapacityReservationAllocationResult:
         raise NotImplementedError
 
     @handler("UpdateSecurityGroupRuleDescriptionsEgress")
