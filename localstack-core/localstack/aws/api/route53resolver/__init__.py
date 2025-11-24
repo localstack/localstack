@@ -84,6 +84,7 @@ class ConfidenceThreshold(StrEnum):
 class DnsThreatProtection(StrEnum):
     DGA = "DGA"
     DNS_TUNNELING = "DNS_TUNNELING"
+    DICTIONARY_DGA = "DICTIONARY_DGA"
 
 
 class FirewallDomainImportOperation(StrEnum):

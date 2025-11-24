@@ -29,6 +29,13 @@ class ApiKeysFormat(StrEnum):
     csv = "csv"
 
 
+class ApiStatus(StrEnum):
+    UPDATING = "UPDATING"
+    AVAILABLE = "AVAILABLE"
+    PENDING = "PENDING"
+    FAILED = "FAILED"
+
+
 class AuthorizerType(StrEnum):
     TOKEN = "TOKEN"
     REQUEST = "REQUEST"
@@ -85,6 +92,12 @@ class DomainNameStatus(StrEnum):
     PENDING = "PENDING"
     PENDING_CERTIFICATE_REIMPORT = "PENDING_CERTIFICATE_REIMPORT"
     PENDING_OWNERSHIP_VERIFICATION = "PENDING_OWNERSHIP_VERIFICATION"
+    FAILED = "FAILED"
+
+
+class EndpointAccessMode(StrEnum):
+    BASIC = "BASIC"
+    STRICT = "STRICT"
 
 
 class EndpointType(StrEnum):
@@ -160,6 +173,11 @@ class ResourceOwner(StrEnum):
     OTHER_ACCOUNTS = "OTHER_ACCOUNTS"
 
 
+class ResponseTransferMode(StrEnum):
+    BUFFERED = "BUFFERED"
+    STREAM = "STREAM"
+
+
 class RoutingMode(StrEnum):
     BASE_PATH_MAPPING_ONLY = "BASE_PATH_MAPPING_ONLY"
     ROUTING_RULE_ONLY = "ROUTING_RULE_ONLY"
@@ -169,6 +187,15 @@ class RoutingMode(StrEnum):
 class SecurityPolicy(StrEnum):
     TLS_1_0 = "TLS_1_0"
     TLS_1_2 = "TLS_1_2"
+    SecurityPolicy_TLS13_1_3_2025_09 = "SecurityPolicy_TLS13_1_3_2025_09"
+    SecurityPolicy_TLS13_1_3_FIPS_2025_09 = "SecurityPolicy_TLS13_1_3_FIPS_2025_09"
+    SecurityPolicy_TLS13_1_2_PFS_PQ_2025_09 = "SecurityPolicy_TLS13_1_2_PFS_PQ_2025_09"
+    SecurityPolicy_TLS13_1_2_FIPS_PQ_2025_09 = "SecurityPolicy_TLS13_1_2_FIPS_PQ_2025_09"
+    SecurityPolicy_TLS13_1_2_PQ_2025_09 = "SecurityPolicy_TLS13_1_2_PQ_2025_09"
+    SecurityPolicy_TLS13_1_2_2021_06 = "SecurityPolicy_TLS13_1_2_2021_06"
+    SecurityPolicy_TLS13_2025_EDGE = "SecurityPolicy_TLS13_2025_EDGE"
+    SecurityPolicy_TLS12_PFS_2025_EDGE = "SecurityPolicy_TLS12_PFS_2025_EDGE"
+    SecurityPolicy_TLS12_2018_EDGE = "SecurityPolicy_TLS12_2018_EDGE"
 
 
 class UnauthorizedCacheControlHeaderStrategy(StrEnum):
@@ -466,6 +493,7 @@ class CreateDomainNameRequest(ServiceRequest):
     endpointConfiguration: EndpointConfiguration | None
     tags: MapOfStringToString | None
     securityPolicy: SecurityPolicy | None
+    endpointAccessMode: EndpointAccessMode | None
     mutualTlsAuthentication: MutualTlsAuthenticationInput | None
     ownershipVerificationCertificateArn: String | None
     policy: String | None
@@ -505,6 +533,8 @@ class CreateRestApiRequest(ServiceRequest):
     policy: String | None
     tags: MapOfStringToString | None
     disableExecuteApiEndpoint: Boolean | None
+    securityPolicy: SecurityPolicy | None
+    endpointAccessMode: EndpointAccessMode | None
 
 
 class CreateStageRequest(ServiceRequest):
@@ -743,6 +773,7 @@ class DomainName(TypedDict, total=False):
     domainNameStatus: DomainNameStatus | None
     domainNameStatusMessage: String | None
     securityPolicy: SecurityPolicy | None
+    endpointAccessMode: EndpointAccessMode | None
     tags: MapOfStringToString | None
     mutualTlsAuthentication: MutualTlsAuthentication | None
     ownershipVerificationCertificateArn: String | None
@@ -1134,6 +1165,8 @@ class Integration(TypedDict, total=False):
     cacheKeyParameters: ListOfString | None
     integrationResponses: MapOfIntegrationResponse | None
     tlsConfig: TlsConfig | None
+    responseTransferMode: ResponseTransferMode | None
+    integrationTarget: String | None
 
 
 Long = int
@@ -1225,6 +1258,10 @@ class RestApi(TypedDict, total=False):
     tags: MapOfStringToString | None
     disableExecuteApiEndpoint: Boolean | None
     rootResourceId: String | None
+    securityPolicy: SecurityPolicy | None
+    endpointAccessMode: EndpointAccessMode | None
+    apiStatus: ApiStatus | None
+    apiStatusMessage: String | None
 
 
 ListOfRestApi = list[RestApi]
@@ -1361,6 +1398,8 @@ class PutIntegrationRequest(TypedDict, total=False):
     contentHandling: ContentHandlingStrategy | None
     timeoutInMillis: NullableInteger | None
     tlsConfig: TlsConfig | None
+    responseTransferMode: ResponseTransferMode | None
+    integrationTarget: String | None
 
 
 class PutIntegrationResponseRequest(ServiceRequest):
@@ -1749,6 +1788,7 @@ class ApigatewayApi:
         endpoint_configuration: EndpointConfiguration | None = None,
         tags: MapOfStringToString | None = None,
         security_policy: SecurityPolicy | None = None,
+        endpoint_access_mode: EndpointAccessMode | None = None,
         mutual_tls_authentication: MutualTlsAuthenticationInput | None = None,
         ownership_verification_certificate_arn: String | None = None,
         policy: String | None = None,
@@ -1820,6 +1860,8 @@ class ApigatewayApi:
         policy: String | None = None,
         tags: MapOfStringToString | None = None,
         disable_execute_api_endpoint: Boolean | None = None,
+        security_policy: SecurityPolicy | None = None,
+        endpoint_access_mode: EndpointAccessMode | None = None,
         **kwargs,
     ) -> RestApi:
         raise NotImplementedError

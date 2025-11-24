@@ -13,6 +13,7 @@ Definition = str
 Enabled = bool
 ErrorMessage = str
 EvaluationFailureLocation = str
+ExceptionHandlerIndex = int
 HTTPBody = str
 HTTPHeaders = str
 HTTPMethod = str
@@ -22,10 +23,14 @@ HTTPStatusMessage = str
 Identity = str
 IncludeExecutionData = bool
 IncludeExecutionDataGetExecutionHistory = bool
+InspectionMaxConcurrency = int
+InspectionToleratedFailureCount = int
+InspectionToleratedFailurePercentage = float
 KmsDataKeyReusePeriodSeconds = int
 KmsKeyId = str
 ListExecutionsPageToken = str
 LongArn = str
+MapIterationFailureCount = int
 MapRunLabel = str
 MaxConcurrency = int
 Name = str
@@ -33,6 +38,8 @@ PageSize = int
 PageToken = str
 Publish = bool
 RedriveCount = int
+RetrierRetryCount = int
+RetryBackoffIntervalSeconds = int
 RevealSecrets = bool
 ReverseOrder = bool
 RevisionId = str
@@ -44,6 +51,7 @@ StateName = str
 TagKey = str
 TagValue = str
 TaskToken = str
+TestStateStateName = str
 ToleratedFailurePercentage = float
 TraceHeader = str
 URL = str
@@ -182,6 +190,12 @@ class MapRunStatus(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     ABORTED = "ABORTED"
+
+
+class MockResponseValidationMode(StrEnum):
+    STRICT = "STRICT"
+    PRESENT = "PRESENT"
+    NONE = "NONE"
 
 
 class StateMachineStatus(StrEnum):
@@ -1024,6 +1038,12 @@ class GetExecutionHistoryOutput(TypedDict, total=False):
     nextToken: PageToken | None
 
 
+class InspectionErrorDetails(TypedDict, total=False):
+    catchIndex: ExceptionHandlerIndex | None
+    retryIndex: ExceptionHandlerIndex | None
+    retryBackoffIntervalSeconds: RetryBackoffIntervalSeconds | None
+
+
 class InspectionDataResponse(TypedDict, total=False):
     protocol: HTTPProtocol | None
     statusCode: HTTPStatusCode | None
@@ -1051,6 +1071,14 @@ class InspectionData(TypedDict, total=False):
     request: InspectionDataRequest | None
     response: InspectionDataResponse | None
     variables: SensitiveData | None
+    errorDetails: InspectionErrorDetails | None
+    afterItemsPath: SensitiveData | None
+    afterItemSelector: SensitiveData | None
+    afterItemBatcher: SensitiveData | None
+    afterItemsPointer: SensitiveData | None
+    toleratedFailureCount: InspectionToleratedFailureCount | None
+    toleratedFailurePercentage: InspectionToleratedFailurePercentage | None
+    maxConcurrency: InspectionMaxConcurrency | None
 
 
 class ListActivitiesInput(ServiceRequest):
@@ -1165,6 +1193,17 @@ class ListTagsForResourceOutput(TypedDict, total=False):
     tags: TagList | None
 
 
+class MockErrorOutput(TypedDict, total=False):
+    error: SensitiveError | None
+    cause: SensitiveCause | None
+
+
+class MockInput(TypedDict, total=False):
+    result: SensitiveData | None
+    errorOutput: MockErrorOutput | None
+    fieldValidationMode: MockResponseValidationMode | None
+
+
 class PublishStateMachineVersionInput(ServiceRequest):
     stateMachineArn: Arn
     revisionId: RevisionId | None
@@ -1271,6 +1310,13 @@ class TagResourceOutput(TypedDict, total=False):
     pass
 
 
+class TestStateConfiguration(TypedDict, total=False):
+    retrierRetryCount: RetrierRetryCount | None
+    errorCausedByState: TestStateStateName | None
+    mapIterationFailureCount: MapIterationFailureCount | None
+    mapItemReaderData: SensitiveData | None
+
+
 class TestStateInput(ServiceRequest):
     definition: Definition
     roleArn: Arn | None
@@ -1278,6 +1324,10 @@ class TestStateInput(ServiceRequest):
     inspectionLevel: InspectionLevel | None
     revealSecrets: RevealSecrets | None
     variables: SensitiveData | None
+    stateName: TestStateStateName | None
+    mock: MockInput | None
+    context: SensitiveData | None
+    stateConfiguration: TestStateConfiguration | None
 
 
 class TestStateOutput(TypedDict, total=False):
@@ -1641,17 +1691,9 @@ class StepfunctionsApi:
     ) -> TagResourceOutput:
         raise NotImplementedError
 
-    @handler("TestState")
+    @handler("TestState", expand=False)
     def test_state(
-        self,
-        context: RequestContext,
-        definition: Definition,
-        role_arn: Arn | None = None,
-        input: SensitiveData | None = None,
-        inspection_level: InspectionLevel | None = None,
-        reveal_secrets: RevealSecrets | None = None,
-        variables: SensitiveData | None = None,
-        **kwargs,
+        self, context: RequestContext, request: TestStateInput, **kwargs
     ) -> TestStateOutput:
         raise NotImplementedError
 

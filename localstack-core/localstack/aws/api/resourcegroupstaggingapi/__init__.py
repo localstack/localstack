@@ -4,16 +4,19 @@ from typing import TypedDict
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 AmazonResourceType = str
+CloudFormationResourceType = str
 ComplianceStatus = bool
 ErrorMessage = str
 ExceptionMessage = str
 ExcludeCompliantResources = bool
 IncludeComplianceDetails = bool
 LastUpdated = str
+MaxResultsForListRequiredTags = int
 MaxResultsGetComplianceSummary = int
 PaginationToken = str
 Region = str
 ResourceARN = str
+ResourceType = str
 ResourcesPerPage = int
 S3Bucket = str
 S3Location = str
@@ -78,6 +81,7 @@ class ThrottledException(ServiceException):
     status_code: int = 400
 
 
+CloudFormationResourceTypes = list[CloudFormationResourceType]
 TagKeyList = list[TagKey]
 
 
@@ -208,6 +212,28 @@ class GetTagValuesOutput(TypedDict, total=False):
     TagValues: TagValuesOutputList | None
 
 
+class ListRequiredTagsInput(ServiceRequest):
+    NextToken: PaginationToken | None
+    MaxResults: MaxResultsForListRequiredTags | None
+
+
+ReportingTagKeys = list[TagKey]
+
+
+class RequiredTag(TypedDict, total=False):
+    ResourceType: ResourceType | None
+    CloudFormationResourceTypes: CloudFormationResourceTypes | None
+    ReportingTagKeys: ReportingTagKeys | None
+
+
+RequiredTagsForListRequiredTags = list[RequiredTag]
+
+
+class ListRequiredTagsOutput(TypedDict, total=False):
+    RequiredTags: RequiredTagsForListRequiredTags | None
+    NextToken: PaginationToken | None
+
+
 ResourceARNListForTagUntag = list[ResourceARN]
 
 
@@ -296,6 +322,16 @@ class ResourcegroupstaggingapiApi:
         pagination_token: PaginationToken | None = None,
         **kwargs,
     ) -> GetTagValuesOutput:
+        raise NotImplementedError
+
+    @handler("ListRequiredTags")
+    def list_required_tags(
+        self,
+        context: RequestContext,
+        next_token: PaginationToken | None = None,
+        max_results: MaxResultsForListRequiredTags | None = None,
+        **kwargs,
+    ) -> ListRequiredTagsOutput:
         raise NotImplementedError
 
     @handler("StartReportCreation")

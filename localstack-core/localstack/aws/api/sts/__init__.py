@@ -29,13 +29,17 @@ idpCommunicationErrorMessage = str
 idpRejectedClaimMessage = str
 invalidAuthorizationMessage = str
 invalidIdentityTokenMessage = str
+jwtAlgorithmType = str
+jwtPayloadSizeExceededException = str
 malformedPolicyDocumentMessage = str
 nonNegativeIntegerType = int
+outboundWebIdentityFederationDisabledException = str
 packedPolicyTooLargeMessage = str
 regionDisabledMessage = str
 roleDurationSecondsType = int
 roleSessionNameType = str
 serialNumberType = str
+sessionDurationEscalationException = str
 sessionPolicyDocumentType = str
 sourceIdentityType = str
 tagKeyType = str
@@ -48,6 +52,9 @@ urlType = str
 userIdType = str
 userNameType = str
 webIdentitySubjectType = str
+webIdentityTokenAudienceStringType = str
+webIdentityTokenDurationSecondsType = int
+webIdentityTokenType = str
 
 
 class ExpiredTokenException(ServiceException):
@@ -86,10 +93,22 @@ class InvalidIdentityTokenException(ServiceException):
     status_code: int = 400
 
 
+class JWTPayloadSizeExceededException(ServiceException):
+    code: str = "JWTPayloadSizeExceededException"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
 class MalformedPolicyDocumentException(ServiceException):
     code: str = "MalformedPolicyDocument"
     sender_fault: bool = True
     status_code: int = 400
+
+
+class OutboundWebIdentityFederationDisabledException(ServiceException):
+    code: str = "OutboundWebIdentityFederationDisabledException"
+    sender_fault: bool = True
+    status_code: int = 403
 
 
 class PackedPolicyTooLargeException(ServiceException):
@@ -100,6 +119,12 @@ class PackedPolicyTooLargeException(ServiceException):
 
 class RegionDisabledException(ServiceException):
     code: str = "RegionDisabledException"
+    sender_fault: bool = True
+    status_code: int = 403
+
+
+class SessionDurationEscalationException(ServiceException):
+    code: str = "SessionDurationEscalationException"
     sender_fault: bool = True
     status_code: int = 403
 
@@ -282,6 +307,21 @@ class GetSessionTokenResponse(TypedDict, total=False):
     Credentials: Credentials | None
 
 
+webIdentityTokenAudienceListType = list[webIdentityTokenAudienceStringType]
+
+
+class GetWebIdentityTokenRequest(ServiceRequest):
+    Audience: webIdentityTokenAudienceListType
+    DurationSeconds: webIdentityTokenDurationSecondsType | None
+    SigningAlgorithm: jwtAlgorithmType
+    Tags: tagListType | None
+
+
+class GetWebIdentityTokenResponse(TypedDict, total=False):
+    WebIdentityToken: webIdentityTokenType | None
+    Expiration: dateType | None
+
+
 class StsApi:
     service: str = "sts"
     version: str = "2011-06-15"
@@ -390,4 +430,16 @@ class StsApi:
         token_code: tokenCodeType | None = None,
         **kwargs,
     ) -> GetSessionTokenResponse:
+        raise NotImplementedError
+
+    @handler("GetWebIdentityToken")
+    def get_web_identity_token(
+        self,
+        context: RequestContext,
+        audience: webIdentityTokenAudienceListType,
+        signing_algorithm: jwtAlgorithmType,
+        duration_seconds: webIdentityTokenDurationSecondsType | None = None,
+        tags: tagListType | None = None,
+        **kwargs,
+    ) -> GetWebIdentityTokenResponse:
         raise NotImplementedError

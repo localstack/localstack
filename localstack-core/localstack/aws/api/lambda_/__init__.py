@@ -77,6 +77,7 @@ Pattern = str
 PositiveInteger = int
 Principal = str
 PrincipalOrgID = str
+ProvisionedPollerGroupName = str
 Qualifier = str
 Queue = str
 ReservedConcurrentExecutions = int
@@ -99,6 +100,7 @@ TagValue = str
 TaggableResource = str
 TagsErrorCode = str
 TagsErrorMessage = str
+TenantId = str
 Timeout = int
 Timestamp = str
 Topic = str
@@ -288,9 +290,9 @@ class Runtime(StrEnum):
     java21 = "java21"
     python3_13 = "python3.13"
     nodejs22_x = "nodejs22.x"
-    java25 = "java25"
     nodejs24_x = "nodejs24.x"
     python3_14 = "python3.14"
+    java25 = "java25"
 
 
 class SchemaRegistryEventRecordFormat(StrEnum):
@@ -357,6 +359,10 @@ class SystemLogLevel(StrEnum):
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARN = "WARN"
+
+
+class TenantIsolationMode(StrEnum):
+    PER_TENANT = "PER_TENANT"
 
 
 class ThrottleReason(StrEnum):
@@ -827,6 +833,7 @@ class CreateCodeSigningConfigResponse(TypedDict, total=False):
 class ProvisionedPollerConfig(TypedDict, total=False):
     MinimumPollers: MinimumNumberOfPollers | None
     MaximumPollers: MaximumNumberOfPollers | None
+    PollerGroupName: ProvisionedPollerGroupName | None
 
 
 EventSourceMappingMetricList = list[EventSourceMappingMetric]
@@ -927,6 +934,10 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     ProvisionedPollerConfig: ProvisionedPollerConfig | None
 
 
+class TenancyConfig(TypedDict, total=False):
+    TenantIsolationMode: TenantIsolationMode
+
+
 class LoggingConfig(TypedDict, total=False):
     LogFormat: LogFormat | None
     ApplicationLogLevel: ApplicationLogLevel | None
@@ -1019,6 +1030,7 @@ class CreateFunctionRequest(ServiceRequest):
     EphemeralStorage: EphemeralStorage | None
     SnapStart: SnapStart | None
     LoggingConfig: LoggingConfig | None
+    TenancyConfig: TenancyConfig | None
 
 
 class CreateFunctionUrlConfigRequest(ServiceRequest):
@@ -1233,6 +1245,7 @@ class FunctionConfiguration(TypedDict, total=False):
     SnapStart: SnapStartResponse | None
     RuntimeVersionConfig: RuntimeVersionConfig | None
     LoggingConfig: LoggingConfig | None
+    TenancyConfig: TenancyConfig | None
 
 
 class FunctionEventInvokeConfig(TypedDict, total=False):
@@ -1435,6 +1448,7 @@ class InvocationRequest(ServiceRequest):
     LogType: LogType | None
     ClientContext: String | None
     Qualifier: Qualifier | None
+    TenantId: TenantId | None
 
 
 class InvocationResponse(TypedDict, total=False):
@@ -1471,6 +1485,7 @@ class InvokeWithResponseStreamRequest(ServiceRequest):
     LogType: LogType | None
     ClientContext: String | None
     Qualifier: Qualifier | None
+    TenantId: TenantId | None
 
 
 class InvokeWithResponseStreamResponseEvent(TypedDict, total=False):
@@ -2009,6 +2024,7 @@ class LambdaApi:
         ephemeral_storage: EphemeralStorage | None = None,
         snap_start: SnapStart | None = None,
         logging_config: LoggingConfig | None = None,
+        tenancy_config: TenancyConfig | None = None,
         **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
@@ -2244,6 +2260,7 @@ class LambdaApi:
         client_context: String | None = None,
         payload: IO[Blob] | None = None,
         qualifier: Qualifier | None = None,
+        tenant_id: TenantId | None = None,
         **kwargs,
     ) -> InvocationResponse:
         raise NotImplementedError
@@ -2268,6 +2285,7 @@ class LambdaApi:
         client_context: String | None = None,
         qualifier: Qualifier | None = None,
         payload: IO[Blob] | None = None,
+        tenant_id: TenantId | None = None,
         **kwargs,
     ) -> InvokeWithResponseStreamResponse:
         raise NotImplementedError
