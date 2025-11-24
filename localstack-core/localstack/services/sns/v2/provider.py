@@ -1162,7 +1162,6 @@ def _default_attributes(topic: Topic, context: RequestContext) -> TopicAttribute
             {
                 "ContentBasedDeduplication": "false",
                 "FifoTopic": "false",
-                "SignatureVersion": "2",
             }
         )
     return default_attributes

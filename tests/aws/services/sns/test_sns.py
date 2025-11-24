@@ -1,5 +1,6 @@
 import base64
 import contextlib
+import importlib
 import json
 import logging
 import queue
@@ -33,7 +34,6 @@ from localstack.services.sns.constants import (
     SMS_MSGS_ENDPOINT,
     SUBSCRIPTION_TOKENS_ENDPOINT,
 )
-from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.testing.pytest import markers
@@ -121,6 +121,21 @@ def sns_create_platform_endpoint(aws_client):
                 endpoint,
                 e,
             )
+
+
+@pytest.fixture
+def sns_provider():
+    def factory(**kwargs):
+        if is_sns_v1_provider():
+            provider = "localstack.services.sns.provider"
+        else:
+            provider = "localstack.services.sns.v2.provider"
+        # TODO: remove once legacy provider is retired completely and import normally
+        module = importlib.import_module(provider)
+        SnsProvider = module.SnsProvider
+        return SnsProvider
+
+    return factory
 
 
 class TestSNSTopicCrud:
@@ -3045,7 +3060,7 @@ class TestSNSSubscriptionSQSFifo:
         ]
     )
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_publish_fifo_messages_to_dlq(
         self,
         sns_create_topic,
@@ -3210,7 +3225,7 @@ class TestSNSSubscriptionSQSFifo:
         ]
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
         self,
         sns_create_topic,
@@ -3567,9 +3582,9 @@ class TestSNSSubscriptionSQSFifo:
 class TestSNSSubscriptionSES:
     @markers.requires_in_process
     @markers.aws.only_localstack
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_topic_email_subscription_confirmation(
-        self, sns_create_topic, sns_subscription, aws_client
+        self, sns_create_topic, sns_subscription, aws_client, sns_provider
     ):
         # FIXME: we do not send the token to the email endpoint, so they cannot validate it
         # create AWS validated test for format
@@ -3582,6 +3597,7 @@ class TestSNSSubscriptionSES:
         )
         subscription_arn = subscription["SubscriptionArn"]
         parsed_arn = parse_arn(subscription_arn)
+        SnsProvider = sns_provider()
         store = SnsProvider.get_store(parsed_arn["account"], parsed_arn["region"])
 
         sub_attr = aws_client.sns.get_subscription_attributes(SubscriptionArn=subscription_arn)
@@ -4279,7 +4295,7 @@ class TestSNSPlatformEndpointCrud:
 class TestSNSPlatformEndpoint:
     @markers.requires_in_process
     @markers.aws.only_localstack
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_subscribe_platform_endpoint(
         self,
         sns_create_topic,
@@ -4288,7 +4304,9 @@ class TestSNSPlatformEndpoint:
         aws_client,
         account_id,
         region_name,
+        sns_provider,
     ):
+        SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(account_id, region_name)
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -4446,6 +4464,7 @@ class TestSNSPlatformEndpoint:
         aws_client,
         account_id,
         region_name,
+        sns_provider,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         endpoints_arn = {}
@@ -4484,7 +4503,7 @@ class TestSNSPlatformEndpoint:
             Message=json.dumps(message),
             MessageStructure="json",
         )
-
+        SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(account_id, region_name)
         platform_endpoint_msgs = sns_backend.platform_endpoint_messages
 
@@ -4503,12 +4522,13 @@ class TestSNSSMS:
     @markers.requires_in_process
     @markers.aws.only_localstack
     @skip_if_sns_v2
-    def test_publish_sms(self, aws_client, account_id, region_name):
+    def test_publish_sms(self, aws_client, account_id, region_name, sns_provider):
         phone_number = "+33000000000"
         response = aws_client.sns.publish(PhoneNumber=phone_number, Message="This is a SMS")
         assert "MessageId" in response
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+        SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(
             account_id=account_id,
             region_name=region_name,
@@ -4541,7 +4561,7 @@ class TestSNSSMS:
     @markers.aws.only_localstack
     @skip_if_sns_v2
     def test_publish_sms_endpoint(
-        self, sns_create_topic, sns_subscription, aws_client, account_id, region_name
+        self, sns_create_topic, sns_subscription, aws_client, account_id, region_name, sns_provider
     ):
         list_of_contacts = [
             f"+{random.randint(100000000, 9999999999)}",
@@ -4555,6 +4575,7 @@ class TestSNSSMS:
 
         aws_client.sns.publish(Message=message, TopicArn=topic_arn)
 
+        SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(account_id, region_name)
 
         def check_messages():
@@ -6016,7 +6037,9 @@ class TestSNSRetrospectionEndpoints:
         account_id,
         region_name,
         secondary_region_name,
+        sns_provider,
     ):
+        SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(account_id, region_name)
         # clean up the saved messages
         sns_backend_endpoint_arns = list(sns_backend.platform_endpoint_messages.keys())
@@ -6173,7 +6196,9 @@ class TestSNSRetrospectionEndpoints:
         account_id,
         region_name,
         secondary_region_name,
+        sns_provider,
     ):
+        SnsProvider = sns_provider()
         sns_store = SnsProvider.get_store(account_id, region_name)
 
         list_of_contacts = [
@@ -6277,7 +6302,9 @@ class TestSNSRetrospectionEndpoints:
         aws_client,
         account_id,
         region_name,
+        sns_provider,
     ):
+        SnsProvider = sns_provider()
         sns_store = SnsProvider.get_store(account_id, region_name)
         # clean up the saved tokens
         sns_store.subscription_tokens.clear()
