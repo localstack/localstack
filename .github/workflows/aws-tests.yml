@@ -163,7 +163,7 @@ jobs:
         run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: localstack
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
@@ -214,7 +214,7 @@ jobs:
       sns-v2: ${{ steps.changes.outputs.sns-v2 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -376,7 +376,7 @@ jobs:
           echo "${{ inputs.testEnvironmentVariables }}" | sed "s/;/\n/" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -463,7 +463,7 @@ jobs:
       CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -583,7 +583,7 @@ jobs:
           echo "${{ inputs.testEnvironmentVariables }}" | sed "s/;/\n/" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -673,7 +673,7 @@ jobs:
       job_status: "executed"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
@@ -726,7 +726,7 @@ jobs:
       job_status: "executed"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
@@ -778,7 +778,7 @@ jobs:
       job_status: "executed"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
@@ -832,7 +832,7 @@ jobs:
       job_status: "executed"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
@@ -882,7 +882,7 @@ jobs:
       job_status: "executed"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
@@ -987,7 +987,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
