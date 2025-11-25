@@ -4393,11 +4393,15 @@ class TestSNSPlatformEndpoint:
     @markers.aws.needs_fixing
     # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
     @skip_if_sns_v2
-    def test_publish_disabled_endpoint(self, sns_create_platform_application, aws_client):
+    def test_publish_disabled_endpoint(
+        self, sns_create_platform_application, aws_client, platform_credentials
+    ):
+        client_id, client_secret = platform_credentials
+        attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
         response = sns_create_platform_application(
             Name=f"test-{short_uid()}",
             Platform="GCM",
-            Attributes={"PlatformCredential": "123"},
+            Attributes=attributes,
         )
         platform_arn = response["PlatformApplicationArn"]
         response = aws_client.sns.create_platform_endpoint(
@@ -5516,6 +5520,7 @@ class TestSNSMultiAccounts:
         return secondary_aws_client.sqs
 
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_cross_account_access(self, sns_primary_client, sns_secondary_client, sns_create_topic):
         # Cross-account access is supported for below operations.
         # This list is taken from ActionName param of the AddPermissions operation
@@ -5570,6 +5575,7 @@ class TestSNSMultiAccounts:
         assert sns_secondary_client.delete_topic(TopicArn=topic_arn)
 
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_cross_account_publish_to_sqs(
         self,
         sns_create_topic,
@@ -5693,6 +5699,7 @@ class TestSNSMultiRegions:
         return aws_client_factory(region_name=secondary_region_name).sqs
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_cross_region_access(self, sns_region1_client, sns_region2_client, snapshot, cleanups):
         # We do not have a list of supported Cross-region access for operations.
         # This test is validating that Cross-account does not mean Cross-region most of the time
