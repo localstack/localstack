@@ -1174,6 +1174,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             status=FunctionStatus.success,
             invocation_type="n/a",
             package_type=package_type,
+            uses_capacity_provider=bool(capacity_provider_config),
         )
         # TODO: consider potential other side effects of not having a function version for $LATEST
         # Provisioning happens upon publishing for functions using a capacity provider

@@ -14,9 +14,10 @@ function_counter = LabeledCounter(
         "status",
         "runtime",
         "package_type",
-        # only for operation "invoke"
-        "invocation_type",
+        "invocation_type",  # only for operation "invoke", otherwise "n/a"
+        "uses_capacity_provider",
     ],
+    schema_version=2,
 )
 
 

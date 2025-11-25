@@ -355,6 +355,7 @@ class LambdaService:
                 status=status,
                 invocation_type=invocation_type,
                 package_type=package_type,
+                uses_capacity_provider=bool(version.config.CapacityProviderConfig),
             ).increment()
             raise ResourceConflictException(
                 f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
@@ -373,6 +374,7 @@ class LambdaService:
                     status=FunctionStatus.invalid_payload_error,
                     invocation_type=invocation_type,
                     package_type=package_type,
+                    uses_capacity_provider=bool(version.config.CapacityProviderConfig),
                 ).increment()
                 # MAYBE: improve parity of detailed exception message (quite cumbersome)
                 raise InvalidRequestContentException(
@@ -423,6 +425,7 @@ class LambdaService:
             status=status,
             invocation_type=invocation_type,
             package_type=package_type,
+            uses_capacity_provider=bool(version.config.CapacityProviderConfig),
         ).increment()
         return invocation_result
 

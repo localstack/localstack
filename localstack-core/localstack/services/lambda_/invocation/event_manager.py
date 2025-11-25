@@ -213,6 +213,7 @@ class Poller:
                     status=FunctionStatus.success,
                     invocation_type=InvocationType.Event,
                     package_type=function_config.package_type,
+                    uses_capacity_provider=bool(function_config.CapacityProviderConfig),
                 ).increment()
             except Exception as e:
                 # Reserved concurrency == 0
@@ -241,13 +242,14 @@ class Poller:
                     QueueUrl=self.event_queue_url, ReceiptHandle=message["ReceiptHandle"]
                 )
                 # status MUST be set before returning
-                package_type = self.version_manager.function_version.config.package_type
+                function_config = self.version_manager.function_version.config
                 function_counter.labels(
                     operation=FunctionOperation.invoke,
                     runtime=runtime or "n/a",
                     status=status,
                     invocation_type=InvocationType.Event,
-                    package_type=package_type,
+                    package_type=function_config.package_type,
+                    uses_capacity_provider=bool(function_config.CapacityProviderConfig),
                 ).increment()
 
             # Good summary blogpost: https://haithai91.medium.com/aws-lambdas-retry-behaviors-edff90e1cf1b
