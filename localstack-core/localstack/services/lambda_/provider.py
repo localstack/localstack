@@ -946,7 +946,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             elif package_type == PackageType.Image:
                 image = request_code.get("ImageUri")
                 if not image:
-                    raise LambdaServiceException("An image is required when the package type is set to 'image'")
+                    raise LambdaServiceException(
+                        "An image is required when the package type is set to 'image'"
+                    )
                 image = create_image_code(image_uri=image)
 
                 image_config_req = request.get("ImageConfig", {})
