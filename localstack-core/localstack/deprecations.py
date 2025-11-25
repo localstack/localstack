@@ -35,12 +35,6 @@ class EnvVarDeprecation:
 # Please make sure this is in-sync with https://docs.localstack.cloud/references/configuration/
 #
 DEPRECATIONS = [
-    # Since 0.11.3 - HTTP / HTTPS multiplexing
-    EnvVarDeprecation(
-        "USE_SSL",
-        "0.11.3",
-        "Each endpoint now supports multiplexing HTTP/HTTPS traffic over the same port. Please remove this environment variable.",  # noqa
-    ),
     # Since 0.12.8 - PORT_UI was removed
     EnvVarDeprecation(
         "PORT_WEB_UI",
