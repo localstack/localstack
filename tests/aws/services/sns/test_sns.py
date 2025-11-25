@@ -4304,14 +4304,18 @@ class TestSNSPlatformEndpoint:
         account_id,
         region_name,
         sns_provider,
+        platform_credentials,
     ):
         SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(account_id, region_name)
         topic_arn = sns_create_topic()["TopicArn"]
 
-        app_arn = sns_create_platform_application(Name="app1", Platform="p1", Attributes={})[
-            "PlatformApplicationArn"
-        ]
+        platform = "ADM"
+        client_id, client_secret = platform_credentials
+        attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
+        app_arn = sns_create_platform_application(
+            Name="app1", Platform=platform, Attributes=attributes
+        )["PlatformApplicationArn"]
         platform_arn = aws_client.sns.create_platform_endpoint(
             PlatformApplicationArn=app_arn, Token="token_1"
         )["EndpointArn"]
