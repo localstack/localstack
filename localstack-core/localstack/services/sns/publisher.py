@@ -561,7 +561,10 @@ class HttpTopicPublisher(TopicPublisher):
             ):
                 return sub_content_type
 
-        if json_topic_delivery_policy := topic_attributes.get("delivery_policy"):
+        # TODO: remove lower case access once legacy v1 provider is removed
+        if json_topic_delivery_policy := topic_attributes.get(
+            "delivery_policy", topic_attributes.get("DeliveryPolicy")
+        ):
             topic_delivery_policy = json.loads(json_topic_delivery_policy)
             if not (
                 topic_content_type := topic_delivery_policy.get(subscriber["Protocol"].lower())

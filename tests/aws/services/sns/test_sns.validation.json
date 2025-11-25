@@ -212,6 +212,15 @@
       "total": 0.3
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpoint::test_publish_disabled_endpoint": {
+    "last_validated_date": "2025-11-27T08:34:37+00:00",
+    "durations_in_seconds": {
+      "setup": 1.83,
+      "call": 48.48,
+      "teardown": 1.6,
+      "total": 51.91
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint": {
     "last_validated_date": "2025-10-31T21:26:47+00:00",
     "durations_in_seconds": {

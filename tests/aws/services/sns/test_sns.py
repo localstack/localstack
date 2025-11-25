@@ -3059,7 +3059,6 @@ class TestSNSSubscriptionSQSFifo:
         ]
     )
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
-    #
     def test_publish_fifo_messages_to_dlq(
         self,
         sns_create_topic,
@@ -3224,7 +3223,6 @@ class TestSNSSubscriptionSQSFifo:
         ]
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
-    #
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
         self,
         sns_create_topic,
@@ -3581,7 +3579,6 @@ class TestSNSSubscriptionSQSFifo:
 class TestSNSSubscriptionSES:
     @markers.requires_in_process
     @markers.aws.only_localstack
-    #
     def test_topic_email_subscription_confirmation(
         self, sns_create_topic, sns_subscription, aws_client, sns_provider
     ):
@@ -4346,7 +4343,6 @@ class TestSNSPlatformEndpoint:
     # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
     # TODO: AWS validate this test
     # See https://github.com/getmoto/moto/pull/6953 where Moto updated errors.
-
     def test_create_platform_endpoint_check_idempotency(
         self, sns_create_platform_application, aws_client
     ):
@@ -4392,15 +4388,15 @@ class TestSNSPlatformEndpoint:
 
     @markers.aws.needs_fixing
     # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
-    @skip_if_sns_v2
     def test_publish_disabled_endpoint(
         self, sns_create_platform_application, aws_client, platform_credentials
     ):
+        platform = "ADM"
         client_id, client_secret = platform_credentials
         attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
         response = sns_create_platform_application(
             Name=f"test-{short_uid()}",
-            Platform="GCM",
+            Platform=platform,
             Attributes=attributes,
         )
         platform_arn = response["PlatformApplicationArn"]
@@ -4417,12 +4413,20 @@ class TestSNSPlatformEndpoint:
             EndpointArn=endpoint_arn, Attributes={"Enabled": "false"}
         )
 
-        get_attrs = aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
-        assert get_attrs["Attributes"]["Enabled"] == "false"
+        retries = 3
+        sleep = 1
+        if is_aws_cloud():
+            retries = 30
+            sleep = 2
 
+        def _assert_endpoint_disabled():
+            get_attrs = aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+            assert get_attrs["Attributes"]["Enabled"] == "false"
+
+        retry(_assert_endpoint_disabled, retries=retries, sleep=sleep)
         with pytest.raises(ClientError) as e:
             message = {
-                "GCM": '{ "notification": {"title": "Title of notification", "body": "It works" } }'
+                platform: '{ "notification": {"title": "Title of notification", "body": "It works" } }'
             }
             aws_client.sns.publish(
                 TargetArn=endpoint_arn, MessageStructure="json", Message=json.dumps(message)
@@ -5129,7 +5133,6 @@ class TestSNSSubscriptionHttp:
             "$.topic-attrs.Attributes.Policy.Statement..Action",
         ]
     )
-    @skip_if_sns_v2
     def test_subscribe_external_http_endpoint_content_type(
         self,
         sns_create_http_endpoint,
@@ -6031,7 +6034,6 @@ class TestSNSCertEndpoint:
 class TestSNSRetrospectionEndpoints:
     @markers.requires_in_process
     @markers.aws.only_localstack
-    @skip_if_sns_v2
     def test_publish_to_platform_endpoint_can_retrospect(
         self,
         sns_create_topic,
@@ -6042,7 +6044,11 @@ class TestSNSRetrospectionEndpoints:
         region_name,
         secondary_region_name,
         sns_provider,
+        platform_credentials,
     ):
+        platform = "APNS"
+        client_id, client_secret = platform_credentials
+        attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
         SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(account_id, region_name)
         # clean up the saved messages
@@ -6054,7 +6060,7 @@ class TestSNSRetrospectionEndpoints:
         application_platform_name = f"app-platform-{short_uid()}"
 
         app_arn = sns_create_platform_application(
-            Name=application_platform_name, Platform="APNS", Attributes={}
+            Name=application_platform_name, Platform=platform, Attributes=attributes
         )["PlatformApplicationArn"]
 
         endpoint_arn = aws_client.sns.create_platform_endpoint(
@@ -6191,7 +6197,6 @@ class TestSNSRetrospectionEndpoints:
 
     @markers.requires_in_process
     @markers.aws.only_localstack
-    @skip_if_sns_v2
     def test_publish_sms_can_retrospect(
         self,
         sns_create_topic,
