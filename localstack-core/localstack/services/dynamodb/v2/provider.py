@@ -56,6 +56,7 @@ from localstack.aws.api.dynamodb import (
     GetItemInput,
     GetItemOutput,
     GlobalTableAlreadyExistsException,
+    GlobalTableDescription,
     GlobalTableNotFoundException,
     KinesisStreamingDestinationOutput,
     ListGlobalTablesOutput,
@@ -560,6 +561,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             if "NumberOfDecreasesToday" not in table_description["ProvisionedThroughput"]:
                 table_description["ProvisionedThroughput"]["NumberOfDecreasesToday"] = 0
 
+        if tags := table_definitions.pop("Tags", []):
+            get_store(context.account_id, context.region).TAGS.tag_resource(table_arn, tags)
         if "WarmThroughput" in table_description:
             table_description["WarmThroughput"]["Status"] = "UPDATING"
 
@@ -596,7 +599,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_arn = self.fix_table_arn(context.account_id, context.region, table_arn)
 
         store = get_store(context.account_id, context.region)
-        store.TABLE_TAGS.pop(table_arn, None)
+        store.TAGS.del_resource(table_arn)
         store.REPLICAS.pop(table_name, None)
 
         return result
@@ -989,10 +992,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def tag_resource(
         self, context: RequestContext, resource_arn: ResourceArnString, tags: TagList, **kwargs
     ) -> None:
-        table_tags = get_store(context.account_id, context.region).TABLE_TAGS
-        if resource_arn not in table_tags:
-            table_tags[resource_arn] = {}
-        table_tags[resource_arn].update({tag["Key"]: tag["Value"] for tag in tags})
+        table_tags = get_store(context.account_id, context.region).TAGS
+        table_tags.tag_resource(resource_arn, tags)
 
     def untag_resource(
         self,
@@ -1001,10 +1002,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         tag_keys: TagKeyList,
         **kwargs,
     ) -> None:
-        for tag_key in tag_keys or []:
-            get_store(context.account_id, context.region).TABLE_TAGS.get(resource_arn, {}).pop(
-                tag_key, None
-            )
+        store = get_store(context.account_id, context.region)
+        store.TAGS.untag_resource(resource_arn, tag_keys)
 
     def list_tags_of_resource(
         self,
@@ -1013,13 +1012,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         next_token: NextTokenString = None,
         **kwargs,
     ) -> ListTagsOfResourceOutput:
-        result = [
-            {"Key": k, "Value": v}
-            for k, v in get_store(context.account_id, context.region)
-            .TABLE_TAGS.get(resource_arn, {})
-            .items()
-        ]
-        return ListTagsOfResourceOutput(Tags=result)
+        store = get_store(context.account_id, context.region)
+        tags = store.TAGS.list_tags_for_resource(resource_arn)
+        return ListTagsOfResourceOutput(Tags=tags.get("Tags"))
 
     #
     # TTLs
@@ -1081,7 +1076,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if global_table_name in global_tables:
             raise GlobalTableAlreadyExistsException("Global table with this name already exists")
         replication_group = [grp.copy() for grp in replication_group or []]
-        data = {"GlobalTableName": global_table_name, "ReplicationGroup": replication_group}
+        data = GlobalTableDescription(
+            GlobalTableName=global_table_name, ReplicationGroup=replication_group
+        )
         global_tables[global_table_name] = data
         for group in replication_group:
             group["ReplicaStatus"] = "ACTIVE"
