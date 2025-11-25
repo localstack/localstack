@@ -3059,7 +3059,7 @@ class TestSNSSubscriptionSQSFifo:
         ]
     )
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
-    # @skip_if_sns_v2
+    #
     def test_publish_fifo_messages_to_dlq(
         self,
         sns_create_topic,
@@ -3224,7 +3224,7 @@ class TestSNSSubscriptionSQSFifo:
         ]
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
-    # @skip_if_sns_v2
+    #
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
         self,
         sns_create_topic,
@@ -3581,7 +3581,7 @@ class TestSNSSubscriptionSQSFifo:
 class TestSNSSubscriptionSES:
     @markers.requires_in_process
     @markers.aws.only_localstack
-    # @skip_if_sns_v2
+    #
     def test_topic_email_subscription_confirmation(
         self, sns_create_topic, sns_subscription, aws_client, sns_provider
     ):
@@ -4294,7 +4294,6 @@ class TestSNSPlatformEndpointCrud:
 class TestSNSPlatformEndpoint:
     @markers.requires_in_process
     @markers.aws.only_localstack
-    # @skip_if_sns_v2
     def test_subscribe_platform_endpoint(
         self,
         sns_create_topic,
