@@ -1,4 +1,5 @@
 import pytest
+from moto.ec2.exceptions import InvalidKeyPairNameError
 from moto.ses.exceptions import MessageRejectedError
 
 from localstack.aws.api import CommonServiceException, RequestContext
@@ -200,7 +201,8 @@ class TestServiceExceptionSerializer:
         assert err_context.service_exception.__traceback__ == raised_exception.__traceback__
         assert err_context.service_exception.status_code == 500
 
-    def test_moto_exception_is_parsed(self, service_response_handler_chain):
+    def test_moto_service_exception_is_translated(self, service_response_handler_chain):
+        # Ensure ServiceExceptions are translated
         context = create_aws_request_context(
             "ses",
             "SendRawEmail",
@@ -219,5 +221,29 @@ class TestServiceExceptionSerializer:
 
         assert msg in context.service_exception.message
         assert context.service_exception.code == "MessageRejected"
+        assert not context.service_exception.sender_fault
+        assert context.service_exception.status_code == 400
+
+    def test_moto_rest_error_is_translated(self, service_response_handler_chain):
+        # Ensure RESTErrors are translated
+        context = create_aws_request_context(
+            "ec2",
+            "RunInstances",
+            "ec2",
+            {
+                "ImageId": "ami-deadc0de",
+                "InstanceType": "t3.nano",
+                "KeyName": "some-key-pair",
+                "MaxCount": 1,
+                "MinCount": 1,
+            },
+        )
+        msg = "The keypair 'some-key-pair' does not exist."
+        moto_exception = InvalidKeyPairNameError(msg)
+
+        ServiceExceptionSerializer().create_exception_response(moto_exception, context)
+
+        assert msg in context.service_exception.message
+        assert context.service_exception.code == "InvalidKeyPair.NotFound"
         assert not context.service_exception.sender_fault
         assert context.service_exception.status_code == 400
