@@ -255,9 +255,11 @@ class LambdaTopicPublisher(TopicPublisher):
             "UnsubscribeUrl": unsubscribe_url,
             "MessageAttributes": message_attributes,
         }
-
+        # TODO: remove v1 "signature_version" access once v1 is retired
         signature_version = (
-            topic_attributes.get("signature_version", "1") if topic_attributes else "1"
+            topic_attributes.get("signature_version", topic_attributes.get("SignatureVersion", "1"))
+            if topic_attributes
+            else "1"
         )
         canonical_string = compute_canonical_string(event_payload, message_context.type)
         signature = get_message_signature(canonical_string, signature_version=signature_version)
