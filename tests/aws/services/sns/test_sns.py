@@ -4523,7 +4523,6 @@ class TestSNSPlatformEndpoint:
 class TestSNSSMS:
     @markers.requires_in_process
     @markers.aws.only_localstack
-    @skip_if_sns_v2
     def test_publish_sms(self, aws_client, account_id, region_name, sns_provider):
         phone_number = "+33000000000"
         response = aws_client.sns.publish(PhoneNumber=phone_number, Message="This is a SMS")
@@ -4532,8 +4531,8 @@ class TestSNSSMS:
 
         SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(
-            account_id=account_id,
-            region_name=region_name,
+            account_id,
+            region_name,
         )
 
         def check_messages():
@@ -5517,7 +5516,6 @@ class TestSNSMultiAccounts:
         return secondary_aws_client.sqs
 
     @markers.aws.only_localstack
-    @skip_if_sns_v2
     def test_cross_account_access(self, sns_primary_client, sns_secondary_client, sns_create_topic):
         # Cross-account access is supported for below operations.
         # This list is taken from ActionName param of the AddPermissions operation
@@ -5572,7 +5570,6 @@ class TestSNSMultiAccounts:
         assert sns_secondary_client.delete_topic(TopicArn=topic_arn)
 
     @markers.aws.only_localstack
-    @skip_if_sns_v2
     def test_cross_account_publish_to_sqs(
         self,
         sns_create_topic,
@@ -5696,7 +5693,6 @@ class TestSNSMultiRegions:
         return aws_client_factory(region_name=secondary_region_name).sqs
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_cross_region_access(self, sns_region1_client, sns_region2_client, snapshot, cleanups):
         # We do not have a list of supported Cross-region access for operations.
         # This test is validating that Cross-account does not mean Cross-region most of the time
