@@ -4564,7 +4564,6 @@ class TestSNSSMS:
 
     @markers.requires_in_process
     @markers.aws.only_localstack
-    @skip_if_sns_v2
     def test_publish_sms_endpoint(
         self, sns_create_topic, sns_subscription, aws_client, account_id, region_name, sns_provider
     ):
