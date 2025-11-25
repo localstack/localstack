@@ -34,6 +34,7 @@ from localstack.aws.api.lambda_ import Runtime
 # => Synchronize the order with the "Supported runtimes" under "AWS Lambda runtimes" (a)
 # => Add comments for deprecated runtimes using <Deprecation date> => <Block function create> => <Block function update>
 IMAGE_MAPPING: dict[Runtime, str] = {
+    Runtime.nodejs24_x: "nodejs:24",
     Runtime.nodejs22_x: "nodejs:22",
     Runtime.nodejs20_x: "nodejs:20",
     Runtime.nodejs18_x: "nodejs:18",
@@ -112,6 +113,7 @@ ALL_RUNTIMES: list[Runtime] = list(IMAGE_MAPPING.keys())
 # => Remove deprecated runtimes from this testing list
 RUNTIMES_AGGREGATED = {
     "nodejs": [
+        Runtime.nodejs24_x,
         Runtime.nodejs22_x,
         Runtime.nodejs20_x,
         Runtime.nodejs18_x,
@@ -166,6 +168,6 @@ SNAP_START_SUPPORTED_RUNTIMES = [
 ]
 
 # An ordered list of all Lambda runtimes considered valid by AWS. Matching snapshots in test_create_lambda_exceptions
-VALID_RUNTIMES: str = "[nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9]"
+VALID_RUNTIMES: str = "[nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs24.x, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9]"
 # An ordered list of all Lambda runtimes for layers considered valid by AWS. Matching snapshots in test_layer_exceptions
 VALID_LAYER_RUNTIMES: str = "[ruby3.5, ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java25, java17, nodejs, nodejs4.3, java8.al2, go1.x, dotnet10, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs24.x, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, nodejs26.x, python3.13, python3.14, nodejs16.x, python3.15, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby3.4, ruby2.5, python3.6, python2.7]"
