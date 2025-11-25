@@ -814,7 +814,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             self._raise_state_machine_does_not_exist(base_arn)
 
         # Update event change parameters about the state machine and should not affect those about this execution.
-        state_machine_clone = copy.deepcopy(unsafe_state_machine)
+        if (isinstance(unsafe_state_machine, StateMachineRevision) and 
+            unsafe_state_machine.aliases):
+            with unsafe_state_machine.aliases.pop()._mutex:
+                state_machine_clone = copy.deepcopy(unsafe_state_machine)
+        else:
+            state_machine_clone = copy.deepcopy(unsafe_state_machine)
 
         if input is None:
             input_data = {}
