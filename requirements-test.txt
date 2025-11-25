@@ -33,11 +33,11 @@ aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==48.19.0
+aws-cdk-cloud-assembly-schema==48.20.0
     # via aws-cdk-lib
-aws-cdk-lib==2.225.0
+aws-cdk-lib==2.229.0
     # via localstack-core (pyproject.toml)
-aws-sam-translator==1.101.0
+aws-sam-translator==1.103.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -45,7 +45,7 @@ aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.43.2
     # via localstack-core
-awscrt==0.28.4
+awscrt==0.29.0
     # via localstack-core
 boto3==1.41.2
     # via
@@ -78,7 +78,7 @@ certifi==2025.11.12
     #   requests
 cffi==2.0.0
     # via cryptography
-cfn-lint==1.40.4
+cfn-lint==1.41.0
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
@@ -92,7 +92,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.3
     # via aws-cdk-lib
-coverage==7.11.3
+coverage==7.12.0
     # via localstack-core (pyproject.toml)
 crontab==1.0.5
     # via localstack-core
@@ -130,6 +130,8 @@ events==0.5
     # via opensearch-py
 graphql-core==3.2.7
     # via moto-ext
+grpcio==1.76.0
+    # via opensearch-protobufs
 h11==0.16.0
     # via
     #   httpcore
@@ -175,11 +177,11 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.4.2
+joserfc==1.4.3
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.119.0
+jsii==1.120.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -237,13 +239,13 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.16.post39
+moto-ext==5.1.17.post15
     # via localstack-core
 mpmath==1.3.0
     # via sympy
 multipart==1.3.0
     # via moto-ext
-networkx==3.5
+networkx==3.6
     # via cfn-lint
 openapi-core==0.19.4
     # via localstack-core
@@ -255,7 +257,9 @@ openapi-spec-validator==0.7.2
     # via
     #   moto-ext
     #   openapi-core
-opensearch-py==3.0.0
+opensearch-protobufs==0.19.0
+    # via opensearch-py
+opensearch-py==3.1.0
     # via localstack-core
 orderly-set==5.5.0
     # via deepdiff
@@ -285,6 +289,8 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
+protobuf==6.33.1
+    # via opensearch-protobufs
 psutil==7.1.3
     # via
     #   localstack-core
@@ -414,7 +420,7 @@ sniffio==1.3.1
     # via anyio
 sympy==1.14.0
     # via cfn-lint
-typeguard==4.2.1
+typeguard==2.13.3
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -427,6 +433,7 @@ typing-extensions==4.15.0
     #   aws-sam-translator
     #   cattrs
     #   cfn-lint
+    #   grpcio
     #   jsii
     #   localstack-core
     #   localstack-twisted
@@ -455,7 +462,7 @@ werkzeug==3.1.3
     #   rolo
 wrapt==2.0.1
     # via aws-xray-sdk
-wsproto==1.3.1
+wsproto==1.3.2
     # via hypercorn
 xmltodict==1.0.2
     # via
