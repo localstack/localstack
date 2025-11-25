@@ -1008,10 +1008,22 @@
     "last_validated_date": "2025-01-24T18:51:32+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_publish_lambda_verify_signature[1]": {
-    "last_validated_date": "2024-01-04T18:31:41+00:00"
+    "last_validated_date": "2025-11-25T08:38:27+00:00",
+    "durations_in_seconds": {
+      "setup": 13.07,
+      "call": 16.84,
+      "teardown": 2.04,
+      "total": 31.95
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_publish_lambda_verify_signature[2]": {
-    "last_validated_date": "2024-01-04T18:33:46+00:00"
+    "last_validated_date": "2025-11-25T08:38:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.87,
+      "teardown": 2.97,
+      "total": 18.84
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_python_lambda_subscribe_sns_topic": {
     "last_validated_date": "2025-10-06T11:08:49+00:00",

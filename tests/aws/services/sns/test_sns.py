@@ -1863,7 +1863,6 @@ class TestSNSSubscriptionLambda:
 
     @markers.aws.validated
     @pytest.mark.parametrize("signature_version", ["1", "2"])
-    @skip_if_sns_v2
     def test_publish_lambda_verify_signature(
         self,
         aws_client,
