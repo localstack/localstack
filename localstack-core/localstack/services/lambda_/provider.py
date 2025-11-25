@@ -942,11 +942,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         account_id=context_account_id,
                     )
                 else:
-                    raise LambdaServiceException("Gotta have s3 bucket or zip file")
+                    raise LambdaServiceException("A ZIP file or S3 bucket is required")
             elif package_type == PackageType.Image:
                 image = request_code.get("ImageUri")
                 if not image:
-                    raise LambdaServiceException("Gotta have an image when package type is image")
+                    raise LambdaServiceException(
+                        "An image is required when the package type is set to 'image'"
+                    )
                 image = create_image_code(image_uri=image)
 
                 image_config_req = request.get("ImageConfig", {})
@@ -1328,7 +1330,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             code = None
             image = create_image_code(image_uri=image)
         else:
-            raise LambdaServiceException("Gotta have s3 bucket or zip file or image")
+            raise LambdaServiceException("A ZIP file, S3 bucket, or image is required")
 
         old_function_version = function.versions.get("$LATEST")
         replace_kwargs = {"code": code} if code else {"image": image}
