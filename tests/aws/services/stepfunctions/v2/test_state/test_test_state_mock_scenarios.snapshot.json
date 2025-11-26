@@ -131,5 +131,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_lambda_service_task_mock_is_not_json_string": {
+    "recorded-date": "26-11-2025, 16:28:54",
+    "recorded-content": {
+      "validation-exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Mocked result must be valid JSON"
+        },
+        "message": "Mocked result must be valid JSON",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

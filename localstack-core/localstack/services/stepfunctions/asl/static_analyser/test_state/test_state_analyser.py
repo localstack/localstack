@@ -74,9 +74,7 @@ class TestStateStaticAnalyser(StaticAnalyser):
             try:
                 mock_result = json.loads(mock_result_raw)
             except json.JSONDecodeError:
-                raise ValidationException(
-                    f"Mock result must be a valid JSON object, but got '{mock_result_raw}' instead"
-                )
+                raise ValidationException("Mocked result must be valid JSON")
             if mock_result is None or field_validation_mode == MockResponseValidationMode.NONE:
                 return
 
