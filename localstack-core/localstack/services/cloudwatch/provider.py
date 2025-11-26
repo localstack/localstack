@@ -35,6 +35,7 @@ from localstack.services import moto
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_account_id_from_arn, lambda_function_name
 from localstack.utils.aws.request_context import (
@@ -306,8 +307,13 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self.tags = TaggingService()
         self.alarm_scheduler = None
 
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(cloudwatch_backends)
+
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
+
+    def on_before_start(self):
         self.start_alarm_scheduler()
 
     def on_before_state_reset(self):

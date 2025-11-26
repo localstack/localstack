@@ -161,6 +161,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
+
+    def on_before_start(self):
         self.start_alarm_scheduler()
 
     def on_before_state_reset(self):
