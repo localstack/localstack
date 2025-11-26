@@ -168,6 +168,7 @@ from localstack.services.events.utils import (
     recursive_remove_none_values_from_dict,
 )
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.common import truncate
 from localstack.utils.event_matcher import matches_event
 from localstack.utils.strings import long_uid
@@ -245,6 +246,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._replay_service_store: ReplayServiceDict = {}
         self._connection_service_store: ConnectionServiceDict = {}
         self._api_destination_service_store: ApiDestinationServiceDict = {}
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(events_stores)
 
     def on_before_start(self):
         JobScheduler.start()
