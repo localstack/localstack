@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_none.py::TestFieldValidationModeNone::test_none_mode_sfn_task[missing_required_fields]": {
+    "last_validated_date": "2025-11-26T15:56:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 14.15,
+      "teardown": 1.05,
+      "total": 15.72
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_none.py::TestFieldValidationModeNone::test_none_mode_sfn_task[wrong_timestamp_type_bool]": {
+    "last_validated_date": "2025-11-26T15:57:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.91,
+      "teardown": 0.98,
+      "total": 13.89
+    }
+  }
+}

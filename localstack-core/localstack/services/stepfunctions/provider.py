@@ -151,7 +151,6 @@ from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.services.stepfunctions.backend.test_state.execution import (
     TestStateExecution,
 )
-from localstack.services.stepfunctions.backend.test_state.test_state_mock import TestStateMock
 from localstack.services.stepfunctions.local_mocking.mock_config import (
     LocalMockTestCase,
     load_local_mock_test_case_for,
@@ -1513,18 +1512,16 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         ):
             raise ValidationException("State not found in definition")
 
-        if mock_input := request.get("mock"):
+        mock_input = request.get("mock")
+        if mock_input is not None:
             self._validate_test_state_mock_input(mock_input)
+            TestStateStaticAnalyser.validate_mock(
+                mock_input=mock_input, definition=definition, state_name=state_name
+            )
 
         if state_configuration := request.get("stateConfiguration"):
             # TODO: Add validations for this i.e assert len(input) <= failureCount
             pass
-
-        if mock_input:
-            mock = TestStateMock(mock_input=mock_input, state_configuration=state_configuration)
-            TestStateStaticAnalyser.validate_mock(
-                mock=mock, definition=definition, state_name=state_name
-            )
 
         name: Name | None = f"TestState-{short_uid()}"
         arn = stepfunctions_state_machine_arn(

@@ -1,3 +1,4 @@
+import json
 from typing import Any, Final
 
 # Botocore shape classes to drive validation
@@ -60,16 +61,25 @@ class TestStateStaticAnalyser(StaticAnalyser):
         return test_program.test_state is not None
 
     @staticmethod
-    def validate_mock(mock: MockInput, definition: Definition, state_name: StateName) -> None:
-        field_validation_mode = mock.get("fieldValidationMode", MockResponseValidationMode.STRICT)
-        mocked_response = mock.get("result")
-        if not mocked_response or field_validation_mode == MockResponseValidationMode.NONE:
-            return
-
+    def validate_mock(mock_input: MockInput, definition: Definition, state_name: StateName) -> None:
         test_program, _ = TestStateAmazonStateLanguageParser.parse(definition, state_name)
         test_state = test_program.test_state
         if isinstance(test_state, StateTaskService):
-            payload: Any = mocked_response.payload
+            field_validation_mode = mock_input.get(
+                "fieldValidationMode", MockResponseValidationMode.STRICT
+            )
+            mock_result_raw = mock_input.get("result")
+            if mock_result_raw is None:
+                return
+            try:
+                mock_result = json.loads(mock_result_raw)
+            except json.JSONDecodeError:
+                raise ValidationException(
+                    f"Mock result must be a valid JSON object, but got '{mock_result_raw}' instead"
+                )
+            if mock_result is None or field_validation_mode == MockResponseValidationMode.NONE:
+                return
+
             boto_service_name = test_state._get_boto_service_name()
             service_action_name = test_state._get_boto_service_action()
             output_shape = test_state._get_boto_operation_model(
@@ -102,7 +112,7 @@ class TestStateStaticAnalyser(StaticAnalyser):
                         StateTaskService._to_sfn_cased(member_key): member_shape
                         for member_key, member_shape in members.items()
                     }
-                    if mock.get_field_validation_mode() == MockResponseValidationMode.STRICT:
+                    if field_validation_mode == MockResponseValidationMode.STRICT:
                         # Ensure required members are present, using SFN-normalised keys
                         for required_key in shape.required_members:
                             sfn_required_key = StateTaskService._to_sfn_cased(required_key)
@@ -166,7 +176,7 @@ class TestStateStaticAnalyser(StaticAnalyser):
                             _raise_type_error("a string", field_name)
 
             # Perform validation against the output shape
-            _validate_value(payload, output_shape)
+            _validate_value(mock_result, output_shape)
         # Non-service tasks or other cases: nothing to validate
         return
 
