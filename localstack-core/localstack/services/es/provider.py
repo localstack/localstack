@@ -68,6 +68,7 @@ from localstack.aws.api.opensearch import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.opensearch.packages import ELASTICSEARCH_DEFAULT_VERSION
+from localstack.state import StateVisitor
 
 
 def _version_to_opensearch(
@@ -208,6 +209,11 @@ def exception_mapper():
 
 
 class EsProvider(EsApi):
+    def accept_state_visitor(self, visitor: StateVisitor):
+        # ES state entirely depends on `opensearch`, and delegates its entire state to it
+        # we do not need to manage state in ES
+        pass
+
     def create_elasticsearch_domain(
         self,
         context: RequestContext,
