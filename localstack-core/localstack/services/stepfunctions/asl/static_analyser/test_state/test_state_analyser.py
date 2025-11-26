@@ -11,6 +11,7 @@ from botocore.model import (
 
 from localstack.aws.api.stepfunctions import (
     Definition,
+    MockInput,
     MockResponseValidationMode,
     StateName,
     ValidationException,
@@ -32,12 +33,6 @@ from localstack.services.stepfunctions.asl.parse.test_state.asl_parser import (
     TestStateAmazonStateLanguageParser,
 )
 from localstack.services.stepfunctions.asl.static_analyser.static_analyser import StaticAnalyser
-from localstack.services.stepfunctions.backend.test_state.test_state_mock import TestStateMock
-from localstack.services.stepfunctions.test_state.mock_config import (
-    TestStateMockedResponse,
-    TestStateResponseReturn,
-    TestStateResponseThrow,
-)
 
 
 class TestStateStaticAnalyser(StaticAnalyser):
@@ -65,22 +60,15 @@ class TestStateStaticAnalyser(StaticAnalyser):
         return test_program.test_state is not None
 
     @staticmethod
-    def validate_mock(mock: TestStateMock, definition: Definition, state_name: StateName) -> None:
+    def validate_mock(mock: MockInput, definition: Definition, state_name: StateName) -> None:
+        field_validation_mode = mock.get("fieldValidationMode", MockResponseValidationMode.STRICT)
+        mocked_response = mock.get("result")
+        if not mocked_response or field_validation_mode == MockResponseValidationMode.NONE:
+            return
+
         test_program, _ = TestStateAmazonStateLanguageParser.parse(definition, state_name)
         test_state = test_program.test_state
         if isinstance(test_state, StateTaskService):
-            if mock.get_field_validation_mode() == MockResponseValidationMode.NONE:
-                return
-
-            mocked_response: TestStateMockedResponse | None = mock.peek_next_result()
-            # No mock provided, or an error-throwing mock: nothing to validate against output shape
-            if mocked_response is None or isinstance(mocked_response, TestStateResponseThrow):
-                return
-
-            if not isinstance(mocked_response, TestStateResponseReturn):
-                # Unknown mock type; treat as invalid input
-                raise ValidationException("Invalid mock result type")
-
             payload: Any = mocked_response.payload
             boto_service_name = test_state._get_boto_service_name()
             service_action_name = test_state._get_boto_service_action()
