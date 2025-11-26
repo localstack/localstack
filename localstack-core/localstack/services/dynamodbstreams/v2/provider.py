@@ -18,6 +18,7 @@ from localstack.services.dynamodb.utils import modify_ddblocal_arns
 from localstack.services.dynamodb.v2.provider import DynamoDBProvider, modify_context_region
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_original_region
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.aws.arns import parse_arn
 
 LOG = logging.getLogger(__name__)
@@ -31,6 +32,11 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     def __init__(self):
         self.server = DynamodbServer.get()
         self.shard_to_region = {}
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        # DynamoDB Streams state is entirely dependent on DynamoDB Local state, and does not hold state itself
+        # the DynamoDB provider is responsible for the persistence of DDB Streams
+        pass
 
     def on_after_init(self):
         # add response processor specific to ddblocal
