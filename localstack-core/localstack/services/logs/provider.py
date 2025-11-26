@@ -43,6 +43,7 @@ from localstack.services import moto
 from localstack.services.logs.models import get_moto_logs_backend, logs_stores
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.aws import arns
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.bootstrap import is_api_enabled
@@ -56,6 +57,12 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
     def __init__(self):
         super().__init__()
         self.cw_client = connect_to().cloudwatch
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        from moto.logs.models import logs_backends
+
+        visitor.visit(logs_backends)
+        visitor.visit(logs_stores)
 
     def put_log_events(
         self,
