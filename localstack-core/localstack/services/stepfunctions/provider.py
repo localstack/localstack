@@ -1519,11 +1519,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if state_configuration := request.get("stateConfiguration"):
             # TODO: Add validations for this i.e assert len(input) <= failureCount
             pass
-        mock = TestStateMock(mock_input=mock_input, state_configuration=state_configuration)
 
-        TestStateStaticAnalyser.validate_mock(
-            mock=mock, definition=definition, state_name=state_name
-        )
+        if mock_input:
+            mock = TestStateMock(mock_input=mock_input, state_configuration=state_configuration)
+            TestStateStaticAnalyser.validate_mock(
+                mock=mock, definition=definition, state_name=state_name
+            )
 
         name: Name | None = f"TestState-{short_uid()}"
         arn = stepfunctions_state_machine_arn(

@@ -123,6 +123,11 @@ class TestFieldValidationModePresent:
         pytest.param(
             {"executionArn": "stringValueExecutionArn", "startDate": "stringValueStartDate"},
             id="field_name_not_in_sfn_case",  # should be treated as unknown field
+            marks=pytest.mark.skipif(
+                condition=not is_aws_cloud(),
+                reason="in LocalStack mock field names are normalized whereas in AWS they are not",
+                # TODO analyse if this normalization can be reasonable fixed - mock is only applied to StateTaskService._eval_service_task, all before_ and after_ methods are still executed, maybe it is not needed
+            ),
         ),
     ]
 

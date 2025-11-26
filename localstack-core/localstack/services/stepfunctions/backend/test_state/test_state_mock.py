@@ -5,6 +5,7 @@ from typing import Final
 from localstack.aws.api.stepfunctions import (
     HistoryEventType,
     MockInput,
+    MockResponseValidationMode,
     TaskFailedEventDetails,
     TestStateConfiguration,
 )
@@ -80,3 +81,6 @@ class TestStateMock:
         if not self._result_stack:
             return None
         return self._result_stack[-1]
+
+    def get_field_validation_mode(self):
+        return self._mock_input.get("fieldValidationMode", MockResponseValidationMode.STRICT)

@@ -11,6 +11,7 @@ from botocore.model import (
 
 from localstack.aws.api.stepfunctions import (
     Definition,
+    MockResponseValidationMode,
     StateName,
     ValidationException,
 )
@@ -68,6 +69,9 @@ class TestStateStaticAnalyser(StaticAnalyser):
         test_program, _ = TestStateAmazonStateLanguageParser.parse(definition, state_name)
         test_state = test_program.test_state
         if isinstance(test_state, StateTaskService):
+            if mock.get_field_validation_mode() == MockResponseValidationMode.NONE:
+                return
+
             mocked_response: TestStateMockedResponse | None = mock.peek_next_result()
             # No mock provided, or an error-throwing mock: nothing to validate against output shape
             if mocked_response is None or isinstance(mocked_response, TestStateResponseThrow):
@@ -110,13 +114,14 @@ class TestStateStaticAnalyser(StaticAnalyser):
                         StateTaskService._to_sfn_cased(member_key): member_shape
                         for member_key, member_shape in members.items()
                     }
-                    # Ensure required members are present, using SFN-normalised keys
-                    for required_key in shape.required_members:
-                        sfn_required_key = StateTaskService._to_sfn_cased(required_key)
-                        if sfn_required_key not in value:
-                            raise ValidationException(
-                                f"Mock result schema validation error: Required field '{sfn_required_key}' is missing"
-                            )
+                    if mock.get_field_validation_mode() == MockResponseValidationMode.STRICT:
+                        # Ensure required members are present, using SFN-normalised keys
+                        for required_key in shape.required_members:
+                            sfn_required_key = StateTaskService._to_sfn_cased(required_key)
+                            if sfn_required_key not in value:
+                                raise ValidationException(
+                                    f"Mock result schema validation error: Required field '{sfn_required_key}' is missing"
+                                )
                     # Validate present fields (match SFN-normalised keys to member shapes)
                     for mock_field_name, mock_field_value in value.items():
                         member_shape = sfn_key_to_member_shape.get(mock_field_name)
