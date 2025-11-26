@@ -535,6 +535,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self.server = self._new_dynamodb_server()
         self._expired_items_worker = ExpiredItemsWorker()
         self._router_rules = []
+        # TODO: fix _event_forwarder to have lazy instantiation of the ThreadPoolExecutor
         self._event_forwarder = EventForwarder()
 
     def on_before_start(self):
