@@ -225,6 +225,11 @@ def parse_boolean_env(env_var_name: str) -> bool | None:
     return None
 
 
+def parse_comma_separated_list(env_var_name: str) -> list[str]:
+    """Parse a comma separated list from the given environment variable."""
+    return os.environ.get(env_var_name, "").strip().split(",")
+
+
 def is_env_true(env_var_name: str) -> bool:
     """Whether the given environment variable has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() in TRUE_STRINGS
@@ -1210,6 +1215,14 @@ CFN_PER_RESOURCE_TIMEOUT = int(os.environ.get("CFN_PER_RESOURCE_TIMEOUT") or 300
 # By default unsupported resource types will be ignored.
 # EXPERIMENTAL
 CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES")
+
+# Comma-separated list of resource type names that CLoudFormation will ignore on stack create/update
+CFN_IGNORE_UNSUPPORTED_TYPE_CREATE: list[str] = parse_comma_separated_list(
+    "CFN_IGNORE_UNSUPPORTED_TYPE_CREATE"
+)
+CFN_IGNORE_UNSUPPORTED_TYPE_UPDATE: list[str] = parse_comma_separated_list(
+    "CFN_IGNORE_UNSUPPORTED_TYPE_UPDATE"
+)
 
 # bind address of local DNS server
 DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or "0.0.0.0"
