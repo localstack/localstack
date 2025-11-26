@@ -7,7 +7,7 @@ import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import StrEnum
 from logging import Logger
 from math import ceil
 from typing import TYPE_CHECKING, Any, Generic, TypedDict, TypeVar
@@ -57,11 +57,11 @@ PUBLIC_REGISTRY: dict[str, type[ResourceProvider]] = {}
 PROVIDER_DEFAULTS = {}  # TODO: remove this after removing patching in -ext
 
 
-class OperationStatus(Enum):
-    PENDING = auto()
-    IN_PROGRESS = auto()
-    SUCCESS = auto()
-    FAILED = auto()
+class OperationStatus(StrEnum):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
 
 
 @dataclass
@@ -69,6 +69,8 @@ class ProgressEvent(Generic[Properties]):
     status: OperationStatus
     resource_model: Properties | None = None
     resource_models: list[Properties] | None = None
+
+    request_token: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     message: str = ""
     result: str | None = None
@@ -432,6 +434,10 @@ class ResourceProviderExecutor:
 
         # This should have been set up in the provider
         assert isinstance(config.CFN_NO_WAIT_ITERATIONS, int)
+
+    @classmethod
+    def standalone(cls) -> Self:
+        return cls(stack_name="", stack_id="")
 
     def deploy_loop(
         self,
