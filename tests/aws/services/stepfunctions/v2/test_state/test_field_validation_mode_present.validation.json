@@ -1,0 +1,155 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_aws_sdk_kms_task[wrong_blob_length_less_than_minimum]": {
+    "last_validated_date": "2025-11-26T12:13:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.07,
+      "teardown": 1.24,
+      "total": 13.31
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_aws_sdk_kms_task[wrong_blob_type_number]": {
+    "last_validated_date": "2025-11-26T12:13:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.07,
+      "teardown": 1.0,
+      "total": 13.07
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_aws_sdk_lambda_get_function_task[integer_less_than_minimum_allowed]": {
+    "last_validated_date": "2025-11-26T12:13:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.69,
+      "teardown": 1.18,
+      "total": 13.87
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_aws_sdk_lambda_get_function_task[integer_more_than_maximum_allowed]": {
+    "last_validated_date": "2025-11-26T12:14:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.13,
+      "teardown": 1.74,
+      "total": 13.87
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_aws_sdk_s3_task[non_existent_enum_value]": {
+    "last_validated_date": "2025-11-26T12:13:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.05,
+      "teardown": 1.06,
+      "total": 13.11
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_aws_sdk_s3_task[wrong_long_type_string]": {
+    "last_validated_date": "2025-11-26T12:13:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.18,
+      "teardown": 1.0,
+      "total": 14.18
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_dynamodb_task[wrong_float_type_string]": {
+    "last_validated_date": "2025-11-26T12:12:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.98,
+      "teardown": 1.06,
+      "total": 14.04
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_eventbridge_task[wrong_type_2nd_array_element]": {
+    "last_validated_date": "2025-11-26T12:11:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.88,
+      "teardown": 1.06,
+      "total": 13.94
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_eventbridge_task[wrong_type_nested_field]": {
+    "last_validated_date": "2025-11-26T12:11:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.18,
+      "teardown": 1.03,
+      "total": 13.21
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_eventbridge_task[wrong_type_top_level_field]": {
+    "last_validated_date": "2025-11-26T12:11:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.9,
+      "teardown": 0.94,
+      "total": 13.84
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_lambda_task[wrong_integer_type_string]": {
+    "last_validated_date": "2025-11-26T12:12:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.16,
+      "teardown": 1.34,
+      "total": 13.5
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_mock_result_field_not_in_api_spec[empty_json]": {
+    "last_validated_date": "2025-11-26T12:10:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.77,
+      "teardown": 0.95,
+      "total": 13.72
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_mock_result_field_not_in_api_spec[field_not_part_of_api_spec]": {
+    "last_validated_date": "2025-11-26T12:10:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.53,
+      "call": 14.14,
+      "teardown": 0.94,
+      "total": 15.61
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_sfn_task_validation_fail[wrong_string_type_number]": {
+    "last_validated_date": "2025-11-26T12:12:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.8,
+      "teardown": 0.95,
+      "total": 13.75
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_sfn_task_validation_fail[wrong_timestamp_type_bool]": {
+    "last_validated_date": "2025-11-26T12:12:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.85,
+      "teardown": 0.95,
+      "total": 13.8
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_sfn_task_validation_pass[field_name_not_in_sfn_case]": {
+    "last_validated_date": "2025-11-26T12:11:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.8,
+      "teardown": 0.95,
+      "total": 13.75
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_present.py::TestFieldValidationModePresent::test_present_mode_sfn_task_validation_pass[missing_required_fields]": {
+    "last_validated_date": "2025-11-26T12:11:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.78,
+      "teardown": 0.95,
+      "total": 12.73
+    }
+  }
+}
