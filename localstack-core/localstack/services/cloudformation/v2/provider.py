@@ -426,28 +426,29 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             reason_suffix = ", ".join(failure_messages)
             status_reason = f"{ChangeSetResourceSupportChecker.TITLE_MESSAGE} {reason_suffix}"
 
-            change_set.set_change_set_status(ChangeSetStatus.FAILED)
             change_set.status_reason = status_reason
-            failure_transitions = {
-                ChangeSetType.CREATE: (
-                    StackStatus.ROLLBACK_IN_PROGRESS,
-                    StackStatus.CREATE_FAILED,
-                ),
-                ChangeSetType.UPDATE: (
-                    StackStatus.UPDATE_ROLLBACK_IN_PROGRESS,
-                    StackStatus.UPDATE_ROLLBACK_FAILED,
-                ),
-                ChangeSetType.IMPORT: (
-                    StackStatus.IMPORT_ROLLBACK_IN_PROGRESS,
-                    StackStatus.IMPORT_ROLLBACK_FAILED,
-                ),
-            }
-            transitions = failure_transitions.get(change_set.change_set_type)
-            if transitions:
-                first_status, *remaining_statuses = transitions
-                change_set.stack.set_stack_status(first_status, status_reason)
-                for status in remaining_statuses:
-                    change_set.stack.set_stack_status(status)
+            if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+                change_set.set_change_set_status(ChangeSetStatus.FAILED)
+                failure_transitions = {
+                    ChangeSetType.CREATE: (
+                        StackStatus.ROLLBACK_IN_PROGRESS,
+                        StackStatus.CREATE_FAILED,
+                    ),
+                    ChangeSetType.UPDATE: (
+                        StackStatus.UPDATE_ROLLBACK_IN_PROGRESS,
+                        StackStatus.UPDATE_ROLLBACK_FAILED,
+                    ),
+                    ChangeSetType.IMPORT: (
+                        StackStatus.IMPORT_ROLLBACK_IN_PROGRESS,
+                        StackStatus.IMPORT_ROLLBACK_FAILED,
+                    ),
+                }
+                transitions = failure_transitions.get(change_set.change_set_type)
+                if transitions:
+                    first_status, *remaining_statuses = transitions
+                    change_set.stack.set_stack_status(first_status, status_reason)
+                    for status in remaining_statuses:
+                        change_set.stack.set_stack_status(status)
             return
 
         # hacky
