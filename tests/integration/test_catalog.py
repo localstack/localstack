@@ -2,6 +2,7 @@ import textwrap
 
 import pytest
 
+from localstack import config
 from localstack.services.cloudformation.engine.v2 import (
     change_set_resource_support_checker as support_checker_module,
 )
@@ -91,8 +92,9 @@ def testing_catalog(monkeypatch):
     [(resource, expected_service) for resource, _, expected_service in UNSUPPORTED_RESOURCE_CASES],
 )
 def test_catalog_reports_unsupported_resources_in_stack_status(
-    testing_catalog, aws_client, unsupported_resource, expected_service
+    testing_catalog, aws_client, unsupported_resource, expected_service, monkeypatch
 ):
+    monkeypatch.setattr(config, "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES", False)
     template_body = textwrap.dedent(
         f"""
         AWSTemplateFormatVersion: '2010-09-09'
