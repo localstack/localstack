@@ -1,3 +1,5 @@
+from localstack.aws.api.s3control import S3ControlApi
+from localstack.state import StateVisitor
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.s3control import (
     AccountId,
@@ -21,6 +23,10 @@ class NoSuchResource(CommonServiceException):
 
 
 class S3ControlProvider(S3ControlApi):
+    def accept_state_visitor(self, visitor: StateVisitor):
+        from moto.s3control.models import s3control_backends
+
+        visitor.visit(s3control_backends)
     """
     S3Control is a management interface for S3, and can access some of its internals with no public API
     This requires us to access the s3 stores directly
