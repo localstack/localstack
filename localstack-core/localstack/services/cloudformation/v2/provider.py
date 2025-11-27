@@ -419,15 +419,15 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         )
         validator.validate()
 
-        support_visitor = ChangeSetResourceSupportChecker()
-        support_visitor.visit(change_set.update_model.node_template)
-        failure_messages = support_visitor.failure_messages
-        if failure_messages:
-            reason_suffix = ", ".join(failure_messages)
-            status_reason = f"{ChangeSetResourceSupportChecker.TITLE_MESSAGE} {reason_suffix}"
+        if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+            support_visitor = ChangeSetResourceSupportChecker()
+            support_visitor.visit(change_set.update_model.node_template)
+            failure_messages = support_visitor.failure_messages
+            if failure_messages:
+                reason_suffix = ", ".join(failure_messages)
+                status_reason = f"{ChangeSetResourceSupportChecker.TITLE_MESSAGE} {reason_suffix}"
 
-            change_set.status_reason = status_reason
-            if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+                change_set.status_reason = status_reason
                 change_set.set_change_set_status(ChangeSetStatus.FAILED)
                 failure_transitions = {
                     ChangeSetType.CREATE: (
@@ -449,7 +449,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                     change_set.stack.set_stack_status(first_status, status_reason)
                     for status in remaining_statuses:
                         change_set.stack.set_stack_status(status)
-            return
+                return
 
         # hacky
         if transform := raw_update_model.node_template.transform:
