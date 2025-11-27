@@ -1589,6 +1589,12 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-no-bucket-tags", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # FIXME: regenerate snapshot when AWS is not raising a 500 error anymore
+            "$.tags-key-aws-duplicated-key.*"
+        ]
+    )
     def test_create_bucket_with_tags_exc(
         self, s3_create_bucket_with_client, aws_client_factory, snapshot
     ):
@@ -1611,6 +1617,52 @@ class TestS3BucketObjectTagging:
                 CreateBucketConfiguration={"Tags": [{"Key": None, "Value": "value1"}]},
             )
         snapshot.match("tags-key-none", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                s3_client,
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"Tags": [{"Key": "key1", "Value": None}]},
+            )
+        snapshot.match("tags-value-none", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                s3_client,
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"Tags": [{"Key": "aws:test", "Value": "value1"}]},
+            )
+        snapshot.match("tags-key-aws-prefix", e.value.response)
+
+        # FIXME: re-generate the snapshot later, AWS is returning a 500 error as of now (27 Nov 2025)
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                s3_client,
+                Bucket=bucket_name,
+                CreateBucketConfiguration={
+                    "Tags": [
+                        {"Key": "key1", "Value": "value1"},
+                        {"Key": "key1", "Value": "value1"},
+                    ]
+                },
+            )
+        snapshot.match("tags-key-aws-duplicated-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                s3_client,
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"Tags": [{"Key": "test", "Value": "value1,value2"}]},
+            )
+        snapshot.match("tags-key-aws-bad-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                s3_client,
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"Tags": [{"Key": "test,test2", "Value": "value1"}]},
+            )
+        snapshot.match("tags-key-aws-bad-key", e.value.response)
 
     @markers.aws.validated
     def test_put_bucket_tagging_none_value(
@@ -1915,12 +1967,17 @@ class TestS3BucketObjectTagging:
         snapshot.match("get-object-after-recreation", get_bucket_tags)
 
     @markers.aws.validated
-    def test_tagging_validation(self, s3_bucket, aws_client, snapshot):
+    def test_tagging_validation(
+        self, s3_bucket, aws_client, aws_client_factory, region_name, snapshot
+    ):
         object_key = "tagging-validation"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body=b"")
+        s3_client = aws_client_factory(
+            region_name=region_name, config=Config(parameter_validation=False)
+        ).s3
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_bucket_tagging(
+            s3_client.put_bucket_tagging(
                 Bucket=s3_bucket,
                 Tagging={
                     "TagSet": [
@@ -1932,7 +1989,7 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-bucket-tags-duplicate-keys", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_bucket_tagging(
+            s3_client.put_bucket_tagging(
                 Bucket=s3_bucket,
                 Tagging={
                     "TagSet": [
@@ -1943,7 +2000,18 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-bucket-tags-invalid-key", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_bucket_tagging(
+            s3_client.put_bucket_tagging(
+                Bucket=s3_bucket,
+                Tagging={
+                    "TagSet": [
+                        {"Key": None, "Value": "Val1"},
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-tags-none-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_tagging(
                 Bucket=s3_bucket,
                 Tagging={
                     "TagSet": [
@@ -1954,7 +2022,18 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-bucket-tags-invalid-value", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_bucket_tagging(
+            s3_client.put_bucket_tagging(
+                Bucket=s3_bucket,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "key1", "Value": None},
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-tags-none-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_tagging(
                 Bucket=s3_bucket,
                 Tagging={
                     "TagSet": [
@@ -1965,7 +2044,7 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-bucket-tags-aws-prefixed", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_object_tagging(
+            s3_client.put_object_tagging(
                 Bucket=s3_bucket,
                 Key=object_key,
                 Tagging={
@@ -1979,7 +2058,7 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-object-tags-duplicate-keys", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_object_tagging(
+            s3_client.put_object_tagging(
                 Bucket=s3_bucket,
                 Key=object_key,
                 Tagging={"TagSet": [{"Key": "Key1,Key2", "Value": "Val1"}]},
@@ -1988,12 +2067,28 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-object-tags-invalid-field", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_object_tagging(
+            s3_client.put_object_tagging(
                 Bucket=s3_bucket,
                 Key=object_key,
                 Tagging={"TagSet": [{"Key": "aws:prefixed", "Value": "Val1"}]},
             )
         snapshot.match("put-object-tags-aws-prefixed", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+                Tagging={"TagSet": [{"Key": None, "Value": "Val1"}]},
+            )
+        snapshot.match("put-object-tags-none-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+                Tagging={"TagSet": [{"Key": "key1", "Value": None}]},
+            )
+        snapshot.match("put-object-tags-none-value", e.value.response)
 
 
 class TestS3ObjectLock:

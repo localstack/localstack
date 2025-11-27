@@ -2311,7 +2311,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_tagging_validation": {
-    "recorded-date": "27-11-2025, 14:45:46",
+    "recorded-date": "27-11-2025, 15:16:36",
     "recorded-content": {
       "put-bucket-tags-duplicate-keys": {
         "Error": {
@@ -2335,12 +2335,32 @@
           "HTTPStatusCode": 400
         }
       },
+      "put-bucket-tags-none-key": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "put-bucket-tags-invalid-value": {
         "Error": {
           "Code": "InvalidTag",
           "Message": "The TagValue you have provided is invalid",
           "TagKey": "Key1",
           "TagValue": "Val1,Val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-bucket-tags-none-value": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2385,6 +2405,26 @@
           "Code": "InvalidTag",
           "Message": "Your TagKey cannot be prefixed with aws:",
           "TagKey": "aws:prefixed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-tags-none-key": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-tags-none-value": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5266,12 +5306,65 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags_exc": {
-    "recorded-date": "27-11-2025, 14:45:23",
+    "recorded-date": "27-11-2025, 15:19:32",
     "recorded-content": {
       "tags-key-none": {
         "Error": {
           "Code": "MalformedXML",
           "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tags-value-none": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tags-key-aws-prefix": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "User-defined tag keys can't start with \"aws:\". This prefix is reserved for system tags. Remove \"aws:\" from your tag keys and try again."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tags-key-aws-duplicated-key": {
+        "Error": {
+          "Code": "InternalError",
+          "Message": "We encountered an internal error. Please try again."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 500
+        }
+      },
+      "tags-key-aws-bad-value": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "The TagValue you have provided is invalid",
+          "TagKey": "test",
+          "TagValue": "value1,value2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tags-key-aws-bad-key": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "The TagKey you have provided is invalid",
+          "TagKey": "test,test2"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

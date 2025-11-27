@@ -492,9 +492,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not is_bucket_name_valid(bucket_name):
             raise InvalidBucketName("The specified bucket is not valid.", BucketName=bucket_name)
 
-        # TODO: support `Tags` in `CreateBucketConfiguration`
         create_bucket_configuration = request.get("CreateBucketConfiguration") or {}
         bucket_region = create_bucket_configuration.get("LocationConstraint")
+        bucket_tags = create_bucket_configuration.get("Tags")
+        if bucket_tags:
+            validate_tag_set(bucket_tags, type_set="create-bucket")
         if bucket_region:
             if context.region == AWS_REGION_US_EAST_1:
                 if bucket_region in ("us-east-1", "aws-global"):
@@ -522,8 +524,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if existing_bucket_owner != context.account_id:
                 raise BucketAlreadyExists()
 
-            # if the existing bucket has the same owner, the behaviour will depend on the region
-            if bucket_region != "us-east-1":
+            # if the existing bucket has the same owner, the behaviour will depend on the region and if the request has
+            # tags
+            if bucket_region != AWS_REGION_US_EAST_1 or bucket_tags:
                 raise BucketAlreadyOwnedByYou(
                     "Your previous request to create the named bucket succeeded and you already own it.",
                     BucketName=bucket_name,
@@ -553,11 +556,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             object_lock_enabled_for_bucket=request.get("ObjectLockEnabledForBucket"),
         )
 
-        # tags = create_bucket_configuration.get("Tags")
-        # store.TAGS.tag_resource()
-        # TODO: investigate into 2 different us-east-1 calls with different tags, idempotency?
         store.buckets[bucket_name] = s3_bucket
         store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
+        if bucket_tags:
+            store.TAGS.tag_resource(
+                arn=s3_bucket.bucket_arn,
+                tags=bucket_tags,
+            )
         self._cors_handler.invalidate_cache()
         self._storage_backend.create_bucket(bucket_name)
 

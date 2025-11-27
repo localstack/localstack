@@ -87,12 +87,12 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags_exc": {
-    "last_validated_date": "2025-11-27T14:45:23+00:00",
+    "last_validated_date": "2025-11-27T15:19:32+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.36,
+      "setup": 0.48,
+      "call": 6.63,
       "teardown": 0.0,
-      "total": 0.36
+      "total": 7.11
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags_us_east_1_idempotency": {
@@ -168,12 +168,12 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_tagging_validation": {
-    "last_validated_date": "2025-11-27T14:45:47+00:00",
+    "last_validated_date": "2025-11-27T15:16:37+00:00",
     "durations_in_seconds": {
-      "setup": 0.65,
-      "call": 2.3,
-      "teardown": 1.23,
-      "total": 4.18
+      "setup": 1.01,
+      "call": 4.03,
+      "teardown": 0.97,
+      "total": 6.01
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketOwnershipControls::test_bucket_ownership_controls_exc": {
