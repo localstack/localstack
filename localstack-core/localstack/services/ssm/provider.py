@@ -78,6 +78,7 @@ from localstack.aws.api.ssm import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto, call_moto_with_request
+from localstack.state import StateVisitor
 from localstack.utils.aws.arns import extract_resource_from_arn, is_arn
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import remove_attributes
@@ -105,6 +106,11 @@ class InvalidParameterNameException(ValidationException):
 
 # TODO: check if _normalize_name(..) calls are still required here
 class SsmProvider(SsmApi, ABC):
+    def accept_state_visitor(self, visitor: StateVisitor):
+        from moto.ssm.models import ssm_backends
+
+        visitor.visit(ssm_backends)
+
     def get_parameters(
         self,
         context: RequestContext,
