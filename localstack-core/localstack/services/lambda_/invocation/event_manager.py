@@ -13,6 +13,7 @@ from botocore.config import Config
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, TooManyRequestsException
 from localstack.services.lambda_.analytics import (
+    FunctionInitializationType,
     FunctionOperation,
     FunctionStatus,
     function_counter,
@@ -201,20 +202,16 @@ class Poller:
         event_invoke_config = self.version_manager.function.event_invoke_configs.get(qualifier)
         runtime = None
         status = None
+        initialization_type = FunctionInitializationType.on_demand
         try:
             sqs_invocation = SQSInvocation.decode(message["Body"])
             invocation = sqs_invocation.invocation
             try:
                 invocation_result = self.version_manager.invoke(invocation=invocation)
                 function_config = self.version_manager.function_version.config
-                function_counter.labels(
-                    operation=FunctionOperation.invoke,
-                    runtime=function_config.runtime or "n/a",
-                    status=FunctionStatus.success,
-                    invocation_type=InvocationType.Event,
-                    package_type=function_config.package_type,
-                    uses_capacity_provider=bool(function_config.CapacityProviderConfig),
-                ).increment()
+                # TODO: handle initialization_type provisioned-concurrency, requires enriching invocation_result
+                if function_config.CapacityProviderConfig:
+                    initialization_type = FunctionInitializationType.lambda_managed_instances
             except Exception as e:
                 # Reserved concurrency == 0
                 if self.version_manager.function.reserved_concurrent_executions == 0:
@@ -249,7 +246,7 @@ class Poller:
                     status=status,
                     invocation_type=InvocationType.Event,
                     package_type=function_config.package_type,
-                    uses_capacity_provider=bool(function_config.CapacityProviderConfig),
+                    initialization_type=initialization_type,
                 ).increment()
 
             # Good summary blogpost: https://haithai91.medium.com/aws-lambdas-retry-behaviors-edff90e1cf1b

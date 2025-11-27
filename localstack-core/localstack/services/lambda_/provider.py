@@ -157,6 +157,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.analytics import (
+    FunctionInitializationType,
     FunctionOperation,
     FunctionStatus,
     function_counter,
@@ -1168,13 +1169,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
             fn.versions["$LATEST"] = version_post_response or version
             state.functions[function_name] = fn
+        initialization_type = (
+            FunctionInitializationType.lambda_managed_instances
+            if capacity_provider_config
+            else FunctionInitializationType.on_demand
+        )
         function_counter.labels(
             operation=FunctionOperation.create,
             runtime=runtime or "n/a",
             status=FunctionStatus.success,
             invocation_type="n/a",
             package_type=package_type,
-            uses_capacity_provider=bool(capacity_provider_config),
+            initialization_type=initialization_type,
         )
         # TODO: consider potential other side effects of not having a function version for $LATEST
         # Provisioning happens upon publishing for functions using a capacity provider
