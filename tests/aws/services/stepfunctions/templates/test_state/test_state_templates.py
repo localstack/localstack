@@ -32,6 +32,10 @@ class TestStateTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/io_output_path_dynamodb_service_task_state.json5"
     )
 
+    IO_SQS_SERVICE_TASK_WAIT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/io_sqs_service_task_wait.json5"
+    )
+
     BASE_MAP_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/base_map_state.json5")
     BASE_MAP_STATE_CATCH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/base_map_state_catch.json5"

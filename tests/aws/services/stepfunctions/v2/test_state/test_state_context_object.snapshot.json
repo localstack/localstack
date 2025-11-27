@@ -1,0 +1,630 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[ALL]": {
+    "recorded-date": "25-11-2025, 17:15:31",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "FunctionName": "lambda_function_name",
+            "Payload": {
+              "input-value": 0
+            }
+          },
+          "afterParameters": {
+            "Payload": {
+              "Input": {
+                "FunctionName": "lambda_function_name",
+                "Payload": {
+                  "input-value": 0
+                }
+              }
+            },
+            "FunctionName": "lambda_function_name"
+          },
+          "afterResultPath": {
+            "ContextObjectValue": {
+              "Execution": {
+                "Id": "arn:<partition>:states:<region>:123456789012:execution:MyStateMachine:execution-name-12345",
+                "Input": {
+                  "input-value": 0,
+                  "message": "test data",
+                  "values": [
+                    "charizard",
+                    "pikachu",
+                    "bulbasaur"
+                  ]
+                },
+                "Name": "execution-name-12345",
+                "RoleArn": "arn:<partition>:iam::123456789012:role/StepFunctionsRole",
+                "StartTime": "date"
+              },
+              "State": {
+                "EnteredTime": "date",
+                "Name": "MyTaskState",
+                "RetryCount": 0
+              },
+              "StateMachine": {
+                "Id": "arn:<partition>:states:<region>:123456789012:stateMachine:MyStateMachine",
+                "Name": "MyStateMachine"
+              }
+            },
+            "LambdaOutput": {
+              "pokemon": [
+                "charizard",
+                "pikachu",
+                "bulbasaur"
+              ]
+            }
+          },
+          "afterResultSelector": {
+            "ContextObjectValue": {
+              "Execution": {
+                "Id": "arn:<partition>:states:<region>:123456789012:execution:MyStateMachine:execution-name-12345",
+                "Input": {
+                  "input-value": 0,
+                  "message": "test data",
+                  "values": [
+                    "charizard",
+                    "pikachu",
+                    "bulbasaur"
+                  ]
+                },
+                "Name": "execution-name-12345",
+                "RoleArn": "arn:<partition>:iam::123456789012:role/StepFunctionsRole",
+                "StartTime": "date"
+              },
+              "State": {
+                "EnteredTime": "date",
+                "Name": "MyTaskState",
+                "RetryCount": 0
+              },
+              "StateMachine": {
+                "Id": "arn:<partition>:states:<region>:123456789012:stateMachine:MyStateMachine",
+                "Name": "MyStateMachine"
+              }
+            },
+            "LambdaOutput": {
+              "pokemon": [
+                "charizard",
+                "pikachu",
+                "bulbasaur"
+              ]
+            }
+          },
+          "input": {
+            "FunctionName": "lambda_function_name",
+            "Payload": {
+              "input-value": 0
+            }
+          },
+          "result": {
+            "pokemon": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ]
+          }
+        },
+        "output": {
+          "ContextObjectValue": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:123456789012:execution:MyStateMachine:execution-name-12345",
+              "Input": {
+                "input-value": 0,
+                "message": "test data",
+                "values": [
+                  "charizard",
+                  "pikachu",
+                  "bulbasaur"
+                ]
+              },
+              "Name": "execution-name-12345",
+              "RoleArn": "arn:<partition>:iam::123456789012:role/StepFunctionsRole",
+              "StartTime": "date"
+            },
+            "State": {
+              "EnteredTime": "date",
+              "Name": "MyTaskState",
+              "RetryCount": 0
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:123456789012:stateMachine:MyStateMachine",
+              "Name": "MyStateMachine"
+            }
+          },
+          "LambdaOutput": {
+            "pokemon": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ]
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT]": {
+    "recorded-date": "25-11-2025, 15:42:46",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "FunctionName": "lambda_function_name",
+            "Payload": {
+              "input-value": 0
+            }
+          },
+          "afterParameters": {
+            "Payload": {
+              "Input": {
+                "FunctionName": "lambda_function_name",
+                "Payload": {
+                  "input-value": 0
+                }
+              }
+            },
+            "FunctionName": "lambda_function_name"
+          },
+          "afterResultPath": {
+            "ContextObjectValue": {
+              "input-value": 0,
+              "message": "test data",
+              "values": [
+                "charizard",
+                "pikachu",
+                "bulbasaur"
+              ]
+            },
+            "LambdaOutput": {
+              "pokemon": [
+                "charizard",
+                "pikachu",
+                "bulbasaur"
+              ]
+            }
+          },
+          "afterResultSelector": {
+            "ContextObjectValue": {
+              "input-value": 0,
+              "message": "test data",
+              "values": [
+                "charizard",
+                "pikachu",
+                "bulbasaur"
+              ]
+            },
+            "LambdaOutput": {
+              "pokemon": [
+                "charizard",
+                "pikachu",
+                "bulbasaur"
+              ]
+            }
+          },
+          "input": {
+            "FunctionName": "lambda_function_name",
+            "Payload": {
+              "input-value": 0
+            }
+          },
+          "result": {
+            "pokemon": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ]
+          }
+        },
+        "output": {
+          "ContextObjectValue": {
+            "input-value": 0,
+            "message": "test data",
+            "values": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ]
+          },
+          "LambdaOutput": {
+            "pokemon": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ]
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT_VALUES]": {
+    "recorded-date": "25-11-2025, 15:43:01",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "FunctionName": "lambda_function_name",
+            "Payload": {
+              "input-value": 0
+            }
+          },
+          "afterParameters": {
+            "Payload": {
+              "Input": {
+                "FunctionName": "lambda_function_name",
+                "Payload": {
+                  "input-value": 0
+                }
+              }
+            },
+            "FunctionName": "lambda_function_name"
+          },
+          "afterResultPath": {
+            "ContextObjectValue": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ],
+            "LambdaOutput": {
+              "pokemon": [
+                "charizard",
+                "pikachu",
+                "bulbasaur"
+              ]
+            }
+          },
+          "afterResultSelector": {
+            "ContextObjectValue": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ],
+            "LambdaOutput": {
+              "pokemon": [
+                "charizard",
+                "pikachu",
+                "bulbasaur"
+              ]
+            }
+          },
+          "input": {
+            "FunctionName": "lambda_function_name",
+            "Payload": {
+              "input-value": 0
+            }
+          },
+          "result": {
+            "pokemon": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ]
+          }
+        },
+        "output": {
+          "ContextObjectValue": [
+            "charizard",
+            "pikachu",
+            "bulbasaur"
+          ],
+          "LambdaOutput": {
+            "pokemon": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ]
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_wait_task_context_object": {
+    "recorded-date": "25-11-2025, 15:43:16",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {},
+          "afterParameters": {
+            "QueueUrl": "https://sqs.us-east-2.amazonaws.com/123456789012/myQueue",
+            "MessageBody": {
+              "Message": "Hello from Step Functions!",
+              "TaskToken": "abcd123"
+            }
+          },
+          "afterResultPath": {
+            "SQS": {
+              "pokemon": [
+                "charizard",
+                "pikachu",
+                "bulbasaur"
+              ]
+            }
+          },
+          "afterResultSelector": {
+            "pokemon": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ]
+          },
+          "input": {},
+          "result": {
+            "pokemon": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ]
+          }
+        },
+        "nextState": "NEXT_STATE",
+        "output": {
+          "SQS": {
+            "pokemon": [
+              "charizard",
+              "pikachu",
+              "bulbasaur"
+            ]
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[ALL]": {
+    "recorded-date": "25-11-2025, 15:43:32",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "Reference path \"$\" must point to array.",
+        "error": "States.Runtime",
+        "inspectionData": {
+          "afterInputPath": "[\"fire\", \"electricity\", \"grass\"]",
+          "input": "[\"fire\", \"electricity\", \"grass\"]"
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[EXECUTION_INPUT]": {
+    "recorded-date": "25-11-2025, 15:43:46",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "Reference path \"$.Execution.Input\" must point to array.",
+        "error": "States.Runtime",
+        "inspectionData": {
+          "afterInputPath": "[\"fire\", \"electricity\", \"grass\"]",
+          "input": "[\"fire\", \"electricity\", \"grass\"]"
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[EXECUTION_INPUT_VALUES]": {
+    "recorded-date": "25-11-2025, 15:44:00",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": "[\"fire\", \"electricity\", \"grass\"]",
+          "afterItemsPath": "[\"charizard\", \"pikachu\", \"bulbasaur\"]",
+          "afterResultPath": "[\"CHARIZARD\", \"PIKACHU\", \"BULBASAUR\"]",
+          "afterResultSelector": "[\"CHARIZARD\", \"PIKACHU\", \"BULBASAUR\"]",
+          "input": "[\"fire\", \"electricity\", \"grass\"]",
+          "maxConcurrency": 1
+        },
+        "output": "[\"CHARIZARD\", \"PIKACHU\", \"BULBASAUR\"]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_invalid_states[TOKEN_TASK_NOT_SYNC]": {
+    "recorded-date": "27-11-2025, 11:37:01",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the TestState operation: Invalid Context object provided: Context object contains 'Task' when state is not a Task state with a '.sync' or '.waitForTaskToken' service integration pattern"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_invalid_states[INVALID_STATE_PASS]": {
+    "recorded-date": "27-11-2025, 11:37:16",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the TestState operation: State type 'Pass' is not supported when a mock is specified"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_ID_TYPE]": {
+    "recorded-date": "25-11-2025, 15:44:46",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the TestState operation: Invalid Context object provided: Execution.Id must be a string"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_MAP]": {
+    "recorded-date": "25-11-2025, 15:45:02",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the TestState operation: Invalid Context object provided: 'Map' field is not supported when mocking a Context object"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_FIELD]": {
+    "recorded-date": "25-11-2025, 15:45:16",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the TestState operation: Invalid Context object provided: Field 'pokemon' is not allowed"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_FIELD]": {
+    "recorded-date": "25-11-2025, 15:45:32",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the TestState operation: Invalid Context object provided: Field 'Pokedex' is not allowed"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_edge_cases[EMPTY_OBJECTS]": {
+    "recorded-date": "25-11-2025, 15:46:04",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "FunctionName": "lambda_function_name",
+            "Payload": {
+              "input-value": 0
+            }
+          },
+          "afterParameters": {
+            "Payload": {
+              "Input": {
+                "FunctionName": "lambda_function_name",
+                "Payload": {
+                  "input-value": 0
+                }
+              }
+            },
+            "FunctionName": "lambda_function_name"
+          },
+          "afterResultPath": {
+            "ContextObjectValue": {
+              "Execution": {},
+              "State": {},
+              "StateMachine": {}
+            },
+            "LambdaOutput": {
+              "pokemon": "pikachu"
+            }
+          },
+          "afterResultSelector": {
+            "ContextObjectValue": {
+              "Execution": {},
+              "State": {},
+              "StateMachine": {}
+            },
+            "LambdaOutput": {
+              "pokemon": "pikachu"
+            }
+          },
+          "input": {
+            "FunctionName": "lambda_function_name",
+            "Payload": {
+              "input-value": 0
+            }
+          },
+          "result": {
+            "pokemon": "pikachu"
+          }
+        },
+        "output": {
+          "ContextObjectValue": {
+            "Execution": {},
+            "State": {},
+            "StateMachine": {}
+          },
+          "LambdaOutput": {
+            "pokemon": "pikachu"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_edge_cases[EMPTY]": {
+    "recorded-date": "25-11-2025, 15:46:18",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "FunctionName": "lambda_function_name",
+            "Payload": {
+              "input-value": 0
+            }
+          },
+          "afterParameters": {
+            "Payload": {
+              "Input": {
+                "FunctionName": "lambda_function_name",
+                "Payload": {
+                  "input-value": 0
+                }
+              }
+            },
+            "FunctionName": "lambda_function_name"
+          },
+          "afterResultPath": {
+            "ContextObjectValue": {},
+            "LambdaOutput": {
+              "pokemon": "pikachu"
+            }
+          },
+          "afterResultSelector": {
+            "ContextObjectValue": {},
+            "LambdaOutput": {
+              "pokemon": "pikachu"
+            }
+          },
+          "input": {
+            "FunctionName": "lambda_function_name",
+            "Payload": {
+              "input-value": 0
+            }
+          },
+          "result": {
+            "pokemon": "pikachu"
+          }
+        },
+        "output": {
+          "ContextObjectValue": {},
+          "LambdaOutput": {
+            "pokemon": "pikachu"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

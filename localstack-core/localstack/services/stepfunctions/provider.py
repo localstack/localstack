@@ -151,6 +151,7 @@ from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.services.stepfunctions.backend.test_state.execution import (
     TestStateExecution,
 )
+from localstack.services.stepfunctions.backend.test_state.test_state_mock import TestStateMock
 from localstack.services.stepfunctions.local_mocking.mock_config import (
     LocalMockTestCase,
     load_local_mock_test_case_for,
@@ -1512,12 +1513,27 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         ):
             raise ValidationException("State not found in definition")
 
-        if mock := request.get("mock"):
-            self._validate_test_state_mock_input(mock)
+        if result_mock := request.get("mock"):
+            self._validate_test_state_mock_input(result_mock)
 
         if state_configuration := request.get("stateConfiguration"):
             # TODO: Add validations for this i.e assert len(input) <= failureCount
             pass
+
+        if state_context := request.get("context"):
+            # TODO: Add validation ensuring only present if 'mock' is specified
+            # An error occurred (ValidationException) when calling the TestState operation: State type 'Pass' is not supported when a mock is specified
+            pass
+
+        try:
+            state_mock = TestStateMock(
+                mock_input=result_mock,
+                state_configuration=state_configuration,
+                context=state_context,
+            )
+        except ValueError as e:
+            LOG.error(e)
+            raise ValidationException(f"Invalid Context object provided: {e}")
 
         name: Name | None = f"TestState-{short_uid()}"
         arn = stepfunctions_state_machine_arn(
@@ -1536,7 +1552,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         exec_arn = exec_arn.replace(f":{name}:{name}:", f":{name}:", 1)
         _, exec_name = exec_arn.rsplit(":", 1)
 
-        input_json = json.loads(request["input"])
+        if input_json := request.get("input", {}):
+            input_json = json.loads(input_json)
+
         execution = TestStateExecution(
             name=exec_name,
             role_arn=request["roleArn"],
@@ -1548,8 +1566,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             input_data=input_json,
             state_name=state_name,
             activity_store=self.get_store(context).activities,
-            mock=mock,
-            state_configuration=state_configuration,
+            mock=state_mock,
         )
         execution.start()
 
