@@ -86,6 +86,7 @@ from localstack.utils.aws.arns import (
 from localstack.utils.collections import PaginatedList, select_from_typed_dict
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
+from ...state import StateVisitor
 from .analytics import internal_api_calls
 
 # set up logger
@@ -117,6 +118,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         super().__init__()
         self._publisher = PublishDispatcher()
         self._signature_cert_pem: str = SNS_SERVER_CERT
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(sns_backends)
+        visitor.visit(sns_stores)
 
     def on_before_stop(self):
         self._publisher.shutdown()
