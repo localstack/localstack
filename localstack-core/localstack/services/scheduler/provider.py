@@ -1,11 +1,12 @@
 import logging
 import re
 
-from moto.scheduler.models import EventBridgeSchedulerBackend
+from moto.scheduler.models import EventBridgeSchedulerBackend, scheduler_backends
 
 from localstack.aws.api.scheduler import SchedulerApi, ValidationException
 from localstack.services.events.rule import RULE_SCHEDULE_CRON_REGEX, RULE_SCHEDULE_RATE_REGEX
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
@@ -17,7 +18,8 @@ RULE_SCHEDULE_AT_REGEX = re.compile(AT_REGEX)
 
 
 class SchedulerProvider(SchedulerApi, ServiceLifecycleHook):
-    pass
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(scheduler_backends)
 
 
 def _validate_schedule_expression(schedule_expression: str) -> None:
