@@ -65,6 +65,7 @@ from localstack.aws.api.secretsmanager import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto
+from localstack.state import StateVisitor
 from localstack.utils.aws import arns
 from localstack.utils.patch import patch
 from localstack.utils.time import today_no_time
@@ -104,6 +105,9 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def __init__(self):
         super().__init__()
         apply_patches()
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(secretsmanager_backends)
 
     @staticmethod
     def get_moto_backend_for_resource(
