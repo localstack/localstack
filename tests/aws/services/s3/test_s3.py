@@ -2639,6 +2639,14 @@ class TestS3:
         region_us_east_2 = "us-east-2"
         region_us_west_1 = "us-west-1"
 
+        client_us_east_1 = aws_client_factory(
+            region_name=AWS_REGION_US_EAST_1, config=Config(parameter_validation=False)
+        ).s3
+        client_us_east_2 = aws_client_factory(
+            region_name=region_us_east_2, config=Config(parameter_validation=False)
+        ).s3
+        client_us_west_1 = aws_client_factory(region_name=region_us_west_1).s3
+
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformers_list(
             [
@@ -2652,9 +2660,6 @@ class TestS3:
             ]
         )
         bucket_us_east_1 = f"bucket-{short_uid()}"
-        client_us_east_1 = aws_client_factory(
-            region_name=AWS_REGION_US_EAST_1, config=Config(parameter_validation=False)
-        ).s3
         s3_create_bucket_with_client(
             client_us_east_1,
             Bucket=bucket_us_east_1,
@@ -2670,15 +2675,13 @@ class TestS3:
             )
         snapshot.match("create-bucket-constraint-us-east-1", exc.value.response)
 
-        # assert creation fails with location constraint with the region unset
-        with pytest.raises(ClientError) as exc:
-            client_us_east_1.create_bucket(
-                Bucket=f"bucket-{short_uid()}",
-                CreateBucketConfiguration={"LocationConstraint": None},
-            )
-        snapshot.match("create-bucket-constraint-us-east-1-with-None", exc.value.response)
+        create_bucket_no_location = s3_create_bucket_with_client(
+            client_us_east_1,
+            Bucket=f"bucket-{short_uid()}",
+            CreateBucketConfiguration={"LocationConstraint": None},
+        )
+        snapshot.match("create-bucket-constraint-us-east-1-with-None", create_bucket_no_location)
 
-        client_us_east_2 = aws_client_factory(region_name=region_us_east_2).s3
         bucket_us_east_2 = f"bucket-{short_uid()}"
         s3_create_bucket_with_client(
             client_us_east_2,
@@ -2693,6 +2696,14 @@ class TestS3:
             client_us_east_2.create_bucket(Bucket=f"bucket-{short_uid()}")
         snapshot.match("create-bucket-us-east-2-no-constraint-exc", exc.value.response)
 
+        # assert creation fails without location constraint for us-east-2 region
+        with pytest.raises(ClientError) as exc:
+            client_us_east_2.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": None},
+            )
+        snapshot.match("create-bucket-constraint-us-east-2-with-None", exc.value.response)
+
         # assert creation fails with wrong location constraint from us-east-2 region to us-west-1 region
         with pytest.raises(ClientError) as exc:
             client_us_east_2.create_bucket(
@@ -2700,8 +2711,6 @@ class TestS3:
                 CreateBucketConfiguration={"LocationConstraint": region_us_west_1},
             )
         snapshot.match("create-bucket-us-east-2-constraint-to-us-west-1", exc.value.response)
-
-        client_us_west_1 = aws_client_factory(region_name=region_us_west_1).s3
 
         with pytest.raises(ClientError) as exc:
             client_us_west_1.create_bucket(

@@ -1137,7 +1137,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "recorded-date": "21-01-2025, 18:30:47",
+    "recorded-date": "27-11-2025, 10:52:05",
     "recorded-content": {
       "get-bucket-location-bucket-us-east-1": {
         "LocationConstraint": null,
@@ -1158,13 +1158,10 @@
         }
       },
       "create-bucket-constraint-us-east-1-with-None": {
-        "Error": {
-          "Code": "MalformedXML",
-          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
-        },
+        "Location": "<location>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 400
+          "HTTPStatusCode": 200
         }
       },
       "get-bucket-location-bucket-us-east-2": {
@@ -1175,6 +1172,16 @@
         }
       },
       "create-bucket-us-east-2-no-constraint-exc": {
+        "Error": {
+          "Code": "IllegalLocationConstraintException",
+          "Message": "The unspecified location constraint is incompatible for the region specific endpoint this request was sent to."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-bucket-constraint-us-east-2-with-None": {
         "Error": {
           "Code": "IllegalLocationConstraintException",
           "Message": "The unspecified location constraint is incompatible for the region specific endpoint this request was sent to."
