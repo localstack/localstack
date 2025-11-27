@@ -1947,6 +1947,44 @@ class TestS3BucketObjectTagging:
         snapshot.match("get-object-tags-wrong-format-qs-2", get_object_tags)
 
     @markers.aws.validated
+    def test_head_object_with_tags(self, s3_bucket, aws_client, snapshot):
+        object_key = "test-put-object-tagging"
+        # tagging must be a URL encoded string directly
+        tag_set = "tag1=tag1&tag2=tag2&tag="
+        put_object = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key, Body="test-tagging", Tagging=tag_set
+        )
+        snapshot.match("put-object", put_object)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-obj-after-create", head_object)
+
+        tag_set_2 = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags", put_bucket_tags)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-obj-after-tagging", head_object)
+
+        tag_set_2 = {
+            "TagSet": [
+                {"Key": "tag3", "Value": "tag3"},
+                {"Key": "tag4", "Value": "tag4"},
+                {"Key": "tag5", "Value": "tag5"},
+            ]
+        }
+        aws_client.s3.put_object_tagging(Bucket=s3_bucket, Key=object_key, Tagging=tag_set_2)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-obj-after-overwrite", head_object)
+
+        aws_client.s3.put_object_tagging(Bucket=s3_bucket, Key=object_key, Tagging={"TagSet": []})
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-obj-after-removal", head_object)
+
+    @markers.aws.validated
     def test_object_tags_delete_or_overwrite_object(self, s3_bucket, aws_client, snapshot):
         # verify that tags aren't kept after object deletion
         object_key = "test-put-object-tagging-kept"

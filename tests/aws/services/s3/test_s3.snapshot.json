@@ -2782,7 +2782,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_head_object_fields": {
-    "recorded-date": "21-01-2025, 18:28:10",
+    "recorded-date": "27-11-2025, 15:29:30",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -10502,7 +10502,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_part": {
-    "recorded-date": "07-07-2025, 17:56:14",
+    "recorded-date": "27-11-2025, 15:28:18",
     "recorded-content": {
       "multipart-upload": {
         "Bucket": "<bucket:1>",

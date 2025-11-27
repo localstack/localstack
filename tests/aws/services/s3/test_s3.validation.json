@@ -156,12 +156,12 @@
     "last_validated_date": "2025-01-21T18:27:10+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_part": {
-    "last_validated_date": "2025-07-07T17:56:15+00:00",
+    "last_validated_date": "2025-11-27T15:28:19+00:00",
     "durations_in_seconds": {
-      "setup": 1.4,
-      "call": 10.69,
-      "teardown": 1.07,
-      "total": 13.16
+      "setup": 0.99,
+      "call": 3.36,
+      "teardown": 0.98,
+      "total": 5.33
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_part_checksum[COMPOSITE]": {
@@ -198,7 +198,13 @@
     "last_validated_date": "2025-01-21T18:31:25+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_head_object_fields": {
-    "last_validated_date": "2025-01-21T18:28:10+00:00"
+    "last_validated_date": "2025-11-27T15:29:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.99,
+      "call": 0.44,
+      "teardown": 0.95,
+      "total": 2.38
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_invalid_range_error": {
     "last_validated_date": "2025-01-21T18:27:45+00:00"

@@ -24,7 +24,13 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_s3": {
-    "last_validated_date": "2025-01-21T18:10:49+00:00"
+    "last_validated_date": "2025-11-27T15:27:12+00:00",
+    "durations_in_seconds": {
+      "setup": 1.06,
+      "call": 0.67,
+      "teardown": 1.0,
+      "total": 2.73
+    }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_default_bucket_encryption": {
     "last_validated_date": "2025-01-21T18:10:45+00:00"
@@ -102,6 +108,15 @@
       "call": 1.64,
       "teardown": 1.24,
       "total": 2.88
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_head_object_with_tags": {
+    "last_validated_date": "2025-11-27T15:35:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.97,
+      "call": 1.08,
+      "teardown": 0.98,
+      "total": 3.03
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_crud": {
