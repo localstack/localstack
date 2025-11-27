@@ -9,6 +9,7 @@ import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from moto.wafv2.models import US_EAST_1_REGION
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid, short_uid
@@ -1450,6 +1451,128 @@ class TestS3BucketObjectTagging:
         e.match("NoSuchTagSet")
 
     @markers.aws.validated
+    def test_create_bucket_with_tags(
+        self, s3_create_bucket_with_client, region_name, aws_client, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value("Location"),
+            ]
+        )
+        additional_config = {}
+        if region_name != US_EAST_1_REGION:
+            additional_config["LocationConstraint"] = region_name
+
+        bucket_name = f"test-bucket-tag-{short_uid()}"
+        create_bucket = s3_create_bucket_with_client(
+            aws_client.s3,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={
+                "Tags": [{"Key": "tag1", "Value": "value1"}],
+                **additional_config,
+            },
+        )
+        snapshot.match("create-bucket-with-tags", create_bucket)
+
+        get_bucket_tags = aws_client.s3.get_bucket_tagging(Bucket=bucket_name)
+        snapshot.match("get-bucket-tags", get_bucket_tags)
+
+    @markers.aws.validated
+    def test_create_bucket_with_empty_tags(
+        self, s3_create_bucket_with_client, aws_client_factory, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value("Location"),
+            ]
+        )
+
+        s3_client = aws_client_factory(
+            region_name=US_EAST_1_REGION, config=Config(parameter_validation=False)
+        ).s3
+
+        bucket_name = f"test-bucket-tag-{short_uid()}"
+        create_bucket = s3_create_bucket_with_client(
+            s3_client,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"Tags": []},
+        )
+        snapshot.match("create-bucket-with-empty-tags", create_bucket)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_tagging(Bucket=bucket_name)
+        snapshot.match("get-bucket-tags", e.value.response)
+
+        create_bucket_none = s3_create_bucket_with_client(
+            s3_client,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"Tags": None},
+        )
+        snapshot.match("create-bucket-with-none-tags", create_bucket_none)
+
+    @markers.aws.validated
+    def test_create_bucket_with_tags_us_east_1_idempotency(
+        self, s3_create_bucket_with_client, aws_client_factory, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value("Location"),
+            ]
+        )
+        us_east_1_s3_client = aws_client_factory(
+            region_name=US_EAST_1_REGION, config=Config(parameter_validation=False)
+        ).s3
+
+        bucket_name = f"test-bucket-tag-{short_uid()}"
+        create_bucket = s3_create_bucket_with_client(
+            us_east_1_s3_client,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"Tags": [{"Key": "tag1", "Value": "value1"}]},
+        )
+        snapshot.match("create-bucket-with-tags", create_bucket)
+
+        get_bucket_tags = us_east_1_s3_client.get_bucket_tagging(Bucket=bucket_name)
+        snapshot.match("get-bucket-tags", get_bucket_tags)
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                us_east_1_s3_client,
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"Tags": [{"Key": "tag2", "Value": "value2"}]},
+            )
+        snapshot.match("create-bucket-different-tags", e.value.response)
+
+        create_bucket = s3_create_bucket_with_client(
+            us_east_1_s3_client,
+            Bucket=bucket_name,
+        )
+        snapshot.match("create-bucket-with-no-tags", create_bucket)
+
+        get_bucket_tags = us_east_1_s3_client.get_bucket_tagging(Bucket=bucket_name)
+        snapshot.match("get-bucket-tags-after-re-create", get_bucket_tags)
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                us_east_1_s3_client,
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"Tags": [{"Key": "tag1", "Value": "value1"}]},
+            )
+        snapshot.match("create-bucket-with-same-tags", e.value.response)
+
+        create_bucket_empty_tags = s3_create_bucket_with_client(
+            us_east_1_s3_client,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"Tags": []},
+        )
+        snapshot.match("create-bucket-with-empty-tags", create_bucket_empty_tags)
+
+        get_bucket_tags = us_east_1_s3_client.get_bucket_tagging(Bucket=bucket_name)
+        snapshot.match("get-bucket-tags-after-create-empty", get_bucket_tags)
+
+    @markers.aws.validated
     def test_bucket_tagging_exc(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         fake_bucket = f"fake-bucket-{short_uid()}-{short_uid()}"
@@ -1464,6 +1587,30 @@ class TestS3BucketObjectTagging:
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_tagging(Bucket=fake_bucket, Tagging={"TagSet": []})
         snapshot.match("put-no-bucket-tags", e.value.response)
+
+    @markers.aws.validated
+    def test_create_bucket_with_tags_exc(
+        self, s3_create_bucket_with_client, aws_client_factory, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value("Location"),
+            ]
+        )
+        s3_client = aws_client_factory(
+            region_name=US_EAST_1_REGION, config=Config(parameter_validation=False)
+        ).s3
+
+        bucket_name = f"test-bucket-tag-{short_uid()}"
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                s3_client,
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"Tags": [{"Key": None, "Value": "value1"}]},
+            )
+        snapshot.match("tags-key-none", e.value.response)
 
     @markers.aws.validated
     def test_put_bucket_tagging_none_value(

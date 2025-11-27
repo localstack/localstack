@@ -542,6 +542,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
         owner = get_owner_for_account_id(context.account_id)
         acl = get_access_control_policy_for_new_resource_request(request, owner=owner)
+
         s3_bucket = S3Bucket(
             name=bucket_name,
             account_id=context.account_id,
@@ -552,6 +553,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             object_lock_enabled_for_bucket=request.get("ObjectLockEnabledForBucket"),
         )
 
+        # tags = create_bucket_configuration.get("Tags")
+        # store.TAGS.tag_resource()
+        # TODO: investigate into 2 different us-east-1 calls with different tags, idempotency?
         store.buckets[bucket_name] = s3_bucket
         store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
         self._cors_handler.invalidate_cache()

@@ -1679,7 +1679,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_crud": {
-    "recorded-date": "21-01-2025, 18:11:06",
+    "recorded-date": "27-11-2025, 14:45:14",
     "recorded-content": {
       "get-bucket-tags-empty": {
         "Error": {
@@ -1747,7 +1747,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_crud": {
-    "recorded-date": "21-01-2025, 18:11:10",
+    "recorded-date": "27-11-2025, 14:45:27",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lpqTBg==",
@@ -1855,7 +1855,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_with_tags": {
-    "recorded-date": "21-01-2025, 18:11:19",
+    "recorded-date": "27-11-2025, 14:45:39",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lpqTBg==",
@@ -1913,6 +1913,7 @@
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
+        "TagCount": 1,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1970,7 +1971,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_exc": {
-    "recorded-date": "21-01-2025, 18:11:07",
+    "recorded-date": "27-11-2025, 14:45:22",
     "recorded-content": {
       "get-no-bucket-tags": {
         "Error": {
@@ -2008,7 +2009,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
-    "recorded-date": "19-09-2025, 23:28:45",
+    "recorded-date": "27-11-2025, 14:45:36",
     "recorded-content": {
       "put-obj-0": {
         "ChecksumCRC32": "XCKz9A==",
@@ -2184,7 +2185,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_exc": {
-    "recorded-date": "02-09-2025, 22:43:24",
+    "recorded-date": "27-11-2025, 14:45:30",
     "recorded-content": {
       "get-no-bucket-tags": {
         "Error": {
@@ -2279,7 +2280,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tags_delete_or_overwrite_object": {
-    "recorded-date": "21-01-2025, 18:11:22",
+    "recorded-date": "27-11-2025, 14:45:42",
     "recorded-content": {
       "get-object-after-creation": {
         "TagSet": [
@@ -2310,7 +2311,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_tagging_validation": {
-    "recorded-date": "21-01-2025, 18:11:25",
+    "recorded-date": "27-11-2025, 14:45:46",
     "recorded-content": {
       "put-bucket-tags-duplicate-keys": {
         "Error": {
@@ -4761,7 +4762,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_tagging_none_value": {
-    "recorded-date": "02-09-2025, 22:43:06",
+    "recorded-date": "27-11-2025, 14:45:32",
     "recorded-content": {
       "put-none-tag-set": {
         "ResponseMetadata": {
@@ -4779,7 +4780,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_bucket_tagging_none_value": {
-    "recorded-date": "05-09-2025, 11:35:52",
+    "recorded-date": "27-11-2025, 14:45:24",
     "recorded-content": {
       "put-bucket-tags-origin": {
         "ResponseMetadata": {
@@ -5149,6 +5150,159 @@
         ],
         "StorageClass": "STANDARD",
         "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags": {
+    "recorded-date": "27-11-2025, 14:45:15",
+    "recorded-content": {
+      "create-bucket-with-tags": {
+        "Location": "<location:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-tags": {
+        "TagSet": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags_us_east_1_idempotency": {
+    "recorded-date": "27-11-2025, 14:45:19",
+    "recorded-content": {
+      "create-bucket-with-tags": {
+        "Location": "/<bucket-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-tags": {
+        "TagSet": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-bucket-different-tags": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "BucketAlreadyOwnedByYou",
+          "Message": "Your previous request to create the named bucket succeeded and you already own it."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "create-bucket-with-no-tags": {
+        "Location": "/<bucket-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-tags-after-re-create": {
+        "TagSet": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-bucket-with-same-tags": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "BucketAlreadyOwnedByYou",
+          "Message": "Your previous request to create the named bucket succeeded and you already own it."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "create-bucket-with-empty-tags": {
+        "Location": "/<bucket-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-tags-after-create-empty": {
+        "TagSet": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags_exc": {
+    "recorded-date": "27-11-2025, 14:45:23",
+    "recorded-content": {
+      "tags-key-none": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_empty_tags": {
+    "recorded-date": "27-11-2025, 14:45:17",
+    "recorded-content": {
+      "create-bucket-with-empty-tags": {
+        "Location": "/<bucket-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-tags": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchTagSet",
+          "Message": "The TagSet does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create-bucket-with-none-tags": {
+        "Location": "/<bucket-name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
