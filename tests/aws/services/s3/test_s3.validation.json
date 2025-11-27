@@ -96,7 +96,13 @@
     "last_validated_date": "2025-01-21T18:31:37+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "last_validated_date": "2025-01-21T18:30:47+00:00"
+    "last_validated_date": "2025-11-27T10:52:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 5.59,
+      "teardown": 3.04,
+      "total": 9.1
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_download_fileobj_multiple_range_requests": {
     "last_validated_date": "2025-01-21T18:31:23+00:00"
