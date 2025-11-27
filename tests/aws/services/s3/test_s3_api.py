@@ -1897,6 +1897,12 @@ class TestS3BucketObjectTagging:
         snapshot.match("delete-object-tags-delete-marker-latest", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: support TagCount in HeadObject
+            "$.head-obj.TagCount",
+        ]
+    )
     def test_put_object_with_tags(self, s3_bucket, aws_client, snapshot):
         object_key = "test-put-object-tagging"
         # tagging must be a URL encoded string directly
