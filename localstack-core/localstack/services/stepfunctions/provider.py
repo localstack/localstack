@@ -1389,9 +1389,26 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     def tag_resource(
         self, context: RequestContext, resource_arn: Arn, tags: TagList, **kwargs
     ) -> TagResourceOutput:
-        # TODO: add tagging for activities.
-        state_machines = self.get_store(context).state_machines
-        state_machine = state_machines.get(resource_arn)
+        """
+        Add tags to a Step Functions resource (state machine or activity).
+
+        :param resource_arn: ARN of the resource to tag (state machine or activity)
+        :param tags: List of tags to add
+        :return: TagResourceOutput
+        :raises ResourceNotFound: If the resource doesn't exist
+        """
+        store = self.get_store(context)
+
+        # Check if it's an activity ARN (contains ':activity:' in the ARN)
+        if ':activity:' in resource_arn:
+            activity = store.activities.get(resource_arn)
+            if activity is None:
+                raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
+            activity.tag_manager.add_all(tags)
+            return TagResourceOutput()
+
+        # Otherwise, it's a state machine
+        state_machine = store.state_machines.get(resource_arn)
         if not isinstance(state_machine, StateMachineRevision):
             raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
 
@@ -1401,9 +1418,26 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     def untag_resource(
         self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList, **kwargs
     ) -> UntagResourceOutput:
-        # TODO: add untagging for activities.
-        state_machines = self.get_store(context).state_machines
-        state_machine = state_machines.get(resource_arn)
+        """
+        Remove tags from a Step Functions resource (state machine or activity).
+
+        :param resource_arn: ARN of the resource to untag (state machine or activity)
+        :param tag_keys: List of tag keys to remove
+        :return: UntagResourceOutput
+        :raises ResourceNotFound: If the resource doesn't exist
+        """
+        store = self.get_store(context)
+
+        # Check if it's an activity ARN (contains ':activity:' in the ARN)
+        if ':activity:' in resource_arn:
+            activity = store.activities.get(resource_arn)
+            if activity is None:
+                raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
+            activity.tag_manager.remove_all(tag_keys)
+            return UntagResourceOutput()
+
+        # Otherwise, it's a state machine
+        state_machine = store.state_machines.get(resource_arn)
         if not isinstance(state_machine, StateMachineRevision):
             raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
 
@@ -1413,9 +1447,25 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: Arn, **kwargs
     ) -> ListTagsForResourceOutput:
-        # TODO: add untagging for activities.
-        state_machines = self.get_store(context).state_machines
-        state_machine = state_machines.get(resource_arn)
+        """
+        List tags for a Step Functions resource (state machine or activity).
+
+        :param resource_arn: ARN of the resource to list tags for (state machine or activity)
+        :return: ListTagsForResourceOutput containing the list of tags
+        :raises ResourceNotFound: If the resource doesn't exist
+        """
+        store = self.get_store(context)
+
+        # Check if it's an activity ARN (contains ':activity:' in the ARN)
+        if ':activity:' in resource_arn:
+            activity = store.activities.get(resource_arn)
+            if activity is None:
+                raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
+            tags: TagList = activity.tag_manager.to_tag_list()
+            return ListTagsForResourceOutput(tags=tags)
+
+        # Otherwise, it's a state machine
+        state_machine = store.state_machines.get(resource_arn)
         if not isinstance(state_machine, StateMachineRevision):
             raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
 
@@ -1536,9 +1586,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
         activities = self.get_store(context).activities
         if activity_arn not in activities:
-            activity = Activity(arn=activity_arn, name=name)
+            # Create new activity with tags support
+            activity = Activity(arn=activity_arn, name=name, tags=tags)
             activities[activity_arn] = activity
         else:
+            # Activity already exists (idempotent operation)
             activity = activities[activity_arn]
 
         return CreateActivityOutput(activityArn=activity.arn, creationDate=activity.creation_date)
