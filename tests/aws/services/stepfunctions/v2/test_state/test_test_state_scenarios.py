@@ -6,7 +6,7 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.stepfunctions import InspectionLevel
 from localstack.testing.pytest import markers
-from localstack.utils.strings import long_uid, short_uid
+from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.evaluatejsonata.evaluate_jsonata_templates import (
     EvaluateJsonataTemplate as EJT,
 )
@@ -308,12 +308,11 @@ class TestStateCaseScenarios:
         aws_client_no_sync_prefix,
         create_state_machine_iam_role,
         sfn_snapshot,
-        account_id,
         region_name,
     ):
         template = TSMT.load_sfn_template(TSMT.LOCALSTACK_BLOGPOST_SCENARIO_STATE_MACHINE)
-        template["States"]["Ask for Approval"]["Arguments"]["Authentication"]["ConnectionArn"] = (
-            f"arn:aws:events:{region_name}:{account_id}:connection/TestStateConnection/{long_uid()}"
+        template["States"]["Ask for Approval"]["Arguments"]["ApiEndpoint"] = (
+            f"example.execute-api.{region_name}.amazonaws.com"
         )
         definition = json.dumps(template)
 

@@ -2116,7 +2116,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_localstack_blogpost_scenario": {
-    "recorded-date": "27-11-2025, 16:41:47",
+    "recorded-date": "28-11-2025, 15:12:12",
     "recorded-content": {
       "small_purchase_response": {
         "nextState": "Ask for Approval",

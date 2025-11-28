@@ -18,17 +18,16 @@
     },
     "Ask for Approval": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::http:invoke", //TODO http invoke is not yet supported in localstack. Change to API gateway call or any other service task
+      "Resource": "arn:aws:states:::apigateway:invoke",
       "Arguments": {
-        "Method": "GET",
-        "ApiEndpoint": "https://example.com/approval",
+        "Method": "POST",
+        "ApiEndpoint": "__api_gateway_endpoint__",
+        "Path": "/approval",
         "RequestBody": {
           "cost": "{% $states.input.cost %}",
           "dept_id": "12345678"
         },
-        "Authentication": {
-          "ConnectionArn": "__http_invoke_connection_arn__",
-        }
+        "AuthType": "NO_AUTH"
       },
       "Retry": [
         {
