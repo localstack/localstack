@@ -1442,7 +1442,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_s3": {
-    "recorded-date": "21-01-2025, 18:10:49",
+    "recorded-date": "27-11-2025, 15:27:11",
     "recorded-content": {
       "put-bucket-enc": {
         "ResponseMetadata": {
@@ -5396,6 +5396,82 @@
       },
       "create-bucket-with-none-tags": {
         "Location": "/<bucket-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_head_object_with_tags": {
+    "recorded-date": "27-11-2025, 15:35:45",
+    "recorded-content": {
+      "put-object": {
+        "ChecksumCRC32": "lpqTBg==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-obj-after-create": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 12,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 3,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-obj-after-tagging": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 12,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-obj-after-overwrite": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 12,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 3,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-obj-after-removal": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 12,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

@@ -1200,12 +1200,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ChecksumType"] = checksum_type
 
         add_encryption_to_response(response, s3_object=s3_object)
+        object_tags = store.TAGS.tags.get(
+            get_unique_key_id(bucket_name, object_key, s3_object.version_id)
+        )
+        if object_tags:
+            response["TagCount"] = len(object_tags)
 
         # if you specify the VersionId, AWS won't return the Expiration header, even if that's the current version
         if not version_id and s3_bucket.lifecycle_rules:
-            object_tags = store.TAGS.tags.get(
-                get_unique_key_id(bucket_name, object_key, s3_object.version_id)
-            )
             if expiration_header := self._get_expiration_header(
                 s3_bucket.lifecycle_rules,
                 bucket_name,
