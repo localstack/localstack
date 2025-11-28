@@ -1,6 +1,8 @@
+from collections.abc import Iterable
+
 import pytest
-from moto.ec2.exceptions import InvalidKeyPairNameError
-from moto.ses.exceptions import MessageRejectedError
+from moto.core.exceptions import RESTError, ServiceException
+from moto.ec2.exceptions import EC2_ERROR_RESPONSE
 
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.chain import HandlerChain
@@ -202,6 +204,10 @@ class TestServiceExceptionSerializer:
         assert err_context.service_exception.status_code == 500
 
     def test_moto_service_exception_is_translated(self, service_response_handler_chain):
+        # Redefine exception here but use the right base exc. This is to improve tolerance against Moto refactors.
+        class MessageRejectedError(ServiceException):
+            code = "MessageRejected"
+
         # Ensure ServiceExceptions are translated
         context = create_aws_request_context(
             "ses",
@@ -225,6 +231,20 @@ class TestServiceExceptionSerializer:
         assert context.service_exception.status_code == 400
 
     def test_moto_rest_error_is_translated(self, service_response_handler_chain):
+        # Redefine exception here but use the right base exc. This is to improve tolerance against Moto refactors.
+        class InvalidKeyPairNameError(RESTError):
+            code = 400
+            request_id_tag_name = "RequestID"
+            extended_templates = {"custom_response": EC2_ERROR_RESPONSE}
+            env = RESTError.extended_environment(extended_templates)
+
+            def __init__(self, key: Iterable[str]):
+                super().__init__(
+                    "InvalidKeyPair.NotFound",
+                    f"The keypair '{key}' does not exist.",
+                    template="custom_response",
+                )
+
         # Ensure RESTErrors are translated
         context = create_aws_request_context(
             "ec2",
@@ -238,12 +258,13 @@ class TestServiceExceptionSerializer:
                 "MinCount": 1,
             },
         )
-        msg = "The keypair 'some-key-pair' does not exist."
-        moto_exception = InvalidKeyPairNameError(msg)
+        moto_exception = InvalidKeyPairNameError({"some-key-pair"})
 
         ServiceExceptionSerializer().create_exception_response(moto_exception, context)
 
-        assert msg in context.service_exception.message
+        assert (
+            "The keypair '{'some-key-pair'}' does not exist." in context.service_exception.message
+        )
         assert context.service_exception.code == "InvalidKeyPair.NotFound"
         assert not context.service_exception.sender_fault
         assert context.service_exception.status_code == 400
