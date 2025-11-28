@@ -18,7 +18,7 @@ class ResultPath(EvalComponent):
     def _eval_body(self, env: Environment) -> None:
         state_input = env.states.get_input()
 
-        # Discard task output if there is one, and set the output ot be the state's input.
+        # Discard task output if there is one, and set the output to be the state's input.
         if self.result_path_src is None:
             env.stack.clear()
             env.stack.append(state_input)

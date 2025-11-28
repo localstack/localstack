@@ -7,10 +7,8 @@ from localstack.aws.api.stepfunctions import (
     Arn,
     ExecutionStatus,
     InspectionLevel,
-    MockInput,
     StateMachineType,
     TestExecutionStatus,
-    TestStateConfiguration,
     TestStateOutput,
     Timestamp,
 )
@@ -80,8 +78,7 @@ class TestStateExecution(Execution):
         activity_store: dict[Arn, Activity],
         state_name: str | None = None,
         input_data: dict | None = None,
-        mock: MockInput | None = None,
-        state_configuration: TestStateConfiguration | None = None,
+        mock: TestStateMock | None = None,
     ):
         super().__init__(
             name=name,
@@ -100,7 +97,7 @@ class TestStateExecution(Execution):
         self._execution_terminated_event = threading.Event()
         self.next_state = None
         self.state_name = state_name
-        self.mock = TestStateMock(mock, state_configuration)
+        self.mock = mock
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
         return self.TestCaseExecutionWorkerCommunication(self)

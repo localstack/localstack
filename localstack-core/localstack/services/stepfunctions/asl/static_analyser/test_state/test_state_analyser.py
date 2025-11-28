@@ -5,11 +5,6 @@ from localstack.aws.api.stepfunctions import (
     StateName,
 )
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
-    ActivityResource,
-    Resource,
-    ServiceResource,
-)
 from localstack.services.stepfunctions.asl.component.state.state_type import StateType
 from localstack.services.stepfunctions.asl.component.test_state.program.test_state_program import (
     TestStateProgram,
@@ -55,18 +50,3 @@ class TestStateStaticAnalyser(StaticAnalyser):
         state_type = StateType(state_type_value)
         if state_type not in self._SUPPORTED_STATE_TYPES:
             raise ValueError(f"Unsupported state type for TestState runs '{state_type}'.")
-
-    def visitResource_decl(self, ctx: ASLParser.Resource_declContext) -> None:
-        resource_str: str = ctx.string_literal().getText()[1:-1]
-        resource = Resource.from_resource_arn(resource_str)
-
-        if isinstance(resource, ActivityResource):
-            raise ValueError(
-                f"ActivityResources are not supported for TestState runs {resource_str}."
-            )
-
-        if isinstance(resource, ServiceResource):
-            if resource.condition is not None:
-                raise ValueError(
-                    f"Service integration patterns are not supported for TestState runs {resource_str}."
-                )

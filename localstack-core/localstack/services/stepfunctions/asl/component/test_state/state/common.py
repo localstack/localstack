@@ -74,9 +74,9 @@ class MockedCommonState(MockedBaseState[CommonStateField]):
             original_eval_body(env)
             env.set_choice_selected(env.next_state_name)
 
-        mock_eval_execution = self.wrap_with_inspection_data(
+        mock_eval_execution = self.wrap_with_post_return(
             method=mock_eval_execution,
-            add_inspection_data=self.add_inspection_data,
+            post_return_fn=self.add_inspection_data,
         )
 
         self._wrapped._eval_body = mock_eval_execution

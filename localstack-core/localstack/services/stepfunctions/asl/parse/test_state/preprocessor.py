@@ -104,7 +104,7 @@ def _decorate_state_field(state_field: CommonStateField, is_single_state: bool =
         MockedCommonState.wrap(state_field, is_single_state)
 
 
-def find_state(state_name: str, states: dict[str, CommonStateField]):
+def find_state(state_name: str, states: dict[str, CommonStateField]) -> CommonStateField | None:
     if state_name in states:
         return states[state_name]
 

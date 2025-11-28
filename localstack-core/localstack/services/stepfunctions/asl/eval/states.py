@@ -82,7 +82,7 @@ class States:
     context_object: Final[ContextObject]
 
     def __init__(self, context: ContextObjectData):
-        input_value = context["Execution"]["Input"]
+        input_value = context.get("Execution", {}).get("Input", {})
         self._states_data = StatesData(input=input_value, context=context)
         self.context_object = ContextObject(context_object=context)
 
