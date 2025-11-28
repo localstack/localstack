@@ -320,12 +320,32 @@ class TestStateCaseScenarios:
         # Step 1 - Testing the Approval Required state
         # 1.1 Approval Required state correctly approves small purchases
 
-        small_purchase_input = json.dumps({"cost": 10})
+        small_purchase_input = json.dumps({"cost": 9})
 
-        small_purchase_response = aws_client_no_sync_prefix.stepfunctions.test_state(
-            definition=definition,
-            roleArn=sfn_role_arn,
-            input=small_purchase_input,
-            stateName="Approval Required",
+        small_purchase_approval_required_response = (
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                roleArn=sfn_role_arn,
+                input=small_purchase_input,
+                stateName="Approval Required",
+            )
         )
-        sfn_snapshot.match("small_purchase_response", small_purchase_response)
+        sfn_snapshot.match(
+            "small_purchase_approval_required_response", small_purchase_approval_required_response
+        )
+
+        # 1.2 Approval Required state correctly sends large purchases to the approval ask process
+
+        large_purchase_input = json.dumps({"cost": 10})
+
+        large_purchase_approval_required_response = (
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                roleArn=sfn_role_arn,
+                input=large_purchase_input,
+                stateName="Approval Required",
+            )
+        )
+        sfn_snapshot.match(
+            "large_purchase_approval_required_response", large_purchase_approval_required_response
+        )

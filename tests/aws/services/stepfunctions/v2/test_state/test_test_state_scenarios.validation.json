@@ -351,12 +351,12 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_localstack_blogpost_scenario": {
-    "last_validated_date": "2025-11-28T15:12:13+00:00",
+    "last_validated_date": "2025-11-28T15:21:30+00:00",
     "durations_in_seconds": {
-      "setup": 0.54,
-      "call": 14.28,
-      "teardown": 1.11,
-      "total": 15.93
+      "setup": 0.51,
+      "call": 13.18,
+      "teardown": 0.99,
+      "total": 14.68
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_task_catch_error[DEBUG]": {
