@@ -350,6 +350,15 @@
       "total": 14.49
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_localstack_blogpost_scenario": {
+    "last_validated_date": "2025-11-28T15:55:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 14.74,
+      "teardown": 1.02,
+      "total": 16.26
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_task_catch_error[DEBUG]": {
     "last_validated_date": "2025-11-21T13:59:51+00:00",
     "durations_in_seconds": {

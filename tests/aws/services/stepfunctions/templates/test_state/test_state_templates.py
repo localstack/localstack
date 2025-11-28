@@ -120,3 +120,7 @@ class TestStateMachineTemplate(TemplateLoader):
     BASE_MAP_STATE_MACHINE_CHOICE_FAIL: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/base_map_state_machine_choice_fail.json5"
     )
+
+    LOCALSTACK_BLOGPOST_SCENARIO_STATE_MACHINE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/localstack_blogpost_scenario_state_machine.json5"
+    )

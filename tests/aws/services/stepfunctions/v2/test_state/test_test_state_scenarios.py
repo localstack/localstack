@@ -14,6 +14,9 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
     ServicesTemplates as ST,
 )
 from tests.aws.services.stepfunctions.templates.test_state.test_state_templates import (
+    TestStateMachineTemplate as TSMT,
+)
+from tests.aws.services.stepfunctions.templates.test_state.test_state_templates import (
     TestStateTemplate as TST,
 )
 
@@ -297,3 +300,97 @@ class TestStateCaseScenarios:
         )
 
         sfn_snapshot.match("catch_task_failed_response", catch_task_failed_response)
+
+    @markers.aws.validated
+    def test_localstack_blogpost_scenario(
+        self,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
+        sfn_snapshot,
+        region_name,
+    ):
+        template = TSMT.load_sfn_template(TSMT.LOCALSTACK_BLOGPOST_SCENARIO_STATE_MACHINE)
+        template["States"]["Ask for Approval"]["Arguments"]["ApiEndpoint"] = (
+            f"example.execute-api.{region_name}.amazonaws.com"
+        )
+        definition = json.dumps(template)
+
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        # Step 1 - Testing the Approval Required state
+        # 1.1 Approval Required state correctly approves small purchases
+
+        small_purchase_input = json.dumps({"cost": 9})
+
+        small_purchase_approval_required_response = (
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                roleArn=sfn_role_arn,
+                input=small_purchase_input,
+                stateName="Approval Required",
+            )
+        )
+        sfn_snapshot.match(
+            "small_purchase_approval_required_response", small_purchase_approval_required_response
+        )
+
+        # 1.2 Approval Required state correctly sends large purchases to the approval ask process
+
+        large_purchase_input = json.dumps({"cost": 10})
+
+        large_purchase_approval_required_response = (
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                roleArn=sfn_role_arn,
+                input=large_purchase_input,
+                stateName="Approval Required",
+            )
+        )
+        sfn_snapshot.match(
+            "large_purchase_approval_required_response", large_purchase_approval_required_response
+        )
+
+        # Step 2 - Testing the Approval Ask state
+        # Approval Ask state correctly approves large purchases
+
+        large_purchase_input = json.dumps({"cost": 10})
+
+        large_purchase_ask_for_approval_response = (
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                roleArn=sfn_role_arn,
+                input=large_purchase_input,
+                stateName="Ask for Approval",
+                mock={"result": '{"approval": true }'},
+            )
+        )
+        sfn_snapshot.match(
+            "large_purchase_ask_for_approval_response", large_purchase_ask_for_approval_response
+        )
+
+        # Step 3 - Testing the Check Approval state
+        # 3.1 Approval granted
+
+        check_approval_granted_input = json.dumps(
+            {"approval": True, "approval_code": "2387462", "approved_by": "Mary"}
+        )
+
+        check_approval_granted_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=check_approval_granted_input,
+            stateName="Check Approval",
+        )
+        sfn_snapshot.match("check_approval_granted_response", check_approval_granted_response)
+
+        # 3.2 Approval denied
+
+        check_approval_denied_input = json.dumps({"approval": False})
+
+        check_approval_denied_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=check_approval_denied_input,
+            stateName="Check Approval",
+        )
+        sfn_snapshot.match("check_approval_denied_response", check_approval_denied_response)
