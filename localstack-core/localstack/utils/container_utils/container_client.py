@@ -15,6 +15,7 @@ from typing import (
     Literal,
     NamedTuple,
     Protocol,
+    TypeAlias,
     TypedDict,
 )
 
@@ -357,7 +358,13 @@ SimpleVolumeBind = tuple[str, str]
 
 
 @dataclasses.dataclass
-class BindMount:
+class Mount:
+    def to_str(self) -> str:
+        return str(self)
+
+
+@dataclasses.dataclass
+class BindMount(Mount):
     """Represents a --volume argument run/create command. When using VolumeBind to bind-mount a file or directory
     that does not yet exist on the Docker host, -v creates the endpoint for you. It is always created as a directory.
     """
@@ -402,7 +409,7 @@ class BindMount:
 
 
 @dataclasses.dataclass
-class VolumeDirMount:
+class VolumeDirMount(Mount):
     volume_path: str
     """
     Absolute path inside /var/lib/localstack to mount into the container
@@ -439,24 +446,25 @@ class VolumeDirMount:
         }
 
 
-class VolumeMappings:
-    mappings: list[SimpleVolumeBind | BindMount]
+VolumeMappingSpecification: TypeAlias = SimpleVolumeBind | Mount
 
-    def __init__(self, mappings: list[SimpleVolumeBind | BindMount | VolumeDirMount] = None):
+
+class VolumeMappings:
+    mappings: list[VolumeMappingSpecification]
+
+    def __init__(
+        self,
+        mappings: list[VolumeMappingSpecification] = None,
+    ):
         self.mappings = mappings if mappings is not None else []
 
-    def add(self, mapping: SimpleVolumeBind | BindMount | VolumeDirMount):
+    def add(self, mapping: VolumeMappingSpecification):
         self.append(mapping)
 
-    def append(
-        self,
-        mapping: SimpleVolumeBind | BindMount | VolumeDirMount,
-    ):
+    def append(self, mapping: VolumeMappingSpecification):
         self.mappings.append(mapping)
 
-    def find_target_mapping(
-        self, container_dir: str
-    ) -> SimpleVolumeBind | BindMount | VolumeDirMount | None:
+    def find_target_mapping(self, container_dir: str) -> VolumeMappingSpecification | None:
         """
         Looks through the volumes and returns the one where the container dir matches ``container_dir``.
         Returns None if there is no volume mapping to the given container directory.
@@ -1510,7 +1518,8 @@ class Util:
     ) -> dict[str, dict[str, str]]:
         """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
 
-        def _map_to_dict(paths: SimpleVolumeBind | BindMount | VolumeDirMount):
+        def _map_to_dict(paths: VolumeMappingSpecification):
+            # TODO: move this logic to the `Mount` base class
             if isinstance(paths, (BindMount, VolumeDirMount)):
                 return paths.to_docker_sdk_parameters()
             else:
