@@ -589,5 +589,202 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlTagging::test_tag_lifecycle": {
+    "recorded-date": "28-11-2025, 11:45:27",
+    "recorded-content": {
+      "list-tags-before": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag-resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-tags-1": {
+        "Tags": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          },
+          {
+            "Key": "key2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag-resource-after-update": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-tags-after-update": {
+        "Tags": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          },
+          {
+            "Key": "key2",
+            "Value": "value2"
+          },
+          {
+            "Key": "key3",
+            "Value": "value3"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag-resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-tags-after-untag": {
+        "Tags": [
+          {
+            "Key": "key1",
+            "Value": "value1"
+          },
+          {
+            "Key": "key2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag-resource-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlTagging::test_tag_resource_validation": {
+    "recorded-date": "28-11-2025, 12:06:32",
+    "recorded-content": {
+      "tags-key-none": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tags-value-none": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tags-key-aws-prefix": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "User-defined tag keys can't start with \"aws:\". This prefix is reserved for system tags. Remove \"aws:\" from your tag keys and try again."
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tags-key-aws-duplicated-key": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "There are duplicate tag keys in your request. Remove the duplicate tag keys and try again."
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tags-key-aws-bad-value": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "This request contains a tag key or value that isn't valid. Valid characters include the following: [a-zA-Z+-=._:/]. Tag keys can contain up to 128 characters. Tag values can contain up to 256 characters."
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tags-key-aws-bad-key": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "This request contains a tag key or value that isn't valid. Valid characters include the following: [a-zA-Z+-=._:/]. Tag keys can contain up to 128 characters. Tag values can contain up to 256 characters."
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlTagging::test_tag_operation_no_bucket": {
+    "recorded-date": "28-11-2025, 11:45:32",
+    "recorded-content": {
+      "tag-resource-no-exist": {
+        "Error": {
+          "Code": "NoSuchResource",
+          "Message": "The specified resource doesn't exist."
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "untag-resource-no-exist": {
+        "Error": {
+          "Code": "NoSuchResource",
+          "Message": "The specified resource doesn't exist."
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list-resource-tags-no-exist": {
+        "Error": {
+          "Code": "NoSuchResource",
+          "Message": "The specified resource doesn't exist."
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

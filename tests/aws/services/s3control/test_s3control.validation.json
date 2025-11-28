@@ -25,5 +25,32 @@
   },
   "tests/aws/services/s3control/test_s3control.py::TestS3ControlPublicAccessBlock::test_empty_public_access_block": {
     "last_validated_date": "2024-05-30T17:32:59+00:00"
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlTagging::test_tag_lifecycle": {
+    "last_validated_date": "2025-11-28T11:45:28+00:00",
+    "durations_in_seconds": {
+      "setup": 1.07,
+      "call": 1.41,
+      "teardown": 0.64,
+      "total": 3.12
+    }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlTagging::test_tag_operation_no_bucket": {
+    "last_validated_date": "2025-11-28T11:45:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.54,
+      "call": 0.56,
+      "teardown": 0.6,
+      "total": 1.7
+    }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlTagging::test_tag_resource_validation": {
+    "last_validated_date": "2025-11-28T12:06:32+00:00",
+    "durations_in_seconds": {
+      "setup": 1.18,
+      "call": 2.18,
+      "teardown": 0.61,
+      "total": 3.97
+    }
   }
 }
