@@ -6787,5 +6787,53 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_is_phone_number_opted_out": {
+    "recorded-date": "01-12-2025, 19:33:36",
+    "recorded-content": {
+      "phone-number-opted-out": {
+        "isOptedOut": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_list_phone_numbers_opted_out": {
+    "recorded-date": "01-12-2025, 19:37:44",
+    "recorded-content": {
+      "list-phone-numbers-opted-out": {
+        "phoneNumbers": [
+          "<phone-number:1>"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_opt_in_phone_number": {
+    "recorded-date": "01-12-2025, 19:44:54",
+    "recorded-content": {
+      "opt-in-phone-number": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_opt_in_non_existing_phone_number": {
+    "recorded-date": "01-12-2025, 19:53:23",
+    "recorded-content": {
+      "opt-in-non-existing-number": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

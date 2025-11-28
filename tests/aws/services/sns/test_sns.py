@@ -37,6 +37,7 @@ from localstack.services.sns.constants import (
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws.arns import get_partition, parse_arn, sqs_queue_arn
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
@@ -3665,6 +3666,15 @@ def platform_credentials() -> tuple[str, str]:
     return client_id, client_secret
 
 
+@pytest.fixture(scope="class")
+def phone_number() -> str:
+    # if you want to test phone number operations against AWS and a real phone number, replace this value
+    # and use this fixture.
+    # note: you might need to verify that number first in your AWS account due to the sms sandbox
+    phone_number = "+430000000000"
+    return phone_number
+
+
 class TestSNSPlatformApplicationCrud:
     @markers.aws.manual_setup_required
     def test_create_platform_application(
@@ -4679,6 +4689,71 @@ class TestSNSSMS:
                 }
             )
         snapshot.match("invalid-attribute", e.value.response)
+
+    @markers.aws.manual_setup_required
+    @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
+    def test_is_phone_number_opted_out(
+        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name
+    ):
+        # this test expects the fixture-provided phone number to be opted out
+        # if you want to test against AWS, you need to manually opt out a number
+        # https://us-east-1.console.aws.amazon.com/sms-voice/home?region=us-east-1#/opt-out-lists?name=Default&tab=opt-out-list-opted-out-numbers
+        if not is_aws_cloud():
+            SnsProvider = sns_provider()
+            store = SnsProvider.get_store(account_id, region_name)
+            store.PHONE_NUMBERS_OPTED_OUT.append(phone_number)
+        response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
+        snapshot.match("phone-number-opted-out", response)
+
+    @markers.aws.manual_setup_required
+    @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
+    def test_list_phone_numbers_opted_out(
+        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name
+    ):
+        # this test expects exactly one phone number opted out
+        # if you want to test against AWS, you need to manually opt out a number
+        # https://us-east-1.console.aws.amazon.com/sms-voice/home?region=us-east-1#/opt-out-lists?name=Default&tab=opt-out-list-opted-out-numbers
+        if not is_aws_cloud():
+            SnsProvider = sns_provider()
+            store = SnsProvider.get_store(account_id, region_name)
+            store.PHONE_NUMBERS_OPTED_OUT.append(phone_number)
+
+        snapshot.add_transformer(
+            TransformerUtility.jsonpath(
+                jsonpath="$..phoneNumbers[*]",
+                value_replacement="phone-number",
+            )
+        )
+        response = aws_client.sns.list_phone_numbers_opted_out()
+        snapshot.match("list-phone-numbers-opted-out", response)
+
+    @markers.aws.manual_setup_required
+    def test_opt_in_phone_number(
+        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name
+    ):
+        # this test expects exactly one phone number opted out
+        # if you want to test against AWS, you need to manually opt out a number
+        # https://us-east-1.console.aws.amazon.com/sms-voice/home?region=us-east-1#/opt-out-lists?name=Default&tab=opt-out-list-opted-out-numbers
+        # IMPORTANT: a phone number can only be opted in once every 30 days on AWS.
+        # Make sure everything else is set up and taken care of properly before trying to validate this.
+        if not is_aws_cloud():
+            SnsProvider = sns_provider()
+            store = SnsProvider.get_store(account_id, region_name)
+            store.PHONE_NUMBERS_OPTED_OUT.append(phone_number)
+        response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
+        assert response["isOptedOut"]
+
+        response = aws_client.sns.opt_in_phone_number(phoneNumber=phone_number)
+        snapshot.match("opt-in-phone-number", response)
+
+    @markers.aws.validated
+    def test_opt_in_non_existing_phone_number(
+        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name
+    ):
+        non_existing_number = "+4411111111"
+        response = aws_client.sns.opt_in_phone_number(phoneNumber=non_existing_number)
+
+        snapshot.match("opt-in-non-existing-number", response)
 
 
 class TestSNSSubscriptionHttp:

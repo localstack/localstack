@@ -12,6 +12,7 @@ from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
     BatchEntryIdsNotDistinctException,
+    CheckIfPhoneNumberIsOptedOutResponse,
     ConfirmSubscriptionResponse,
     CreateEndpointResponse,
     CreatePlatformApplicationResponse,
@@ -26,6 +27,7 @@ from localstack.aws.api.sns import (
     InvalidParameterException,
     InvalidParameterValueException,
     ListEndpointsByPlatformApplicationResponse,
+    ListPhoneNumbersOptedOutResponse,
     ListPlatformApplicationsResponse,
     ListString,
     ListSubscriptionsByTopicResponse,
@@ -35,6 +37,7 @@ from localstack.aws.api.sns import (
     MapStringToString,
     MessageAttributeMap,
     NotFoundException,
+    OptInPhoneNumberResponse,
     PhoneNumber,
     PlatformApplication,
     PublishBatchRequestEntryList,
@@ -61,6 +64,7 @@ from localstack.aws.api.sns import (
     messageStructure,
     nextToken,
     protocol,
+    string,
     subject,
     subscriptionARN,
     topicARN,
@@ -1072,6 +1076,39 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 return_attributes[k] = store_attributes[k]
 
         return GetSMSAttributesResponse(attributes=return_attributes)
+
+    #
+    # Phone number operations
+    #
+
+    def check_if_phone_number_is_opted_out(
+        self, context: RequestContext, phone_number: PhoneNumber, **kwargs
+    ) -> CheckIfPhoneNumberIsOptedOutResponse:
+        store = sns_stores[context.account_id][context.region]
+        return CheckIfPhoneNumberIsOptedOutResponse(
+            isOptedOut=phone_number in store.PHONE_NUMBERS_OPTED_OUT
+        )
+
+    def list_phone_numbers_opted_out(
+        self, context: RequestContext, next_token: string | None = None, **kwargs
+    ) -> ListPhoneNumbersOptedOutResponse:
+        store = self.get_store(context.account_id, context.region)
+        numbers_opted_out = PaginatedList(store.PHONE_NUMBERS_OPTED_OUT)
+        page, nxt = numbers_opted_out.get_page(
+            token_generator=lambda x: x,
+            next_token=next_token,
+            page_size=100,
+        )
+        phone_numbers = {"phoneNumbers": page, "nextToken": nxt}
+        return ListPhoneNumbersOptedOutResponse(**phone_numbers)
+
+    def opt_in_phone_number(
+        self, context: RequestContext, phone_number: PhoneNumber, **kwargs
+    ) -> OptInPhoneNumberResponse:
+        store = self.get_store(context.account_id, context.region)
+        if phone_number in store.PHONE_NUMBERS_OPTED_OUT:
+            store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
+        return OptInPhoneNumberResponse()
 
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs

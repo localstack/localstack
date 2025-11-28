@@ -665,6 +665,42 @@
       "total": 2.74
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_is_phone_number_opted_out": {
+    "last_validated_date": "2025-12-01T19:33:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 0.63,
+      "teardown": 0.0,
+      "total": 1.37
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_list_phone_numbers_opted_out": {
+    "last_validated_date": "2025-12-01T19:37:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.92,
+      "call": 1.23,
+      "teardown": 0.01,
+      "total": 2.16
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_opt_in_non_existing_phone_number": {
+    "last_validated_date": "2025-12-01T19:53:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.99,
+      "call": 1.03,
+      "teardown": 0.0,
+      "total": 2.02
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_opt_in_phone_number": {
+    "last_validated_date": "2025-12-01T19:44:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.94,
+      "call": 1.02,
+      "teardown": 0.0,
+      "total": 1.96
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_publish_wrong_phone_format": {
     "last_validated_date": "2023-08-24T22:20:12+00:00"
   },
