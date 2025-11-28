@@ -2114,5 +2114,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_localstack_blogpost_scenario": {
+    "recorded-date": "27-11-2025, 16:41:47",
+    "recorded-content": {
+      "small_purchase_response": {
+        "nextState": "Ask for Approval",
+        "output": {
+          "cost": 10
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
