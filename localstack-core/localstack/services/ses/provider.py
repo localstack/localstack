@@ -62,6 +62,7 @@ from localstack.http import Resource, Response
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.ses.models import EmailType, SentEmail, SentEmailBody
+from localstack.state import StateVisitor
 from localstack.utils.aws import arns
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
@@ -177,6 +178,9 @@ def register_ses_api_resource():
 
 
 class SesProvider(SesApi, ServiceLifecycleHook):
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(ses_backends)
+
     #
     # Lifecycle Hooks
     #

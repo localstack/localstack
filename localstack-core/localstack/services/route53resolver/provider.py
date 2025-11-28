@@ -100,6 +100,7 @@ from localstack.services.route53resolver.utils import (
     validate_mutation_protection,
     validate_priority,
 )
+from localstack.state import StateVisitor
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.collections import select_from_typed_dict
@@ -107,6 +108,10 @@ from localstack.utils.patch import patch
 
 
 class Route53ResolverProvider(Route53ResolverApi):
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(route53resolver_backends)
+        visitor.visit(route53resolver_stores)
+
     @staticmethod
     def get_store(account_id: str, region: str) -> Route53ResolverStore:
         return route53resolver_stores[account_id][region]

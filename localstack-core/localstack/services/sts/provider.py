@@ -23,6 +23,7 @@ from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sts.models import SessionConfig, sts_stores
+from localstack.state import StateVisitor
 from localstack.utils.aws.arns import extract_account_id_from_arn
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 
@@ -49,6 +50,12 @@ class ValidationError(CommonServiceException):
 class StsProvider(StsApi, ServiceLifecycleHook):
     def __init__(self):
         apply_iam_patches()
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        from moto.sts.models import sts_backends
+
+        visitor.visit(sts_backends)
+        visitor.visit(sts_stores)
 
     def get_caller_identity(self, context: RequestContext, **kwargs) -> GetCallerIdentityResponse:
         response = call_moto(context)

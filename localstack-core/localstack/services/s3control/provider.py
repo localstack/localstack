@@ -12,6 +12,7 @@ from localstack.aws.api.s3control import (
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError
 from localstack.services.s3.models import s3_stores
 from localstack.services.s3control.validation import validate_tags
+from localstack.state import StateVisitor
 from localstack.utils.tagging import TaggingService
 
 
@@ -21,6 +22,11 @@ class NoSuchResource(CommonServiceException):
 
 
 class S3ControlProvider(S3ControlApi):
+    def accept_state_visitor(self, visitor: StateVisitor):
+        from moto.s3control.models import s3control_backends
+
+        visitor.visit(s3control_backends)
+
     """
     S3Control is a management interface for S3, and can access some of its internals with no public API
     This requires us to access the s3 stores directly

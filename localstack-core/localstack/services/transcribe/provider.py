@@ -38,6 +38,7 @@ from localstack.services.s3.utils import (
 )
 from localstack.services.transcribe.models import TranscribeStore, transcribe_stores
 from localstack.services.transcribe.packages import vosk_package
+from localstack.state import StateVisitor
 from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
 from localstack.utils.run import run
@@ -101,6 +102,12 @@ _DL_LOCK = threading.Lock()
 
 
 class TranscribeProvider(TranscribeApi):
+    def accept_state_visitor(self, visitor: StateVisitor) -> None:
+        from moto.transcribe.models import transcribe_backends
+
+        visitor.visit(transcribe_backends)
+        visitor.visit(transcribe_stores)
+
     def get_transcription_job(
         self, context: RequestContext, transcription_job_name: TranscriptionJobName, **kwargs: Any
     ) -> GetTranscriptionJobResponse:
