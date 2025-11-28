@@ -6,12 +6,15 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.stepfunctions import InspectionLevel
 from localstack.testing.pytest import markers
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import long_uid, short_uid
 from tests.aws.services.stepfunctions.templates.evaluatejsonata.evaluate_jsonata_templates import (
     EvaluateJsonataTemplate as EJT,
 )
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
+)
+from tests.aws.services.stepfunctions.templates.test_state.test_state_templates import (
+    TestStateMachineTemplate as TSMT,
 )
 from tests.aws.services.stepfunctions.templates.test_state.test_state_templates import (
     TestStateTemplate as TST,
@@ -297,3 +300,33 @@ class TestStateCaseScenarios:
         )
 
         sfn_snapshot.match("catch_task_failed_response", catch_task_failed_response)
+
+    @markers.aws.validated
+    def test_localstack_blogpost_scenario(
+        self,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
+        sfn_snapshot,
+        account_id,
+        region_name,
+    ):
+        template = TSMT.load_sfn_template(TSMT.LOCALSTACK_BLOGPOST_SCENARIO_STATE_MACHINE)
+        template["States"]["Ask for Approval"]["Arguments"]["Authentication"]["ConnectionArn"] = (
+            f"arn:aws:events:{region_name}:{account_id}:connection/TestStateConnection/{long_uid()}"
+        )
+        definition = json.dumps(template)
+
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        # Step 1 - Testing the Approval Required state
+        # 1.1 Approval Required state correctly approves small purchases
+
+        small_purchase_input = json.dumps({"cost": 10})
+
+        small_purchase_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=small_purchase_input,
+            stateName="Approval Required",
+        )
+        sfn_snapshot.match("small_purchase_response", small_purchase_response)

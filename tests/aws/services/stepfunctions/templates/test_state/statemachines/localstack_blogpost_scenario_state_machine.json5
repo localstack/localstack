@@ -1,0 +1,65 @@
+{
+  "Comment": "Cost approval workflow",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Approval Required",
+  "States": {
+    "Approval Required": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.cost < 10 %}",
+          "Next": "Purchase Approved"
+        }
+      ],
+      "Default": "Ask for Approval"
+    },
+    "Purchase Approved": {
+      "Type": "Succeed"
+    },
+    "Ask for Approval": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::http:invoke", //TODO http invoke is not yet supported in localstack. Change to API gateway call or any other service task
+      "Arguments": {
+        "Method": "GET",
+        "ApiEndpoint": "https://example.com/approval",
+        "RequestBody": {
+          "cost": "{% $states.input.cost %}",
+          "dept_id": "12345678"
+        },
+        "Authentication": {
+          "ConnectionArn": "__http_invoke_connection_arn__",
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "BackoffRate": 2,
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Check Approval",
+      "Output": {
+        "approval": "{% $states.result.approval %}",
+        "approval_code": "2387462",
+        "approved_by": "Mary"
+      }
+    },
+    "Check Approval": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Next": "Purchase Approved",
+          "Condition": "{% $states.input.approval %}"
+        }
+      ],
+      "Default": "Not Approved"
+    },
+    "Not Approved": {
+      "Type": "Fail"
+    }
+  },
+}
