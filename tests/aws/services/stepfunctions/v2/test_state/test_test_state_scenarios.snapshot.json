@@ -2116,7 +2116,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_localstack_blogpost_scenario": {
-    "recorded-date": "28-11-2025, 15:21:29",
+    "recorded-date": "28-11-2025, 15:27:44",
     "recorded-content": {
       "small_purchase_approval_required_response": {
         "nextState": "Purchase Approved",
@@ -2133,6 +2133,19 @@
         "nextState": "Ask for Approval",
         "output": {
           "cost": 10
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "large_purchase_ask_for_approval_response": {
+        "nextState": "Check Approval",
+        "output": {
+          "approval": true,
+          "approval_code": "2387462",
+          "approved_by": "Mary"
         },
         "status": "SUCCEEDED",
         "ResponseMetadata": {

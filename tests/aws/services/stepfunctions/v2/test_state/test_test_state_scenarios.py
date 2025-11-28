@@ -349,3 +349,21 @@ class TestStateCaseScenarios:
         sfn_snapshot.match(
             "large_purchase_approval_required_response", large_purchase_approval_required_response
         )
+
+        # Step 2 - Testing the Approval Ask state
+        # Approval Ask state correctly approves large purchases
+
+        large_purchase_input = json.dumps({"cost": 10})
+
+        large_purchase_ask_for_approval_response = (
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                roleArn=sfn_role_arn,
+                input=large_purchase_input,
+                stateName="Ask for Approval",
+                mock={"result": '{"approval": true }'},
+            )
+        )
+        sfn_snapshot.match(
+            "large_purchase_ask_for_approval_response", large_purchase_ask_for_approval_response
+        )
