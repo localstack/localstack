@@ -343,9 +343,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             self.alarm_scheduler = AlarmScheduler()
 
     def shutdown_alarm_scheduler(self):
-        LOG.debug("stopping cloudwatch scheduler")
-        self.alarm_scheduler.shutdown_scheduler()
-        self.alarm_scheduler = None
+        if self.alarm_scheduler:
+            LOG.debug("stopping cloudwatch scheduler")
+            self.alarm_scheduler.shutdown_scheduler()
+            self.alarm_scheduler = None
 
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames, **kwargs) -> None:
         moto.call_moto(context)
