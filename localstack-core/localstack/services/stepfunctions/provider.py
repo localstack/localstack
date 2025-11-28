@@ -243,8 +243,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
 
     @staticmethod
-    def _validate_test_state_mock_input(mock: MockInput) -> None:
-        if {"result", "errorOutput"} <= mock.keys():
+    def _validate_test_state_mock_input(mock_input: MockInput) -> None:
+        if {"result", "errorOutput"} <= mock_input.keys():
             # FIXME create proper error
             raise ValidationException("Cannot define both 'result' and 'errorOutput'")
 
@@ -1513,8 +1513,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         ):
             raise ValidationException("State not found in definition")
 
-        if result_mock := request.get("mock"):
-            self._validate_test_state_mock_input(result_mock)
+        mock_input = request.get("mock")
+        if mock_input is not None:
+            self._validate_test_state_mock_input(mock_input)
+            TestStateStaticAnalyser.validate_mock(
+                mock_input=mock_input, definition=definition, state_name=state_name
+            )
 
         if state_configuration := request.get("stateConfiguration"):
             # TODO: Add validations for this i.e assert len(input) <= failureCount
@@ -1527,7 +1531,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         try:
             state_mock = TestStateMock(
-                mock_input=result_mock,
+                mock_input=mock_input,
                 state_configuration=state_configuration,
                 context=state_context,
             )

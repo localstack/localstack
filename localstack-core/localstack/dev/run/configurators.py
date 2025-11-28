@@ -282,7 +282,7 @@ class DependencyMountConfigurator:
     dependency_glob = "/opt/code/localstack/.venv/lib/python3.*/site-packages/*"
 
     # skip mounting dependencies with incompatible binaries (e.g., on macOS)
-    skipped_dependencies = ["cryptography", "psutil", "rpds"]
+    skipped_dependencies = ["cryptography", "psutil", "rpds", "pydantic", "pydantic_core"]
 
     def __init__(
         self,

@@ -67,6 +67,15 @@ class TestStateTemplate(TemplateLoader):
     BASE_SFN_START_EXECUTION_TASK_STATE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/base_sfn_start_execution.json5"
     )
+    BASE_AWS_SDK_S3_GET_OBJECT_TASK_STATE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_aws_api_s3_get_object.json5"
+    )
+    BASE_AWS_SDK_KMS_ENCRYPT_TASK_STATE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_aws_api_kms_encrypt.json5"
+    )
+    BASE_AWS_SDK_LAMBDA_GET_FUNCTION: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_aws_api_lambda_get_function.json5"
+    )
 
     BASE_TASK_STATE_RETRY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/base_task_state_retry.json5"

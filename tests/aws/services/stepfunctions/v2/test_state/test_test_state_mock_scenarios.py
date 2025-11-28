@@ -15,6 +15,36 @@ from tests.aws.services.stepfunctions.templates.test_state.test_state_templates 
 
 class TestStateMockScenarios:
     @markers.aws.validated
+    def test_base_lambda_service_task_mock_is_not_json_string(
+        self,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+
+        template = TST.load_sfn_template(TST.BASE_LAMBDA_SERVICE_TASK_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
+        mock = {
+            "result": "not JSON string",
+            "fieldValidationMode": "NONE",  # the result must be a valid JSON string even if field validation mode is NONE
+        }
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+
+        with pytest.raises(aws_client.stepfunctions.exceptions.ValidationException) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                roleArn=sfn_role_arn,
+                input=exec_input,
+                inspectionLevel=InspectionLevel.INFO,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation-exception", e.value.response)
+
+    @markers.aws.validated
     def test_base_lambda_service_task_mock_success(
         self,
         aws_client,

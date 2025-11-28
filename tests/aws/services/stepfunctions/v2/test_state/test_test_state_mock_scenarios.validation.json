@@ -1,65 +1,74 @@
 {
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_lambda_service_task_mock_success": {
-    "last_validated_date": "2025-11-12T16:33:18+00:00",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_lambda_service_task_mock_is_not_json_string": {
+    "last_validated_date": "2025-11-26T16:40:57+00:00",
     "durations_in_seconds": {
-      "setup": 0.64,
-      "call": 18.94,
-      "teardown": 1.11,
-      "total": 20.69
+      "setup": 0.51,
+      "call": 14.36,
+      "teardown": 1.15,
+      "total": 16.02
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_lambda_service_task_mock_success": {
+    "last_validated_date": "2025-11-24T23:40:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 13.09,
+      "teardown": 1.02,
+      "total": 14.63
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[base]": {
-    "last_validated_date": "2025-11-12T16:33:31+00:00",
+    "last_validated_date": "2025-11-24T23:40:48+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 11.85,
-      "teardown": 1.08,
-      "total": 12.93
+      "call": 17.82,
+      "teardown": 1.25,
+      "total": 19.07
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[io]": {
-    "last_validated_date": "2025-11-12T16:33:50+00:00",
+    "last_validated_date": "2025-11-24T23:41:01+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 17.62,
-      "teardown": 1.09,
-      "total": 18.71
+      "call": 12.05,
+      "teardown": 1.04,
+      "total": 13.09
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[io_output_path]": {
-    "last_validated_date": "2025-11-12T16:34:03+00:00",
+    "last_validated_date": "2025-11-24T23:41:15+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 11.94,
-      "teardown": 1.11,
-      "total": 13.05
+      "call": 13.1,
+      "teardown": 0.98,
+      "total": 14.08
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_put_events_mock_success": {
-    "last_validated_date": "2025-11-12T16:34:16+00:00",
+    "last_validated_date": "2025-11-24T23:41:29+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 11.85,
-      "teardown": 1.11,
-      "total": 12.96
+      "call": 12.84,
+      "teardown": 1.08,
+      "total": 13.92
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_send_sqs_message_success": {
-    "last_validated_date": "2025-11-12T17:54:06+00:00",
+    "last_validated_date": "2025-11-24T23:41:43+00:00",
     "durations_in_seconds": {
-      "setup": 0.65,
-      "call": 13.39,
-      "teardown": 0.98,
-      "total": 15.02
+      "setup": 0.0,
+      "call": 12.82,
+      "teardown": 0.97,
+      "total": 13.79
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_sfn_start_execution_success": {
-    "last_validated_date": "2025-11-13T11:41:39+00:00",
+    "last_validated_date": "2025-11-25T00:48:50+00:00",
     "durations_in_seconds": {
-      "setup": 0.58,
-      "call": 13.15,
-      "teardown": 0.99,
-      "total": 14.72
+      "setup": 0.51,
+      "call": 12.93,
+      "teardown": 0.94,
+      "total": 14.38
     }
   }
 }
