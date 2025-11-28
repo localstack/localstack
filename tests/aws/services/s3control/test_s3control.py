@@ -10,8 +10,6 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.urls import localstack_host
 
-# TODO: this fails in CI, not sure why yet
-# s3_control_endpoint = f"http://s3-control.{localstack_host()}"
 s3_control_endpoint = f"https://{localstack_host().host_and_port()}"
 
 
@@ -421,3 +419,152 @@ class TestS3ControlAccessPoint:
 
         list_by_bucket = s3control_client.list_access_points(AccountId=account_id, Bucket=bucket_1)
         snapshot.match("list-by-bucket", list_by_bucket)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # FIXME: this needs to be updated in the serializer, see https://github.com/localstack/localstack/pull/9730
+        "$..HostId",
+    ]
+)
+class TestS3ControlTagging:
+    @markers.aws.validated
+    def test_tag_lifecycle(
+        self, s3_bucket, s3control_client, snapshot, account_id, s3control_snapshot
+    ):
+        bucket_arn = f"arn:aws:s3:::{s3_bucket}"
+
+        list_tags_before = s3control_client.list_tags_for_resource(
+            AccountId=account_id,
+            ResourceArn=bucket_arn,
+        )
+        snapshot.match("list-tags-before", list_tags_before)
+
+        tag_resource = s3control_client.tag_resource(
+            AccountId=account_id,
+            ResourceArn=bucket_arn,
+            Tags=[
+                {"Key": "key1", "Value": "value1"},
+                {"Key": "key2", "Value": "value2"},
+            ],
+        )
+        snapshot.match("tag-resource", tag_resource)
+
+        list_tags_1 = s3control_client.list_tags_for_resource(
+            AccountId=account_id,
+            ResourceArn=bucket_arn,
+        )
+        snapshot.match("list-tags-1", list_tags_1)
+
+        tag_resource_after_update = s3control_client.tag_resource(
+            AccountId=account_id, ResourceArn=bucket_arn, Tags=[{"Key": "key3", "Value": "value3"}]
+        )
+        snapshot.match("tag-resource-after-update", tag_resource_after_update)
+
+        list_tags_after_update = s3control_client.list_tags_for_resource(
+            AccountId=account_id,
+            ResourceArn=bucket_arn,
+        )
+        snapshot.match("list-tags-after-update", list_tags_after_update)
+
+        untag_resource = s3control_client.untag_resource(
+            AccountId=account_id, ResourceArn=bucket_arn, TagKeys=["key3"]
+        )
+        snapshot.match("untag-resource", untag_resource)
+
+        list_tags_after_untag = s3control_client.list_tags_for_resource(
+            AccountId=account_id,
+            ResourceArn=bucket_arn,
+        )
+        snapshot.match("list-tags-after-untag", list_tags_after_untag)
+
+        untag_resource_idempotent = s3control_client.untag_resource(
+            AccountId=account_id, ResourceArn=bucket_arn, TagKeys=["key3"]
+        )
+        snapshot.match("untag-resource-idempotent", untag_resource_idempotent)
+
+    @markers.aws.validated
+    def test_tag_resource_validation(
+        self, s3_bucket, s3control_client_no_validation, account_id, snapshot, s3control_snapshot
+    ):
+        bucket_arn = f"arn:aws:s3:::{s3_bucket}"
+
+        with pytest.raises(ClientError) as e:
+            s3control_client_no_validation.tag_resource(
+                AccountId=account_id,
+                ResourceArn=bucket_arn,
+                Tags=[{"Key": None, "Value": "value1"}],
+            )
+        snapshot.match("tags-key-none", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3control_client_no_validation.tag_resource(
+                AccountId=account_id,
+                ResourceArn=bucket_arn,
+                Tags=[{"Key": "key1", "Value": None}],
+            )
+        snapshot.match("tags-value-none", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3control_client_no_validation.tag_resource(
+                AccountId=account_id,
+                ResourceArn=bucket_arn,
+                Tags=[{"Key": "aws:test", "Value": "value1"}],
+            )
+        snapshot.match("tags-key-aws-prefix", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3control_client_no_validation.tag_resource(
+                AccountId=account_id,
+                ResourceArn=bucket_arn,
+                Tags=[
+                    {"Key": "key1", "Value": "value1"},
+                    {"Key": "key1", "Value": "value1"},
+                ],
+            )
+        snapshot.match("tags-key-aws-duplicated-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3control_client_no_validation.tag_resource(
+                AccountId=account_id,
+                ResourceArn=bucket_arn,
+                Tags=[{"Key": "test", "Value": "value1,value2"}],
+            )
+        snapshot.match("tags-key-aws-bad-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3control_client_no_validation.tag_resource(
+                AccountId=account_id,
+                ResourceArn=bucket_arn,
+                Tags=[{"Key": "test,test2", "Value": "value1"}],
+            )
+        snapshot.match("tags-key-aws-bad-key", e.value.response)
+
+    @markers.aws.validated
+    def test_tag_operation_no_bucket(
+        self, s3_bucket, s3control_client, account_id, snapshot, s3control_snapshot
+    ):
+        bucket_arn = f"arn:aws:s3:::{short_uid()}-{short_uid()}"
+
+        with pytest.raises(ClientError) as e:
+            s3control_client.tag_resource(
+                AccountId=account_id,
+                ResourceArn=bucket_arn,
+                Tags=[{"Key": "key1", "Value": "value1"}],
+            )
+        snapshot.match("tag-resource-no-exist", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3control_client.untag_resource(
+                AccountId=account_id,
+                ResourceArn=bucket_arn,
+                TagKeys=["key1"],
+            )
+        snapshot.match("untag-resource-no-exist", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3control_client.list_tags_for_resource(
+                AccountId=account_id,
+                ResourceArn=bucket_arn,
+            )
+        snapshot.match("list-resource-tags-no-exist", e.value.response)
