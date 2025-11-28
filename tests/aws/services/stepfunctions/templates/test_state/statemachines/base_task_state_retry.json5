@@ -1,0 +1,19 @@
+{
+  "Comment": "BASE_TASK_STATE_RETRY",
+  "QueryLanguage": "JSONata",
+  "Type": "Task",
+  "Resource": "arn:aws:states:::lambda:invoke",
+  "Arguments": {
+    "FunctionName": "foo",
+    "Payload": "bar"
+  },
+  "Retry": [
+    {
+      "ErrorEquals": ["MockException"],
+      "IntervalSeconds": 1,
+      "MaxAttempts": 5,
+      "BackoffRate": 2.0
+    },
+  ],
+  "End": true
+}

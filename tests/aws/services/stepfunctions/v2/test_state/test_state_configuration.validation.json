@@ -1,0 +1,236 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_error_caused_by_state[DEBUG]": {
+    "last_validated_date": "2025-11-13T17:08:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.93,
+      "teardown": 1.67,
+      "total": 14.6
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_error_caused_by_state[INFO]": {
+    "last_validated_date": "2025-11-13T17:07:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.3,
+      "teardown": 1.91,
+      "total": 15.21
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_error_caused_by_state[TRACE]": {
+    "last_validated_date": "2025-11-13T17:08:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.77,
+      "teardown": 1.96,
+      "total": 14.73
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[DEBUG-BASE_MAP_STATE]": {
+    "last_validated_date": "2025-11-18T11:40:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.05,
+      "teardown": 1.82,
+      "total": 14.87
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[DEBUG-BASE_MAP_STATE_CATCH]": {
+    "last_validated_date": "2025-11-18T11:41:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.67,
+      "teardown": 1.7,
+      "total": 15.37
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[DEBUG-BASE_MAP_STATE_RETRY]": {
+    "last_validated_date": "2025-11-18T11:41:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.8,
+      "teardown": 1.78,
+      "total": 14.58
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[DEBUG-MAP_TASK_STATE]": {
+    "last_validated_date": "2025-11-18T11:41:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.48,
+      "teardown": 1.66,
+      "total": 15.14
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[DEBUG]": {
+    "last_validated_date": "2025-11-13T17:07:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.18,
+      "teardown": 1.72,
+      "total": 14.9
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[INFO-BASE_MAP_STATE]": {
+    "last_validated_date": "2025-11-18T11:39:50+00:00",
+    "durations_in_seconds": {
+      "setup": 1.44,
+      "call": 16.26,
+      "teardown": 1.95,
+      "total": 19.65
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[INFO-BASE_MAP_STATE_CATCH]": {
+    "last_validated_date": "2025-11-18T11:40:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.81,
+      "teardown": 2.06,
+      "total": 14.87
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[INFO-BASE_MAP_STATE_RETRY]": {
+    "last_validated_date": "2025-11-18T11:40:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.96,
+      "teardown": 1.66,
+      "total": 15.62
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[INFO-MAP_TASK_STATE]": {
+    "last_validated_date": "2025-11-18T11:40:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 18.16,
+      "teardown": 1.65,
+      "total": 19.81
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[INFO]": {
+    "last_validated_date": "2025-11-13T17:07:09+00:00",
+    "durations_in_seconds": {
+      "setup": 1.08,
+      "call": 15.54,
+      "teardown": 1.76,
+      "total": 18.38
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[TRACE-BASE_MAP_STATE]": {
+    "last_validated_date": "2025-11-18T11:41:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.27,
+      "teardown": 1.77,
+      "total": 15.04
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[TRACE-BASE_MAP_STATE_CATCH]": {
+    "last_validated_date": "2025-11-18T11:42:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.39,
+      "teardown": 1.78,
+      "total": 15.17
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[TRACE-BASE_MAP_STATE_RETRY]": {
+    "last_validated_date": "2025-11-18T11:42:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.37,
+      "teardown": 1.61,
+      "total": 14.98
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[TRACE-MAP_TASK_STATE]": {
+    "last_validated_date": "2025-11-18T11:42:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 14.14,
+      "teardown": 2.11,
+      "total": 16.25
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[TRACE]": {
+    "last_validated_date": "2025-11-13T17:07:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.2,
+      "teardown": 2.1,
+      "total": 15.3
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_configuration_retrier_retry_count[DEBUG]": {
+    "last_validated_date": "2025-11-22T17:13:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.59,
+      "call": 13.49,
+      "teardown": 1.03,
+      "total": 15.11
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_configuration_retrier_retry_count[TRACE]": {
+    "last_validated_date": "2025-11-22T17:13:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.95,
+      "teardown": 1.09,
+      "total": 13.04
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_item_reader_with_error[DEBUG]": {
+    "last_validated_date": "2025-11-14T11:14:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 14.13,
+      "teardown": 1.75,
+      "total": 15.88
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_item_reader_with_error[INFO]": {
+    "last_validated_date": "2025-11-14T11:13:48+00:00",
+    "durations_in_seconds": {
+      "setup": 1.16,
+      "call": 16.23,
+      "teardown": 1.76,
+      "total": 19.15
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_item_reader_with_error[TRACE]": {
+    "last_validated_date": "2025-11-14T11:14:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 14.42,
+      "teardown": 1.86,
+      "total": 16.28
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_map_iteration_item_reader[DEBUG]": {
+    "last_validated_date": "2025-11-13T18:00:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.76,
+      "teardown": 1.7,
+      "total": 15.46
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_map_iteration_item_reader[INFO]": {
+    "last_validated_date": "2025-11-13T17:59:52+00:00",
+    "durations_in_seconds": {
+      "setup": 1.15,
+      "call": 21.21,
+      "teardown": 1.77,
+      "total": 24.13
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_map_iteration_item_reader[TRACE]": {
+    "last_validated_date": "2025-11-13T18:00:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.78,
+      "teardown": 1.64,
+      "total": 14.42
+    }
+  }
+}

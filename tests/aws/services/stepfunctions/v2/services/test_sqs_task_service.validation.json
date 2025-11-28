@@ -1,11 +1,29 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message": {
-    "last_validated_date": "2024-08-21T15:47:00+00:00"
+    "last_validated_date": "2025-11-06T12:39:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 14.54,
+      "teardown": 1.92,
+      "total": 16.46
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_attributes": {
-    "last_validated_date": "2024-08-22T10:04:56+00:00"
+    "last_validated_date": "2025-11-06T12:40:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 14.51,
+      "teardown": 2.57,
+      "total": 17.08
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_unsupported_parameters": {
-    "last_validated_date": "2024-04-18T06:37:24+00:00"
+    "last_validated_date": "2025-11-06T12:40:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 14.29,
+      "teardown": 1.62,
+      "total": 15.91
+    }
   }
 }

@@ -29,7 +29,7 @@ from localstack.services.stepfunctions.backend.activity import Activity
 from localstack.services.stepfunctions.backend.execution_worker_comm import (
     ExecutionWorkerCommunication,
 )
-from localstack.services.stepfunctions.mocking.mock_config import MockTestCase
+from localstack.services.stepfunctions.local_mocking.mock_config import LocalMockTestCase
 from localstack.utils.common import TMP_THREADS
 
 
@@ -37,7 +37,7 @@ class ExecutionWorker:
     _evaluation_details: Final[EvaluationDetails]
     _execution_communication: Final[ExecutionWorkerCommunication]
     _cloud_watch_logging_session: Final[CloudWatchLoggingSession | None]
-    _mock_test_case: Final[MockTestCase | None]
+    _local_mock_test_case: Final[LocalMockTestCase | None]
     _activity_store: dict[Arn, Activity]
 
     env: Environment | None
@@ -48,12 +48,12 @@ class ExecutionWorker:
         exec_comm: ExecutionWorkerCommunication,
         cloud_watch_logging_session: CloudWatchLoggingSession | None,
         activity_store: dict[Arn, Activity],
-        mock_test_case: MockTestCase | None = None,
+        local_mock_test_case: LocalMockTestCase | None = None,
     ):
         self._evaluation_details = evaluation_details
         self._execution_communication = exec_comm
         self._cloud_watch_logging_session = cloud_watch_logging_session
-        self._mock_test_case = mock_test_case
+        self._local_mock_test_case = local_mock_test_case
         self._activity_store = activity_store
         self.env = None
 
@@ -82,7 +82,7 @@ class ExecutionWorker:
             event_history_context=EventHistoryContext.of_program_start(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
-            mock_test_case=self._mock_test_case,
+            local_mock_test_case=self._local_mock_test_case,
         )
 
     def _execution_logic(self):

@@ -1,0 +1,40 @@
+{
+  "Comment": "BASE_MAP_STATE_MACHINE_CHOICE_FAIL",
+  "StartAt": "MapState",
+  "States": {
+    "State0": {
+      "Type": "Map",
+      "ItemsPath": "$.Values",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "HandleItem",
+        "States": {
+          "RouteItem": {
+            "QueryLanguage": "JSONata",
+            "Type": "Choice",
+            "Comment": "The first item should always fail.",
+            "Choices": [
+              {
+                "Next": "FailureHandler",
+                "Condition": "{% $$.Map.Item.Index = 0 %}",
+              },
+            ],
+            "Default": "SucceessHandler"
+          },
+          "FailureHandler": {
+            "Type": "Fail",
+            "Error": "SomeFailure",
+            "Cause": "This state machines raises a 'SomeFailure' failure."
+          },
+          "SucceessHandler": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

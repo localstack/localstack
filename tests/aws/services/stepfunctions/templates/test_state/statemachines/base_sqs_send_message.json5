@@ -1,0 +1,9 @@
+{
+  "Type": "Task",
+  "Resource": "arn:aws:states:::sqs:sendMessage",
+  "Parameters": {
+    "QueueUrl.$": "$.QueueUrl",
+    "MessageBody.$": "$.MessageBody"
+  },
+  "End": true
+}

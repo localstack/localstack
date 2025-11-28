@@ -1,0 +1,16 @@
+{
+  "Comment": "BASE_MULTI_STATE_MACHINE",
+  "QueryLanguage": "JSONata",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Next": "State1"
+    },
+    "State1": {
+      "Type": "Fail",
+      "Error": "SomeFailure",
+      "Cause": "This state machines raises a 'SomeFailure' failure.",
+    },
+  }
+}

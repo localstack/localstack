@@ -1,0 +1,34 @@
+{
+  "Comment": "BASE_MAP_STATE_CATCH",
+  "Type": "Map",
+  "QueryLanguage": "JSONata",
+  "Items": "{% $states.input.Values %}",
+  "ItemProcessor": {
+    "ProcessorConfig": {
+      "Mode": "DISTRIBUTED",
+      "ExecutionType": "STANDARD"
+    },
+    "StartAt": "TestState",
+    "States": {
+      "TestState": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:your-region:your-account-id:function:yourHelloWorldFunction",
+        "End": true
+      }
+    }
+  },
+  "Catch": [
+    {
+      "ErrorEquals": ["MockException"],
+      "Output": "{% $states %}",
+      "Next": "HandleMockError"
+    },
+    {
+      "ErrorEquals": ["States.ExceedToleratedFailureThreshold"],
+      "Output": "{% $states %}",
+      "Next": "HandleThreshold"
+    }
+  ],
+  "ToleratedFailureCount": 1,
+  "End": true
+}

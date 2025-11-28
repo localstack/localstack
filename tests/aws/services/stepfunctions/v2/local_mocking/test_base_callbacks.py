@@ -12,7 +12,7 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_state_machine_with_iam_role,
 )
 from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
+from tests.aws.services.stepfunctions.local_mocked_service_integrations.mocked_service_integrations import (
     MockedServiceIntegrationsLoader,
 )
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate

@@ -1,0 +1,12 @@
+{
+  "Comment": "BASE_FAIL_STATE_MACHINE",
+  "QueryLanguage": "JSONata",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Fail",
+      "Error": "SomeFailure",
+      "Cause": "This state machines raises a 'SomeFailure' failure.",
+    },
+  }
+}

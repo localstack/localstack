@@ -1,32 +1,86 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_base": {
-    "last_validated_date": "2023-08-20T13:26:20+00:00"
+    "last_validated_date": "2025-11-06T12:12:46+00:00",
+    "durations_in_seconds": {
+      "setup": 12.84,
+      "call": 21.85,
+      "teardown": 4.98,
+      "total": 39.67
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_error": {
-    "last_validated_date": "2023-08-20T14:15:34+00:00"
+    "last_validated_date": "2025-11-06T12:17:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 18.14,
+      "teardown": 41.19,
+      "total": 59.33
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_body_post[HelloWorld]": {
-    "last_validated_date": "2023-08-25T10:41:49+00:00"
+    "last_validated_date": "2025-11-06T12:14:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 19.32,
+      "teardown": 17.83,
+      "total": 37.15
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_body_post[None]": {
-    "last_validated_date": "2023-08-25T10:40:49+00:00"
+    "last_validated_date": "2025-11-06T12:13:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 19.38,
+      "teardown": 22.02,
+      "total": 41.4
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_body_post[]": {
-    "last_validated_date": "2023-08-25T10:41:13+00:00"
+    "last_validated_date": "2025-11-06T12:13:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 19.41,
+      "teardown": 10.31,
+      "total": 29.72
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_body_post[request_body3]": {
-    "last_validated_date": "2023-08-25T10:42:12+00:00"
+    "last_validated_date": "2025-11-06T12:15:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 19.36,
+      "teardown": 8.46,
+      "total": 27.82
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_headers[custom_header1]": {
-    "last_validated_date": "2024-10-06T14:50:48+00:00"
+    "last_validated_date": "2025-11-06T12:15:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 19.48,
+      "teardown": 18.67,
+      "total": 38.15
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_headers[custom_header2]": {
-    "last_validated_date": "2024-10-06T14:51:07+00:00"
+    "last_validated_date": "2025-11-06T12:16:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 19.23,
+      "teardown": 8.24,
+      "total": 27.47
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_headers[singleStringHeader]": {
     "last_validated_date": "2024-10-06T14:50:24+00:00"
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_query_parameters": {
-    "last_validated_date": "2023-08-20T13:18:59+00:00"
+    "last_validated_date": "2025-11-06T12:16:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 20.2,
+      "teardown": 6.06,
+      "total": 26.26
+    }
   }
 }

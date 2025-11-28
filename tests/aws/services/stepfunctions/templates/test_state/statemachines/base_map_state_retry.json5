@@ -1,0 +1,32 @@
+{
+  "Comment": "BASE_MAP_STATE_RETRY",
+  "Type": "Map",
+  "QueryLanguage": "JSONata",
+  "Items": "{% $states.input.Values %}",
+  "ItemProcessor": {
+    "ProcessorConfig": {
+      "Mode": "DISTRIBUTED",
+      "ExecutionType": "STANDARD"
+    },
+    "StartAt": "TestState",
+    "States": {
+      "TestState": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:your-region:your-account-id:function:yourHelloWorldFunction",
+        "End": true
+      }
+    }
+  },
+  "Retry": [
+    {
+      "ErrorEquals": ["MockException"],
+      "MaxAttempts": 3
+    },
+    {
+      "ErrorEquals": ["States.ExceedToleratedFailureThreshold"],
+      "MaxAttempts": 2
+    }
+  ],
+  "ToleratedFailureCount": 1,
+  "End": true
+}

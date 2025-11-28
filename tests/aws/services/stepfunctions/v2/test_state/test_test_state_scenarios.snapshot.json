@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:45:35",
+    "recorded-date": "14-11-2025, 16:38:49",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -15,7 +15,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_RESULT_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:45:49",
+    "recorded-date": "14-11-2025, 16:39:04",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -30,7 +30,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[IO_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:46:03",
+    "recorded-date": "14-11-2025, 16:39:19",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -55,7 +55,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[IO_RESULT_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:46:15",
+    "recorded-date": "14-11-2025, 16:39:34",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -79,7 +79,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_FAIL_STATE]": {
-    "recorded-date": "12-04-2024, 20:46:28",
+    "recorded-date": "14-11-2025, 16:39:49",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -93,7 +93,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_SUCCEED_STATE]": {
-    "recorded-date": "12-04-2024, 20:46:41",
+    "recorded-date": "14-11-2025, 16:40:09",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -108,7 +108,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_CHOICE_STATE]": {
-    "recorded-date": "12-04-2024, 20:46:53",
+    "recorded-date": "14-11-2025, 16:40:25",
     "recorded-content": {
       "test_case_response": {
         "nextState": "ValueInTwenties",
@@ -125,7 +125,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:47:06",
+    "recorded-date": "14-11-2025, 16:40:40",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -157,7 +157,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_RESULT_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:47:19",
+    "recorded-date": "14-11-2025, 16:40:54",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -186,7 +186,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[IO_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:47:31",
+    "recorded-date": "14-11-2025, 16:41:09",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -247,7 +247,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[IO_RESULT_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:47:44",
+    "recorded-date": "14-11-2025, 16:41:23",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -300,7 +300,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_FAIL_STATE]": {
-    "recorded-date": "12-04-2024, 20:47:56",
+    "recorded-date": "14-11-2025, 16:41:38",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -322,7 +322,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_SUCCEED_STATE]": {
-    "recorded-date": "12-04-2024, 20:48:10",
+    "recorded-date": "14-11-2025, 16:41:59",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -345,7 +345,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_CHOICE_STATE]": {
-    "recorded-date": "12-04-2024, 20:48:24",
+    "recorded-date": "14-11-2025, 16:42:14",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -372,7 +372,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:48:37",
+    "recorded-date": "14-11-2025, 16:42:30",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -404,7 +404,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_RESULT_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:48:50",
+    "recorded-date": "14-11-2025, 16:42:45",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -433,7 +433,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[IO_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:49:03",
+    "recorded-date": "14-11-2025, 16:43:00",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -494,7 +494,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[IO_RESULT_PASS_STATE]": {
-    "recorded-date": "12-04-2024, 20:49:22",
+    "recorded-date": "14-11-2025, 16:43:16",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -547,7 +547,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_FAIL_STATE]": {
-    "recorded-date": "12-04-2024, 20:49:31",
+    "recorded-date": "14-11-2025, 16:43:31",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -569,7 +569,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_SUCCEED_STATE]": {
-    "recorded-date": "12-04-2024, 20:49:44",
+    "recorded-date": "14-11-2025, 16:43:45",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -592,7 +592,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_CHOICE_STATE]": {
-    "recorded-date": "12-04-2024, 20:49:57",
+    "recorded-date": "14-11-2025, 16:44:00",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -619,7 +619,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[INFO]": {
-    "recorded-date": "12-04-2024, 20:50:22",
+    "recorded-date": "14-11-2025, 16:44:29",
     "recorded-content": {
       "test_case_response": {
         "output": "\"HelloWorld!\"",
@@ -632,7 +632,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[DEBUG]": {
-    "recorded-date": "12-04-2024, 20:50:37",
+    "recorded-date": "14-11-2025, 16:44:48",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -659,7 +659,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[TRACE]": {
-    "recorded-date": "12-04-2024, 20:50:52",
+    "recorded-date": "14-11-2025, 16:45:08",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -686,7 +686,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[INFO]": {
-    "recorded-date": "12-04-2024, 20:51:07",
+    "recorded-date": "14-11-2025, 16:45:27",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -703,9 +703,7 @@
               "Connection": [
                 "keep-alive"
               ],
-              "x-amzn-RequestId": [
-                "<uuid:1>"
-              ],
+              "x-amzn-RequestId": "x-amzn-RequestId",
               "Content-Length": [
                 "2"
               ],
@@ -722,13 +720,13 @@
               "Date": "date",
               "X-Amz-Executed-Version": "$LATEST",
               "x-amzn-Remapped-Content-Length": "0",
-              "x-amzn-RequestId": "<uuid:1>",
+              "x-amzn-RequestId": "x-amzn-RequestId",
               "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
             },
             "HttpStatusCode": 200
           },
           "SdkResponseMetadata": {
-            "RequestId": "<uuid:1>"
+            "RequestId": "RequestId"
           },
           "StatusCode": 200
         },
@@ -741,7 +739,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[DEBUG]": {
-    "recorded-date": "12-04-2024, 20:51:22",
+    "recorded-date": "14-11-2025, 16:45:46",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -767,9 +765,7 @@
                 "Connection": [
                   "keep-alive"
                 ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "Content-Length": [
                   "2"
                 ],
@@ -786,13 +782,13 @@
                 "Date": "date",
                 "X-Amz-Executed-Version": "$LATEST",
                 "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
               },
               "HttpStatusCode": 200
             },
             "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
+              "RequestId": "RequestId"
             },
             "StatusCode": 200
           },
@@ -810,9 +806,7 @@
                 "Connection": [
                   "keep-alive"
                 ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "Content-Length": [
                   "2"
                 ],
@@ -829,13 +823,13 @@
                 "Date": "date",
                 "X-Amz-Executed-Version": "$LATEST",
                 "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
               },
               "HttpStatusCode": 200
             },
             "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
+              "RequestId": "RequestId"
             },
             "StatusCode": 200
           },
@@ -857,9 +851,7 @@
                 "Connection": [
                   "keep-alive"
                 ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "Content-Length": [
                   "2"
                 ],
@@ -876,13 +868,13 @@
                 "Date": "date",
                 "X-Amz-Executed-Version": "$LATEST",
                 "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
               },
               "HttpStatusCode": 200
             },
             "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
+              "RequestId": "RequestId"
             },
             "StatusCode": 200
           }
@@ -901,9 +893,7 @@
               "Connection": [
                 "keep-alive"
               ],
-              "x-amzn-RequestId": [
-                "<uuid:1>"
-              ],
+              "x-amzn-RequestId": "x-amzn-RequestId",
               "Content-Length": [
                 "2"
               ],
@@ -920,13 +910,13 @@
               "Date": "date",
               "X-Amz-Executed-Version": "$LATEST",
               "x-amzn-Remapped-Content-Length": "0",
-              "x-amzn-RequestId": "<uuid:1>",
+              "x-amzn-RequestId": "x-amzn-RequestId",
               "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
             },
             "HttpStatusCode": 200
           },
           "SdkResponseMetadata": {
-            "RequestId": "<uuid:1>"
+            "RequestId": "RequestId"
           },
           "StatusCode": 200
         },
@@ -939,7 +929,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[TRACE]": {
-    "recorded-date": "12-04-2024, 20:51:37",
+    "recorded-date": "14-11-2025, 16:46:06",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -965,9 +955,7 @@
                 "Connection": [
                   "keep-alive"
                 ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "Content-Length": [
                   "2"
                 ],
@@ -984,13 +972,13 @@
                 "Date": "date",
                 "X-Amz-Executed-Version": "$LATEST",
                 "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
               },
               "HttpStatusCode": 200
             },
             "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
+              "RequestId": "RequestId"
             },
             "StatusCode": 200
           },
@@ -1008,9 +996,7 @@
                 "Connection": [
                   "keep-alive"
                 ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "Content-Length": [
                   "2"
                 ],
@@ -1027,13 +1013,13 @@
                 "Date": "date",
                 "X-Amz-Executed-Version": "$LATEST",
                 "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
               },
               "HttpStatusCode": 200
             },
             "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
+              "RequestId": "RequestId"
             },
             "StatusCode": 200
           },
@@ -1055,9 +1041,7 @@
                 "Connection": [
                   "keep-alive"
                 ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "Content-Length": [
                   "2"
                 ],
@@ -1074,13 +1058,13 @@
                 "Date": "date",
                 "X-Amz-Executed-Version": "$LATEST",
                 "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
+                "x-amzn-RequestId": "x-amzn-RequestId",
                 "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
               },
               "HttpStatusCode": 200
             },
             "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
+              "RequestId": "RequestId"
             },
             "StatusCode": 200
           }
@@ -1099,9 +1083,7 @@
               "Connection": [
                 "keep-alive"
               ],
-              "x-amzn-RequestId": [
-                "<uuid:1>"
-              ],
+              "x-amzn-RequestId": "x-amzn-RequestId",
               "Content-Length": [
                 "2"
               ],
@@ -1118,15 +1100,1076 @@
               "Date": "date",
               "X-Amz-Executed-Version": "$LATEST",
               "x-amzn-Remapped-Content-Length": "0",
-              "x-amzn-RequestId": "<uuid:1>",
+              "x-amzn-RequestId": "x-amzn-RequestId",
               "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
             },
             "HttpStatusCode": 200
           },
           "SdkResponseMetadata": {
-            "RequestId": "<uuid:1>"
+            "RequestId": "RequestId"
           },
           "StatusCode": 200
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect_trace[MAX_CONCURRENCY]": {
+    "recorded-date": "12-11-2025, 15:25:18",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "maxConcurrency": 1
+        },
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect_trace[TOLERATED_FAILURE_PERCENTAGE]": {
+    "recorded-date": "12-11-2025, 14:19:49",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailurePercentage": 1.0
+        },
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect_trace[TOLERATED_FAILURE_COUNT]": {
+    "recorded-date": "12-11-2025, 14:20:04",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_MAP_STATE]": {
+    "recorded-date": "13-11-2025, 11:02:39",
+    "recorded-content": {}
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect[MAX_CONCURRENCY-INFO]": {
+    "recorded-date": "14-11-2025, 16:46:24",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect[MAX_CONCURRENCY-DEBUG]": {
+    "recorded-date": "14-11-2025, 16:46:39",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "maxConcurrency": 1
+        },
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect[MAX_CONCURRENCY-TRACE]": {
+    "recorded-date": "14-11-2025, 16:46:54",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "maxConcurrency": 1
+        },
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect[TOLERATED_FAILURE_PERCENTAGE-INFO]": {
+    "recorded-date": "14-11-2025, 16:47:08",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect[TOLERATED_FAILURE_PERCENTAGE-DEBUG]": {
+    "recorded-date": "14-11-2025, 16:47:23",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailurePercentage": 1.0
+        },
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect[TOLERATED_FAILURE_PERCENTAGE-TRACE]": {
+    "recorded-date": "14-11-2025, 16:47:38",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailurePercentage": 1.0
+        },
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect[TOLERATED_FAILURE_COUNT-INFO]": {
+    "recorded-date": "14-11-2025, 16:47:54",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect[TOLERATED_FAILURE_COUNT-DEBUG]": {
+    "recorded-date": "14-11-2025, 16:48:09",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_map_state_inspect[TOLERATED_FAILURE_COUNT-TRACE]": {
+    "recorded-date": "14-11-2025, 16:48:24",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "output": {
+          "input": {
+            "Values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_task_catch_error[INFO]": {
+    "recorded-date": "21-11-2025, 13:59:35",
+    "recorded-content": {
+      "test_catch_mock_exception_response": {
+        "cause": "Mock the cause of the error.",
+        "error": "MockException",
+        "nextState": "HandleMockError",
+        "output": {
+          "input": {
+            "Value": "HelloWorld"
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Value": "HelloWorld"
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "errorOutput": {
+            "Error": "MockException",
+            "Cause": "Mock the cause of the error."
+          }
+        },
+        "status": "CAUGHT_ERROR",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "catch_task_failed_response": {
+        "cause": "The task failed.",
+        "error": "States.TaskFailed",
+        "nextState": "HandleThreshold",
+        "output": {
+          "input": {
+            "Value": "HelloWorld"
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:5>:<resource:4>",
+              "Input": {
+                "Value": "HelloWorld"
+              },
+              "Name": "<resource:4>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:5>",
+              "Name": "<resource:5>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "errorOutput": {
+            "Error": "States.TaskFailed",
+            "Cause": "The task failed."
+          }
+        },
+        "status": "CAUGHT_ERROR",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_task_catch_error[DEBUG]": {
+    "recorded-date": "21-11-2025, 13:59:50",
+    "recorded-content": {
+      "test_catch_mock_exception_response": {
+        "cause": "Mock the cause of the error.",
+        "error": "MockException",
+        "inspectionData": {
+          "afterArguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "errorDetails": {
+            "catchIndex": 0
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "nextState": "HandleMockError",
+        "output": {
+          "input": {
+            "Value": "HelloWorld"
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Value": "HelloWorld"
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "errorOutput": {
+            "Error": "MockException",
+            "Cause": "Mock the cause of the error."
+          }
+        },
+        "status": "CAUGHT_ERROR",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "catch_task_failed_response": {
+        "cause": "The task failed.",
+        "error": "States.TaskFailed",
+        "inspectionData": {
+          "afterArguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "errorDetails": {
+            "catchIndex": 1
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "nextState": "HandleThreshold",
+        "output": {
+          "input": {
+            "Value": "HelloWorld"
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:5>:<resource:4>",
+              "Input": {
+                "Value": "HelloWorld"
+              },
+              "Name": "<resource:4>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:5>",
+              "Name": "<resource:5>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "errorOutput": {
+            "Error": "States.TaskFailed",
+            "Cause": "The task failed."
+          }
+        },
+        "status": "CAUGHT_ERROR",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_task_catch_error[TRACE]": {
+    "recorded-date": "21-11-2025, 14:00:05",
+    "recorded-content": {
+      "test_catch_mock_exception_response": {
+        "cause": "Mock the cause of the error.",
+        "error": "MockException",
+        "inspectionData": {
+          "afterArguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "errorDetails": {
+            "catchIndex": 0
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "nextState": "HandleMockError",
+        "output": {
+          "input": {
+            "Value": "HelloWorld"
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Value": "HelloWorld"
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "errorOutput": {
+            "Error": "MockException",
+            "Cause": "Mock the cause of the error."
+          }
+        },
+        "status": "CAUGHT_ERROR",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "catch_task_failed_response": {
+        "cause": "The task failed.",
+        "error": "States.TaskFailed",
+        "inspectionData": {
+          "afterArguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "errorDetails": {
+            "catchIndex": 1
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "nextState": "HandleThreshold",
+        "output": {
+          "input": {
+            "Value": "HelloWorld"
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:5>:<resource:4>",
+              "Input": {
+                "Value": "HelloWorld"
+              },
+              "Name": "<resource:4>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:5>",
+              "Name": "<resource:5>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "errorOutput": {
+            "Error": "States.TaskFailed",
+            "Cause": "The task failed."
+          }
+        },
+        "status": "CAUGHT_ERROR",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_localstack_blogpost_scenario": {
+    "recorded-date": "28-11-2025, 15:55:10",
+    "recorded-content": {
+      "small_purchase_approval_required_response": {
+        "nextState": "Purchase Approved",
+        "output": {
+          "cost": 9
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "large_purchase_approval_required_response": {
+        "nextState": "Ask for Approval",
+        "output": {
+          "cost": 10
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "large_purchase_ask_for_approval_response": {
+        "nextState": "Check Approval",
+        "output": {
+          "approval": true,
+          "approval_code": "2387462",
+          "approved_by": "Mary"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "check_approval_granted_response": {
+        "nextState": "Purchase Approved",
+        "output": {
+          "approval": true,
+          "approval_code": "2387462",
+          "approved_by": "Mary"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "check_approval_denied_response": {
+        "nextState": "Not Approved",
+        "output": {
+          "approval": false
         },
         "status": "SUCCEEDED",
         "ResponseMetadata": {

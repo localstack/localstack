@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_list_secrets": {
-    "recorded-date": "22-06-2023, 13:59:49",
+    "recorded-date": "06-11-2025, 12:17:53",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -142,7 +142,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_get_item": {
-    "recorded-date": "16-05-2023, 22:27:38",
+    "recorded-date": "06-11-2025, 12:18:15",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -341,11 +341,11 @@
             "taskSucceededEventDetails": {
               "output": {
                 "Item": {
-                  "data": {
-                    "S": "HelloWorld"
-                  },
                   "id": {
                     "S": "id1"
+                  },
+                  "data": {
+                    "S": "HelloWorld"
                   }
                 }
               },
@@ -381,11 +381,11 @@
                 "putItemOutput": {},
                 "getItemOutput": {
                   "Item": {
-                    "data": {
-                      "S": "HelloWorld"
-                    },
                     "id": {
                       "S": "id1"
+                    },
+                    "data": {
+                      "S": "HelloWorld"
                     }
                   }
                 }
@@ -417,11 +417,11 @@
                 "putItemOutput": {},
                 "getItemOutput": {
                   "Item": {
-                    "data": {
-                      "S": "HelloWorld"
-                    },
                     "id": {
                       "S": "id1"
+                    },
+                    "data": {
+                      "S": "HelloWorld"
                     }
                   }
                 }
@@ -444,7 +444,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_delete_item": {
-    "recorded-date": "16-05-2023, 22:28:05",
+    "recorded-date": "06-11-2025, 12:18:39",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -719,7 +719,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_update_get_item": {
-    "recorded-date": "16-05-2023, 22:28:28",
+    "recorded-date": "06-11-2025, 12:19:01",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1220,7 +1220,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_start_execution": {
-    "recorded-date": "18-12-2023, 14:22:59",
+    "recorded-date": "06-11-2025, 12:20:01",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1341,7 +1341,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_start_execution_implicit_json_serialisation": {
-    "recorded-date": "05-02-2024, 11:29:16",
+    "recorded-date": "06-11-2025, 12:20:37",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1489,7 +1489,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_send_task_outcome_with_no_such_token[state_machine_template0]": {
-    "recorded-date": "10-04-2024, 18:55:26",
+    "recorded-date": "06-11-2025, 12:19:18",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1552,7 +1552,7 @@
             "id": 5,
             "previousEventId": 4,
             "taskFailedEventDetails": {
-              "cause": "Invalid Token: 'Invalid token' (Service: Sfn, Status Code: 400, Request ID: <request_id>)",
+              "cause": "Invalid Token: 'Invalid token' (Service: Sfn, Status Code: 400, Request ID: <request_id>) (SDK Attempt Count: 1)",
               "error": "Sfn.InvalidTokenException",
               "resource": "sendTaskSuccess",
               "resourceType": "aws-sdk:sfn"
@@ -1562,7 +1562,7 @@
           },
           {
             "executionFailedEventDetails": {
-              "cause": "Invalid Token: 'Invalid token' (Service: Sfn, Status Code: 400, Request ID: <request_id>)",
+              "cause": "Invalid Token: 'Invalid token' (Service: Sfn, Status Code: 400, Request ID: <request_id>) (SDK Attempt Count: 1)",
               "error": "Sfn.InvalidTokenException"
             },
             "id": 6,
@@ -1579,7 +1579,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_send_task_outcome_with_no_such_token[state_machine_template1]": {
-    "recorded-date": "10-04-2024, 18:55:40",
+    "recorded-date": "06-11-2025, 12:19:33",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1641,7 +1641,7 @@
             "id": 5,
             "previousEventId": 4,
             "taskFailedEventDetails": {
-              "cause": "Invalid Token: 'Invalid token' (Service: Sfn, Status Code: 400, Request ID: <request_id>)",
+              "cause": "Invalid Token: 'Invalid token' (Service: Sfn, Status Code: 400, Request ID: <request_id>) (SDK Attempt Count: 1)",
               "error": "Sfn.InvalidTokenException",
               "resource": "sendTaskFailure",
               "resourceType": "aws-sdk:sfn"
@@ -1651,7 +1651,7 @@
           },
           {
             "executionFailedEventDetails": {
-              "cause": "Invalid Token: 'Invalid token' (Service: Sfn, Status Code: 400, Request ID: <request_id>)",
+              "cause": "Invalid Token: 'Invalid token' (Service: Sfn, Status Code: 400, Request ID: <request_id>) (SDK Attempt Count: 1)",
               "error": "Sfn.InvalidTokenException"
             },
             "id": 6,
@@ -1668,7 +1668,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[empty_str]": {
-    "recorded-date": "27-01-2025, 10:17:44",
+    "recorded-date": "06-11-2025, 12:21:01",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1804,7 +1804,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[str]": {
-    "recorded-date": "27-01-2025, 10:18:02",
+    "recorded-date": "06-11-2025, 12:21:21",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1940,7 +1940,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[empty_binary]": {
-    "recorded-date": "27-01-2025, 10:18:18",
+    "recorded-date": "06-11-2025, 12:21:40",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2076,7 +2076,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[binary]": {
-    "recorded-date": "27-01-2025, 10:18:40",
+    "recorded-date": "06-11-2025, 12:22:00",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2212,7 +2212,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[bytearray]": {
-    "recorded-date": "27-01-2025, 10:18:56",
+    "recorded-date": "06-11-2025, 12:22:19",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2348,7 +2348,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[str]": {
-    "recorded-date": "27-01-2025, 10:29:12",
+    "recorded-date": "06-11-2025, 12:22:38",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2491,7 +2491,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[dict]": {
-    "recorded-date": "27-01-2025, 10:29:28",
+    "recorded-date": "06-11-2025, 12:22:57",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2642,7 +2642,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[list]": {
-    "recorded-date": "27-01-2025, 10:29:44",
+    "recorded-date": "06-11-2025, 12:23:16",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2794,7 +2794,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[bool]": {
-    "recorded-date": "27-01-2025, 10:30:01",
+    "recorded-date": "06-11-2025, 12:23:35",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2937,7 +2937,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[num]": {
-    "recorded-date": "27-01-2025, 10:30:17",
+    "recorded-date": "06-11-2025, 12:23:54",
     "recorded-content": {
       "get_execution_history": {
         "events": [

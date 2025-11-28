@@ -1,0 +1,63 @@
+{
+  "Comment": "Cost approval workflow",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Approval Required",
+  "States": {
+    "Approval Required": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.cost < 10 %}",
+          "Next": "Purchase Approved"
+        }
+      ],
+      "Default": "Ask for Approval"
+    },
+    "Purchase Approved": {
+      "Type": "Succeed"
+    },
+    "Ask for Approval": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::apigateway:invoke",
+      "Arguments": {
+        "Method": "POST",
+        "ApiEndpoint": "__api_gateway_endpoint__",
+        "Path": "/approval",
+        "RequestBody": {
+          "cost": "{% $states.input.cost %}",
+          "dept_id": "12345678"
+        },
+        "AuthType": "NO_AUTH"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "BackoffRate": 2,
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+        }
+      ],
+      "Next": "Check Approval",
+      "Output": {
+        "approval": "{% $states.result.approval %}",
+        "approval_code": "2387462",
+        "approved_by": "Mary"
+      }
+    },
+    "Check Approval": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Next": "Purchase Approved",
+          "Condition": "{% $states.input.approval %}"
+        }
+      ],
+      "Default": "Not Approved"
+    },
+    "Not Approved": {
+      "Type": "Fail"
+    }
+  },
+}

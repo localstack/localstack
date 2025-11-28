@@ -17,7 +17,7 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_mocked_sync_execution,
 )
 from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
+from tests.aws.services.stepfunctions.local_mocked_service_integrations.mocked_service_integrations import (
     MockedServiceIntegrationsLoader,
 )
 from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
@@ -323,8 +323,8 @@ class TestBaseScenarios:
         if is_aws_cloud():
             queue_name = f"queue-{short_uid()}"
             queue_url = sqs_create_queue(QueueName=queue_name)
-            sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs-queue-name"))
             sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs-queue-url"))
+            sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs-queue-name"))
 
             exec_input = json.dumps({"QueueUrl": queue_url, "MessageBody": message_body})
             create_and_record_execution(
@@ -658,6 +658,20 @@ class TestBaseScenarios:
         function_name_branch2 = f"lambda_branch2_{short_uid()}"
         sfn_snapshot.add_transformer(
             RegexTransformer(function_name_branch2, "function_name_branch2")
+        )
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                "$..stateExitedEventDetails.output",
+                "stateExitedEventDetails.output",
+                replace_reference=False,
+            )
+        )
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                "$..executionSucceededEventDetails.output",
+                "executionSucceededEventDetails.output",
+                replace_reference=False,
+            )
         )
 
         exec_input = json.dumps(
