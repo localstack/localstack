@@ -1,0 +1,14 @@
+{
+    "Comment": "IO_SQS_SERVICE_TASK_WAIT",
+    "Type": "Task",
+    "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+    "Parameters": {
+        "QueueUrl": "https://sqs.us-east-2.amazonaws.com/123456789012/myQueue",
+        "MessageBody": {
+            "Message": "Hello from Step Functions!",
+            "TaskToken.$": "$$.Task.Token"
+        }
+    },
+    "ResultPath": "$.SQS",
+    "Next": "NEXT_STATE"
+}

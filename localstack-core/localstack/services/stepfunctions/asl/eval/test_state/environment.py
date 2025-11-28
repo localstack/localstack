@@ -61,6 +61,9 @@ class TestStateEnvironment(Environment):
         env: Self,
         event_history_frame_cache: EventHistoryContext | None = None,
     ) -> Self:
+        if (mocked_context := env.mock.get_context()) is not None:
+            env.states.context_object.context_object_data = mocked_context
+
         return cls.as_inner_frame_of(
             env=env,
             variable_store=env.variable_store,

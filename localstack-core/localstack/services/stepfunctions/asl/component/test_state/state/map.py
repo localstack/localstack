@@ -1,6 +1,9 @@
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.common.query_language import (
+    QueryLanguageMode,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.state_map import (
     StateMap,
 )
@@ -11,7 +14,6 @@ from localstack.services.stepfunctions.asl.component.test_state.state.execution 
     MockedStateExecution,
 )
 from localstack.services.stepfunctions.asl.eval.test_state.environment import TestStateEnvironment
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.test_state.test_state_mock import (
     TestStateResponseThrow,
 )
@@ -19,25 +21,11 @@ from localstack.services.stepfunctions.backend.test_state.test_state_mock import
 
 class MockedStateMap(MockedBaseState[StateMap]):
     def add_inspection_data(self, env: TestStateEnvironment):
-        state = self._wrapped
-
         if tolerated_failure_percentage := env.inspection_data.get("toleratedFailurePercentage"):
             env.inspection_data["toleratedFailurePercentage"] = float(tolerated_failure_percentage)
 
         if tolerated_failure_count := env.inspection_data.get("toleratedFailureCount"):
             env.inspection_data["toleratedFailureCount"] = int(tolerated_failure_count)
-
-        if state.input_path:
-            state.input_path._eval_body(env)
-            env.inspection_data["afterInputPath"] = env.stack.pop()
-
-        if state.items_path:
-            state.items_path._eval_body(env)
-            env.inspection_data["afterItemsPath"] = to_json_str(env.stack.pop())
-
-        if state.item_selector:
-            state.item_selector._eval_body(env)
-            env.inspection_data["afterItemSelector"] = env.stack.pop()
 
     @classmethod
     def before_mock(cls, env: TestStateEnvironment):
@@ -62,6 +50,10 @@ class MockedStateMap(MockedBaseState[StateMap]):
     def _apply_patches(self):
         self._wrapped = MockedStateExecution.wrap(self._wrapped)
 
+        if self._wrapped.query_language.query_language_mode == QueryLanguageMode.JSONPath:
+            self._eval_with_inspect(self._wrapped.items_path, "afterInputPath")
+            self._eval_with_inspect(self._wrapped.item_selector, "afterItemsSelector")
+
         original_eval_max_concurrency = self._wrapped.max_concurrency_decl._eval_max_concurrency
         original_iteration_component_eval_body = self._wrapped.iteration_component._eval_body
         original_eval_execution = self._wrapped._eval_execution
@@ -74,9 +66,9 @@ class MockedStateMap(MockedBaseState[StateMap]):
             env.inspection_data["maxConcurrency"] = original_eval_max_concurrency(env)
             return 1
 
-        self._wrapped._eval_execution = self.wrap_with_inspection_data(
+        self._wrapped._eval_execution = self.wrap_with_post_return(
             method=original_eval_execution,
-            add_inspection_data=self.add_inspection_data,
+            post_return_fn=self.add_inspection_data,
         )
 
         self._wrapped.max_concurrency_decl._eval_max_concurrency = mock_max_concurrency

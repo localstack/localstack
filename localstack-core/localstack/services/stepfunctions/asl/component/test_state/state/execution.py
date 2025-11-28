@@ -7,6 +7,9 @@ from localstack.services.stepfunctions.asl.component.common.catch.catcher_outcom
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
+from localstack.services.stepfunctions.asl.component.common.query_language import (
+    QueryLanguageMode,
+)
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_decl import RetrierDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_outcome import (
     RetrierOutcome,
@@ -19,10 +22,19 @@ from localstack.services.stepfunctions.asl.component.test_state.state.base_mock 
     MockedBaseState,
 )
 from localstack.services.stepfunctions.asl.eval.test_state.environment import TestStateEnvironment
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
 class MockedStateExecution(MockedBaseState[ExecutionState]):
     def add_inspection_data(self, env: TestStateEnvironment):
+        if self._wrapped.query_language.query_language_mode == QueryLanguageMode.JSONPath:
+            if "afterResultSelector" not in env.inspection_data:
+                # HACK: A DistributedItemProcessorEvalInput is added to the stack and never popped off
+                # during an error case. So we need to check the inspected value is correct before
+                # adding it to our inspectionData.
+                if isinstance(env.stack[-1], (dict, str, int, float)):
+                    env.inspection_data["afterResultSelector"] = to_json_str(env.stack[-1])
+
         if catch := self._wrapped.catch:
             for ind, catcher in enumerate(catch.catchers):
                 original_fn = catcher._eval_body
@@ -36,7 +48,13 @@ class MockedStateExecution(MockedBaseState[ExecutionState]):
     def _apply_patches(self):
         if not isinstance(self._wrapped, ExecutionState):
             raise ValueError("Can only apply MockedStateExecution patches to an ExecutionState")
+        state = self._wrapped
 
+        if state.query_language.query_language_mode == QueryLanguageMode.JSONPath:
+            self._eval_with_inspect(self._wrapped.input_path, "afterInputPath")
+            self._eval_with_inspect(self._wrapped.result_path, "afterResultPath")
+
+        self._eval_with_inspect(self._wrapped.result_selector, "afterResultSelector")
         original_eval_execution = self._wrapped._eval_execution
 
         if self._wrapped.catch:
@@ -47,9 +65,9 @@ class MockedStateExecution(MockedBaseState[ExecutionState]):
             original_fn = self._wrapped._handle_retry
             self._wrapped._handle_retry = partial(self._handle_retry, original_fn)
 
-        self._wrapped._eval_execution = self.wrap_with_inspection_data(
+        self._wrapped._eval_execution = self.wrap_with_post_return(
             method=original_eval_execution,
-            add_inspection_data=self.add_inspection_data,
+            post_return_fn=self.add_inspection_data,
         )
 
     @staticmethod
