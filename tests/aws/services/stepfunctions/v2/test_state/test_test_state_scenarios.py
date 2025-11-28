@@ -367,3 +367,30 @@ class TestStateCaseScenarios:
         sfn_snapshot.match(
             "large_purchase_ask_for_approval_response", large_purchase_ask_for_approval_response
         )
+
+        # Step 3 - Testing the Check Approval state
+        # 3.1 Approval granted
+
+        check_approval_granted_input = json.dumps(
+            {"approval": True, "approval_code": "2387462", "approved_by": "Mary"}
+        )
+
+        check_approval_granted_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=check_approval_granted_input,
+            stateName="Check Approval",
+        )
+        sfn_snapshot.match("check_approval_granted_response", check_approval_granted_response)
+
+        # 3.2 Approval denied
+
+        check_approval_denied_input = json.dumps({"approval": False})
+
+        check_approval_denied_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=check_approval_denied_input,
+            stateName="Check Approval",
+        )
+        sfn_snapshot.match("check_approval_denied_response", check_approval_denied_response)

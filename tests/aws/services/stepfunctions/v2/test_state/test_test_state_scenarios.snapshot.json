@@ -2116,7 +2116,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_localstack_blogpost_scenario": {
-    "recorded-date": "28-11-2025, 15:27:44",
+    "recorded-date": "28-11-2025, 15:55:10",
     "recorded-content": {
       "small_purchase_approval_required_response": {
         "nextState": "Purchase Approved",
@@ -2146,6 +2146,30 @@
           "approval": true,
           "approval_code": "2387462",
           "approved_by": "Mary"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "check_approval_granted_response": {
+        "nextState": "Purchase Approved",
+        "output": {
+          "approval": true,
+          "approval_code": "2387462",
+          "approved_by": "Mary"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "check_approval_denied_response": {
+        "nextState": "Not Approved",
+        "output": {
+          "approval": false
         },
         "status": "SUCCEEDED",
         "ResponseMetadata": {
