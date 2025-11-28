@@ -10,6 +10,7 @@ from localstack.aws.api.acm import (
     RequestCertificateResponse,
 )
 from localstack.services import moto
+from localstack.state import StateVisitor
 from localstack.utils.patch import patch
 
 # reduce the validation wait time from 60 (default) to 10 seconds
@@ -100,6 +101,9 @@ def describe(describe_orig, self):
 
 
 class AcmProvider(AcmApi):
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(acm_models.acm_backends)
+
     @handler("RequestCertificate", expand=False)
     def request_certificate(
         self,

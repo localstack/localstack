@@ -37,6 +37,7 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     table_name_from_stream_arn,
 )
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.collections import select_from_typed_dict
 
 LOG = logging.getLogger(__name__)
@@ -56,6 +57,11 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     def __init__(self):
         self.shard_to_region = {}
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        from localstack.services.dynamodbstreams.models import dynamodbstreams_stores
+
+        visitor.visit(dynamodbstreams_stores)
 
     def describe_stream(
         self,

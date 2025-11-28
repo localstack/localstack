@@ -138,6 +138,7 @@ from localstack.services.kms.utils import (
     validate_alias_name,
 )
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.aws.arns import get_partition, kms_alias_arn, parse_arn
 from localstack.utils.collections import PaginatedList
 from localstack.utils.common import select_attributes
@@ -200,6 +201,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     - Verify
     - VerifyMac
     """
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(kms_stores)
 
     #
     # Helpers

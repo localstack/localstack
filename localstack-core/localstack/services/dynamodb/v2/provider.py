@@ -392,6 +392,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(dynamodb_stores)
+        # FIXME: DDB v2 does not depend on dynamodbstreams_stores as DynamoDB Local holds all the state
         visitor.visit(dynamodbstreams_stores)
         visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, self.service)))
 

@@ -94,6 +94,7 @@ from localstack.services.firehose.mappers import (
     convert_source_config_to_desc,
 )
 from localstack.services.firehose.models import FirehoseStore, firehose_stores
+from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
     extract_region_from_arn,
@@ -251,7 +252,11 @@ class FirehoseProvider(FirehoseApi):
 
     def __init__(self) -> None:
         super().__init__()
+        # TODO: stop/restart the kinesis listeners when stopping the service / reset the state / restore the state
         self.kinesis_listeners = {}
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(firehose_stores)
 
     @staticmethod
     def get_store(account_id: str, region_name: str) -> FirehoseStore:

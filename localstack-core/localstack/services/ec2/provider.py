@@ -94,6 +94,7 @@ from localstack.services.ec2.models import get_ec2_backend
 from localstack.services.ec2.patches import apply_patches
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.patch import patch
 from localstack.utils.strings import first_char_to_upper, long_uid, short_uid
 
@@ -106,6 +107,11 @@ ADDITIONAL_SUBNET_ATTRS = ("private_dns_name_options_on_launch", "enable_dns64")
 class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
     def on_after_init(self):
         apply_patches()
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        from moto.ec2.models import ec2_backends
+
+        visitor.visit(ec2_backends)
 
     @handler("DescribeAvailabilityZones", expand=False)
     def describe_availability_zones(

@@ -75,6 +75,7 @@ from localstack.services.iam.resources.policy_simulator import (
 )
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
 from localstack.services.moto import call_moto
+from localstack.state import StateVisitor
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 
 LOG = logging.getLogger(__name__)
@@ -109,6 +110,9 @@ class IamProvider(IamApi):
     def __init__(self):
         apply_iam_patches()
         self.policy_simulator = BasicIAMPolicySimulator()
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(iam_backends)
 
     @handler("CreateRole", expand=False)
     def create_role(

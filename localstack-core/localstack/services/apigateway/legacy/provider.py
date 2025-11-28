@@ -118,7 +118,11 @@ from localstack.services.apigateway.helpers import (
 from localstack.services.apigateway.legacy.helpers import multi_value_dict_for_list
 from localstack.services.apigateway.legacy.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.legacy.router_asf import ApigatewayRouter, to_invocation_context
-from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
+from localstack.services.apigateway.models import (
+    ApiGatewayStore,
+    RestApiContainer,
+    apigateway_stores,
+)
 from localstack.services.apigateway.next_gen.execute_api.router import (
     ApiGatewayRouter as ApiGatewayRouterNextGen,
 )
@@ -126,6 +130,7 @@ from localstack.services.apigateway.patches import apply_patches
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.aws.arns import InvalidArnException, get_partition, parse_arn
 from localstack.utils.collections import (
     DelSafeDict,
@@ -191,6 +196,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def on_after_init(self):
         apply_patches()
         self.router.register_routes()
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        from moto.apigateway import apigateway_backends
+
+        visitor.visit(apigateway_backends)
+        visitor.visit(apigateway_stores)
 
     @handler("TestInvokeMethod", expand=False)
     def test_invoke_method(
