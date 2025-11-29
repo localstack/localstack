@@ -690,9 +690,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     raise InvalidParameterException(
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
                     )
-                elif not platform_endpoint.platform_endpoint["Attributes"].get(
-                    "Enabled"
-                ):  # TODO: double check enabled attribute
+                elif (
+                    not platform_endpoint.platform_endpoint["Attributes"]
+                    .get("Enabled", "false")
+                    .lower()
+                    == "true"
+                ):
                     raise EndpointDisabledException("Endpoint is disabled")
             else:
                 topic = self._get_topic(topic_or_target_arn, context)
@@ -1162,7 +1165,6 @@ def _default_attributes(topic: Topic, context: RequestContext) -> TopicAttribute
             {
                 "ContentBasedDeduplication": "false",
                 "FifoTopic": "false",
-                "SignatureVersion": "2",
             }
         )
     return default_attributes

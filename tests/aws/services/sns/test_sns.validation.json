@@ -212,6 +212,15 @@
       "total": 0.3
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpoint::test_publish_disabled_endpoint": {
+    "last_validated_date": "2025-11-27T08:34:37+00:00",
+    "durations_in_seconds": {
+      "setup": 1.83,
+      "call": 48.48,
+      "teardown": 1.6,
+      "total": 51.91
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint": {
     "last_validated_date": "2025-10-31T21:26:47+00:00",
     "durations_in_seconds": {
@@ -1008,10 +1017,22 @@
     "last_validated_date": "2025-01-24T18:51:32+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_publish_lambda_verify_signature[1]": {
-    "last_validated_date": "2024-01-04T18:31:41+00:00"
+    "last_validated_date": "2025-11-25T08:38:27+00:00",
+    "durations_in_seconds": {
+      "setup": 13.07,
+      "call": 16.84,
+      "teardown": 2.04,
+      "total": 31.95
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_publish_lambda_verify_signature[2]": {
-    "last_validated_date": "2024-01-04T18:33:46+00:00"
+    "last_validated_date": "2025-11-25T08:38:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.87,
+      "teardown": 2.97,
+      "total": 18.84
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_python_lambda_subscribe_sns_topic": {
     "last_validated_date": "2025-10-06T11:08:49+00:00",
@@ -1134,10 +1155,22 @@
     "last_validated_date": "2023-11-09T20:10:27+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_fifo_messages_to_dlq[False]": {
-    "last_validated_date": "2023-08-24T21:37:59+00:00"
+    "last_validated_date": "2025-11-24T12:29:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 5.28,
+      "teardown": 1.03,
+      "total": 6.31
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_fifo_messages_to_dlq[True]": {
-    "last_validated_date": "2023-08-24T21:37:54+00:00"
+    "last_validated_date": "2025-11-24T12:29:49+00:00",
+    "durations_in_seconds": {
+      "setup": 1.07,
+      "call": 7.89,
+      "teardown": 1.13,
+      "total": 10.09
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_to_fifo_topic_deduplication_on_topic_level": {
     "last_validated_date": "2023-11-09T20:07:36+00:00"

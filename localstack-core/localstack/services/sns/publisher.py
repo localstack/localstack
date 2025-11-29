@@ -255,9 +255,11 @@ class LambdaTopicPublisher(TopicPublisher):
             "UnsubscribeUrl": unsubscribe_url,
             "MessageAttributes": message_attributes,
         }
-
+        # TODO: remove v1 "signature_version" access once v1 is retired
         signature_version = (
-            topic_attributes.get("signature_version", "1") if topic_attributes else "1"
+            topic_attributes.get("signature_version", topic_attributes.get("SignatureVersion", "1"))
+            if topic_attributes
+            else "1"
         )
         canonical_string = compute_canonical_string(event_payload, message_context.type)
         signature = get_message_signature(canonical_string, signature_version=signature_version)
@@ -559,7 +561,10 @@ class HttpTopicPublisher(TopicPublisher):
             ):
                 return sub_content_type
 
-        if json_topic_delivery_policy := topic_attributes.get("delivery_policy"):
+        # TODO: remove lower case access once legacy v1 provider is removed
+        if json_topic_delivery_policy := topic_attributes.get(
+            "delivery_policy", topic_attributes.get("DeliveryPolicy")
+        ):
             topic_delivery_policy = json.loads(json_topic_delivery_policy)
             if not (
                 topic_content_type := topic_delivery_policy.get(subscriber["Protocol"].lower())
