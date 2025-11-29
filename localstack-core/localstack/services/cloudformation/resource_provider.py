@@ -523,7 +523,10 @@ class ResourceProviderExecutor:
 
         match change_type:
             case "Add":
-                return resource_provider.create(request)
+                # TODO: propagate request token in other methods
+                event = resource_provider.create(request)
+                event.request_token = request.request_token
+                return event
             case "Dynamic" | "Modify":
                 try:
                     return resource_provider.update(request)
