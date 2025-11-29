@@ -136,7 +136,11 @@ class SsmProvider(SsmApi, ABC):
             moto_res = call_moto_with_request(context, request)
         else:
             moto_res = call_moto(context)
-        SsmProvider._notify_event_subscribers(context.account_id, context.region, nname, "Create")
+
+        version = moto_res.get("Version")
+        operation = "Update" if version and version > 1 else "Create"
+
+        SsmProvider._notify_event_subscribers(context.account_id, context.region, nname, operation)
         return PutParameterResult(**moto_res)
 
     def get_parameter(
