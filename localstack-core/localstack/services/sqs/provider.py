@@ -1488,7 +1488,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self, context: RequestContext, queue_url: String, **kwargs
     ) -> ListQueueTagsResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        return ListQueueTagsResult(Tags=(queue.tags if queue.tags else None))
+        tagging_store = get_tagging_store(context.account_id, context.region)
+        tags = tagging_store.get_tags(queue.arn)
+        return ListQueueTagsResult(Tags=tags if len(tags) else None)
 
     def untag_queue(
         self, context: RequestContext, queue_url: String, tag_keys: TagKeyList, **kwargs
