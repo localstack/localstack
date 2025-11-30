@@ -32,7 +32,9 @@ class TaggingPlugin(Plugin):
         """
         pass
 
-    def untag_resource(self, context: RequestContext, resource_arn: str, tag_keys: list[str]) -> None:
+    def untag_resource(
+        self, context: RequestContext, resource_arn: str, tag_keys: list[str]
+    ) -> None:
         """
         Untags a resource using the service's built in un-tagging functionality.
 
