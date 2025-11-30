@@ -25,7 +25,6 @@ class SQSTaggingPlugin(TaggingPlugin):
         )
 
     def tag_resource(self, context: RequestContext, resource_arn: str, tags: dict[str, str]) -> None:
-        # Callback to return ARN instead?
         client = self._get_sqs_client(context)
         queue_url = self._queue_url_from_arn(resource_arn)
         client.tag_queue(QueueUrl=queue_url, Tags=tags)

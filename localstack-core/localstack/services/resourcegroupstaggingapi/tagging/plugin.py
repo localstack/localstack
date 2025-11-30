@@ -9,15 +9,6 @@ LOG = logging.getLogger(__name__)
 
 TAGGING_PLUGIN_NAMESPACE = "localstack.service.tagging.plugins"
 
-"""
-This IAM plugin exposes an API to query IAM relevant data from a specific service with a common interface.
-IAM seems to be integrated into the services quite heavily, and IAM evaluation can behave quite differently for
-different services.
-
-It also provides access to the tags of resources by their arn to allow Attribute Based Access Control (ABAC)
-https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction_attribute-based-access-control.html
-"""
-
 
 class TaggingPlugin(Plugin):
     """
