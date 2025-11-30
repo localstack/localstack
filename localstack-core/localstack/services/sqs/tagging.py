@@ -31,3 +31,8 @@ class SQSTaggingPlugin(TaggingPlugin):
         client = self._get_sqs_client(context)
         queue_url = self._queue_url_from_arn(resource_arn)
         client.tag_queue(QueueUrl=queue_url, Tags=tags)
+
+    def untag_resource(self, context: RequestContext, resource_arn: str, tag_keys: list[str]):
+        client = self._get_sqs_client(context)
+        queue_url = self._queue_url_from_arn(resource_arn)
+        client.untag_queue(QueueUrl=queue_url, TagKeys=tag_keys)

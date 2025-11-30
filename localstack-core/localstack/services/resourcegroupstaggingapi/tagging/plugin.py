@@ -32,13 +32,13 @@ class TaggingPlugin(Plugin):
         """
         pass
 
-    def untag_resource(self, context: RequestContext, resource_arn: str, tag_key: str) -> None:
+    def untag_resource(self, context: RequestContext, resource_arn: str, tag_keys: list[str]) -> None:
         """
         Untags a resource using the service's built in un-tagging functionality.
 
         :param context: The context of the original un-tagging operation. This is to enforce IAM restrictions.
         :param resource_arn: The ARN of the resource which is being untagged.
-        :param tag_key: The tag key to remove from the resource's tags.
+        :param tag_keys: The tag keys to remove from the resource's tags.
         :return: None
         """
         pass
