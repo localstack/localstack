@@ -33,7 +33,11 @@ from localstack.services.stores import (
     LocalAttribute,
 )
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
-from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
+from localstack.testing.aws.util import (
+    get_lambda_logs,
+    is_aws_cloud,
+    wait_for_user,
+)
 from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
@@ -2366,13 +2370,14 @@ def create_role_with_policy(create_role, create_policy_generated_document, aws_c
 
 
 @pytest.fixture
-def create_user_with_policy(create_policy_generated_document, create_user, aws_client):
-    def _create_user_with_policy(effect, actions, resource=None):
+def create_user_with_policy(create_policy_generated_document, create_user, aws_client, region_name):
+    def _create_user_with_policy(effect, actions, resource=None, user_name=None):
         policy_arn = create_policy_generated_document(effect, actions, resource=resource)
-        username = f"user-{short_uid()}"
+        username = user_name or f"user-{short_uid()}"
         create_user(UserName=username)
         aws_client.iam.attach_user_policy(UserName=username, PolicyArn=policy_arn)
         keys = aws_client.iam.create_access_key(UserName=username)["AccessKey"]
+        wait_for_user(keys=keys, region_name=region_name)
         return username, keys
 
     return _create_user_with_policy
