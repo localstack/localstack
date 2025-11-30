@@ -1,4 +1,4 @@
-from localstack.aws.api.resourcegroupstaggingapi import ResourceARN, TagMap, TagList
+from localstack.aws.api.resourcegroupstaggingapi import ResourceARN, TagList, TagMap
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 
 
@@ -14,7 +14,9 @@ class ResourceGroupsTaggingApiStore(BaseStore):
         :param tags: A mapping of tag keys to tag values or an array of tag objects.
         :return: None
         """
-        formatted_tags = {tag["Key"]: tag["Value"] for tag in tags} if isinstance(tags, TagList) else tags
+        formatted_tags = (
+            {tag["Key"]: tag["Value"] for tag in tags} if isinstance(tags, TagList) else tags
+        )
 
         if arn not in formatted_tags:
             self.tags[arn] = {}
@@ -53,9 +55,11 @@ class ResourceGroupsTaggingApiStore(BaseStore):
         """
         self.tags.pop(arn, None)
 
+
 resourcegroupstaggingapi_stores = AccountRegionBundle(
     "resourcegroupstaggingapi", ResourceGroupsTaggingApiStore
 )
+
 
 def get_tagging_store(account_id: str, region: str) -> ResourceGroupsTaggingApiStore:
     return resourcegroupstaggingapi_stores[account_id][region]

@@ -6,6 +6,7 @@ from localstack.utils.aws.request_context import extract_access_key_id_from_auth
 
 QUEUE_URL = "https://sqs.{region}.amazonaws.com/{account_id}/{queue_name}"
 
+
 class SQSTaggingPlugin(TaggingPlugin):
     name = "sqs"
 
@@ -24,7 +25,9 @@ class SQSTaggingPlugin(TaggingPlugin):
             queue_name=parsed_arn["resource"],
         )
 
-    def tag_resource(self, context: RequestContext, resource_arn: str, tags: dict[str, str]) -> None:
+    def tag_resource(
+        self, context: RequestContext, resource_arn: str, tags: dict[str, str]
+    ) -> None:
         client = self._get_sqs_client(context)
         queue_url = self._queue_url_from_arn(resource_arn)
         client.tag_queue(QueueUrl=queue_url, Tags=tags)

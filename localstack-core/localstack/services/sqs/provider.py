@@ -69,7 +69,9 @@ from localstack.aws.spec import load_service
 from localstack.config import SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.resourcegroupstaggingapi.models import resourcegroupstaggingapi_stores, get_tagging_store
+from localstack.services.resourcegroupstaggingapi.models import (
+    get_tagging_store,
+)
 from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs import query_api
 from localstack.services.sqs.constants import (

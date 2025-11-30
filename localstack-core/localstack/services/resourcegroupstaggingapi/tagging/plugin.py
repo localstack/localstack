@@ -1,8 +1,8 @@
 import logging
 
 from plux import Plugin, PluginManager
-from localstack.aws.api import RequestContext
 
+from localstack.aws.api import RequestContext
 from localstack.utils.objects import singleton_factory
 
 LOG = logging.getLogger(__name__)
@@ -16,9 +16,12 @@ class TaggingPlugin(Plugin):
     This will allow supported service resources to be tagged via this API by calling the individual service
     implementations of `tag_<resource>` or `untag_<resource>` whilst obeying IAM restrictions.
     """
+
     namespace = TAGGING_PLUGIN_NAMESPACE
 
-    def tag_resource(self, context: RequestContext, resource_arn: str, tags: dict[str, str]) -> None:
+    def tag_resource(
+        self, context: RequestContext, resource_arn: str, tags: dict[str, str]
+    ) -> None:
         """
         Tags the resource using the service's built in tagging functionality.
 
