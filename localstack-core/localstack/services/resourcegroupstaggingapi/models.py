@@ -1,4 +1,4 @@
-from localstack.aws.api.resourcegroupstaggingapi import ResourceARN, TagList, TagMap
+from localstack.aws.api.resourcegroupstaggingapi import ResourceARN, TagMap
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 
 
@@ -6,7 +6,7 @@ class ResourceGroupsTaggingApiStore(BaseStore):
     # Maps ARNs to a dictionary of TagKey:TagValue
     tags: dict[ResourceARN, TagMap] = LocalAttribute(default=dict)
 
-    def update_tags(self, arn: ResourceARN, tags: TagMap | TagList) -> None:
+    def update_tags(self, arn: ResourceARN, tags: TagMap) -> None:
         """
         Updates the tags of the specified resource.
 
@@ -14,14 +14,10 @@ class ResourceGroupsTaggingApiStore(BaseStore):
         :param tags: A mapping of tag keys to tag values or an array of tag objects.
         :return: None
         """
-        formatted_tags = (
-            {tag["Key"]: tag["Value"] for tag in tags} if isinstance(tags, TagList) else tags
-        )
-
-        if arn not in formatted_tags:
+        if arn not in tags:
             self.tags[arn] = {}
 
-        for k, v in formatted_tags.items():
+        for k, v in tags.items():
             self.tags[arn][k] = v
 
     def get_tags(self, arn: ResourceARN) -> TagMap:
