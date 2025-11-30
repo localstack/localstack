@@ -8,6 +8,7 @@ from enum import Enum, auto
 from threading import RLock, Timer
 
 from localstack import config
+from localstack.aws.api.lambda_ import LogFormat
 from localstack.aws.connect import connect_to
 from localstack.services.lambda_.invocation.lambda_models import (
     Credentials,
@@ -149,6 +150,22 @@ class ExecutionEnvironment:
             # LOCALSTACK_USER conditionally added below
         }
         # Conditionally added environment variables
+        # Lambda advanced logging controls:
+        # https://aws.amazon.com/blogs/compute/introducing-advanced-logging-controls-for-aws-lambda-functions/
+        logging_config = self.function_version.config.logging_config
+        if logging_config.get("LogFormat") == LogFormat.JSON:
+            env_vars["AWS_LAMBDA_LOG_FORMAT"] = logging_config["LogFormat"]
+            # TODO: test this (currently not implemented in LocalStack)
+            env_vars["AWS_LAMBDA_LOG_LEVEL"] = logging_config["ApplicationLogLevel"].capitalize()
+        # Lambda Managed Instances
+        if capacity_provider_config := self.function_version.config.CapacityProviderConfig:
+            # Disable dropping privileges for parity
+            # TODO: implement mixed permissions (maybe in RIE)
+            # env_vars["LOCALSTACK_USER"] = "root"
+            env_vars["AWS_LAMBDA_MAX_CONCURRENCY"] = capacity_provider_config[
+                "LambdaManagedInstancesCapacityProviderConfig"
+            ]["PerExecutionEnvironmentMaxConcurrency"]
+            env_vars["TZ"] = ":/etc/localtime"
         if not config.LAMBDA_DISABLE_AWS_ENDPOINT_URL:
             env_vars["AWS_ENDPOINT_URL"] = (
                 f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}"
@@ -159,8 +176,6 @@ class ExecutionEnvironment:
         # Will be overridden by the runtime itself unless it is a provided runtime
         if self.function_version.config.runtime:
             env_vars["AWS_EXECUTION_ENV"] = "AWS_Lambda_rapid"
-        if self.function_version.config.environment:
-            env_vars.update(self.function_version.config.environment)
         if config.LAMBDA_INIT_DEBUG:
             # Disable dropping privileges because it breaks debugging
             env_vars["LOCALSTACK_USER"] = "root"
@@ -175,6 +190,10 @@ class ExecutionEnvironment:
             env_vars["LOCALSTACK_MAX_PAYLOAD_SIZE"] = int(
                 config.LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES
             )
+
+        # Let users overwrite any environment variable at last (if they want so)
+        if self.function_version.config.environment:
+            env_vars.update(self.function_version.config.environment)
         return env_vars
 
     # Lifecycle methods

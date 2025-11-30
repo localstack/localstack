@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping": {
-    "recorded-date": "22-02-2025, 03:03:03",
+    "recorded-date": "25-11-2025, 15:47:40",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -100,7 +100,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_disabled_dynamodb_event_source_mapping": {
-    "recorded-date": "12-10-2024, 10:57:16",
+    "recorded-date": "25-11-2025, 17:53:07",
     "recorded-content": {
       "dynamodb_create_table_result": {
         "TableDescription": {
@@ -199,7 +199,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_deletion_event_source_mapping_with_dynamodb": {
-    "recorded-date": "12-10-2024, 10:57:49",
+    "recorded-date": "25-11-2025, 15:49:36",
     "recorded-content": {
       "create_dynamodb_table_response": {
         "TableDescription": {
@@ -302,7 +302,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
-    "recorded-date": "13-10-2025, 19:19:23",
+    "recorded-date": "25-11-2025, 15:53:08",
     "recorded-content": {
       "create_table_response": {
         "TableDescription": {
@@ -456,7 +456,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[single-string]": {
-    "recorded-date": "12-10-2024, 11:21:25",
+    "recorded-date": "25-11-2025, 16:06:35",
     "recorded-content": {
       "exception_event_source_creation": {
         "Error": {
@@ -473,7 +473,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
-    "recorded-date": "12-10-2024, 11:21:41",
+    "recorded-date": "25-11-2025, 16:06:50",
     "recorded-content": {
       "exception_event_source_creation": {
         "Error": {
@@ -490,7 +490,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_duplicate_event_source_mappings": {
-    "recorded-date": "12-10-2024, 10:55:48",
+    "recorded-date": "25-11-2025, 15:47:54",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -569,7 +569,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[insert_same_entry_twice]": {
-    "recorded-date": "12-10-2024, 11:03:08",
+    "recorded-date": "25-11-2025, 15:56:13",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -713,7 +713,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_or_filter]": {
-    "recorded-date": "12-10-2024, 11:05:33",
+    "recorded-date": "25-11-2025, 15:57:25",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1029,7 +1029,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_filter_type]": {
-    "recorded-date": "12-10-2024, 11:08:12",
+    "recorded-date": "25-11-2025, 15:59:22",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1179,7 +1179,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_filter_type]": {
-    "recorded-date": "12-10-2024, 11:10:06",
+    "recorded-date": "25-11-2025, 16:01:13",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1331,7 +1331,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_false_filter]": {
-    "recorded-date": "05-12-2024, 15:58:42",
+    "recorded-date": "25-11-2025, 16:02:27",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1506,7 +1506,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[numeric_filter]": {
-    "recorded-date": "05-12-2024, 16:01:14",
+    "recorded-date": "25-11-2025, 16:04:16",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1664,7 +1664,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[prefix_filter]": {
-    "recorded-date": "12-10-2024, 11:11:06",
+    "recorded-date": "25-11-2025, 16:05:14",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1816,7 +1816,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[date_time_conversion]": {
-    "recorded-date": "12-10-2024, 11:20:10",
+    "recorded-date": "25-11-2025, 16:06:22",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1982,7 +1982,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_sns_on_failure_destination_config": {
-    "recorded-date": "13-10-2025, 19:15:20",
+    "recorded-date": "25-11-2025, 15:51:38",
     "recorded-content": {
       "create_table_response": {
         "TableDescription": {
@@ -2133,7 +2133,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failures": {
-    "recorded-date": "13-10-2025, 19:22:57",
+    "recorded-date": "25-11-2025, 16:08:24",
     "recorded-content": {
       "create_table_response": {
         "TableDescription": {
@@ -2713,7 +2713,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[empty_string_item_identifier_failure]": {
-    "recorded-date": "12-10-2024, 11:30:34",
+    "recorded-date": "25-11-2025, 20:01:25",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -2917,7 +2917,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[null_item_identifier_failure]": {
-    "recorded-date": "12-10-2024, 11:33:20",
+    "recorded-date": "25-11-2025, 20:03:19",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -3121,7 +3121,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[invalid_key_foo_failure]": {
-    "recorded-date": "12-10-2024, 11:35:08",
+    "recorded-date": "25-11-2025, 20:04:44",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -3325,7 +3325,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[invalid_key_foo_null_value_failure]": {
-    "recorded-date": "14-10-2024, 21:33:18",
+    "recorded-date": "25-11-2025, 20:06:23",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -3529,7 +3529,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[unhandled_exception_in_function]": {
-    "recorded-date": "12-10-2024, 11:39:13",
+    "recorded-date": "25-11-2025, 20:08:17",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -3733,7 +3733,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[empty_list_success]": {
-    "recorded-date": "12-10-2024, 11:40:57",
+    "recorded-date": "25-11-2025, 16:19:58",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -3807,7 +3807,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[null_success]": {
-    "recorded-date": "12-10-2024, 11:42:06",
+    "recorded-date": "25-11-2025, 16:21:35",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -3881,7 +3881,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[empty_dict_success]": {
-    "recorded-date": "12-10-2024, 11:43:06",
+    "recorded-date": "25-11-2025, 16:23:20",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -3955,7 +3955,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[empty_batch_item_failure_success]": {
-    "recorded-date": "12-10-2024, 11:44:06",
+    "recorded-date": "25-11-2025, 16:25:03",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -4029,7 +4029,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[null_batch_item_failure_success]": {
-    "recorded-date": "12-10-2024, 11:45:51",
+    "recorded-date": "25-11-2025, 16:26:14",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -4103,7 +4103,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failure_scenarios[item_identifier_not_present_failure]": {
-    "recorded-date": "12-10-2024, 11:27:29",
+    "recorded-date": "25-11-2025, 20:00:14",
     "recorded-content": {
       "create-table-result": {
         "TableDescription": {
@@ -4307,7 +4307,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_s3_on_failure_destination": {
-    "recorded-date": "03-01-2025, 16:42:26",
+    "recorded-date": "25-11-2025, 15:54:54",
     "recorded-content": {
       "create_table_response": {
         "TableDescription": {
@@ -4476,7 +4476,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_esm_with_not_existing_dynamodb_stream": {
-    "recorded-date": "26-02-2025, 03:08:09",
+    "recorded-date": "25-11-2025, 15:45:36",
     "recorded-content": {
       "error": {
         "Error": {

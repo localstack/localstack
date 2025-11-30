@@ -1,0 +1,29 @@
+{
+  "tests/aws/services/lambda_/test_lambda_integration_xray.py::test_traceid_outside_handler[Active]": {
+    "last_validated_date": "2025-11-24T23:08:01+00:00",
+    "durations_in_seconds": {
+      "setup": 10.9,
+      "call": 3.31,
+      "teardown": 0.57,
+      "total": 14.78
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_xray.py::test_traceid_outside_handler[PassThrough]": {
+    "last_validated_date": "2025-11-24T23:08:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.02,
+      "teardown": 0.28,
+      "total": 3.3
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_xray.py::test_xray_trace_propagation": {
+    "last_validated_date": "2025-11-24T23:08:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.3,
+      "call": 1.91,
+      "teardown": 1.1,
+      "total": 3.31
+    }
+  }
+}

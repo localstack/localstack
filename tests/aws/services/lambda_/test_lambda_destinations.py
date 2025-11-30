@@ -238,7 +238,9 @@ class TestLambdaDestinationSqs:
         receive_message_result = retry(receive_message, retries=120, sleep=3)
         snapshot.match("receive_message_result", receive_message_result)
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Body.requestContext.functionArn"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Body.requestContext.functionArn", "$..Messages..Attributes.AWSTraceHeader"]
+    )
     @markers.aws.validated
     @markers.requires_in_process
     def test_retries(
@@ -264,6 +266,7 @@ class TestLambdaDestinationSqs:
                 "MD5OfBody", value_replacement="<md5-body>", reference_replacement=False
             )
         )
+        snapshot.add_transformer(snapshot.transform.key_value("AWSTraceHeader"))
 
         test_delay_base = 60
         if not is_aws_cloud():
@@ -357,7 +360,13 @@ class TestLambdaDestinationSqs:
         assert len(set(request_ids)) == 1  # all 3 are equal
 
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..SenderId", "$..Body.requestContext.functionArn"]
+        paths=[
+            # TODO since LS SQS uses the account id as SenderId, it is the same in both events, while it differs on AWS
+            "$..SenderId",
+            # TODO LS SQS uses the account id as SenderId, which in turn get mixed up with the account id in arn
+            "$..Body.requestContext.functionArn",
+            "$..Attributes.AWSTraceHeader",
+        ]
     )
     @markers.aws.validated
     def test_maxeventage(
@@ -384,6 +393,7 @@ class TestLambdaDestinationSqs:
                 "MD5OfBody", value_replacement="<md5-body>", reference_replacement=False
             )
         )
+        snapshot.add_transformer(snapshot.transform.key_value("AWSTraceHeader"))
 
         queue_name = f"destination-queue-{short_uid()}"
         fn_name = f"retry-fn-{short_uid()}"

@@ -1,0 +1,6 @@
+{
+  "tests/aws/services/lambda_/test_lambda_integration_xray.py::test_xray_trace_propagation": {
+    "recorded-date": "24-11-2025, 23:08:06",
+    "recorded-content": {}
+  }
+}

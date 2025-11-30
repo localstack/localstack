@@ -19,11 +19,24 @@ from localstack.utils.strings import is_base64, to_bytes
 from localstack.utils.testutil import create_zip_file
 
 
+class LambdaManagedInstancesCapacityProviderConfig(TypedDict):
+    CapacityProviderArn: str | None
+    PerExecutionEnvironmentMaxConcurrency: int | None
+    ExecutionEnvironmentMemoryGiBPerVCpu: float | None
+
+
+class CapacityProviderConfig(TypedDict):
+    LambdaManagedInstancesCapacityProviderConfig: (
+        LambdaManagedInstancesCapacityProviderConfig | None
+    )
+
+
 class LambdaFunctionProperties(TypedDict):
     Code: Code | None
     Role: str | None
     Architectures: list[str] | None
     Arn: str | None
+    CapacityProviderConfig: CapacityProviderConfig | None
     CodeSigningConfigArn: str | None
     DeadLetterConfig: DeadLetterConfig | None
     Description: str | None
@@ -297,6 +310,7 @@ def _transform_function_to_model(function):
         "Arn",
         "EphemeralStorage",
         "Architectures",
+        "CapacityProviderConfig",
     ]
     response_model = util.select_attributes(function, model_properties)
     response_model["Arn"] = function["FunctionArn"]
@@ -387,6 +401,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
                     "TracingConfig",
                     "VpcConfig",
                     "LoggingConfig",
+                    "CapacityProviderConfig",
                 ],
             )
             if "Timeout" in kwargs:
@@ -408,11 +423,27 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
                 }
 
             kwargs["Code"] = _get_lambda_code_param(model)
+
+            # For managed instance lambdas, we publish them immediately
+            if "CapacityProviderConfig" in kwargs:
+                kwargs["Publish"] = True
+                kwargs["PublishTo"] = "LATEST_PUBLISHED"
+
             create_response = lambda_client.create_function(**kwargs)
+            # TODO: if version is in the schema, just put it in the model instead of the custom context
+            request.custom_context["Version"] = create_response["Version"]  # $LATEST.PUBLISHED
             model["Arn"] = create_response["FunctionArn"]
 
-        get_fn_response = lambda_client.get_function(FunctionName=model["Arn"])
+        if request.custom_context.get("Version") == "$LATEST.PUBLISHED":
+            # for managed instance lambdas, we need to wait until the version is published & active
+            get_fn_response = lambda_client.get_function(
+                FunctionName=model["FunctionName"], Qualifier=request.custom_context["Version"]
+            )
+        else:
+            get_fn_response = lambda_client.get_function(FunctionName=model["Arn"])
+
         match get_fn_response["Configuration"]["State"]:
+            # TODO: explicitly handle new ActiveNonInvocable state?
             case "Pending":
                 return ProgressEvent(
                     status=OperationStatus.IN_PROGRESS,
@@ -541,6 +572,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
             "TracingConfig",
             "VpcConfig",
             "LoggingConfig",
+            "CapacityProviderConfig",
         ]
         update_config_props = util.select_attributes(request.desired_state, config_keys)
         function_name = request.previous_state["FunctionName"]

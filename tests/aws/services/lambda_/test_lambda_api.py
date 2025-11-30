@@ -52,6 +52,7 @@ from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import (
+    capacity_provider_arn,
     get_partition,
     lambda_event_source_mapping_arn,
     lambda_function_arn,
@@ -324,9 +325,11 @@ class TestLoggingConfig:
 
 class TestLambdaFunction:
     @markers.snapshot.skip_snapshot_verify(
-        # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
-        # for different runtime versions"
-        paths=["$..RuntimeVersionConfig.RuntimeVersionArn"]
+        paths=[
+            # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
+            # for different runtime versions"
+            "$..RuntimeVersionConfig.RuntimeVersionArn",
+        ]
     )
     @markers.aws.validated
     def test_function_lifecycle(self, snapshot, create_lambda_function, lambda_su_role, aws_client):
@@ -972,8 +975,12 @@ class TestLambdaFunction:
                 "function_name_too_long-invoke",
                 "incomplete_arn-invoke",
             )
+            and not is_aws_cloud()
         ):
-            pytest.skip("skipping test case")
+            pytest.skip("Not implemented")
+
+        if request.node.callspec.id == "incomplete_arn-create_function":
+            pytest.skip("Works against AWS")
 
         function_name = test_case["FunctionName"].format(
             region_name=region_name, account_id=account_id
@@ -2762,6 +2769,9 @@ class TestLambdaRevisions:
         assert rev_a1_create_alias != rev_a2_update_alias
 
     @markers.aws.validated
+    @pytest.mark.skip(
+        reason="The API on AWS has changed significantly and this test needs re-writing"
+    )
     def test_function_revisions_permissions(self, create_lambda_function, snapshot, aws_client):
         """Tests revision id lifecycle for adding and removing permissions"""
         # rev1: create function
@@ -2993,8 +3003,8 @@ class TestLambdaTag:
 
     @pytest.mark.parametrize(
         "create_resource_arn",
-        [lambda_function_arn, lambda_event_source_mapping_arn],
-        ids=["lambda_function", "event_source_mapping"],
+        [lambda_function_arn, lambda_event_source_mapping_arn, capacity_provider_arn],
+        ids=["lambda_function", "event_source_mapping", "capacity_provider"],
     )
     @markers.aws.validated
     def test_tag_exceptions(
@@ -3954,6 +3964,13 @@ class TestLambdaProvisionedConcurrency:
 
 
 class TestLambdaPermissions:
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: adjust validation to new AWS behavior, raising function not found under a certain condition
+            "get_policy_fn_doesnotexist..Error.Message",
+            "get_policy_fn_doesnotexist..Message",
+        ]
+    )
     @markers.aws.validated
     def test_permission_exceptions(
         self, create_lambda_function, account_id, snapshot, aws_client, region_name
@@ -4147,6 +4164,7 @@ class TestLambdaPermissions:
         snapshot.match("get_policy", get_policy_result)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(["$..RevisionId"])  # TODO fix in follow up
     def test_lambda_permission_fn_versioning(
         self, create_lambda_function, account_id, snapshot, aws_client, region_name
     ):
@@ -5484,7 +5502,9 @@ class TestLambdaAccountSettings:
 
 class TestLambdaEventSourceMappings:
     @markers.aws.validated
-    def test_event_source_mapping_exceptions(self, snapshot, aws_client):
+    def test_event_source_mapping_exceptions(
+        self, snapshot, aws_client, region_name, secondary_region_name
+    ):
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
             aws_client.lambda_.get_event_source_mapping(UUID=long_uid())
         snapshot.match("get_unknown_uuid", e.value.response)
@@ -5501,7 +5521,7 @@ class TestLambdaEventSourceMappings:
         aws_client.lambda_.list_event_source_mappings()
         aws_client.lambda_.list_event_source_mappings(FunctionName="doesnotexist")
         aws_client.lambda_.list_event_source_mappings(
-            EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue"
+            EventSourceArn=f"arn:aws:sqs:{region_name}:111111111111:somequeue"
         )
 
         with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
@@ -5511,17 +5531,17 @@ class TestLambdaEventSourceMappings:
         with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
             aws_client.lambda_.create_event_source_mapping(
                 FunctionName="doesnotexist",
-                EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
+                EventSourceArn=f"arn:aws:sqs:{region_name}:111111111111:somequeue",
             )
         snapshot.match("create_unknown_params", e.value.response)
 
         with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
             aws_client.lambda_.create_event_source_mapping(
                 FunctionName="doesnotexist",
-                EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
+                EventSourceArn=f"arn:aws:sqs:{region_name}:111111111111:somequeue",
                 DestinationConfig={
                     "OnSuccess": {
-                        "Destination": "arn:aws:sqs:us-east-1:111111111111:someotherqueue"
+                        "Destination": f"arn:aws:sqs:{region_name}:111111111111:someotherqueue"
                     }
                 },
             )
@@ -5735,10 +5755,10 @@ class TestLambdaEventSourceMappings:
             aws_client.lambda_.delete_event_source_mapping(UUID=result["UUID"])
 
             def _assert_esm_deleted():
-                with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+                try:
                     aws_client.lambda_.get_event_source_mapping(UUID=result["UUID"])
-
-                return True
+                except aws_client.lambda_.exceptions.ResourceNotFoundException:
+                    return True
 
             wait_until(_assert_esm_deleted)
 

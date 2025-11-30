@@ -1,86 +1,260 @@
 {
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisEventFiltering::test_kinesis_event_filtering_json_pattern": {
-    "last_validated_date": "2024-12-13T14:48:09+00:00"
+    "last_validated_date": "2025-11-25T17:06:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 153.83,
+      "teardown": 2.61,
+      "total": 156.44
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping": {
-    "last_validated_date": "2024-12-13T14:01:07+00:00"
+    "last_validated_date": "2025-11-25T16:27:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 84.38,
+      "teardown": 1.2,
+      "total": 85.58
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_lambdas_single_kinesis_event_stream": {
-    "last_validated_date": "2024-12-13T14:02:48+00:00"
+    "last_validated_date": "2025-11-25T17:33:16+00:00",
+    "durations_in_seconds": {
+      "setup": 11.22,
+      "call": 92.09,
+      "teardown": 2.12,
+      "total": 105.43
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_disable_kinesis_event_source_mapping": {
-    "last_validated_date": "2024-12-13T14:10:20+00:00"
+    "last_validated_date": "2025-11-25T16:34:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 197.42,
+      "teardown": 1.38,
+      "total": 198.8
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_duplicate_event_source_mappings": {
-    "last_validated_date": "2024-12-13T14:03:01+00:00"
+    "last_validated_date": "2025-11-25T16:29:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 9.37,
+      "teardown": 2.02,
+      "total": 11.39
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_esm_with_not_existing_kinesis_stream": {
-    "last_validated_date": "2025-02-26T03:05:29+00:00"
+    "last_validated_date": "2025-11-25T16:26:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.18,
+      "teardown": 0.39,
+      "total": 2.57
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_empty_provided": {
-    "last_validated_date": "2024-12-13T14:45:29+00:00"
+    "last_validated_date": "2025-11-25T17:03:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 103.36,
+      "teardown": 1.17,
+      "total": 104.53
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_async_invocation": {
-    "last_validated_date": "2024-12-13T14:04:46+00:00"
+    "last_validated_date": "2025-11-25T16:30:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 92.33,
+      "teardown": 1.15,
+      "total": 93.48
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_on_failure_destination_config": {
+    "last_validated_date": "2025-11-25T16:35:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 84.61,
+      "teardown": 2.35,
+      "total": 86.96
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_s3_on_failure_destination": {
-    "last_validated_date": "2025-01-03T14:50:23+00:00"
+    "last_validated_date": "2025-11-25T16:50:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.78,
+      "call": 103.02,
+      "teardown": 3.28,
+      "total": 107.08
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_sns_on_failure_destination_config": {
-    "last_validated_date": "2024-12-13T14:35:43+00:00"
+    "last_validated_date": "2025-11-25T16:48:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 107.83,
+      "teardown": 3.07,
+      "total": 110.9
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_trim_horizon": {
-    "last_validated_date": "2024-12-13T14:06:49+00:00"
+    "last_validated_date": "2025-11-25T17:33:32+00:00",
+    "durations_in_seconds": {
+      "setup": 11.15,
+      "call": 95.7,
+      "teardown": 1.63,
+      "total": 108.48
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded": {
     "last_validated_date": "2025-04-13T15:57:25+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded[expire-before-ingestion]": {
-    "last_validated_date": "2025-04-13T16:29:25+00:00"
+    "last_validated_date": "2025-11-25T17:01:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 119.95,
+      "teardown": 1.62,
+      "total": 121.57
+    }
+  },
+  "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded[expire-while-retrying]": {
+    "last_validated_date": "2025-11-25T16:59:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 76.3,
+      "teardown": 1.69,
+      "total": 77.99
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded[expire-with-mixed-arrival-batch]": {
     "last_validated_date": "2025-04-13T16:39:43+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded_discard_records": {
-    "last_validated_date": "2025-04-23T21:42:09+00:00"
+    "last_validated_date": "2025-11-25T18:15:47+00:00",
+    "durations_in_seconds": {
+      "setup": 11.3,
+      "call": 161.14,
+      "teardown": 2.18,
+      "total": 174.62
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[empty_string_item_identifier_failure]": {
-    "last_validated_date": "2024-12-13T14:23:18+00:00"
+    "last_validated_date": "2025-11-25T21:22:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 93.51,
+      "teardown": 1.0,
+      "total": 94.51
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[invalid_key_foo_failure]": {
-    "last_validated_date": "2024-12-13T14:27:36+00:00"
+    "last_validated_date": "2025-11-25T21:25:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 62.92,
+      "teardown": 1.0,
+      "total": 63.92
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[invalid_key_foo_null_value_failure]": {
-    "last_validated_date": "2024-12-13T14:31:32+00:00"
+    "last_validated_date": "2025-11-25T21:26:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 47.63,
+      "teardown": 1.07,
+      "total": 48.7
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[item_identifier_not_present_failure]": {
-    "last_validated_date": "2024-12-13T14:20:08+00:00"
+    "last_validated_date": "2025-11-25T21:21:12+00:00",
+    "durations_in_seconds": {
+      "setup": 11.0,
+      "call": 78.58,
+      "teardown": 1.0,
+      "total": 90.58
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[null_item_identifier_failure]": {
-    "last_validated_date": "2024-12-13T14:25:26+00:00"
+    "last_validated_date": "2025-11-25T21:24:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 93.26,
+      "teardown": 1.03,
+      "total": 94.29
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[unhandled_exception_in_function]": {
-    "last_validated_date": "2024-12-13T14:34:41+00:00"
+    "last_validated_date": "2025-11-25T21:27:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 77.2,
+      "teardown": 1.77,
+      "total": 78.97
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failures": {
-    "last_validated_date": "2024-12-13T14:18:13+00:00"
+    "last_validated_date": "2025-11-25T19:03:19+00:00",
+    "durations_in_seconds": {
+      "setup": 11.23,
+      "call": 118.12,
+      "teardown": 2.25,
+      "total": 131.6
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_batch_item_failure_success]": {
-    "last_validated_date": "2024-12-13T14:42:49+00:00"
+    "last_validated_date": "2025-11-25T16:56:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 80.81,
+      "teardown": 1.14,
+      "total": 81.95
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_dict_success]": {
-    "last_validated_date": "2024-12-13T14:41:30+00:00"
+    "last_validated_date": "2025-11-25T16:55:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 89.38,
+      "teardown": 1.2,
+      "total": 90.58
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_list_success]": {
-    "last_validated_date": "2024-12-13T14:38:21+00:00"
+    "last_validated_date": "2025-11-25T16:52:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 54.19,
+      "teardown": 1.17,
+      "total": 55.36
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_string_success]": {
-    "last_validated_date": "2024-12-13T14:37:20+00:00"
+    "last_validated_date": "2025-11-25T16:51:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 80.53,
+      "teardown": 1.21,
+      "total": 81.74
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[null_batch_item_failure_success]": {
-    "last_validated_date": "2024-12-13T14:44:14+00:00"
+    "last_validated_date": "2025-11-25T16:58:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 97.16,
+      "teardown": 1.13,
+      "total": 98.29
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[null_success]": {
-    "last_validated_date": "2024-12-13T14:39:47+00:00"
+    "last_validated_date": "2025-11-25T16:53:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 73.11,
+      "teardown": 1.21,
+      "total": 74.32
+    }
   }
 }

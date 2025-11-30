@@ -62,7 +62,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload0]": {
-    "recorded-date": "21-03-2024, 12:26:43",
+    "recorded-date": "24-11-2025, 23:11:08",
     "recorded-content": {
       "put_function_event_invoke_config": {
         "DestinationConfig": {
@@ -125,7 +125,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload1]": {
-    "recorded-date": "21-03-2024, 12:26:48",
+    "recorded-date": "24-11-2025, 23:11:12",
     "recorded-content": {
       "put_function_event_invoke_config": {
         "DestinationConfig": {
@@ -186,7 +186,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDLQ::test_dead_letter_queue": {
-    "recorded-date": "17-06-2024, 11:49:58",
+    "recorded-date": "24-11-2025, 23:11:05",
     "recorded-content": {
       "create_lambda_with_dlq": {
         "CreateEventSourceMappingResponse": null,
@@ -344,22 +344,23 @@
           "START RequestId: <uuid:4> Version: $LATEST",
           "Lambda log message - print function",
           "[INFO]\tdate\t<uuid:4>\tLambda log message - logging module",
-          "LAMBDA_WARNING: Unhandled exception. The most likely cause is an issue in the function code. However, in rare cases, a Lambda runtime update can cause unexpected function behavior. For functions using managed runtimes, runtime updates can be triggered by a function change, or can be applied automatically. To determine if the runtime has been updated, check the runtime version in the INIT_START log entry. If this error correlates with a change in the runtime version, you may be able to mitigate this error by temporarily rolling back to the previous runtime version. For more information, see https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html",
           "[ERROR] Exception: Test exception (this is intentional)",
           "Traceback (most recent call last):",
           "\u00a0\u00a0File \"/var/task/handler.py\", line 55, in handler",
-          "\u00a0\u00a0\u00a0\u00a0raise Exception(\"Test exception (this is intentional)\")END RequestId: <uuid:4>"
+          "\u00a0\u00a0\u00a0\u00a0raise Exception(\"Test exception (this is intentional)\")",
+          "END RequestId: <uuid:4>"
         ]
       }
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_retries": {
-    "recorded-date": "22-03-2023, 18:50:18",
+    "recorded-date": "25-11-2025, 22:18:25",
     "recorded-content": {
       "queue_destination_payload": {
         "Messages": [
           {
             "Attributes": {
+              "AWSTraceHeader": "<a-w-s-trace-header:1>",
               "ApproximateFirstReceiveTimestamp": "timestamp",
               "ApproximateReceiveCount": "2",
               "SenderId": "<sender-id:1>",
@@ -404,10 +405,11 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_maxeventage": {
-    "recorded-date": "22-03-2023, 18:52:05",
+    "recorded-date": "27-11-2025, 02:28:57",
     "recorded-content": {
       "no_retry_failure_message": {
         "Attributes": {
+          "AWSTraceHeader": "<a-w-s-trace-header:1>",
           "ApproximateFirstReceiveTimestamp": "timestamp",
           "ApproximateReceiveCount": "1",
           "SenderId": "<sender-id:1>",
@@ -445,6 +447,7 @@
       },
       "single_retry_failure_message": {
         "Attributes": {
+          "AWSTraceHeader": "<a-w-s-trace-header:2>",
           "ApproximateFirstReceiveTimestamp": "timestamp",
           "ApproximateReceiveCount": "1",
           "SenderId": "<sender-id:2>",
@@ -483,7 +486,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_lambda_destination_default_retries": {
-    "recorded-date": "21-03-2024, 12:24:09",
+    "recorded-date": "24-11-2025, 23:14:10",
     "recorded-content": {
       "put_function_event_invoke_config": {
         "DestinationConfig": {
@@ -543,7 +546,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationEventbridge::test_invoke_lambda_eventbridge": {
-    "recorded-date": "19-11-2024, 08:49:47",
+    "recorded-date": "24-11-2025, 23:21:20",
     "recorded-content": {
       "lambda_destination_event_bus_success": {
         "account": "111111111111",

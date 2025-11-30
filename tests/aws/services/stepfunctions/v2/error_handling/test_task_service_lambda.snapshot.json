@@ -904,7 +904,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_no_such_function": {
-    "recorded-date": "28-11-2024, 13:05:16",
+    "recorded-date": "25-11-2025, 15:29:42",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -969,7 +969,7 @@
             "id": 5,
             "previousEventId": 4,
             "taskFailedEventDetails": {
-              "cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+              "cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name>:$LATEST (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
               "error": "Lambda.ResourceNotFoundException",
               "resource": "invoke",
               "resourceType": "lambda"
@@ -979,7 +979,7 @@
           },
           {
             "executionFailedEventDetails": {
-              "cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+              "cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name>:$LATEST (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
               "error": "Lambda.ResourceNotFoundException"
             },
             "id": 6,
@@ -996,7 +996,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_no_such_function_catch": {
-    "recorded-date": "28-11-2024, 13:05:33",
+    "recorded-date": "25-11-2025, 21:15:38",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1061,7 +1061,7 @@
             "id": 5,
             "previousEventId": 4,
             "taskFailedEventDetails": {
-              "cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+              "cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name>:$LATEST (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
               "error": "Lambda.ResourceNotFoundException",
               "resource": "invoke",
               "resourceType": "lambda"
@@ -1076,7 +1076,7 @@
               "name": "Start",
               "output": {
                 "Error": "Lambda.ResourceNotFoundException",
-                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name>:$LATEST (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
               },
               "outputDetails": {
                 "truncated": false
@@ -1091,7 +1091,7 @@
             "stateEnteredEventDetails": {
               "input": {
                 "Error": "Lambda.ResourceNotFoundException",
-                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name>:$LATEST (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
               },
               "inputDetails": {
                 "truncated": false
@@ -1108,10 +1108,10 @@
               "name": "EndWithStateTaskFailedHandler",
               "output": {
                 "Error": "Lambda.ResourceNotFoundException",
-                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name>:$LATEST (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
                 "task_failed_error": {
                   "Error": "Lambda.ResourceNotFoundException",
-                  "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+                  "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name>:$LATEST (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
                 }
               },
               "outputDetails": {
@@ -1125,10 +1125,10 @@
             "executionSucceededEventDetails": {
               "output": {
                 "Error": "Lambda.ResourceNotFoundException",
-                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+                "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name>:$LATEST (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
                 "task_failed_error": {
                   "Error": "Lambda.ResourceNotFoundException",
-                  "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+                  "Cause": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:no_such_<lambda_function_name>:$LATEST (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
                 }
               },
               "outputDetails": {

@@ -3,10 +3,22 @@
     "last_validated_date": "2024-11-28T13:05:54+00:00"
   },
   "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_no_such_function": {
-    "last_validated_date": "2024-11-28T13:05:16+00:00"
+    "last_validated_date": "2025-11-25T15:29:44+00:00",
+    "durations_in_seconds": {
+      "setup": 11.48,
+      "call": 16.85,
+      "teardown": 2.53,
+      "total": 30.86
+    }
   },
   "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_no_such_function_catch": {
-    "last_validated_date": "2024-11-28T13:05:33+00:00"
+    "last_validated_date": "2025-11-25T21:15:40+00:00",
+    "durations_in_seconds": {
+      "setup": 11.11,
+      "call": 14.27,
+      "teardown": 1.84,
+      "total": 27.22
+    }
   },
   "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_raise_custom_exception": {
     "last_validated_date": "2024-11-28T13:03:53+00:00"

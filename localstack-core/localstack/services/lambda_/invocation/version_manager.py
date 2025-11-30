@@ -100,11 +100,26 @@ class LambdaVersionManager:
 
             # code and reason not set for success scenario because only failed states provide this field:
             # https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionConfiguration.html#SSS-GetFunctionConfiguration-response-LastUpdateStatusReasonCode
-            self.state = VersionState(state=State.Active)
+            new_state = State.Active
+            if (
+                self.function_version.config.CapacityProviderConfig
+                and self.function_version.id.qualifier == "$LATEST"
+            ):
+                new_state = State.ActiveNonInvocable
+                # HACK: trying to match the AWS timing behavior of Lambda Managed Instances for the operation
+                # update_function_configuration followed by get_function because transitioning LastUpdateStatus from
+                # InProgress to Successful happens too fast on LocalStack (thanks to caching in prepare_version).
+                # Without this hack, test_latest_published_update_config fails at get_function_response_postupdate_latest
+                # TODO: this sleep has side-effects and we should be looking into alternatives
+                # Increasing this sleep too much (e.g., 3s) could cause the side effect that a created function is not
+                # ready for updates (i.e., rejected with a ResourceConflictException) and failing other tests
+                # time.sleep(0.1)
+            self.state = VersionState(state=new_state)
             LOG.debug(
-                "Changing Lambda %s (id %s) to active",
+                "Changing Lambda %s (id %s) to %s",
                 self.function_arn,
                 self.function_version.config.internal_revision,
+                new_state,
             )
         except Exception as e:
             self.state = VersionState(
@@ -113,7 +128,7 @@ class LambdaVersionManager:
                 reason=f"Error while creating lambda: {e}",
             )
             LOG.debug(
-                "Changing Lambda %s (id %s) to failed. Reason: %s",
+                "Changing Lambda %s (id %s) to Failed. Reason: %s",
                 self.function_arn,
                 self.function_version.config.internal_revision,
                 e,
