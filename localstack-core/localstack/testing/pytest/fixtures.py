@@ -1427,6 +1427,34 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
 
 
 @pytest.fixture
+def lambda_is_function_deleted(aws_client):
+    """Example usage:
+    wait_until(lambda_is_function_deleted(function_name))
+    wait_until(lambda_is_function_deleted(function_name, Qualifier="my-alias"))
+
+    function_name can be a function name, function ARN, or partial function ARN.
+    """
+    return _lambda_is_function_deleted(aws_client.lambda_)
+
+
+def _lambda_is_function_deleted(lambda_client):
+    def _is_function_deleted(
+        function_name: str,
+        **kwargs,
+    ) -> Callable[[], bool]:
+        def _inner() -> bool:
+            try:
+                lambda_client.get_function(FunctionName=function_name, **kwargs)
+                return False
+            except lambda_client.exceptions.ResourceNotFoundException:
+                return True
+
+        return _inner
+
+    return _is_function_deleted
+
+
+@pytest.fixture
 def create_echo_http_server(aws_client, create_lambda_function):
     from localstack.aws.api.lambda_ import Runtime
 

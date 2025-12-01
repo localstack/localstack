@@ -12,7 +12,7 @@ import threading
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import IO, Literal, TypedDict
+from typing import IO, Literal, Optional, TypedDict
 
 import boto3
 from botocore.exceptions import ClientError
@@ -22,12 +22,19 @@ from localstack.aws.api import CommonServiceException
 from localstack.aws.api.lambda_ import (
     AllowedPublishers,
     Architecture,
+    CapacityProviderArn,
+    CapacityProviderConfig,
+    CapacityProviderPermissionsConfig,
+    CapacityProviderScalingConfig,
+    CapacityProviderVpcConfig,
     CodeSigningPolicies,
     Cors,
     DestinationConfig,
     FunctionUrlAuthType,
+    InstanceRequirements,
     InvocationType,
     InvokeMode,
+    KMSKeyArn,
     LastUpdateStatus,
     LoggingConfig,
     PackageType,
@@ -38,12 +45,14 @@ from localstack.aws.api.lambda_ import (
     SnapStartResponse,
     State,
     StateReasonCode,
+    Timestamp,
     TracingMode,
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1, INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.lambda_.api_utils import qualified_lambda_arn, unqualified_lambda_arn
 from localstack.utils.archives import unzip
+from localstack.utils.files import chmod_r
 from localstack.utils.strings import long_uid, short_uid
 
 LOG = logging.getLogger(__name__)
@@ -212,6 +221,7 @@ class S3Code(ArchiveCode):
             with tempfile.NamedTemporaryFile() as file:
                 self._download_archive_to_file(file)
                 unzip(file.name, str(target_path))
+                chmod_r(str(target_path), 0o755)
 
     def destroy_cached(self) -> None:
         """
@@ -331,7 +341,7 @@ class VpcConfig:
 @dataclasses.dataclass(frozen=True)
 class UpdateStatus:
     status: LastUpdateStatus | None
-    code: str | None = None  # TODO: probably not a string
+    code: str | None = None
     reason: str | None = None
 
 
@@ -568,6 +578,9 @@ class VersionFunctionConfiguration:
     vpc_config: VpcConfig | None = None
 
     logging_config: LoggingConfig = dataclasses.field(default_factory=dict)
+    # TODO: why does `CapacityProviderConfig | None = None` fail with on Python 3.13.9:
+    #  TypeError: unsupported operand type(s) for |: 'NoneType' and 'NoneType'
+    CapacityProviderConfig: Optional[CapacityProviderConfig] = None  # noqa
 
 
 @dataclasses.dataclass(frozen=True)
@@ -578,6 +591,18 @@ class FunctionVersion:
     @property
     def qualified_arn(self) -> str:
         return self.id.qualified_arn()
+
+
+@dataclasses.dataclass
+class CapacityProvider:
+    CapacityProviderArn: CapacityProviderArn
+    # State is determined dynamically
+    VpcConfig: CapacityProviderVpcConfig
+    PermissionsConfig: CapacityProviderPermissionsConfig
+    InstanceRequirements: InstanceRequirements
+    CapacityProviderScalingConfig: CapacityProviderScalingConfig
+    LastModified: Timestamp
+    KmsKeyArn: KMSKeyArn | None = None
 
 
 @dataclasses.dataclass

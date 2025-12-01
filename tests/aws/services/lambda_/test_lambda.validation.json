@@ -1,120 +1,342 @@
 {
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaAliases::test_alias_routingconfig": {
-    "last_validated_date": "2024-04-08T17:11:17+00:00"
+    "last_validated_date": "2025-11-24T23:27:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 10.8,
+      "teardown": 0.56,
+      "total": 11.36
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaAliases::test_lambda_alias_moving": {
-    "last_validated_date": "2024-04-08T17:11:05+00:00"
+    "last_validated_date": "2025-11-25T23:37:28+00:00",
+    "durations_in_seconds": {
+      "setup": 11.16,
+      "call": 7.47,
+      "teardown": 1.06,
+      "total": 19.69
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_assume_role[1]": {
-    "last_validated_date": "2024-04-08T16:55:25+00:00"
+    "last_validated_date": "2025-11-24T23:08:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 4.38,
+      "teardown": 0.52,
+      "total": 4.9
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_assume_role[2]": {
-    "last_validated_date": "2024-04-08T16:55:31+00:00"
+    "last_validated_date": "2025-11-24T23:08:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 4.49,
+      "teardown": 0.48,
+      "total": 4.97
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_function_state": {
-    "last_validated_date": "2024-04-08T16:55:20+00:00"
+    "last_validated_date": "2025-11-24T23:08:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.78,
+      "teardown": 0.21,
+      "total": 1.99
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_different_iam_keys_environment": {
-    "last_validated_date": "2024-04-08T16:55:37+00:00"
+    "last_validated_date": "2025-11-24T23:08:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 4.58,
+      "teardown": 0.54,
+      "total": 5.12
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_large_response": {
-    "last_validated_date": "2024-04-08T16:55:11+00:00"
+    "last_validated_date": "2025-11-24T23:08:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.51,
+      "teardown": 0.31,
+      "total": 3.82
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_too_large_response": {
-    "last_validated_date": "2024-04-08T16:55:18+00:00"
+    "last_validated_date": "2025-11-24T23:08:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 5.3,
+      "teardown": 0.35,
+      "total": 5.65
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_large_payloads": {
-    "last_validated_date": "2024-04-08T16:55:06+00:00"
+    "last_validated_date": "2025-11-24T23:08:00+00:00",
+    "durations_in_seconds": {
+      "setup": 11.1,
+      "call": 5.22,
+      "teardown": 0.57,
+      "total": 16.89
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_cache_local[nodejs]": {
-    "last_validated_date": "2024-04-08T16:55:56+00:00"
+    "last_validated_date": "2025-11-24T23:08:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.13,
+      "teardown": 0.34,
+      "total": 2.47
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_cache_local[python]": {
-    "last_validated_date": "2024-04-08T16:55:59+00:00"
+    "last_validated_date": "2025-11-24T23:08:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.17,
+      "teardown": 0.49,
+      "total": 2.66
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_host_prefix_api_operation": {
-    "last_validated_date": "2025-05-26T16:38:53+00:00"
+    "last_validated_date": "2025-11-24T23:09:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.38,
+      "teardown": 0.56,
+      "total": 3.94
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_init_environment": {
-    "last_validated_date": "2024-04-08T16:56:25+00:00"
+    "last_validated_date": "2025-11-25T22:02:31+00:00",
+    "durations_in_seconds": {
+      "setup": 11.17,
+      "call": 2.27,
+      "teardown": 6.54,
+      "total": 19.98
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_no_timeout": {
-    "last_validated_date": "2024-04-08T16:56:14+00:00"
+    "last_validated_date": "2025-11-24T23:08:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.59,
+      "teardown": 0.32,
+      "total": 6.91
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_timed_out_environment_reuse": {
     "last_validated_date": "2024-04-08T16:56:22+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_with_timeout": {
-    "last_validated_date": "2024-04-08T16:56:04+00:00"
+    "last_validated_date": "2025-11-25T00:39:46+00:00",
+    "durations_in_seconds": {
+      "setup": 11.18,
+      "call": 3.78,
+      "teardown": 1.05,
+      "total": 16.01
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_mixed_architecture": {
-    "last_validated_date": "2024-05-15T12:55:52+00:00"
+    "last_validated_date": "2025-11-24T23:08:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 4.18,
+      "teardown": 0.52,
+      "total": 4.7
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_arm": {
-    "last_validated_date": "2024-04-08T16:55:44+00:00"
+    "last_validated_date": "2025-11-24T23:08:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.13,
+      "teardown": 0.5,
+      "total": 2.63
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_x86": {
-    "last_validated_date": "2024-04-08T16:55:41+00:00"
+    "last_validated_date": "2025-11-24T23:08:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.08,
+      "teardown": 0.49,
+      "total": 2.57
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_ulimits": {
-    "last_validated_date": "2024-04-16T08:12:11+00:00"
+    "last_validated_date": "2025-11-24T23:08:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.06,
+      "teardown": 0.62,
+      "total": 2.68
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaCleanup::test_recreate_function": {
-    "last_validated_date": "2024-05-15T10:16:44+00:00"
+    "last_validated_date": "2025-11-24T23:13:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.09,
+      "teardown": 0.44,
+      "total": 13.53
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_block": {
-    "last_validated_date": "2024-04-08T17:02:06+00:00"
+    "last_validated_date": "2025-11-24T23:16:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 138.97,
+      "teardown": 0.72,
+      "total": 139.69
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_crud": {
-    "last_validated_date": "2025-05-22T08:04:13+00:00"
+    "last_validated_date": "2025-11-24T23:14:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.14,
+      "teardown": 0.49,
+      "total": 2.63
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_update": {
-    "last_validated_date": "2025-05-22T14:11:12+00:00"
+    "last_validated_date": "2025-11-24T23:14:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.14,
+      "teardown": 0.49,
+      "total": 2.63
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_provisioned_concurrency_moves_with_alias": {
     "last_validated_date": "2023-03-21T07:47:38+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_provisioned_concurrency_scheduling": {
-    "last_validated_date": "2024-04-16T08:03:41+00:00"
+    "last_validated_date": "2025-11-24T23:23:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 136.09,
+      "teardown": 0.73,
+      "total": 136.82
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_provisioned_concurrency": {
-    "last_validated_date": "2024-04-08T17:04:20+00:00"
+    "last_validated_date": "2025-11-24T23:18:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 130.34,
+      "teardown": 0.81,
+      "total": 131.15
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_provisioned_concurrency_on_alias": {
-    "last_validated_date": "2025-05-07T09:26:54+00:00"
+    "last_validated_date": "2025-11-24T23:21:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 130.7,
+      "teardown": 0.67,
+      "total": 131.37
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency": {
-    "last_validated_date": "2024-04-08T17:08:10+00:00"
+    "last_validated_date": "2025-11-25T11:20:35+00:00",
+    "durations_in_seconds": {
+      "setup": 11.64,
+      "call": 6.88,
+      "teardown": 1.57,
+      "total": 20.09
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency_async_queue": {
-    "last_validated_date": "2025-03-26T10:54:29+00:00"
+    "last_validated_date": "2025-11-24T23:23:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.88,
+      "teardown": 0.86,
+      "total": 7.74
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_provisioned_overlap": {
-    "last_validated_date": "2024-04-08T17:10:36+00:00"
+    "last_validated_date": "2025-11-24T23:26:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 141.12,
+      "teardown": 0.75,
+      "total": 141.87
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_handler_error": {
-    "last_validated_date": "2024-04-08T16:59:22+00:00"
+    "last_validated_date": "2025-11-24T23:13:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.18,
+      "teardown": 0.32,
+      "total": 2.5
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_handler_exit": {
-    "last_validated_date": "2024-04-08T16:59:25+00:00"
+    "last_validated_date": "2025-11-24T23:13:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.11,
+      "teardown": 0.56,
+      "total": 2.67
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_invoke_payload_encoding_error[body-n\\x87r\\x9e\\xe9\\xb5\\xd7I\\xee\\x9bmt]": {
-    "last_validated_date": "2024-04-08T16:59:31+00:00"
+    "last_validated_date": "2025-11-24T23:13:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.01,
+      "teardown": 0.3,
+      "total": 2.31
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_invoke_payload_encoding_error[message-\\x99\\xeb,j\\x07\\xa1zYh]": {
-    "last_validated_date": "2024-04-08T16:59:34+00:00"
+    "last_validated_date": "2025-11-24T23:13:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.93,
+      "teardown": 0.53,
+      "total": 2.46
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_error": {
-    "last_validated_date": "2025-02-24T16:26:36+00:00"
+    "last_validated_date": "2025-11-24T23:12:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.33,
+      "teardown": 0.61,
+      "total": 2.94
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_exit": {
-    "last_validated_date": "2024-04-08T16:58:35+00:00"
+    "last_validated_date": "2025-11-24T23:12:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.23,
+      "teardown": 0.37,
+      "total": 2.6
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_exit_segfault": {
-    "last_validated_date": "2024-04-08T16:59:19+00:00"
+    "last_validated_date": "2025-11-24T23:13:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 42.13,
+      "teardown": 0.61,
+      "total": 42.74
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_wrapper_not_found": {
-    "last_validated_date": "2024-04-08T16:59:28+00:00"
+    "last_validated_date": "2025-11-24T23:13:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.93,
+      "teardown": 0.41,
+      "total": 2.34
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_dry_run[nodejs16.x]": {
     "last_validated_date": "2022-09-09T17:15:38+00:00"
@@ -123,186 +345,504 @@
     "last_validated_date": "2023-04-26T17:37:23+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_event[nodejs16.x]": {
-    "last_validated_date": "2024-04-08T16:57:59+00:00"
+    "last_validated_date": "2025-11-24T23:11:31+00:00",
+    "durations_in_seconds": {
+      "setup": 1.71,
+      "call": 3.09,
+      "teardown": 0.44,
+      "total": 5.24
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_event[python3.10]": {
-    "last_validated_date": "2024-04-08T16:58:09+00:00"
+    "last_validated_date": "2025-11-24T23:11:39+00:00",
+    "durations_in_seconds": {
+      "setup": 1.96,
+      "call": 5.36,
+      "teardown": 0.38,
+      "total": 7.7
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_event_error": {
     "last_validated_date": "2023-09-04T20:49:02+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[nodejs-Event]": {
-    "last_validated_date": "2024-10-09T16:16:27+00:00"
+    "last_validated_date": "2025-11-24T23:12:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 10.05,
+      "teardown": 0.42,
+      "total": 10.47
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[nodejs-RequestResponse]": {
-    "last_validated_date": "2024-10-09T16:16:13+00:00"
+    "last_validated_date": "2025-11-24T23:12:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 8.84,
+      "teardown": 0.35,
+      "total": 9.19
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[python-Event]": {
-    "last_validated_date": "2024-10-09T16:16:05+00:00"
+    "last_validated_date": "2025-11-24T23:11:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 7.08,
+      "teardown": 0.3,
+      "total": 7.38
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[python-RequestResponse]": {
-    "last_validated_date": "2024-10-09T16:15:57+00:00"
+    "last_validated_date": "2025-11-24T23:11:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 9.87,
+      "teardown": 0.37,
+      "total": 10.24
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_request_response[nodejs16.x]": {
-    "last_validated_date": "2024-04-08T16:57:47+00:00"
+    "last_validated_date": "2025-11-24T23:11:23+00:00",
+    "durations_in_seconds": {
+      "setup": 1.82,
+      "call": 0.39,
+      "teardown": 0.5,
+      "total": 2.71
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_request_response[python3.10]": {
-    "last_validated_date": "2024-04-08T16:57:50+00:00"
+    "last_validated_date": "2025-11-24T23:11:26+00:00",
+    "durations_in_seconds": {
+      "setup": 1.8,
+      "call": 0.41,
+      "teardown": 0.53,
+      "total": 2.74
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[nodejs16.x]": {
-    "last_validated_date": "2024-04-08T16:57:40+00:00"
+    "last_validated_date": "2025-11-24T23:11:18+00:00",
+    "durations_in_seconds": {
+      "setup": 1.78,
+      "call": 0.47,
+      "teardown": 0.57,
+      "total": 2.82
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[python3.10]": {
-    "last_validated_date": "2024-04-08T16:57:44+00:00"
+    "last_validated_date": "2025-11-24T23:11:20+00:00",
+    "durations_in_seconds": {
+      "setup": 1.87,
+      "call": 0.34,
+      "teardown": 0.49,
+      "total": 2.7
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_qualifier": {
-    "last_validated_date": "2024-04-08T16:58:20+00:00"
+    "last_validated_date": "2025-11-24T23:12:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.67,
+      "call": 8.66,
+      "teardown": 1.07,
+      "total": 10.4
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invoke_exceptions": {
-    "last_validated_date": "2024-04-08T16:57:45+00:00"
+    "last_validated_date": "2025-11-24T23:11:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.12,
+      "teardown": 0.0,
+      "total": 0.12
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_lambda_with_context": {
     "last_validated_date": "2022-09-09T18:19:33+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_upload_lambda_from_s3": {
-    "last_validated_date": "2024-04-08T16:58:25+00:00"
+    "last_validated_date": "2025-11-24T23:12:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.61,
+      "call": 2.5,
+      "teardown": 1.06,
+      "total": 4.17
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_cross_account_access": {
     "last_validated_date": "2024-06-14T12:09:31+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_delete_function": {
-    "last_validated_date": "2024-06-14T15:17:16+00:00"
+    "last_validated_date": "2025-11-24T23:14:15+00:00",
+    "durations_in_seconds": {
+      "setup": 1.9,
+      "call": 0.31,
+      "teardown": 0.36,
+      "total": 2.57
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_alias": {
-    "last_validated_date": "2024-06-14T15:17:02+00:00"
+    "last_validated_date": "2025-11-24T23:14:04+00:00",
+    "durations_in_seconds": {
+      "setup": 1.89,
+      "call": 0.45,
+      "teardown": 0.51,
+      "total": 2.85
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_concurrency": {
-    "last_validated_date": "2024-06-14T15:16:58+00:00"
+    "last_validated_date": "2025-11-24T23:14:01+00:00",
+    "durations_in_seconds": {
+      "setup": 1.81,
+      "call": 0.21,
+      "teardown": 0.51,
+      "total": 2.53
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_invocation": {
-    "last_validated_date": "2024-06-14T15:17:09+00:00"
+    "last_validated_date": "2025-11-24T23:14:10+00:00",
+    "durations_in_seconds": {
+      "setup": 1.86,
+      "call": 0.47,
+      "teardown": 0.6,
+      "total": 2.93
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_tags": {
-    "last_validated_date": "2024-06-14T15:17:06+00:00"
+    "last_validated_date": "2025-11-24T23:14:07+00:00",
+    "durations_in_seconds": {
+      "setup": 1.8,
+      "call": 0.37,
+      "teardown": 0.78,
+      "total": 2.95
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_function": {
-    "last_validated_date": "2024-06-14T15:16:49+00:00"
+    "last_validated_date": "2025-11-24T23:13:53+00:00",
+    "durations_in_seconds": {
+      "setup": 1.82,
+      "call": 0.19,
+      "teardown": 0.51,
+      "total": 2.52
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_function_configuration": {
-    "last_validated_date": "2024-06-14T15:16:52+00:00"
+    "last_validated_date": "2025-11-24T23:13:56+00:00",
+    "durations_in_seconds": {
+      "setup": 1.81,
+      "call": 0.18,
+      "teardown": 0.57,
+      "total": 2.56
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_lambda_layer": {
-    "last_validated_date": "2024-06-14T15:16:46+00:00"
+    "last_validated_date": "2025-11-24T23:13:51+00:00",
+    "durations_in_seconds": {
+      "setup": 5.4,
+      "call": 0.33,
+      "teardown": 0.0,
+      "total": 5.73
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_list_versions_by_function": {
-    "last_validated_date": "2024-06-14T15:16:55+00:00"
+    "last_validated_date": "2025-11-24T23:13:58+00:00",
+    "durations_in_seconds": {
+      "setup": 1.79,
+      "call": 0.16,
+      "teardown": 0.51,
+      "total": 2.46
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_publish_version": {
-    "last_validated_date": "2024-06-14T15:17:13+00:00"
+    "last_validated_date": "2025-11-24T23:14:13+00:00",
+    "durations_in_seconds": {
+      "setup": 1.87,
+      "call": 0.49,
+      "teardown": 0.65,
+      "total": 3.01
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaPermissions::test_lambda_permission_url_invocation": {
-    "last_validated_date": "2024-04-08T16:57:37+00:00"
+    "last_validated_date": "2025-11-24T23:11:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.26,
+      "teardown": 0.53,
+      "total": 2.79
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_function_url_with_response_streaming": {
-    "last_validated_date": "2025-07-30T21:16:00+00:00",
+    "last_validated_date": "2025-11-24T23:09:29+00:00",
     "durations_in_seconds": {
-      "setup": 10.91,
-      "call": 3.45,
-      "teardown": 0.83,
-      "total": 15.19
+      "setup": 0.0,
+      "call": 2.87,
+      "teardown": 0.52,
+      "total": 3.39
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_update_function_url_config": {
-    "last_validated_date": "2024-04-08T16:57:17+00:00"
+    "last_validated_date": "2025-11-24T23:09:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.1,
+      "teardown": 0.53,
+      "total": 3.63
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture": {
     "last_validated_date": "2024-03-28T22:20:14+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture_default": {
-    "last_validated_date": "2024-07-18T14:18:07+00:00"
+    "last_validated_date": "2025-11-24T23:11:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.52,
+      "teardown": 0.58,
+      "total": 3.1
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture_trim_x_headers": {
-    "last_validated_date": "2024-04-08T16:57:34+00:00"
+    "last_validated_date": "2025-11-24T23:11:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.54,
+      "teardown": 0.51,
+      "total": 3.05
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[BUFFERED]": {
-    "last_validated_date": "2024-04-08T16:57:05+00:00"
+    "last_validated_date": "2025-11-24T23:09:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.72,
+      "teardown": 0.54,
+      "total": 3.26
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[None]": {
-    "last_validated_date": "2024-04-08T16:57:01+00:00"
+    "last_validated_date": "2025-11-24T23:09:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.83,
+      "teardown": 0.52,
+      "total": 3.35
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[RESPONSE_STREAM]": {
-    "last_validated_date": "2024-04-08T16:57:09+00:00"
+    "last_validated_date": "2025-11-24T23:09:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.7,
+      "teardown": 0.56,
+      "total": 3.26
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_form_payload": {
-    "last_validated_date": "2024-06-13T21:01:15+00:00"
+    "last_validated_date": "2025-11-24T23:11:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.25,
+      "teardown": 0.55,
+      "total": 3.8
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_headers_and_status": {
-    "last_validated_date": "2024-04-08T16:57:13+00:00"
+    "last_validated_date": "2025-11-24T23:09:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.82,
+      "teardown": 0.56,
+      "total": 3.38
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invalid_invoke_mode": {
-    "last_validated_date": "2024-04-08T16:57:25+00:00"
+    "last_validated_date": "2025-11-24T23:11:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.73,
+      "teardown": 0.35,
+      "total": 2.08
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[boolean]": {
-    "last_validated_date": "2024-04-08T16:56:56+00:00"
+    "last_validated_date": "2025-11-24T23:09:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.42,
+      "teardown": 0.51,
+      "total": 2.93
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[dict]": {
-    "last_validated_date": "2024-04-08T16:56:29+00:00"
+    "last_validated_date": "2025-11-24T23:09:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.61,
+      "teardown": 0.53,
+      "total": 3.14
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[float]": {
-    "last_validated_date": "2024-04-08T16:56:52+00:00"
+    "last_validated_date": "2025-11-24T23:09:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.57,
+      "teardown": 0.48,
+      "total": 3.05
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[http-response-json]": {
-    "last_validated_date": "2024-04-08T16:56:36+00:00"
+    "last_validated_date": "2025-11-24T23:09:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.56,
+      "teardown": 0.49,
+      "total": 3.05
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[http-response]": {
-    "last_validated_date": "2024-04-08T16:56:32+00:00"
+    "last_validated_date": "2025-11-24T23:09:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.48,
+      "teardown": 0.49,
+      "total": 2.97
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[integer]": {
-    "last_validated_date": "2024-04-08T16:56:48+00:00"
+    "last_validated_date": "2025-11-24T23:09:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.8,
+      "teardown": 0.52,
+      "total": 3.32
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[list-mixed]": {
-    "last_validated_date": "2024-04-08T16:56:40+00:00"
+    "last_validated_date": "2025-11-24T23:09:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.5,
+      "teardown": 0.48,
+      "total": 2.98
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[string]": {
-    "last_validated_date": "2024-04-08T16:56:44+00:00"
+    "last_validated_date": "2025-11-24T23:09:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.59,
+      "teardown": 0.56,
+      "total": 3.15
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_custom_id": {
-    "last_validated_date": "2024-08-05T12:24:46+00:00"
+    "last_validated_date": "2025-11-24T23:09:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.67,
+      "teardown": 0.59,
+      "total": 3.26
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_custom_id_aliased": {
-    "last_validated_date": "2024-08-05T12:48:05+00:00"
+    "last_validated_date": "2025-11-24T23:09:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.85,
+      "teardown": 0.57,
+      "total": 3.42
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_exception": {
-    "last_validated_date": "2024-04-08T16:57:22+00:00"
+    "last_validated_date": "2025-11-24T23:09:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.88,
+      "teardown": 0.5,
+      "total": 3.38
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_non_existing_url": {
-    "last_validated_date": "2024-04-11T17:16:39+00:00"
+    "last_validated_date": "2025-11-24T23:11:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.29,
+      "teardown": 0.0,
+      "total": 0.29
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_persists_after_alias_delete": {
-    "last_validated_date": "2024-08-05T13:57:02+00:00"
+    "last_validated_date": "2025-11-24T23:11:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 62.73,
+      "teardown": 0.65,
+      "total": 63.38
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_async_invoke_queue_upon_function_update": {
-    "last_validated_date": "2024-05-15T18:29:38+00:00"
+    "last_validated_date": "2025-11-24T23:27:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 71.82,
+      "teardown": 1.85,
+      "total": 73.67
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_function_update_during_invoke": {
     "last_validated_date": "2024-05-15T19:05:04+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_lambda_handler_update": {
-    "last_validated_date": "2024-04-08T17:10:58+00:00"
+    "last_validated_date": "2025-11-24T23:26:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 4.64,
+      "teardown": 0.65,
+      "total": 5.29
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_lambda_versions_with_code_changes": {
-    "last_validated_date": "2024-04-08T17:10:52+00:00"
+    "last_validated_date": "2025-11-24T23:26:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.8,
+      "teardown": 0.46,
+      "total": 13.26
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_async_invoke_with_retry": {
-    "last_validated_date": "2024-04-08T17:13:38+00:00"
+    "last_validated_date": "2025-11-24T23:30:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 122.59,
+      "teardown": 1.51,
+      "total": 124.1
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_format": {
-    "last_validated_date": "2024-04-08T17:11:17+00:00"
+    "last_validated_date": "2025-11-24T23:27:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.16,
+      "teardown": 0.0,
+      "total": 0.16
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_invoke": {
-    "last_validated_date": "2024-04-08T17:11:26+00:00"
+    "last_validated_date": "2025-11-24T23:28:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.99,
+      "teardown": 0.42,
+      "total": 7.41
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_invoke_url": {
-    "last_validated_date": "2024-04-08T17:11:34+00:00"
+    "last_validated_date": "2025-11-24T23:28:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 9.54,
+      "teardown": 0.38,
+      "total": 9.92
+    }
   }
 }

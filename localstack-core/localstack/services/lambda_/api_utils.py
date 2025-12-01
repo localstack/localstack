@@ -3,6 +3,8 @@ Everything related to behavior or implicit functionality goes into `lambda_utils
 """
 
 import datetime
+import hashlib
+import json
 import random
 import re
 import string
@@ -62,13 +64,14 @@ DESTINATION_ARN_PATTERN = re.compile(
     r"^$|arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
 )
 
+# TODO: what's the difference between AWS_FUNCTION_NAME_REGEX and FUNCTION_NAME_REGEX? Can we unify?
 AWS_FUNCTION_NAME_REGEX = re.compile(
-    "^(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?$"
+    "^(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_.]+)(:(\\$LATEST(\\.PUBLISHED)?|[a-zA-Z0-9-_]+))?$"
 )
 
 # Pattern for extracting various attributes from a full or partial ARN or just a function name.
 FUNCTION_NAME_REGEX = re.compile(
-    r"(arn:(aws[a-zA-Z-]*):lambda:)?((?P<region>[a-z]{2}(-gov)?-[a-z]+-\d{1}):)?(?:(?P<account>\d{12}):)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST|[a-zA-Z0-9-_]+))?"
+    r"(arn:(aws[a-zA-Z-]*):lambda:)?((?P<region>[a-z]{2}(-gov)?-[a-z]+-\d{1}):)?(?:(?P<account>\d{12}):)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST(\.PUBLISHED)?|[a-zA-Z0-9-_]+))?"
 )  # also length 1-170 incl.
 # Pattern for a lambda function handler
 HANDLER_REGEX = re.compile(r"[^\s]+")
@@ -86,9 +89,11 @@ SIGNING_JOB_ARN_REGEX = re.compile(
 SIGNING_PROFILE_VERSION_ARN_REGEX = re.compile(
     r"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
 )
-# Combined pattern for alias and version based on AWS error using "(|[a-zA-Z0-9$_-]+)"
-QUALIFIER_REGEX = re.compile(r"(^[a-zA-Z0-9$_-]+$)")
+# Combined pattern for alias and version based on AWS error using "\\$(LATEST(\\.PUBLISHED)?)|[a-zA-Z0-9-_$]+"
+# This regex is based on the snapshotted validation message, just removing the double \\ before $LATEST
+QUALIFIER_REGEX = re.compile(r"^\$(LATEST(\\.PUBLISHED)?)|[a-zA-Z0-9-_$]+$")
 # Pattern for a version qualifier
+# TODO: do we need to consider $LATEST.PUBLISHED here?
 VERSION_REGEX = re.compile(r"^[0-9]+$")
 # Pattern for an alias qualifier
 # Rules: https://docs.aws.amazon.com/lambda/latest/dg/API_CreateAlias.html#SSS-CreateAlias-request-Name
@@ -107,36 +112,42 @@ LAMBDA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
 # An unordered list of all Lambda CPU architectures supported by LocalStack.
 ARCHITECTURES = [Architecture.arm64, Architecture.x86_64]
 
-# ARN pattern returned in validation exception messages.
-# Some excpetions from AWS return a '\.' in the function name regex
-# pattern therefore we can sub this value in when appropriate.
-ARN_NAME_PATTERN_VALIDATION_TEMPLATE = "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{{2}}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{{1}}:)?(\\d{{12}}:)?(function:)?([a-zA-Z0-9-_{0}]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+# ARN patterns returned in validation exception messages
+ARN_NAME_PATTERN_GET = r"(arn:(aws[a-zA-Z-]*)?:lambda:)?((eusc-)?[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_\.]+)(:(\$LATEST(\.PUBLISHED)?|[a-zA-Z0-9-_]+))?"
+ARN_NAME_PATTERN_CREATE = r"(arn:(aws[a-zA-Z-]*)?:lambda:)?((eusc-)?[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"
 
 # AWS response when invalid ARNs are used in Tag operations.
-TAGGABLE_RESOURCE_ARN_PATTERN = "arn:(aws[a-zA-Z-]*):lambda:[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:(function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?|layer:([a-zA-Z0-9-_]+)|code-signing-config:csc-[a-z0-9]{17}|event-source-mapping:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+TAGGABLE_RESOURCE_ARN_PATTERN = "arn:(aws[a-zA-Z-]*):lambda:(eusc-)?[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:(function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?|layer:([a-zA-Z0-9-_]+)|code-signing-config:csc-[a-z0-9]{17}|event-source-mapping:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|capacity-provider:[a-zA-Z0-9-_]+)"
 
 
 def validate_function_name(function_name_or_arn: str, operation_type: str):
     function_name, *_ = function_locators_from_arn(function_name_or_arn)
-    arn_name_pattern = ARN_NAME_PATTERN_VALIDATION_TEMPLATE.format("")
+    arn_name_pattern = ARN_NAME_PATTERN_CREATE
     max_length = 170
 
-    match operation_type:
-        case "GetFunction" | "Invoke":
-            arn_name_pattern = ARN_NAME_PATTERN_VALIDATION_TEMPLATE.format(r"\.")
-        case "CreateFunction" if function_name == function_name_or_arn:  # only a function name
+    if operation_type == "GetFunction" or operation_type == "Invoke":
+        arn_name_pattern = ARN_NAME_PATTERN_GET
+    elif operation_type == "CreateFunction":
+        # https://docs.aws.amazon.com/lambda/latest/api/API_CreateFunction.html#lambda-CreateFunction-request-FunctionName
+        if function_name == function_name_or_arn:  # only a function name
             max_length = 64
-        case "CreateFunction" | "DeleteFunction":
+        else:  # full or partial ARN
             max_length = 140
+    elif operation_type == "DeleteFunction":
+        max_length = 140
+        arn_name_pattern = ARN_NAME_PATTERN_GET
 
     validations = []
-    if len(function_name_or_arn) > max_length:
-        constraint = f"Member must have length less than or equal to {max_length}"
-        validation_msg = f"Value '{function_name_or_arn}' at 'functionName' failed to satisfy constraint: {constraint}"
-        validations.append(validation_msg)
-
     if not AWS_FUNCTION_NAME_REGEX.match(function_name_or_arn) or not function_name:
         constraint = f"Member must satisfy regular expression pattern: {arn_name_pattern}"
+        validation_msg = f"Value '{function_name_or_arn}' at 'functionName' failed to satisfy constraint: {constraint}"
+        validations.append(validation_msg)
+        if not operation_type == "CreateFunction":
+            # Immediately raises rather than summarizing all validations, except for CreateFunction
+            return validations
+
+    if len(function_name_or_arn) > max_length:
+        constraint = f"Member must have length less than or equal to {max_length}"
         validation_msg = f"Value '{function_name_or_arn}' at 'functionName' failed to satisfy constraint: {constraint}"
         validations.append(validation_msg)
 
@@ -154,7 +165,7 @@ def validate_qualifier(qualifier: str):
         validations.append(validation_msg)
 
     if not QUALIFIER_REGEX.match(qualifier):
-        constraint = "Member must satisfy regular expression pattern: (|[a-zA-Z0-9$_-]+)"
+        constraint = "Member must satisfy regular expression pattern: \\$(LATEST(\\.PUBLISHED)?)|[a-zA-Z0-9-_$]+"
         validation_msg = (
             f"Value '{qualifier}' at 'qualifier' failed to satisfy constraint: {constraint}"
         )
@@ -570,6 +581,12 @@ def map_config_out(
     elif version.config.image:
         optional_kwargs["CodeSize"] = 0
         optional_kwargs["CodeSha256"] = version.config.image.code_sha256
+
+    if version.config.CapacityProviderConfig:
+        optional_kwargs["CapacityProviderConfig"] = version.config.CapacityProviderConfig
+        data = json.dumps(version.config.CapacityProviderConfig, sort_keys=True).encode("utf-8")
+        config_sha_256 = hashlib.sha256(data).hexdigest()
+        optional_kwargs["ConfigSha256"] = config_sha_256
 
     # output for an alias qualifier is completely the same except for the returned ARN
     if alias_name:

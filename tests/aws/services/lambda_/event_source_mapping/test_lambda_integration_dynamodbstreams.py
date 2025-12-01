@@ -309,7 +309,7 @@ class TestDynamoDBEventSourceMapping:
         retry(
             check_expected_lambda_log_events_length,
             retries=10,
-            sleep=3,
+            sleep=5 if is_aws_cloud() else 1,
             function_name=function_name,
             expected_length=1,
             logs_client=aws_client.logs,
@@ -1080,6 +1080,8 @@ class TestDynamoDBEventSourceMapping:
     ):
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
         snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
+        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
+        snapshot.add_transformer(snapshot.transform.key_value("endSequenceNumber"))
 
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
@@ -1134,11 +1136,14 @@ class TestDynamoDBEventSourceMapping:
         messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("destination_queue_messages", messages)
 
-        events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
-
         # This will filter out exception messages being added to the log stream
-        invocation_events = [event for event in events if "Records" in event]
-        snapshot.match("dynamodb_events", invocation_events)
+        def _get_events():
+            events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
+            invocation_events = [event for event in events if "Records" in event]
+            assert len(invocation_events) == 4
+            return invocation_events
+
+        snapshot.match("dynamodb_events", retry(_get_events, retries=10))
 
     @markers.aws.validated
     @pytest.mark.parametrize(

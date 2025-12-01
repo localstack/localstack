@@ -5,6 +5,7 @@ import io
 import logging
 import os.path
 import random
+import time
 import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from datetime import datetime
@@ -19,6 +20,7 @@ from localstack.aws.api.lambda_ import (
     InvalidRequestContentException,
     InvocationType,
     LastUpdateStatus,
+    NoPublishedVersionException,
     ResourceConflictException,
     ResourceNotFoundException,
     State,
@@ -190,6 +192,9 @@ class LambdaService:
             lambda_hooks.create_function_version.run(function_version.qualified_arn)
         return self.task_executor.submit(self._start_lambda_version, version_manager)
 
+    def publish_version_async(self, function_version: FunctionVersion):
+        self.task_executor.submit(self.publish_version, function_version)
+
     def publish_version(self, function_version: FunctionVersion):
         """
         Synchronously create a function version (manager)
@@ -200,6 +205,14 @@ class LambdaService:
 
         :param function_version: Function Version to create
         """
+        # HACK: trying to match the AWS timing behavior of Lambda Managed Instances for the operation
+        # publish_version followed by get_function because transitioning LastUpdateStatus from InProgress to
+        # Successful happens too fast on LocalStack (thanks to caching in prepare_version).
+        # Without this hack, test_latest_published_update_config fails at get_function_response_postpublish
+        # and test_lifecycle_invoke is flaky, sometimes not triggering the ResourceConflictException
+        # Increasing this sleep too much (e.g., 10s) shouldn't cause any side effects apart from slow responsiveness
+        if function_version.config.CapacityProviderConfig:
+            time.sleep(0.1)
         with self.lambda_version_manager_lock:
             qualified_arn = function_version.id.qualified_arn()
             version_manager = self.lambda_starting_versions.get(qualified_arn)
@@ -225,7 +238,7 @@ class LambdaService:
     def invoke(
         self,
         function_name: str,
-        qualifier: str,
+        qualifier: str | None,
         region: str,
         account_id: str,
         invocation_type: InvocationType | None,
@@ -258,12 +271,26 @@ class LambdaService:
             account=account_id,
             region=region,
         )
-        qualifier = qualifier or "$LATEST"
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
 
         if function is None:
+            if not qualifier:
+                invoked_arn += ":$LATEST"
             raise ResourceNotFoundException(f"Function not found: {invoked_arn}", Type="User")
+
+        # A provided qualifier always takes precedence, but the default depends on whether $LATEST.PUBLISHED exists
+        version_latest_published = function.versions.get("$LATEST.PUBLISHED")
+        if version_latest_published:
+            qualifier = qualifier or "$LATEST.PUBLISHED"
+            invoked_arn = lambda_arn(
+                function_name=function_name,
+                qualifier=qualifier,
+                account=account_id,
+                region=region,
+            )
+        else:
+            qualifier = qualifier or "$LATEST"
 
         if qualifier_is_alias(qualifier):
             alias = function.aliases.get(qualifier)
@@ -282,8 +309,21 @@ class LambdaService:
         # Need the qualified arn to exactly get the target lambda
         qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
         version = function.versions.get(version_qualifier)
+        if version is None:
+            raise ResourceNotFoundException(f"Function not found: {invoked_arn}", Type="User")
         runtime = version.config.runtime or "n/a"
         package_type = version.config.package_type
+        if version.config.CapacityProviderConfig and qualifier == "$LATEST":
+            if function.versions.get("$LATEST.PUBLISHED"):
+                raise InvalidParameterValueException(
+                    "Functions configured with capacity provider configuration can't be invoked with $LATEST qualifier. To invoke this function, specify a published version qualifier or $LATEST.PUBLISHED.",
+                    Type="User",
+                )
+            else:
+                raise NoPublishedVersionException(
+                    "The function can't be invoked because no published version exists. For functions with capacity provider configuration, either publish a version to $LATEST.PUBLISHED, or specify a published version qualifier.",
+                    Type="User",
+                )
         try:
             version_manager = self.get_lambda_version_manager(qualified_arn)
             event_manager = self.get_lambda_event_manager(qualified_arn)
@@ -393,7 +433,10 @@ class LambdaService:
 
         :param new_version: New version (with the same qualifier as an older one)
         """
-        if new_version.qualified_arn not in self.lambda_running_versions:
+        if (
+            new_version.qualified_arn not in self.lambda_running_versions
+            and not new_version.config.CapacityProviderConfig
+        ):
             raise ValueError(
                 f"Version {new_version.qualified_arn} cannot be updated if an old one is not running"
             )
@@ -437,6 +480,11 @@ class LambdaService:
                 elif new_state.state == State.Failed:
                     update_status = UpdateStatus(status=LastUpdateStatus.Failed)
                     self.task_executor.submit(new_version_manager.stop)
+                elif (
+                    new_state.state == State.ActiveNonInvocable
+                    and function_version.config.CapacityProviderConfig
+                ):
+                    update_status = UpdateStatus(status=LastUpdateStatus.Successful)
                 else:
                     # TODO what to do if state pending or inactive is supported?
                     self.task_executor.submit(new_version_manager.stop)

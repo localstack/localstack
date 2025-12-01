@@ -453,6 +453,11 @@ class TestLambdaBehavior:
             "$..Payload.paths._var_task_gid",
             "$..Payload.paths._var_task_owner",
             "$..Payload.paths._var_task_uid",
+            # TODO fix runtime environment
+            "$..Payload.paths._tmp_gid",
+            "$..Payload.paths._tmp_mode",
+            "$..Payload.paths._tmp_owner",
+            "$..Payload.paths._tmp_uid",
         ],
     )
     @markers.aws.validated
@@ -477,6 +482,10 @@ class TestLambdaBehavior:
             "$..Payload.paths._var_task_gid",
             "$..Payload.paths._var_task_owner",
             "$..Payload.paths._var_task_uid",
+            "$..Payload.paths._tmp_gid",
+            "$..Payload.paths._tmp_mode",
+            "$..Payload.paths._tmp_owner",
+            "$..Payload.paths._tmp_uid",
         ],
     )
     @markers.aws.validated
@@ -503,7 +512,7 @@ class TestLambdaBehavior:
         monkeypatch.setattr(
             config,
             "LAMBDA_DOCKER_FLAGS",
-            "--ulimit nofile=1024:1024 --ulimit nproc=742:742 --ulimit core=-1:-1 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
+            "--ulimit nofile=1024:1024 --ulimit nproc=742:742 --ulimit core=10737418240 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
         )
 
         func_name = f"test_lambda_ulimits_{short_uid()}"
@@ -612,9 +621,18 @@ class TestLambdaBehavior:
         snapshot.match("second_invoke_result", second_invoke_result)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO the current error is Sandbox.Timedout. This is likely to change when the feature goes live?
+            "$..Payload.errorType",
+            "$..Payload.errorMessage",
+        ]
+    )
     def test_lambda_invoke_with_timeout(self, create_lambda_function, snapshot, aws_client):
         # Snapshot generation could be flaky against AWS with a small timeout margin (e.g., 1.02 instead of 1.00)
-        regex = re.compile(r".*\s(?P<uuid>[-a-z0-9]+) Task timed out after \d.\d+ seconds")
+        regex = re.compile(
+            r".*\s(?P<uuid>[-a-z0-9]+)( Error:)? Task timed out after \d.\d+ seconds"
+        )
         snapshot.add_transformer(
             KeyValueBasedTransformer(
                 lambda k, v: regex.search(v).group("uuid") if k == "errorMessage" else None,
@@ -775,38 +793,12 @@ class TestLambdaBehavior:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # not set directly on init in lambda, but only on runtime processes
-            "$..Payload.environment.AWS_ACCESS_KEY_ID",
-            "$..Payload.environment.AWS_SECRET_ACCESS_KEY",
-            "$..Payload.environment.AWS_SESSION_TOKEN",
-            "$..Payload.environment.AWS_XRAY_DAEMON_ADDRESS",
-            # variables set by default in the image/docker
-            "$..Payload.environment.HOME",
-            "$..Payload.environment.HOSTNAME",
-            # LocalStack specific variables
+            "$..Payload.environment.AWS_CONTAINER_AUTHORIZATION_TOKEN",
+            "$..Payload.environment.AWS_CONTAINER_CREDENTIALS_FULL_URI",
             "$..Payload.environment.AWS_ENDPOINT_URL",
             "$..Payload.environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
             "$..Payload.environment.EDGE_PORT",
-            "$..Payload.environment.LOCALSTACK_FUNCTION_ACCOUNT_ID",
             "$..Payload.environment.LOCALSTACK_HOSTNAME",
-            "$..Payload.environment.LOCALSTACK_INIT_LOG_LEVEL",
-            "$..Payload.environment.LOCALSTACK_RUNTIME_ENDPOINT",
-            "$..Payload.environment.LOCALSTACK_RUNTIME_ID",
-            "$..Payload.environment.LOCALSTACK_USER",
-            "$..Payload.environment.LOCALSTACK_POST_INVOKE_WAIT_MS",
-            "$..Payload.environment.LOCALSTACK_MAX_PAYLOAD_SIZE",
-            "$..Payload.environment.LOCALSTACK_CHMOD_PATHS",
-            # internal AWS lambda functionality
-            "$..Payload.environment._AWS_XRAY_DAEMON_ADDRESS",
-            "$..Payload.environment._LAMBDA_CONSOLE_SOCKET",
-            "$..Payload.environment._LAMBDA_CONTROL_SOCKET",
-            "$..Payload.environment._LAMBDA_DIRECT_INVOKE_SOCKET",
-            "$..Payload.environment._LAMBDA_LOG_FD",
-            "$..Payload.environment._LAMBDA_RUNTIME_LOAD_TIME",
-            "$..Payload.environment._LAMBDA_SB_ID",
-            "$..Payload.environment._LAMBDA_SHARED_MEM_FD",
-            "$..Payload.environment._LAMBDA_TELEMETRY_API_PASSPHRASE",
-            "$..Payload.environment._X_AMZN_TRACE_ID",
         ]
     )
     @markers.requires_in_process
@@ -826,6 +818,10 @@ class TestLambdaBehavior:
                 snapshot.transform.key_value("AWS_LAMBDA_LOG_STREAM_NAME", "log-stream-name"),
                 snapshot.transform.key_value("_X_AMZN_TRACE_ID", "xray-trace-id"),
                 snapshot.transform.key_value("_LAMBDA_RUNTIME_LOAD_TIME", "runtime-load-time"),
+                snapshot.transform.key_value("AWS_SECRET_ACCESS_KEY", "aws-secret-access-key"),
+                snapshot.transform.key_value("AWS_ACCESS_KEY_ID", "aws-access-key-id"),
+                snapshot.transform.key_value("AWS_SESSION_TOKEN", "aws-session-token"),
+                snapshot.transform.key_value("_AWS_XRAY_DAEMON_ADDRESS", "xray-daemon-address"),
             ]
         )
         create_result = create_lambda_function(
@@ -1277,6 +1273,8 @@ class TestLambdaURL:
         assert result.status_code == 502
 
     @markers.aws.validated
+    # TODO Add error message
+    @markers.snapshot.skip_snapshot_verify(paths=["$..content.Message"])
     def test_lambda_url_persists_after_alias_delete(
         self, create_lambda_function, snapshot, aws_client
     ):
@@ -2903,6 +2901,7 @@ class TestLambdaConcurrency:
         snapshot.add_transformer(
             snapshot.transform.key_value("SenderId", "<sender-id>", reference_replacement=False)
         )
+        snapshot.add_transformer(snapshot.transform.key_value("AWSTraceHeader"))
         func_name = f"test_lambda_{short_uid()}"
 
         create_lambda_function(
@@ -3372,10 +3371,16 @@ class TestLambdaAliases:
             FunctionVersion=second_publish_response["Version"],
         )
         snapshot.match("update_alias_response", update_alias_response)
+
         # check if alias moved to 2
-        invocation_result_qualifier_v2 = aws_client.lambda_.invoke(
-            FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
-        )
+        def _invoke_qualifier_v2():
+            result = aws_client.lambda_.invoke(
+                FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
+            )
+            assert result["ExecutedVersion"] == "2"
+            return result
+
+        invocation_result_qualifier_v2 = retry(_invoke_qualifier_v2)
         snapshot.match("invocation_result_qualifier_v2", invocation_result_qualifier_v2)
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
             aws_client.lambda_.invoke(

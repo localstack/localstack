@@ -1,23 +1,65 @@
 {
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDLQ::test_dead_letter_queue": {
-    "last_validated_date": "2024-06-17T11:49:58+00:00"
+    "last_validated_date": "2025-11-24T23:11:05+00:00",
+    "durations_in_seconds": {
+      "setup": 11.02,
+      "call": 176.18,
+      "teardown": 0.76,
+      "total": 187.96
+    }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationEventbridge::test_invoke_lambda_eventbridge": {
-    "last_validated_date": "2024-11-19T08:54:21+00:00"
+    "last_validated_date": "2025-11-24T23:22:15+00:00",
+    "durations_in_seconds": {
+      "setup": 100.97,
+      "call": 21.64,
+      "teardown": 55.12,
+      "total": 177.73
+    }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload0]": {
-    "last_validated_date": "2024-03-21T12:26:43+00:00"
+    "last_validated_date": "2025-11-24T23:11:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.93,
+      "teardown": 0.6,
+      "total": 3.53
+    }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload1]": {
-    "last_validated_date": "2024-03-21T12:26:48+00:00"
+    "last_validated_date": "2025-11-24T23:11:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.09,
+      "teardown": 0.74,
+      "total": 3.83
+    }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_lambda_destination_default_retries": {
-    "last_validated_date": "2024-03-21T12:24:09+00:00"
+    "last_validated_date": "2025-11-24T23:14:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 177.39,
+      "teardown": 0.87,
+      "total": 178.26
+    }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_maxeventage": {
-    "last_validated_date": "2023-03-22T17:52:05+00:00"
+    "last_validated_date": "2025-11-27T02:28:58+00:00",
+    "durations_in_seconds": {
+      "setup": 11.21,
+      "call": 72.08,
+      "teardown": 1.45,
+      "total": 84.74
+    }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_retries": {
-    "last_validated_date": "2023-03-22T17:50:18+00:00"
+    "last_validated_date": "2025-11-25T22:18:25+00:00",
+    "durations_in_seconds": {
+      "setup": 10.92,
+      "call": 218.7,
+      "teardown": 1.26,
+      "total": 230.88
+    }
   }
 }

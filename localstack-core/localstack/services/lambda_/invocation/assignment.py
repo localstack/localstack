@@ -88,9 +88,12 @@ class AssignmentService(OtherServiceEndpoint):
         self, version_manager_id: str, function_version: FunctionVersion
     ) -> ExecutionEnvironment:
         LOG.debug("Starting new environment")
+        initialization_type = "on-demand"
+        if function_version.config.CapacityProviderConfig:
+            initialization_type = "lambda-managed-instances"
         execution_environment = ExecutionEnvironment(
             function_version=function_version,
-            initialization_type="on-demand",
+            initialization_type=initialization_type,
             on_timeout=self.on_timeout,
             version_manager_id=version_manager_id,
         )

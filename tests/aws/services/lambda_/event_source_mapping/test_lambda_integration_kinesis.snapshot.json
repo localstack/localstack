@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping": {
-    "recorded-date": "12-10-2024, 11:47:16",
+    "recorded-date": "25-11-2025, 16:27:42",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 100,
@@ -195,7 +195,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_async_invocation": {
-    "recorded-date": "11-12-2024, 09:54:54",
+    "recorded-date": "25-11-2025, 16:30:35",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -562,7 +562,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_trim_horizon": {
-    "recorded-date": "12-10-2024, 11:50:52",
+    "recorded-date": "25-11-2025, 17:33:31",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -1096,7 +1096,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_disable_kinesis_event_source_mapping": {
-    "recorded-date": "12-10-2024, 11:54:22",
+    "recorded-date": "25-11-2025, 16:34:05",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -1293,7 +1293,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_on_failure_destination_config": {
-    "recorded-date": "12-10-2024, 12:29:14",
+    "recorded-date": "25-11-2025, 16:35:32",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -1363,7 +1363,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisEventFiltering::test_kinesis_event_filtering_json_pattern": {
-    "recorded-date": "12-10-2024, 13:31:54",
+    "recorded-date": "25-11-2025, 17:06:08",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -1447,7 +1447,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_duplicate_event_source_mappings": {
-    "recorded-date": "12-10-2024, 11:48:49",
+    "recorded-date": "25-11-2025, 16:29:02",
     "recorded-content": {
       "create": {
         "BatchSize": 100,
@@ -1490,7 +1490,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping_multiple_lambdas_single_kinesis_event_stream": {
-    "recorded-date": "12-10-2024, 13:58:19",
+    "recorded-date": "25-11-2025, 17:33:15",
     "recorded-content": {
       "create_event_source_mapping_response-a": {
         "BatchSize": 100,
@@ -1587,7 +1587,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_sns_on_failure_destination_config": {
-    "recorded-date": "12-10-2024, 13:17:57",
+    "recorded-date": "25-11-2025, 16:48:33",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -1654,7 +1654,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failures": {
-    "recorded-date": "12-10-2024, 14:17:06",
+    "recorded-date": "25-11-2025, 19:03:18",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 3,
@@ -1890,7 +1890,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_list_success]": {
-    "recorded-date": "12-10-2024, 13:21:25",
+    "recorded-date": "25-11-2025, 16:52:37",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -1945,7 +1945,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[null_success]": {
-    "recorded-date": "12-10-2024, 13:23:15",
+    "recorded-date": "25-11-2025, 16:53:51",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -2000,7 +2000,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_dict_success]": {
-    "recorded-date": "12-10-2024, 13:25:13",
+    "recorded-date": "25-11-2025, 16:55:22",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -2055,7 +2055,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_batch_item_failure_success]": {
-    "recorded-date": "12-10-2024, 13:27:12",
+    "recorded-date": "25-11-2025, 16:56:44",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -2110,7 +2110,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[null_batch_item_failure_success]": {
-    "recorded-date": "12-10-2024, 13:28:05",
+    "recorded-date": "25-11-2025, 16:58:22",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -2165,7 +2165,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[empty_string_item_identifier_failure]": {
-    "recorded-date": "12-10-2024, 13:08:09",
+    "recorded-date": "25-11-2025, 21:22:47",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -2299,7 +2299,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[null_item_identifier_failure]": {
-    "recorded-date": "12-10-2024, 13:10:20",
+    "recorded-date": "25-11-2025, 21:24:21",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -2433,7 +2433,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[invalid_key_foo_failure]": {
-    "recorded-date": "12-10-2024, 13:13:18",
+    "recorded-date": "25-11-2025, 21:25:25",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -2567,7 +2567,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[invalid_key_foo_null_value_failure]": {
-    "recorded-date": "12-10-2024, 13:14:13",
+    "recorded-date": "25-11-2025, 21:26:14",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -2701,7 +2701,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[unhandled_exception_in_function]": {
-    "recorded-date": "14-10-2024, 18:10:16",
+    "recorded-date": "25-11-2025, 21:27:32",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -2835,7 +2835,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_failure_scenarios[item_identifier_not_present_failure]": {
-    "recorded-date": "12-10-2024, 13:06:13",
+    "recorded-date": "25-11-2025, 21:21:12",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -2969,7 +2969,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_report_batch_item_success_scenarios[empty_string_success]": {
-    "recorded-date": "12-10-2024, 13:19:37",
+    "recorded-date": "25-11-2025, 16:51:42",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -3024,7 +3024,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_empty_provided": {
-    "recorded-date": "11-10-2024, 11:04:55",
+    "recorded-date": "25-11-2025, 17:03:32",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -3081,7 +3081,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_s3_on_failure_destination": {
-    "recorded-date": "03-01-2025, 14:50:27",
+    "recorded-date": "25-11-2025, 16:50:20",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -3158,7 +3158,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_esm_with_not_existing_kinesis_stream": {
-    "recorded-date": "26-02-2025, 03:05:30",
+    "recorded-date": "25-11-2025, 16:26:16",
     "recorded-content": {
       "error": {
         "Error": {
@@ -3175,7 +3175,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded[expire-while-retrying]": {
-    "recorded-date": "13-04-2025, 15:00:55",
+    "recorded-date": "25-11-2025, 16:59:40",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -3213,7 +3213,7 @@
                 "requestId": "<uuid:2>",
                 "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
                 "condition": "RecordAgeExceeded",
-                "approximateInvokeCount": 1
+                "approximateInvokeCount": 8
               },
               "version": "1.0",
               "timestamp": "<timestamp:2022-07-13T13:48:01.000Z>",
@@ -3240,7 +3240,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded[expire-before-ingestion]": {
-    "recorded-date": "13-04-2025, 16:29:29",
+    "recorded-date": "25-11-2025, 17:01:42",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -3305,7 +3305,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_maximum_record_age_exceeded_discard_records": {
-    "recorded-date": "13-04-2025, 17:05:16",
+    "recorded-date": "25-11-2025, 18:15:46",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,

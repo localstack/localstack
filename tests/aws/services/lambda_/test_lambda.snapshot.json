@@ -152,7 +152,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_cache_local[nodejs]": {
-    "recorded-date": "08-04-2024, 16:55:57",
+    "recorded-date": "24-11-2025, 23:08:41",
     "recorded-content": {
       "first_invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -179,7 +179,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_cache_local[python]": {
-    "recorded-date": "08-04-2024, 16:56:00",
+    "recorded-date": "24-11-2025, 23:08:44",
     "recorded-content": {
       "first_invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -206,7 +206,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_with_timeout": {
-    "recorded-date": "08-04-2024, 16:56:05",
+    "recorded-date": "25-11-2025, 00:39:45",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -261,7 +261,8 @@
         "ExecutedVersion": "$LATEST",
         "FunctionError": "Unhandled",
         "Payload": {
-          "errorMessage": "date <timeout_error_msg> Task timed out after 1.00 seconds"
+          "errorType": "Sandbox.Timedout",
+          "errorMessage": "RequestId: <timeout_error_msg> Error: Task timed out after 1.00 seconds"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -272,7 +273,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_no_timeout": {
-    "recorded-date": "08-04-2024, 16:56:14",
+    "recorded-date": "24-11-2025, 23:08:55",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -335,7 +336,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_function_state": {
-    "recorded-date": "08-04-2024, 16:55:21",
+    "recorded-date": "24-11-2025, 23:08:11",
     "recorded-content": {
       "create-fn-response": {
         "Architectures": [
@@ -431,7 +432,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[python3.10]": {
-    "recorded-date": "08-04-2024, 16:57:44",
+    "recorded-date": "24-11-2025, 23:11:20",
     "recorded-content": {
       "invoke": {
         "ExecutedVersion": "$LATEST",
@@ -454,7 +455,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[nodejs16.x]": {
-    "recorded-date": "08-04-2024, 16:57:41",
+    "recorded-date": "24-11-2025, 23:11:18",
     "recorded-content": {
       "invoke": {
         "ExecutedVersion": "$LATEST",
@@ -491,7 +492,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_request_response[python3.10]": {
-    "recorded-date": "08-04-2024, 16:57:51",
+    "recorded-date": "24-11-2025, 23:11:26",
     "recorded-content": {
       "invoke-result": {
         "ExecutedVersion": "$LATEST",
@@ -505,7 +506,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_request_response[nodejs16.x]": {
-    "recorded-date": "08-04-2024, 16:57:48",
+    "recorded-date": "24-11-2025, 23:11:23",
     "recorded-content": {
       "invoke-result": {
         "ExecutedVersion": "$LATEST",
@@ -532,7 +533,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_event[python3.10]": {
-    "recorded-date": "08-04-2024, 16:58:09",
+    "recorded-date": "24-11-2025, 23:11:39",
     "recorded-content": {
       "invoke-result": {
         "Payload": "",
@@ -545,7 +546,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_event[nodejs16.x]": {
-    "recorded-date": "08-04-2024, 16:57:59",
+    "recorded-date": "24-11-2025, 23:11:31",
     "recorded-content": {
       "invoke-result": {
         "Payload": "",
@@ -689,7 +690,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_qualifier": {
-    "recorded-date": "08-04-2024, 16:58:22",
+    "recorded-date": "24-11-2025, 23:12:27",
     "recorded-content": {
       "creation-response": {
         "Architectures": [
@@ -769,7 +770,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_upload_lambda_from_s3": {
-    "recorded-date": "08-04-2024, 16:58:27",
+    "recorded-date": "24-11-2025, 23:12:31",
     "recorded-content": {
       "creation-response": {
         "Architectures": [
@@ -917,7 +918,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_block": {
-    "recorded-date": "08-04-2024, 17:02:07",
+    "recorded-date": "24-11-2025, 23:16:40",
     "recorded-content": {
       "v1_result": {
         "Architectures": [
@@ -1033,7 +1034,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_lambda_versions_with_code_changes": {
-    "recorded-date": "08-04-2024, 17:10:52",
+    "recorded-date": "24-11-2025, 23:26:21",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1343,7 +1344,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaAliases::test_lambda_alias_moving": {
-    "recorded-date": "08-04-2024, 17:11:05",
+    "recorded-date": "25-11-2025, 23:37:28",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1576,7 +1577,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaAliases::test_alias_routingconfig": {
-    "recorded-date": "08-04-2024, 17:11:17",
+    "recorded-date": "24-11-2025, 23:27:57",
     "recorded-content": {
       "create_alias_response": {
         "AliasArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
@@ -1597,7 +1598,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_different_iam_keys_environment": {
-    "recorded-date": "08-04-2024, 16:55:38",
+    "recorded-date": "24-11-2025, 23:08:26",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -2278,7 +2279,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_exception": {
-    "recorded-date": "08-04-2024, 16:57:23",
+    "recorded-date": "24-11-2025, 23:09:56",
     "recorded-content": {
       "get_fn_result": {
         "Code": {
@@ -2362,7 +2363,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_crud": {
-    "recorded-date": "22-05-2025, 08:04:13",
+    "recorded-date": "24-11-2025, 23:14:18",
     "recorded-content": {
       "get_function_concurrency_default": {
         "ResponseMetadata": {
@@ -2393,15 +2394,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaPermissions::test_lambda_permission_url_invocation": {
-    "recorded-date": "08-04-2024, 16:57:38",
+    "recorded-date": "24-11-2025, 23:11:15",
     "recorded-content": {
       "lambda_url_invocation_missing_permission": {
-        "Message": "Forbidden"
+        "Message": "Forbidden. For troubleshooting Function URL authorization issues, see: https://docs.aws.amazon.com/lambda/latest/dg/urls-auth.html"
       }
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[dict]": {
-    "recorded-date": "08-04-2024, 16:56:29",
+    "recorded-date": "24-11-2025, 23:09:04",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -2444,7 +2445,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[http-response]": {
-    "recorded-date": "08-04-2024, 16:56:33",
+    "recorded-date": "24-11-2025, 23:09:07",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -2485,7 +2486,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[http-response-json]": {
-    "recorded-date": "08-04-2024, 16:56:37",
+    "recorded-date": "24-11-2025, 23:09:11",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -2528,7 +2529,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[list-mixed]": {
-    "recorded-date": "08-04-2024, 16:56:41",
+    "recorded-date": "24-11-2025, 23:09:13",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -2569,7 +2570,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[string]": {
-    "recorded-date": "08-04-2024, 16:56:45",
+    "recorded-date": "24-11-2025, 23:09:17",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -2610,7 +2611,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[integer]": {
-    "recorded-date": "08-04-2024, 16:56:49",
+    "recorded-date": "24-11-2025, 23:09:20",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -2651,7 +2652,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[float]": {
-    "recorded-date": "08-04-2024, 16:56:53",
+    "recorded-date": "24-11-2025, 23:09:23",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -2692,7 +2693,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[boolean]": {
-    "recorded-date": "08-04-2024, 16:56:57",
+    "recorded-date": "24-11-2025, 23:09:26",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -2733,7 +2734,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_arm": {
-    "recorded-date": "08-04-2024, 16:55:44",
+    "recorded-date": "24-11-2025, 23:08:31",
     "recorded-content": {
       "invoke_runtime_arm_introspection": {
         "ExecutedVersion": "$LATEST",
@@ -2746,17 +2747,17 @@
           "pwd": "/var/task",
           "paths": {
             "_var_task_mode": "drwxr-xr-x",
-            "_var_task_uid": 998,
-            "_var_task_owner": "slicer",
-            "_var_task_gid": 995,
+            "_var_task_uid": 0,
+            "_var_task_owner": "root",
+            "_var_task_gid": 0,
             "_opt_mode": "drwxr-xr-x",
             "_opt_uid": 0,
             "_opt_owner": "root",
             "_opt_gid": 0,
-            "_tmp_mode": "drwx------",
-            "_tmp_uid": 993,
-            "_tmp_owner": "sbx_user1051",
-            "_tmp_gid": 990,
+            "_tmp_mode": "drwxrwxrwt",
+            "_tmp_uid": 0,
+            "_tmp_owner": "root",
+            "_tmp_gid": 0,
             "_lambda-entrypoint.sh_mode": "-rwxr-xr-x",
             "_lambda-entrypoint.sh_uid": 0,
             "_lambda-entrypoint.sh_owner": "root",
@@ -2772,7 +2773,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_x86": {
-    "recorded-date": "08-04-2024, 16:55:41",
+    "recorded-date": "24-11-2025, 23:08:29",
     "recorded-content": {
       "invoke_runtime_x86_introspection": {
         "ExecutedVersion": "$LATEST",
@@ -2785,17 +2786,17 @@
           "pwd": "/var/task",
           "paths": {
             "_var_task_mode": "drwxr-xr-x",
-            "_var_task_uid": 998,
-            "_var_task_owner": "slicer",
-            "_var_task_gid": 995,
+            "_var_task_uid": 0,
+            "_var_task_owner": "root",
+            "_var_task_gid": 0,
             "_opt_mode": "drwxr-xr-x",
             "_opt_uid": 0,
             "_opt_owner": "root",
             "_opt_gid": 0,
-            "_tmp_mode": "drwx------",
-            "_tmp_uid": 993,
-            "_tmp_owner": "sbx_user1051",
-            "_tmp_gid": 990,
+            "_tmp_mode": "drwxrwxrwt",
+            "_tmp_uid": 0,
+            "_tmp_owner": "root",
+            "_tmp_gid": 0,
             "_lambda-entrypoint.sh_mode": "-rwxr-xr-x",
             "_lambda-entrypoint.sh_uid": 0,
             "_lambda-entrypoint.sh_owner": "root",
@@ -2811,7 +2812,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_ulimits": {
-    "recorded-date": "16-04-2024, 08:12:12",
+    "recorded-date": "24-11-2025, 23:08:34",
     "recorded-content": {
       "invoke_runtime_ulimits": {
         "ExecutedVersion": "$LATEST",
@@ -2821,8 +2822,8 @@
             -1
           ],
           "RLIMIT_CORE": [
-            -1,
-            -1
+            10737418240,
+            10737418240
           ],
           "RLIMIT_CPU": [
             -1,
@@ -2866,7 +2867,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency": {
-    "recorded-date": "08-04-2024, 17:08:11",
+    "recorded-date": "25-11-2025, 11:20:35",
     "recorded-content": {
       "fn": {
         "Architectures": [
@@ -2958,7 +2959,7 @@
       },
       "msg": {
         "Attributes": {
-          "AWSTraceHeader": "Root=1-6614247a-4513533344453f9a2d077845;Parent=282ed520d6ca75c8;Sampled=0",
+          "AWSTraceHeader": "<a-w-s-trace-header:1>",
           "ApproximateFirstReceiveTimestamp": "timestamp",
           "ApproximateReceiveCount": "1",
           "SenderId": "<sender-id>",
@@ -2982,7 +2983,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency_async_queue": {
-    "recorded-date": "26-03-2025, 10:53:54",
+    "recorded-date": "24-11-2025, 23:23:27",
     "recorded-content": {
       "fn": {
         "Architectures": [
@@ -3052,7 +3053,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_provisioned_concurrency": {
-    "recorded-date": "08-04-2024, 17:04:21",
+    "recorded-date": "24-11-2025, 23:18:51",
     "recorded-content": {
       "put_provisioned_5": {
         "AllocatedProvisionedConcurrentExecutions": 0,
@@ -3090,7 +3091,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_provisioned_overlap": {
-    "recorded-date": "08-04-2024, 17:10:37",
+    "recorded-date": "24-11-2025, 23:26:07",
     "recorded-content": {
       "put_provisioned_5": {
         "AllocatedProvisionedConcurrentExecutions": 0,
@@ -3230,11 +3231,11 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_format": {
-    "recorded-date": "08-04-2024, 17:11:17",
+    "recorded-date": "24-11-2025, 23:27:57",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_invoke": {
-    "recorded-date": "08-04-2024, 17:11:26",
+    "recorded-date": "24-11-2025, 23:28:05",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -3256,7 +3257,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_async_invoke_with_retry": {
-    "recorded-date": "08-04-2024, 17:13:39",
+    "recorded-date": "24-11-2025, 23:30:18",
     "recorded-content": {
       "invoke_result": {
         "Payload": "",
@@ -3273,7 +3274,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_invoke_url": {
-    "recorded-date": "08-04-2024, 17:11:35",
+    "recorded-date": "24-11-2025, 23:28:15",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -3333,7 +3334,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_error": {
-    "recorded-date": "24-02-2025, 16:26:37",
+    "recorded-date": "24-11-2025, 23:12:34",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
@@ -3348,7 +3349,7 @@
             "  File \"<frozen importlib._bootstrap>\", line 1360, in _find_and_load\n",
             "  File \"<frozen importlib._bootstrap>\", line 1331, in _find_and_load_unlocked\n",
             "  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n",
-            "  File \"<frozen importlib._bootstrap_external>\", line 1022, in exec_module\n",
+            "  File \"<frozen importlib._bootstrap_external>\", line 1027, in exec_module\n",
             "  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n",
             "  File \"/var/task/lambda_runtime_error.py\", line 1, in <module>\n    raise Exception(\"Runtime startup fails\")\n"
           ]
@@ -3362,14 +3363,14 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invoke_exceptions": {
-    "recorded-date": "08-04-2024, 16:57:45",
+    "recorded-date": "24-11-2025, 23:11:21",
     "recorded-content": {
       "invoke_function_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:doesnotexist"
+          "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:doesnotexist:$LATEST"
         },
-        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:doesnotexist",
+        "Message": "Function not found: arn:<partition>:lambda:<region>:111111111111:function:doesnotexist:$LATEST",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3379,7 +3380,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_wrapper_not_found": {
-    "recorded-date": "08-04-2024, 16:59:29",
+    "recorded-date": "24-11-2025, 23:13:27",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
@@ -3397,7 +3398,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_exit": {
-    "recorded-date": "08-04-2024, 16:58:35",
+    "recorded-date": "24-11-2025, 23:12:36",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
@@ -3415,7 +3416,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_handler_exit": {
-    "recorded-date": "08-04-2024, 16:59:26",
+    "recorded-date": "24-11-2025, 23:13:24",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
@@ -3433,7 +3434,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_handler_error": {
-    "recorded-date": "08-04-2024, 16:59:23",
+    "recorded-date": "24-11-2025, 23:13:22",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
@@ -3455,13 +3456,14 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_exit_segfault": {
-    "recorded-date": "08-04-2024, 16:59:20",
+    "recorded-date": "24-11-2025, 23:13:19",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
         "FunctionError": "Unhandled",
         "Payload": {
-          "errorMessage": "date <uuid> Task timed out after 30.13 seconds"
+          "errorType": "Sandbox.Timedout",
+          "errorMessage": "RequestId: <uuid> Error: Task timed out after 30.00 seconds"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -3472,15 +3474,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_invoke_payload_encoding_error[body-n\\x87r\\x9e\\xe9\\xb5\\xd7I\\xee\\x9bmt]": {
-    "recorded-date": "08-04-2024, 16:59:32",
+    "recorded-date": "24-11-2025, 23:13:29",
     "recorded-content": {
       "invoke_function_invalid_payload_body": {
         "Error": {
           "Code": "InvalidRequestContentException",
-          "Message": "Could not parse request body into json: Could not parse payload into json: Invalid UTF-8 start byte 0x87\n at [Source: (byte[])\"n\ufffdr\ufffd\ufffd\ufffdI\ufffdmt\"; line: 1, column: 3]"
+          "Message": "Could not parse request body into json: Could not parse payload into json: Invalid UTF-8 start byte 0x87\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 3]"
         },
         "Type": "User",
-        "message": "Could not parse request body into json: Could not parse payload into json: Invalid UTF-8 start byte 0x87\n at [Source: (byte[])\"n\ufffdr\ufffd\ufffd\ufffdI\ufffdmt\"; line: 1, column: 3]",
+        "message": "Could not parse request body into json: Could not parse payload into json: Invalid UTF-8 start byte 0x87\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 3]",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -3489,15 +3491,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_invoke_payload_encoding_error[message-\\x99\\xeb,j\\x07\\xa1zYh]": {
-    "recorded-date": "08-04-2024, 16:59:35",
+    "recorded-date": "24-11-2025, 23:13:31",
     "recorded-content": {
       "invoke_function_invalid_payload_message": {
         "Error": {
           "Code": "InvalidRequestContentException",
-          "Message": "Could not parse request body into json: Could not parse payload into json: Unexpected character ((CTRL-CHAR, code 153)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (byte[])\"\ufffd\ufffd,j\u0007\ufffdzYh\"; line: 1, column: 2]"
+          "Message": "Could not parse request body into json: Could not parse payload into json: Unexpected character ((CTRL-CHAR, code 153)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 1]"
         },
         "Type": "User",
-        "message": "Could not parse request body into json: Could not parse payload into json: Unexpected character ((CTRL-CHAR, code 153)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (byte[])\"\ufffd\ufffd,j\u0007\ufffdzYh\"; line: 1, column: 2]",
+        "message": "Could not parse request body into json: Could not parse payload into json: Unexpected character ((CTRL-CHAR, code 153)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 1]",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -3506,23 +3508,23 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_assume_role[1]": {
-    "recorded-date": "08-04-2024, 16:55:26",
+    "recorded-date": "24-11-2025, 23:08:16",
     "recorded-content": {
       "invoke-result-assumed-role-arn": "arn:<partition>:sts::111111111111:assumed-role/lambda-autogenerated-<lambda-autogenerated-role-prefix>/<function-name>@lambda_function"
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_assume_role[2]": {
-    "recorded-date": "08-04-2024, 16:55:32",
+    "recorded-date": "24-11-2025, 23:08:21",
     "recorded-content": {
       "invoke-result-assumed-role-arn": "arn:<partition>:sts::111111111111:assumed-role/lambda-autogenerated-<lambda-autogenerated-role-prefix>/<function-name>"
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_large_payloads": {
-    "recorded-date": "08-04-2024, 16:55:07",
+    "recorded-date": "24-11-2025, 23:08:00",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_mixed_architecture": {
-    "recorded-date": "15-05-2024, 12:55:53",
+    "recorded-date": "24-11-2025, 23:08:39",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -3623,7 +3625,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_provisioned_concurrency_scheduling": {
-    "recorded-date": "16-04-2024, 08:03:42",
+    "recorded-date": "24-11-2025, 23:23:20",
     "recorded-content": {
       "get_provisioned_postwait": {
         "AllocatedProvisionedConcurrentExecutions": 1,
@@ -3639,7 +3641,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_init_environment": {
-    "recorded-date": "08-04-2024, 16:56:25",
+    "recorded-date": "25-11-2025, 22:02:31",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -3694,35 +3696,35 @@
         "ExecutedVersion": "$LATEST",
         "Payload": {
           "environment": {
-            "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
-            "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
-            "_LAMBDA_TELEMETRY_API_PASSPHRASE": "<telemetry-passphrase:1>",
-            "LANG": "en_US.UTF-8",
-            "TZ": ":UTC",
-            "_HANDLER": "handler.handler",
-            "_LAMBDA_DIRECT_INVOKE_SOCKET": "9",
-            "_LAMBDA_CONTROL_SOCKET": "11",
-            "_LAMBDA_CONSOLE_SOCKET": "12",
-            "LAMBDA_TASK_ROOT": "/var/task",
-            "LAMBDA_RUNTIME_DIR": "/var/runtime",
-            "_LAMBDA_LOG_FD": "18",
-            "_LAMBDA_SB_ID": "0",
-            "_LAMBDA_SHARED_MEM_FD": "8",
-            "AWS_REGION": "<region>",
-            "AWS_DEFAULT_REGION": "<region>",
-            "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
-            "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-            "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
-            "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "128",
             "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
-            "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
-            "_AWS_XRAY_DAEMON_PORT": "2000",
-            "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
-            "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-            "_X_AMZN_TRACE_ID": "<xray-trace-id:1>",
-            "AWS_EXECUTION_ENV": "AWS_Lambda_rapid",
+            "AWS_EXECUTION_ENV": "AWS_Lambda_python3.12",
+            "AWS_DEFAULT_REGION": "<region>",
+            "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+            "AWS_REGION": "<region>",
+            "PWD": "/var/task",
+            "_HANDLER": "handler.handler",
+            "TZ": ":UTC",
+            "LAMBDA_TASK_ROOT": "/var/task",
+            "LANG": "en_US.UTF-8",
+            "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
+            "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+            "AWS_LAMBDA_RUNTIME_API": "<xray-daemon-address:1>:9001",
+            "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "128",
+            "LAMBDA_RUNTIME_DIR": "/var/runtime",
+            "_AWS_XRAY_DAEMON_ADDRESS": "<xray-daemon-address:1>",
+            "AWS_XRAY_DAEMON_ADDRESS": "<xray-daemon-address:1>:2000",
+            "SHLVL": "0",
+            "AWS_ACCESS_KEY_ID": "<aws-access-key-id:1>",
+            "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+            "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+            "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
             "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
-            "_LAMBDA_RUNTIME_LOAD_TIME": "<runtime-load-time:1>"
+            "AWS_SESSION_TOKEN": "<aws-session-token:1>",
+            "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+            "_AWS_XRAY_DAEMON_PORT": "2000",
+            "LC_CTYPE": "C.UTF-8",
+            "PYTHONPATH": "/var/runtime",
+            "_X_AMZN_TRACE_ID": "<xray-trace-id:1>"
           }
         },
         "StatusCode": 200,
@@ -3734,7 +3736,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_too_large_response": {
-    "recorded-date": "08-04-2024, 16:55:18",
+    "recorded-date": "24-11-2025, 23:08:09",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -3765,7 +3767,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_lambda_handler_update": {
-    "recorded-date": "08-04-2024, 17:10:59",
+    "recorded-date": "24-11-2025, 23:26:26",
     "recorded-content": {
       "invoke_result_handler_one": {
         "ExecutedVersion": "$LATEST",
@@ -3901,7 +3903,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invalid_invoke_mode": {
-    "recorded-date": "08-04-2024, 16:57:26",
+    "recorded-date": "24-11-2025, 23:11:02",
     "recorded-content": {
       "invoke_function_invalid_invoke_type": {
         "Error": {
@@ -3916,7 +3918,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_update_function_url_config": {
-    "recorded-date": "08-04-2024, 16:57:18",
+    "recorded-date": "24-11-2025, 23:09:53",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -3992,7 +3994,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[RESPONSE_STREAM]": {
-    "recorded-date": "08-04-2024, 16:57:10",
+    "recorded-date": "24-11-2025, 23:09:46",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -4026,7 +4028,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[BUFFERED]": {
-    "recorded-date": "08-04-2024, 16:57:05",
+    "recorded-date": "24-11-2025, 23:09:43",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -4060,7 +4062,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[None]": {
-    "recorded-date": "08-04-2024, 16:57:02",
+    "recorded-date": "24-11-2025, 23:09:39",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -4093,7 +4095,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture_default": {
-    "recorded-date": "18-07-2024, 14:18:08",
+    "recorded-date": "24-11-2025, 23:11:05",
     "recorded-content": {
       "url_response": {
         "args": {
@@ -4126,7 +4128,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture_trim_x_headers": {
-    "recorded-date": "08-04-2024, 16:57:34",
+    "recorded-date": "24-11-2025, 23:11:08",
     "recorded-content": {
       "url_response": {
         "args": {
@@ -4152,15 +4154,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_large_response": {
-    "recorded-date": "08-04-2024, 16:55:12",
+    "recorded-date": "24-11-2025, 23:08:04",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_headers_and_status": {
-    "recorded-date": "08-04-2024, 16:57:14",
+    "recorded-date": "24-11-2025, 23:09:49",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaCleanup::test_recreate_function": {
-    "recorded-date": "15-05-2024, 10:16:45",
+    "recorded-date": "24-11-2025, 23:13:45",
     "recorded-content": {
       "create_function_response_one": {
         "CreateEventSourceMappingResponse": null,
@@ -4263,7 +4265,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_async_invoke_queue_upon_function_update": {
-    "recorded-date": "15-05-2024, 17:38:05",
+    "recorded-date": "24-11-2025, 23:27:40",
     "recorded-content": {
       "async_invoke_history_sorted": [
         "01-sleep--variant-1",
@@ -4304,7 +4306,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_form_payload": {
-    "recorded-date": "13-06-2024, 21:01:16",
+    "recorded-date": "24-11-2025, 23:11:12",
     "recorded-content": {
       "url_response": {
         "args": {},
@@ -4329,55 +4331,55 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_lambda_layer": {
-    "recorded-date": "14-06-2024, 15:16:46",
+    "recorded-date": "24-11-2025, 23:13:51",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_function": {
-    "recorded-date": "14-06-2024, 15:16:50",
+    "recorded-date": "24-11-2025, 23:13:53",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_function_configuration": {
-    "recorded-date": "14-06-2024, 15:16:53",
+    "recorded-date": "24-11-2025, 23:13:56",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_list_versions_by_function": {
-    "recorded-date": "14-06-2024, 15:16:56",
+    "recorded-date": "24-11-2025, 23:13:58",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_concurrency": {
-    "recorded-date": "14-06-2024, 15:16:59",
+    "recorded-date": "24-11-2025, 23:14:01",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_alias": {
-    "recorded-date": "14-06-2024, 15:17:03",
+    "recorded-date": "24-11-2025, 23:14:04",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_tags": {
-    "recorded-date": "14-06-2024, 15:17:07",
+    "recorded-date": "24-11-2025, 23:14:07",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_invocation": {
-    "recorded-date": "14-06-2024, 15:17:10",
+    "recorded-date": "24-11-2025, 23:14:10",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_publish_version": {
-    "recorded-date": "14-06-2024, 15:17:14",
+    "recorded-date": "24-11-2025, 23:14:13",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_delete_function": {
-    "recorded-date": "14-06-2024, 15:17:17",
+    "recorded-date": "24-11-2025, 23:14:15",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_custom_id": {
-    "recorded-date": "05-08-2024, 12:24:48",
+    "recorded-date": "24-11-2025, 23:09:33",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_custom_id_aliased": {
-    "recorded-date": "05-08-2024, 12:48:07",
+    "recorded-date": "24-11-2025, 23:09:36",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_persists_after_alias_delete": {
-    "recorded-date": "05-08-2024, 13:57:04",
+    "recorded-date": "24-11-2025, 23:11:00",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",
@@ -4401,7 +4403,7 @@
       },
       "invoke_deleted_alias_url_response_delayed": {
         "content": {
-          "Message": null
+          "Message": "Forbidden. For troubleshooting Function URL authorization issues, see: https://docs.aws.amazon.com/lambda/latest/dg/urls-auth.html"
         },
         "headers": {
           "x-amzn-ErrorType": "AccessDeniedException"
@@ -4411,7 +4413,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[python-RequestResponse]": {
-    "recorded-date": "09-10-2024, 16:15:57",
+    "recorded-date": "24-11-2025, 23:11:49",
     "recorded-content": {
       "invoke-result": {
         "ExecutedVersion": "$LATEST",
@@ -4425,7 +4427,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[python-Event]": {
-    "recorded-date": "09-10-2024, 16:16:05",
+    "recorded-date": "24-11-2025, 23:11:57",
     "recorded-content": {
       "invoke-result": {
         "Payload": "",
@@ -4438,7 +4440,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[nodejs-RequestResponse]": {
-    "recorded-date": "09-10-2024, 16:16:14",
+    "recorded-date": "24-11-2025, 23:12:06",
     "recorded-content": {
       "invoke-result": {
         "ExecutedVersion": "$LATEST",
@@ -4452,7 +4454,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_no_return_payload[nodejs-Event]": {
-    "recorded-date": "09-10-2024, 16:16:28",
+    "recorded-date": "24-11-2025, 23:12:16",
     "recorded-content": {
       "invoke-result": {
         "Payload": "",
@@ -4465,7 +4467,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_provisioned_concurrency_on_alias": {
-    "recorded-date": "07-05-2025, 09:26:54",
+    "recorded-date": "24-11-2025, 23:21:03",
     "recorded-content": {
       "put_provisioned_5": {
         "AllocatedProvisionedConcurrentExecutions": 0,
@@ -4503,7 +4505,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_update": {
-    "recorded-date": "22-05-2025, 14:11:12",
+    "recorded-date": "24-11-2025, 23:14:20",
     "recorded-content": {
       "put_function_concurrency": {
         "ReservedConcurrentExecutions": 3,
@@ -4582,7 +4584,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_host_prefix_api_operation": {
-    "recorded-date": "26-05-2025, 16:38:54",
+    "recorded-date": "24-11-2025, 23:09:01",
     "recorded-content": {
       "invoke-result": {
         "ExecutedVersion": "$LATEST",
@@ -4606,10 +4608,14 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_function_url_with_response_streaming": {
-    "recorded-date": "30-07-2025, 20:58:56",
+    "recorded-date": "24-11-2025, 23:09:29",
     "recorded-content": {
       "response_status": 200,
       "response_data": "Hello, world!"
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_non_existing_url": {
+    "recorded-date": "24-11-2025, 23:11:02",
+    "recorded-content": {}
   }
 }

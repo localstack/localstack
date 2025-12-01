@@ -378,6 +378,10 @@ class TestKinesisSource:
         stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
         assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
 
+        if is_aws_cloud():
+            # 😿
+            time.sleep(5)
+
         # insert some records before event source mapping created
         for i in range(num_batches - 1):
             aws_client.kinesis.put_records(
@@ -652,13 +656,22 @@ class TestKinesisSource:
         sqs_payload = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("sqs_payload", sqs_payload)
 
-        batched_records = get_lambda_log_events(function_name, logs_client=aws_client.logs)
-        flattened_records = [
-            record for batch in batched_records for record in batch.get("Records", [])
-        ]
-        sorted_records = sorted(flattened_records, key=lambda item: item["kinesis"]["partitionKey"])
+        def _verify_messages_received():
+            events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
 
-        snapshot.match("kinesis_records", {"Records": sorted_records})
+            # This will filter out exception messages being added to the log stream
+            batched_records = [event for event in events if "Records" in event]
+            assert len(batched_records) >= 5
+            flattened_records = [
+                record for batch in batched_records for record in batch.get("Records", [])
+            ]
+            sorted_records = sorted(
+                flattened_records, key=lambda item: item["kinesis"]["partitionKey"]
+            )
+
+            snapshot.match("kinesis_records", {"Records": sorted_records})
+
+        retry(_verify_messages_received)
 
     @markers.aws.validated
     @pytest.mark.parametrize(
@@ -753,11 +766,15 @@ class TestKinesisSource:
         sqs_payload = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("sqs_payload", sqs_payload)
 
-        events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
+        def _get_events():
+            events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
 
-        # This will filter out exception messages being added to the log stream
-        invocation_events = [event for event in events if "Records" in event]
-        snapshot.match("kinesis_events", invocation_events)
+            # This will filter out exception messages being added to the log stream
+            invocation_events = [event for event in events if "Records" in event]
+            assert len(invocation_events) == 3
+            return invocation_events
+
+        snapshot.match("kinesis_events", retry(_get_events))
 
     @markers.aws.validated
     def test_kinesis_event_source_mapping_with_sns_on_failure_destination_config(
@@ -1231,20 +1248,16 @@ class TestKinesisSource:
             "StreamDescription"
         ]["StreamARN"]
 
-        aws_client.kinesis.put_record(
-            Data="stream-data",
-            PartitionKey="test",
-            StreamName=stream_name,
+        retry(
+            lambda: aws_client.kinesis.put_record(
+                Data="stream-data",
+                PartitionKey="test",
+                StreamName=stream_name,
+            )
         )
 
         # Ensure that the first record has expired
         time.sleep(wait_before_processing)
-
-        # The first record in the batch will have expired with the remaining batch not exceeding any age-limits.
-        aws_client.kinesis.put_records(
-            Records=[{"Data": f"stream-data-{i + 1}", "PartitionKey": "test"} for i in range(5)],
-            StreamName=stream_name,
-        )
 
         destination_queue_url = sqs_create_queue()
         create_lambda_function(
@@ -1259,6 +1272,12 @@ class TestKinesisSource:
         dead_letter_queue = sqs_create_queue()
         dead_letter_queue_arn = sqs_get_queue_arn(dead_letter_queue)
         destination_config = {"OnFailure": {"Destination": dead_letter_queue_arn}}
+
+        # The first record in the batch will have expired with the remaining batch not exceeding any age-limits.
+        aws_client.kinesis.put_records(
+            Records=[{"Data": f"stream-data-{i + 1}", "PartitionKey": "test"} for i in range(5)],
+            StreamName=stream_name,
+        )
 
         create_event_source_mapping_response = create_event_source_mapping(
             FunctionName=function_name,

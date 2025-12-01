@@ -284,6 +284,13 @@ def lambda_event_source_mapping_arn(uuid: str, account_id: str, region_name: str
     return _resource_arn(uuid, pattern, account_id=account_id, region_name=region_name)
 
 
+def capacity_provider_arn(capacity_provider_name: str, account_id: str, region_name: str) -> str:
+    pattern = "arn:%s:lambda:%s:%s:capacity-provider:%s"
+    return _resource_arn(
+        capacity_provider_name, pattern, account_id=account_id, region_name=region_name
+    )
+
+
 def lambda_function_or_layer_arn(
     type: str,
     entity_name: str,
