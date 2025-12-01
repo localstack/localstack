@@ -482,6 +482,10 @@ class TestLambdaBehavior:
             "$..Payload.paths._var_task_gid",
             "$..Payload.paths._var_task_owner",
             "$..Payload.paths._var_task_uid",
+            "$..Payload.paths._tmp_gid",
+            "$..Payload.paths._tmp_mode",
+            "$..Payload.paths._tmp_owner",
+            "$..Payload.paths._tmp_uid",
         ],
     )
     @markers.aws.validated
