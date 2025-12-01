@@ -71,6 +71,15 @@
       "total": 2.19
     }
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_eu_location_constraint_raises": {
+    "last_validated_date": "2025-12-01T22:24:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.84,
+      "call": 0.38,
+      "teardown": 0.0,
+      "total": 1.22
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_existing_name": {
     "last_validated_date": "2025-01-21T18:34:10+00:00"
   },

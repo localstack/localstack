@@ -18308,5 +18308,20 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_eu_location_constraint_raises": {
+    "recorded-date": "01-12-2025, 22:24:44",
+    "recorded-content": {
+      "eu-location-constraint-error": {
+        "Error": {
+          "Code": "IllegalLocationConstraintException",
+          "Message": "The EU location constraint is incompatible for the region specific endpoint this request was sent to."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

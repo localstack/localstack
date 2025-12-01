@@ -1031,6 +1031,23 @@ class TestS3:
         assert list_buckets_response["Buckets"][0]["BucketRegion"] == "eu-west-1"
         snapshot.match("list-bucket-response", list_buckets_response)
 
+
+    @markers.aws.validated
+    def test_create_bucket_with_eu_location_constraint_raises(
+        self, s3_create_bucket_with_client, aws_client_factory, snapshot
+    ):
+        # Should fail for a region that isn't eu-west-1 (not including us-east-1)
+        client_us_east_2 = aws_client_factory(region_name="us-east-2").s3
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                client_us_east_2,
+                Bucket=f"test-eu-region-{short_uid()}",
+                CreateBucketConfiguration={
+                    "LocationConstraint": "EU"
+                },
+            )
+        snapshot.match("eu-location-constraint-error", e.value.response)
+
     @markers.aws.validated
     def test_get_bucket_policy(self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id):
         snapshot.add_transformer(snapshot.transform.key_value("Resource"))
