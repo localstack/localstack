@@ -7,6 +7,7 @@ LocalStack providers.
 
 import json
 import logging
+import os
 import re
 import threading
 from abc import ABC, abstractmethod
@@ -602,6 +603,14 @@ class ExternalClientFactory(ClientFactory):
 
 
 class ExternalAwsClientFactory(ClientFactory):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if ca_cert := os.getenv("REQUESTS_CA_BUNDLE"):
+            LOG.debug("Creating External AWS Client with REQUESTS_CA_BUNDLE=%s", ca_cert)
+
+        self._verify = ca_cert or True
+
     def get_client(
         self,
         service_name: str,
@@ -645,7 +654,7 @@ class ExternalAwsClientFactory(ClientFactory):
             region_name=region_name or self._get_session_region(),
             endpoint_url=endpoint_url,
             use_ssl=True,
-            verify=True,
+            verify=self._verify,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token,
@@ -687,7 +696,7 @@ class ExternalBypassDnsClientFactory(ExternalAwsClientFactory):
 
     def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
         client = super()._get_client_post_hook(client)
-        client._endpoint.http_session = ExternalBypassDnsSession()
+        client._endpoint.http_session = ExternalBypassDnsSession(verify=self._verify)
         return client
 
 
