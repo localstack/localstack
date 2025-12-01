@@ -1010,7 +1010,7 @@ class TestS3:
                 snapshot.transform.key_value("ID"),
                 snapshot.transform.key_value("Name"),
                 snapshot.transform.key_value("BucketOwner"),
-                snapshot.transform.key_value("BucketRegion")
+                snapshot.transform.key_value("BucketRegion"),
             ]
         )
         client_eu_west_1 = aws_client_factory(region_name="eu-west-1").s3
@@ -1031,7 +1031,6 @@ class TestS3:
         assert list_buckets_response["Buckets"][0]["BucketRegion"] == "eu-west-1"
         snapshot.match("list-bucket-response", list_buckets_response)
 
-
     @markers.aws.validated
     def test_create_bucket_with_eu_location_constraint_raises(
         self, s3_create_bucket_with_client, aws_client_factory, snapshot
@@ -1042,9 +1041,7 @@ class TestS3:
             s3_create_bucket_with_client(
                 client_us_east_2,
                 Bucket=f"test-eu-region-{short_uid()}",
-                CreateBucketConfiguration={
-                    "LocationConstraint": "EU"
-                },
+                CreateBucketConfiguration={"LocationConstraint": "EU"},
             )
         snapshot.match("eu-location-constraint-error", e.value.response)
 

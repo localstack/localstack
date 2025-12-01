@@ -659,7 +659,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 Name=bucket.name,
                 CreationDate=bucket.creation_date,
                 BucketRegion=bucket.bucket_region,
-                BucketArn=bucket.bucket_arn
+                BucketArn=bucket.bucket_arn,
             )
             buckets.append(output_bucket)
             count += 1
