@@ -62,6 +62,15 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_via_host_name": {
     "last_validated_date": "2025-01-21T18:27:49+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_eu_location_constraint": {
+    "last_validated_date": "2025-12-01T21:59:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.87,
+      "call": 0.85,
+      "teardown": 0.47,
+      "total": 2.19
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_existing_name": {
     "last_validated_date": "2025-01-21T18:34:10+00:00"
   },

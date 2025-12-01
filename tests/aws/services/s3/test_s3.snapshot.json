@@ -18278,5 +18278,35 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_eu_location_constraint": {
+    "recorded-date": "01-12-2025, 21:59:23",
+    "recorded-content": {
+      "get-bucket-location": {
+        "LocationConstraint": "EU",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-bucket-response": {
+        "Buckets": [
+          {
+            "BucketArn": "arn:<partition>:s3:::<name:1>",
+            "BucketRegion": "<bucket-region:1>",
+            "CreationDate": "datetime",
+            "Name": "<name:1>"
+          }
+        ],
+        "Owner": {
+          "ID": "<i-d:1>"
+        },
+        "Prefix": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

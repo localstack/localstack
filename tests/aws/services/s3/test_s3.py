@@ -1001,6 +1001,37 @@ class TestS3:
             s3_vhost_client.delete_bucket(Bucket=bucket_name)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Owner.DisplayName"])
+    def test_create_bucket_with_eu_location_constraint(
+        self, s3_create_bucket_with_client, aws_client_factory, snapshot
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("ID"),
+                snapshot.transform.key_value("Name"),
+                snapshot.transform.key_value("BucketOwner"),
+                snapshot.transform.key_value("BucketRegion")
+            ]
+        )
+        client_eu_west_1 = aws_client_factory(region_name="eu-west-1").s3
+
+        bucket_name = f"test-eu-region-{short_uid()}"
+        s3_create_bucket_with_client(
+            client_eu_west_1,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={
+                "LocationConstraint": "EU"
+            },  # EU is just an alias for eu-west-1.
+        )
+        get_bucket_location_response = client_eu_west_1.get_bucket_location(Bucket=bucket_name)
+        assert get_bucket_location_response["LocationConstraint"] == "EU"
+        snapshot.match("get-bucket-location", get_bucket_location_response)
+
+        list_buckets_response = client_eu_west_1.list_buckets(Prefix=bucket_name)
+        assert list_buckets_response["Buckets"][0]["BucketRegion"] == "eu-west-1"
+        snapshot.match("list-bucket-response", list_buckets_response)
+
+    @markers.aws.validated
     def test_get_bucket_policy(self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id):
         snapshot.add_transformer(snapshot.transform.key_value("Resource"))
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
