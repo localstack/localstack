@@ -254,6 +254,7 @@ from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
+CAPACITY_PROVIDER_ARN_NAME = "arn:aws[a-zA-Z-]*:lambda:(eusc-)?[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:capacity-provider:[a-zA-Z0-9-_]+"
 LAMBDA_DEFAULT_TIMEOUT = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
@@ -852,6 +853,30 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
             visited_layers[layer_arn] = layer_version_arn
 
+    def _validate_capacity_provider(
+        self, capacity_provider_config: CapacityProviderConfig, context: RequestContext
+    ):
+        if not capacity_provider_config.get("LambdaManagedInstancesCapacityProviderConfig"):
+            raise ValidationException(
+                "1 validation error detected: Value null at 'capacityProviderConfig.lambdaManagedInstancesCapacityProviderConfig' failed to satisfy constraint: Member must not be null"
+            )
+
+        capacity_provider_arn = capacity_provider_config.get(
+            "LambdaManagedInstancesCapacityProviderConfig", {}
+        ).get("CapacityProviderArn")
+        if not capacity_provider_arn:
+            raise ValidationException(
+                "1 validation error detected: Value null at 'capacityProviderConfig.lambdaManagedInstancesCapacityProviderConfig.capacityProviderArn' failed to satisfy constraint: Member must not be null"
+            )
+
+        if not re.match(CAPACITY_PROVIDER_ARN_NAME, capacity_provider_arn):
+            raise ValidationException(
+                f"1 validation error detected: Value '{capacity_provider_arn}' at 'capacityProviderConfig.lambdaManagedInstancesCapacityProviderConfig.capacityProviderArn' failed to satisfy constraint: Member must satisfy regular expression pattern: {CAPACITY_PROVIDER_ARN_NAME}"
+            )
+
+        capacity_provider_name = capacity_provider_arn.split(":")[-1]
+        self.get_capacity_provider(context, capacity_provider_name)
+
     @staticmethod
     def map_layers(new_layers: list[str]) -> list[LayerVersion]:
         layers = []
@@ -1028,11 +1053,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 # Runtime management controls are not available when providing a custom image
                 runtime_version_config = None
 
-            # TODO: validations and figure out in which order
             capacity_provider_config = None
             memory_size = request.get("MemorySize", LAMBDA_DEFAULT_MEMORY_SIZE)
             if "CapacityProviderConfig" in request:
                 capacity_provider_config = request["CapacityProviderConfig"]
+                self._validate_capacity_provider(capacity_provider_config, context)
+
                 default_config = CapacityProviderConfig(
                     LambdaManagedInstancesCapacityProviderConfig=LambdaManagedInstancesCapacityProviderConfig(
                         ExecutionEnvironmentMemoryGiBPerVCpu=2.0,
