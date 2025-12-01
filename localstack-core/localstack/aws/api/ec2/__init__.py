@@ -3263,6 +3263,25 @@ class NatGatewayAddressStatus(StrEnum):
     failed = "failed"
 
 
+class NatGatewayApplianceModifyState(StrEnum):
+    modifying = "modifying"
+    completed = "completed"
+    failed = "failed"
+
+
+class NatGatewayApplianceState(StrEnum):
+    attaching = "attaching"
+    attached = "attached"
+    detaching = "detaching"
+    detached = "detached"
+    attach_failed = "attach-failed"
+    detach_failed = "detach-failed"
+
+
+class NatGatewayApplianceType(StrEnum):
+    network_firewall_proxy = "network-firewall-proxy"
+
+
 class NatGatewayState(StrEnum):
     pending = "pending"
     failed = "failed"
@@ -9449,6 +9468,19 @@ class CreateNatGatewayRequest(ServiceRequest):
     SecondaryPrivateIpAddressCount: PrivateIpAddressCount | None
 
 
+class NatGatewayAttachedAppliance(TypedDict, total=False):
+    Type: NatGatewayApplianceType | None
+    ApplianceArn: String | None
+    VpcEndpointId: String | None
+    AttachmentState: NatGatewayApplianceState | None
+    ModificationState: NatGatewayApplianceModifyState | None
+    FailureCode: String | None
+    FailureMessage: String | None
+
+
+NatGatewayAttachedApplianceList = list[NatGatewayAttachedAppliance]
+
+
 class ProvisionedBandwidth(TypedDict, total=False):
     ProvisionTime: DateTime | None
     Provisioned: String | None
@@ -9473,6 +9505,7 @@ class NatGateway(TypedDict, total=False):
     AvailabilityMode: AvailabilityMode | None
     AutoScalingIps: AutoScalingIpsState | None
     AutoProvisionZones: AutoProvisionZonesState | None
+    AttachedAppliances: NatGatewayAttachedApplianceList | None
     RouteTableId: String | None
 
 

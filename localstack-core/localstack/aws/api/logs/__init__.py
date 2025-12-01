@@ -22,6 +22,7 @@ Column = str
 DataProtectionPolicyDocument = str
 Days = int
 DefaultValue = float
+DeletionProtectionEnabled = bool
 Delimiter = str
 DeliveryDestinationName = str
 DeliveryDestinationPolicy = str
@@ -781,6 +782,7 @@ class CreateLogGroupRequest(ServiceRequest):
     kmsKeyId: KmsKeyId | None
     tags: Tags | None
     logGroupClass: LogGroupClass | None
+    deletionProtectionEnabled: DeletionProtectionEnabled | None
 
 
 class CreateLogStreamRequest(ServiceRequest):
@@ -1178,6 +1180,7 @@ class LogGroup(TypedDict, total=False):
     inheritedProperties: InheritedProperties | None
     logGroupClass: LogGroupClass | None
     logGroupArn: Arn | None
+    deletionProtectionEnabled: DeletionProtectionEnabled | None
 
 
 LogGroups = list[LogGroup]
@@ -2210,6 +2213,11 @@ class PutLogEventsResponse(TypedDict, total=False):
     rejectedEntityInfo: RejectedEntityInfo | None
 
 
+class PutLogGroupDeletionProtectionRequest(ServiceRequest):
+    logGroupIdentifier: LogGroupIdentifier
+    deletionProtectionEnabled: DeletionProtectionEnabled
+
+
 class PutMetricFilterRequest(ServiceRequest):
     logGroupName: LogGroupName
     filterName: FilterName
@@ -2494,6 +2502,7 @@ class LogsApi:
         kms_key_id: KmsKeyId | None = None,
         tags: Tags | None = None,
         log_group_class: LogGroupClass | None = None,
+        deletion_protection_enabled: DeletionProtectionEnabled | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -3202,6 +3211,16 @@ class LogsApi:
         entity: Entity | None = None,
         **kwargs,
     ) -> PutLogEventsResponse:
+        raise NotImplementedError
+
+    @handler("PutLogGroupDeletionProtection")
+    def put_log_group_deletion_protection(
+        self,
+        context: RequestContext,
+        log_group_identifier: LogGroupIdentifier,
+        deletion_protection_enabled: DeletionProtectionEnabled,
+        **kwargs,
+    ) -> None:
         raise NotImplementedError
 
     @handler("PutMetricFilter")

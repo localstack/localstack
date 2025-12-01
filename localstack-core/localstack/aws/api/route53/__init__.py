@@ -7,6 +7,7 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 ARN = str
 AWSAccountID = str
 AWSRegion = str
+AcceleratedRecoveryEnabled = bool
 AlarmName = str
 AliasHealthEnabled = bool
 AssociateVPCComment = str
@@ -26,6 +27,7 @@ DisassociateVPCComment = str
 EnableSNI = bool
 ErrorMessage = str
 EvaluationPeriods = int
+FailureReason = str
 FailureThreshold = int
 FullyQualifiedDomainName = str
 GeoLocationContinentCode = str
@@ -96,6 +98,17 @@ TrafficPolicyVersionMarker = str
 TransportProtocol = str
 UUID = str
 VPCId = str
+
+
+class AcceleratedRecoveryStatus(StrEnum):
+    ENABLING = "ENABLING"
+    ENABLE_FAILED = "ENABLE_FAILED"
+    ENABLING_HOSTED_ZONE_LOCKED = "ENABLING_HOSTED_ZONE_LOCKED"
+    ENABLED = "ENABLED"
+    DISABLING = "DISABLING"
+    DISABLE_FAILED = "DISABLE_FAILED"
+    DISABLED = "DISABLED"
+    DISABLING_HOSTED_ZONE_LOCKED = "DISABLING_HOSTED_ZONE_LOCKED"
 
 
 class AccountLimitType(StrEnum):
@@ -1073,6 +1086,15 @@ class DelegationSet(TypedDict, total=False):
     NameServers: DelegationSetNameServers
 
 
+class HostedZoneFailureReasons(TypedDict, total=False):
+    AcceleratedRecovery: FailureReason | None
+
+
+class HostedZoneFeatures(TypedDict, total=False):
+    AcceleratedRecoveryStatus: AcceleratedRecoveryStatus | None
+    FailureReasons: HostedZoneFailureReasons | None
+
+
 HostedZoneRRSetCount = int
 
 
@@ -1083,6 +1105,7 @@ class HostedZone(TypedDict, total=False):
     Config: HostedZoneConfig | None
     ResourceRecordSetCount: HostedZoneRRSetCount | None
     LinkedService: LinkedService | None
+    Features: HostedZoneFeatures | None
 
 
 class CreateHostedZoneResponse(TypedDict, total=False):
@@ -1908,6 +1931,15 @@ class UpdateHostedZoneCommentResponse(TypedDict, total=False):
     HostedZone: HostedZone
 
 
+class UpdateHostedZoneFeaturesRequest(ServiceRequest):
+    HostedZoneId: ResourceId
+    EnableAcceleratedRecovery: AcceleratedRecoveryEnabled | None
+
+
+class UpdateHostedZoneFeaturesResponse(TypedDict, total=False):
+    pass
+
+
 class UpdateTrafficPolicyCommentRequest(ServiceRequest):
     Id: TrafficPolicyId
     Version: TrafficPolicyVersion
@@ -2541,6 +2573,16 @@ class Route53Api:
         comment: ResourceDescription | None = None,
         **kwargs,
     ) -> UpdateHostedZoneCommentResponse:
+        raise NotImplementedError
+
+    @handler("UpdateHostedZoneFeatures")
+    def update_hosted_zone_features(
+        self,
+        context: RequestContext,
+        hosted_zone_id: ResourceId,
+        enable_accelerated_recovery: AcceleratedRecoveryEnabled | None = None,
+        **kwargs,
+    ) -> UpdateHostedZoneFeaturesResponse:
         raise NotImplementedError
 
     @handler("UpdateTrafficPolicyComment")
