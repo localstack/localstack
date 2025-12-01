@@ -14,6 +14,7 @@ from moto.logs.models import LogStream as MotoLogStream
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.logs import (
     AmazonResourceName,
+    DeletionProtectionEnabled,
     DescribeLogGroupsRequest,
     DescribeLogGroupsResponse,
     DescribeLogStreamsRequest,
@@ -163,6 +164,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         kms_key_id: KmsKeyId | None = None,
         tags: Tags | None = None,
         log_group_class: LogGroupClass | None = None,
+        deletion_protection_enabled: DeletionProtectionEnabled | None = None,
         **kwargs,
     ) -> None:
         call_moto(context)
