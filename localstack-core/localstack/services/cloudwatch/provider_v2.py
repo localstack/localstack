@@ -161,6 +161,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
+
+    def on_before_start(self):
         self.start_alarm_scheduler()
 
     def on_before_state_reset(self):
@@ -192,9 +194,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             self.alarm_scheduler = AlarmScheduler()
 
     def shutdown_alarm_scheduler(self):
-        LOG.debug("stopping cloudwatch scheduler")
-        self.alarm_scheduler.shutdown_scheduler()
-        self.alarm_scheduler = None
+        if self.alarm_scheduler:
+            LOG.debug("stopping cloudwatch scheduler")
+            self.alarm_scheduler.shutdown_scheduler()
+            self.alarm_scheduler = None
 
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames, **kwargs) -> None:
         """

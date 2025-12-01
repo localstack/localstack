@@ -45,6 +45,7 @@ from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.v1.models import EventsStore, events_stores
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.aws.arns import event_bus_arn, parse_arn
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import send_event_to_target
@@ -82,6 +83,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     def on_before_stop(self):
         JobScheduler.shutdown()
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        from moto.events.models import events_backends
+
+        from localstack.services.events.v1.models import events_stores
+
+        visitor.visit(events_backends)
+        visitor.visit(events_stores)
 
     @route("/_aws/events/rules/<path:rule_arn>/trigger")
     def trigger_scheduled_rule(self, request: Request, rule_arn: str):
