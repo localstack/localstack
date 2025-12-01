@@ -1362,6 +1362,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if new_mode:
                 replace_kwargs["tracing_config_mode"] = new_mode
 
+        if "CapacityProviderConfig" in request:
+            if latest_version.config.CapacityProviderConfig and not request[
+                "CapacityProviderConfig"
+            ].get("LambdaManagedInstancesCapacityProviderConfig"):
+                raise ValidationException(
+                    "1 validation error detected: Value null at 'capacityProviderConfig.lambdaManagedInstancesCapacityProviderConfig' failed to satisfy constraint: Member must not be null"
+                )
+            if not latest_version.config.CapacityProviderConfig:
+                raise InvalidParameterValueException(
+                    "CapacityProviderConfig isn't supported for Lambda Default functions.",
+                    Type="User",
+                )
+
         new_latest_version = dataclasses.replace(
             latest_version,
             config=dataclasses.replace(
