@@ -4728,6 +4728,7 @@ class TestSNSSMS:
         snapshot.match("list-phone-numbers-opted-out", response)
 
     @markers.aws.manual_setup_required
+    @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
     def test_opt_in_phone_number(
         self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name
     ):
