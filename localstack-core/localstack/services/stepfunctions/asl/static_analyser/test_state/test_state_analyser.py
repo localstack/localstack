@@ -28,6 +28,11 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
     StateTask,
 )
+from localstack.services.stepfunctions.asl.component.state.state_fail.state_fail import StateFail
+from localstack.services.stepfunctions.asl.component.state.state_pass.state_pass import StatePass
+from localstack.services.stepfunctions.asl.component.state.state_succeed.state_succeed import (
+    StateSucceed,
+)
 from localstack.services.stepfunctions.asl.component.state.state_type import StateType
 from localstack.services.stepfunctions.asl.component.test_state.program.test_state_program import (
     TestStateProgram,
@@ -76,14 +81,21 @@ class TestStateStaticAnalyser(StaticAnalyser):
         test_program, _ = TestStateAmazonStateLanguageParser.parse(definition, state_name)
         test_state = test_program.test_state
 
+        TestStateStaticAnalyser.validate_test_state_allows_mocking(test_state=test_state)
+
         TestStateStaticAnalyser.validate_mock_result_matches_api_shape(
-            mock_input=mock_input, test_state=test_state, definition=definition
+            mock_input=mock_input, test_state=test_state
         )
 
     @staticmethod
-    def validate_mock_result_matches_api_shape(
-        mock_input: MockInput, test_state: CommonStateField, definition: Definition
-    ):
+    def validate_test_state_allows_mocking(test_state: CommonStateField) -> None:
+        if isinstance(test_state, (StatePass, StateFail, StateSucceed)):
+            raise ValidationException(
+                f"State type '{test_state.state_type.name}' is not supported when a mock is specified"
+            )
+
+    @staticmethod
+    def validate_mock_result_matches_api_shape(mock_input: MockInput, test_state: CommonStateField):
         # apigateway:invoke: has no equivalent in the AWS SDK service integration.
         # Hence, the validation against botocore doesn't apply.
         # See the note in https://docs.aws.amazon.com/step-functions/latest/dg/connect-api-gateway.html
