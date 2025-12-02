@@ -853,7 +853,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
             visited_layers[layer_arn] = layer_version_arn
 
-    def _validate_capacity_provider(
+    def _validate_capacity_provider_config(
         self, capacity_provider_config: CapacityProviderConfig, context: RequestContext
     ):
         if not capacity_provider_config.get("LambdaManagedInstancesCapacityProviderConfig"):
@@ -1057,7 +1057,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             memory_size = request.get("MemorySize", LAMBDA_DEFAULT_MEMORY_SIZE)
             if "CapacityProviderConfig" in request:
                 capacity_provider_config = request["CapacityProviderConfig"]
-                self._validate_capacity_provider(capacity_provider_config, context)
+                self._validate_capacity_provider_config(capacity_provider_config, context)
 
                 default_config = CapacityProviderConfig(
                     LambdaManagedInstancesCapacityProviderConfig=LambdaManagedInstancesCapacityProviderConfig(
