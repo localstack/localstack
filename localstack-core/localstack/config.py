@@ -1211,6 +1211,9 @@ CFN_PER_RESOURCE_TIMEOUT = int(os.environ.get("CFN_PER_RESOURCE_TIMEOUT") or 300
 # EXPERIMENTAL
 CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES")
 
+# Decrease the waiting time for resource deployment
+CFN_NO_WAIT_ITERATIONS: str | int | None = os.environ.get("CFN_NO_WAIT_ITERATIONS")
+
 # bind address of local DNS server
 DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or "0.0.0.0"
 # port of the local DNS server
