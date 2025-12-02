@@ -88,7 +88,6 @@ PerExecutionEnvironmentMaxConcurrency = int
 PositiveInteger = int
 Principal = str
 PrincipalOrgID = str
-ProvisionedPollerGroupName = str
 PublishedFunctionQualifier = str
 Qualifier = str
 Queue = str
@@ -112,7 +111,6 @@ TagValue = str
 TaggableResource = str
 TagsErrorCode = str
 TagsErrorMessage = str
-TenantId = str
 Timeout = int
 Timestamp = str
 Topic = str
@@ -297,47 +295,59 @@ class Runtime(StrEnum):
     nodejs = "nodejs"
     nodejs4_3 = "nodejs4.3"
     nodejs6_10 = "nodejs6.10"
+    nodejs8_9 = "nodejs8.9"
     nodejs8_10 = "nodejs8.10"
+    nodejs8_x = "nodejs8.x"
     nodejs10_x = "nodejs10.x"
     nodejs12_x = "nodejs12.x"
     nodejs14_x = "nodejs14.x"
     nodejs16_x = "nodejs16.x"
+    nodejs18_x = "nodejs18.x"
+    nodejs20_x = "nodejs20.x"
+    nodejs22_x = "nodejs22.x"
+    nodejs24_x = "nodejs24.x"
     java8 = "java8"
     java8_al2 = "java8.al2"
     java11 = "java11"
+    java17 = "java17"
+    java21 = "java21"
+    java25 = "java25"
     python2_7 = "python2.7"
+    python3_4 = "python3.4"
     python3_6 = "python3.6"
     python3_7 = "python3.7"
     python3_8 = "python3.8"
     python3_9 = "python3.9"
+    python3_10 = "python3.10"
+    python3_11 = "python3.11"
+    python3_12 = "python3.12"
+    python3_13 = "python3.13"
+    python3_14 = "python3.14"
     dotnetcore1_0 = "dotnetcore1.0"
     dotnetcore2_0 = "dotnetcore2.0"
     dotnetcore2_1 = "dotnetcore2.1"
     dotnetcore3_1 = "dotnetcore3.1"
     dotnet6 = "dotnet6"
     dotnet8 = "dotnet8"
+    dotnet10 = "dotnet10"
     nodejs4_3_edge = "nodejs4.3-edge"
+    python2_7_greengrass = "python2.7-greengrass"
+    byol = "byol"
+    go1_9 = "go1.9"
     go1_x = "go1.x"
     ruby2_5 = "ruby2.5"
+    ruby2_6 = "ruby2.6"
     ruby2_7 = "ruby2.7"
-    provided = "provided"
-    provided_al2 = "provided.al2"
-    nodejs18_x = "nodejs18.x"
-    python3_10 = "python3.10"
-    java17 = "java17"
     ruby3_2 = "ruby3.2"
     ruby3_3 = "ruby3.3"
     ruby3_4 = "ruby3.4"
-    python3_11 = "python3.11"
-    nodejs20_x = "nodejs20.x"
+    provided = "provided"
+    provided_al2 = "provided.al2"
     provided_al2023 = "provided.al2023"
-    python3_12 = "python3.12"
-    java21 = "java21"
-    python3_13 = "python3.13"
-    nodejs22_x = "nodejs22.x"
-    nodejs24_x = "nodejs24.x"
-    python3_14 = "python3.14"
-    java25 = "java25"
+    nasa = "nasa"
+    nodejs26_x = "nodejs26.x"
+    ruby3_5 = "ruby3.5"
+    python3_15 = "python3.15"
 
 
 class SchemaRegistryEventRecordFormat(StrEnum):
@@ -420,10 +430,6 @@ class SystemLogLevel(StrEnum):
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARN = "WARN"
-
-
-class TenantIsolationMode(StrEnum):
-    PER_TENANT = "PER_TENANT"
 
 
 class ThrottleReason(StrEnum):
@@ -989,7 +995,6 @@ class CreateCodeSigningConfigResponse(TypedDict, total=False):
 class ProvisionedPollerConfig(TypedDict, total=False):
     MinimumPollers: MinimumNumberOfPollers | None
     MaximumPollers: MaximumNumberOfPollers | None
-    PollerGroupName: ProvisionedPollerGroupName | None
 
 
 EventSourceMappingMetricList = list[EventSourceMappingMetric]
@@ -1090,10 +1095,6 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     ProvisionedPollerConfig: ProvisionedPollerConfig | None
 
 
-class TenancyConfig(TypedDict, total=False):
-    TenantIsolationMode: TenantIsolationMode
-
-
 class LoggingConfig(TypedDict, total=False):
     LogFormat: LogFormat | None
     ApplicationLogLevel: ApplicationLogLevel | None
@@ -1188,7 +1189,6 @@ class CreateFunctionRequest(ServiceRequest):
     LoggingConfig: LoggingConfig | None
     CapacityProviderConfig: CapacityProviderConfig | None
     PublishTo: FunctionVersionLatestPublished | None
-    TenancyConfig: TenancyConfig | None
 
 
 class CreateFunctionUrlConfigRequest(ServiceRequest):
@@ -1417,7 +1417,6 @@ class FunctionConfiguration(TypedDict, total=False):
     LoggingConfig: LoggingConfig | None
     CapacityProviderConfig: CapacityProviderConfig | None
     ConfigSha256: String | None
-    TenancyConfig: TenancyConfig | None
 
 
 class FunctionEventInvokeConfig(TypedDict, total=False):
@@ -1652,7 +1651,6 @@ class InvocationRequest(ServiceRequest):
     LogType: LogType | None
     ClientContext: String | None
     Qualifier: NumericLatestPublishedOrAliasQualifier | None
-    TenantId: TenantId | None
 
 
 class InvocationResponse(TypedDict, total=False):
@@ -1689,7 +1687,6 @@ class InvokeWithResponseStreamRequest(ServiceRequest):
     LogType: LogType | None
     ClientContext: String | None
     Qualifier: NumericLatestPublishedOrAliasQualifier | None
-    TenantId: TenantId | None
 
 
 class InvokeWithResponseStreamResponseEvent(TypedDict, total=False):
@@ -2290,7 +2287,6 @@ class LambdaApi:
         logging_config: LoggingConfig | None = None,
         capacity_provider_config: CapacityProviderConfig | None = None,
         publish_to: FunctionVersionLatestPublished | None = None,
-        tenancy_config: TenancyConfig | None = None,
         **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
@@ -2548,7 +2544,6 @@ class LambdaApi:
         client_context: String | None = None,
         payload: IO[Blob] | None = None,
         qualifier: NumericLatestPublishedOrAliasQualifier | None = None,
-        tenant_id: TenantId | None = None,
         **kwargs,
     ) -> InvocationResponse:
         raise NotImplementedError
@@ -2573,7 +2568,6 @@ class LambdaApi:
         client_context: String | None = None,
         qualifier: NumericLatestPublishedOrAliasQualifier | None = None,
         payload: IO[Blob] | None = None,
-        tenant_id: TenantId | None = None,
         **kwargs,
     ) -> InvokeWithResponseStreamResponse:
         raise NotImplementedError

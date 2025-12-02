@@ -135,7 +135,6 @@ from localstack.aws.api.lambda_ import (
     TaggableResource,
     TagKeyList,
     Tags,
-    TenantId,
     TracingMode,
     UnqualifiedFunctionName,
     UpdateCodeSigningConfigResponse,
@@ -1742,7 +1741,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         client_context: String | None = None,
         payload: IO[Blob] | None = None,
         qualifier: NumericLatestPublishedOrAliasQualifier | None = None,
-        tenant_id: TenantId | None = None,
         **kwargs,
     ) -> InvocationResponse:
         account_id, region = api_utils.get_account_and_region(function_name, context)
