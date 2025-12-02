@@ -2116,9 +2116,14 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_localstack_blogpost_scenario": {
-    "recorded-date": "28-11-2025, 15:55:10",
+    "recorded-date": "02-12-2025, 23:11:05",
     "recorded-content": {
       "small_purchase_approval_required_response": {
+        "inspectionData": {
+          "input": {
+            "cost": 9
+          }
+        },
         "nextState": "Purchase Approved",
         "output": {
           "cost": 9
@@ -2130,6 +2135,11 @@
         }
       },
       "large_purchase_approval_required_response": {
+        "inspectionData": {
+          "input": {
+            "cost": 10
+          }
+        },
         "nextState": "Ask for Approval",
         "output": {
           "cost": 10
@@ -2141,6 +2151,24 @@
         }
       },
       "large_purchase_ask_for_approval_response": {
+        "inspectionData": {
+          "afterArguments": {
+            "Method": "POST",
+            "ApiEndpoint": "example.execute-api.<region>.amazonaws.com",
+            "Path": "/approval",
+            "RequestBody": {
+              "cost": 10,
+              "dept_id": "12345678"
+            },
+            "AuthType": "NO_AUTH"
+          },
+          "input": {
+            "cost": 10
+          },
+          "result": {
+            "approval": true
+          }
+        },
         "nextState": "Check Approval",
         "output": {
           "approval": true,
@@ -2154,6 +2182,13 @@
         }
       },
       "check_approval_granted_response": {
+        "inspectionData": {
+          "input": {
+            "approval": true,
+            "approval_code": "2387462",
+            "approved_by": "Mary"
+          }
+        },
         "nextState": "Purchase Approved",
         "output": {
           "approval": true,
@@ -2167,6 +2202,11 @@
         }
       },
       "check_approval_denied_response": {
+        "inspectionData": {
+          "input": {
+            "approval": false
+          }
+        },
         "nextState": "Not Approved",
         "output": {
           "approval": false

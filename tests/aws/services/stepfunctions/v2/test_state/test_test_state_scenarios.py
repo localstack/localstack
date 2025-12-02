@@ -306,7 +306,6 @@ class TestStateCaseScenarios:
         self,
         aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
         region_name,
     ):
@@ -316,7 +315,6 @@ class TestStateCaseScenarios:
         )
         definition = json.dumps(template)
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
         # Step 1 - Testing the Approval Required state
         # 1.1 Approval Required state correctly approves small purchases
 
@@ -325,9 +323,9 @@ class TestStateCaseScenarios:
         small_purchase_approval_required_response = (
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=small_purchase_input,
                 stateName="Approval Required",
+                inspectionLevel=InspectionLevel.TRACE,
             )
         )
         sfn_snapshot.match(
@@ -341,9 +339,9 @@ class TestStateCaseScenarios:
         large_purchase_approval_required_response = (
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=large_purchase_input,
                 stateName="Approval Required",
+                inspectionLevel=InspectionLevel.TRACE,
             )
         )
         sfn_snapshot.match(
@@ -358,10 +356,10 @@ class TestStateCaseScenarios:
         large_purchase_ask_for_approval_response = (
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=large_purchase_input,
                 stateName="Ask for Approval",
                 mock={"result": '{"approval": true }'},
+                inspectionLevel=InspectionLevel.TRACE,
             )
         )
         sfn_snapshot.match(
@@ -377,9 +375,9 @@ class TestStateCaseScenarios:
 
         check_approval_granted_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=check_approval_granted_input,
             stateName="Check Approval",
+            inspectionLevel=InspectionLevel.TRACE,
         )
         sfn_snapshot.match("check_approval_granted_response", check_approval_granted_response)
 
@@ -389,8 +387,8 @@ class TestStateCaseScenarios:
 
         check_approval_denied_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=check_approval_denied_input,
             stateName="Check Approval",
+            inspectionLevel=InspectionLevel.TRACE,
         )
         sfn_snapshot.match("check_approval_denied_response", check_approval_denied_response)
