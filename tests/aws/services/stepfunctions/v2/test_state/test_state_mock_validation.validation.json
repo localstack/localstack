@@ -1,0 +1,56 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-FailState]": {
+    "last_validated_date": "2025-12-02T14:12:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.1,
+      "teardown": 1.12,
+      "total": 14.22
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-PassState]": {
+    "last_validated_date": "2025-12-02T14:12:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.97,
+      "teardown": 1.14,
+      "total": 14.11
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-SucceedState]": {
+    "last_validated_date": "2025-12-02T14:12:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.89,
+      "teardown": 1.06,
+      "total": 13.95
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-FailState]": {
+    "last_validated_date": "2025-12-02T14:11:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.93,
+      "teardown": 1.1,
+      "total": 14.03
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-PassState]": {
+    "last_validated_date": "2025-12-02T14:11:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 14.06,
+      "teardown": 1.15,
+      "total": 15.71
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-SucceedState]": {
+    "last_validated_date": "2025-12-02T14:12:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.01,
+      "teardown": 1.08,
+      "total": 14.09
+    }
+  }
+}
