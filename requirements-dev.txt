@@ -12,9 +12,9 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.11.0
+anyio==4.12.0
     # via httpx
-apispec==6.8.4
+apispec==6.9.0
     # via localstack-core
 argparse==1.4.0
     # via kclpy-ext
@@ -35,9 +35,9 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==48.20.0
     # via aws-cdk-lib
-aws-cdk-lib==2.229.0
+aws-cdk-lib==2.231.0
     # via localstack-core
-aws-sam-translator==1.103.0
+aws-sam-translator==1.104.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -45,7 +45,7 @@ aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.43.6
     # via localstack-core
-awscrt==0.29.0
+awscrt==0.29.1
     # via localstack-core
 boto3==1.42.0
     # via
@@ -80,7 +80,7 @@ cffi==2.0.0
     # via cryptography
 cfgv==3.5.0
     # via pre-commit
-cfn-lint==1.41.0
+cfn-lint==1.42.0
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
@@ -110,7 +110,7 @@ cryptography==46.0.3
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-cython==3.2.1
+cython==3.2.2
     # via localstack-core (pyproject.toml)
 decorator==5.2.1
     # via jsonpath-rw
@@ -182,7 +182,7 @@ idna==3.11
     #   requests
 importlib-resources==6.5.2
     # via jsii
-incremental==24.7.2
+incremental==24.11.0
     # via localstack-twisted
 iniconfig==2.3.0
     # via pytest
@@ -196,7 +196,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.4.3
+joserfc==1.5.0
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
@@ -244,6 +244,8 @@ kclpy-ext==3.0.5
     # via localstack-core
 lazy-object-proxy==1.12.0
     # via openapi-spec-validator
+librt==0.6.3
+    # via mypy
 localstack-snapshot==0.3.0
     # via localstack-core
 localstack-twisted==24.3.0
@@ -258,13 +260,13 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.17.post15
+moto-ext==5.1.18.post6
     # via localstack-core
 mpmath==1.3.0
     # via sympy
 multipart==1.3.0
     # via moto-ext
-mypy==1.18.2
+mypy==1.19.0
     # via localstack-core (pyproject.toml)
 mypy-extensions==1.1.0
     # via mypy
@@ -295,6 +297,7 @@ packaging==25.0
     # via
     #   apispec
     #   deptry
+    #   incremental
     #   jpype1
     #   pytest
     #   pytest-rerunfailures
@@ -350,7 +353,7 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.23
     # via cffi
-pydantic==2.12.4
+pydantic==2.12.5
     # via
     #   aws-sam-translator
     #   localstack-core
@@ -443,7 +446,7 @@ rich==14.2.0
     #   localstack-core (pyproject.toml)
 rolo==0.7.6
     # via localstack-core
-rpds-py==0.29.0
+rpds-py==0.30.0
     # via
     #   jsonschema
     #   referencing
@@ -451,7 +454,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.14.6
+ruff==0.14.7
     # via localstack-core (pyproject.toml)
 s3transfer==0.16.0
     # via
@@ -467,8 +470,6 @@ six==1.17.0
     #   jsonpath-rw
     #   python-dateutil
     #   rfc3339-validator
-sniffio==1.3.1
-    # via anyio
 sympy==1.14.0
     # via cfn-lint
 typeguard==2.13.3
@@ -507,7 +508,7 @@ virtualenv==20.35.4
     # via pre-commit
 websocket-client==1.9.0
     # via localstack-core
-werkzeug==3.1.3
+werkzeug==3.1.4
     # via
     #   localstack-core
     #   moto-ext
