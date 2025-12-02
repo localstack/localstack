@@ -251,7 +251,7 @@ class ClientFactory(ABC):
     def __init__(
         self,
         use_ssl: bool = False,
-        verify: bool = False,
+        verify: bool | str = False,
         session: Session = None,
         config: Config = None,
     ):
@@ -603,14 +603,6 @@ class ExternalClientFactory(ClientFactory):
 
 
 class ExternalAwsClientFactory(ClientFactory):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        if ca_cert := os.getenv("REQUESTS_CA_BUNDLE"):
-            LOG.debug("Creating External AWS Client with REQUESTS_CA_BUNDLE=%s", ca_cert)
-
-        self._verify = ca_cert or True
-
     def get_client(
         self,
         service_name: str,
@@ -692,7 +684,10 @@ class ExternalBypassDnsClientFactory(ExternalAwsClientFactory):
         session: Session = None,
         config: Config = None,
     ):
-        super().__init__(use_ssl=True, verify=True, session=session, config=config)
+        if ca_cert := os.getenv("REQUESTS_CA_BUNDLE"):
+            LOG.debug("Creating External AWS Client with REQUESTS_CA_BUNDLE=%s", ca_cert)
+
+        super().__init__(use_ssl=True, verify=ca_cert or True, session=session, config=config)
 
     def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
         client = super()._get_client_post_hook(client)
