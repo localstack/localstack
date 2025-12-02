@@ -8,12 +8,22 @@ Parameters:
   BucketName:
     Type: String
 
+  IsFifo:
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+
 Conditions:
   ShouldDeployBucket: !Equals ["true", !Ref AddBucket]
+  SetIsFifo: !Equals ["true", !Ref IsFifo]
 
 Resources:
   Queue:
     Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue:
+        !If [SetIsFifo, true, !Ref AWS::NoValue]
 
   Bucket:
     Type: AWS::S3::Bucket

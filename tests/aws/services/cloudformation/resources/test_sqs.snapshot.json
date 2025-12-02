@@ -1,17 +1,4 @@
 {
-  "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_queue_no_change": {
-    "recorded-date": "08-12-2023, 21:11:26",
-    "recorded-content": {
-      "outputs-1": {
-        "QueueArn": "<queue-arn>",
-        "QueueUrl": "<queue-url>"
-      },
-      "outputs-2": {
-        "QueueArn": "<queue-arn>",
-        "QueueUrl": "<queue-url>"
-      }
-    }
-  },
   "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_sqs_queuepolicy": {
     "recorded-date": "27-03-2024, 20:30:24",
     "recorded-content": {
@@ -113,6 +100,32 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_queue_no_change[True]": {
+    "recorded-date": "02-12-2025, 15:52:08",
+    "recorded-content": {
+      "outputs-1": {
+        "QueueArn": "<queue-arn>",
+        "QueueUrl": "<queue-url>"
+      },
+      "outputs-2": {
+        "QueueArn": "<queue-arn>",
+        "QueueUrl": "<queue-url>"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_queue_no_change[False]": {
+    "recorded-date": "02-12-2025, 15:53:46",
+    "recorded-content": {
+      "outputs-1": {
+        "QueueArn": "<queue-arn>",
+        "QueueUrl": "<queue-url>"
+      },
+      "outputs-2": {
+        "QueueArn": "<queue-arn>",
+        "QueueUrl": "<queue-url>"
       }
     }
   }

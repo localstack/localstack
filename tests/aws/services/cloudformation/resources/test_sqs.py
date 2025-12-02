@@ -71,7 +71,8 @@ def test_cfn_handle_sqs_resource(deploy_cfn_template, aws_client, snapshot):
 
 
 @markers.aws.validated
-def test_update_queue_no_change(deploy_cfn_template, aws_client, snapshot):
+@pytest.mark.parametrize("is_fifo", [True, False])
+def test_update_queue_no_change(deploy_cfn_template, aws_client, snapshot, is_fifo):
     bucket_name = f"bucket-{short_uid()}"
 
     stack = deploy_cfn_template(
@@ -81,6 +82,7 @@ def test_update_queue_no_change(deploy_cfn_template, aws_client, snapshot):
         parameters={
             "AddBucket": "false",
             "BucketName": bucket_name,
+            "IsFifo": "true" if is_fifo else "false",
         },
     )
     queue_url = stack.outputs["QueueUrl"]
@@ -100,6 +102,7 @@ def test_update_queue_no_change(deploy_cfn_template, aws_client, snapshot):
         parameters={
             "AddBucket": "true",
             "BucketName": bucket_name,
+            "IsFifo": "true" if is_fifo else "false",
         },
     )
     snapshot.match("outputs-2", updated_stack.outputs)

@@ -96,9 +96,6 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
         model = request.desired_state
         sqs = request.aws_client_factory.sqs
 
-        if model.get("FifoQueue", False):
-            model["FifoQueue"] = model["FifoQueue"]
-
         queue_name = model.get("QueueName")
         if not queue_name:
             # TODO: verify patterns here
