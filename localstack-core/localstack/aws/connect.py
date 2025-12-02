@@ -7,6 +7,7 @@ LocalStack providers.
 
 import json
 import logging
+import os
 import re
 import threading
 from abc import ABC, abstractmethod
@@ -250,7 +251,7 @@ class ClientFactory(ABC):
     def __init__(
         self,
         use_ssl: bool = False,
-        verify: bool = False,
+        verify: bool | str = False,
         session: Session = None,
         config: Config = None,
     ):
@@ -683,11 +684,19 @@ class ExternalBypassDnsClientFactory(ExternalAwsClientFactory):
         session: Session = None,
         config: Config = None,
     ):
-        super().__init__(use_ssl=True, verify=True, session=session, config=config)
+        if ca_cert := os.getenv("REQUESTS_CA_BUNDLE"):
+            LOG.debug("Creating External AWS Client with REQUESTS_CA_BUNDLE=%s", ca_cert)
+
+        super().__init__(
+            use_ssl=localstack_config.is_env_not_false("USE_SSL"),
+            verify=ca_cert or True,
+            session=session,
+            config=config,
+        )
 
     def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
         client = super()._get_client_post_hook(client)
-        client._endpoint.http_session = ExternalBypassDnsSession()
+        client._endpoint.http_session = ExternalBypassDnsSession(verify=self._verify)
         return client
 
 
