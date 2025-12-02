@@ -729,6 +729,7 @@ class SdkDockerClient(ContainerClient):
         ulimits: list[Ulimit] | None = None,
         init: bool | None = None,
         log_config: LogConfig | None = None,
+        hostname: str | None = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
@@ -793,6 +794,8 @@ class SdkDockerClient(ContainerClient):
                     )
                     for ulimit in ulimits
                 ]
+            if hostname:
+                kwargs["hostname"] = hostname
             mounts = None
             if volumes:
                 mounts = Util.convert_mount_list_to_dict(volumes)
@@ -860,6 +863,7 @@ class SdkDockerClient(ContainerClient):
         ulimits: list[Ulimit] | None = None,
         init: bool | None = None,
         log_config: LogConfig | None = None,
+        hostname: str | None = None,
     ) -> tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
@@ -891,6 +895,7 @@ class SdkDockerClient(ContainerClient):
                 labels=labels,
                 ulimits=ulimits,
                 log_config=log_config,
+                hostname=hostname,
             )
             result = self.start_container(
                 container_name_or_id=container,

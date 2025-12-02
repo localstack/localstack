@@ -1040,6 +1040,7 @@ class ContainerClient(metaclass=ABCMeta):
         ulimits: list[Ulimit] | None = None,
         init: bool | None = None,
         log_config: LogConfig | None = None,
+        hostname: str | None = None,
     ) -> tuple[bytes, bytes]:
         """Creates and runs a given docker container
 
