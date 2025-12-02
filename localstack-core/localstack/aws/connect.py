@@ -646,7 +646,7 @@ class ExternalAwsClientFactory(ClientFactory):
             region_name=region_name or self._get_session_region(),
             endpoint_url=endpoint_url,
             use_ssl=True,
-            verify=self._verify,
+            verify=True,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token,
