@@ -1001,7 +1001,9 @@ class TestS3:
             s3_vhost_client.delete_bucket(Bucket=bucket_name)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Owner.DisplayName"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Owner.DisplayName", "$..Buckets..BucketArn"]
+    )  # Bucket ARN is by AWS in this scenario but not for others.
     def test_create_bucket_with_eu_location_constraint(
         self, s3_create_bucket_with_client, aws_client_factory, snapshot
     ):
