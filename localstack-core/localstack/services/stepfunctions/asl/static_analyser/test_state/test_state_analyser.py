@@ -18,6 +18,7 @@ from localstack.aws.api.stepfunctions import (
     ValidationException,
 )
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
+from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
     StateTaskService,
 )
@@ -75,6 +76,14 @@ class TestStateStaticAnalyser(StaticAnalyser):
         test_program, _ = TestStateAmazonStateLanguageParser.parse(definition, state_name)
         test_state = test_program.test_state
 
+        TestStateStaticAnalyser.validate_mock_result_matches_api_shape(
+            mock_input=mock_input, test_state=test_state, definition=definition
+        )
+
+    @staticmethod
+    def validate_mock_result_matches_api_shape(
+        mock_input: MockInput, test_state: CommonStateField, definition: Definition
+    ):
         # apigateway:invoke: has no equivalent in the AWS SDK service integration.
         # Hence, the validation against botocore doesn't apply.
         # See the note in https://docs.aws.amazon.com/step-functions/latest/dg/connect-api-gateway.html
