@@ -4693,30 +4693,43 @@ class TestSNSSMS:
     @markers.aws.manual_setup_required
     @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
     def test_is_phone_number_opted_out(
-        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name
+        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name, cleanups
     ):
         # this test expects the fixture-provided phone number to be opted out
         # if you want to test against AWS, you need to manually opt out a number
         # https://us-east-1.console.aws.amazon.com/sms-voice/home?region=us-east-1#/opt-out-lists?name=Default&tab=opt-out-list-opted-out-numbers
+        def cleanup_store():
+            SnsProvider = sns_provider()
+            store = SnsProvider.get_store(account_id, region_name)
+            store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
+
         if not is_aws_cloud():
             SnsProvider = sns_provider()
             store = SnsProvider.get_store(account_id, region_name)
             store.PHONE_NUMBERS_OPTED_OUT.append(phone_number)
+            cleanups.append(cleanup_store)
+
         response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
         snapshot.match("phone-number-opted-out", response)
 
     @markers.aws.manual_setup_required
     @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
     def test_list_phone_numbers_opted_out(
-        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name
+        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name, cleanups
     ):
         # this test expects exactly one phone number opted out
         # if you want to test against AWS, you need to manually opt out a number
         # https://us-east-1.console.aws.amazon.com/sms-voice/home?region=us-east-1#/opt-out-lists?name=Default&tab=opt-out-list-opted-out-numbers
+        def cleanup_store():
+            SnsProvider = sns_provider()
+            store = SnsProvider.get_store(account_id, region_name)
+            store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
+
         if not is_aws_cloud():
             SnsProvider = sns_provider()
             store = SnsProvider.get_store(account_id, region_name)
             store.PHONE_NUMBERS_OPTED_OUT.append(phone_number)
+            cleanups.append(cleanup_store)
 
         snapshot.add_transformer(
             TransformerUtility.jsonpath(
@@ -4730,17 +4743,23 @@ class TestSNSSMS:
     @markers.aws.manual_setup_required
     @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
     def test_opt_in_phone_number(
-        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name
+        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name, cleanups
     ):
         # this test expects exactly one phone number opted out
         # if you want to test against AWS, you need to manually opt out a number
         # https://us-east-1.console.aws.amazon.com/sms-voice/home?region=us-east-1#/opt-out-lists?name=Default&tab=opt-out-list-opted-out-numbers
         # IMPORTANT: a phone number can only be opted in once every 30 days on AWS.
         # Make sure everything else is set up and taken care of properly before trying to validate this.
+        def cleanup_store():
+            SnsProvider = sns_provider()
+            store = SnsProvider.get_store(account_id, region_name)
+            store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
+
         if not is_aws_cloud():
             SnsProvider = sns_provider()
             store = SnsProvider.get_store(account_id, region_name)
             store.PHONE_NUMBERS_OPTED_OUT.append(phone_number)
+            cleanups.append(cleanup_store)
         response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
         assert response["isOptedOut"]
 
