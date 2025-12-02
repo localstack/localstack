@@ -118,6 +118,7 @@ from localstack.services.sns.v2.utils import (
     parse_and_validate_topic_arn,
     validate_subscription_attribute,
 )
+from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
     extract_region_from_arn,
@@ -141,6 +142,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         super().__init__()
         self._publisher = PublishDispatcher()
         self._signature_cert_pem: str = SNS_SERVER_CERT
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(sns_stores)
 
     def on_before_stop(self):
         self._publisher.shutdown()
