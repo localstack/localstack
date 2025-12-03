@@ -66,15 +66,11 @@ class TestStateContextObject:
     )
     def test_state_task_context_object(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
         region_name,
-        create_state_machine_iam_role,
         sfn_snapshot,
         context_object_literal,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         state_machine_template = ContextObjectTemplates.load_sfn_template(
             ContextObjectTemplates.CONTEXT_OBJECT_RESULT_PATH
         )
@@ -95,7 +91,6 @@ class TestStateContextObject:
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.TRACE,
             context=context_object_full,
@@ -106,14 +101,10 @@ class TestStateContextObject:
     @markers.aws.validated
     def test_state_wait_task_context_object(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
         region_name,
-        create_state_machine_iam_role,
         sfn_snapshot,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         state_template = TST.load_sfn_template(
             TST.IO_SQS_SERVICE_TASK_WAIT,
         )
@@ -127,7 +118,6 @@ class TestStateContextObject:
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             inspectionLevel=InspectionLevel.TRACE,
             context=task_context_object_full,
             mock={"result": mocked_result},
@@ -143,15 +133,11 @@ class TestStateContextObject:
     @pytest.mark.skipif(not is_aws_cloud(), reason="Error messages are different")
     def test_state_map_context_object(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
         region_name,
-        create_state_machine_iam_role,
         sfn_snapshot,
         context_object_literal,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         state_machine_template = ContextObjectTemplates.load_sfn_template(
             ContextObjectTemplates.CONTEXT_OBJECT_ITEMS_PATH
         )
@@ -170,7 +156,6 @@ class TestStateContextObject:
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.TRACE,
             context=context_object_full,
@@ -190,15 +175,11 @@ class TestStateContextObject:
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Failure cases not yet handled.")
     def test_state_context_object_invalid_states(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
         state_template,
         context_template,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         state_machine_template = ContextObjectTemplates.load_sfn_template(state_template)
 
         state_template = state_machine_template["States"][TEST_STATE_NAME]
@@ -214,7 +195,6 @@ class TestStateContextObject:
         with pytest.raises(ClientError) as exc:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=exec_input,
                 inspectionLevel=InspectionLevel.TRACE,
                 context=context_template,
@@ -242,14 +222,11 @@ class TestStateContextObject:
     )
     def test_state_context_object_validation_failures(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
         context_template,
     ):
         context_object = json.dumps(context_template)
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         state_template = TST.load_sfn_template(
             TST.BASE_SFN_START_EXECUTION_TASK_STATE,
@@ -266,7 +243,6 @@ class TestStateContextObject:
         with pytest.raises(ClientError) as exc:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=exec_input,
                 inspectionLevel=InspectionLevel.TRACE,
                 context=context_object,
@@ -296,14 +272,11 @@ class TestStateContextObject:
     )
     def test_state_context_object_edge_cases(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
         context_template,
     ):
         context_object = json.dumps(context_template)
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         state_machine_template = ContextObjectTemplates.load_sfn_template(
             ContextObjectTemplates.CONTEXT_OBJECT_RESULT_PATH
@@ -324,7 +297,6 @@ class TestStateContextObject:
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.TRACE,
             context=context_object,
