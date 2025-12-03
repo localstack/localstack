@@ -230,7 +230,7 @@ from localstack.aws.handlers import (
     preprocess_request,
     serve_custom_service_request_handlers,
 )
-from localstack.constants import AWS_REGION_US_EAST_1, AWS_REGION_EU_WEST_1
+from localstack.constants import AWS_REGION_EU_WEST_1, AWS_REGION_US_EAST_1
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
@@ -282,6 +282,7 @@ from localstack.services.s3.utils import (
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
     generate_safe_version_id,
+    get_bucket_location_xml,
     get_canned_acl,
     get_class_attrs_from_spec_class,
     get_failed_precondition_copy_source,
@@ -503,19 +504,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_tag_set(bucket_tags, type_set="create-bucket")
 
         if location_constraint := create_bucket_configuration.get("LocationConstraint", ""):
-            if (
-                context.region == AWS_REGION_US_EAST_1
-                and location_constraint not in BUCKET_LOCATION_CONSTRAINTS
-            ):
-                raise InvalidLocationConstraint(
-                    "The specified location-constraint is not valid",
-                    LocationConstraint=location_constraint,
-                )
-            elif (
-                context.region == AWS_REGION_EU_WEST_1
-                and location_constraint not in EU_WEST_1_LOCATION_CONSTRAINTS
-            ):
-                raise IllegalLocationConstraintException(location_constraint)
+            if context.region == AWS_REGION_US_EAST_1:
+                if location_constraint not in BUCKET_LOCATION_CONSTRAINTS:
+                    raise InvalidLocationConstraint(
+                        "The specified location-constraint is not valid",
+                        LocationConstraint=location_constraint,
+                    )
+            elif context.region == AWS_REGION_EU_WEST_1:
+                if location_constraint not in EU_WEST_1_LOCATION_CONSTRAINTS:
+                    raise IllegalLocationConstraintException(location_constraint)
             elif context.region != location_constraint:
                 raise IllegalLocationConstraintException(location_constraint)
         else:
@@ -720,27 +717,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         Botocore implements this hack for parsing the response in `botocore.handlers.py#parse_get_bucket_location`
         """
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
-
-        location_constraint_template = (
-            '<?xml version="1.0" encoding="UTF-8"?>\n'
-            '<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">{location_constraint}</LocationConstraint>'
-        )
-
         bucket_region = s3_bucket.bucket_region
 
         # TODO: Remove usage of getattr once persistence mechanism is updated.
         # If the stored constraint is None the bucket was made before the storage of location_constraint.
         # The EU location constraint wasn't supported before this point so we can safely default to the region.
-        stored_constraint = getattr(s3_bucket, "location_constraint", None)
-        if stored_constraint is None:
+        location_constraint = getattr(s3_bucket, "location_constraint", None)
+        if location_constraint is None:
             location_constraint = bucket_region if bucket_region != "us-east-1" else ""
 
-        response = GetBucketLocationOutput(
-            LocationConstraint=location_constraint_template.format(
-                location_constraint=location_constraint
-            )
+        return GetBucketLocationOutput(
+            LocationConstraint=get_bucket_location_xml(location_constraint)
         )
-        return response
 
     @handler("PutObject", expand=False)
     def put_object(
