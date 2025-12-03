@@ -1105,3 +1105,19 @@ def is_version_older_than_other(version_id: str, other: str):
     See `generate_safe_version_id`
     """
     return base64.b64decode(version_id, altchars=b"._") < base64.b64decode(other, altchars=b"._")
+
+
+def get_bucket_location_xml(location_constraint: str) -> str:
+    """
+    Returns the formatted XML for the GetBucketLocation operation.
+
+    :param location_constraint: The location constraint to return in the XML. It can be an empty string when
+    it's not specified in the bucket configuration.
+    :return: The XML response.
+    """
+
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"'
+        + ("/>" if not location_constraint else f">{location_constraint}</LocationConstraint>")
+    )
