@@ -14,6 +14,7 @@ class TestStateMockValidation:
         pytest.param(TST.BASE_PASS_STATE, id="PassState"),
         pytest.param(TST.BASE_FAIL_STATE, id="FailState"),
         pytest.param(TST.BASE_SUCCEED_STATE, id="SucceedState"),
+        # TODO choice
     ]
     MOCK_VARIANTS = [
         pytest.param({"result": json.dumps({"mock": "the unmockable"})}, id="mock_result"),
@@ -25,9 +26,7 @@ class TestStateMockValidation:
     @pytest.mark.parametrize("mock", MOCK_VARIANTS)
     def test_state_type_does_not_accept_mock(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
         definition_template,
         mock,
@@ -35,14 +34,33 @@ class TestStateMockValidation:
         template = TST.load_sfn_template(definition_template)
         definition = json.dumps(template)
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
+
+    STATES_REQUIRING_MOCKS = [
+        pytest.param(TST.BASE_MAP_STATE, id="MapState"),
+        pytest.param(TST.MAP_TASK_STATE, id="MapTaskState"),
+    ]
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("definition_template", STATES_REQUIRING_MOCKS)
+    def test_state_type_requires_mock(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+        definition_template,
+    ):
+        template = TST.load_sfn_template(definition_template)
+        definition = json.dumps(template)
 
         with pytest.raises(Exception) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
-                # input=exec_input,
                 inspectionLevel=InspectionLevel.TRACE,
-                mock=mock,
             )
         sfn_snapshot.match("validation_exception", e.value.response)

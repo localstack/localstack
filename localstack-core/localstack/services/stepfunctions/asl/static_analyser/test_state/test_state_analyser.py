@@ -12,6 +12,7 @@ from botocore.model import (
 
 from localstack.aws.api.stepfunctions import (
     Definition,
+    InvalidDefinition,
     MockInput,
     MockResponseValidationMode,
     StateName,
@@ -19,6 +20,12 @@ from localstack.aws.api.stepfunctions import (
 )
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.state_map import (
+    StateMap,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_parallel.state_parallel import (
+    StateParallel,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
     StateTaskService,
 )
@@ -81,15 +88,27 @@ class TestStateStaticAnalyser(StaticAnalyser):
         test_program, _ = TestStateAmazonStateLanguageParser.parse(definition, state_name)
         test_state = test_program.test_state
 
-        TestStateStaticAnalyser.validate_test_state_allows_mocking(test_state=test_state)
-
-        TestStateStaticAnalyser.validate_mock_result_matches_api_shape(
+        TestStateStaticAnalyser.validate_test_state_allows_mocking(
             mock_input=mock_input, test_state=test_state
         )
 
+        if mock_input is not None:
+            TestStateStaticAnalyser.validate_mock_result_matches_api_shape(
+                mock_input=mock_input, test_state=test_state
+            )
+
     @staticmethod
-    def validate_test_state_allows_mocking(test_state: CommonStateField) -> None:
-        if isinstance(test_state, (StatePass, StateFail, StateSucceed)):
+    def validate_test_state_allows_mocking(
+        mock_input: MockInput, test_state: CommonStateField
+    ) -> None:
+        if mock_input is None and isinstance(test_state, (StateMap, StateParallel)):
+            # This is a literal message when a Map or Parallel state is not accompanied by a mock in a test state request.
+            # The message is the same for both cases and is not parametrised anyhow.
+            raise InvalidDefinition(
+                "TestState API does not support Map or Parallel states. Supported state types include: [Task, Wait, Pass, Succeed, Fail, Choice]"
+            )
+
+        if mock_input is not None and isinstance(test_state, (StatePass, StateFail, StateSucceed)):
             raise ValidationException(
                 f"State type '{test_state.state_type.name}' is not supported when a mock is specified"
             )
