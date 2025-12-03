@@ -1549,7 +1549,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             TestStateStaticAnalyser.validate_role_arn_required(
                 mock_input=mock_input, definition=definition, state_name=state_name
             )
-
+            # HACK: Added dummy role ARN because it is a required field in Execution.
+            # To allow optional roleArn for the test state but preserve the mandatory one for regular executions
+            # we likely need to remove inheritance TestStateExecution(Execution) in favor of composition.
+            # TestState execution starts to have too many simplifications compared to a regular execution
+            # which renders the inheritance mechanism harmful.
+            # TODO make role_arn optional in TestStateExecution
             role_arn = arns.iam_role_arn(
                 role_name=f"RoleFor-{name}",
                 account_id=context.account_id,
