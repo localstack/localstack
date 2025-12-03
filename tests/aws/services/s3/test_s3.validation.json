@@ -374,6 +374,33 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure": {
     "last_validated_date": "2025-01-21T18:41:38+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure_get_bucket_location[eu-central-1-eu-central-1-eu-central-1]": {
+    "last_validated_date": "2025-12-03T02:59:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.05,
+      "teardown": 0.5,
+      "total": 1.55
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure_get_bucket_location[eu-west-1-EU-EU]": {
+    "last_validated_date": "2025-12-03T02:59:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.95,
+      "teardown": 0.55,
+      "total": 1.5
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure_get_bucket_location[us-east-1-None-]": {
+    "last_validated_date": "2025-12-03T02:59:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.61,
+      "teardown": 0.94,
+      "total": 2.55
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure_get_obj_attrs": {
     "last_validated_date": "2025-08-18T16:12:31+00:00",
     "durations_in_seconds": {
