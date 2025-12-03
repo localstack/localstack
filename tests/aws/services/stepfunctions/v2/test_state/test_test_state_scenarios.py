@@ -219,6 +219,27 @@ class TestStateCaseScenarios:
         sfn_snapshot.match("test_case_response", test_case_response)
 
     @markers.aws.validated
+    def test_base_lambda_service_task_state_no_role_arn_validation(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+
+        template = TST.load_sfn_template(TST.BASE_LAMBDA_SERVICE_TASK_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
+
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                input=exec_input,
+                inspectionLevel=InspectionLevel.TRACE,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "inspection_level", [InspectionLevel.INFO, InspectionLevel.DEBUG, InspectionLevel.TRACE]
     )

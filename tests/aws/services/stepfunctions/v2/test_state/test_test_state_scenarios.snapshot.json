@@ -2218,5 +2218,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state_no_role_arn_validation": {
+    "recorded-date": "03-12-2025, 00:38:08",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "RoleArn must be specified when testing a Task state"
+        },
+        "message": "RoleArn must be specified when testing a Task state",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
