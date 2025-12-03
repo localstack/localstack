@@ -215,6 +215,15 @@
       "total": 20.14
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state_no_role_arn_validation": {
+    "last_validated_date": "2025-12-03T00:38:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.53,
+      "call": 0.67,
+      "teardown": 0.0,
+      "total": 1.2
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[DEBUG]": {
     "last_validated_date": "2025-11-14T16:44:51+00:00",
     "durations_in_seconds": {
@@ -351,12 +360,12 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_localstack_blogpost_scenario": {
-    "last_validated_date": "2025-11-28T15:55:11+00:00",
+    "last_validated_date": "2025-12-02T23:11:05+00:00",
     "durations_in_seconds": {
-      "setup": 0.5,
-      "call": 14.74,
-      "teardown": 1.02,
-      "total": 16.26
+      "setup": 0.55,
+      "call": 1.26,
+      "teardown": 0.0,
+      "total": 1.81
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_task_catch_error[DEBUG]": {

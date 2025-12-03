@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_mock_result_field_not_in_api_spec[field_not_part_of_api_spec]": {
-    "recorded-date": "26-11-2025, 00:19:16",
+    "recorded-date": "03-12-2025, 01:10:10",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -15,7 +15,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_mock_result_field_not_in_api_spec[empty_json]": {
-    "recorded-date": "26-11-2025, 00:19:30",
+    "recorded-date": "03-12-2025, 01:10:10",
     "recorded-content": {
       "test_case_response": {
         "output": {},
@@ -28,7 +28,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_eventbridge_task[wrong_type_top_level_field]": {
-    "recorded-date": "26-11-2025, 00:19:44",
+    "recorded-date": "03-12-2025, 01:10:10",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -44,7 +44,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_eventbridge_task[wrong_type_nested_field]": {
-    "recorded-date": "26-11-2025, 00:19:58",
+    "recorded-date": "03-12-2025, 01:10:10",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -60,7 +60,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_eventbridge_task[wrong_type_2nd_array_element]": {
-    "recorded-date": "26-11-2025, 00:20:12",
+    "recorded-date": "03-12-2025, 01:10:10",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -76,7 +76,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_sfn_task[missing_required_fields]": {
-    "recorded-date": "26-11-2025, 00:20:26",
+    "recorded-date": "03-12-2025, 01:10:11",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -92,7 +92,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_sfn_task[field_name_not_in_sfn_case]": {
-    "recorded-date": "26-11-2025, 00:20:40",
+    "recorded-date": "03-12-2025, 01:10:11",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -108,7 +108,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_sfn_task[wrong_timestamp_type_bool]": {
-    "recorded-date": "26-11-2025, 00:20:54",
+    "recorded-date": "03-12-2025, 01:10:11",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -124,7 +124,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_sfn_task[wrong_timestamp_type_number]": {
-    "recorded-date": "26-11-2025, 00:21:08",
+    "recorded-date": "03-12-2025, 01:10:11",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -140,7 +140,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_lambda_task[wrong_integer_type_string]": {
-    "recorded-date": "26-11-2025, 00:21:22",
+    "recorded-date": "03-12-2025, 01:10:11",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -156,7 +156,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_dynamodb_task[wrong_float_type_string]": {
-    "recorded-date": "26-11-2025, 00:21:36",
+    "recorded-date": "03-12-2025, 01:10:12",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -172,7 +172,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_s3_task[wrong_long_type_string]": {
-    "recorded-date": "26-11-2025, 00:21:50",
+    "recorded-date": "03-12-2025, 01:10:12",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -188,7 +188,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_s3_task[non_existent_enum_value]": {
-    "recorded-date": "26-11-2025, 00:22:03",
+    "recorded-date": "03-12-2025, 01:10:12",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -204,7 +204,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_kms_task[wrong_blob_type_number]": {
-    "recorded-date": "26-11-2025, 00:22:17",
+    "recorded-date": "03-12-2025, 01:10:12",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -220,7 +220,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_kms_task[wrong_blob_length_less_than_minimum]": {
-    "recorded-date": "26-11-2025, 00:22:31",
+    "recorded-date": "03-12-2025, 01:10:13",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -236,7 +236,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_lambda_get_function_task[integer_less_than_minimum_allowed]": {
-    "recorded-date": "26-11-2025, 00:22:45",
+    "recorded-date": "03-12-2025, 01:10:13",
     "recorded-content": {
       "validation-exception": {
         "Error": {
@@ -252,7 +252,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode.py::TestFieldValidationMode::test_strict_mode_aws_sdk_lambda_get_function_task[integer_more_than_maximum_allowed]": {
-    "recorded-date": "26-11-2025, 00:22:58",
+    "recorded-date": "03-12-2025, 01:10:13",
     "recorded-content": {
       "validation-exception": {
         "Error": {

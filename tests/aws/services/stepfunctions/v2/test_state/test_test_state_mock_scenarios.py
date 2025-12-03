@@ -19,7 +19,6 @@ class TestStateMockScenarios:
         self,
         aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
@@ -32,12 +31,10 @@ class TestStateMockScenarios:
             "result": "not JSON string",
             "fieldValidationMode": "NONE",  # the result must be a valid JSON string even if field validation mode is NONE
         }
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         with pytest.raises(aws_client.stepfunctions.exceptions.ValidationException) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=exec_input,
                 inspectionLevel=InspectionLevel.INFO,
                 mock=mock,
@@ -47,9 +44,7 @@ class TestStateMockScenarios:
     @markers.aws.validated
     def test_base_lambda_service_task_mock_success(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
@@ -66,11 +61,9 @@ class TestStateMockScenarios:
             "SdkHttpMetadata": {"HttpStatusCode": 200},
         }
         mock = {"result": json.dumps(result)}
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.INFO,
             mock=mock,
@@ -87,9 +80,7 @@ class TestStateMockScenarios:
     @pytest.mark.parametrize("template_path", DYNAMODB_TEMPLATES)
     def test_io_dynamodb_service_task_mock_success(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
         template_path,
     ):
@@ -106,11 +97,9 @@ class TestStateMockScenarios:
         )
         result = {"SdkHttpMetadata": {"HttpStatusCode": 200}}
         mock = {"result": json.dumps(result)}
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.INFO,
             mock=mock,
@@ -120,9 +109,7 @@ class TestStateMockScenarios:
     @markers.aws.validated
     def test_put_events_mock_success(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
     ):
         template = TST.load_sfn_template(TST.BASE_EVENTS_PUT_EVENTS_TASK_STATE)
@@ -140,11 +127,8 @@ class TestStateMockScenarios:
         result = {"Entries": [{"EventId": long_uid()}]}
         mock = {"result": json.dumps(result)}
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.INFO,
             mock=mock,
@@ -154,9 +138,7 @@ class TestStateMockScenarios:
     @markers.aws.validated
     def test_send_sqs_message_success(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
     ):
         template = TST.load_sfn_template(TST.BASE_SQS_SEND_MESSAGE_TASK_STATE)
@@ -169,11 +151,9 @@ class TestStateMockScenarios:
         exec_input = json.dumps({"QueueUrl": "queue_url", "MessageBody": message_body})
         result = {"MD5OfMessageBody": md5_of_message_body, "MessageId": long_uid()}
         mock = {"result": json.dumps(result)}
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.INFO,
             mock=mock,
@@ -183,9 +163,7 @@ class TestStateMockScenarios:
     @markers.aws.validated
     def test_sfn_start_execution_success(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         account_id,
         region_name,
         sfn_snapshot,
@@ -220,11 +198,9 @@ class TestStateMockScenarios:
 
         result = {"ExecutionArn": target_execution_arn, "StartDate": datetime.now().isoformat()}
         mock = {"result": json.dumps(result)}
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.INFO,
             mock=mock,

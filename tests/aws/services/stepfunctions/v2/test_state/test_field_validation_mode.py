@@ -32,9 +32,7 @@ class TestFieldValidationMode:
     @pytest.mark.parametrize("result", EVENTBRIDGE_VALIDATION_PASS_FIELDS_NOT_IN_SPEC)
     def test_strict_mode_mock_result_field_not_in_api_spec(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
         result,
     ):
@@ -55,11 +53,8 @@ class TestFieldValidationMode:
 
         mock = {"result": json.dumps(result)}
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.INFO,
             mock=mock,
@@ -96,7 +91,6 @@ class TestFieldValidationMode:
         self,
         aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         sfn_snapshot,
         result,
     ):
@@ -114,12 +108,9 @@ class TestFieldValidationMode:
 
         mock = {"result": json.dumps(result)}
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         with pytest.raises(aws_client.stepfunctions.exceptions.ValidationException) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=exec_input,
                 inspectionLevel=InspectionLevel.INFO,
                 mock=mock,
@@ -151,7 +142,6 @@ class TestFieldValidationMode:
         self,
         aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         account_id,
         region_name,
         sfn_snapshot,
@@ -176,12 +166,9 @@ class TestFieldValidationMode:
 
         mock = {"result": json.dumps(result)}
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         with pytest.raises(aws_client.stepfunctions.exceptions.ValidationException) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=exec_input,
                 inspectionLevel=InspectionLevel.INFO,
                 mock=mock,
@@ -201,9 +188,6 @@ class TestFieldValidationMode:
         self,
         aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
-        account_id,
-        region_name,
         sfn_snapshot,
         result,
     ):
@@ -213,12 +197,9 @@ class TestFieldValidationMode:
 
         mock = {"result": json.dumps(result)}
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         with pytest.raises(aws_client.stepfunctions.exceptions.ValidationException) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=exec_input,
                 inspectionLevel=InspectionLevel.INFO,
                 mock=mock,
@@ -238,9 +219,6 @@ class TestFieldValidationMode:
         self,
         aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
-        account_id,
-        region_name,
         sfn_snapshot,
         result,
     ):
@@ -255,12 +233,9 @@ class TestFieldValidationMode:
 
         mock = {"result": json.dumps(result)}
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         with pytest.raises(aws_client.stepfunctions.exceptions.ValidationException) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=exec_input,
                 inspectionLevel=InspectionLevel.INFO,
                 mock=mock,
@@ -284,9 +259,6 @@ class TestFieldValidationMode:
         self,
         aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
-        account_id,
-        region_name,
         sfn_snapshot,
         result,
     ):
@@ -296,12 +268,9 @@ class TestFieldValidationMode:
 
         mock = {"result": json.dumps(result)}
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         with pytest.raises(aws_client.stepfunctions.exceptions.ValidationException) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=exec_input,
                 inspectionLevel=InspectionLevel.INFO,
                 mock=mock,
@@ -329,9 +298,6 @@ class TestFieldValidationMode:
         self,
         aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
-        account_id,
-        region_name,
         sfn_snapshot,
         result,
     ):
@@ -341,12 +307,9 @@ class TestFieldValidationMode:
 
         mock = {"result": json.dumps(result)}
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         with pytest.raises(aws_client.stepfunctions.exceptions.ValidationException) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=exec_input,
                 inspectionLevel=InspectionLevel.INFO,
                 mock=mock,
@@ -373,9 +336,6 @@ class TestFieldValidationMode:
         self,
         aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
-        account_id,
-        region_name,
         sfn_snapshot,
         result,
     ):
@@ -385,12 +345,9 @@ class TestFieldValidationMode:
 
         mock = {"result": json.dumps(result)}
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         with pytest.raises(aws_client.stepfunctions.exceptions.ValidationException) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=exec_input,
                 inspectionLevel=InspectionLevel.INFO,
                 mock=mock,

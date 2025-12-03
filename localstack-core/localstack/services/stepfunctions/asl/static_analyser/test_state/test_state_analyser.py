@@ -24,6 +24,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_api_gateway import (
     StateTaskServiceApiGateway,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
+    StateTask,
+)
 from localstack.services.stepfunctions.asl.component.state.state_type import StateType
 from localstack.services.stepfunctions.asl.component.test_state.program.test_state_program import (
     TestStateProgram,
@@ -57,6 +60,15 @@ class TestStateStaticAnalyser(StaticAnalyser):
             raise ValueError("expected parsed EvalComponent to be of type TestStateProgram")
 
         return test_program.test_state is not None
+
+    @staticmethod
+    def validate_role_arn_required(
+        mock_input: MockInput, definition: Definition, state_name: StateName
+    ) -> None:
+        test_program, _ = TestStateAmazonStateLanguageParser.parse(definition, state_name)
+        test_state = test_program.test_state
+        if isinstance(test_state, StateTask) and mock_input is None:
+            raise ValidationException("RoleArn must be specified when testing a Task state")
 
     @staticmethod
     def validate_mock(mock_input: MockInput, definition: Definition, state_name: StateName) -> None:
