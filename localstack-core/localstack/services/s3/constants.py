@@ -1,4 +1,5 @@
 from localstack.aws.api.s3 import (
+    BucketLocationConstraint,
     ChecksumAlgorithm,
     Grantee,
     Permission,
@@ -65,6 +66,10 @@ CHECKSUM_ALGORITHMS: list[ChecksumAlgorithm] = [
     ChecksumAlgorithm.CRC32C,
     ChecksumAlgorithm.CRC64NVME,
 ]
+
+BUCKET_LOCATION_CONSTRAINTS = [constraint.value for constraint in BucketLocationConstraint]
+
+EU_WEST_1_LOCATION_CONSTRAINTS = [BucketLocationConstraint.EU, BucketLocationConstraint.eu_west_1]
 
 # response header overrides the client may request
 ALLOWED_HEADER_OVERRIDES = {
