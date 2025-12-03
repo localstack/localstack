@@ -1,15 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_edge_cases[EMPTY]": {
-    "last_validated_date": "2025-12-03T12:20:44+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.22,
-      "teardown": 0.0,
-      "total": 0.22
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_edge_cases[EMPTY_OBJECTS]": {
-    "last_validated_date": "2025-12-03T12:20:44+00:00",
+    "last_validated_date": "2025-12-03T12:32:50+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 0.19,
@@ -17,8 +8,44 @@
       "total": 0.19
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_edge_cases[EMPTY_OBJECTS]": {
+    "last_validated_date": "2025-12-03T12:32:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.0,
+      "total": 0.2
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_invalid_states[INVALID_STATE_PASS]": {
-    "last_validated_date": "2025-12-03T12:20:42+00:00",
+    "last_validated_date": "2025-12-03T12:32:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.0,
+      "total": 0.19
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_invalid_states[TOKEN_TASK_NOT_SYNC]": {
+    "last_validated_date": "2025-12-03T12:32:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.0,
+      "total": 0.2
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_FIELD]": {
+    "last_validated_date": "2025-12-03T12:32:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.22,
+      "teardown": 0.0,
+      "total": 0.22
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_ID_TYPE]": {
+    "last_validated_date": "2025-12-03T12:32:48+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 0.21,
@@ -26,8 +53,8 @@
       "total": 0.21
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_invalid_states[TOKEN_TASK_NOT_SYNC]": {
-    "last_validated_date": "2025-12-03T12:20:42+00:00",
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_FIELD]": {
+    "last_validated_date": "2025-12-03T12:32:49+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 0.23,
@@ -35,103 +62,76 @@
       "total": 0.23
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_FIELD]": {
-    "last_validated_date": "2025-12-03T12:20:43+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.21,
-      "teardown": 0.0,
-      "total": 0.21
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_ID_TYPE]": {
-    "last_validated_date": "2025-12-03T12:20:43+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.63,
-      "teardown": 0.0,
-      "total": 0.63
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_FIELD]": {
-    "last_validated_date": "2025-12-03T12:20:43+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.24,
-      "teardown": 0.0,
-      "total": 0.24
-    }
-  },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_MAP]": {
-    "last_validated_date": "2025-12-03T12:20:43+00:00",
+    "last_validated_date": "2025-12-03T12:32:49+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.21,
+      "call": 0.22,
       "teardown": 0.0,
-      "total": 0.21
+      "total": 0.22
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[ALL]": {
-    "last_validated_date": "2025-12-03T12:20:41+00:00",
+    "last_validated_date": "2025-12-03T12:32:47+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.2,
+      "call": 0.22,
       "teardown": 0.0,
-      "total": 0.2
+      "total": 0.22
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[EXECUTION_INPUT]": {
-    "last_validated_date": "2025-12-03T12:20:41+00:00",
+    "last_validated_date": "2025-12-03T12:32:48+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.22,
+      "call": 0.23,
       "teardown": 0.0,
-      "total": 0.22
+      "total": 0.23
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[EXECUTION_INPUT_VALUES]": {
-    "last_validated_date": "2025-12-03T12:20:42+00:00",
+    "last_validated_date": "2025-12-03T12:32:48+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.22,
+      "call": 0.19,
       "teardown": 0.0,
-      "total": 0.22
+      "total": 0.19
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[ALL]": {
-    "last_validated_date": "2025-12-03T12:20:40+00:00",
+    "last_validated_date": "2025-12-03T12:32:47+00:00",
     "durations_in_seconds": {
-      "setup": 0.5,
-      "call": 0.67,
+      "setup": 0.53,
+      "call": 0.7,
       "teardown": 0.0,
-      "total": 1.17
+      "total": 1.23
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT]": {
-    "last_validated_date": "2025-12-03T12:20:40+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.22,
-      "teardown": 0.0,
-      "total": 0.22
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT_VALUES]": {
-    "last_validated_date": "2025-12-03T12:20:41+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.24,
-      "teardown": 0.0,
-      "total": 0.24
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_wait_task_context_object": {
-    "last_validated_date": "2025-12-03T12:20:41+00:00",
+    "last_validated_date": "2025-12-03T12:32:47+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 0.2,
       "teardown": 0.0,
       "total": 0.2
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT_VALUES]": {
+    "last_validated_date": "2025-12-03T12:32:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.23,
+      "teardown": 0.0,
+      "total": 0.23
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_wait_task_context_object": {
+    "last_validated_date": "2025-12-03T12:32:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.22,
+      "teardown": 0.0,
+      "total": 0.22
     }
   }
 }
