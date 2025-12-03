@@ -18323,5 +18323,52 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_invalid_location_constraint[us-east-1-us-east-1]": {
+    "recorded-date": "03-12-2025, 10:38:51",
+    "recorded-content": {
+      "us-east-1-location-constraint-us-east-1-error": {
+        "Error": {
+          "Code": "InvalidLocationConstraint",
+          "LocationConstraint": "<location-constraint:1>",
+          "Message": "The specified location-constraint is not valid"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_invalid_location_constraint[us-east-1-foo]": {
+    "recorded-date": "03-12-2025, 10:38:51",
+    "recorded-content": {
+      "us-east-1-location-constraint-foo-error": {
+        "Error": {
+          "Code": "InvalidLocationConstraint",
+          "LocationConstraint": "<location-constraint:1>",
+          "Message": "The specified location-constraint is not valid"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_invalid_location_constraint[eu-west-1-bar]": {
+    "recorded-date": "03-12-2025, 10:38:51",
+    "recorded-content": {
+      "eu-west-1-location-constraint-bar-error": {
+        "Error": {
+          "Code": "IllegalLocationConstraintException",
+          "Message": "The bar location constraint is incompatible for the region specific endpoint this request was sent to."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

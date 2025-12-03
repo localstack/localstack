@@ -83,6 +83,33 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_existing_name": {
     "last_validated_date": "2025-01-21T18:34:10+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_invalid_location_constraint[eu-west-1-bar]": {
+    "last_validated_date": "2025-12-03T10:38:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.12,
+      "teardown": 0.0,
+      "total": 0.12
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_invalid_location_constraint[us-east-1-foo]": {
+    "last_validated_date": "2025-12-03T10:38:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.32,
+      "teardown": 0.0,
+      "total": 0.32
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_invalid_location_constraint[us-east-1-us-east-1]": {
+    "last_validated_date": "2025-12-03T10:38:51+00:00",
+    "durations_in_seconds": {
+      "setup": 1.29,
+      "call": 0.34,
+      "teardown": 0.0,
+      "total": 1.63
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_delete_bucket_no_such_bucket": {
     "last_validated_date": "2025-01-21T18:27:11+00:00"
   },

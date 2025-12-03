@@ -1054,6 +1054,30 @@ class TestS3:
         snapshot.match("eu-location-constraint-error", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "client_region, location_constraint",
+        [("us-east-1", "us-east-1"), ("us-east-1", "foo"), ("eu-west-1", "bar")],
+    )
+    def test_create_bucket_with_invalid_location_constraint(
+        self,
+        s3_create_bucket_with_client,
+        aws_client_factory,
+        snapshot,
+        client_region,
+        location_constraint,
+    ):
+        # Different error messages are raised for us-east-1.
+        snapshot.add_transformer(snapshot.transform.key_value("LocationConstraint", value_replacement="location-constraint"))
+
+        client = aws_client_factory(region_name=client_region).s3
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                client,
+                CreateBucketConfiguration={"LocationConstraint": location_constraint},
+            )
+        snapshot.match(f"{client_region}-location-constraint-{location_constraint}-error", e.value.response)
+
+    @markers.aws.validated
     def test_get_bucket_policy(self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id):
         snapshot.add_transformer(snapshot.transform.key_value("Resource"))
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
