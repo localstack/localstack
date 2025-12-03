@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_none.py::TestFieldValidationModeNone::test_none_mode_sfn_task[missing_required_fields]": {
-    "recorded-date": "26-11-2025, 15:56:57",
+    "recorded-date": "03-12-2025, 01:12:35",
     "recorded-content": {
       "test_state_response": {
         "output": {
@@ -15,7 +15,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_field_validation_mode_none.py::TestFieldValidationModeNone::test_none_mode_sfn_task[wrong_timestamp_type_bool]": {
-    "recorded-date": "26-11-2025, 15:57:11",
+    "recorded-date": "03-12-2025, 01:12:35",
     "recorded-content": {
       "test_state_response": {
         "output": {
