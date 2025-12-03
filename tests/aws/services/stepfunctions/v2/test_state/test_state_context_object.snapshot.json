@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[ALL]": {
-    "recorded-date": "25-11-2025, 17:15:31",
+    "recorded-date": "03-12-2025, 18:51:48",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -24,7 +24,7 @@
           "afterResultPath": {
             "ContextObjectValue": {
               "Execution": {
-                "Id": "arn:<partition>:states:<region>:123456789012:execution:MyStateMachine:execution-name-12345",
+                "Id": "arn:<partition>:states:::execution:MyStateMachine:execution-name-12345",
                 "Input": {
                   "input-value": 0,
                   "message": "test data",
@@ -35,7 +35,7 @@
                   ]
                 },
                 "Name": "execution-name-12345",
-                "RoleArn": "arn:<partition>:iam::123456789012:role/StepFunctionsRole",
+                "RoleArn": "arn:<partition>:iam:::role/StepFunctionsRole",
                 "StartTime": "date"
               },
               "State": {
@@ -44,7 +44,7 @@
                 "RetryCount": 0
               },
               "StateMachine": {
-                "Id": "arn:<partition>:states:<region>:123456789012:stateMachine:MyStateMachine",
+                "Id": "arn:<partition>:states:::stateMachine:MyStateMachine",
                 "Name": "MyStateMachine"
               }
             },
@@ -59,7 +59,7 @@
           "afterResultSelector": {
             "ContextObjectValue": {
               "Execution": {
-                "Id": "arn:<partition>:states:<region>:123456789012:execution:MyStateMachine:execution-name-12345",
+                "Id": "arn:<partition>:states:::execution:MyStateMachine:execution-name-12345",
                 "Input": {
                   "input-value": 0,
                   "message": "test data",
@@ -70,7 +70,7 @@
                   ]
                 },
                 "Name": "execution-name-12345",
-                "RoleArn": "arn:<partition>:iam::123456789012:role/StepFunctionsRole",
+                "RoleArn": "arn:<partition>:iam:::role/StepFunctionsRole",
                 "StartTime": "date"
               },
               "State": {
@@ -79,7 +79,7 @@
                 "RetryCount": 0
               },
               "StateMachine": {
-                "Id": "arn:<partition>:states:<region>:123456789012:stateMachine:MyStateMachine",
+                "Id": "arn:<partition>:states:::stateMachine:MyStateMachine",
                 "Name": "MyStateMachine"
               }
             },
@@ -108,7 +108,7 @@
         "output": {
           "ContextObjectValue": {
             "Execution": {
-              "Id": "arn:<partition>:states:<region>:123456789012:execution:MyStateMachine:execution-name-12345",
+              "Id": "arn:<partition>:states:::execution:MyStateMachine:execution-name-12345",
               "Input": {
                 "input-value": 0,
                 "message": "test data",
@@ -119,7 +119,7 @@
                 ]
               },
               "Name": "execution-name-12345",
-              "RoleArn": "arn:<partition>:iam::123456789012:role/StepFunctionsRole",
+              "RoleArn": "arn:<partition>:iam:::role/StepFunctionsRole",
               "StartTime": "date"
             },
             "State": {
@@ -128,7 +128,7 @@
               "RetryCount": 0
             },
             "StateMachine": {
-              "Id": "arn:<partition>:states:<region>:123456789012:stateMachine:MyStateMachine",
+              "Id": "arn:<partition>:states:::stateMachine:MyStateMachine",
               "Name": "MyStateMachine"
             }
           },
@@ -149,7 +149,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT]": {
-    "recorded-date": "25-11-2025, 15:42:46",
+    "recorded-date": "03-12-2025, 18:51:48",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -247,7 +247,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT_VALUES]": {
-    "recorded-date": "25-11-2025, 15:43:01",
+    "recorded-date": "03-12-2025, 18:51:49",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -333,7 +333,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_wait_task_context_object": {
-    "recorded-date": "25-11-2025, 15:43:16",
+    "recorded-date": "03-12-2025, 18:51:49",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -389,7 +389,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[ALL]": {
-    "recorded-date": "25-11-2025, 15:43:32",
+    "recorded-date": "03-12-2025, 18:51:49",
     "recorded-content": {
       "test_case_response": {
         "cause": "Reference path \"$\" must point to array.",
@@ -407,7 +407,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[EXECUTION_INPUT]": {
-    "recorded-date": "25-11-2025, 15:43:46",
+    "recorded-date": "03-12-2025, 18:51:49",
     "recorded-content": {
       "test_case_response": {
         "cause": "Reference path \"$.Execution.Input\" must point to array.",
@@ -425,7 +425,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[EXECUTION_INPUT_VALUES]": {
-    "recorded-date": "25-11-2025, 15:44:00",
+    "recorded-date": "03-12-2025, 18:51:49",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -446,7 +446,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_invalid_states[TOKEN_TASK_NOT_SYNC]": {
-    "recorded-date": "27-11-2025, 11:37:01",
+    "recorded-date": "03-12-2025, 18:51:50",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -455,7 +455,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_invalid_states[INVALID_STATE_PASS]": {
-    "recorded-date": "27-11-2025, 11:37:16",
+    "recorded-date": "03-12-2025, 18:51:50",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -464,7 +464,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_ID_TYPE]": {
-    "recorded-date": "25-11-2025, 15:44:46",
+    "recorded-date": "03-12-2025, 18:51:50",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -473,7 +473,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_MAP]": {
-    "recorded-date": "25-11-2025, 15:45:02",
+    "recorded-date": "03-12-2025, 18:51:50",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -482,7 +482,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_FIELD]": {
-    "recorded-date": "25-11-2025, 15:45:16",
+    "recorded-date": "03-12-2025, 18:51:51",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -491,7 +491,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_FIELD]": {
-    "recorded-date": "25-11-2025, 15:45:32",
+    "recorded-date": "03-12-2025, 18:51:51",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -500,7 +500,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_edge_cases[EMPTY_OBJECTS]": {
-    "recorded-date": "25-11-2025, 15:46:04",
+    "recorded-date": "03-12-2025, 18:51:51",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -570,7 +570,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_edge_cases[EMPTY]": {
-    "recorded-date": "25-11-2025, 15:46:18",
+    "recorded-date": "03-12-2025, 18:51:51",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
