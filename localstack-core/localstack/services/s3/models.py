@@ -106,7 +106,7 @@ class S3Bucket:
     name: BucketName
     bucket_account_id: AccountId
     bucket_region: BucketRegion
-    location_constraint: BucketLocationConstraint | None
+    location_constraint: BucketLocationConstraint | Literal[""]
     creation_date: datetime
     multiparts: dict[MultipartUploadId, "S3Multipart"]
     objects: Union["KeyStore", "VersionedKeyStore"]
@@ -143,7 +143,7 @@ class S3Bucket:
         acl: AccessControlPolicy = None,
         object_ownership: ObjectOwnership = None,
         object_lock_enabled_for_bucket: bool = None,
-        location_constraint: str | None = None,
+        location_constraint: BucketLocationConstraint | Literal[""] = "",
     ):
         self.name = name
         self.bucket_account_id = account_id
