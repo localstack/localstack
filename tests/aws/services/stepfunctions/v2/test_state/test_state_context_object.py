@@ -19,7 +19,7 @@ TEST_STATE_NAME: Final[str] = "TestState"
 
 _CONTEXT_OBJECT_FULL: Final[dict] = {
     "Execution": {
-        "Id": "arn:aws:states:us-east-1:123456789012:execution:MyStateMachine:execution-name-12345",
+        "Id": "arn:aws:states:__region_placeholder__:123456789012:execution:MyStateMachine:execution-name-12345",
         "Input": {
             "input-value": 0,
             "message": "test data",
@@ -35,7 +35,7 @@ _CONTEXT_OBJECT_FULL: Final[dict] = {
         "RetryCount": 0,
     },
     "StateMachine": {
-        "Id": "arn:aws:states:us-east-1:123456789012:stateMachine:MyStateMachine",
+        "Id": "arn:aws:states:__region_placeholder__:123456789012:stateMachine:MyStateMachine",
         "Name": "MyStateMachine",
     },
     # Context object contains 'Task' when state is not a Task state with a '.sync' or '.waitForTaskToken' service integration pattern
@@ -68,6 +68,7 @@ class TestStateContextObject:
         self,
         aws_client,
         aws_client_no_sync_prefix,
+        region_name,
         create_state_machine_iam_role,
         sfn_snapshot,
         context_object_literal,
@@ -90,12 +91,14 @@ class TestStateContextObject:
         )
         mocked_result = json.dumps({"pokemon": ["charizard", "pikachu", "bulbasaur"]})
 
+        context_object_full = CONTEXT_OBJECT_FULL.replace("__region_placeholder__", region_name)
+
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
             roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.TRACE,
-            context=CONTEXT_OBJECT_FULL,
+            context=context_object_full,
             mock={"result": mocked_result},
         )
         sfn_snapshot.match("test_case_response", test_case_response)
@@ -105,6 +108,7 @@ class TestStateContextObject:
         self,
         aws_client,
         aws_client_no_sync_prefix,
+        region_name,
         create_state_machine_iam_role,
         sfn_snapshot,
     ):
@@ -117,11 +121,15 @@ class TestStateContextObject:
         definition = json.dumps(state_template)
         mocked_result = json.dumps({"pokemon": ["charizard", "pikachu", "bulbasaur"]})
 
+        task_context_object_full = TASK_CONTEXT_OBJECT_FULL.replace(
+            "__region_placeholder__", region_name
+        )
+
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
             roleArn=sfn_role_arn,
             inspectionLevel=InspectionLevel.TRACE,
-            context=TASK_CONTEXT_OBJECT_FULL,
+            context=task_context_object_full,
             mock={"result": mocked_result},
         )
         sfn_snapshot.match("test_case_response", test_case_response)
@@ -137,6 +145,7 @@ class TestStateContextObject:
         self,
         aws_client,
         aws_client_no_sync_prefix,
+        region_name,
         create_state_machine_iam_role,
         sfn_snapshot,
         context_object_literal,
@@ -157,12 +166,14 @@ class TestStateContextObject:
         exec_input = json.dumps(["fire", "electricity", "grass"])
         mocked_result = json.dumps(["CHARIZARD", "PIKACHU", "BULBASAUR"])
 
+        context_object_full = CONTEXT_OBJECT_FULL.replace("__region_placeholder__", region_name)
+
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
             roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.TRACE,
-            context=CONTEXT_OBJECT_FULL,
+            context=context_object_full,
             mock={"result": mocked_result},
         )
         sfn_snapshot.match("test_case_response", test_case_response)

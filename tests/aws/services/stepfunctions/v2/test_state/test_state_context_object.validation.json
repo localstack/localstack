@@ -1,137 +1,137 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_edge_cases[EMPTY]": {
-    "last_validated_date": "2025-11-25T15:46:20+00:00",
+    "last_validated_date": "2025-12-03T12:12:22+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 12.8,
-      "teardown": 1.63,
-      "total": 14.43
+      "call": 12.81,
+      "teardown": 0.92,
+      "total": 13.73
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_edge_cases[EMPTY_OBJECTS]": {
-    "last_validated_date": "2025-11-25T15:46:05+00:00",
+    "last_validated_date": "2025-12-03T12:12:08+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 14.54,
-      "teardown": 1.64,
-      "total": 16.18
+      "call": 12.92,
+      "teardown": 0.96,
+      "total": 13.88
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_invalid_states[INVALID_STATE_PASS]": {
-    "last_validated_date": "2025-11-27T11:37:18+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 12.6,
-      "teardown": 1.8,
-      "total": 14.4
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_invalid_states[TOKEN_TASK_NOT_SYNC]": {
-    "last_validated_date": "2025-11-27T11:37:03+00:00",
-    "durations_in_seconds": {
-      "setup": 0.97,
-      "call": 16.13,
-      "teardown": 1.76,
-      "total": 18.86
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_FIELD]": {
-    "last_validated_date": "2025-11-25T15:45:18+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 12.86,
-      "teardown": 1.66,
-      "total": 14.52
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_ID_TYPE]": {
-    "last_validated_date": "2025-11-25T15:44:48+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 13.66,
-      "teardown": 1.7,
-      "total": 15.36
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_FIELD]": {
-    "last_validated_date": "2025-11-25T15:45:34+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 13.72,
-      "teardown": 1.76,
-      "total": 15.48
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_MAP]": {
-    "last_validated_date": "2025-11-25T15:45:04+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 14.01,
-      "teardown": 1.66,
-      "total": 15.67
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[ALL]": {
-    "last_validated_date": "2025-11-25T15:43:33+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 13.73,
-      "teardown": 1.69,
-      "total": 15.42
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[EXECUTION_INPUT]": {
-    "last_validated_date": "2025-11-25T15:43:48+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 12.71,
-      "teardown": 1.67,
-      "total": 14.38
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[EXECUTION_INPUT_VALUES]": {
-    "last_validated_date": "2025-11-25T15:44:02+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 12.59,
-      "teardown": 1.67,
-      "total": 14.26
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[ALL]": {
-    "last_validated_date": "2025-11-25T17:15:33+00:00",
-    "durations_in_seconds": {
-      "setup": 1.15,
-      "call": 15.79,
-      "teardown": 1.84,
-      "total": 18.78
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT]": {
-    "last_validated_date": "2025-11-25T15:42:48+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 12.83,
-      "teardown": 1.8,
-      "total": 14.63
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT_VALUES]": {
-    "last_validated_date": "2025-11-25T15:43:02+00:00",
+    "last_validated_date": "2025-12-03T12:10:59+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 12.95,
-      "teardown": 1.69,
-      "total": 14.64
+      "teardown": 0.97,
+      "total": 13.92
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_invalid_states[TOKEN_TASK_NOT_SYNC]": {
+    "last_validated_date": "2025-12-03T12:10:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.76,
+      "teardown": 0.99,
+      "total": 13.75
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_FIELD]": {
+    "last_validated_date": "2025-12-03T12:11:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.77,
+      "teardown": 0.94,
+      "total": 13.71
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_EXECUTION_ID_TYPE]": {
+    "last_validated_date": "2025-12-03T12:11:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.8,
+      "teardown": 0.94,
+      "total": 13.74
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_FIELD]": {
+    "last_validated_date": "2025-12-03T12:11:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.81,
+      "teardown": 0.94,
+      "total": 13.75
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_context_object_validation_failures[INVALID_MAP]": {
+    "last_validated_date": "2025-12-03T12:11:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.81,
+      "teardown": 0.93,
+      "total": 13.74
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[ALL]": {
+    "last_validated_date": "2025-12-03T12:10:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.84,
+      "teardown": 0.94,
+      "total": 13.78
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[EXECUTION_INPUT]": {
+    "last_validated_date": "2025-12-03T12:10:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.72,
+      "teardown": 0.98,
+      "total": 13.7
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_map_context_object[EXECUTION_INPUT_VALUES]": {
+    "last_validated_date": "2025-12-03T12:10:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.73,
+      "teardown": 1.09,
+      "total": 13.82
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[ALL]": {
+    "last_validated_date": "2025-12-03T12:09:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.53,
+      "call": 14.13,
+      "teardown": 0.93,
+      "total": 15.59
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT]": {
+    "last_validated_date": "2025-12-03T12:09:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.73,
+      "teardown": 0.94,
+      "total": 13.67
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_task_context_object[EXECUTION_INPUT_VALUES]": {
+    "last_validated_date": "2025-12-03T12:09:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.67,
+      "teardown": 0.93,
+      "total": 12.6
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_wait_task_context_object": {
-    "last_validated_date": "2025-11-25T15:43:18+00:00",
+    "last_validated_date": "2025-12-03T12:09:50+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 13.82,
-      "teardown": 1.71,
-      "total": 15.53
+      "call": 12.77,
+      "teardown": 0.93,
+      "total": 13.7
     }
   }
 }
