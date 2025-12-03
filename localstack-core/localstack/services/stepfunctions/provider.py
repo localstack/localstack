@@ -1546,6 +1546,10 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
         role_arn = request.get("roleArn")
         if role_arn is None:
+            TestStateStaticAnalyser.validate_role_arn_required(
+                mock_input=mock_input, definition=definition, state_name=state_name
+            )
+
             role_arn = arns.iam_role_arn(
                 role_name=f"RoleFor-{name}",
                 account_id=context.account_id,
