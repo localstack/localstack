@@ -439,11 +439,11 @@ class ResourceProviderExecutor:
         resource: dict,
         raw_payload: ResourceProviderPayload,
         max_timeout: int = config.CFN_PER_RESOURCE_TIMEOUT,
-        sleep_time: float = 2,
+        sleep_time: float = 1,
     ) -> ProgressEvent[Properties]:
         payload = copy.deepcopy(raw_payload)
 
-        max_iterations = max(ceil(max_timeout / sleep_time), 2)
+        max_iterations = max(ceil(max_timeout / sleep_time), 10)
 
         for current_iteration in range(max_iterations):
             resource_type = get_resource_type({"Type": raw_payload["resourceType"]})
