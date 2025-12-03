@@ -439,7 +439,7 @@ class ResourceProviderExecutor:
         resource: dict,
         raw_payload: ResourceProviderPayload,
         max_timeout: int = config.CFN_PER_RESOURCE_TIMEOUT,
-        sleep_time: float = 5,
+        sleep_time: float = 2,
     ) -> ProgressEvent[Properties]:
         payload = copy.deepcopy(raw_payload)
 
