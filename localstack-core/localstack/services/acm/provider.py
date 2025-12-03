@@ -21,7 +21,9 @@ moto_settings.ACM_VALIDATION_WAIT = min(10, moto_settings.ACM_VALIDATION_WAIT)
 def list_certificates(list_certificates_orig, self, statuses, includes):
     # Normalize keyTypes filter to match our describe() output format (hyphens)
     if includes and "keyTypes" in includes:
-        includes["keyTypes"] = [kt.replace("RSA_", "RSA-").replace("EC_", "EC-") for kt in includes["keyTypes"]]
+        includes["keyTypes"] = [
+            kt.replace("RSA_", "RSA-").replace("EC_", "EC-") for kt in includes["keyTypes"]
+        ]
     return list_certificates_orig(self, statuses, includes)
 
 
