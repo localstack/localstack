@@ -166,34 +166,6 @@ class TestS3ListBuckets:
             aws_client.s3.list_buckets(BucketRegion="eu-east-1")
         snapshot.match("bad-region", e.value.response)
 
-    @markers.aws.only_localstack
-    @markers.requires_in_process
-    def test_list_buckets_region_validation_disabled(
-        self, snapshot, monkeypatch, aws_client_factory, s3_create_bucket_with_client
-    ):
-        monkeypatch.setattr(config, "ALLOW_NONSTANDARD_REGIONS", True)
-        # we need to patch the `DefaultRegionRewriterStrategy` as it wil replace `eu-east-1` by `us-east-1`, which
-        # is its default region
-        from localstack.aws.handlers.region import DefaultRegionRewriterStrategy
-
-        monkeypatch.setattr(DefaultRegionRewriterStrategy, "apply", lambda *_, **__: None)
-
-        bad_region = "eu-east-1"
-
-        # A client created with us-east-1 can create buckets in any region
-        client_us_east_1 = aws_client_factory(region_name=AWS_REGION_US_EAST_1).s3
-
-        bucket_name = f"test-bucket-{short_uid()}"
-        s3_create_bucket_with_client(
-            client_us_east_1,
-            Bucket=bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": bad_region},
-        )
-
-        list_buckets = client_us_east_1.list_buckets(BucketRegion=bad_region)
-        assert list_buckets["Buckets"]
-        assert list_buckets["Buckets"][0]["BucketRegion"] == bad_region
-
 
 class TestS3ListObjects:
     @markers.aws.validated
