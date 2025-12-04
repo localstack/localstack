@@ -1041,6 +1041,7 @@ class ContainerClient(metaclass=ABCMeta):
         init: bool | None = None,
         log_config: LogConfig | None = None,
         hostname: str | None = None,
+        cgroupns: str | None = None,
     ) -> tuple[bytes, bytes]:
         """Creates and runs a given docker container
 
