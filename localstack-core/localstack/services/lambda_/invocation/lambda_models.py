@@ -626,7 +626,9 @@ class Function:
     provisioned_concurrency_configs: dict[str, ProvisionedConcurrencyConfiguration] = (
         dataclasses.field(default_factory=dict)
     )
-    scaling_configs: dict[str, FunctionScalingConfig] = dataclasses.field(default_factory=dict)
+    function_scaling_configs: dict[str, FunctionScalingConfig] = dataclasses.field(
+        default_factory=dict
+    )
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     next_version: int = 1
