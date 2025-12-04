@@ -4,6 +4,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
 )
+from localstack.services.cloudformation.resources import AWS_AVAILABLE_CFN_RESOURCES
 from localstack.utils.catalog.catalog import (
     AwsServicesSupportStatus,
     CatalogPlugin,
@@ -91,6 +92,9 @@ class ChangeSetResourceSupportChecker(ChangeSetModelVisitor):
     def visit_node_resource(self, node_resource: NodeResource):
         resource_type = node_resource.type_.value
         if resource_type not in self._resource_failure_messages:
+            if resource_type not in AWS_AVAILABLE_CFN_RESOURCES:
+                # Ignore non-AWS resources
+                pass
             support_status = self._resource_support_status(resource_type)
             if support_status == CloudFormationResourcesSupportAtRuntime.AVAILABLE:
                 pass
