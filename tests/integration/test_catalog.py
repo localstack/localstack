@@ -92,7 +92,7 @@ def testing_catalog(monkeypatch):
     [(resource, expected_service) for resource, _, expected_service in UNSUPPORTED_RESOURCE_CASES],
 )
 def test_catalog_reports_unsupported_resources_in_stack_status(
-    testing_catalog, aws_client, unsupported_resource, expected_service, monkeypatch
+    testing_catalog, aws_client, unsupported_resource, expected_service, monkeypatch, cleanups
 ):
     monkeypatch.setattr(config, "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES", False)
     template_body = textwrap.dedent(
@@ -146,7 +146,7 @@ def test_catalog_reports_unsupported_resources_in_stack_status(
     assert unsupported_resource in stack_status_reason
     assert expected_service in stack_status_reason.lower()
 
-    try:
-        aws_client.cloudformation.delete_stack(StackName=stack_id)
-    except Exception:
-        pass
+    cleanups.append(
+        lambda: aws_client.cloudformation.delete_change_set(ChangeSetName=change_set_id)
+    )
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
