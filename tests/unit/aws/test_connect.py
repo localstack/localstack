@@ -198,7 +198,6 @@ class TestClientFactory:
             "iam",
             "iot",
             "iot_data",
-            "iotanalytics",
             "iotwireless",
             "kafka",
             "kinesis",
