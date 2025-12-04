@@ -124,3 +124,7 @@ class TestStateMachineTemplate(TemplateLoader):
     LOCALSTACK_BLOGPOST_SCENARIO_STATE_MACHINE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/localstack_blogpost_scenario_state_machine.json5"
     )
+
+    BASE_INVALID_STATE_DEFINITION: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_invalid_state_definition.json5"
+    )

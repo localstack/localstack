@@ -105,3 +105,28 @@ class TestStateMachineScenarios:
         sfn_snapshot.match(
             "exception", {"exception_typename": ex.typename, "exception_value": ex.value}
         )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    # ANTLR parser message has different wording but the same meaning as AWS response. Not investing time now to convert to the exact same wording - relying on error code for test.
+    # TODO match wording and hide implementation details (ANTLR)
+    # expected:
+    # /Error/Message "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: The field 'Type' should have one of these values: [Task, Wait, Pass, Succeed, Fail, Choice, Parallel, Map] at /States/ExistingButInvalidState/Type'"
+    # actual:
+    # 'ASLParserException line 1:170, at "TypeThatDoesNotExist", mismatched input \'"TypeThatDoesNotExist"\' expecting {\'"Task"\', \'"Choice"\', \'"Fail"\', \'"Succeed"\', \'"Pass"\', \'"Wait"\', \'"Parallel"\', \'"Map"\'}'
+    def test_state_name_invalid_state_definition(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TSMT.load_sfn_template(TSMT.BASE_INVALID_STATE_DEFINITION)
+        definition = json.dumps(template)
+
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                stateName="ExistingButInvalidState",
+                definition=definition,
+                input=HELLO_WORLD_INPUT,
+                inspectionLevel=InspectionLevel.INFO,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)

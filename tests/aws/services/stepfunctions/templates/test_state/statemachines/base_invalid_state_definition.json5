@@ -1,0 +1,10 @@
+{
+  "Comment": "Base state machine with a state that is not a valid state definition.",
+  "StartAt": "ExistingButInvalidState",
+  "States": {
+    "ExistingButInvalidState": {
+      "Type": "TypeThatDoesNotExist",
+      "End": true
+    }
+  }
+}
