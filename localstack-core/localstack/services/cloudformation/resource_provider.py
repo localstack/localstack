@@ -430,17 +430,20 @@ class ResourceProviderExecutor:
         self.stack_name = stack_name
         self.stack_id = stack_id
 
+        # This should have been set up in the provider
+        assert isinstance(config.CFN_NO_WAIT_ITERATIONS, int)
+
     def deploy_loop(
         self,
         resource_provider: ResourceProvider,
         resource: dict,
         raw_payload: ResourceProviderPayload,
         max_timeout: int = config.CFN_PER_RESOURCE_TIMEOUT,
-        sleep_time: float = 5,
+        sleep_time: float = 1,
     ) -> ProgressEvent[Properties]:
         payload = copy.deepcopy(raw_payload)
 
-        max_iterations = max(ceil(max_timeout / sleep_time), 2)
+        max_iterations = max(ceil(max_timeout / sleep_time), 10)
 
         for current_iteration in range(max_iterations):
             resource_type = get_resource_type({"Type": raw_payload["resourceType"]})
@@ -486,10 +489,11 @@ class ResourceProviderExecutor:
                     payload["requestData"]["resourceProperties"] = event.resource_model
                     resource["Properties"] = event.resource_model
 
-                    if current_iteration == 0:
-                        time.sleep(0)
+                    if current_iteration < config.CFN_NO_WAIT_ITERATIONS:
+                        pass
                     else:
                         time.sleep(sleep_time)
+
                 case OperationStatus.PENDING:
                     # come back to this resource in another iteration
                     return event

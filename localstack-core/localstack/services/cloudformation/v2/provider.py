@@ -222,6 +222,12 @@ def find_stack_instance(stack_set: StackSet, account: str, region: str) -> Stack
 
 class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
     def on_before_start(self):
+        # TODO: make sure to bring `_validate_config` from the base class when removing it
+        # as this ensures we have a valid CFN_NO_WAIT_ITERATIONS value
+        super().on_before_start()
+        self._log_create_issue_info()
+
+    def _log_create_issue_info(self):
         base = "https://github.com/localstack/localstack/issues/new"
         query_args = {
             "template": "bug-report.yml",

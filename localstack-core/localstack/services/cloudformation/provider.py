@@ -5,6 +5,7 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 
+from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
     AlreadyExistsException,
@@ -120,6 +121,7 @@ from localstack.services.cloudformation.stores import (
     find_stack_by_id,
     get_cloudformation_store,
 )
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
 from localstack.utils.collections import (
     remove_attributes,
@@ -177,7 +179,30 @@ class InternalFailure(CommonServiceException):
         super().__init__("InternalFailure", status_code=500, message=message, sender_fault=False)
 
 
-class CloudformationProvider(CloudformationApi):
+class CloudformationProvider(CloudformationApi, ServiceLifecycleHook):
+    def on_before_start(self):
+        self._validate_config()
+
+    def _validate_config(self):
+        no_wait_value: int = 5
+        try:
+            no_wait_value = int(config.CFN_NO_WAIT_ITERATIONS or 5)
+        except (TypeError, ValueError):
+            LOG.warning(
+                "You have set CFN_NO_WAIT_ITERATIONS to an invalid value: '%s'. It must be an integer greater or equal to 0. Using the default of 5",
+                config.CFN_NO_WAIT_ITERATIONS,
+            )
+
+        if no_wait_value < 0:
+            LOG.warning(
+                "You have set CFN_NO_WAIT_ITERATIONS to an invalid value: '%s'. It must be an integer greater or equal to 0. Using the default of 5",
+                config.CFN_NO_WAIT_ITERATIONS,
+            )
+            no_wait_value = 5
+
+        # Set the configuration back
+        config.CFN_NO_WAIT_ITERATIONS = no_wait_value
+
     def _stack_status_is_active(self, stack_status: str) -> bool:
         return stack_status not in [StackStatus.DELETE_COMPLETE]
 
