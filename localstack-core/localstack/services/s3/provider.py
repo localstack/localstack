@@ -118,7 +118,6 @@ from localstack.aws.api.s3 import (
     InvalidArgument,
     InvalidBucketName,
     InvalidDigest,
-    InvalidLocationConstraint,
     InvalidObjectState,
     InvalidPartNumber,
     InvalidPartOrder,
@@ -237,15 +236,12 @@ from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import (
     ALLOWED_HEADER_OVERRIDES,
     ARCHIVES_STORAGE_CLASSES,
-    BUCKET_LOCATION_CONSTRAINTS,
     CHECKSUM_ALGORITHMS,
     DEFAULT_BUCKET_ENCRYPTION,
-    EU_WEST_1_LOCATION_CONSTRAINTS,
     S3_HOST_ID,
 )
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.exceptions import (
-    IllegalLocationConstraintException,
     InvalidBucketOwnerAWSAccountID,
     InvalidBucketState,
     InvalidRequest,
@@ -309,6 +305,7 @@ from localstack.services.s3.utils import (
     validate_dict_fields,
     validate_failed_precondition,
     validate_kms_key_id,
+    validate_location_constraint,
     validate_tag_set,
 )
 from localstack.services.s3.validation import (
@@ -503,21 +500,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if bucket_tags:
             validate_tag_set(bucket_tags, type_set="create-bucket")
 
-        if location_constraint := create_bucket_configuration.get("LocationConstraint", ""):
-            if context.region == AWS_REGION_US_EAST_1:
-                if location_constraint not in BUCKET_LOCATION_CONSTRAINTS:
-                    raise InvalidLocationConstraint(
-                        "The specified location-constraint is not valid",
-                        LocationConstraint=location_constraint,
-                    )
-            elif context.region == AWS_REGION_EU_WEST_1:
-                if location_constraint not in EU_WEST_1_LOCATION_CONSTRAINTS:
-                    raise IllegalLocationConstraintException(location_constraint)
-            elif context.region != location_constraint:
-                raise IllegalLocationConstraintException(location_constraint)
-        else:
-            if context.region != AWS_REGION_US_EAST_1:
-                raise IllegalLocationConstraintException("unspecified")
+        location_constraint = create_bucket_configuration.get("LocationConstraint", "")
+        validate_location_constraint(context.region, location_constraint)
 
         bucket_region = location_constraint
         if not location_constraint:
