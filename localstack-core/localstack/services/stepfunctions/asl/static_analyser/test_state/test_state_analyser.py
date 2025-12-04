@@ -93,8 +93,17 @@ class TestStateStaticAnalyser(StaticAnalyser):
         )
 
         if mock_input is not None:
+            TestStateStaticAnalyser._validate_mock_is_either_result_or_error(mock_input=mock_input)
+
             TestStateStaticAnalyser.validate_mock_result_matches_api_shape(
                 mock_input=mock_input, test_state=test_state
+            )
+
+    @staticmethod
+    def _validate_mock_is_either_result_or_error(mock_input: MockInput) -> None:
+        if {"result", "errorOutput"} <= mock_input.keys():
+            raise ValidationException(
+                "A test mock should have only one of the following fields: [result, errorOutput]."
             )
 
     @staticmethod

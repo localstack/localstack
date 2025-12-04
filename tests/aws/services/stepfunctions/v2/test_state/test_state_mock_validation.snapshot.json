@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-PassState]": {
-    "recorded-date": "03-12-2025, 16:48:23",
+    "recorded-date": "04-12-2025, 17:02:01",
     "recorded-content": {
       "validation_exception": {
         "Error": {
@@ -16,7 +16,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-FailState]": {
-    "recorded-date": "03-12-2025, 16:48:23",
+    "recorded-date": "04-12-2025, 17:02:01",
     "recorded-content": {
       "validation_exception": {
         "Error": {
@@ -32,7 +32,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-SucceedState]": {
-    "recorded-date": "03-12-2025, 16:48:23",
+    "recorded-date": "04-12-2025, 17:02:01",
     "recorded-content": {
       "validation_exception": {
         "Error": {
@@ -48,7 +48,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-PassState]": {
-    "recorded-date": "03-12-2025, 16:48:23",
+    "recorded-date": "04-12-2025, 17:02:02",
     "recorded-content": {
       "validation_exception": {
         "Error": {
@@ -64,7 +64,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-FailState]": {
-    "recorded-date": "03-12-2025, 16:48:23",
+    "recorded-date": "04-12-2025, 17:02:02",
     "recorded-content": {
       "validation_exception": {
         "Error": {
@@ -80,7 +80,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-SucceedState]": {
-    "recorded-date": "03-12-2025, 16:48:24",
+    "recorded-date": "04-12-2025, 17:02:02",
     "recorded-content": {
       "validation_exception": {
         "Error": {
@@ -96,7 +96,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_requires_mock[MapState]": {
-    "recorded-date": "03-12-2025, 16:48:24",
+    "recorded-date": "04-12-2025, 17:02:02",
     "recorded-content": {
       "validation_exception": {
         "Error": {
@@ -112,7 +112,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_requires_mock[MapTaskState]": {
-    "recorded-date": "03-12-2025, 16:48:24",
+    "recorded-date": "04-12-2025, 17:02:02",
     "recorded-content": {
       "validation_exception": {
         "Error": {
@@ -120,6 +120,22 @@
           "Message": "TestState API does not support Map or Parallel states. Supported state types include: [Task, Wait, Pass, Succeed, Fail, Choice]"
         },
         "message": "TestState API does not support Map or Parallel states. Supported state types include: [Task, Wait, Pass, Succeed, Fail, Choice]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_both_mock_result_and_mock_error_output_are_set": {
+    "recorded-date": "04-12-2025, 17:02:03",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "A test mock should have only one of the following fields: [result, errorOutput]."
+        },
+        "message": "A test mock should have only one of the following fields: [result, errorOutput].",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
