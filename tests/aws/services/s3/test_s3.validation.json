@@ -62,8 +62,53 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_via_host_name": {
     "last_validated_date": "2025-01-21T18:27:49+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_eu_location_constraint": {
+    "last_validated_date": "2025-12-01T21:59:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.87,
+      "call": 0.85,
+      "teardown": 0.47,
+      "total": 2.19
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_eu_location_constraint_raises": {
+    "last_validated_date": "2025-12-01T22:24:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.84,
+      "call": 0.38,
+      "teardown": 0.0,
+      "total": 1.22
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_existing_name": {
     "last_validated_date": "2025-01-21T18:34:10+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_invalid_location_constraint[eu-west-1-bar]": {
+    "last_validated_date": "2025-12-03T10:38:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.12,
+      "teardown": 0.0,
+      "total": 0.12
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_invalid_location_constraint[us-east-1-foo]": {
+    "last_validated_date": "2025-12-03T10:38:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.32,
+      "teardown": 0.0,
+      "total": 0.32
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_invalid_location_constraint[us-east-1-us-east-1]": {
+    "last_validated_date": "2025-12-03T10:38:51+00:00",
+    "durations_in_seconds": {
+      "setup": 1.29,
+      "call": 0.34,
+      "teardown": 0.0,
+      "total": 1.63
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_delete_bucket_no_such_bucket": {
     "last_validated_date": "2025-01-21T18:27:11+00:00"
@@ -355,6 +400,33 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure": {
     "last_validated_date": "2025-01-21T18:41:38+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure_get_bucket_location[eu-central-1-eu-central-1-eu-central-1]": {
+    "last_validated_date": "2025-12-03T02:59:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.05,
+      "teardown": 0.5,
+      "total": 1.55
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure_get_bucket_location[eu-west-1-EU-EU]": {
+    "last_validated_date": "2025-12-03T02:59:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.95,
+      "teardown": 0.55,
+      "total": 1.5
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure_get_bucket_location[us-east-1-None-]": {
+    "last_validated_date": "2025-12-03T02:59:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.61,
+      "teardown": 0.94,
+      "total": 2.55
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure_get_obj_attrs": {
     "last_validated_date": "2025-08-18T16:12:31+00:00",

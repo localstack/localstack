@@ -34,6 +34,7 @@ from localstack.aws.api.s3 import (
     Grantee,
     HeadObjectRequest,
     InvalidArgument,
+    InvalidLocationConstraint,
     InvalidRange,
     InvalidTag,
     LifecycleExpiration,
@@ -57,18 +58,25 @@ from localstack.aws.api.s3 import (
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.chain import HandlerChain
 from localstack.aws.connect import connect_to
+from localstack.constants import AWS_REGION_EU_WEST_1, AWS_REGION_US_EAST_1
 from localstack.http import Response
 from localstack.services.s3 import checksums
 from localstack.services.s3.constants import (
     ALL_USERS_ACL_GRANTEE,
     AUTHENTICATED_USERS_ACL_GRANTEE,
+    BUCKET_LOCATION_CONSTRAINTS,
     CHECKSUM_ALGORITHMS,
+    EU_WEST_1_LOCATION_CONSTRAINTS,
     LOG_DELIVERY_ACL_GRANTEE,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,
     SYSTEM_METADATA_SETTABLE_HEADERS,
 )
-from localstack.services.s3.exceptions import InvalidRequest, MalformedXML
+from localstack.services.s3.exceptions import (
+    IllegalLocationConstraintException,
+    InvalidRequest,
+    MalformedXML,
+)
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.objects import singleton_factory
@@ -888,6 +896,27 @@ def validate_tag_set(
         keys.add(key)
 
 
+def validate_location_constraint(context_region: str, location_constraint: str) -> None:
+    if location_constraint:
+        if context_region == AWS_REGION_US_EAST_1:
+            if (
+                not config.ALLOW_NONSTANDARD_REGIONS
+                and location_constraint not in BUCKET_LOCATION_CONSTRAINTS
+            ):
+                raise InvalidLocationConstraint(
+                    "The specified location-constraint is not valid",
+                    LocationConstraint=location_constraint,
+                )
+        elif context_region == AWS_REGION_EU_WEST_1:
+            if location_constraint not in EU_WEST_1_LOCATION_CONSTRAINTS:
+                raise IllegalLocationConstraintException(location_constraint)
+        elif context_region != location_constraint:
+            raise IllegalLocationConstraintException(location_constraint)
+    else:
+        if context_region != AWS_REGION_US_EAST_1:
+            raise IllegalLocationConstraintException("unspecified")
+
+
 def get_unique_key_id(
     bucket: BucketName, object_key: ObjectKey, version_id: ObjectVersionId
 ) -> str:
@@ -1105,3 +1134,19 @@ def is_version_older_than_other(version_id: str, other: str):
     See `generate_safe_version_id`
     """
     return base64.b64decode(version_id, altchars=b"._") < base64.b64decode(other, altchars=b"._")
+
+
+def get_bucket_location_xml(location_constraint: str) -> str:
+    """
+    Returns the formatted XML for the GetBucketLocation operation.
+
+    :param location_constraint: The location constraint to return in the XML. It can be an empty string when
+    it's not specified in the bucket configuration.
+    :return: The XML response.
+    """
+
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"'
+        + ("/>" if not location_constraint else f">{location_constraint}</LocationConstraint>")
+    )

@@ -168,7 +168,7 @@ class TestS3ListBuckets:
 
     @markers.aws.only_localstack
     @markers.requires_in_process
-    def test_list_buckets_region_validation_disabled(
+    def test_region_validation_non_standard_regions_enabled(
         self, snapshot, monkeypatch, aws_client_factory, s3_create_bucket_with_client
     ):
         monkeypatch.setattr(config, "ALLOW_NONSTANDARD_REGIONS", True)
@@ -180,19 +180,32 @@ class TestS3ListBuckets:
 
         bad_region = "eu-east-1"
 
-        # A client created with us-east-1 can create buckets in any region
+        # A client created with us-east-1 can create buckets in any region, including the bad region.
         client_us_east_1 = aws_client_factory(region_name=AWS_REGION_US_EAST_1).s3
-
-        bucket_name = f"test-bucket-{short_uid()}"
         s3_create_bucket_with_client(
             client_us_east_1,
-            Bucket=bucket_name,
             CreateBucketConfiguration={"LocationConstraint": bad_region},
         )
 
+        # A client created in the bad region should can only create buckets in this region.
+        client_bad_region = aws_client_factory(region_name=bad_region).s3
+        s3_create_bucket_with_client(
+            client_bad_region,
+            CreateBucketConfiguration={"LocationConstraint": bad_region},
+        )
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                client_bad_region,
+                CreateBucketConfiguration={"LocationConstraint": AWS_REGION_US_EAST_1},
+            )
+        assert (
+            e.value.response["Error"]["Message"]
+            == "The us-east-1 location constraint is incompatible for the region specific endpoint this request was sent to."
+        )
+
         list_buckets = client_us_east_1.list_buckets(BucketRegion=bad_region)
-        assert list_buckets["Buckets"]
-        assert list_buckets["Buckets"][0]["BucketRegion"] == bad_region
+        for bucket in list_buckets["Buckets"]:
+            assert bucket["BucketRegion"] == bad_region
 
 
 class TestS3ListObjects:

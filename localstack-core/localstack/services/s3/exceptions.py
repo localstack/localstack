@@ -51,3 +51,12 @@ class InvalidBucketOwnerAWSAccountID(CommonServiceException):
 class TooManyConfigurations(CommonServiceException):
     def __init__(self, message=None) -> None:
         super().__init__("TooManyConfigurations", status_code=400, message=message)
+
+
+class IllegalLocationConstraintException(CommonServiceException):
+    def __init__(self, location_constraint: str):
+        super().__init__(
+            "IllegalLocationConstraintException",
+            status_code=400,
+            message=f"The {location_constraint} location constraint is incompatible for the region specific endpoint this request was sent to.",
+        )

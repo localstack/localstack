@@ -46,6 +46,7 @@ from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.utils import (
     RFC1123,
     etag_to_base_64_content_md5,
+    get_bucket_location_xml,
     parse_expiration_header,
     rfc_1123_datetime,
 )
@@ -286,6 +287,11 @@ def _simple_bucket_policy(s3_bucket: str) -> dict:
             }
         ],
     }
+
+
+def get_xml_content(http_response_content: bytes) -> bytes:
+    # just format a bit the XML, nothing bad parity wise, but allow the test to run against AWS
+    return http_response_content.replace(b"'", b'"').replace(b"utf", b"UTF")
 
 
 class TestS3:
@@ -999,6 +1005,83 @@ class TestS3:
             )
         finally:
             s3_vhost_client.delete_bucket(Bucket=bucket_name)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Owner.DisplayName", "$..Buckets..BucketArn"]
+    )  # Bucket ARN is by AWS in this scenario but not for others.
+    def test_create_bucket_with_eu_location_constraint(
+        self, s3_create_bucket_with_client, aws_client_factory, snapshot
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("ID"),
+                snapshot.transform.key_value("Name"),
+                snapshot.transform.key_value("BucketOwner"),
+                snapshot.transform.key_value("BucketRegion"),
+            ]
+        )
+        client_eu_west_1 = aws_client_factory(region_name="eu-west-1").s3
+
+        bucket_name = f"test-eu-region-{short_uid()}"
+        s3_create_bucket_with_client(
+            client_eu_west_1,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={
+                "LocationConstraint": "EU"
+            },  # EU is just an alias for eu-west-1.
+        )
+        get_bucket_location_response = client_eu_west_1.get_bucket_location(Bucket=bucket_name)
+        assert get_bucket_location_response["LocationConstraint"] == "EU"
+        snapshot.match("get-bucket-location", get_bucket_location_response)
+
+        list_buckets_response = client_eu_west_1.list_buckets(Prefix=bucket_name)
+        assert list_buckets_response["Buckets"][0]["BucketRegion"] == "eu-west-1"
+        snapshot.match("list-bucket-response", list_buckets_response)
+
+    @markers.aws.validated
+    def test_create_bucket_with_eu_location_constraint_raises(
+        self, s3_create_bucket_with_client, aws_client_factory, snapshot
+    ):
+        # Should fail for a region that isn't eu-west-1 (not including us-east-1)
+        client_us_east_2 = aws_client_factory(region_name="us-east-2").s3
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                client_us_east_2,
+                Bucket=f"test-eu-region-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": "EU"},
+            )
+        snapshot.match("eu-location-constraint-error", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "client_region, location_constraint",
+        [("us-east-1", "us-east-1"), ("us-east-1", "foo"), ("eu-west-1", "bar")],
+    )
+    def test_create_bucket_with_invalid_location_constraint(
+        self,
+        s3_create_bucket_with_client,
+        aws_client_factory,
+        snapshot,
+        client_region,
+        location_constraint,
+    ):
+        # Different error messages are raised for us-east-1.
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "LocationConstraint", value_replacement="location-constraint"
+            )
+        )
+
+        client = aws_client_factory(region_name=client_region).s3
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket_with_client(
+                client,
+                CreateBucketConfiguration={"LocationConstraint": location_constraint},
+            )
+        snapshot.match(
+            f"{client_region}-location-constraint-{location_constraint}-error", e.value.response
+        )
 
     @markers.aws.validated
     def test_get_bucket_policy(self, s3_bucket, snapshot, aws_client, allow_bucket_acl, account_id):
@@ -5075,10 +5158,6 @@ class TestS3:
 
         s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
 
-        def get_xml_content(http_response_content: bytes) -> bytes:
-            # just format a bit the XML, nothing bad parity wise, but allow the test to run against AWS
-            return http_response_content.replace(b"'", b'"').replace(b"utf", b"UTF")
-
         # Lists all buckets
         endpoint_url = _endpoint_url()
         resp = s3_http_client.get(endpoint_url, headers=headers)
@@ -5211,6 +5290,41 @@ class TestS3:
         assert resp.status_code == 204
         assert resp.headers.get("Content-Type") is None
         assert resp.headers.get("Content-Length") is None
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "client_region, location_constraint, expected_result",
+        [
+            ("us-east-1", None, ""),
+            ("eu-west-1", "EU", "EU"),
+            ("eu-central-1", "eu-central-1", "eu-central-1"),
+        ],
+    )
+    def test_response_structure_get_bucket_location(
+        self,
+        aws_http_client_factory,
+        s3_create_bucket_with_client,
+        aws_client_factory,
+        client_region,
+        location_constraint,
+        expected_result,
+    ):
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        s3_client = aws_client_factory(region_name=client_region).s3
+        bucket_name = f"get-bucket-location-response-test-{short_uid()}"
+
+        bucket_config = (
+            {"CreateBucketConfiguration": {"LocationConstraint": location_constraint}}
+            if location_constraint
+            else {}
+        )
+        s3_create_bucket_with_client(s3_client, Bucket=bucket_name, **bucket_config)
+        get_bucket_location_response = s3_http_client.get(
+            f"{_bucket_url(bucket_name)}?location",
+            headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"},
+        )
+        xml_content = get_xml_content(get_bucket_location_response.content)
+        assert get_bucket_location_xml(expected_result).encode() == xml_content
 
     @markers.aws.validated
     def test_response_structure_get_obj_attrs(self, aws_http_client_factory, s3_bucket, aws_client):
