@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_both_mock_result_and_mock_error_output_are_set": {
-    "last_validated_date": "2025-12-04T17:02:03+00:00",
+    "last_validated_date": "2025-12-04T20:55:10+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 0.19,
@@ -8,26 +8,26 @@
       "total": 0.19
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-FailState]": {
-    "last_validated_date": "2025-12-04T17:02:02+00:00",
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_reveal_secrets_is_true_and_mock_result_is_set": {
+    "last_validated_date": "2025-12-04T20:55:10+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.22,
+      "call": 0.18,
       "teardown": 0.0,
-      "total": 0.22
+      "total": 0.18
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-FailState]": {
+    "last_validated_date": "2025-12-04T20:55:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.0,
+      "total": 0.19
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-PassState]": {
-    "last_validated_date": "2025-12-04T17:02:02+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.24,
-      "teardown": 0.0,
-      "total": 0.24
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-SucceedState]": {
-    "last_validated_date": "2025-12-04T17:02:02+00:00",
+    "last_validated_date": "2025-12-04T20:55:09+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 0.2,
@@ -35,8 +35,17 @@
       "total": 0.2
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-SucceedState]": {
+    "last_validated_date": "2025-12-04T20:55:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.0,
+      "total": 0.19
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-FailState]": {
-    "last_validated_date": "2025-12-04T17:02:01+00:00",
+    "last_validated_date": "2025-12-04T20:55:09+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 0.2,
@@ -45,39 +54,39 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-PassState]": {
-    "last_validated_date": "2025-12-04T17:02:01+00:00",
+    "last_validated_date": "2025-12-04T20:55:08+00:00",
     "durations_in_seconds": {
-      "setup": 0.55,
-      "call": 0.66,
+      "setup": 0.54,
+      "call": 0.64,
       "teardown": 0.0,
-      "total": 1.21
+      "total": 1.18
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-SucceedState]": {
-    "last_validated_date": "2025-12-04T17:02:01+00:00",
+    "last_validated_date": "2025-12-04T20:55:09+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.18,
+      "call": 0.21,
       "teardown": 0.0,
-      "total": 0.18
+      "total": 0.21
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_requires_mock[MapState]": {
-    "last_validated_date": "2025-12-04T17:02:02+00:00",
+    "last_validated_date": "2025-12-04T20:55:10+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.21,
+      "call": 0.19,
       "teardown": 0.0,
-      "total": 0.21
+      "total": 0.19
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_requires_mock[MapTaskState]": {
-    "last_validated_date": "2025-12-04T17:02:02+00:00",
+    "last_validated_date": "2025-12-04T20:55:10+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.21,
+      "call": 0.2,
       "teardown": 0.0,
-      "total": 0.21
+      "total": 0.2
     }
   }
 }

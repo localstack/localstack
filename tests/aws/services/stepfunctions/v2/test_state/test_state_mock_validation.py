@@ -85,3 +85,21 @@ class TestStateMockValidation:
                 mock=mock,
             )
         sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_reveal_secrets_is_true_and_mock_result_is_set(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TST.load_sfn_template(TST.BASE_LAMBDA_SERVICE_TASK_STATE)
+        definition = json.dumps(template)
+        mock = {"result": json.dumps({"mock": "response"})}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+                revealSecrets=True,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)

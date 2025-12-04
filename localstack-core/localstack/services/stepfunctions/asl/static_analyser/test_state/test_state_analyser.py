@@ -16,6 +16,7 @@ from localstack.aws.api.stepfunctions import (
     MockInput,
     MockResponseValidationMode,
     StateName,
+    TestStateInput,
     ValidationException,
 )
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
@@ -84,27 +85,33 @@ class TestStateStaticAnalyser(StaticAnalyser):
             raise ValidationException("RoleArn must be specified when testing a Task state")
 
     @staticmethod
-    def validate_mock(mock_input: MockInput, definition: Definition, state_name: StateName) -> None:
-        test_program, _ = TestStateAmazonStateLanguageParser.parse(definition, state_name)
+    def validate_mock(test_state_input: TestStateInput) -> None:
+        test_program, _ = TestStateAmazonStateLanguageParser.parse(
+            test_state_input.get("definition"), test_state_input.get("stateName")
+        )
         test_state = test_program.test_state
+        mock_input = test_state_input.get("mock")
 
         TestStateStaticAnalyser.validate_test_state_allows_mocking(
             mock_input=mock_input, test_state=test_state
         )
 
-        if mock_input is not None:
-            TestStateStaticAnalyser._validate_mock_is_either_result_or_error(mock_input=mock_input)
+        if mock_input is None:
+            return
 
-            TestStateStaticAnalyser.validate_mock_result_matches_api_shape(
-                mock_input=mock_input, test_state=test_state
+        if test_state_input.get("revealSecrets"):
+            raise ValidationException(
+                "TestState does not support RevealSecrets when a mock is specified."
             )
 
-    @staticmethod
-    def _validate_mock_is_either_result_or_error(mock_input: MockInput) -> None:
         if {"result", "errorOutput"} <= mock_input.keys():
             raise ValidationException(
                 "A test mock should have only one of the following fields: [result, errorOutput]."
             )
+
+        TestStateStaticAnalyser.validate_mock_result_matches_api_shape(
+            mock_input=mock_input, test_state=test_state
+        )
 
     @staticmethod
     def validate_test_state_allows_mocking(
