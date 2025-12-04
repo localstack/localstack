@@ -701,14 +701,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         Botocore implements this hack for parsing the response in `botocore.handlers.py#parse_get_bucket_location`
         """
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
-        bucket_region = s3_bucket.bucket_region
 
         # TODO: Remove usage of getattr once persistence mechanism is updated.
         # If the stored constraint is None the bucket was made before the storage of location_constraint.
         # The EU location constraint wasn't supported before this point so we can safely default to the region.
         location_constraint = getattr(s3_bucket, "location_constraint", None)
         if location_constraint is None:
-            location_constraint = bucket_region if bucket_region != "us-east-1" else ""
+            location_constraint = (
+                s3_bucket.bucket_region if s3_bucket.bucket_region != "us-east-1" else ""
+            )
 
         return GetBucketLocationOutput(
             LocationConstraint=get_bucket_location_xml(location_constraint)
