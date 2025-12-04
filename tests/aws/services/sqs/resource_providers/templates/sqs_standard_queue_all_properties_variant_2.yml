@@ -1,0 +1,43 @@
+#
+# Similar to sqs_standard_queue_all_properties.yml in that it defines a standard SQS queue with all properties set,
+# however, the property values are different, including the Queue name.
+#
+Resources:
+  StandardQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: 'MyStandardQueueWithADifferentName'
+      DelaySeconds: 15
+      MaximumMessageSize: 4444
+      MessageRetentionPeriod: 17777
+      ReceiveMessageWaitTimeSeconds: 14
+      VisibilityTimeout: 35
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 4
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Environment'
+          Value: 'Pre-Test'
+        - Key: 'Department'
+          Value: 'Marketing'
+
+  DeadLetterQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      RedriveAllowPolicy:
+        redrivePermission: 'allowAll'
+
+Outputs:
+  QueueUrl:
+    Description: 'URL of the SQS Standard Queue'
+    Value: !Ref StandardQueue
+  QueueArn:
+    Description: 'ARN of the SQS Standard Queue'
+    Value: !GetAtt StandardQueue.Arn
+  DeadLetterQueueUrl:
+    Description: 'URL of the Dead Letter Queue'
+    Value: !Ref DeadLetterQueue
+  DeadLetterQueueArn:
+    Description: 'ARN of the Dead Letter Queue'
+    Value: !GetAtt DeadLetterQueue.Arn

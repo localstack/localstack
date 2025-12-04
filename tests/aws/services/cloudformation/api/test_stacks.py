@@ -340,6 +340,7 @@ class TestStacksApi:
         )
 
     @markers.aws.validated
+    @skip_if_legacy_engine()
     def test_update_stack_actual_update(self, deploy_cfn_template, aws_client):
         template = load_file(
             os.path.join(os.path.dirname(__file__), "../../../templates/sqs_queue_update.yml")

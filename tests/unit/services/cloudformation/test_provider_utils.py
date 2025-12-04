@@ -200,3 +200,17 @@ class TestDictUtils:
             original_dict, skip_keys={"Configuration"}
         )
         assert converted_dict == target_dict
+
+    def test_resource_tags_to_remove_or_update(self):
+        previous = [
+            {"Key": "k1", "Value": "v1"},
+            {"Key": "k2", "Value": "v2"},
+            {"Key": "k3", "Value": "v3"},
+            {"Key": "k4", "Value": "v4"},
+        ]
+        desired = [{"Key": "k2", "Value": "v2-updated"}, {"Key": "k3", "Value": "v3"}]
+
+        to_remove, to_update = utils.resource_tags_to_remove_or_update(previous, desired)
+
+        assert sorted(to_remove) == ["k1", "k4"]
+        assert to_update == {"k2": "v2-updated", "k3": "v3"}

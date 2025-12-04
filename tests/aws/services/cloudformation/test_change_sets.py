@@ -782,15 +782,7 @@ class TestCaptureUpdateProcess:
         snapshot.match("parameter-2", parameter)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..PhysicalResourceId",
-            # TODO: parity in the resource provider
-            "$..Attributes.MaximumMessageSize",
-            "$..Attributes.MessageRetentionPeriod",
-            "$..Attributes.ReceiveMessageWaitTimeSeconds",
-        ]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PhysicalResourceId"])
     def test_queue_update(
         self, aws_client, deploy_cfn_template, capture_per_resource_events, snapshot
     ):

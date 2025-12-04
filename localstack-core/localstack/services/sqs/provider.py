@@ -1273,7 +1273,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         for k, v in attributes.items():
             if k in sqs_constants.INTERNAL_QUEUE_ATTRIBUTES:
                 raise InvalidAttributeName(f"Unknown Attribute {k}.")
-            queue.attributes[k] = v
+            if k in sqs_constants.DELETE_IF_DEFAULT and v == sqs_constants.DELETE_IF_DEFAULT[k]:
+                if k in queue.attributes:
+                    del queue.attributes[k]
+            else:
+                queue.attributes[k] = v
 
         # Special cases
         if queue.attributes.get(QueueAttributeName.Policy) == "":

@@ -1,0 +1,17 @@
+#
+# Define an SQS FIFO Queue with only the required properties set. All other properties will
+# take their default values.
+#
+Resources:
+  FifoQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      FifoQueue: true
+
+Outputs:
+  QueueUrl:
+    Description: 'URL of the SQS Fifo Queue'
+    Value: !Ref FifoQueue
+  QueueArn:
+    Description: 'ARN of the SQS Fifo Queue'
+    Value: !GetAtt FifoQueue.Arn
