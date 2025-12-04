@@ -103,7 +103,8 @@ _DL_LOCK = threading.Lock()
 
 class TranscribeProvider(TranscribeApi):
     def accept_state_visitor(self, visitor: StateVisitor) -> None:
-        from moto.transcribe.models import transcribe_backends  # type: ignore
+        from moto.transcribe.models import transcribe_backends
+        # pp
 
         visitor.visit(transcribe_backends)
         visitor.visit(transcribe_stores)

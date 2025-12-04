@@ -15,7 +15,7 @@ repos:
     hooks:
       - id: mypy
         entry: bash -c 'cd localstack-core && mypy --install-types --non-interactive'
-        additional_dependencies: ['botocore-stubs', 'rolo']
+        additional_dependencies: ['botocore-stubs', 'rolo', 'moto-ext']
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
