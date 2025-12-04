@@ -419,6 +419,13 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         )
         validator.validate()
 
+        # hacky
+        if transform := raw_update_model.node_template.transform:
+            if transform.global_transforms:
+                # global transforms should always be considered "MODIFIED"
+                update_model.node_template.change_type = ChangeType.MODIFIED
+        change_set.processed_template = transformed_after_template
+
         if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
             support_visitor = ChangeSetResourceSupportChecker()
             support_visitor.visit(change_set.update_model.node_template)
@@ -450,13 +457,6 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                     for status in remaining_statuses:
                         change_set.stack.set_stack_status(status)
                 return
-
-        # hacky
-        if transform := raw_update_model.node_template.transform:
-            if transform.global_transforms:
-                # global transforms should always be considered "MODIFIED"
-                update_model.node_template.change_type = ChangeType.MODIFIED
-        change_set.processed_template = transformed_after_template
 
     @handler("CreateChangeSet", expand=False)
     def create_change_set(
