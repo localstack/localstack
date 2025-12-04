@@ -30,6 +30,7 @@ from localstack.aws.api.lambda_ import (
     CodeSigningPolicies,
     Cors,
     DestinationConfig,
+    FunctionScalingConfig,
     FunctionUrlAuthType,
     InstanceRequirements,
     InvocationType,
@@ -624,6 +625,9 @@ class Function:
     recursive_loop: RecursiveLoop = RecursiveLoop.Terminate
     provisioned_concurrency_configs: dict[str, ProvisionedConcurrencyConfiguration] = (
         dataclasses.field(default_factory=dict)
+    )
+    function_scaling_configs: dict[str, FunctionScalingConfig] = dataclasses.field(
+        default_factory=dict
     )
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
