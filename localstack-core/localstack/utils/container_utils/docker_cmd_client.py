@@ -12,7 +12,6 @@ from localstack import config
 from localstack.utils.collections import ensure_list
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
-    BindMount,
     CancellableStream,
     ContainerClient,
     ContainerException,
@@ -21,16 +20,16 @@ from localstack.utils.container_utils.container_client import (
     DockerNotAvailable,
     DockerPlatform,
     LogConfig,
+    Mount,
     NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
     NoSuchObject,
     PortMappings,
     RegistryConnectionError,
-    SimpleVolumeBind,
     Ulimit,
     Util,
-    VolumeDirMount,
+    VolumeMappingSpecification,
 )
 from localstack.utils.run import run
 from localstack.utils.strings import first_char_to_upper, to_str
@@ -810,7 +809,7 @@ class CmdDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: list[str] | str | None = None,
-        volumes: list[SimpleVolumeBind] | None = None,
+        volumes: list[VolumeMappingSpecification] | None = None,
         ports: PortMappings | None = None,
         exposed_ports: list[str] | None = None,
         env_vars: dict[str, str] | None = None,
@@ -900,7 +899,7 @@ class CmdDockerClient(ContainerClient):
         return cmd, env_file
 
     @staticmethod
-    def _map_to_volume_param(volume: SimpleVolumeBind | BindMount | VolumeDirMount) -> str:
+    def _map_to_volume_param(volume: VolumeMappingSpecification) -> str:
         """
         Maps the mount volume, to a parameter for the -v docker cli argument.
 
@@ -911,7 +910,8 @@ class CmdDockerClient(ContainerClient):
         :param volume: Either a SimpleVolumeBind, in essence a tuple (host_dir, container_dir), or a VolumeBind object
         :return: String which is passable as parameter to the docker cli -v option
         """
-        if isinstance(volume, (BindMount, VolumeDirMount)):
+        # TODO: move this logic to the VolumeMappingSpecification type
+        if isinstance(volume, Mount):
             return volume.to_str()
         else:
             return f"{volume[0]}:{volume[1]}"

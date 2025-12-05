@@ -34,8 +34,8 @@ from localstack.utils.container_utils.container_client import (
     NoSuchImage,
     NoSuchNetwork,
     PortMappings,
-    VolumeDirMount,
     VolumeMappings,
+    VolumeMappingSpecification,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -666,7 +666,7 @@ class ContainerConfigurators:
         return _cfg
 
     @staticmethod
-    def volume(volume: BindMount | VolumeDirMount):
+    def volume(volume: VolumeMappingSpecification):
         def _cfg(cfg: ContainerConfiguration):
             cfg.volumes.add(volume)
 
