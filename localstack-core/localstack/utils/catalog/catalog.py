@@ -1,5 +1,6 @@
 import logging
 from abc import abstractmethod
+from typing import TypeAlias
 
 from plux import Plugin
 
@@ -21,10 +22,10 @@ ServiceOperations = set[str]
 ProviderName = str
 CfnResourceName = str
 CfnResourceMethodName = str
-AwsServicesSupportStatus = (
+AwsServicesSupportStatus: TypeAlias = (
     AwsServiceSupportAtRuntime | AwsServicesSupportInLatest | AwsServiceOperationsSupportInLatest
 )
-CfnResourceSupportStatus = (
+CfnResourceSupportStatus: TypeAlias = (
     CloudFormationResourcesSupportInLatest | CloudFormationResourcesSupportAtRuntime
 )
 CfnResourceCatalog = dict[LocalstackEmulatorType, dict[CfnResourceName, set[CfnResourceMethodName]]]

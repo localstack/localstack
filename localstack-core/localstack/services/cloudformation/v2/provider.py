@@ -103,6 +103,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model_transform imp
 from localstack.services.cloudformation.engine.v2.change_set_model_validator import (
     ChangeSetModelValidator,
 )
+from localstack.services.cloudformation.engine.v2.change_set_resource_support_checker import (
+    ChangeSetResourceSupportChecker,
+)
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.provider import (
     ARN_CHANGESET_REGEX,
@@ -422,6 +425,38 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 # global transforms should always be considered "MODIFIED"
                 update_model.node_template.change_type = ChangeType.MODIFIED
         change_set.processed_template = transformed_after_template
+
+        if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+            support_visitor = ChangeSetResourceSupportChecker()
+            support_visitor.visit(change_set.update_model.node_template)
+            failure_messages = support_visitor.failure_messages
+            if failure_messages:
+                reason_suffix = ", ".join(failure_messages)
+                status_reason = f"{ChangeSetResourceSupportChecker.TITLE_MESSAGE} {reason_suffix}"
+
+                change_set.status_reason = status_reason
+                change_set.set_change_set_status(ChangeSetStatus.FAILED)
+                failure_transitions = {
+                    ChangeSetType.CREATE: (
+                        StackStatus.ROLLBACK_IN_PROGRESS,
+                        StackStatus.CREATE_FAILED,
+                    ),
+                    ChangeSetType.UPDATE: (
+                        StackStatus.UPDATE_ROLLBACK_IN_PROGRESS,
+                        StackStatus.UPDATE_ROLLBACK_FAILED,
+                    ),
+                    ChangeSetType.IMPORT: (
+                        StackStatus.IMPORT_ROLLBACK_IN_PROGRESS,
+                        StackStatus.IMPORT_ROLLBACK_FAILED,
+                    ),
+                }
+                transitions = failure_transitions.get(change_set.change_set_type)
+                if transitions:
+                    first_status, *remaining_statuses = transitions
+                    change_set.stack.set_stack_status(first_status, status_reason)
+                    for status in remaining_statuses:
+                        change_set.stack.set_stack_status(status)
+                return
 
     @handler("CreateChangeSet", expand=False)
     def create_change_set(

@@ -225,6 +225,11 @@ def parse_boolean_env(env_var_name: str) -> bool | None:
     return None
 
 
+def parse_comma_separated_list(env_var_name: str) -> list[str]:
+    """Parse a comma separated list from the given environment variable."""
+    return os.environ.get(env_var_name, "").strip().split(",")
+
+
 def is_env_true(env_var_name: str) -> bool:
     """Whether the given environment variable has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() in TRUE_STRINGS
