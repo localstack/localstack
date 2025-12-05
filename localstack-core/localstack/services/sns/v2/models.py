@@ -7,6 +7,7 @@ from typing import Literal, TypedDict
 from localstack.aws.api.sns import (
     Endpoint,
     MessageAttributeMap,
+    PhoneNumber,
     PlatformApplication,
     PublishBatchRequestEntry,
     TopicAttributesMap,
@@ -191,6 +192,8 @@ class SnsStore(BaseStore):
     sms_messages: list[dict] = LocalAttribute(default=list)
 
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
+
+    PHONE_NUMBERS_OPTED_OUT: list[PhoneNumber] = CrossRegionAttribute(default=list)
 
 
 sns_stores = AccountRegionBundle("sns", SnsStore)
