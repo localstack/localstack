@@ -61,7 +61,7 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import long_uid, short_uid, to_str
-from localstack.utils.sync import ShortCircuitWaitException, wait_until
+from localstack.utils.sync import ShortCircuitWaitException, once_func, wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_NODEJS,
@@ -5605,7 +5605,11 @@ class TestLambdaEventSourceMappings:
         )
 
         uuid = create_response["UUID"]
-        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+
+        # Since we expect the ESM to be deleted as a part of lifecycle testing,
+        # ensure that this deletion only happens once.
+        delete_esm_once = once_func(aws_client.lambda_.delete_event_source_mapping)
+        cleanups.append(lambda: delete_esm_once(UUID=uuid))
         snapshot.match("create_response", create_response)
 
         # the stream might not be active immediately(!)
@@ -5627,7 +5631,7 @@ class TestLambdaEventSourceMappings:
         get_response_post_delete = aws_client.lambda_.get_event_source_mapping(UUID=uuid)
         snapshot.match("get_response_post_delete", get_response_post_delete)
         #
-        delete_response = aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
+        delete_response = delete_esm_once(UUID=uuid)
         snapshot.match("delete_response", delete_response)
 
     @markers.snapshot.skip_snapshot_verify(
