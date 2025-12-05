@@ -43,7 +43,6 @@ class TestCloudFormationMappings:
         ]
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="not implemented")
     def test_mapping_with_nonexisting_key(self, aws_client, cleanups, snapshot):
         """
         Tries to deploy a resource with a dependency on a mapping key
