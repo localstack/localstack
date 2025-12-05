@@ -254,6 +254,7 @@ class ClientFactory(ABC):
         verify: bool | str = False,
         session: Session = None,
         config: Config = None,
+        endpoint: str = None,
     ):
         """
         :param use_ssl: Whether to use SSL
@@ -269,6 +270,7 @@ class ClientFactory(ABC):
         self._verify = verify
         self._config: Config = config or Config(max_pool_connections=MAX_POOL_CONNECTIONS)
         self._session: Session = session or Session()
+        self._endpoint = endpoint
 
         # make sure we consider our custom data paths for legacy specs (like SQS query protocol)
         if LOCALSTACK_BUILTIN_DATA_PATH not in self._session._loader.search_paths:
@@ -515,10 +517,13 @@ class InternalClientFactory(ClientFactory):
         else:
             config = self._config.merge(config)
 
-        endpoint_url = endpoint_url or get_service_endpoint()
-        if service_name == "s3" and endpoint_url:
-            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
-                endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
+        endpoint_url = endpoint_url or self._endpoint or get_service_endpoint()
+        if (
+            endpoint_url
+            and service_name == "s3"
+            and re.match(r"https?://localhost(:[0-9]+)?", endpoint_url)
+        ):
+            endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
 
         return self._get_client(
             service_name=service_name,
@@ -575,14 +580,20 @@ class ExternalClientFactory(ClientFactory):
         # If the region in arg is non-default, it gives the arg the precedence
         # But if the region in arg is default (us-east-1), it gives precedence to one in config
         # Below: always give precedence to arg region
-        if config and config.region_name != AWS_REGION_US_EAST_1:
-            if region_name == AWS_REGION_US_EAST_1:
-                config = config.merge(Config(region_name=region_name))
+        if (
+            config
+            and config.region_name != AWS_REGION_US_EAST_1
+            and region_name == AWS_REGION_US_EAST_1
+        ):
+            config = config.merge(Config(region_name=region_name))
 
-        endpoint_url = endpoint_url or get_service_endpoint()
-        if service_name == "s3":
-            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
-                endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
+        endpoint_url = endpoint_url or self._endpoint or get_service_endpoint()
+        if (
+            endpoint_url
+            and service_name == "s3"
+            and re.match(r"https?://localhost(:[0-9]+)?", endpoint_url)
+        ):
+            endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
 
         # Prevent `PartialCredentialsError` when only access key ID is provided
         # The value of secret access key is insignificant and can be set to anything
