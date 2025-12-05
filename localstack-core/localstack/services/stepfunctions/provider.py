@@ -57,7 +57,6 @@ from localstack.aws.api.stepfunctions import (
     LongArn,
     MaxConcurrency,
     MissingRequiredParameter,
-    MockInput,
     Name,
     PageSize,
     PageToken,
@@ -242,12 +241,6 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         raise InvalidArn(
             f"Invalid Arn: 'Resource type not valid in this context: {lower_resource_type}'"
         )
-
-    @staticmethod
-    def _validate_test_state_mock_input(mock_input: MockInput) -> None:
-        if {"result", "errorOutput"} <= mock_input.keys():
-            # FIXME create proper error
-            raise ValidationException("Cannot define both 'result' and 'errorOutput'")
 
     @staticmethod
     def _validate_activity_name(name: str) -> None:
@@ -1515,11 +1508,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             raise ValidationException("State not found in definition")
 
         mock_input = request.get("mock")
-        TestStateStaticAnalyser.validate_mock(
-            mock_input=mock_input, definition=definition, state_name=state_name
-        )
-        if mock_input is not None:
-            self._validate_test_state_mock_input(mock_input)
+        TestStateStaticAnalyser.validate_mock(test_state_input=request)
 
         if state_configuration := request.get("stateConfiguration"):
             # TODO: Add validations for this i.e assert len(input) <= failureCount
