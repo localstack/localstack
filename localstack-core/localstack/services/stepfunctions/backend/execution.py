@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import datetime
-import json
 import logging
-from typing import Final
+from typing import Any, Final
 
 from localstack.aws.api.events import PutEventsRequestEntry
 from localstack.aws.api.stepfunctions import (
@@ -111,7 +110,7 @@ class Execution:
     local_mock_test_case: Final[LocalMockTestCase | None]
 
     start_date: Final[Timestamp]
-    input_data: Final[json | None]
+    input_data: Final[dict[str, Any] | None]
     input_details: Final[CloudWatchEventsExecutionDataDetails | None]
     trace_header: Final[TraceHeader | None]
     _cloud_watch_logging_session: Final[CloudWatchLoggingSession | None]
@@ -119,7 +118,7 @@ class Execution:
     exec_status: ExecutionStatus | None
     stop_date: Timestamp | None
 
-    output: json | None
+    output: dict[str, Any] | None
     output_details: CloudWatchEventsExecutionDataDetails | None
 
     error: SensitiveError | None
@@ -141,7 +140,7 @@ class Execution:
         start_date: Timestamp,
         cloud_watch_logging_session: CloudWatchLoggingSession | None,
         activity_store: dict[Arn, Activity],
-        input_data: json | None = None,
+        input_data: dict[str, Any] | None = None,
         trace_header: TraceHeader | None = None,
         state_machine_alias_arn: Arn | None = None,
         local_mock_test_case: LocalMockTestCase | None = None,
