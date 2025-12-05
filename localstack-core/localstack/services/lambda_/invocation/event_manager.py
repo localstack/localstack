@@ -199,19 +199,22 @@ class Poller:
     def handle_message(self, message: dict) -> None:
         failure_cause = None
         qualifier = self.version_manager.function_version.id.qualifier
+        function_config = self.version_manager.function_version.config
         event_invoke_config = self.version_manager.function.event_invoke_configs.get(qualifier)
         runtime = None
         status = None
-        initialization_type = FunctionInitializationType.on_demand
+        # TODO: handle initialization_type provisioned-concurrency, which requires enriching invocation_result
+        initialization_type = (
+            FunctionInitializationType.lambda_managed_instances
+            if function_config.CapacityProviderConfig
+            else FunctionInitializationType.on_demand
+        )
         try:
             sqs_invocation = SQSInvocation.decode(message["Body"])
             invocation = sqs_invocation.invocation
             try:
                 invocation_result = self.version_manager.invoke(invocation=invocation)
-                function_config = self.version_manager.function_version.config
-                # TODO: handle initialization_type provisioned-concurrency, requires enriching invocation_result
-                if function_config.CapacityProviderConfig:
-                    initialization_type = FunctionInitializationType.lambda_managed_instances
+                status = FunctionStatus.success
             except Exception as e:
                 # Reserved concurrency == 0
                 if self.version_manager.function.reserved_concurrent_executions == 0:
@@ -221,6 +224,7 @@ class Poller:
                 elif not has_enough_time_for_retry(sqs_invocation, event_invoke_config):
                     failure_cause = "EventAgeExceeded"
                     status = FunctionStatus.event_age_exceeded_error
+
                 if failure_cause:
                     invocation_result = InvocationResult(
                         is_error=True, request_id=invocation.request_id, payload=None, logs=None
@@ -238,8 +242,7 @@ class Poller:
                 sqs_client.delete_message(
                     QueueUrl=self.event_queue_url, ReceiptHandle=message["ReceiptHandle"]
                 )
-                # status MUST be set before returning
-                function_config = self.version_manager.function_version.config
+                assert status, "status MUST be set before returning"
                 function_counter.labels(
                     operation=FunctionOperation.invoke,
                     runtime=runtime or "n/a",
@@ -255,6 +258,8 @@ class Poller:
             max_retry_attempts = 2
             if event_invoke_config and event_invoke_config.maximum_retry_attempts is not None:
                 max_retry_attempts = event_invoke_config.maximum_retry_attempts
+
+            assert invocation_result, "Invocation result MUST exist if we are not returning before"
 
             # An invocation error either leads to a terminal failure or to a scheduled retry
             if invocation_result.is_error:  # invocation error
