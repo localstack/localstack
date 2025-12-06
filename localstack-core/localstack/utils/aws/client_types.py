@@ -277,6 +277,8 @@ class ServicePrincipal(str):
     appsync = "appsync"
     cloudformation = "cloudformation"
     dms = "dms"
+    ecr = "ecr"
+    ecr_task = "ecr-task"
     edgelambda = "edgelambda"
     elasticloadbalancing = "elasticloadbalancing"
     events = "events"
