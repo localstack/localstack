@@ -186,7 +186,7 @@ typing-extensions==4.15.0
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
     #   readerwriterlock
-urllib3==2.5.0
+urllib3==2.6.0
     # via
     #   botocore
     #   docker
