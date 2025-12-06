@@ -14,9 +14,10 @@ function_counter = LabeledCounter(
         "status",
         "runtime",
         "package_type",
-        # only for operation "invoke"
-        "invocation_type",
+        "invocation_type",  # only for operation "invoke", otherwise "n/a"
+        "initialization_type",
     ],
+    schema_version=2,
 )
 
 
@@ -36,6 +37,14 @@ class FunctionStatus(StrEnum):
     pending_state_error = "pending_state_error"
     invalid_payload_error = "invalid_payload_error"
     invocation_error = "invocation_error"
+
+
+class FunctionInitializationType(StrEnum):
+    # Maps to the Lambda environment variable AWS_LAMBDA_INITIALIZATION_TYPE
+    on_demand = "on-demand"
+    lambda_managed_instances = "lambda-managed-instances"
+    # Only applies to the operation "invoke" because provisioned concurrency is not configured on "create"
+    provisioned_concurrency = "provisioned-concurrency"
 
 
 esm_counter = LabeledCounter(namespace=NAMESPACE, name="esm", labels=["source", "status"])
