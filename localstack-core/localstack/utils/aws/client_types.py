@@ -61,7 +61,6 @@ if TYPE_CHECKING:
     from mypy_boto3_identitystore import IdentityStoreClient
     from mypy_boto3_iot import IoTClient
     from mypy_boto3_iot_data import IoTDataPlaneClient
-    from mypy_boto3_iotanalytics import IoTAnalyticsClient
     from mypy_boto3_iotwireless import IoTWirelessClient
     from mypy_boto3_kafka import KafkaClient
     from mypy_boto3_kinesis import KinesisClient
@@ -184,7 +183,6 @@ class TypedServiceClientFactory(abc.ABC):
     identitystore: Union["IdentityStoreClient", "MetadataRequestInjector[IdentityStoreClient]"]
     iot: Union["IoTClient", "MetadataRequestInjector[IoTClient]"]
     iot_data: Union["IoTDataPlaneClient", "MetadataRequestInjector[IoTDataPlaneClient]"]
-    iotanalytics: Union["IoTAnalyticsClient", "MetadataRequestInjector[IoTAnalyticsClient]"]
     iotwireless: Union["IoTWirelessClient", "MetadataRequestInjector[IoTWirelessClient]"]
     kafka: Union["KafkaClient", "MetadataRequestInjector[KafkaClient]"]
     kinesis: Union["KinesisClient", "MetadataRequestInjector[KinesisClient]"]
