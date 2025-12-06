@@ -5950,5 +5950,114 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_queue_update": {
+    "recorded-date": "05-12-2025, 10:45:20",
+    "recorded-content": {
+      "queue-attributes-1": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "0",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "1048576",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue-attributes-2": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "0",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "4321",
+          "MessageRetentionPeriod": "17539",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "17",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue-attributes-3": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "0",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "events": [
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<resource:1>",
+          "LogicalResourceId": "StandardQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "CREATE_IN_PROGRESS",
+          "Timestamp": "timestamp"
+        },
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<resource:1>",
+          "LogicalResourceId": "StandardQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "Timestamp": "timestamp"
+        },
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<resource:1>",
+          "LogicalResourceId": "StandardQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "UPDATE_IN_PROGRESS",
+          "Timestamp": "timestamp"
+        },
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<resource:1>",
+          "LogicalResourceId": "StandardQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "UPDATE_COMPLETE",
+          "Timestamp": "timestamp"
+        },
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<resource:1>",
+          "LogicalResourceId": "StandardQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "UPDATE_IN_PROGRESS",
+          "Timestamp": "timestamp"
+        },
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<resource:1>",
+          "LogicalResourceId": "StandardQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "UPDATE_COMPLETE",
+          "Timestamp": "timestamp"
+        }
+      ]
+    }
   }
 }

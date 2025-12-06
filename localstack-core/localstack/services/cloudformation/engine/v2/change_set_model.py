@@ -1169,6 +1169,15 @@ class ChangeSetModel:
                 fn_transform,
             ],
         )
+
+        # special case of where either the before or after state does not specify properties but
+        # the resource was in the previous template
+        if (
+            terminal_value_type.change_type == ChangeType.UNCHANGED
+            and properties.change_type != ChangeType.UNCHANGED
+        ):
+            change_type = ChangeType.MODIFIED
+
         requires_replacement = self._resolve_requires_replacement(
             node_properties=properties, resource_type=terminal_value_type
         )

@@ -1,0 +1,16 @@
+Resources:
+  StandardQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      VisibilityTimeout: 30
+      MaximumMessageSize: 4321
+      MessageRetentionPeriod: 17539
+      ReceiveMessageWaitTimeSeconds: 17
+
+Outputs:
+  QueueUrl:
+    Description: 'URL of the SQS Standard Queue'
+    Value: !Ref StandardQueue
+  QueueArn:
+    Description: 'ARN of the SQS Standard Queue'
+    Value: !GetAtt StandardQueue.Arn
