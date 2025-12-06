@@ -1176,7 +1176,6 @@ class ChangeSetModel:
             terminal_value_type.change_type == ChangeType.UNCHANGED
             and properties.change_type != ChangeType.UNCHANGED
         ):
-            # TODO: do we need to take into account the calculated change type from above?
             change_type = ChangeType.MODIFIED
 
         requires_replacement = self._resolve_requires_replacement(
