@@ -1,0 +1,12 @@
+Parameters:
+  ParamsList:
+    Type: List<AWS::EC2::Subnet::Id>
+Resources:
+  MyParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Join ["|", !Ref ParamsList]
+Outputs:
+  ParamValue:
+    Value: !GetAtt MyParam.Value
