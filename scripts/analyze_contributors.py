@@ -10,7 +10,6 @@ This script analyzes the git history to count:
 """
 
 import argparse
-import json
 import os
 import re
 import subprocess
@@ -33,16 +32,17 @@ LOCALSTACK_BOTS = [
 # GitHub usernames that are part of LocalStack organization (for noreply addresses)
 # This will be augmented with data from GitHub API if available
 # List derived from CODEOWNERS file and known organization members
-LOCALSTACK_GITHUB_USERS = [
+# All usernames stored in lowercase for efficient case-insensitive comparison
+LOCALSTACK_GITHUB_USERS = {
     "localstack-bot",
     "taras-kobernyk-localstack",
     # From CODEOWNERS file
-    "HarshCasper",
+    "harshcasper",
     "aidehn",
     "alexrashed",
     "baermat",
     "bentsku",
-    "cloutierMat",
+    "cloutiermat",
     "dfangl",
     "dominikschubert",
     "giograno",
@@ -55,11 +55,11 @@ LOCALSTACK_GITHUB_USERS = [
     "sannya-singal",
     "silv-io",
     "simonrw",
-    "steffyP",
+    "steffyp",
     "thrau",
     "tiurin",
     "viren-nadkarni",
-]
+}
 
 
 def extract_github_username(email: str) -> Optional[str]:
@@ -70,13 +70,13 @@ def extract_github_username(email: str) -> Optional[str]:
         email: Email address
     
     Returns:
-        GitHub username if found, None otherwise
+        GitHub username (lowercased) if found, None otherwise
     """
     # Pattern: <numeric_id>+<username>@users.noreply.github.com
     # or: <username>@users.noreply.github.com
     match = re.match(r'(?:\d+\+)?([^@]+)@users\.noreply\.github\.com', email.lower())
     if match:
-        return match.group(1)
+        return match.group(1).lower()
     return None
 
 
@@ -88,7 +88,7 @@ def fetch_github_org_members(org: str = "localstack") -> Set[str]:
         org: GitHub organization name
     
     Returns:
-        Set of GitHub usernames in the organization
+        Set of GitHub usernames (lowercased) in the organization
     """
     try:
         # Check if GH_TOKEN or GITHUB_TOKEN is available
@@ -113,6 +113,7 @@ def fetch_github_org_members(org: str = "localstack") -> Set[str]:
         )
         
         if result.returncode == 0:
+            # Convert all usernames to lowercase for consistent comparison
             members = set(line.strip().lower() for line in result.stdout.strip().split("\n") if line.strip())
             print(f"Fetched {len(members)} members from GitHub organization '{org}'", file=sys.stderr)
             return members
@@ -156,15 +157,14 @@ def is_localstack_contributor(
     github_username = extract_github_username(email)
     
     # Check against known LocalStack GitHub organization users
-    if github_username:
-        for username in LOCALSTACK_GITHUB_USERS:
-            if github_username.lower() == username.lower():
-                return True
+    # (all usernames are already lowercased in the set)
+    if github_username and github_username in LOCALSTACK_GITHUB_USERS:
+        return True
     
     # If we have org members list from API, check against that too
-    if org_members and github_username:
-        if github_username.lower() in org_members:
-            return True
+    # (API results are also lowercased)
+    if org_members and github_username and github_username in org_members:
+        return True
     
     return False
 
@@ -180,8 +180,9 @@ def get_git_log(repo_path: str = ".") -> List[Tuple[str, str]]:
         List of tuples containing (email, name) for each commit
     """
     try:
+        # Use null byte as separator to avoid issues with pipe characters in names
         result = subprocess.run(
-            ["git", "log", "--all", "--format=%ae|%an"],
+            ["git", "log", "--all", "--format=%ae%x00%an"],
             cwd=repo_path,
             capture_output=True,
             text=True,
@@ -191,7 +192,7 @@ def get_git_log(repo_path: str = ".") -> List[Tuple[str, str]]:
         commits = []
         for line in result.stdout.strip().split("\n"):
             if line:
-                parts = line.split("|", 1)
+                parts = line.split("\x00", 1)
                 if len(parts) == 2:
                     commits.append((parts[0], parts[1]))
                 else:
