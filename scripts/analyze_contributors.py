@@ -13,7 +13,7 @@ import argparse
 import subprocess
 import sys
 from collections import defaultdict
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 
 # Define LocalStack organization email patterns
@@ -89,6 +89,9 @@ def get_git_log(repo_path: str = ".") -> List[Tuple[str, str]]:
                 parts = line.split("|", 1)
                 if len(parts) == 2:
                     commits.append((parts[0], parts[1]))
+                else:
+                    # Log warning for malformed lines
+                    print(f"Warning: Skipping malformed line: {line[:50]}...", file=sys.stderr)
         
         return commits
     except subprocess.CalledProcessError as e:
@@ -96,7 +99,7 @@ def get_git_log(repo_path: str = ".") -> List[Tuple[str, str]]:
         sys.exit(1)
 
 
-def analyze_contributors(repo_path: str = ".") -> Dict:
+def analyze_contributors(repo_path: str = ".") -> Dict[str, Any]:
     """
     Analyze git repository to count contributors and contributions.
     
@@ -109,7 +112,7 @@ def analyze_contributors(repo_path: str = ".") -> Dict:
     commits = get_git_log(repo_path)
     
     # Track unique contributors and their commit counts
-    all_contributors: Dict[str, Dict] = defaultdict(lambda: {"name": "", "commits": 0, "is_external": False})
+    all_contributors: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"name": "", "commits": 0, "is_external": False})
     external_contributors: Set[str] = set()
     external_commits = 0
     
@@ -195,8 +198,8 @@ def print_summary(results: Dict, verbose: bool = False):
         
         # Show top 50 external contributors
         for email, name, commits in external_list[:50]:
-            name_truncated = name[:28] + ".." if len(name) > 30 else name
-            email_truncated = email[:28] + ".." if len(email) > 30 else email
+            name_truncated = name[:28] + ".." if len(name) > 28 else name
+            email_truncated = email[:28] + ".." if len(email) > 28 else email
             print(f"{commits:<10} {name_truncated:<30} {email_truncated:<30}")
         
         if len(external_list) > 50:
