@@ -969,6 +969,7 @@ class DelegationRequest(TypedDict, total=False):
     OwnerId: ownerIdType | None
     ApproverId: arnType | None
     State: stateType | None
+    ExpirationTime: dateType | None
     RequestorId: accountIdType | None
     RequestorName: requestorNameType | None
     CreateDate: dateType | None

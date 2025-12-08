@@ -10,26 +10,38 @@ AdditionalVersion = str
 Alias = str
 AllowCredentials = bool
 Arn = str
+AttemptCount = int
 BatchSize = int
 BisectBatchOnFunctionError = bool
 Boolean = bool
+CallbackId = str
 CapacityProviderArn = str
 CapacityProviderMaxVCpuCount = int
 CapacityProviderName = str
+CheckpointToken = str
+ClientToken = str
 CodeSigningConfigArn = str
 CodeSigningConfigId = str
 CollectionName = str
 DatabaseName = str
 Description = str
 DestinationArn = str
+DurableExecutionArn = str
+DurableExecutionName = str
+DurationSeconds = int
 Enabled = bool
 Endpoint = str
 EnvironmentVariableName = str
 EnvironmentVariableValue = str
 EphemeralStorageSize = int
+ErrorData = str
+ErrorMessage = str
+ErrorType = str
+EventId = int
 EventSourceMappingArn = str
 EventSourceToken = str
 ExecutionEnvironmentMemoryGiBPerVCpu = float
+ExecutionTimeout = int
 FileSystemArn = str
 FilterCriteriaErrorCode = str
 FilterCriteriaErrorMessage = str
@@ -41,9 +53,12 @@ FunctionUrlQualifier = str
 Handler = str
 Header = str
 HttpStatus = int
+IncludeExecutionData = bool
+InputPayload = str
 InstanceType = str
 Integer = int
 InvokedViaFunctionUrl = bool
+ItemCount = int
 KMSKeyArn = str
 KMSKeyArnNonEmpty = str
 LastUpdateStatusReason = str
@@ -80,8 +95,13 @@ NamespacedStatementId = str
 NonNegativeInteger = int
 NullableBoolean = bool
 NumericLatestPublishedOrAliasQualifier = str
+OperationId = str
+OperationName = str
+OperationPayload = str
+OperationSubType = str
 OrganizationId = str
 Origin = str
+OutputPayload = str
 ParallelizationFactor = int
 Pattern = str
 PerExecutionEnvironmentMaxConcurrency = int
@@ -92,8 +112,11 @@ ProvisionedPollerGroupName = str
 PublishedFunctionQualifier = str
 Qualifier = str
 Queue = str
+ReplayChildren = bool
 ReservedConcurrentExecutions = int
 ResourceArn = str
+RetentionPeriodInDays = int
+ReverseOrder = bool
 RoleArn = str
 RuntimeVersionArn = str
 S3Bucket = str
@@ -103,8 +126,10 @@ SchemaRegistryUri = str
 SecurityGroupId = str
 SensitiveString = str
 SourceOwner = str
+StackTraceEntry = str
 StateReason = str
 StatementId = str
+StepOptionsNextAttemptDelaySecondsInteger = int
 String = str
 SubnetId = str
 TagKey = str
@@ -116,6 +141,7 @@ TenantId = str
 Timeout = int
 Timestamp = str
 Topic = str
+Truncated = bool
 TumblingWindowInSeconds = int
 URI = str
 UnqualifiedFunctionName = str
@@ -123,8 +149,10 @@ UnreservedConcurrentExecutions = int
 Version = str
 VersionWithLatestPublished = str
 VpcId = str
+WaitOptionsWaitSecondsInteger = int
 Weight = float
 WorkingDirectory = str
+XAmznTraceId = str
 
 
 class ApplicationLogLevel(StrEnum):
@@ -174,6 +202,41 @@ class EventSourcePosition(StrEnum):
     TRIM_HORIZON = "TRIM_HORIZON"
     LATEST = "LATEST"
     AT_TIMESTAMP = "AT_TIMESTAMP"
+
+
+class EventType(StrEnum):
+    ExecutionStarted = "ExecutionStarted"
+    ExecutionSucceeded = "ExecutionSucceeded"
+    ExecutionFailed = "ExecutionFailed"
+    ExecutionTimedOut = "ExecutionTimedOut"
+    ExecutionStopped = "ExecutionStopped"
+    ContextStarted = "ContextStarted"
+    ContextSucceeded = "ContextSucceeded"
+    ContextFailed = "ContextFailed"
+    WaitStarted = "WaitStarted"
+    WaitSucceeded = "WaitSucceeded"
+    WaitCancelled = "WaitCancelled"
+    StepStarted = "StepStarted"
+    StepSucceeded = "StepSucceeded"
+    StepFailed = "StepFailed"
+    ChainedInvokeStarted = "ChainedInvokeStarted"
+    ChainedInvokeSucceeded = "ChainedInvokeSucceeded"
+    ChainedInvokeFailed = "ChainedInvokeFailed"
+    ChainedInvokeTimedOut = "ChainedInvokeTimedOut"
+    ChainedInvokeStopped = "ChainedInvokeStopped"
+    CallbackStarted = "CallbackStarted"
+    CallbackSucceeded = "CallbackSucceeded"
+    CallbackFailed = "CallbackFailed"
+    CallbackTimedOut = "CallbackTimedOut"
+    InvocationCompleted = "InvocationCompleted"
+
+
+class ExecutionStatus(StrEnum):
+    RUNNING = "RUNNING"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+    TIMED_OUT = "TIMED_OUT"
+    STOPPED = "STOPPED"
 
 
 class FullDocument(StrEnum):
@@ -260,6 +323,7 @@ class LastUpdateStatusReasonCode(StrEnum):
     FunctionError_PermissionDenied = "FunctionError.PermissionDenied"
     FunctionError_TooManyExtensions = "FunctionError.TooManyExtensions"
     FunctionError_InitResourceExhausted = "FunctionError.InitResourceExhausted"
+    DisallowedByVpcEncryptionControl = "DisallowedByVpcEncryptionControl"
 
 
 class LogFormat(StrEnum):
@@ -270,6 +334,34 @@ class LogFormat(StrEnum):
 class LogType(StrEnum):
     None_ = "None"
     Tail = "Tail"
+
+
+class OperationAction(StrEnum):
+    START = "START"
+    SUCCEED = "SUCCEED"
+    FAIL = "FAIL"
+    RETRY = "RETRY"
+    CANCEL = "CANCEL"
+
+
+class OperationStatus(StrEnum):
+    STARTED = "STARTED"
+    PENDING = "PENDING"
+    READY = "READY"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+    TIMED_OUT = "TIMED_OUT"
+    STOPPED = "STOPPED"
+
+
+class OperationType(StrEnum):
+    EXECUTION = "EXECUTION"
+    CONTEXT = "CONTEXT"
+    STEP = "STEP"
+    WAIT = "WAIT"
+    CALLBACK = "CALLBACK"
+    CHAINED_INVOKE = "CHAINED_INVOKE"
 
 
 class PackageType(StrEnum):
@@ -402,6 +494,7 @@ class StateReasonCode(StrEnum):
     InvalidRuntime = "InvalidRuntime"
     InvalidZipFileException = "InvalidZipFileException"
     FunctionError = "FunctionError"
+    DrainingDurableExecutions = "DrainingDurableExecutions"
     VcpuLimitExceeded = "VcpuLimitExceeded"
     CapacityProviderScalingLimitExceeded = "CapacityProviderScalingLimitExceeded"
     InsufficientCapacity = "InsufficientCapacity"
@@ -414,6 +507,7 @@ class StateReasonCode(StrEnum):
     FunctionError_PermissionDenied = "FunctionError.PermissionDenied"
     FunctionError_TooManyExtensions = "FunctionError.TooManyExtensions"
     FunctionError_InitResourceExhausted = "FunctionError.InitResourceExhausted"
+    DisallowedByVpcEncryptionControl = "DisallowedByVpcEncryptionControl"
 
 
 class SystemLogLevel(StrEnum):
@@ -448,6 +542,13 @@ class UpdateRuntimeOn(StrEnum):
     FunctionUpdate = "FunctionUpdate"
 
 
+class CallbackTimeoutException(ServiceException):
+    code: str = "CallbackTimeoutException"
+    sender_fault: bool = True
+    status_code: int = 400
+    Type: String | None
+
+
 class CapacityProviderLimitExceededException(ServiceException):
     code: str = "CapacityProviderLimitExceededException"
     sender_fault: bool = True
@@ -473,6 +574,13 @@ class CodeVerificationFailedException(ServiceException):
     code: str = "CodeVerificationFailedException"
     sender_fault: bool = True
     status_code: int = 400
+    Type: String | None
+
+
+class DurableExecutionAlreadyStartedException(ServiceException):
+    code: str = "DurableExecutionAlreadyStartedException"
+    sender_fault: bool = True
+    status_code: int = 409
     Type: String | None
 
 
@@ -852,8 +960,56 @@ class AmazonManagedKafkaEventSourceConfig(TypedDict, total=False):
 
 
 ArchitecturesList = list[Architecture]
+BinaryOperationPayload = bytes
 Blob = bytes
 BlobStream = bytes
+StackTraceEntries = list[StackTraceEntry]
+
+
+class ErrorObject(TypedDict, total=False):
+    ErrorMessage: ErrorMessage | None
+    ErrorType: ErrorType | None
+    ErrorData: ErrorData | None
+    StackTrace: StackTraceEntries | None
+
+
+class CallbackDetails(TypedDict, total=False):
+    CallbackId: CallbackId | None
+    Result: OperationPayload | None
+    Error: ErrorObject | None
+
+
+class EventError(TypedDict, total=False):
+    Payload: ErrorObject | None
+    Truncated: Truncated | None
+
+
+class CallbackFailedDetails(TypedDict, total=False):
+    Error: EventError
+
+
+class CallbackOptions(TypedDict, total=False):
+    TimeoutSeconds: DurationSeconds | None
+    HeartbeatTimeoutSeconds: DurationSeconds | None
+
+
+class CallbackStartedDetails(TypedDict, total=False):
+    CallbackId: CallbackId
+    HeartbeatTimeout: DurationSeconds | None
+    Timeout: DurationSeconds | None
+
+
+class EventResult(TypedDict, total=False):
+    Payload: OperationPayload | None
+    Truncated: Truncated | None
+
+
+class CallbackSucceededDetails(TypedDict, total=False):
+    Result: EventResult
+
+
+class CallbackTimedOutDetails(TypedDict, total=False):
+    Error: EventError
 
 
 class TargetTrackingScalingPolicy(TypedDict, total=False):
@@ -916,6 +1072,137 @@ class CapacityProviderConfig(TypedDict, total=False):
 CapacityProvidersList = list[CapacityProvider]
 
 
+class ChainedInvokeDetails(TypedDict, total=False):
+    Result: OperationPayload | None
+    Error: ErrorObject | None
+
+
+class ChainedInvokeFailedDetails(TypedDict, total=False):
+    Error: EventError
+
+
+class ChainedInvokeOptions(TypedDict, total=False):
+    FunctionName: NamespacedFunctionName
+    TenantId: TenantId | None
+
+
+class EventInput(TypedDict, total=False):
+    Payload: InputPayload | None
+    Truncated: Truncated | None
+
+
+class ChainedInvokeStartedDetails(TypedDict, total=False):
+    FunctionName: NamespacedFunctionName
+    TenantId: TenantId | None
+    Input: EventInput | None
+    ExecutedVersion: VersionWithLatestPublished | None
+    DurableExecutionArn: DurableExecutionArn | None
+
+
+class ChainedInvokeStoppedDetails(TypedDict, total=False):
+    Error: EventError
+
+
+class ChainedInvokeSucceededDetails(TypedDict, total=False):
+    Result: EventResult
+
+
+class ChainedInvokeTimedOutDetails(TypedDict, total=False):
+    Error: EventError
+
+
+class WaitOptions(TypedDict, total=False):
+    WaitSeconds: WaitOptionsWaitSecondsInteger | None
+
+
+class StepOptions(TypedDict, total=False):
+    NextAttemptDelaySeconds: StepOptionsNextAttemptDelaySecondsInteger | None
+
+
+class ContextOptions(TypedDict, total=False):
+    ReplayChildren: ReplayChildren | None
+
+
+class OperationUpdate(TypedDict, total=False):
+    Id: OperationId
+    ParentId: OperationId | None
+    Name: OperationName | None
+    Type: OperationType
+    SubType: OperationSubType | None
+    Action: OperationAction
+    Payload: OperationPayload | None
+    Error: ErrorObject | None
+    ContextOptions: ContextOptions | None
+    StepOptions: StepOptions | None
+    WaitOptions: WaitOptions | None
+    CallbackOptions: CallbackOptions | None
+    ChainedInvokeOptions: ChainedInvokeOptions | None
+
+
+OperationUpdates = list[OperationUpdate]
+
+
+class CheckpointDurableExecutionRequest(ServiceRequest):
+    DurableExecutionArn: DurableExecutionArn
+    CheckpointToken: CheckpointToken
+    Updates: OperationUpdates | None
+    ClientToken: ClientToken | None
+
+
+ExecutionTimestamp = datetime
+
+
+class WaitDetails(TypedDict, total=False):
+    ScheduledEndTimestamp: ExecutionTimestamp | None
+
+
+class StepDetails(TypedDict, total=False):
+    Attempt: AttemptCount | None
+    NextAttemptTimestamp: ExecutionTimestamp | None
+    Result: OperationPayload | None
+    Error: ErrorObject | None
+
+
+class ContextDetails(TypedDict, total=False):
+    ReplayChildren: ReplayChildren | None
+    Result: OperationPayload | None
+    Error: ErrorObject | None
+
+
+class ExecutionDetails(TypedDict, total=False):
+    InputPayload: InputPayload | None
+
+
+class Operation(TypedDict, total=False):
+    Id: OperationId
+    ParentId: OperationId | None
+    Name: OperationName | None
+    Type: OperationType
+    SubType: OperationSubType | None
+    StartTimestamp: ExecutionTimestamp
+    EndTimestamp: ExecutionTimestamp | None
+    Status: OperationStatus
+    ExecutionDetails: ExecutionDetails | None
+    ContextDetails: ContextDetails | None
+    StepDetails: StepDetails | None
+    WaitDetails: WaitDetails | None
+    CallbackDetails: CallbackDetails | None
+    ChainedInvokeDetails: ChainedInvokeDetails | None
+
+
+Operations = list[Operation]
+
+
+class CheckpointUpdatedExecutionState(TypedDict, total=False):
+    Operations: Operations | None
+    NextMarker: String | None
+
+
+class CheckpointDurableExecutionResponse(TypedDict, total=False):
+    CheckpointToken: CheckpointToken | None
+    NewExecutionState: CheckpointUpdatedExecutionState
+
+
 class CodeSigningPolicies(TypedDict, total=False):
     UntrustedArtifactOnDeployment: CodeSigningPolicy | None
 
@@ -936,6 +1223,18 @@ CompatibleRuntimes = list[Runtime]
 
 class Concurrency(TypedDict, total=False):
     ReservedConcurrentExecutions: ReservedConcurrentExecutions | None
+
+
+class ContextFailedDetails(TypedDict, total=False):
+    Error: EventError
+
+
+class ContextStartedDetails(TypedDict, total=False):
+    pass
+
+
+class ContextSucceededDetails(TypedDict, total=False):
+    Result: EventResult
 
 
 HeadersList = list[Header]
@@ -1094,6 +1393,11 @@ class TenancyConfig(TypedDict, total=False):
     TenantIsolationMode: TenantIsolationMode
 
 
+class DurableConfig(TypedDict, total=False):
+    RetentionPeriodInDays: RetentionPeriodInDays | None
+    ExecutionTimeout: ExecutionTimeout | None
+
+
 class LoggingConfig(TypedDict, total=False):
     LogFormat: LogFormat | None
     ApplicationLogLevel: ApplicationLogLevel | None
@@ -1188,6 +1492,7 @@ class CreateFunctionRequest(ServiceRequest):
     LoggingConfig: LoggingConfig | None
     CapacityProviderConfig: CapacityProviderConfig | None
     PublishTo: FunctionVersionLatestPublished | None
+    DurableConfig: DurableConfig | None
     TenancyConfig: TenancyConfig | None
 
 
@@ -1270,6 +1575,18 @@ class DeleteProvisionedConcurrencyConfigRequest(ServiceRequest):
     Qualifier: Qualifier
 
 
+class Execution(TypedDict, total=False):
+    DurableExecutionArn: DurableExecutionArn
+    DurableExecutionName: DurableExecutionName
+    FunctionArn: NameSpacedFunctionArn
+    Status: ExecutionStatus
+    StartTimestamp: ExecutionTimestamp
+    EndTimestamp: ExecutionTimestamp | None
+
+
+DurableExecutions = list[Execution]
+
+
 class EnvironmentError(TypedDict, total=False):
     ErrorCode: String | None
     Message: SensitiveString | None
@@ -1278,6 +1595,100 @@ class EnvironmentError(TypedDict, total=False):
 class EnvironmentResponse(TypedDict, total=False):
     Variables: EnvironmentVariables | None
     Error: EnvironmentError | None
+
+
+class InvocationCompletedDetails(TypedDict, total=False):
+    StartTimestamp: ExecutionTimestamp
+    EndTimestamp: ExecutionTimestamp
+    RequestId: String
+    Error: EventError | None
+
+
+class RetryDetails(TypedDict, total=False):
+    CurrentAttempt: AttemptCount | None
+    NextAttemptDelaySeconds: DurationSeconds | None
+
+
+class StepFailedDetails(TypedDict, total=False):
+    Error: EventError
+    RetryDetails: RetryDetails
+
+
+class StepSucceededDetails(TypedDict, total=False):
+    Result: EventResult
+    RetryDetails: RetryDetails
+
+
+class StepStartedDetails(TypedDict, total=False):
+    pass
+
+
+class WaitCancelledDetails(TypedDict, total=False):
+    Error: EventError | None
+
+
+class WaitSucceededDetails(TypedDict, total=False):
+    Duration: DurationSeconds | None
+
+
+class WaitStartedDetails(TypedDict, total=False):
+    Duration: DurationSeconds
+    ScheduledEndTimestamp: ExecutionTimestamp
+
+
+class ExecutionStoppedDetails(TypedDict, total=False):
+    Error: EventError
+
+
+class ExecutionTimedOutDetails(TypedDict, total=False):
+    Error: EventError | None
+
+
+class ExecutionFailedDetails(TypedDict, total=False):
+    Error: EventError
+
+
+class ExecutionSucceededDetails(TypedDict, total=False):
+    Result: EventResult
+
+
+class ExecutionStartedDetails(TypedDict, total=False):
+    Input: EventInput
+    ExecutionTimeout: DurationSeconds
+
+
+class Event(TypedDict, total=False):
+    EventType: EventType | None
+    SubType: OperationSubType | None
+    EventId: EventId | None
+    Id: OperationId | None
+    Name: OperationName | None
+    EventTimestamp: ExecutionTimestamp | None
+    ParentId: OperationId | None
+    ExecutionStartedDetails: ExecutionStartedDetails | None
+    ExecutionSucceededDetails: ExecutionSucceededDetails | None
+    ExecutionFailedDetails: ExecutionFailedDetails | None
+    ExecutionTimedOutDetails: ExecutionTimedOutDetails | None
+    ExecutionStoppedDetails: ExecutionStoppedDetails | None
+    ContextStartedDetails: ContextStartedDetails | None
+    ContextSucceededDetails: ContextSucceededDetails | None
+    ContextFailedDetails: ContextFailedDetails | None
+    WaitStartedDetails: WaitStartedDetails | None
+    WaitSucceededDetails: WaitSucceededDetails | None
+    WaitCancelledDetails: WaitCancelledDetails | None
+    StepStartedDetails: StepStartedDetails | None
+    StepSucceededDetails: StepSucceededDetails | None
+    StepFailedDetails: StepFailedDetails | None
+    ChainedInvokeStartedDetails: ChainedInvokeStartedDetails | None
+    ChainedInvokeSucceededDetails: ChainedInvokeSucceededDetails | None
+    ChainedInvokeFailedDetails: ChainedInvokeFailedDetails | None
+    ChainedInvokeTimedOutDetails: ChainedInvokeTimedOutDetails | None
+    ChainedInvokeStoppedDetails: ChainedInvokeStoppedDetails | None
+    CallbackStartedDetails: CallbackStartedDetails | None
+    CallbackSucceededDetails: CallbackSucceededDetails | None
+    CallbackFailedDetails: CallbackFailedDetails | None
+    CallbackTimedOutDetails: CallbackTimedOutDetails | None
+    InvocationCompletedDetails: InvocationCompletedDetails | None
 
 
 class FilterCriteriaError(TypedDict, total=False):
@@ -1321,6 +1732,8 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
 
 
 EventSourceMappingsList = list[EventSourceMappingConfiguration]
+Events = list[Event]
+ExecutionStatusList = list[ExecutionStatus]
 FunctionArnList = list[FunctionArn]
 
 
@@ -1417,6 +1830,7 @@ class FunctionConfiguration(TypedDict, total=False):
     LoggingConfig: LoggingConfig | None
     CapacityProviderConfig: CapacityProviderConfig | None
     ConfigSha256: String | None
+    DurableConfig: DurableConfig | None
     TenancyConfig: TenancyConfig | None
 
 
@@ -1486,6 +1900,53 @@ class GetCodeSigningConfigRequest(ServiceRequest):
 
 class GetCodeSigningConfigResponse(TypedDict, total=False):
     CodeSigningConfig: CodeSigningConfig
+
+
+class GetDurableExecutionHistoryRequest(ServiceRequest):
+    DurableExecutionArn: DurableExecutionArn
+    IncludeExecutionData: IncludeExecutionData | None
+    MaxItems: ItemCount | None
+    Marker: String | None
+    ReverseOrder: ReverseOrder | None
+
+
+class GetDurableExecutionHistoryResponse(TypedDict, total=False):
+    Events: Events
+    NextMarker: String | None
+
+
+class GetDurableExecutionRequest(ServiceRequest):
+    DurableExecutionArn: DurableExecutionArn
+
+
+class TraceHeader(TypedDict, total=False):
+    XAmznTraceId: XAmznTraceId | None
+
+
+class GetDurableExecutionResponse(TypedDict, total=False):
+    DurableExecutionArn: DurableExecutionArn
+    DurableExecutionName: DurableExecutionName
+    FunctionArn: NameSpacedFunctionArn
+    InputPayload: InputPayload | None
+    Result: OutputPayload | None
+    Error: ErrorObject | None
+    StartTimestamp: ExecutionTimestamp
+    Status: ExecutionStatus
+    EndTimestamp: ExecutionTimestamp | None
+    Version: VersionWithLatestPublished | None
+    TraceHeader: TraceHeader | None
+
+
+class GetDurableExecutionStateRequest(ServiceRequest):
+    DurableExecutionArn: DurableExecutionArn
+    CheckpointToken: CheckpointToken
+    Marker: String | None
+    MaxItems: ItemCount | None
+
+
+class GetDurableExecutionStateResponse(TypedDict, total=False):
+    Operations: Operations
+    NextMarker: String | None
 
 
 class GetEventSourceMappingRequest(ServiceRequest):
@@ -1651,6 +2112,7 @@ class InvocationRequest(ServiceRequest):
     InvocationType: InvocationType | None
     LogType: LogType | None
     ClientContext: String | None
+    DurableExecutionName: DurableExecutionName | None
     Qualifier: NumericLatestPublishedOrAliasQualifier | None
     TenantId: TenantId | None
 
@@ -1661,6 +2123,7 @@ class InvocationResponse(TypedDict, total=False):
     FunctionError: String | None
     LogResult: String | None
     ExecutedVersion: Version | None
+    DurableExecutionArn: DurableExecutionArn | None
 
 
 class InvokeAsyncRequest(ServiceRequest):
@@ -1764,6 +2227,23 @@ class ListCodeSigningConfigsRequest(ServiceRequest):
 class ListCodeSigningConfigsResponse(TypedDict, total=False):
     NextMarker: String | None
     CodeSigningConfigs: CodeSigningConfigList | None
+
+
+class ListDurableExecutionsByFunctionRequest(ServiceRequest):
+    FunctionName: NamespacedFunctionName
+    Qualifier: NumericLatestPublishedOrAliasQualifier | None
+    DurableExecutionName: DurableExecutionName | None
+    Statuses: ExecutionStatusList | None
+    StartedAfter: ExecutionTimestamp | None
+    StartedBefore: ExecutionTimestamp | None
+    ReverseOrder: ReverseOrder | None
+    Marker: String | None
+    MaxItems: ItemCount | None
+
+
+class ListDurableExecutionsByFunctionResponse(TypedDict, total=False):
+    DurableExecutions: DurableExecutions | None
+    NextMarker: String | None
 
 
 class ListEventSourceMappingsRequest(ServiceRequest):
@@ -2016,6 +2496,41 @@ class RemovePermissionRequest(ServiceRequest):
     RevisionId: String | None
 
 
+class SendDurableExecutionCallbackFailureRequest(ServiceRequest):
+    CallbackId: CallbackId
+    Error: ErrorObject | None
+
+
+class SendDurableExecutionCallbackFailureResponse(TypedDict, total=False):
+    pass
+
+
+class SendDurableExecutionCallbackHeartbeatRequest(ServiceRequest):
+    CallbackId: CallbackId
+
+
+class SendDurableExecutionCallbackHeartbeatResponse(TypedDict, total=False):
+    pass
+
+
+class SendDurableExecutionCallbackSuccessRequest(ServiceRequest):
+    Result: IO[BinaryOperationPayload] | None
+    CallbackId: CallbackId
+
+
+class SendDurableExecutionCallbackSuccessResponse(TypedDict, total=False):
+    pass
+
+
+class StopDurableExecutionRequest(ServiceRequest):
+    DurableExecutionArn: DurableExecutionArn
+    Error: ErrorObject | None
+
+
+class StopDurableExecutionResponse(TypedDict, total=False):
+    StopTimestamp: ExecutionTimestamp
+
+
 TagKeyList = list[TagKey]
 
 
@@ -2118,6 +2633,7 @@ class UpdateFunctionConfigurationRequest(ServiceRequest):
     SnapStart: SnapStart | None
     LoggingConfig: LoggingConfig | None
     CapacityProviderConfig: CapacityProviderConfig | None
+    DurableConfig: DurableConfig | None
 
 
 class UpdateFunctionEventInvokeConfigRequest(ServiceRequest):
@@ -2183,6 +2699,18 @@ class LambdaApi:
         invoked_via_function_url: InvokedViaFunctionUrl | None = None,
         **kwargs,
     ) -> AddPermissionResponse:
+        raise NotImplementedError
+
+    @handler("CheckpointDurableExecution")
+    def checkpoint_durable_execution(
+        self,
+        context: RequestContext,
+        durable_execution_arn: DurableExecutionArn,
+        checkpoint_token: CheckpointToken,
+        updates: OperationUpdates | None = None,
+        client_token: ClientToken | None = None,
+        **kwargs,
+    ) -> CheckpointDurableExecutionResponse:
         raise NotImplementedError
 
     @handler("CreateAlias")
@@ -2290,6 +2818,7 @@ class LambdaApi:
         logging_config: LoggingConfig | None = None,
         capacity_provider_config: CapacityProviderConfig | None = None,
         publish_to: FunctionVersionLatestPublished | None = None,
+        durable_config: DurableConfig | None = None,
         tenancy_config: TenancyConfig | None = None,
         **kwargs,
     ) -> FunctionConfiguration:
@@ -2410,6 +2939,37 @@ class LambdaApi:
     def get_code_signing_config(
         self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn, **kwargs
     ) -> GetCodeSigningConfigResponse:
+        raise NotImplementedError
+
+    @handler("GetDurableExecution")
+    def get_durable_execution(
+        self, context: RequestContext, durable_execution_arn: DurableExecutionArn, **kwargs
+    ) -> GetDurableExecutionResponse:
+        raise NotImplementedError
+
+    @handler("GetDurableExecutionHistory")
+    def get_durable_execution_history(
+        self,
+        context: RequestContext,
+        durable_execution_arn: DurableExecutionArn,
+        include_execution_data: IncludeExecutionData | None = None,
+        max_items: ItemCount | None = None,
+        marker: String | None = None,
+        reverse_order: ReverseOrder | None = None,
+        **kwargs,
+    ) -> GetDurableExecutionHistoryResponse:
+        raise NotImplementedError
+
+    @handler("GetDurableExecutionState")
+    def get_durable_execution_state(
+        self,
+        context: RequestContext,
+        durable_execution_arn: DurableExecutionArn,
+        checkpoint_token: CheckpointToken,
+        marker: String | None = None,
+        max_items: ItemCount | None = None,
+        **kwargs,
+    ) -> GetDurableExecutionStateResponse:
         raise NotImplementedError
 
     @handler("GetEventSourceMapping")
@@ -2546,6 +3106,7 @@ class LambdaApi:
         invocation_type: InvocationType | None = None,
         log_type: LogType | None = None,
         client_context: String | None = None,
+        durable_execution_name: DurableExecutionName | None = None,
         payload: IO[Blob] | None = None,
         qualifier: NumericLatestPublishedOrAliasQualifier | None = None,
         tenant_id: TenantId | None = None,
@@ -2609,6 +3170,23 @@ class LambdaApi:
         max_items: MaxListItems | None = None,
         **kwargs,
     ) -> ListCodeSigningConfigsResponse:
+        raise NotImplementedError
+
+    @handler("ListDurableExecutionsByFunction")
+    def list_durable_executions_by_function(
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        qualifier: NumericLatestPublishedOrAliasQualifier | None = None,
+        durable_execution_name: DurableExecutionName | None = None,
+        statuses: ExecutionStatusList | None = None,
+        started_after: ExecutionTimestamp | None = None,
+        started_before: ExecutionTimestamp | None = None,
+        reverse_order: ReverseOrder | None = None,
+        marker: String | None = None,
+        max_items: ItemCount | None = None,
+        **kwargs,
+    ) -> ListDurableExecutionsByFunctionResponse:
         raise NotImplementedError
 
     @handler("ListEventSourceMappings")
@@ -2860,6 +3438,42 @@ class LambdaApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("SendDurableExecutionCallbackFailure")
+    def send_durable_execution_callback_failure(
+        self,
+        context: RequestContext,
+        callback_id: CallbackId,
+        error: ErrorObject | None = None,
+        **kwargs,
+    ) -> SendDurableExecutionCallbackFailureResponse:
+        raise NotImplementedError
+
+    @handler("SendDurableExecutionCallbackHeartbeat")
+    def send_durable_execution_callback_heartbeat(
+        self, context: RequestContext, callback_id: CallbackId, **kwargs
+    ) -> SendDurableExecutionCallbackHeartbeatResponse:
+        raise NotImplementedError
+
+    @handler("SendDurableExecutionCallbackSuccess")
+    def send_durable_execution_callback_success(
+        self,
+        context: RequestContext,
+        callback_id: CallbackId,
+        result: IO[BinaryOperationPayload] | None = None,
+        **kwargs,
+    ) -> SendDurableExecutionCallbackSuccessResponse:
+        raise NotImplementedError
+
+    @handler("StopDurableExecution")
+    def stop_durable_execution(
+        self,
+        context: RequestContext,
+        durable_execution_arn: DurableExecutionArn,
+        error: ErrorObject | None = None,
+        **kwargs,
+    ) -> StopDurableExecutionResponse:
+        raise NotImplementedError
+
     @handler("TagResource")
     def tag_resource(
         self, context: RequestContext, resource: TaggableResource, tags: Tags, **kwargs
@@ -2981,6 +3595,7 @@ class LambdaApi:
         snap_start: SnapStart | None = None,
         logging_config: LoggingConfig | None = None,
         capacity_provider_config: CapacityProviderConfig | None = None,
+        durable_config: DurableConfig | None = None,
         **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
