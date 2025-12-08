@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+"""
+Script to analyze git contributors and identify contributions from outside the LocalStack organization.
+
+This script analyzes the git history to count:
+- Total unique contributors
+- External contributors (outside LocalStack organization)
+- Total commits
+- Commits from external contributors
+"""
+
+import argparse
+import subprocess
+import sys
+from collections import defaultdict
+from typing import Dict, List, Set, Tuple
+
+
+# Define LocalStack organization email patterns
+LOCALSTACK_DOMAINS = [
+    "@localstack.cloud",
+    "@atlassian.com",  # Historical domain when project was at Atlassian
+]
+
+LOCALSTACK_BOTS = [
+    "localstack-bot@users.noreply.github.com",
+    "88328844+localstack-bot@users.noreply.github.com",
+]
+
+# GitHub usernames that are part of LocalStack organization (for noreply addresses)
+LOCALSTACK_GITHUB_USERS = [
+    "localstack-bot",
+    "taras-kobernyk-localstack",
+]
+
+
+def is_localstack_contributor(email: str, name: str = "") -> bool:
+    """
+    Determine if a contributor is part of the LocalStack organization.
+    
+    Args:
+        email: Contributor's email address
+        name: Contributor's name (optional)
+    
+    Returns:
+        True if the contributor is part of LocalStack organization, False otherwise
+    """
+    email_lower = email.lower()
+    
+    # Check for LocalStack email domains
+    for domain in LOCALSTACK_DOMAINS:
+        if domain in email_lower:
+            return True
+    
+    # Check for LocalStack bot accounts
+    if email_lower in [bot.lower() for bot in LOCALSTACK_BOTS]:
+        return True
+    
+    # Check for LocalStack GitHub organization users (in noreply addresses)
+    for username in LOCALSTACK_GITHUB_USERS:
+        if f"+{username}@users.noreply.github.com" in email_lower:
+            return True
+    
+    return False
+
+
+def get_git_log(repo_path: str = ".") -> List[Tuple[str, str]]:
+    """
+    Get git log with author email and name for all commits.
+    
+    Args:
+        repo_path: Path to the git repository
+    
+    Returns:
+        List of tuples containing (email, name) for each commit
+    """
+    try:
+        result = subprocess.run(
+            ["git", "log", "--all", "--format=%ae|%an"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        
+        commits = []
+        for line in result.stdout.strip().split("\n"):
+            if line:
+                parts = line.split("|", 1)
+                if len(parts) == 2:
+                    commits.append((parts[0], parts[1]))
+        
+        return commits
+    except subprocess.CalledProcessError as e:
+        print(f"Error running git log: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def analyze_contributors(repo_path: str = ".") -> Dict:
+    """
+    Analyze git repository to count contributors and contributions.
+    
+    Args:
+        repo_path: Path to the git repository
+    
+    Returns:
+        Dictionary containing analysis results
+    """
+    commits = get_git_log(repo_path)
+    
+    # Track unique contributors and their commit counts
+    all_contributors: Dict[str, Dict] = defaultdict(lambda: {"name": "", "commits": 0, "is_external": False})
+    external_contributors: Set[str] = set()
+    external_commits = 0
+    
+    for email, name in commits:
+        is_external = not is_localstack_contributor(email, name)
+        
+        # Update contributor info
+        all_contributors[email]["name"] = name
+        all_contributors[email]["commits"] += 1
+        all_contributors[email]["is_external"] = is_external
+        
+        if is_external:
+            external_contributors.add(email)
+            external_commits += 1
+    
+    return {
+        "total_commits": len(commits),
+        "total_contributors": len(all_contributors),
+        "external_contributors": len(external_contributors),
+        "external_commits": external_commits,
+        "internal_contributors": len(all_contributors) - len(external_contributors),
+        "internal_commits": len(commits) - external_commits,
+        "all_contributors": dict(all_contributors),
+    }
+
+
+def print_summary(results: Dict, verbose: bool = False):
+    """
+    Print a summary of the analysis results.
+    
+    Args:
+        results: Analysis results dictionary
+        verbose: If True, print detailed contributor information
+    """
+    print("=" * 70)
+    print("LocalStack Repository Contributor Analysis")
+    print("=" * 70)
+    print()
+    
+    # Overall statistics
+    print("📊 OVERALL STATISTICS")
+    print("-" * 70)
+    print(f"Total Contributors:        {results['total_contributors']:>6}")
+    print(f"Total Commits:             {results['total_commits']:>6}")
+    print()
+    
+    # Internal (LocalStack organization) statistics
+    print("🏢 LOCALSTACK ORGANIZATION")
+    print("-" * 70)
+    print(f"Internal Contributors:     {results['internal_contributors']:>6}")
+    print(f"Internal Commits:          {results['internal_commits']:>6}")
+    internal_commit_pct = (results['internal_commits'] / results['total_commits'] * 100) if results['total_commits'] > 0 else 0
+    print(f"Percentage of Commits:     {internal_commit_pct:>5.1f}%")
+    print()
+    
+    # External (outside organization) statistics
+    print("🌍 EXTERNAL CONTRIBUTORS (Outside LocalStack Organization)")
+    print("-" * 70)
+    print(f"External Contributors:     {results['external_contributors']:>6}")
+    print(f"External Commits:          {results['external_commits']:>6}")
+    external_commit_pct = (results['external_commits'] / results['total_commits'] * 100) if results['total_commits'] > 0 else 0
+    print(f"Percentage of Commits:     {external_commit_pct:>5.1f}%")
+    print()
+    
+    # Verbose output with detailed contributor information
+    if verbose:
+        print("=" * 70)
+        print("DETAILED EXTERNAL CONTRIBUTOR LIST")
+        print("=" * 70)
+        
+        # Sort external contributors by commit count (descending)
+        external_list = [
+            (email, info["name"], info["commits"])
+            for email, info in results["all_contributors"].items()
+            if info["is_external"]
+        ]
+        external_list.sort(key=lambda x: x[2], reverse=True)
+        
+        print(f"\nTop External Contributors (Total: {len(external_list)}):")
+        print("-" * 70)
+        print(f"{'Commits':<10} {'Name':<30} {'Email':<30}")
+        print("-" * 70)
+        
+        # Show top 50 external contributors
+        for email, name, commits in external_list[:50]:
+            name_truncated = name[:28] + ".." if len(name) > 30 else name
+            email_truncated = email[:28] + ".." if len(email) > 30 else email
+            print(f"{commits:<10} {name_truncated:<30} {email_truncated:<30}")
+        
+        if len(external_list) > 50:
+            print(f"\n... and {len(external_list) - 50} more external contributors")
+    
+    print()
+    print("=" * 70)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Analyze git contributors and identify external contributions",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Basic analysis
+  python analyze_contributors.py
+
+  # Detailed analysis with contributor list
+  python analyze_contributors.py --verbose
+
+  # Analyze a different repository
+  python analyze_contributors.py --repo /path/to/repo --verbose
+        """,
+    )
+    
+    parser.add_argument(
+        "--repo",
+        default=".",
+        help="Path to the git repository (default: current directory)",
+    )
+    
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show detailed contributor information",
+    )
+    
+    args = parser.parse_args()
+    
+    # Analyze the repository
+    results = analyze_contributors(args.repo)
+    
+    # Print the summary
+    print_summary(results, verbose=args.verbose)
+
+
+if __name__ == "__main__":
+    main()
