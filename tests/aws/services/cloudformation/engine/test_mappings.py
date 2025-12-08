@@ -43,6 +43,7 @@ class TestCloudFormationMappings:
         ]
 
     @markers.aws.validated
+    @skip_if_legacy_engine()
     def test_mapping_with_nonexisting_key(self, aws_client, cleanups, snapshot):
         """
         Tries to deploy a resource with a dependency on a mapping key
