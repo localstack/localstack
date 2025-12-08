@@ -10,10 +10,13 @@ This script analyzes the git history to count:
 """
 
 import argparse
+import json
+import os
+import re
 import subprocess
 import sys
 from collections import defaultdict
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 # Define LocalStack organization email patterns
@@ -28,19 +31,112 @@ LOCALSTACK_BOTS = [
 ]
 
 # GitHub usernames that are part of LocalStack organization (for noreply addresses)
+# This will be augmented with data from GitHub API if available
+# List derived from CODEOWNERS file and known organization members
 LOCALSTACK_GITHUB_USERS = [
     "localstack-bot",
     "taras-kobernyk-localstack",
+    # From CODEOWNERS file
+    "HarshCasper",
+    "aidehn",
+    "alexrashed",
+    "baermat",
+    "bentsku",
+    "cloutierMat",
+    "dfangl",
+    "dominikschubert",
+    "giograno",
+    "gregfurman",
+    "joe4dev",
+    "k-a-il",
+    "macnev2013",
+    "maxhoheiser",
+    "pinzon",
+    "sannya-singal",
+    "silv-io",
+    "simonrw",
+    "steffyP",
+    "thrau",
+    "tiurin",
+    "viren-nadkarni",
 ]
 
 
-def is_localstack_contributor(email: str, name: str = "") -> bool:
+def extract_github_username(email: str) -> Optional[str]:
+    """
+    Extract GitHub username from a GitHub noreply email address.
+    
+    Args:
+        email: Email address
+    
+    Returns:
+        GitHub username if found, None otherwise
+    """
+    # Pattern: <numeric_id>+<username>@users.noreply.github.com
+    # or: <username>@users.noreply.github.com
+    match = re.match(r'(?:\d+\+)?([^@]+)@users\.noreply\.github\.com', email.lower())
+    if match:
+        return match.group(1)
+    return None
+
+
+def fetch_github_org_members(org: str = "localstack") -> Set[str]:
+    """
+    Fetch GitHub organization members using gh CLI.
+    
+    Args:
+        org: GitHub organization name
+    
+    Returns:
+        Set of GitHub usernames in the organization
+    """
+    try:
+        # Check if GH_TOKEN or GITHUB_TOKEN is available
+        token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+        if not token:
+            print(
+                "Warning: No GitHub token found. Set GH_TOKEN or GITHUB_TOKEN environment variable "
+                "to fetch organization members from GitHub API.",
+                file=sys.stderr,
+            )
+            return set()
+        
+        # Use gh CLI to fetch organization members
+        env = os.environ.copy()
+        env["GH_TOKEN"] = token
+        
+        result = subprocess.run(
+            ["gh", "api", f"/orgs/{org}/members", "--paginate", "--jq", ".[].login"],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        
+        if result.returncode == 0:
+            members = set(line.strip().lower() for line in result.stdout.strip().split("\n") if line.strip())
+            print(f"Fetched {len(members)} members from GitHub organization '{org}'", file=sys.stderr)
+            return members
+        else:
+            print(
+                f"Warning: Failed to fetch organization members: {result.stderr}",
+                file=sys.stderr,
+            )
+            return set()
+    except Exception as e:
+        print(f"Warning: Error fetching organization members: {e}", file=sys.stderr)
+        return set()
+
+
+def is_localstack_contributor(
+    email: str, name: str = "", org_members: Optional[Set[str]] = None
+) -> bool:
     """
     Determine if a contributor is part of the LocalStack organization.
     
     Args:
         email: Contributor's email address
         name: Contributor's name (optional)
+        org_members: Set of GitHub usernames in the LocalStack organization (optional)
     
     Returns:
         True if the contributor is part of LocalStack organization, False otherwise
@@ -56,9 +152,18 @@ def is_localstack_contributor(email: str, name: str = "") -> bool:
     if email_lower in [bot.lower() for bot in LOCALSTACK_BOTS]:
         return True
     
-    # Check for LocalStack GitHub organization users (in noreply addresses)
-    for username in LOCALSTACK_GITHUB_USERS:
-        if f"+{username}@users.noreply.github.com" in email_lower:
+    # Extract GitHub username from email if it's a noreply address
+    github_username = extract_github_username(email)
+    
+    # Check against known LocalStack GitHub organization users
+    if github_username:
+        for username in LOCALSTACK_GITHUB_USERS:
+            if github_username.lower() == username.lower():
+                return True
+    
+    # If we have org members list from API, check against that too
+    if org_members and github_username:
+        if github_username.lower() in org_members:
             return True
     
     return False
@@ -99,25 +204,35 @@ def get_git_log(repo_path: str = ".") -> List[Tuple[str, str]]:
         sys.exit(1)
 
 
-def analyze_contributors(repo_path: str = ".") -> Dict[str, Any]:
+def analyze_contributors(
+    repo_path: str = ".", use_github_api: bool = True
+) -> Dict[str, Any]:
     """
     Analyze git repository to count contributors and contributions.
     
     Args:
         repo_path: Path to the git repository
+        use_github_api: Whether to fetch organization members from GitHub API
     
     Returns:
         Dictionary containing analysis results
     """
     commits = get_git_log(repo_path)
     
+    # Fetch GitHub organization members if requested
+    org_members = None
+    if use_github_api:
+        org_members = fetch_github_org_members("localstack")
+    
     # Track unique contributors and their commit counts
-    all_contributors: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"name": "", "commits": 0, "is_external": False})
+    all_contributors: Dict[str, Dict[str, Any]] = defaultdict(
+        lambda: {"name": "", "commits": 0, "is_external": False}
+    )
     external_contributors: Set[str] = set()
     external_commits = 0
     
     for email, name in commits:
-        is_external = not is_localstack_contributor(email, name)
+        is_external = not is_localstack_contributor(email, name, org_members)
         
         # Update contributor info
         all_contributors[email]["name"] = name
@@ -136,6 +251,7 @@ def analyze_contributors(repo_path: str = ".") -> Dict[str, Any]:
         "internal_contributors": len(all_contributors) - len(external_contributors),
         "internal_commits": len(commits) - external_commits,
         "all_contributors": dict(all_contributors),
+        "used_github_api": org_members is not None and len(org_members) > 0,
     }
 
 
@@ -150,6 +266,11 @@ def print_summary(results: Dict, verbose: bool = False):
     print("=" * 70)
     print("LocalStack Repository Contributor Analysis")
     print("=" * 70)
+    if results.get("used_github_api"):
+        print("✓ Using GitHub API for organization member detection")
+    else:
+        print("⚠ Using static list for organization member detection")
+        print("  (Set GH_TOKEN or GITHUB_TOKEN to use GitHub API)")
     print()
     
     # Overall statistics
@@ -215,14 +336,21 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic analysis
+  # Basic analysis with GitHub API
   python analyze_contributors.py
 
   # Detailed analysis with contributor list
   python analyze_contributors.py --verbose
 
+  # Analysis without GitHub API (faster but less accurate)
+  python analyze_contributors.py --no-github-api
+
   # Analyze a different repository
   python analyze_contributors.py --repo /path/to/repo --verbose
+
+Note:
+  To use GitHub API to fetch organization members, set GH_TOKEN or GITHUB_TOKEN
+  environment variable with a valid GitHub personal access token.
         """,
     )
     
@@ -239,10 +367,16 @@ Examples:
         help="Show detailed contributor information",
     )
     
+    parser.add_argument(
+        "--no-github-api",
+        action="store_true",
+        help="Skip fetching organization members from GitHub API (faster but less accurate)",
+    )
+    
     args = parser.parse_args()
     
     # Analyze the repository
-    results = analyze_contributors(args.repo)
+    results = analyze_contributors(args.repo, use_github_api=not args.no_github_api)
     
     # Print the summary
     print_summary(results, verbose=args.verbose)
