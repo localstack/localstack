@@ -9,6 +9,7 @@ TEST_AWS_ACCOUNT_ID = os.getenv("TEST_AWS_ACCOUNT_ID") or DEFAULT_AWS_ACCOUNT_ID
 TEST_AWS_ACCESS_KEY_ID = os.getenv("TEST_AWS_ACCESS_KEY_ID") or "test"
 TEST_AWS_SECRET_ACCESS_KEY = os.getenv("TEST_AWS_SECRET_ACCESS_KEY") or "test"
 TEST_AWS_REGION_NAME = os.getenv("TEST_AWS_REGION_NAME") or "us-east-1"
+TEST_AWS_ENDPOINT_URL = os.getenv("TEST_AWS_ENDPOINT_URL")
 
 # Secondary test AWS profile - only used for testing against AWS
 SECONDARY_TEST_AWS_PROFILE = os.getenv("SECONDARY_TEST_AWS_PROFILE")
