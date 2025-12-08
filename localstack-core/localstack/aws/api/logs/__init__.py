@@ -20,6 +20,9 @@ ClientToken = str
 CollectionRetentionDays = int
 Column = str
 DataProtectionPolicyDocument = str
+DataSourceName = str
+DataSourceType = str
+DataType = str
 Days = int
 DefaultValue = float
 DeletionProtectionEnabled = bool
@@ -69,6 +72,8 @@ ForceUpdate = bool
 FromKey = str
 GetScheduledQueryHistoryMaxResults = int
 GrokMatch = str
+GroupingIdentifierKey = str
+GroupingIdentifierValue = str
 IncludeLinkedAccounts = bool
 InferredTokenName = str
 Integer = int
@@ -85,10 +90,14 @@ ListAnomaliesLimit = int
 ListLimit = int
 ListLogAnomalyDetectorsLimit = int
 ListLogGroupsForQueryMaxResults = int
+ListLogGroupsRequestLimit = int
 ListScheduledQueriesMaxResults = int
+ListSourcesForS3TableIntegrationMaxResults = int
 Locale = str
 LogEventIndex = int
+LogFieldName = str
 LogGroupArn = str
+LogGroupCount = int
 LogGroupIdentifier = str
 LogGroupName = str
 LogGroupNamePattern = str
@@ -133,6 +142,8 @@ RequestId = str
 ResourceIdentifier = str
 ResourceType = str
 RoleArn = str
+S3TableIntegrationSourceIdentifier = str
+S3TableIntegrationSourceStatusReason = str
 S3Uri = str
 ScheduleExpression = str
 ScheduleTimezone = str
@@ -257,6 +268,11 @@ class IndexSource(StrEnum):
     LOG_GROUP = "LOG_GROUP"
 
 
+class IndexType(StrEnum):
+    FACET = "FACET"
+    FIELD_INDEX = "FIELD_INDEX"
+
+
 class InheritedProperty(StrEnum):
     ACCOUNT_DATA_PROTECTION = "ACCOUNT_DATA_PROTECTION"
 
@@ -269,6 +285,11 @@ class IntegrationStatus(StrEnum):
 
 class IntegrationType(StrEnum):
     OPENSEARCH = "OPENSEARCH"
+
+
+class ListAggregateLogGroupSummariesGroupBy(StrEnum):
+    DATA_SOURCE_NAME_TYPE_AND_FORMAT = "DATA_SOURCE_NAME_TYPE_AND_FORMAT"
+    DATA_SOURCE_NAME_AND_TYPE = "DATA_SOURCE_NAME_AND_TYPE"
 
 
 class LogGroupClass(StrEnum):
@@ -328,6 +349,13 @@ class QueryStatus(StrEnum):
     Cancelled = "Cancelled"
     Timeout = "Timeout"
     Unknown = "Unknown"
+
+
+class S3TableIntegrationSourceStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    UNHEALTHY = "UNHEALTHY"
+    FAILED = "FAILED"
+    DATA_SOURCE_DELETE_IN_PROGRESS = "DATA_SOURCE_DELETE_IN_PROGRESS"
 
 
 class ScheduledQueryDestinationType(StrEnum):
@@ -572,6 +600,20 @@ class AddKeys(TypedDict, total=False):
     entries: AddKeyEntries
 
 
+class GroupingIdentifier(TypedDict, total=False):
+    key: GroupingIdentifierKey | None
+    value: GroupingIdentifierValue | None
+
+
+GroupingIdentifiers = list[GroupingIdentifier]
+
+
+class AggregateLogGroupSummary(TypedDict, total=False):
+    logGroupCount: LogGroupCount | None
+    groupingIdentifiers: GroupingIdentifiers | None
+
+
+AggregateLogGroupSummaries = list[AggregateLogGroupSummary]
 AllowedFieldDelimiters = list[FieldDelimiter]
 
 
@@ -654,6 +696,20 @@ class AssociateKmsKeyRequest(ServiceRequest):
     logGroupName: LogGroupName | None
     kmsKeyId: KmsKeyId
     resourceIdentifier: ResourceIdentifier | None
+
+
+class DataSource(TypedDict, total=False):
+    name: DataSourceName
+    type: DataSourceType | None
+
+
+class AssociateSourceToS3TableIntegrationRequest(ServiceRequest):
+    integrationArn: Arn
+    dataSource: DataSource
+
+
+class AssociateSourceToS3TableIntegrationResponse(TypedDict, total=False):
+    identifier: S3TableIntegrationSourceIdentifier | None
 
 
 Columns = list[Column]
@@ -827,6 +883,14 @@ class CreateScheduledQueryResponse(TypedDict, total=False):
 
 DashboardViewerPrincipals = list[Arn]
 Data = bytes
+
+
+class DataSourceFilter(TypedDict, total=False):
+    name: DataSourceName
+    type: DataSourceType | None
+
+
+DataSourceFilters = list[DataSourceFilter]
 MatchPatterns = list[MatchPattern]
 
 
@@ -1116,6 +1180,7 @@ class FieldIndex(TypedDict, total=False):
     lastScanTime: Timestamp | None
     firstEventTime: Timestamp | None
     lastEventTime: Timestamp | None
+    type: IndexType | None
 
 
 FieldIndexes = list[FieldIndex]
@@ -1373,6 +1438,14 @@ class DisassociateKmsKeyRequest(ServiceRequest):
     resourceIdentifier: ResourceIdentifier | None
 
 
+class DisassociateSourceFromS3TableIntegrationRequest(ServiceRequest):
+    identifier: S3TableIntegrationSourceIdentifier
+
+
+class DisassociateSourceFromS3TableIntegrationResponse(TypedDict, total=False):
+    identifier: S3TableIntegrationSourceIdentifier | None
+
+
 EntityAttributes = dict[EntityAttributesKey, EntityAttributesValue]
 EntityKeyAttributes = dict[EntityKeyAttributesKey, EntityKeyAttributesValue]
 
@@ -1385,6 +1458,7 @@ class Entity(TypedDict, total=False):
 EventNumber = int
 ExecutionStatusList = list[ExecutionStatus]
 ExtractedValues = dict[Token, Value]
+FieldIndexNames = list[FieldIndexName]
 
 
 class FieldsData(TypedDict, total=False):
@@ -1594,6 +1668,29 @@ class GetLogEventsResponse(TypedDict, total=False):
     events: OutputLogEvents | None
     nextForwardToken: NextToken | None
     nextBackwardToken: NextToken | None
+
+
+class GetLogFieldsRequest(ServiceRequest):
+    dataSourceName: DataSourceName
+    dataSourceType: DataSourceType
+
+
+LogFieldsList = list["LogFieldsListItem"]
+
+
+class LogFieldType(TypedDict, total=False):
+    type: "DataType | None"
+    element: "LogFieldType | None"
+    fields: "LogFieldsList | None"
+
+
+class LogFieldsListItem(TypedDict, total=False):
+    logFieldName: LogFieldName | None
+    logFieldType: LogFieldType | None
+
+
+class GetLogFieldsResponse(TypedDict, total=False):
+    logFields: LogFieldsList | None
 
 
 class GetLogGroupFieldsRequest(ServiceRequest):
@@ -1933,6 +2030,22 @@ class IntegrationSummary(TypedDict, total=False):
 IntegrationSummaries = list[IntegrationSummary]
 
 
+class ListAggregateLogGroupSummariesRequest(ServiceRequest):
+    accountIdentifiers: AccountIds | None
+    includeLinkedAccounts: IncludeLinkedAccounts | None
+    logGroupClass: LogGroupClass | None
+    logGroupNamePattern: LogGroupNameRegexPattern | None
+    dataSources: DataSourceFilters | None
+    groupBy: ListAggregateLogGroupSummariesGroupBy
+    nextToken: NextToken | None
+    limit: ListLogGroupsRequestLimit | None
+
+
+class ListAggregateLogGroupSummariesResponse(TypedDict, total=False):
+    aggregateLogGroupSummaries: AggregateLogGroupSummaries | None
+    nextToken: NextToken | None
+
+
 class ListAnomaliesRequest(ServiceRequest):
     anomalyDetectorArn: AnomalyDetectorArn | None
     suppressionState: SuppressionState | None
@@ -1987,6 +2100,8 @@ class ListLogGroupsRequest(ServiceRequest):
     accountIdentifiers: AccountIds | None
     nextToken: NextToken | None
     limit: ListLimit | None
+    dataSources: DataSourceFilters | None
+    fieldIndexNames: FieldIndexNames | None
 
 
 class LogGroupSummary(TypedDict, total=False):
@@ -2028,6 +2143,28 @@ ScheduledQuerySummaryList = list[ScheduledQuerySummary]
 class ListScheduledQueriesResponse(TypedDict, total=False):
     nextToken: NextToken | None
     scheduledQueries: ScheduledQuerySummaryList | None
+
+
+class ListSourcesForS3TableIntegrationRequest(ServiceRequest):
+    integrationArn: Arn
+    maxResults: ListSourcesForS3TableIntegrationMaxResults | None
+    nextToken: NextToken | None
+
+
+class S3TableIntegrationSource(TypedDict, total=False):
+    identifier: S3TableIntegrationSourceIdentifier | None
+    dataSource: DataSource | None
+    status: S3TableIntegrationSourceStatus | None
+    statusReason: S3TableIntegrationSourceStatusReason | None
+    createdTimeStamp: Timestamp | None
+
+
+S3TableIntegrationSources = list[S3TableIntegrationSource]
+
+
+class ListSourcesForS3TableIntegrationResponse(TypedDict, total=False):
+    sources: S3TableIntegrationSources | None
+    nextToken: NextToken | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
@@ -2455,6 +2592,12 @@ class LogsApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("AssociateSourceToS3TableIntegration")
+    def associate_source_to_s3_table_integration(
+        self, context: RequestContext, integration_arn: Arn, data_source: DataSource, **kwargs
+    ) -> AssociateSourceToS3TableIntegrationResponse:
+        raise NotImplementedError
+
     @handler("CancelExportTask")
     def cancel_export_task(self, context: RequestContext, task_id: ExportTaskId, **kwargs) -> None:
         raise NotImplementedError
@@ -2875,6 +3018,12 @@ class LogsApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DisassociateSourceFromS3TableIntegration")
+    def disassociate_source_from_s3_table_integration(
+        self, context: RequestContext, identifier: S3TableIntegrationSourceIdentifier, **kwargs
+    ) -> DisassociateSourceFromS3TableIntegrationResponse:
+        raise NotImplementedError
+
     @handler("FilterLogEvents")
     def filter_log_events(
         self,
@@ -2953,6 +3102,16 @@ class LogsApi:
     ) -> GetLogEventsResponse:
         raise NotImplementedError
 
+    @handler("GetLogFields")
+    def get_log_fields(
+        self,
+        context: RequestContext,
+        data_source_name: DataSourceName,
+        data_source_type: DataSourceType,
+        **kwargs,
+    ) -> GetLogFieldsResponse:
+        raise NotImplementedError
+
     @handler("GetLogGroupFields")
     def get_log_group_fields(
         self,
@@ -3016,6 +3175,22 @@ class LogsApi:
     ) -> GetTransformerResponse:
         raise NotImplementedError
 
+    @handler("ListAggregateLogGroupSummaries")
+    def list_aggregate_log_group_summaries(
+        self,
+        context: RequestContext,
+        group_by: ListAggregateLogGroupSummariesGroupBy,
+        account_identifiers: AccountIds | None = None,
+        include_linked_accounts: IncludeLinkedAccounts | None = None,
+        log_group_class: LogGroupClass | None = None,
+        log_group_name_pattern: LogGroupNameRegexPattern | None = None,
+        data_sources: DataSourceFilters | None = None,
+        next_token: NextToken | None = None,
+        limit: ListLogGroupsRequestLimit | None = None,
+        **kwargs,
+    ) -> ListAggregateLogGroupSummariesResponse:
+        raise NotImplementedError
+
     @handler("ListAnomalies")
     def list_anomalies(
         self,
@@ -3060,6 +3235,8 @@ class LogsApi:
         account_identifiers: AccountIds | None = None,
         next_token: NextToken | None = None,
         limit: ListLimit | None = None,
+        data_sources: DataSourceFilters | None = None,
+        field_index_names: FieldIndexNames | None = None,
         **kwargs,
     ) -> ListLogGroupsResponse:
         raise NotImplementedError
@@ -3084,6 +3261,17 @@ class LogsApi:
         state: ScheduledQueryState | None = None,
         **kwargs,
     ) -> ListScheduledQueriesResponse:
+        raise NotImplementedError
+
+    @handler("ListSourcesForS3TableIntegration")
+    def list_sources_for_s3_table_integration(
+        self,
+        context: RequestContext,
+        integration_arn: Arn,
+        max_results: ListSourcesForS3TableIntegrationMaxResults | None = None,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> ListSourcesForS3TableIntegrationResponse:
         raise NotImplementedError
 
     @handler("ListTagsForResource")

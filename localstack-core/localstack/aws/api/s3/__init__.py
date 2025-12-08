@@ -520,6 +520,7 @@ class ObjectStorageClass(StrEnum):
     SNOW = "SNOW"
     EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
     FSX_OPENZFS = "FSX_OPENZFS"
+    FSX_ONTAP = "FSX_ONTAP"
 
 
 class ObjectVersionStorageClass(StrEnum):
@@ -632,6 +633,7 @@ class StorageClass(StrEnum):
     SNOW = "SNOW"
     EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
     FSX_OPENZFS = "FSX_OPENZFS"
+    FSX_ONTAP = "FSX_ONTAP"
 
 
 class StorageClassAnalysisSchemaVersion(StrEnum):

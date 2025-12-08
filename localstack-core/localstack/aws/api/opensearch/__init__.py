@@ -698,6 +698,10 @@ class ValidationException(ServiceException):
     status_code: int = 400
 
 
+class ServerlessVectorAcceleration(TypedDict, total=False):
+    Enabled: Boolean | None
+
+
 class S3VectorsEngine(TypedDict, total=False):
     Enabled: Boolean | None
 
@@ -709,6 +713,7 @@ class NaturalLanguageQueryGenerationOptionsInput(TypedDict, total=False):
 class AIMLOptionsInput(TypedDict, total=False):
     NaturalLanguageQueryGenerationOptions: NaturalLanguageQueryGenerationOptionsInput | None
     S3VectorsEngine: S3VectorsEngine | None
+    ServerlessVectorAcceleration: ServerlessVectorAcceleration | None
 
 
 class NaturalLanguageQueryGenerationOptionsOutput(TypedDict, total=False):
@@ -719,6 +724,7 @@ class NaturalLanguageQueryGenerationOptionsOutput(TypedDict, total=False):
 class AIMLOptionsOutput(TypedDict, total=False):
     NaturalLanguageQueryGenerationOptions: NaturalLanguageQueryGenerationOptionsOutput | None
     S3VectorsEngine: S3VectorsEngine | None
+    ServerlessVectorAcceleration: ServerlessVectorAcceleration | None
 
 
 UpdateTimestamp = datetime
