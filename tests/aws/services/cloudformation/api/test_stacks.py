@@ -716,11 +716,7 @@ def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups):
 
 
 @markers.aws.validated
-def test_subnet_id_parameter_type(
-    aws_client,
-    deploy_cfn_template,
-    cleanups,
-):
+def test_subnet_id_parameter_type(aws_client, deploy_cfn_template, cleanups, snapshot):
     vpc_id = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
     cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc_id))
     aws_client.ec2.get_waiter("vpc_available").wait(VpcIds=[vpc_id])
@@ -743,7 +739,9 @@ def test_subnet_id_parameter_type(
         },
     )
 
-    assert stack.outputs["ParamValue"] == subnets_list.replace(",", "|")
+    snapshot.add_transformer(snapshot.transform.regex(subnet_id_1, "subnet-id-1"))
+    snapshot.add_transformer(snapshot.transform.regex(subnet_id_2, "subnet-id-2"))
+    snapshot.match("outputs", stack.outputs)
 
 
 @markers.aws.validated

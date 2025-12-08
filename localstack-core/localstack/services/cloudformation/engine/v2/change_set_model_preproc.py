@@ -1069,7 +1069,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         def _resolve_parameter_type(value: str, type_: str) -> Any:
             match type_:
-                case "List<String>" | "List<AWS::EC2::Subnet::Id>" | "CommaDelimitedList":
+                case s if re.match(r"List<[^>]+>", s):
+                    return [item.strip() for item in value.split(",")]
+                case "CommaDelimitedList":
                     return [item.strip() for item in value.split(",")]
                 case "Number":
                     # TODO: validate the parameter type at template parse time (or whatever is in parity with AWS) so we know this cannot fail
