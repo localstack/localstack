@@ -333,13 +333,13 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_wait_task_context_object": {
-    "recorded-date": "03-12-2025, 18:51:49",
+    "recorded-date": "09-12-2025, 11:42:20",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
           "afterInputPath": {},
           "afterParameters": {
-            "QueueUrl": "https://sqs.us-east-2.amazonaws.com/123456789012/myQueue",
+            "QueueUrl": "https://sqs.<region>.amazonaws.com/111111111111/test-queue",
             "MessageBody": {
               "Message": "Hello from Step Functions!",
               "TaskToken": "abcd123"

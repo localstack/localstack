@@ -99,11 +99,16 @@ class TestStateContextObject:
     def test_state_wait_task_context_object(
         self,
         aws_client_no_sync_prefix,
+        account_id,
+        region_name,
         sfn_snapshot,
     ):
         state_template = TST.load_sfn_template(
             TST.IO_SQS_SERVICE_TASK_WAIT,
         )
+
+        sqs_queue_url = f"https://sqs.{region_name}.amazonaws.com/{account_id}/test-queue"
+        state_template["Parameters"]["QueueUrl"] = sqs_queue_url
 
         definition = json.dumps(state_template)
         mocked_result = json.dumps({"pokemon": ["charizard", "pikachu", "bulbasaur"]})
