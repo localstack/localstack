@@ -396,8 +396,6 @@ mypy-boto3-managedblockchain==1.41.0
     # via boto3-stubs
 mypy-boto3-mediaconvert==1.41.0
     # via boto3-stubs
-mypy-boto3-mediastore==1.41.0
-    # via boto3-stubs
 mypy-boto3-mq==1.41.0
     # via boto3-stubs
 mypy-boto3-mwaa==1.41.0
