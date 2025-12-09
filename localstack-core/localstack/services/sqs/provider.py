@@ -701,6 +701,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         self._stop_cloudwatch_metrics_reporting()
 
+    def on_before_state_save(self) -> None:
+        # As we do not want to snapshot expired messages, we update all the queues before saving the state.
+        self._queue_update_worker.do_update_all_queues()
+
     @staticmethod
     def _require_queue(
         account_id: str, region_name: str, name: str, is_query: bool = False
