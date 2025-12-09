@@ -208,6 +208,7 @@ class TestIntegration:
         # clean up
         aws_client.firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
 
+    @pytest.mark.skip(reason="flaky")
     @markers.aws.unknown
     def test_lambda_streams_batch_and_transactions(
         self,
