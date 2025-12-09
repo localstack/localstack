@@ -1125,6 +1125,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         update_item_input: UpdateItemInput,
     ) -> UpdateItemOutput:
+
+        # === 🔴 FIX START ===
+        if "AttributeUpdates" in update_item_input:
+            for update in update_item_input["AttributeUpdates"].values():
+                if "Action" not in update:
+                    update["Action"] = "PUT"
+        # === 🔴 FIX END ===
+        
         # TODO: UpdateItem is harder to use ReturnValues for Streams, because it needs the Before and After images.
         table_name = update_item_input["TableName"]
         global_table_region = self.get_global_table_region(context, table_name)
