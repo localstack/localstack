@@ -215,6 +215,15 @@
   "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_resource_not_found": {
     "last_validated_date": "2025-01-29T09:08:15+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_subnet_id_parameter_type": {
+    "last_validated_date": "2025-12-08T15:18:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.45,
+      "call": 13.02,
+      "teardown": 6.25,
+      "total": 19.72
+    }
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_update_termination_protection": {
     "last_validated_date": "2023-01-04T15:23:22+00:00"
   },

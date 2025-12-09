@@ -4342,5 +4342,13 @@
     "recorded-content": {
       "stack_create_ec2": "An error occurred (ValidationError) when calling the CreateStack operation: Template format error: unsupported structure."
     }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_subnet_id_parameter_type": {
+    "recorded-date": "08-12-2025, 15:18:37",
+    "recorded-content": {
+      "outputs": {
+        "ParamValue": "subnet-id-1|subnet-id-2"
+      }
+    }
   }
 }
