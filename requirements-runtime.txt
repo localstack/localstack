@@ -25,15 +25,16 @@ attrs==25.4.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-sam-translator==1.104.0
+aws-sam-translator==1.103.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
+    #   moto-ext
 aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.43.10
     # via localstack-core (pyproject.toml)
-awscrt==0.29.1
+awscrt==0.29.2
     # via localstack-core
 boto3==1.42.4
     # via
@@ -62,7 +63,7 @@ certifi==2025.11.12
     #   requests
 cffi==2.0.0
     # via cryptography
-cfn-lint==1.42.0
+cfn-lint==1.41.0
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
@@ -193,13 +194,13 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.18.post6
+moto-ext==5.1.18.post23
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
 multipart==1.3.0
     # via moto-ext
-networkx==3.6
+networkx==3.6.1
     # via cfn-lint
 openapi-core==0.19.4
     # via localstack-core
@@ -236,7 +237,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-protobuf==6.33.1
+protobuf==6.33.2
     # via opensearch-protobufs
 psutil==7.1.3
     # via
@@ -248,15 +249,16 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.23
     # via cffi
-pydantic==2.12.5
+pydantic==2.12.4
     # via
     #   aws-sam-translator
     #   localstack-core (pyproject.toml)
+    #   moto-ext
 pydantic-core==2.41.5
     # via pydantic
 pygments==2.19.2
     # via rich
-pymongo==4.15.4
+pymongo==4.15.5
     # via localstack-core (pyproject.toml)
 pyopenssl==25.3.0
     # via
@@ -353,7 +355,7 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic
-urllib3==2.5.0
+urllib3==2.6.1
     # via
     #   botocore
     #   docker

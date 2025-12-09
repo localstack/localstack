@@ -11,7 +11,7 @@ attrs==25.4.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.29.1
+awscrt==0.29.2
     # via localstack-core (pyproject.toml)
 boto3==1.42.4
     # via localstack-core (pyproject.toml)
@@ -186,7 +186,7 @@ typing-extensions==4.15.0
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
     #   readerwriterlock
-urllib3==2.5.0
+urllib3==2.6.1
     # via
     #   botocore
     #   docker
