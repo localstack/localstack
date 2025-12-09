@@ -339,43 +339,36 @@
     }
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_list_certificates_with_key_types_filter_imported_certificate": {
-    "recorded-date": "03-12-2025, 03:59:57",
+    "recorded-date": "09-12-2025, 12:36:59",
     "recorded-content": {
       "list-certificates-with-key-types": {
-        "CertificateSummaryList": [
-          {
-            "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
-            "DomainName": "localhost",
-            "Exported": false,
-            "ExtendedKeyUsages": [
-              "TLS_WEB_SERVER_AUTHENTICATION",
-              "TLS_WEB_CLIENT_AUTHENTICATION"
-            ],
-            "HasAdditionalSubjectAlternativeNames": false,
-            "ImportedAt": "datetime",
-            "InUse": false,
-            "KeyAlgorithm": "RSA-2048",
-            "KeyUsages": [
-              "DIGITAL_SIGNATURE",
-              "KEY_ENCIPHERMENT"
-            ],
-            "NotAfter": "datetime",
-            "NotBefore": "datetime",
-            "RenewalEligibility": "INELIGIBLE",
-            "Status": "ISSUED",
-            "SubjectAlternativeNameSummaries": [
-              "localhost",
-              "test.localhost.atlassian.io",
-              "localhost.localstack.cloud",
-              "localhost.localstack.cloudIP:127.0.0.1"
-            ],
-            "Type": "IMPORTED"
-          }
+        "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
+        "CreatedAt": "datetime",
+        "DomainName": "localhost",
+        "ExportOption": "DISABLED",
+        "ExtendedKeyUsages": [
+          "TLS_WEB_SERVER_AUTHENTICATION"
         ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
+        "HasAdditionalSubjectAlternativeNames": false,
+        "ImportedAt": "datetime",
+        "InUse": false,
+        "KeyAlgorithm": "RSA-2048",
+        "KeyUsages": [
+          "DIGITAL_SIGNATURE",
+          "NON_REPUDIATION",
+          "KEY_ENCIPHERMENT"
+        ],
+        "NotAfter": "datetime",
+        "NotBefore": "datetime",
+        "RenewalEligibility": "INELIGIBLE",
+        "Status": "ISSUED",
+        "SubjectAlternativeNameSummaries": [
+          "localhost",
+          "test.localhost.atlassian.io",
+          "localhost.localstack.cloud",
+          "localhost.localstack.cloudIP:127.0.0.1"
+        ],
+        "Type": "IMPORTED"
       }
     }
   },

@@ -28,5 +28,14 @@
       "teardown": 0.25,
       "total": 1.98
     }
+  },
+  "tests/aws/services/acm/test_acm.py::TestACM::test_list_certificates_with_key_types_filter_imported_certificate": {
+    "last_validated_date": "2025-12-09T12:42:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.57,
+      "call": 2.11,
+      "teardown": 0.23,
+      "total": 2.91
+    }
   }
 }
