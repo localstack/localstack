@@ -430,9 +430,6 @@ class ResourceProviderExecutor:
         self.stack_name = stack_name
         self.stack_id = stack_id
 
-        # This should have been set up in the provider
-        assert isinstance(config.CFN_NO_WAIT_ITERATIONS, int)
-
     def deploy_loop(
         self,
         resource_provider: ResourceProvider,
