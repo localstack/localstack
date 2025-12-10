@@ -2258,6 +2258,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     raise Exception("unknown version")  # TODO: cover via test
             elif qualifier == "$LATEST":
                 pass
+            elif qualifier == "$LATEST.PUBLISHED":
+                if fn.versions.get(qualifier):
+                    pass
             else:
                 raise Exception("invalid functionname")  # TODO: cover via test
             fn_arn = api_utils.qualified_lambda_arn(function_name, qualifier, account, region)
