@@ -126,12 +126,12 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_context_object.py::TestStateContextObject::test_state_wait_task_context_object": {
-    "last_validated_date": "2025-12-03T18:51:49+00:00",
+    "last_validated_date": "2025-12-09T11:42:20+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.19,
+      "setup": 0.48,
+      "call": 0.62,
       "teardown": 0.0,
-      "total": 0.19
+      "total": 1.1
     }
   }
 }
