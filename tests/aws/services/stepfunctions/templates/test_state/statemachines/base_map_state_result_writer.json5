@@ -1,0 +1,32 @@
+{
+  "Comment": "BASE_MAP_STATE",
+  "Type": "Map",
+  "ItemsPath": "$.Values",
+  "ItemProcessor": {
+    "ProcessorConfig": {
+      "Mode": "DISTRIBUTED",
+      "ExecutionType": "STANDARD"
+    },
+    "StartAt": "TestState",
+    "States": {
+      "TestState": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Parameters": {
+          "FunctionName": "foo",
+          "Payload": "bar"
+        },
+        "End": true
+      }
+    }
+  },
+  "ResultWriter": {
+    "Resource": "arn:aws:states:::s3:putObject",
+    "Parameters": {
+      "Bucket": "result-bucket",
+      "Prefix": "mapJobs"
+    }
+  },
+  "Label": "TestMap",
+  "End": true
+}

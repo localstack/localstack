@@ -103,3 +103,37 @@ class TestStateMockValidation:
                 revealSecrets=True,
             )
         sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_mock_result_is_not_array_on_map_state_without_result_writer(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TST.load_sfn_template(TST.BASE_MAP_STATE)
+        definition = json.dumps(template)
+        mock = {"result": json.dumps({"mock": "array is expected but object is provided instead"})}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_mock_result_is_not_object_on_map_state_with_result_writer(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TST.load_sfn_template(TST.BASE_MAP_STATE_WITH_RESULT_WRITER)
+        definition = json.dumps(template)
+        mock = {"result": json.dumps(["object is expected but array is provided instead"])}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
