@@ -122,14 +122,15 @@ class TestStateStaticAnalyser(StaticAnalyser):
                 mock_result=mock_result, test_state=test_state
             )
 
-        field_validation_mode = mock_input.get(
-            "fieldValidationMode", MockResponseValidationMode.STRICT
-        )
-        TestStateStaticAnalyser.validate_mock_result_matches_api_shape(
-            mock_result=mock_result,
-            field_validation_mode=field_validation_mode,
-            test_state=test_state,
-        )
+        if isinstance(test_state, StateTaskService):
+            field_validation_mode = mock_input.get(
+                "fieldValidationMode", MockResponseValidationMode.STRICT
+            )
+            TestStateStaticAnalyser.validate_mock_result_matches_api_shape(
+                mock_result=mock_result,
+                field_validation_mode=field_validation_mode,
+                test_state=test_state,
+            )
 
     @staticmethod
     def validate_test_state_allows_mocking(
@@ -159,7 +160,7 @@ class TestStateStaticAnalyser(StaticAnalyser):
     def validate_mock_result_matches_api_shape(
         mock_result: Any,
         field_validation_mode: MockResponseValidationMode,
-        test_state: CommonStateField,
+        test_state: StateTaskService,
     ):
         # apigateway:invoke: has no equivalent in the AWS SDK service integration.
         # Hence, the validation against botocore doesn't apply.
@@ -168,109 +169,106 @@ class TestStateStaticAnalyser(StaticAnalyser):
         if isinstance(test_state, StateTaskServiceApiGateway):
             return
 
-        if isinstance(test_state, StateTaskService):
-            if field_validation_mode == MockResponseValidationMode.NONE:
+        if field_validation_mode == MockResponseValidationMode.NONE:
+            return
+
+        boto_service_name = test_state._get_boto_service_name()
+        service_action_name = test_state._get_boto_service_action()
+        output_shape = test_state._get_boto_operation_model(
+            boto_service_name=boto_service_name, service_action_name=service_action_name
+        ).output_shape
+
+        # If the operation has no output, there's nothing to validate
+        if output_shape is None:
+            return
+
+        def _raise_type_error(expected_type: str, field_name: str) -> None:
+            raise ValidationException(
+                f"Mock result schema validation error: Field '{field_name}' must be {expected_type}"
+            )
+
+        def _validate_value(value: Any, shape: Shape, field_name: str | None = None) -> None:
+            # Document type accepts any JSON value
+            if shape.type_name == "document":
                 return
 
-            boto_service_name = test_state._get_boto_service_name()
-            service_action_name = test_state._get_boto_service_action()
-            output_shape = test_state._get_boto_operation_model(
-                boto_service_name=boto_service_name, service_action_name=service_action_name
-            ).output_shape
-
-            # If the operation has no output, there's nothing to validate
-            if output_shape is None:
+            if isinstance(shape, StructureShape):
+                if not isinstance(value, dict):
+                    # this is a defensive check, the mock result is loaded from JSON before, so should always be a dict
+                    raise ValidationException(
+                        f"Mock result must be a valid JSON object, but got '{type(value)}' instead"
+                    )
+                # Build a mapping from SFN-normalised member keys -> botocore member shapes
+                members = shape.members
+                sfn_key_to_member_shape: dict[str, Shape] = {
+                    StateTaskService._to_sfn_cased(member_key): member_shape
+                    for member_key, member_shape in members.items()
+                }
+                if field_validation_mode == MockResponseValidationMode.STRICT:
+                    # Ensure required members are present, using SFN-normalised keys
+                    for required_key in shape.required_members:
+                        sfn_required_key = StateTaskService._to_sfn_cased(required_key)
+                        if sfn_required_key not in value:
+                            raise ValidationException(
+                                f"Mock result schema validation error: Required field '{sfn_required_key}' is missing"
+                            )
+                # Validate present fields (match SFN-normalised keys to member shapes)
+                for mock_field_name, mock_field_value in value.items():
+                    member_shape = sfn_key_to_member_shape.get(mock_field_name)
+                    if member_shape is None:
+                        # Fields that are present in mock but are not in the API spec should not raise validation errors - forward compatibility
+                        continue
+                    _validate_value(mock_field_value, member_shape, mock_field_name)
                 return
 
-            def _raise_type_error(expected_type: str, field_name: str) -> None:
-                raise ValidationException(
-                    f"Mock result schema validation error: Field '{field_name}' must be {expected_type}"
-                )
+            if isinstance(shape, ListShape):
+                if not isinstance(value, list):
+                    _raise_type_error("an array", field_name)
+                member_shape = shape.member
+                for list_item in value:
+                    _validate_value(list_item, member_shape, field_name)
+                return
 
-            def _validate_value(value: Any, shape: Shape, field_name: str | None = None) -> None:
-                # Document type accepts any JSON value
-                if shape.type_name == "document":
-                    return
+            if isinstance(shape, MapShape):
+                if not isinstance(value, dict):
+                    _raise_type_error("an object", field_name)
+                value_shape = shape.value
+                for _, map_item_value in value.items():
+                    _validate_value(map_item_value, value_shape, field_name)
+                return
 
-                if isinstance(shape, StructureShape):
-                    if not isinstance(value, dict):
-                        # this is a defensive check, the mock result is loaded from JSON before, so should always be a dict
-                        raise ValidationException(
-                            f"Mock result must be a valid JSON object, but got '{type(value)}' instead"
-                        )
-                    # Build a mapping from SFN-normalised member keys -> botocore member shapes
-                    members = shape.members
-                    sfn_key_to_member_shape: dict[str, Shape] = {
-                        StateTaskService._to_sfn_cased(member_key): member_shape
-                        for member_key, member_shape in members.items()
-                    }
-                    if field_validation_mode == MockResponseValidationMode.STRICT:
-                        # Ensure required members are present, using SFN-normalised keys
-                        for required_key in shape.required_members:
-                            sfn_required_key = StateTaskService._to_sfn_cased(required_key)
-                            if sfn_required_key not in value:
-                                raise ValidationException(
-                                    f"Mock result schema validation error: Required field '{sfn_required_key}' is missing"
-                                )
-                    # Validate present fields (match SFN-normalised keys to member shapes)
-                    for mock_field_name, mock_field_value in value.items():
-                        member_shape = sfn_key_to_member_shape.get(mock_field_name)
-                        if member_shape is None:
-                            # Fields that are present in mock but are not in the API spec should not raise validation errors - forward compatibility
-                            continue
-                        _validate_value(mock_field_value, member_shape, mock_field_name)
-                    return
+            # Primitive shapes and others
+            type_name = shape.type_name
+            match type_name:
+                case "string" | "timestamp":
+                    if not isinstance(value, str):
+                        _raise_type_error("a string", field_name)
+                    # Validate enum if present
+                    if isinstance(shape, StringShape):
+                        enum = getattr(shape, "enum", None)
+                        if enum and value not in enum:
+                            raise ValidationException(
+                                f"Mock result schema validation error: Field '{field_name}' is not an expected value"
+                            )
 
-                if isinstance(shape, ListShape):
-                    if not isinstance(value, list):
-                        _raise_type_error("an array", field_name)
-                    member_shape = shape.member
-                    for list_item in value:
-                        _validate_value(list_item, member_shape, field_name)
-                    return
+                case "integer" | "long":
+                    if not isinstance(value, int) or isinstance(value, bool):
+                        _raise_type_error("a number", field_name)
 
-                if isinstance(shape, MapShape):
-                    if not isinstance(value, dict):
-                        _raise_type_error("an object", field_name)
-                    value_shape = shape.value
-                    for _, map_item_value in value.items():
-                        _validate_value(map_item_value, value_shape, field_name)
-                    return
+                case "float" | "double":
+                    if not (isinstance(value, (int, float)) or isinstance(value, bool)):
+                        _raise_type_error("a number", field_name)
 
-                # Primitive shapes and others
-                type_name = shape.type_name
-                match type_name:
-                    case "string" | "timestamp":
-                        if not isinstance(value, str):
-                            _raise_type_error("a string", field_name)
-                        # Validate enum if present
-                        if isinstance(shape, StringShape):
-                            enum = getattr(shape, "enum", None)
-                            if enum and value not in enum:
-                                raise ValidationException(
-                                    f"Mock result schema validation error: Field '{field_name}' is not an expected value"
-                                )
+                case "boolean":
+                    if not isinstance(value, bool):
+                        _raise_type_error("a boolean", field_name)
 
-                    case "integer" | "long":
-                        if not isinstance(value, int) or isinstance(value, bool):
-                            _raise_type_error("a number", field_name)
+                case "blob":
+                    if not (isinstance(value, (str, bytes))):
+                        _raise_type_error("a string", field_name)
 
-                    case "float" | "double":
-                        if not (isinstance(value, (int, float)) or isinstance(value, bool)):
-                            _raise_type_error("a number", field_name)
-
-                    case "boolean":
-                        if not isinstance(value, bool):
-                            _raise_type_error("a boolean", field_name)
-
-                    case "blob":
-                        if not (isinstance(value, (str, bytes))):
-                            _raise_type_error("a string", field_name)
-
-            # Perform validation against the output shape
-            _validate_value(mock_result, output_shape)
-        # Non-service tasks or other cases: nothing to validate
-        return
+        # Perform validation against the output shape
+        _validate_value(mock_result, output_shape)
 
     def analyse(self, definition: str) -> None:
         _, parser_rule_context = TestStateAmazonStateLanguageParser.parse(
