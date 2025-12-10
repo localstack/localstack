@@ -37,6 +37,9 @@ class TestStateTemplate(TemplateLoader):
     )
 
     BASE_MAP_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/base_map_state.json5")
+    BASE_MAP_STATE_WITH_RESULT_WRITER: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_map_state_result_writer.json5"
+    )
     BASE_MAP_STATE_CATCH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/base_map_state_catch.json5"
     )

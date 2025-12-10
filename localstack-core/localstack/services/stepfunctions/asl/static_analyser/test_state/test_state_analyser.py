@@ -109,8 +109,26 @@ class TestStateStaticAnalyser(StaticAnalyser):
                 "A test mock should have only one of the following fields: [result, errorOutput]."
             )
 
+        mock_result_raw = mock_input.get("result")
+        if mock_result_raw is None:
+            return
+        try:
+            mock_result = json.loads(mock_result_raw)
+        except json.JSONDecodeError:
+            raise ValidationException("Mocked result must be valid JSON")
+
+        if isinstance(test_state, StateMap):
+            TestStateStaticAnalyser.validate_mock_result_matches_map_definition(
+                mock_result=mock_result, test_state=test_state
+            )
+
+        field_validation_mode = mock_input.get(
+            "fieldValidationMode", MockResponseValidationMode.STRICT
+        )
         TestStateStaticAnalyser.validate_mock_result_matches_api_shape(
-            mock_input=mock_input, test_state=test_state
+            mock_result=mock_result,
+            field_validation_mode=field_validation_mode,
+            test_state=test_state,
         )
 
     @staticmethod
@@ -130,7 +148,19 @@ class TestStateStaticAnalyser(StaticAnalyser):
             )
 
     @staticmethod
-    def validate_mock_result_matches_api_shape(mock_input: MockInput, test_state: CommonStateField):
+    def validate_mock_result_matches_map_definition(mock_result: Any, test_state: StateMap):
+        if test_state.result_writer is not None and not isinstance(mock_result, dict):
+            raise ValidationException("Mocked result must be a JSON object.")
+
+        if test_state.result_writer is None and not isinstance(mock_result, list):
+            raise ValidationException("Mocked result must be an array.")
+
+    @staticmethod
+    def validate_mock_result_matches_api_shape(
+        mock_result: Any,
+        field_validation_mode: MockResponseValidationMode,
+        test_state: CommonStateField,
+    ):
         # apigateway:invoke: has no equivalent in the AWS SDK service integration.
         # Hence, the validation against botocore doesn't apply.
         # See the note in https://docs.aws.amazon.com/step-functions/latest/dg/connect-api-gateway.html
@@ -139,17 +169,7 @@ class TestStateStaticAnalyser(StaticAnalyser):
             return
 
         if isinstance(test_state, StateTaskService):
-            field_validation_mode = mock_input.get(
-                "fieldValidationMode", MockResponseValidationMode.STRICT
-            )
-            mock_result_raw = mock_input.get("result")
-            if mock_result_raw is None:
-                return
-            try:
-                mock_result = json.loads(mock_result_raw)
-            except json.JSONDecodeError:
-                raise ValidationException("Mocked result must be valid JSON")
-            if mock_result is None or field_validation_mode == MockResponseValidationMode.NONE:
+            if field_validation_mode == MockResponseValidationMode.NONE:
                 return
 
             boto_service_name = test_state._get_boto_service_name()
