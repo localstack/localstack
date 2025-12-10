@@ -37,11 +37,10 @@ aws-cdk-cloud-assembly-schema==48.20.0
     # via aws-cdk-lib
 aws-cdk-lib==2.232.1
     # via localstack-core
-aws-sam-translator==1.103.0
+aws-sam-translator==1.105.0
     # via
     #   cfn-lint
     #   localstack-core
-    #   moto-ext
 aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.43.10
@@ -85,7 +84,7 @@ cffi==2.0.0
     # via cryptography
 cfgv==3.5.0
     # via pre-commit
-cfn-lint==1.41.0
+cfn-lint==1.42.1
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
@@ -205,7 +204,7 @@ joserfc==1.5.0
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.120.0
+jsii==1.121.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -558,11 +557,10 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.23
     # via cffi
-pydantic==2.12.4
+pydantic==2.12.5
     # via
     #   aws-sam-translator
     #   localstack-core
-    #   moto-ext
 pydantic-core==2.41.5
     # via pydantic
 pygments==2.19.2

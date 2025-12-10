@@ -87,7 +87,8 @@ runtime = [
     # antlr4-python3-runtime: exact pin because antlr4 runtime is tightly coupled to the generated parser code
     "antlr4-python3-runtime==4.13.2",
     "apispec>=5.1.1",
-    "aws-sam-translator>=1.15.1",
+    # pinning it to a higher version than what moto-ext requires
+    "aws-sam-translator>=1.105.0",
     "crontab>=0.22.6",
     "cryptography>=41.0.5",
     "jinja2>=3.1.6",
