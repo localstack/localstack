@@ -837,15 +837,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         if alarm_name:
             history = [h for h in history if h["AlarmName"] == alarm_name]
 
-        def _get_timestamp(input: dict):
-            if timestamp_string := input.get("Timestamp"):
-                return datetime.datetime.fromisoformat(timestamp_string)
-            return None
-
         if start_date:
-            history = [h for h in history if (date := _get_timestamp(h)) and date >= start_date]
+            history = [h for h in history if (date := h.get("Timestamp")) and date >= start_date]
         if end_date:
-            history = [h for h in history if (date := _get_timestamp(h)) and date <= end_date]
+            history = [h for h in history if (date := h.get("Timestamp")) and date <= end_date]
         return DescribeAlarmHistoryOutput(AlarmHistoryItems=history)
 
     def _evaluate_composite_alarms(self, context: RequestContext, triggering_alarm):
