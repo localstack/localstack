@@ -782,9 +782,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             },
         }
         alarm_history_item = AlarmHistoryItem(
-            Timestamp=datetime.datetime.fromtimestamp(
-                timestamp_millis(alarm.alarm["StateUpdatedTimestamp"])
-            ),
+            Timestamp=alarm.alarm["StateUpdatedTimestamp"],
             HistoryItemType=HistoryItemType.StateUpdate,
             AlarmName=alarm.alam["AlarmName"],
             HistoryData=json.dumps(history_data),
