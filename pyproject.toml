@@ -16,7 +16,6 @@ dependencies = [
     "click>=8.2.0",
     "cachetools>=5.0",
     "cryptography",
-    "dill==0.3.6",
     "dnslib>=0.9.10",
     "dnspython>=1.16.0",
     "plux>=1.10",
@@ -58,6 +57,7 @@ base-runtime = [
     # transitive dependency of botocore, added to avoid specific version
     "awscrt>=0.13.14,!=0.27.1",
     "cbor2>=5.5.0",
+    "dill==0.3.6",
     "dnspython>=1.16.0",
     "docker>=6.1.1",
     "jsonpatch>=1.24",
