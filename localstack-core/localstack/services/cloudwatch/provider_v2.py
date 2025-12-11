@@ -9,6 +9,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
     AccountId,
     ActionPrefix,
+    AlarmHistoryItem,
     AlarmName,
     AlarmNamePrefix,
     AlarmNames,
@@ -760,7 +761,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         alarm: LocalStackAlarm,
-        state_value: str,
+        state_value: StateValue,
         state_reason: str,
         state_reason_data: dict = None,
     ):
@@ -780,18 +781,19 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 "stateReasonData": state_reason_data,
             },
         }
-        store.histories.append(
-            {
-                "Timestamp": timestamp_millis(alarm.alarm["StateUpdatedTimestamp"]),
-                "HistoryItemType": HistoryItemType.StateUpdate,
-                "AlarmName": alarm.alarm["AlarmName"],
-                "HistoryData": json.dumps(history_data),
-                "HistorySummary": f"Alarm updated from {old_state} to {state_value}",
-                "AlarmType": "MetricAlarm"
-                if isinstance(alarm, LocalStackMetricAlarm)
-                else "CompositeAlarm",
-            }
+        alarm_history_item = AlarmHistoryItem(
+            Timestamp=datetime.datetime.fromtimestamp(
+                timestamp_millis(alarm.alarm["StateUpdatedTimestamp"])
+            ),
+            HistoryItemType=HistoryItemType.StateUpdate,
+            AlarmName=alarm.alam["AlarmName"],
+            HistoryData=json.dumps(history_data),
+            HistorySummary=f"Alarm updated from {old_state} to {state_value}",
+            AlarmType="MetricAlarm"
+            if isinstance(alarm, LocalStackMetricAlarm)
+            else "CompositeAlarm",
         )
+        store.histories.append(alarm_history_item)
         alarm.alarm["StateValue"] = state_value
         alarm.alarm["StateReason"] = state_reason
         if state_reason_data:

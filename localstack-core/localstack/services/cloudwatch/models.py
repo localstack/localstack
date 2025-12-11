@@ -1,6 +1,12 @@
 import datetime
 
-from localstack.aws.api.cloudwatch import CompositeAlarm, DashboardBody, MetricAlarm, StateValue
+from localstack.aws.api.cloudwatch import (
+    AlarmHistoryItem,
+    CompositeAlarm,
+    DashboardBody,
+    MetricAlarm,
+    StateValue,
+)
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -72,6 +78,8 @@ class LocalStackDashboard:
     dashboard_name: str
     dashboard_arn: str
     dashboard_body: DashboardBody
+    last_modified: datetime.datetime
+    size: int
 
     def __init__(
         self, account_id: str, region: str, dashboard_name: str, dashboard_body: DashboardBody
@@ -99,7 +107,7 @@ class CloudWatchStore(BaseStore):
 
     # Contains all the Alarm Histories. Per documentation, an alarm history is retained even if the alarm is deleted,
     # making it necessary to save this at store level
-    histories: list[dict] = LocalAttribute(default=list)
+    histories: list[dict[str, AlarmHistoryItem]] = LocalAttribute(default=list)
 
     dashboards: dict[str, LocalStackDashboard] = LocalAttribute(default=dict)
 
