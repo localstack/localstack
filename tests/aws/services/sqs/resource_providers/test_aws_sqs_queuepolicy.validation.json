@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queuepolicy.py::test_sqs_queue_policy": {
+    "last_validated_date": "2025-12-07T18:57:27+00:00",
+    "durations_in_seconds": {
+      "setup": 1.1,
+      "call": 44.01,
+      "teardown": 66.41,
+      "total": 111.52
+    }
+  }
+}

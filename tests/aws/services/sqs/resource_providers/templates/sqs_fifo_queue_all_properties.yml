@@ -1,0 +1,49 @@
+#
+# Define an SQS FIFO Queue with all possible properties set to valid values.
+#
+Resources:
+  FifoQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: 'MyFifoQueueWithAllProperties.fifo'
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      DeduplicationScope: 'messageGroup'
+      FifoThroughputLimit: 'perMessageGroupId'
+      DelaySeconds: 13
+      MaximumMessageSize: 3232
+      MessageRetentionPeriod: 13425
+      ReceiveMessageWaitTimeSeconds: 15
+      VisibilityTimeout: 42
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 7
+      SqsManagedSseEnabled: false
+      KmsMasterKeyId: 'alias/aws/sqs'
+      KmsDataKeyReusePeriodSeconds: 200
+      Tags:
+        - Key: 'Environment'
+          Value: 'Production'
+        - Key: 'Department'
+          Value: 'Finance'
+
+  DeadLetterQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      FifoQueue: true
+      RedriveAllowPolicy:
+        redrivePermission: 'allowAll'
+
+Outputs:
+  QueueUrl:
+    Description: 'URL of the SQS Fifo Queue'
+    Value: !Ref FifoQueue
+  QueueArn:
+    Description: 'ARN of the SQS Fifo Queue'
+    Value: !GetAtt FifoQueue.Arn
+  DeadLetterQueueUrl:
+    Description: 'URL of the Dead Letter Queue'
+    Value: !Ref DeadLetterQueue
+  DeadLetterQueueArn:
+    Description: 'ARN of the Dead Letter Queue'
+    Value: !GetAtt DeadLetterQueue.Arn

@@ -1,0 +1,45 @@
+#
+# A standard SQS queue with all properties set, including a dead-letter queue. The ReceiveMessageWaitTimeSeconds
+# property is set to an invalid value (21) to simulate an error scenario.
+#
+Resources:
+  StandardQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: 'MyStandardQueueWithAllProperties'
+      DelaySeconds: 31
+      MaximumMessageSize: 1048576
+      MessageRetentionPeriod: 13579
+      ReceiveMessageWaitTimeSeconds: 21
+      VisibilityTimeout: 45
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 7
+      SqsManagedSseEnabled: false
+      KmsMasterKeyId: 'alias/aws/sqs'
+      KmsDataKeyReusePeriodSeconds: 297
+      Tags:
+        - Key: 'Environment'
+          Value: 'Production'
+        - Key: 'Department'
+          Value: 'Finance'
+
+  DeadLetterQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      RedriveAllowPolicy:
+        redrivePermission: 'allowAll'
+
+Outputs:
+  QueueUrl:
+    Description: 'URL of the SQS Standard Queue'
+    Value: !Ref StandardQueue
+  QueueArn:
+    Description: 'ARN of the SQS Standard Queue'
+    Value: !GetAtt StandardQueue.Arn
+  DeadLetterQueueUrl:
+    Description: 'URL of the Dead Letter Queue'
+    Value: !Ref DeadLetterQueue
+  DeadLetterQueueArn:
+    Description: 'ARN of the Dead Letter Queue'
+    Value: !GetAtt DeadLetterQueue.Arn

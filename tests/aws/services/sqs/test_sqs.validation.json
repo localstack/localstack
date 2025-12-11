@@ -755,6 +755,24 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_empty_redrive_policy[sqs_query]": {
     "last_validated_date": "2024-08-20T14:14:11+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_queue_attributes_default_values[sqs]": {
+    "last_validated_date": "2025-12-10T18:38:55+00:00",
+    "durations_in_seconds": {
+      "setup": 2.41,
+      "call": 2.34,
+      "teardown": 0.29,
+      "total": 5.04
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_queue_attributes_default_values[sqs_query]": {
+    "last_validated_date": "2025-12-10T18:38:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 2.21,
+      "teardown": 0.3,
+      "total": 2.52
+    }
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_fifo[sqs]": {
     "last_validated_date": "2024-05-14T22:23:46+00:00"
   },

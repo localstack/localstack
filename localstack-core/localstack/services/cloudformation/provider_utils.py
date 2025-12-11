@@ -275,6 +275,26 @@ def convert_values_to_numbers(input_dict: dict, keys_to_skip: list[str] | None =
     return recursive_convert(input_dict)
 
 
+def resource_tags_to_remove_or_update(
+    prev_tags: list[dict], new_tags: list[dict]
+) -> tuple[list[str], dict[str, str]]:
+    """
+    When updating resources that have tags, we need to determine which tags to remove and which to add/update,
+    as these are typically done in separate API calls. The format of prev_tags and new_tags is expected to
+    be [{ "Key": tagName, "Value": tagValue }, ...]. The return value will be a tuple of (tags_to_remove, tags_to_update),
+    where:
+    - tags_to_remove is a list of tag keys that are present in prev_tags but not in new_tags.
+    - tags_to_update is a dict of tags to add or update, with the format: { tagName: tagValue, ... }.
+    """
+    prev_tag_keys = [tag["Key"] for tag in prev_tags]
+    new_tag_keys = [tag["Key"] for tag in new_tags]
+    tags_to_remove = list(set(prev_tag_keys) - set(new_tag_keys))
+
+    # convert from list of dicts, to a single dict because that's what tag_queue APIs expect.
+    tags_to_update = {tag["Key"]: tag["Value"] for tag in new_tags}
+    return (tags_to_remove, tags_to_update)
+
+
 #  LocalStack specific utilities
 def get_schema_path(file_path: Path) -> dict:
     file_name_base = file_path.name.removesuffix(".py").removesuffix(".py.enc")
