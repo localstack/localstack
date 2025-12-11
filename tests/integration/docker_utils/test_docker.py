@@ -2187,6 +2187,35 @@ class TestDockerLabels:
         assert 0.0 <= stats["MemPerc"] <= 100.0
 
 
+class TestDockerCgroupLimits:
+    def test_run_container_with_memory_limit(self, docker_client, create_container):
+        container = create_container(
+            "alpine",
+            command=[
+                "sh",
+                "-c",
+                "if [ -e /sys/fs/cgroup/cgroup.controllers ]; then cat /sys/fs/cgroup/memory.max; else cat /sys/fs/cgroup/memory/memory.limit_in_bytes; fi",
+            ],
+            mem_limit="128m",
+        )
+        stdout, _ = docker_client.start_container(container.container_id, attach=True)
+        assert "134217728" in stdout.decode("utf-8")
+
+    def test_run_container_with_cpu_shares(self, docker_client, create_container):
+        container = create_container(
+            "alpine",
+            command=[
+                "sh",
+                "-c",
+                "if [ -e /sys/fs/cgroup/cgroup.controllers ]; then cat /sys/fs/cgroup/cpu.weight; else cat /sys/fs/cgroup/cpu,cpuacct/cpu.shares; fi",
+            ],
+            cpu_shares=256,
+        )
+        stdout, _ = docker_client.start_container(container.container_id, attach=True)
+        stdout = stdout.decode("utf-8")
+        assert "35" in stdout or "256" in stdout
+
+
 def _pull_image_if_not_exists(docker_client: ContainerClient, image_name: str):
     if image_name not in docker_client.get_docker_image_names():
         docker_client.pull_image(image_name)

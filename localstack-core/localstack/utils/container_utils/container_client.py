@@ -544,6 +544,8 @@ class ContainerConfiguration:
     labels: dict[str, str] | None = None
     init: bool | None = None
     log_config: LogConfig | None = None
+    cpu_shares: int | None = None
+    mem_limit: int | str | None = None
 
 
 class ContainerConfigurator(Protocol):
@@ -979,6 +981,8 @@ class ContainerClient(metaclass=ABCMeta):
             ulimits=container_config.ulimits,
             init=container_config.init,
             log_config=container_config.log_config,
+            cpu_shares=container_config.cpu_shares,
+            mem_limit=container_config.mem_limit,
         )
 
     @abstractmethod
@@ -1011,6 +1015,8 @@ class ContainerClient(metaclass=ABCMeta):
         ulimits: list[Ulimit] | None = None,
         init: bool | None = None,
         log_config: LogConfig | None = None,
+        cpu_shares: int | None = None,
+        mem_limit: int | str | None = None,
     ) -> str:
         """Creates a container with the given image
 
@@ -1048,6 +1054,8 @@ class ContainerClient(metaclass=ABCMeta):
         ulimits: list[Ulimit] | None = None,
         init: bool | None = None,
         log_config: LogConfig | None = None,
+        cpu_shares: int | None = None,
+        mem_limit: int | str | None = None,
     ) -> tuple[bytes, bytes]:
         """Creates and runs a given docker container
 
@@ -1086,6 +1094,8 @@ class ContainerClient(metaclass=ABCMeta):
             ulimits=container_config.ulimits,
             init=container_config.init,
             log_config=container_config.log_config,
+            cpu_shares=container_config.cpu_shares,
+            mem_limit=container_config.mem_limit,
         )
 
     @abstractmethod
