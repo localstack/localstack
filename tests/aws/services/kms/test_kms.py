@@ -546,7 +546,6 @@ class TestKMS:
             KeyUsage=key_usage,
             Tags=[
                 {"TagKey": "_custom_key_material_", "TagValue": custom_key_tag_value},
-                # {"TagKey": "_custom_id_", "TagValue": "14122ec4-cdd0-4154-8275-04363c15fbd9"},
             ],
         )["KeyId"]
         public_key = aws_client.kms.get_public_key(KeyId=key_id)["PublicKey"]
