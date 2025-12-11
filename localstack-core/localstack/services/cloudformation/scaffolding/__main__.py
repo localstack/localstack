@@ -10,6 +10,7 @@ from functools import reduce
 from pathlib import Path
 from typing import Any, Literal, TypedDict, TypeVar
 
+import boto3
 import click
 from jinja2 import Environment, FileSystemLoader
 from yaml import safe_dump
@@ -138,6 +139,71 @@ class SchemaProvider:
             raise click.ClickException(
                 f"Could not find schema for CloudFormation resource type: {resource_name.full_name}"
             ) from e
+
+
+class LiveSchemaProvider:
+    """
+    Provides CloudFormation resource schemas by fetching them from the live AWS CloudFormation service, rather than
+    a local zip file.
+    """
+
+    def __init__(self, cfn_client):
+        self.cfn_client = cfn_client
+
+    def available_schemas(self, pattern: str) -> list[str]:
+        """
+        Return the names of available CloudFormation resource types. `pattern` should be something like
+        AWS::S3::Bucket or AWS::S3::*, depending on whether you want all resources for a service or a specific one.
+        The result is a list of matching resource type names (e.g. [AWS::S3::Bucket, AWS::S3::Object, ...])
+        """
+
+        is_wildcard = pattern.endswith("*")
+        pattern = pattern[:-1] if is_wildcard else pattern
+        matching_names = []
+
+        params = {
+            "Visibility": "PUBLIC",
+            "Type": "RESOURCE",
+            "DeprecatedStatus": "LIVE",
+            "Filters": {"Category": "AWS_TYPES", "TypeNamePrefix": pattern},
+        }
+        next_token: str | None = None
+
+        # Note: pagination is necessary since list_types requires multiple calls even to get a single result.
+        while True:
+            if next_token:
+                params["NextToken"] = next_token
+            response = self.cfn_client.list_types(**params)
+
+            # collect any matching type names (if wildcard, all; else exact match only)
+            matching_names.extend(
+                [
+                    type_summary["TypeName"]
+                    for type_summary in response.get("TypeSummaries", [])
+                    if (is_wildcard or type_summary["TypeName"] == pattern)
+                ]
+            )
+
+            next_token = response.get("NextToken")
+            if not next_token:
+                break
+
+        return matching_names
+
+    def schema(self, type_name: ResourceName) -> ResourceSchema:
+        """
+        Given a CloudFormation resource type name (e.g. AWS::S3::Bucket), return the resource schema as dict.
+        """
+        response = self.cfn_client.describe_type(
+            Type="RESOURCE",
+            TypeName=type_name.full_name,
+        )
+        schema_str = response.get("Schema")
+        if not schema_str:
+            raise click.ClickException(
+                f"Could not fetch schema for CloudFormation resource type: {type_name}"
+            )
+        return json.loads(schema_str)
 
 
 LOCALSTACK_ROOT_DIR = Path(__file__).parent.joinpath("../../../../..").resolve()
@@ -763,21 +829,14 @@ def generate(
     console = Console()
     console.rule(title=resource_type)
 
-    schema_provider = SchemaProvider(
-        zipfile_path=Path(__file__).parent.joinpath("CloudformationSchema.zip")
-    )
+    schema_provider = LiveSchemaProvider(boto3.client("cloudformation"))
 
     template_root = Path(__file__).parent.joinpath("templates")
     env = Environment(
         loader=FileSystemLoader(template_root),
     )
 
-    parts = resource_type.rpartition("::")
-    if parts[-1] == "*":
-        # generate all resource types for that service
-        matching_resources = [x for x in schema_provider.schemas.keys() if x.startswith(parts[0])]
-    else:
-        matching_resources = [resource_type]
+    matching_resources = schema_provider.available_schemas(resource_type)
 
     for matching_resource in matching_resources:
         console.rule(title=matching_resource)
