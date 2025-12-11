@@ -109,9 +109,7 @@ decorator==5.2.1
 deepdiff==8.6.1
     # via localstack-snapshot
 dill==0.3.6
-    # via
-    #   localstack-core
-    #   localstack-core (pyproject.toml)
+    # via localstack-core
 dnslib==0.9.26
     # via
     #   localstack-core

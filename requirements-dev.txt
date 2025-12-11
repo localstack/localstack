@@ -120,9 +120,7 @@ deepdiff==8.6.1
 deptry==0.24.0
     # via localstack-core (pyproject.toml)
 dill==0.3.6
-    # via
-    #   localstack-core
-    #   localstack-core (pyproject.toml)
+    # via localstack-core
 distlib==0.4.0
     # via virtualenv
 dnslib==0.9.26

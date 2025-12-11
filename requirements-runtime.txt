@@ -87,9 +87,7 @@ cryptography==46.0.3
 decorator==5.2.1
     # via jsonpath-rw
 dill==0.3.6
-    # via
-    #   localstack-core
-    #   localstack-core (pyproject.toml)
+    # via localstack-core
 dnslib==0.9.26
     # via
     #   localstack-core
