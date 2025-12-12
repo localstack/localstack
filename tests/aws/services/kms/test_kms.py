@@ -523,6 +523,34 @@ class TestKMS:
             aws_client.kms.describe_key(KeyId="mrk-fake-key-id")
         snapshot.match("describe-key-with-invalid-uuid-mrk", e.value.response)
 
+    @markers.aws.only_localstack
+    def test_create_key_custom_key_material_rsa_2048(self, kms_create_key, aws_client):
+        rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        raw_private_key = rsa_key.private_bytes(
+            serialization.Encoding.DER,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        raw_public_key = rsa_key.public_key().public_bytes(
+            serialization.Encoding.DER,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+
+        custom_key_tag_value = base64.b64encode(raw_private_key).decode("utf-8")
+
+        key_spec = "RSA_2048"
+        key_usage = "SIGN_VERIFY"
+
+        key_id = kms_create_key(
+            KeySpec=key_spec,
+            KeyUsage=key_usage,
+            Tags=[
+                {"TagKey": "_custom_key_material_", "TagValue": custom_key_tag_value},
+            ],
+        )["KeyId"]
+        public_key = aws_client.kms.get_public_key(KeyId=key_id)["PublicKey"]
+        assert public_key == raw_public_key
+
     @markers.aws.validated
     def test_list_keys(self, kms_create_key, aws_client):
         created_key = kms_create_key()
