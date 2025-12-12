@@ -517,6 +517,107 @@ class TestSNSTopicCrudV2:
             )
         snapshot.match("set-fifo-false-after-creation", e.value.response)
 
+    @markers.aws.validated
+    def test_topic_add_permission(self, sns_create_topic, aws_client, snapshot, account_id):
+        topic_arn = sns_create_topic()["TopicArn"]
+        resp = aws_client.sns.add_permission(
+            TopicArn=topic_arn, Label="test", AWSAccountId=[account_id], ActionName=["Publish"]
+        )
+        snapshot.match("add-permission-response", resp)
+
+        attributes_resp = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        policy_str = attributes_resp["Attributes"]["Policy"]
+        policy_json = json.loads(policy_str)
+        snapshot.match("topic-policy-after-permission", policy_json)
+
+    @markers.aws.validated
+    def test_topic_add_multiple_permissions(
+        self, sns_create_topic, aws_client, snapshot, account_id
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        resp = aws_client.sns.add_permission(
+            TopicArn=topic_arn,
+            Label="test",
+            AWSAccountId=[account_id],
+            ActionName=["Publish", "Subscribe"],
+        )
+        snapshot.match("add-permission-response", resp)
+
+        attributes_resp = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        policy_str = attributes_resp["Attributes"]["Policy"]
+        policy_json = json.loads(policy_str)
+        snapshot.match("topic-policy-after-permission", policy_json)
+
+    @markers.aws.validated
+    def test_topic_remove_permission(self, sns_create_topic, aws_client, snapshot, account_id):
+        topic_arn = sns_create_topic()["TopicArn"]
+        label = "test"
+        aws_client.sns.add_permission(
+            TopicArn=topic_arn, Label=label, AWSAccountId=[account_id], ActionName=["Publish"]
+        )
+
+        aws_client.sns.remove_permission(TopicArn=topic_arn, Label=label)
+        attributes_resp = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        policy_str = attributes_resp["Attributes"]["Policy"]
+        policy_json = json.loads(policy_str)
+        snapshot.match("topic-policy", policy_json)
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"], condition=is_sns_v1_provider)
+    @markers.aws.validated
+    def test_add_permission_errors(self, snapshot, aws_client, account_id):
+        topic_name = f"topic-{short_uid()}"
+        topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
+
+        aws_client.sns.add_permission(
+            TopicArn=topic_arn,
+            Label="test",
+            AWSAccountId=[account_id],
+            ActionName=["Publish"],
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.add_permission(
+                TopicArn=topic_arn,
+                Label="test",
+                AWSAccountId=[account_id],
+                ActionName=["AddPermission"],
+            )
+        snapshot.match("duplicate-label", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.add_permission(
+                TopicArn=f"{topic_arn}-not-existing",
+                Label="test-2",
+                AWSAccountId=[account_id],
+                ActionName=["AddPermission"],
+            )
+        snapshot.match("topic-not-found", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.add_permission(
+                TopicArn=topic_arn,
+                Label="test-2",
+                AWSAccountId=[account_id],
+                ActionName=["InvalidAction"],
+            )
+        snapshot.match("invalid-action", e.value.response)
+
+    @markers.aws.validated
+    def test_remove_permission_errors(self, snapshot, aws_client, account_id):
+        topic_name = f"topic-{short_uid()}"
+        topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
+        aws_client.sns.add_permission(
+            TopicArn=topic_arn,
+            Label="test",
+            AWSAccountId=[account_id],
+            ActionName=["Publish"],
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.remove_permission(TopicArn=f"{topic_arn}-not-existing", Label="test")
+
+        snapshot.match("topic-not-found", e.value.response)
+
 
 class TestSNSPublishCrud:
     """

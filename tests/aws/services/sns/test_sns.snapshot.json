@@ -6835,5 +6835,198 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_topic_add_permission": {
+    "recorded-date": "11-12-2025, 11:43:04",
+    "recorded-content": {
+      "add-permission-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "topic-policy-after-permission": {
+        "Id": "__default_policy_ID",
+        "Statement": [
+          {
+            "Action": [
+              "SNS:GetTopicAttributes",
+              "SNS:SetTopicAttributes",
+              "SNS:AddPermission",
+              "SNS:RemovePermission",
+              "SNS:DeleteTopic",
+              "SNS:Subscribe",
+              "SNS:ListSubscriptionsByTopic",
+              "SNS:Publish"
+            ],
+            "Condition": {
+              "StringEquals": {
+                "AWS:SourceOwner": "111111111111"
+              }
+            },
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "*"
+            },
+            "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+            "Sid": "__default_statement_ID"
+          },
+          {
+            "Action": "SNS:Publish",
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:<partition>:iam::111111111111:<resource:2>"
+            },
+            "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+            "Sid": "test"
+          }
+        ],
+        "Version": "2008-10-17"
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_topic_remove_permission": {
+    "recorded-date": "11-12-2025, 12:02:07",
+    "recorded-content": {
+      "topic-policy": {
+        "Id": "__default_policy_ID",
+        "Statement": [
+          {
+            "Action": [
+              "SNS:GetTopicAttributes",
+              "SNS:SetTopicAttributes",
+              "SNS:AddPermission",
+              "SNS:RemovePermission",
+              "SNS:DeleteTopic",
+              "SNS:Subscribe",
+              "SNS:ListSubscriptionsByTopic",
+              "SNS:Publish"
+            ],
+            "Condition": {
+              "StringEquals": {
+                "AWS:SourceOwner": "111111111111"
+              }
+            },
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "*"
+            },
+            "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+            "Sid": "__default_statement_ID"
+          }
+        ],
+        "Version": "2008-10-17"
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_topic_policy_overwrite_lifecycle": {
+    "recorded-date": "11-12-2025, 12:39:06",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_topic_add_multiple_permissions": {
+    "recorded-date": "11-12-2025, 12:53:37",
+    "recorded-content": {
+      "add-permission-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "topic-policy-after-permission": {
+        "Id": "__default_policy_ID",
+        "Statement": [
+          {
+            "Action": [
+              "SNS:GetTopicAttributes",
+              "SNS:SetTopicAttributes",
+              "SNS:AddPermission",
+              "SNS:RemovePermission",
+              "SNS:DeleteTopic",
+              "SNS:Subscribe",
+              "SNS:ListSubscriptionsByTopic",
+              "SNS:Publish"
+            ],
+            "Condition": {
+              "StringEquals": {
+                "AWS:SourceOwner": "111111111111"
+              }
+            },
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "*"
+            },
+            "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+            "Sid": "__default_statement_ID"
+          },
+          {
+            "Action": [
+              "SNS:Publish",
+              "SNS:Subscribe"
+            ],
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:<partition>:iam::111111111111:<resource:2>"
+            },
+            "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+            "Sid": "test"
+          }
+        ],
+        "Version": "2008-10-17"
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_add_permission_errors": {
+    "recorded-date": "11-12-2025, 13:00:18",
+    "recorded-content": {
+      "duplicate-label": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Statement already exists",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "topic-not-found": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Topic does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "invalid-action": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Policy statement action out of service scope!",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_remove_permission_errors": {
+    "recorded-date": "11-12-2025, 13:05:40",
+    "recorded-content": {
+      "topic-not-found": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Topic does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
