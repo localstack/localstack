@@ -2,6 +2,10 @@ import copy
 import json
 import logging
 import re
+from localstack.aws.api.ec2 import (
+    DescribeInstanceCreditSpecificationsRequest,
+    DescribeInstanceCreditSpecificationsResult,
+)
 from abc import ABC
 from datetime import UTC, datetime
 
@@ -477,6 +481,26 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
                 policy = json.loads(policy)
                 policy.pop("Version", None)
                 endpoint["PolicyDocument"] = json.dumps(policy)
+
+        return result
+    
+    # ==========================================
+    # [FIX] Issue #13488: 修复 NextToken 无效的问题
+    # ==========================================
+    @handler("DescribeInstanceCreditSpecifications", expand=False)
+    def describe_instance_credit_specifications(
+        self,
+        context: RequestContext,
+        request: DescribeInstanceCreditSpecificationsRequest,
+    ) -> DescribeInstanceCreditSpecificationsResult:
+        # 1. 调用底层的 Moto 获取原始结果
+        # Moto 会返回包含 'NextToken': 'string' 的错误数据
+        result = call_moto(context)
+
+        # 2. 【核心修复】暴力删除 NextToken
+        # 只有当真的有分页数据时，NextToken 才有意义。
+        # 这里直接删掉它，Terraform 就不会以为还有下一页了。
+        result.pop("NextToken", None)
 
         return result
 
