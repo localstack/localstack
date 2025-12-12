@@ -200,3 +200,91 @@ class TestSnfApiTagging:
             resourceArn=state_machine_arn
         )
         sfn_snapshot.match("list_resources_res", list_resources_res)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "tag_list",
+        [
+            [],
+            [Tag(key="key1", value="value1")],
+            [Tag(key="key1", value="")],
+            [Tag(key="key1", value="value1"), Tag(key="key2", value="value2")],
+        ],
+    )
+    def test_tag_activity(
+        self,
+        sfn_snapshot,
+        aws_client,
+        tag_list,
+    ):
+        activity_name = f"activity_{short_uid()}"
+        creation_resp = aws_client.stepfunctions.create_activity(name=activity_name)
+        activity_arn = creation_resp["activityArn"]
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(activity_arn, "activity_arn"))
+        sfn_snapshot.match("creation_resp", creation_resp)
+
+        tag_resource_resp = aws_client.stepfunctions.tag_resource(
+            resourceArn=activity_arn, tags=tag_list
+        )
+        sfn_snapshot.match("tag_resource_resp", tag_resource_resp)
+
+        list_resources_res = aws_client.stepfunctions.list_tags_for_resource(
+            resourceArn=activity_arn
+        )
+        sfn_snapshot.match("list_resources_res", list_resources_res)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "tag_keys",
+        [
+            [],
+            ["key1"],
+            ["key1", "key2"],
+        ],
+    )
+    def test_untag_activity(
+        self,
+        sfn_snapshot,
+        aws_client,
+        tag_keys,
+    ):
+        activity_name = f"activity_{short_uid()}"
+        creation_resp = aws_client.stepfunctions.create_activity(name=activity_name)
+        activity_arn = creation_resp["activityArn"]
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(activity_arn, "activity_arn"))
+        sfn_snapshot.match("creation_resp", creation_resp)
+
+        # Add tags first
+        tag_resource_resp = aws_client.stepfunctions.tag_resource(
+            resourceArn=activity_arn,
+            tags=[Tag(key="key1", value="value1"), Tag(key="key2", value="value2")],
+        )
+        sfn_snapshot.match("tag_resource_resp", tag_resource_resp)
+
+        # Remove specified tags
+        untag_resource_resp = aws_client.stepfunctions.untag_resource(
+            resourceArn=activity_arn, tagKeys=tag_keys
+        )
+        sfn_snapshot.match("untag_resource_resp", untag_resource_resp)
+
+        # Verify remaining tags
+        list_resources_res = aws_client.stepfunctions.list_tags_for_resource(
+            resourceArn=activity_arn
+        )
+        sfn_snapshot.match("list_resources_res", list_resources_res)
+
+    @markers.aws.validated
+    def test_create_activity_with_tags(self, sfn_snapshot, aws_client):
+        activity_name = f"activity_{short_uid()}"
+        creation_resp = aws_client.stepfunctions.create_activity(
+            name=activity_name,
+            tags=[Tag(key="key1", value="value1"), Tag(key="key2", value="value2")],
+        )
+        activity_arn = creation_resp["activityArn"]
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(activity_arn, "activity_arn"))
+        sfn_snapshot.match("creation_resp", creation_resp)
+
+        list_resources_res = aws_client.stepfunctions.list_tags_for_resource(
+            resourceArn=activity_arn
+        )
+        sfn_snapshot.match("list_resources_res", list_resources_res)
