@@ -1,5 +1,7 @@
 import dataclasses
 import os
+import shlex
+import subprocess as sp
 from typing import Literal
 
 import click
@@ -315,12 +317,11 @@ def generate_k8s_helm_overrides(
     return overrides
 
 
-def write_file(content: dict, output_path: str, file_name: str):
-    path = os.path.join(output_path, file_name)
-    with open(path, "w") as f:
+def write_file(content: dict, output_path: str):
+    with open(output_path, "w") as f:
         f.write(yaml.dump(content))
         f.close()
-        print(f"Generated file at {path}")
+        print(f"Generated file at {output_path}")
 
 
 def print_file(content: dict, file_name: str):
@@ -328,6 +329,22 @@ def print_file(content: dict, file_name: str):
     print("=====================================")
     print(yaml.dump(content))
     print("=====================================")
+
+
+def generate_k3d_command(config_file_path: str) -> str:
+    return f"k3d cluster create --config {config_file_path}"
+
+
+def generate_helm_command(overrides_file_path: str) -> str:
+    return f"helm upgrade --install localstack localstack/localstack -f {overrides_file_path}"
+
+
+def execute_deployment(config_file_path: str, overrides_file_path: str):
+    """
+    Use the k3d and helm commands to create a cluster and deploy LocalStack in one command
+    """
+    sp.check_call(shlex.split(generate_k3d_command(config_file_path)))
+    sp.check_call(shlex.split(generate_helm_command(overrides_file_path)))
 
 
 @click.command("run")
@@ -386,6 +403,13 @@ def print_file(content: dict, file_name: str):
     help="DNS port to expose from the kubernetes node. It is applied only if --expose-dns is set.",
     type=click.IntRange(0, 65535),
 )
+@click.option(
+    "--execute",
+    "-x",
+    is_flag=True,
+    default=False,
+    help="Execute deployment from generated config files. Implies -w/--write.",
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     pro: bool = None,
@@ -400,6 +424,7 @@ def run(
     port: int = None,
     expose_dns: bool = False,
     dns_port: int = 53,
+    execute: bool = False,
 ):
     """
     A tool for localstack developers to generate the kubernetes cluster configuration file and the overrides to mount the localstack code into the cluster.
@@ -416,25 +441,25 @@ def run(
     overrides_file = overrides_file or "overrides.yml"
     config_file = config_file or "configuration.yml"
 
-    if write:
-        write_file(config, output_dir, config_file)
-        write_file(overrides, output_dir, overrides_file)
+    overrides_file_path = os.path.join(output_dir, overrides_file)
+    config_file_path = os.path.join(output_dir, config_file)
+
+    if write or execute:
+        write_file(config, config_file_path)
+        write_file(overrides, overrides_file_path)
+        if execute:
+            execute_deployment(config_file, overrides_file)
     else:
         print_file(config, config_file)
         print_file(overrides, overrides_file)
 
-    overrides_file_path = os.path.join(output_dir, overrides_file)
-    config_file_path = os.path.join(output_dir, config_file)
-
     print("\nTo create a k3d cluster with the generated configuration, follow these steps:")
     print("1. Run the following command to create the cluster:")
-    print(f"\n    k3d cluster create --config {config_file_path}\n")
+    print(f"\n    {generate_k3d_command(config_file_path)}\n")
 
     print("2. Once the cluster is created, start LocalStack with the generated overrides:")
     print("\n    helm repo add localstack https://localstack.github.io/helm-charts # (if required)")
-    print(
-        f"\n    helm upgrade --install localstack localstack/localstack -f {overrides_file_path}\n"
-    )
+    print(f"\n    {generate_helm_command(overrides_file_path)}\n")
 
 
 def main():
