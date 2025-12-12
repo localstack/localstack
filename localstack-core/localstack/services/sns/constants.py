@@ -25,6 +25,19 @@ VALID_SUBSCRIPTION_ATTR_NAME: list[str] = [
     "SubscriptionRoleArn",
 ]
 
+
+VALID_POLICY_ACTIONS = [
+    "GetTopicAttributes",
+    "SetTopicAttributes",
+    "AddPermission",
+    "RemovePermission",
+    "DeleteTopic",
+    "Subscribe",
+    "ListSubscriptionsByTopic",
+    "Publish",
+    "Receive",
+]
+
 MSG_ATTR_NAME_REGEX = re.compile(r"^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9_\-.]+$")
 ATTR_TYPE_REGEX = re.compile(r"^(String|Number|Binary)\..+$")
 VALID_MSG_ATTR_NAME_CHARS = set(ascii_letters + digits + "." + "-" + "_")
