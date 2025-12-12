@@ -618,6 +618,40 @@ class TestSNSTopicCrudV2:
 
         snapshot.match("topic-not-found", e.value.response)
 
+    @markers.aws.validated
+    def test_data_protection_policy_crud(self, snapshot, aws_client):
+        topic_name = f"topic-{short_uid()}"
+        topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
+
+        policy_doc = {
+            "Name": "data_protection_policy",
+            "Description": "Test Policy",
+            "Version": "2021-06-01",
+            "Statement": [
+                {
+                    "Sid": "test-statement",
+                    "DataDirection": "Inbound",
+                    "Principal": ["*"],
+                    "DataIdentifier": [
+                        "arn:aws:dataprotection:us-east-1::data-identifier/EmailAddress"
+                    ],
+                    "Operation": {"Deny": {}},
+                }
+            ],
+        }
+
+        response = aws_client.sns.put_data_protection_policy(
+            ResourceArn=topic_arn, DataProtectionPolicy=json.dumps(policy_doc)
+        )
+        snapshot.match("put-data-protection-policy", response)
+
+        response = aws_client.sns.get_data_protection_policy(ResourceArn=topic_arn)
+        snapshot.match("get-data-protection-policy", response)
+
+        # check if policy shows up in the attributes
+        response = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("get-topic-attributes", response)
+
 
 class TestSNSPublishCrud:
     """

@@ -21,6 +21,7 @@ from localstack.aws.api.sns import (
     DelegatesList,
     Endpoint,
     EndpointDisabledException,
+    GetDataProtectionPolicyResponse,
     GetEndpointAttributesResponse,
     GetPlatformApplicationAttributesResponse,
     GetSMSAttributesResponse,
@@ -1172,6 +1173,28 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         statements = [statement for statement in statements if statement["Sid"] != label]
         policy["Statement"] = statements
         topic["attributes"]["Policy"] = json.dumps(policy)
+
+    #
+    # Data Protection Policy operations
+    #
+
+    def get_data_protection_policy(
+        self, context: RequestContext, resource_arn: topicARN, **kwargs
+    ) -> GetDataProtectionPolicyResponse:
+        topic = self._get_topic(resource_arn, context)
+        return GetDataProtectionPolicyResponse(
+            DataProtectionPolicy=topic.get("data_protection_policy")
+        )
+
+    def put_data_protection_policy(
+        self,
+        context: RequestContext,
+        resource_arn: topicARN,
+        data_protection_policy: attributeValue,
+        **kwargs,
+    ) -> None:
+        topic = self._get_topic(resource_arn, context)
+        topic["data_protection_policy"] = data_protection_policy
 
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
