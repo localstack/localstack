@@ -33,6 +33,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
     PreprocProperties,
     PreprocResource,
 )
+from localstack.services.cloudformation.engine.v2.unsupported_resource import (
+    should_ignore_unsupported_resource_type,
+)
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
     OperationStatus,
@@ -512,7 +515,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     resource_model={},
                     message=f"Resource provider operation failed: {reason}",
                 )
-        elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+        elif should_ignore_unsupported_resource_type(
+            resource_type=resource_type, change_set_type=self._change_set.change_set_type
+        ):
             log_not_available_message(
                 resource_type,
                 f'No resource provider found for "{resource_type}"',

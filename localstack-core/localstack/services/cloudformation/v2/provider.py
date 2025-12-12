@@ -427,7 +427,9 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         change_set.processed_template = transformed_after_template
 
         if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
-            support_visitor = ChangeSetResourceSupportChecker()
+            support_visitor = ChangeSetResourceSupportChecker(
+                change_set_type=change_set.change_set_type
+            )
             support_visitor.visit(change_set.update_model.node_template)
             failure_messages = support_visitor.failure_messages
             if failure_messages:

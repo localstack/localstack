@@ -1216,6 +1216,15 @@ CFN_PER_RESOURCE_TIMEOUT = int(os.environ.get("CFN_PER_RESOURCE_TIMEOUT") or 300
 # EXPERIMENTAL
 CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES")
 
+# Comma-separated list of resource type names that CloudFormation will ignore on stack creation
+CFN_IGNORE_UNSUPPORTED_TYPE_CREATE = parse_comma_separated_list(
+    "CFN_IGNORE_UNSUPPORTED_TYPE_CREATE"
+)
+# Comma-separated list of resource type names that CloudFormation will ignore on stack update
+CFN_IGNORE_UNSUPPORTED_TYPE_UPDATE = parse_comma_separated_list(
+    "CFN_IGNORE_UNSUPPORTED_TYPE_UPDATE"
+)
+
 # Decrease the waiting time for resource deployment
 CFN_NO_WAIT_ITERATIONS: str | int | None = os.environ.get("CFN_NO_WAIT_ITERATIONS")
 
