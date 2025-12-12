@@ -827,6 +827,8 @@ class CmdDockerClient(ContainerClient):
         ulimits: list[Ulimit] | None = None,
         init: bool | None = None,
         log_config: LogConfig | None = None,
+        cpu_shares: int | None = None,
+        mem_limit: int | str | None = None,
     ) -> tuple[list[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -890,6 +892,10 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--log-driver", log_config.type]
             for key, value in log_config.config.items():
                 cmd += ["--log-opt", f"{key}={value}"]
+        if cpu_shares:
+            cmd += ["--cpu-shares", str(cpu_shares)]
+        if mem_limit:
+            cmd += ["--memory", str(mem_limit)]
 
         if additional_flags:
             cmd += shlex.split(additional_flags)
