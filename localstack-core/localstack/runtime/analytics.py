@@ -7,6 +7,8 @@ from localstack.utils.analytics import log
 
 LOG = logging.getLogger(__name__)
 
+# Config options for which both usage and values are reported in analytics.
+# Important: This list must only contain options whose values do not contain PII or sensitive data.
 TRACKED_ENV_VAR = [
     "ACTIVATE_PRO",
     "ALLOW_NONSTANDARD_REGIONS",
@@ -28,6 +30,7 @@ TRACKED_ENV_VAR = [
     "DYNAMODB_IN_MEMORY",
     "DYNAMODB_REMOVE_EXPIRED_ITEMS",
     "EAGER_SERVICE_LOADING",
+    "EC2_DOCKER_INIT",
     "EC2_VM_MANAGER",
     "ECS_TASK_EXECUTOR",
     "EDGE_PORT",
@@ -73,9 +76,15 @@ TRACKED_ENV_VAR = [
     "USE_SSL",
 ]
 
+# Config options for which only the usage is reported in analytics.
+# Use this for options which may hold sensitive data or PII.
 PRESENCE_ENV_VAR = [
     "DATA_DIR",
     "EDGE_FORWARD_URL",  # Not functional; deprecated in 1.4.0, removed in 3.0.0
+    "EC2_HYPERVISOR_URI",
+    "EC2_REFERENCE_DOMAIN",
+    "EC2_LIBVIRT_NETWORK",
+    "EC2_LIBVIRT_POOL",
     "GATEWAY_LISTEN",
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",
