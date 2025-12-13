@@ -1,3 +1,13 @@
+"""
+Moto IAM patches required for STS operations.
+
+This file contains patches to moto's IAM models that are needed for STS
+operations like AssumeRole to work correctly. These patches are applied
+when the STS provider is initialized.
+
+Note: The native IAM provider does not use these patches - they are only
+needed because STS still uses moto's IAM backend via call_moto.
+"""
 import threading
 
 from moto.iam.models import (
@@ -47,7 +57,7 @@ IAM_PATCH_LOCK = threading.RLock()
 def apply_iam_patches():
     global IAM_PATCHED
 
-    # prevent patching multiple times, as this is called from both STS and IAM (for now)
+    # prevent patching multiple times
     with IAM_PATCH_LOCK:
         if IAM_PATCHED:
             return

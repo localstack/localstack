@@ -1,5 +1,6 @@
 import logging
 import re
+from datetime import datetime, timezone
 
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.sts import (
@@ -19,11 +20,12 @@ from localstack.aws.api.sts import (
     tokenCodeType,
     unrestrictedSessionPolicyDocumentType,
 )
-from localstack.services.iam.iam_patches import apply_iam_patches
+from localstack.services.iam.models import RoleLastUsed, iam_stores
+from localstack.services.sts.iam_patches import apply_iam_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sts.models import SessionConfig, sts_stores
-from localstack.utils.aws.arns import extract_account_id_from_arn
+from localstack.utils.aws.arns import extract_account_id_from_arn, extract_resource_from_arn
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 
 LOG = logging.getLogger(__name__)
@@ -126,4 +128,34 @@ class StsProvider(StsApi, ServiceLifecycleHook):
                 transitive_tags=[key.lower() for key in transitive_tag_keys],
                 iam_context={},
             )
+
+        # Track role last used in IAM store
+        self._track_role_last_used(role_arn, target_account_id, context.region)
+
         return response
+
+    def _track_role_last_used(
+        self, role_arn: str, account_id: str, region: str
+    ) -> None:
+        """Update the role's last_used information when it's assumed."""
+        try:
+            # Extract role name from ARN (format: role/path/role-name or role/role-name)
+            resource = extract_resource_from_arn(role_arn)
+            if resource.startswith("role/"):
+                # Extract role name (last component after role/)
+                role_name = resource.split("/")[-1]
+            else:
+                return
+
+            # Get the IAM store for the target account
+            iam_store = iam_stores[account_id][region]
+            role = iam_store.get_role(role_name)
+
+            if role:
+                role.last_used = RoleLastUsed(
+                    last_used_date=datetime.now(timezone.utc),
+                    region=region,
+                )
+        except Exception as e:
+            # Don't fail the assume_role if tracking fails
+            LOG.debug(f"Failed to track role last used: {e}")

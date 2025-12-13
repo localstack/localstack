@@ -258,26 +258,39 @@ def get_credentials_from_parameters(parameters: dict, region: str) -> PreSignedC
 def get_secret_access_key_from_access_key_id(access_key_id: str, region: str) -> str | None:
     """
     We need to retrieve the internal secret access key in order to also sign the request on our side to validate it
-    For now, we need to access Moto internals, as they are no public APIs to retrieve it for obvious reasons.
-    If the AccessKey is not registered, use the default `test` value that was historically used for pre-signed URLs, in
-    order to support default use cases
+    First attempts to use the native IAM store, then falls back to moto if needed.
+    If the AccessKey is not registered, returns None to use the default `test` value that was historically used
+    for pre-signed URLs, in order to support default use cases.
     :param access_key_id: the provided AccessKeyID in the Credentials parameter
     :param region: the region from the credentials
     :return: the linked secret_access_key to the access_key
     """
+    account_id = get_account_id_from_access_key_id(access_key_id)
+
+    # Try native IAM store first
+    try:
+        from localstack.services.iam.models import iam_stores
+
+        iam_store = iam_stores[account_id][region]
+        access_key = iam_store.get_access_key(access_key_id)
+        if access_key:
+            return access_key.secret_access_key
+    except Exception:
+        pass
+
+    # Fall back to moto for backward compatibility
     try:
         from moto.iam.models import AccessKey, iam_backends
+
+        moto_access_key: AccessKey = iam_backends[account_id][get_partition(region)].access_keys.get(
+            access_key_id
+        )
+        if moto_access_key:
+            return moto_access_key.secret_access_key
     except ImportError:
-        return
+        pass
 
-    account_id = get_account_id_from_access_key_id(access_key_id)
-    moto_access_key: AccessKey = iam_backends[account_id][get_partition(region)].access_keys.get(
-        access_key_id
-    )
-    if not moto_access_key:
-        return
-
-    return moto_access_key.secret_access_key
+    return None
 
 
 def is_expired(expiry_datetime: datetime.datetime):
