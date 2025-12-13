@@ -19,10 +19,11 @@ from localstack.aws.api.logs import (
     FilterLogEventsResponse,
     ResourceNotFoundException,
     ResourceAlreadyExistsException,
-    LogGroup, # Keep LogGroup for constructing the return type
-    LogStream, # Keep LogStream for constructing the return type
-    OutputLogEvent, # Keep OutputLogEvent for constructing the return type
-    FilteredLogEvent, # Keep FilteredLogEvent for constructing the return type
+    InvalidParameterException,
+    LogGroup,
+    LogStream,
+    OutputLogEvent,
+    FilteredLogEvent, GetLogEventsRequest, FilterLogEventsRequest,
 )
 from localstack.services.logs.db import db_helper
 from localstack.services.plugins import ServiceLifecycleHook
@@ -68,7 +69,22 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
     ) -> DescribeLogGroupsResponse:
         region = context.region
         account_id = context.account_id
-        log_groups_data = db_helper.describe_log_groups(region, account_id)
+        log_group_name_prefix = request.get("logGroupNamePrefix")
+        log_group_name_pattern = request.get("logGroupNamePattern")
+        log_group_name = request.get("logGroupName") # New parameter
+
+        if log_group_name_prefix and log_group_name_pattern:
+            raise InvalidParameterException(
+                "LogGroup name prefix and LogGroup name pattern are mutually exclusive parameters."
+            )
+        if log_group_name and (log_group_name_prefix or log_group_name_pattern):
+            raise InvalidParameterException(
+                "LogGroup name cannot be used with LogGroup name prefix or LogGroup name pattern."
+            )
+
+        log_groups_data = db_helper.describe_log_groups(
+            region, account_id, log_group_name, log_group_name_prefix, log_group_name_pattern
+        )
         log_groups = [LogGroup(arn=data["arn"], logGroupName=data["logGroupName"]) for data in log_groups_data]
         return DescribeLogGroupsResponse(logGroups=log_groups)
 
