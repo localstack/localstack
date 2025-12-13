@@ -83,13 +83,31 @@ class DatabaseHelper:
             )
             conn.commit()
 
-    def describe_log_groups(self, region: str, account_id: str) -> List[Dict[str, str]]:
+    def describe_log_groups(
+        self,
+        region: str,
+        account_id: str,
+        log_group_name: Optional[str] = None, # New parameter
+        log_group_name_prefix: Optional[str] = None,
+        log_group_name_pattern: Optional[str] = None,
+    ) -> List[Dict[str, str]]:
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT arn, name FROM log_groups WHERE region = ? AND account_id = ?",
-                (region, account_id),
-            )
+            query = "SELECT arn, name FROM log_groups WHERE region = ? AND account_id = ?"
+            params = [region, account_id]
+
+            if log_group_name:
+                query += " AND name = ?"
+                params.append(log_group_name)
+            elif log_group_name_prefix:
+                query += " AND name LIKE ?"
+                params.append(f"{log_group_name_prefix}%")
+            elif log_group_name_pattern:
+                # Basic wildcard support, not full regex
+                query += " AND name LIKE ?"
+                params.append(log_group_name_pattern.replace("*", "%"))
+
+            cursor.execute(query, tuple(params))
             rows = cursor.fetchall()
             return [{"arn": row[0], "logGroupName": row[1]} for row in rows]
 
