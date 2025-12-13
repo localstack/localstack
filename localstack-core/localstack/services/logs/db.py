@@ -1,6 +1,6 @@
 import sqlite3
 import threading
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 
 class DatabaseHelper:
@@ -63,7 +63,9 @@ class DatabaseHelper:
             )
             return cursor.fetchone() is not None
 
-    def _log_stream_exists(self, log_stream_name: str, log_group_name: str, region: str, account_id: str) -> bool:
+    def _log_stream_exists(
+        self, log_stream_name: str, log_group_name: str, region: str, account_id: str
+    ) -> bool:
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -87,22 +89,38 @@ class DatabaseHelper:
         self,
         region: str,
         account_id: str,
-        log_group_name: Optional[str] = None, # New parameter
-        log_group_name_prefix: Optional[str] = None,
-        log_group_name_pattern: Optional[str] = None,
-    ) -> List[Dict[str, str]]:
+        log_group_name_prefix: str | None = None,
+        log_group_name_pattern: str | None = None,
+    ) -> list[dict[str, str]]:
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
             query = "SELECT arn, name FROM log_groups WHERE region = ? AND account_id = ?"
             params = [region, account_id]
 
-            if log_group_name:
-                query += " AND name = ?"
-                params.append(log_group_name)
-            elif log_group_name_prefix:
+            if log_group_name_prefix:
                 query += " AND name LIKE ?"
                 params.append(f"{log_group_name_prefix}%")
-            elif log_group_name_pattern:
+            if log_group_name_pattern:
+                # Basic wildcard support, not full regex
+                query += " AND name LIKE ?"
+                params.append(f"%{log_group_name_pattern}%")
+
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+            return [{"arn": row[0], "logGroupName": row[1]} for row in rows]
+
+    def list_log_groups(
+        self,
+        region: str,
+        account_id: str,
+        log_group_name_pattern: str | None = None,
+    ) -> list[dict[str, str]]:
+        with self.lock, self._get_connection() as conn:
+            cursor = conn.cursor()
+            query = "SELECT arn, name FROM log_groups WHERE region = ? AND account_id = ?"
+            params = [region, account_id]
+
+            if log_group_name_pattern:
                 # Basic wildcard support, not full regex
                 query += " AND name LIKE ?"
                 params.append(log_group_name_pattern.replace("*", "%"))
@@ -122,7 +140,9 @@ class DatabaseHelper:
             )
             conn.commit()
 
-    def create_log_stream(self, arn: str, log_stream_name: str, log_group_name: str, region: str, account_id: str):
+    def create_log_stream(
+        self, arn: str, log_stream_name: str, log_group_name: str, region: str, account_id: str
+    ):
         if not self._log_group_exists(log_group_name, region, account_id):
             raise ValueError("ResourceNotFoundException")
         if self._log_stream_exists(log_stream_name, log_group_name, region, account_id):
@@ -142,20 +162,30 @@ class DatabaseHelper:
             conn.commit()
 
     def describe_log_streams(
-        self, log_group_name: str, region: str, account_id: str
-    ) -> List[Dict[str, str]]:
+        self,
+        log_group_name: str,
+        region: str,
+        account_id: str,
+        log_stream_name_prefix: str | None = None,
+    ) -> list[dict[str, str]]:
         if not self._log_group_exists(log_group_name, region, account_id):
             raise ValueError("ResourceNotFoundException")
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT arn, name FROM log_streams WHERE log_group_name = ? AND region = ? AND account_id = ?",
-                (log_group_name, region, account_id),
-            )
+            query = "SELECT arn, name FROM log_streams WHERE log_group_name = ? AND region = ? AND account_id = ?"
+            params = [log_group_name, region, account_id]
+
+            if log_stream_name_prefix:
+                query += " AND name LIKE ?"
+                params.append(f"{log_stream_name_prefix}%")
+
+            cursor.execute(query, tuple(params))
             rows = cursor.fetchall()
             return [{"arn": row[0], "logStreamName": row[1]} for row in rows]
 
-    def delete_log_stream(self, log_group_name: str, log_stream_name: str, region: str, account_id: str):
+    def delete_log_stream(
+        self, log_group_name: str, log_stream_name: str, region: str, account_id: str
+    ):
         if not self._log_stream_exists(log_stream_name, log_group_name, region, account_id):
             raise ValueError("ResourceNotFoundException")
         with self.lock, self._get_connection() as conn:
@@ -170,7 +200,7 @@ class DatabaseHelper:
         self,
         log_group_name: str,
         log_stream_name: str,
-        log_events: List[Dict[str, Any]],
+        log_events: list[dict[str, Any]],
         region: str,
         account_id: str,
     ):
@@ -198,11 +228,11 @@ class DatabaseHelper:
         log_stream_name: str,
         region: str,
         account_id: str,
-        start_time: Optional[int] = None,
-        end_time: Optional[int] = None,
-        limit: Optional[int] = None,
-        start_from_head: Optional[bool] = False,
-    ) -> List[Dict[str, Any]]:
+        start_time: int | None = None,
+        end_time: int | None = None,
+        limit: int | None = None,
+        start_from_head: bool | None = False,
+    ) -> list[dict[str, Any]]:
         if not self._log_stream_exists(log_stream_name, log_group_name, region, account_id):
             raise ValueError("ResourceNotFoundException")
         with self.lock, self._get_connection() as conn:
@@ -240,12 +270,12 @@ class DatabaseHelper:
         log_group_name: str,
         region: str,
         account_id: str,
-        log_stream_names: Optional[List[str]] = None,
-        start_time: Optional[int] = None,
-        end_time: Optional[int] = None,
-        filter_pattern: Optional[str] = None,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        log_stream_names: list[str] | None = None,
+        start_time: int | None = None,
+        end_time: int | None = None,
+        filter_pattern: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         if not self._log_group_exists(log_group_name, region, account_id):
             raise ValueError("ResourceNotFoundException")
 
@@ -270,7 +300,7 @@ class DatabaseHelper:
                 params.append(end_time)
             if filter_pattern:
                 query += " AND message LIKE ?"
-                params.append(f"%{filter_pattern}%") # Basic "contains" filtering
+                params.append(f"%{filter_pattern}%")  # Basic "contains" filtering
 
             query += " ORDER BY timestamp DESC"
 
@@ -286,7 +316,7 @@ class DatabaseHelper:
                     "logStreamName": row[0],
                     "timestamp": row[1],
                     "message": row[2],
-                    "eventId": f"{row[0]}-{row[1]}", # Simple eventId for now
+                    "eventId": f"{row[0]}-{row[1]}",  # Simple eventId for now
                 }
                 for row in rows
             ]

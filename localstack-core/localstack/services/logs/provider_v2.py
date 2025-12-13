@@ -1,29 +1,32 @@
-
-from typing import List, Optional, Dict, Any
-
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.logs import (
-    LogsApi,
-    DescribeLogGroupsResponse,
-    DescribeLogStreamsResponse,
-    PutLogEventsResponse,
-    RejectedLogEventsInfo,
     CreateLogGroupRequest,
-    DescribeLogGroupsRequest,
     CreateLogStreamRequest,
-    DescribeLogStreamsRequest,
-    PutLogEventsRequest,
     DeleteLogGroupRequest,
     DeleteLogStreamRequest,
-    GetLogEventsResponse,
+    DescribeLogGroupsRequest,
+    DescribeLogGroupsResponse,
+    DescribeLogStreamsRequest,
+    DescribeLogStreamsResponse,
+    FilteredLogEvent,
+    FilterLogEventsRequest,
     FilterLogEventsResponse,
-    ResourceNotFoundException,
-    ResourceAlreadyExistsException,
+    GetLogEventsRequest,
+    GetLogEventsResponse,
     InvalidParameterException,
+    ListLogGroupsRequest,
+    ListLogGroupsResponse,
     LogGroup,
+    LogGroupClass,
+    LogGroupSummary,
+    LogsApi,
     LogStream,
     OutputLogEvent,
-    FilteredLogEvent, GetLogEventsRequest, FilterLogEventsRequest,
+    PutLogEventsRequest,
+    PutLogEventsResponse,
+    RejectedLogEventsInfo,
+    ResourceAlreadyExistsException,
+    ResourceNotFoundException,
 )
 from localstack.services.logs.db import db_helper
 from localstack.services.plugins import ServiceLifecycleHook
@@ -34,17 +37,22 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
     New provider for CloudWatch Logs.
     """
 
-    def _get_exception_for_value_error(self, e: ValueError, log_group_name: str, log_stream_name: Optional[str] = None):
+    def _get_exception_for_value_error(
+        self, e: ValueError, log_group_name: str, log_stream_name: str | None = None
+    ):
         if str(e) == "ResourceAlreadyExistsException":
             if log_stream_name:
-                return ResourceAlreadyExistsException(f"Log stream '{log_stream_name}' already exists in log group '{log_group_name}'.")
+                return ResourceAlreadyExistsException(
+                    f"Log stream '{log_stream_name}' already exists in log group '{log_group_name}'."
+                )
             return ResourceAlreadyExistsException(f"Log group '{log_group_name}' already exists.")
         if str(e) == "ResourceNotFoundException":
             if log_stream_name:
-                return ResourceNotFoundException(f"Log stream '{log_stream_name}' not found in log group '{log_group_name}'.")
+                return ResourceNotFoundException(
+                    f"Log stream '{log_stream_name}' not found in log group '{log_group_name}'."
+                )
             return ResourceNotFoundException(f"Log group '{log_group_name}' not found.")
         return e
-
 
     @handler("CreateLogGroup", expand=False)
     def create_log_group(
@@ -71,22 +79,38 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         account_id = context.account_id
         log_group_name_prefix = request.get("logGroupNamePrefix")
         log_group_name_pattern = request.get("logGroupNamePattern")
-        log_group_name = request.get("logGroupName") # New parameter
 
         if log_group_name_prefix and log_group_name_pattern:
             raise InvalidParameterException(
                 "LogGroup name prefix and LogGroup name pattern are mutually exclusive parameters."
             )
-        if log_group_name and (log_group_name_prefix or log_group_name_pattern):
-            raise InvalidParameterException(
-                "LogGroup name cannot be used with LogGroup name prefix or LogGroup name pattern."
-            )
 
         log_groups_data = db_helper.describe_log_groups(
-            region, account_id, log_group_name, log_group_name_prefix, log_group_name_pattern
+            region, account_id, log_group_name_prefix, log_group_name_pattern
         )
-        log_groups = [LogGroup(arn=data["arn"], logGroupName=data["logGroupName"]) for data in log_groups_data]
+        log_groups = [
+            LogGroup(arn=data["arn"], logGroupName=data["logGroupName"]) for data in log_groups_data
+        ]
         return DescribeLogGroupsResponse(logGroups=log_groups)
+
+    @handler("ListLogGroups", expand=False)
+    def list_log_groups(
+        self, context: RequestContext, request: ListLogGroupsRequest
+    ) -> ListLogGroupsResponse:
+        region = context.region
+        account_id = context.account_id
+        log_group_name_pattern = request.get("logGroupNamePattern")
+
+        log_groups_data = db_helper.list_log_groups(region, account_id, log_group_name_pattern)
+        groups = [
+            LogGroupSummary(
+                logGroupName=data["logGroupName"],
+                logGroupArn=data["arn"],
+                logGroupClass=LogGroupClass.STANDARD,
+            )
+            for data in log_groups_data
+        ]
+        return ListLogGroupsResponse(logGroups=groups)
 
     @handler("DeleteLogGroup", expand=False)
     def delete_log_group(
@@ -126,10 +150,25 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
     ) -> DescribeLogStreamsResponse:
         region = context.region
         account_id = context.account_id
-        log_group_name = request["logGroupName"]
+        log_group_name = request.get("logGroupName")
+        log_group_identifier = request.get("logGroupIdentifier")
+        log_stream_name_prefix = request.get("logStreamNamePrefix")
+
+        if log_group_name and log_group_identifier:
+            raise InvalidParameterException(
+                "LogGroup name and LogGroup ARN are mutually exclusive parameters."
+            )
+
+        log_group_name = log_group_name or log_group_identifier.split(":")[-1]
+
         try:
-            log_streams_data = db_helper.describe_log_streams(log_group_name, region, account_id)
-            log_streams = [LogStream(arn=data["arn"], logStreamName=data["logStreamName"]) for data in log_streams_data]
+            log_streams_data = db_helper.describe_log_streams(
+                log_group_name, region, account_id, log_stream_name_prefix
+            )
+            log_streams = [
+                LogStream(arn=data["arn"], logStreamName=data["logStreamName"])
+                for data in log_streams_data
+            ]
             return DescribeLogStreamsResponse(logStreams=log_streams)
         except ValueError as e:
             raise self._get_exception_for_value_error(e, log_group_name)
@@ -159,9 +198,13 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         account_id = context.account_id
         log_group_name = request["logGroupName"]
         log_stream_name = request["logStreamName"]
-        log_events = [{"timestamp": e["timestamp"], "message": e["message"]} for e in request["logEvents"]] # Convert to dict
+        log_events = [
+            {"timestamp": e["timestamp"], "message": e["message"]} for e in request["logEvents"]
+        ]  # Convert to dict
         try:
-            db_helper.put_log_events(log_group_name, log_stream_name, log_events, region, account_id)
+            db_helper.put_log_events(
+                log_group_name, log_stream_name, log_events, region, account_id
+            )
             return PutLogEventsResponse(rejectedLogEventsInfo=RejectedLogEventsInfo())
         except ValueError as e:
             raise self._get_exception_for_value_error(e, log_group_name, log_stream_name)
@@ -187,7 +230,10 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
                 request.get("limit"),
                 request.get("startFromHead"),
             )
-            events = [OutputLogEvent(timestamp=data["timestamp"], message=data["message"]) for data in events_data]
+            events = [
+                OutputLogEvent(timestamp=data["timestamp"], message=data["message"])
+                for data in events_data
+            ]
             return GetLogEventsResponse(events=events)
         except ValueError as e:
             raise self._get_exception_for_value_error(e, log_group_name, log_stream_name)
