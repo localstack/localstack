@@ -221,13 +221,21 @@ def lambda_v2():
     return Service.for_provider(provider)
 
 
+# @aws_provider()
+# def logs():
+#     from localstack.services.logs.provider import LogsProvider
+#     from localstack.services.moto import MotoFallbackDispatcher
+#
+#     provider = LogsProvider()
+#     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
 @aws_provider()
 def logs():
-    from localstack.services.logs.provider import LogsProvider
-    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.logs.provider_v2 import LogsProviderV2
 
-    provider = LogsProvider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+    provider = LogsProviderV2()
+    return Service.for_provider(provider)
 
 
 @aws_provider()
