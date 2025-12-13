@@ -1,7 +1,7 @@
 # Development Environment Setup
 
 Before you get started with contributing to LocalStack, make sure you’ve familiarized yourself with LocalStack from the perspective of a user.
-You can follow our [getting started guide](https://docs.localstack.cloud/get-started/).
+You can follow our [getting started guide](https://docs.localstack.cloud/getting-started/).
 Once LocalStack runs in your Docker environment and you’ve played around with the LocalStack and `awslocal` CLI, you can move forward to set up your developer environment.
 
 ## Development requirements
