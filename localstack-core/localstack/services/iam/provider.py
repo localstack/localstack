@@ -236,6 +236,7 @@ from localstack.services.iam.models import (
     generate_server_certificate_id,
     generate_ssh_public_key_id,
     generate_user_id,
+    get_aws_managed_policies,
     iam_stores,
 )
 from localstack.services.iam.pagination import filter_by_path_prefix, paginate_list
@@ -266,6 +267,7 @@ from localstack.services.iam.validation import (
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -750,9 +752,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         if not scope or scope in ("All", "Local"):
             all_policies.extend(store.policies.values())
 
-        # Add AWS managed policies
+        # Add AWS managed policies (lazy loaded)
         if not scope or scope in ("All", "AWS"):
-            all_policies.extend(store.AWS_MANAGED_POLICIES.values())
+            all_policies.extend(get_aws_managed_policies().values())
 
         # Filter by path prefix
         if path_prefix:
@@ -4867,6 +4869,37 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         for key in tag_keys:
             device.tags.pop(key, None)
 
+    def list_mfa_device_tags(
+        self,
+        context: RequestContext,
+        serial_number: serialNumberType,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ):
+        """List tags for a virtual MFA device."""
+        store = self.get_store(context.account_id, context.region)
+
+        if serial_number not in store.virtual_mfa_devices:
+            raise NoSuchEntityException(
+                f"MFA device with serial number {serial_number} does not exist."
+            )
+
+        device = store.virtual_mfa_devices[serial_number]
+        tags = [{"Key": k, "Value": v} for k, v in device.tags.items()]
+
+        paginated = paginate_list(
+            items=tags,
+            marker=marker,
+            max_items=max_items,
+            get_marker_value=lambda t: t["Key"],
+        )
+
+        response = {"Tags": paginated.items, "IsTruncated": paginated.is_truncated}
+        if paginated.next_marker:
+            response["Marker"] = paginated.next_marker
+        return response
+
     # =========================================================================
     # OIDC Provider Operations (Native Implementation)
     # =========================================================================
@@ -6018,3 +6051,120 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             Policies=policies_list,
             IsTruncated=False,
         )
+
+    # =========================================================================
+    # Service Last Accessed Operations (Stub Implementation)
+    # =========================================================================
+
+    def generate_service_last_accessed_details(
+        self,
+        context: RequestContext,
+        arn: arnType,
+        granularity: str = None,
+        **kwargs,
+    ):
+        """
+        Generate service last accessed details report.
+
+        Stub implementation - returns a job ID immediately.
+        """
+        job_id = short_uid()
+        return {"JobId": job_id}
+
+    def get_service_last_accessed_details(
+        self,
+        context: RequestContext,
+        job_id: str,
+        max_items: maxItemsType = None,
+        marker: markerType = None,
+        **kwargs,
+    ):
+        """
+        Get service last accessed details.
+
+        Stub implementation - returns empty completed result.
+        """
+        return {
+            "JobStatus": "COMPLETED",
+            "JobCreationDate": datetime.utcnow(),
+            "ServicesLastAccessed": [],
+            "JobCompletionDate": datetime.utcnow(),
+            "IsTruncated": False,
+        }
+
+    def get_service_last_accessed_details_with_entities(
+        self,
+        context: RequestContext,
+        job_id: str,
+        service_namespace: str,
+        max_items: maxItemsType = None,
+        marker: markerType = None,
+        **kwargs,
+    ):
+        """
+        Get service last accessed details with entities.
+
+        Stub implementation - returns empty completed result.
+        """
+        return {
+            "JobStatus": "COMPLETED",
+            "JobCreationDate": datetime.utcnow(),
+            "JobCompletionDate": datetime.utcnow(),
+            "EntityDetailsList": [],
+            "IsTruncated": False,
+        }
+
+    def list_policies_granting_service_access(
+        self,
+        context: RequestContext,
+        arn: arnType,
+        service_namespaces: list,
+        marker: markerType = None,
+        **kwargs,
+    ):
+        """
+        List policies granting service access.
+
+        Stub implementation - returns empty result.
+        """
+        return {
+            "PoliciesGrantingServiceAccess": [],
+            "IsTruncated": False,
+        }
+
+    def generate_organizations_access_report(
+        self,
+        context: RequestContext,
+        entity_path: str,
+        organizations_policy_id: str = None,
+        **kwargs,
+    ):
+        """
+        Generate organizations access report.
+
+        Stub implementation for AWS Organizations integration.
+        """
+        job_id = short_uid()
+        return {"JobId": job_id}
+
+    def get_organizations_access_report(
+        self,
+        context: RequestContext,
+        job_id: str,
+        max_items: maxItemsType = None,
+        marker: markerType = None,
+        sort_key: str = None,
+        **kwargs,
+    ):
+        """
+        Get organizations access report.
+
+        Stub implementation for AWS Organizations integration.
+        """
+        return {
+            "JobStatus": "COMPLETED",
+            "JobCreationDate": datetime.utcnow(),
+            "JobCompletionDate": datetime.utcnow(),
+            "AccessDetails": [],
+            "IsTruncated": False,
+        }

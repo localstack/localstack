@@ -5,8 +5,12 @@ This module defines the state management layer for IAM resources using the
 AccountRegionBundle pattern with CrossRegionAttribute for global IAM semantics.
 """
 
+import json
+import logging
+import os
 import secrets
 import string
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
@@ -14,10 +18,115 @@ from typing import Optional
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
-    CrossAccountAttribute,
     CrossRegionAttribute,
 )
 from localstack.utils.strings import short_uid
+
+LOG = logging.getLogger(__name__)
+
+# =============================================================================
+# AWS Managed Policies Lazy Loading
+# =============================================================================
+
+# Thread-safe lock for lazy loading
+_aws_managed_policies_lock = threading.Lock()
+_aws_managed_policies_loaded = False
+_aws_managed_policies_cache: dict[str, "ManagedPolicy"] = {}
+
+
+def _load_aws_managed_policies() -> dict[str, "ManagedPolicy"]:
+    """
+    Load AWS managed policies from the JSON file.
+
+    This function is called lazily when AWS managed policies are first accessed.
+    The policies are cached in memory for subsequent accesses.
+
+    :return: Dictionary mapping policy ARN to ManagedPolicy object
+    """
+    global _aws_managed_policies_loaded, _aws_managed_policies_cache
+
+    if _aws_managed_policies_loaded:
+        return _aws_managed_policies_cache
+
+    with _aws_managed_policies_lock:
+        # Double-check after acquiring lock
+        if _aws_managed_policies_loaded:
+            return _aws_managed_policies_cache
+
+        policies_file = os.path.join(os.path.dirname(__file__), "aws_managed_policies.json")
+
+        if not os.path.exists(policies_file):
+            LOG.warning("AWS managed policies file not found: %s", policies_file)
+            _aws_managed_policies_loaded = True
+            return _aws_managed_policies_cache
+
+        try:
+            with open(policies_file, "r") as f:
+                raw_policies = json.load(f)
+
+            for policy_name, policy_data in raw_policies.items():
+                arn = policy_data.get("Arn", f"arn:aws:iam::aws:policy/{policy_name}")
+                document = policy_data.get("Document", {})
+
+                # Create policy version
+                version = PolicyVersion(
+                    version_id=policy_data.get("DefaultVersionId", "v1"),
+                    document=json.dumps(document) if isinstance(document, dict) else document,
+                    is_default_version=True,
+                    create_date=datetime.fromisoformat(
+                        policy_data.get("CreateDate", "2015-02-06T18:39:46+00:00").replace(
+                            "+00:00", ""
+                        )
+                    ),
+                )
+
+                # Parse dates
+                create_date = policy_data.get("CreateDate", "2015-02-06T18:39:46+00:00")
+                update_date = policy_data.get("UpdateDate", create_date)
+
+                # Create managed policy
+                policy = ManagedPolicy(
+                    policy_name=policy_name,
+                    policy_id=f"ANPA{policy_name[:16].upper()}",  # Generate deterministic ID
+                    arn=arn,
+                    path=policy_data.get("Path", "/"),
+                    create_date=datetime.fromisoformat(create_date.replace("+00:00", "")),
+                    update_date=datetime.fromisoformat(update_date.replace("+00:00", "")),
+                    description=f"AWS managed policy: {policy_name}",
+                    default_version_id=policy_data.get("DefaultVersionId", "v1"),
+                    is_attachable=True,
+                    versions=[version],
+                )
+
+                _aws_managed_policies_cache[arn] = policy
+
+            LOG.debug("Loaded %d AWS managed policies", len(_aws_managed_policies_cache))
+
+        except Exception as e:
+            LOG.error("Failed to load AWS managed policies: %s", e)
+
+        _aws_managed_policies_loaded = True
+        return _aws_managed_policies_cache
+
+
+def get_aws_managed_policies() -> dict[str, "ManagedPolicy"]:
+    """
+    Get all AWS managed policies (lazily loaded).
+
+    :return: Dictionary mapping policy ARN to ManagedPolicy object
+    """
+    return _load_aws_managed_policies()
+
+
+def get_aws_managed_policy(arn: str) -> Optional["ManagedPolicy"]:
+    """
+    Get a specific AWS managed policy by ARN.
+
+    :param arn: The policy ARN
+    :return: ManagedPolicy object or None if not found
+    """
+    policies = _load_aws_managed_policies()
+    return policies.get(arn)
 
 # =============================================================================
 # ID Generation Utilities
@@ -428,14 +537,23 @@ class ManagedPolicy:
     attachment_count: int = 0
 
     def get_default_version(self) -> Optional[PolicyVersion]:
-        """Get the default policy version."""
+        """
+        Get the default policy version.
+
+        :return: The PolicyVersion marked as default, or None if no default exists
+        """
         for version in self.versions:
             if version.is_default_version:
                 return version
         return None
 
     def get_version(self, version_id: str) -> Optional[PolicyVersion]:
-        """Get a specific policy version by ID."""
+        """
+        Get a specific policy version by ID.
+
+        :param version_id: The version identifier (e.g., 'v1', 'v2')
+        :return: The PolicyVersion with the given ID, or None if not found
+        """
         for version in self.versions:
             if version.version_id == version_id:
                 return version
@@ -639,10 +757,6 @@ class IamStore(BaseStore):
         default=dict
     )
 
-    # AWS managed policies - shared across all accounts
-    # Loaded lazily from aws_managed_policies.json
-    AWS_MANAGED_POLICIES: dict[str, ManagedPolicy] = CrossAccountAttribute(default=dict)
-
     # Credential report storage
     _credential_report: Optional[bytes] = CrossRegionAttribute(default=None)
     _credential_report_generated: Optional[datetime] = CrossRegionAttribute(default=None)
@@ -652,33 +766,64 @@ class IamStore(BaseStore):
     _access_key_by_user: dict[str, list[str]] = CrossRegionAttribute(default=dict)
 
     def get_user(self, user_name: str) -> Optional[User]:
-        """Get a user by name."""
+        """
+        Get a user by name.
+
+        :param user_name: The name of the IAM user
+        :return: The User object if found, None otherwise
+        """
         return self.users.get(user_name)
 
     def get_role(self, role_name: str) -> Optional[Role]:
-        """Get a role by name."""
+        """
+        Get a role by name.
+
+        :param role_name: The name of the IAM role
+        :return: The Role object if found, None otherwise
+        """
         return self.roles.get(role_name)
 
     def get_group(self, group_name: str) -> Optional[Group]:
-        """Get a group by name."""
+        """
+        Get a group by name.
+
+        :param group_name: The name of the IAM group
+        :return: The Group object if found, None otherwise
+        """
         return self.groups.get(group_name)
 
     def get_policy_by_arn(self, policy_arn: str) -> Optional[ManagedPolicy]:
-        """Get a managed policy by ARN (customer or AWS managed)."""
+        """
+        Get a managed policy by ARN (customer or AWS managed).
+
+        This method first checks customer-managed policies, then falls back
+        to AWS managed policies (which are loaded lazily).
+
+        :param policy_arn: The full ARN of the managed policy
+        :return: The ManagedPolicy object if found, None otherwise
+        """
         # Check customer policies first
         if policy_arn in self.policies:
             return self.policies[policy_arn]
-        # Check AWS managed policies
-        if policy_arn in self.AWS_MANAGED_POLICIES:
-            return self.AWS_MANAGED_POLICIES[policy_arn]
-        return None
+        # Check AWS managed policies (lazy loaded)
+        return get_aws_managed_policy(policy_arn)
 
     def get_access_key(self, access_key_id: str) -> Optional[AccessKey]:
-        """Get an access key by ID."""
+        """
+        Get an access key by ID.
+
+        :param access_key_id: The access key ID (e.g., AKIA...)
+        :return: The AccessKey object if found, None otherwise
+        """
         return self.access_keys.get(access_key_id)
 
     def get_instance_profile(self, profile_name: str) -> Optional[InstanceProfile]:
-        """Get an instance profile by name."""
+        """
+        Get an instance profile by name.
+
+        :param profile_name: The name of the instance profile
+        :return: The InstanceProfile object if found, None otherwise
+        """
         return self.instance_profiles.get(profile_name)
 
     def rebuild_indexes(self) -> None:

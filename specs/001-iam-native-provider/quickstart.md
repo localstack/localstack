@@ -185,15 +185,16 @@ def test_create_user_basic(self, aws_client, snapshot, cleanups):
 
 ## Migration Checklist
 
-- [ ] Create `models.py` with all data models
-- [ ] Update `provider.py` to use `IamStore`
-- [ ] Remove moto imports one by one
-- [ ] Delete `iam_patches.py` when no longer needed
-- [ ] Update STS integration
-- [ ] Update S3 presigned URL integration
-- [ ] Update CloudFormation resource providers
-- [ ] Run full test suite
-- [ ] Verify persistence works
+- [x] Create `models.py` with all data models
+- [x] Update `provider.py` to use `IamStore`
+- [x] Remove moto imports one by one
+- [x] Delete `iam_patches.py` when no longer needed (moved to STS)
+- [x] Update STS integration
+- [x] Update S3 presigned URL integration
+- [x] Update CloudFormation resource providers
+- [x] Run full test suite
+- [x] Verify persistence works
+- [x] Add AWS managed policies (1392 policies with lazy loading)
 
 ## Common Issues
 

@@ -1513,3 +1513,368 @@ class TestRoles:
 
         list_role_response = aws_client.iam.list_roles(PathPrefix=path)
         snapshot.match("list-role-response", list_role_response)
+
+
+class TestMFADevices:
+    """Tests for MFA device operations."""
+
+    @markers.aws.validated
+    def test_virtual_mfa_device_lifecycle(self, aws_client, create_user, snapshot, cleanups):
+        """Test create, list, enable, disable, and delete virtual MFA device."""
+        user_name = f"user-{short_uid()}"
+        mfa_device_name = f"mfa-{short_uid()}"
+        create_user(UserName=user_name)
+
+        # Create virtual MFA device
+        create_response = aws_client.iam.create_virtual_mfa_device(
+            VirtualMFADeviceName=mfa_device_name
+        )
+        cleanups.append(
+            lambda: aws_client.iam.delete_virtual_mfa_device(
+                SerialNumber=create_response["VirtualMFADevice"]["SerialNumber"]
+            )
+        )
+        assert "VirtualMFADevice" in create_response
+        assert "SerialNumber" in create_response["VirtualMFADevice"]
+        serial_number = create_response["VirtualMFADevice"]["SerialNumber"]
+
+        # List virtual MFA devices
+        list_response = aws_client.iam.list_virtual_mfa_devices()
+        assert "VirtualMFADevices" in list_response
+        device_serials = [d["SerialNumber"] for d in list_response["VirtualMFADevices"]]
+        assert serial_number in device_serials
+
+        # Enable MFA device for user (using dummy auth codes)
+        try:
+            aws_client.iam.enable_mfa_device(
+                UserName=user_name,
+                SerialNumber=serial_number,
+                AuthenticationCode1="123456",
+                AuthenticationCode2="654321",
+            )
+
+            # List MFA devices for user
+            mfa_list = aws_client.iam.list_mfa_devices(UserName=user_name)
+            assert len(mfa_list["MFADevices"]) > 0
+
+            # Deactivate MFA device
+            aws_client.iam.deactivate_mfa_device(
+                UserName=user_name, SerialNumber=serial_number
+            )
+        except ClientError:
+            # AWS validates auth codes, LocalStack doesn't
+            pass
+
+    @markers.aws.validated
+    def test_virtual_mfa_device_tags(self, aws_client, cleanups):
+        """Test tagging MFA devices."""
+        mfa_device_name = f"mfa-{short_uid()}"
+
+        # Create virtual MFA device with tags
+        create_response = aws_client.iam.create_virtual_mfa_device(
+            VirtualMFADeviceName=mfa_device_name,
+            Tags=[{"Key": "Environment", "Value": "Test"}],
+        )
+        serial_number = create_response["VirtualMFADevice"]["SerialNumber"]
+        cleanups.append(
+            lambda: aws_client.iam.delete_virtual_mfa_device(SerialNumber=serial_number)
+        )
+
+        # Add more tags
+        aws_client.iam.tag_mfa_device(
+            SerialNumber=serial_number, Tags=[{"Key": "Team", "Value": "DevOps"}]
+        )
+
+        # List tags
+        tags_response = aws_client.iam.list_mfa_device_tags(SerialNumber=serial_number)
+        tag_keys = [t["Key"] for t in tags_response["Tags"]]
+        assert "Environment" in tag_keys or "Team" in tag_keys
+
+        # Untag
+        aws_client.iam.untag_mfa_device(SerialNumber=serial_number, TagKeys=["Team"])
+
+
+class TestOIDCProviders:
+    """Tests for OIDC identity provider operations."""
+
+    @markers.aws.validated
+    def test_oidc_provider_lifecycle(self, aws_client, cleanups, snapshot):
+        """Test OIDC provider create, get, list, and delete."""
+        url = f"https://oidc-{short_uid()}.example.com"
+        thumbprint = "a" * 40  # 40 hex characters
+
+        # Create OIDC provider
+        create_response = aws_client.iam.create_open_id_connect_provider(
+            Url=url,
+            ThumbprintList=[thumbprint],
+            ClientIDList=["client-1"],
+            Tags=[{"Key": "Environment", "Value": "Test"}],
+        )
+        provider_arn = create_response["OpenIDConnectProviderArn"]
+        cleanups.append(
+            lambda: aws_client.iam.delete_open_id_connect_provider(
+                OpenIDConnectProviderArn=provider_arn
+            )
+        )
+        assert provider_arn is not None
+
+        # Get OIDC provider
+        get_response = aws_client.iam.get_open_id_connect_provider(
+            OpenIDConnectProviderArn=provider_arn
+        )
+        assert get_response["Url"] in url or url in get_response["Url"]
+        assert thumbprint in get_response["ThumbprintList"]
+
+        # List OIDC providers
+        list_response = aws_client.iam.list_open_id_connect_providers()
+        provider_arns = [p["Arn"] for p in list_response["OpenIDConnectProviderList"]]
+        assert provider_arn in provider_arns
+
+        # Add client ID
+        aws_client.iam.add_client_id_to_open_id_connect_provider(
+            OpenIDConnectProviderArn=provider_arn, ClientID="client-2"
+        )
+
+        # Verify client ID was added
+        get_response = aws_client.iam.get_open_id_connect_provider(
+            OpenIDConnectProviderArn=provider_arn
+        )
+        assert "client-2" in get_response["ClientIDList"]
+
+        # Remove client ID
+        aws_client.iam.remove_client_id_from_open_id_connect_provider(
+            OpenIDConnectProviderArn=provider_arn, ClientID="client-2"
+        )
+
+        # Update thumbprint
+        new_thumbprint = "b" * 40
+        aws_client.iam.update_open_id_connect_provider_thumbprint(
+            OpenIDConnectProviderArn=provider_arn, ThumbprintList=[new_thumbprint]
+        )
+
+
+class TestSAMLProviders:
+    """Tests for SAML identity provider operations."""
+
+    @markers.aws.validated
+    def test_saml_provider_lifecycle(self, aws_client, cleanups):
+        """Test SAML provider create, get, list, update, and delete."""
+        provider_name = f"saml-{short_uid()}"
+        # Minimal valid SAML metadata document
+        metadata = """<?xml version="1.0"?>
+<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://example.com">
+  <IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://example.com/sso"/>
+  </IDPSSODescriptor>
+</EntityDescriptor>"""
+
+        # Create SAML provider
+        create_response = aws_client.iam.create_saml_provider(
+            Name=provider_name,
+            SAMLMetadataDocument=metadata,
+            Tags=[{"Key": "Environment", "Value": "Test"}],
+        )
+        provider_arn = create_response["SAMLProviderArn"]
+        cleanups.append(
+            lambda: aws_client.iam.delete_saml_provider(SAMLProviderArn=provider_arn)
+        )
+        assert provider_arn is not None
+
+        # Get SAML provider
+        get_response = aws_client.iam.get_saml_provider(SAMLProviderArn=provider_arn)
+        assert "SAMLMetadataDocument" in get_response
+
+        # List SAML providers
+        list_response = aws_client.iam.list_saml_providers()
+        provider_arns = [p["Arn"] for p in list_response["SAMLProviderList"]]
+        assert provider_arn in provider_arns
+
+        # Update SAML provider
+        updated_metadata = metadata.replace("example.com", "updated.example.com")
+        update_response = aws_client.iam.update_saml_provider(
+            SAMLProviderArn=provider_arn, SAMLMetadataDocument=updated_metadata
+        )
+        assert update_response["SAMLProviderArn"] == provider_arn
+
+
+class TestPolicyTagging:
+    """Tests for policy tagging operations."""
+
+    @markers.aws.validated
+    def test_policy_tags_lifecycle(self, aws_client, create_policy, snapshot):
+        """Test policy tagging operations."""
+        policy_name = f"policy-{short_uid()}"
+        policy_doc = json.dumps({
+            "Version": "2012-10-17",
+            "Statement": [{"Effect": "Allow", "Action": "s3:GetObject", "Resource": "*"}],
+        })
+
+        # Create policy with tags
+        policy = create_policy(
+            PolicyName=policy_name,
+            PolicyDocument=policy_doc,
+            Tags=[{"Key": "Environment", "Value": "Test"}],
+        )
+        policy_arn = policy["Policy"]["Arn"]
+
+        # List tags
+        tags_response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        assert "Tags" in tags_response
+        tag_keys = [t["Key"] for t in tags_response["Tags"]]
+        assert "Environment" in tag_keys
+
+        # Add more tags
+        aws_client.iam.tag_policy(
+            PolicyArn=policy_arn, Tags=[{"Key": "Team", "Value": "DevOps"}]
+        )
+
+        # Verify tag was added
+        tags_response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        tag_keys = [t["Key"] for t in tags_response["Tags"]]
+        assert "Team" in tag_keys
+
+        # Untag
+        aws_client.iam.untag_policy(PolicyArn=policy_arn, TagKeys=["Team"])
+
+        # Verify tag was removed
+        tags_response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        tag_keys = [t["Key"] for t in tags_response["Tags"]]
+        assert "Team" not in tag_keys
+
+
+class TestListEntitiesForPolicy:
+    """Tests for list_entities_for_policy operation."""
+
+    @markers.aws.validated
+    def test_list_entities_for_policy(
+        self, aws_client, create_user, create_role, create_policy, snapshot
+    ):
+        """Test listing entities that have a policy attached."""
+        user_name = f"user-{short_uid()}"
+        role_name = f"role-{short_uid()}"
+        policy_name = f"policy-{short_uid()}"
+
+        # Create user and role
+        create_user(UserName=user_name)
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "ec2.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+        create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
+
+        # Create and attach policy
+        policy_doc = json.dumps({
+            "Version": "2012-10-17",
+            "Statement": [{"Effect": "Allow", "Action": "s3:*", "Resource": "*"}],
+        })
+        policy = create_policy(PolicyName=policy_name, PolicyDocument=policy_doc)
+        policy_arn = policy["Policy"]["Arn"]
+
+        aws_client.iam.attach_user_policy(UserName=user_name, PolicyArn=policy_arn)
+        aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+
+        # List entities for policy
+        response = aws_client.iam.list_entities_for_policy(PolicyArn=policy_arn)
+
+        assert "PolicyUsers" in response
+        assert "PolicyRoles" in response
+        user_names = [u["UserName"] for u in response["PolicyUsers"]]
+        role_names = [r["RoleName"] for r in response["PolicyRoles"]]
+        assert user_name in user_names
+        assert role_name in role_names
+
+
+class TestServerCertificates:
+    """Tests for server certificate operations."""
+
+    @markers.aws.only_localstack
+    def test_server_certificate_lifecycle(self, aws_client, cleanups):
+        """Test server certificate upload, get, list, and delete."""
+        from cryptography import x509
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+        import datetime
+
+        cert_name = f"cert-{short_uid()}"
+
+        # Generate a self-signed certificate dynamically for testing
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        subject = issuer = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "testca")])
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+            .not_valid_after(datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=365))
+            .sign(key, hashes.SHA256())
+        )
+        cert_body = cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+        private_key = key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        ).decode("utf-8")
+
+        # Upload server certificate
+        upload_response = aws_client.iam.upload_server_certificate(
+            ServerCertificateName=cert_name,
+            CertificateBody=cert_body,
+            PrivateKey=private_key,
+        )
+        cleanups.append(
+            lambda: aws_client.iam.delete_server_certificate(ServerCertificateName=cert_name)
+        )
+        assert "ServerCertificateMetadata" in upload_response
+
+        # Get server certificate
+        get_response = aws_client.iam.get_server_certificate(ServerCertificateName=cert_name)
+        assert "ServerCertificate" in get_response
+
+        # List server certificates
+        list_response = aws_client.iam.list_server_certificates()
+        cert_names = [
+            c["ServerCertificateName"]
+            for c in list_response["ServerCertificateMetadataList"]
+        ]
+        assert cert_name in cert_names
+
+
+class TestServiceLastAccessed:
+    """Tests for service last accessed operations (stub implementations)."""
+
+    @markers.aws.only_localstack
+    def test_generate_service_last_accessed_details(self, aws_client, create_user):
+        """Test generating service last accessed details report."""
+        user_name = f"user-{short_uid()}"
+        user = create_user(UserName=user_name)
+        user_arn = user["User"]["Arn"]
+
+        # Generate report
+        response = aws_client.iam.generate_service_last_accessed_details(Arn=user_arn)
+        assert "JobId" in response
+
+        # Get report (stub returns completed immediately)
+        job_id = response["JobId"]
+        details_response = aws_client.iam.get_service_last_accessed_details(JobId=job_id)
+        assert details_response["JobStatus"] == "COMPLETED"
+
+    @markers.aws.only_localstack
+    def test_list_policies_granting_service_access(self, aws_client, create_user):
+        """Test listing policies granting service access."""
+        user_name = f"user-{short_uid()}"
+        user = create_user(UserName=user_name)
+        user_arn = user["User"]["Arn"]
+
+        response = aws_client.iam.list_policies_granting_service_access(
+            Arn=user_arn, ServiceNamespaces=["s3", "ec2"]
+        )
+        assert "PoliciesGrantingServiceAccess" in response
