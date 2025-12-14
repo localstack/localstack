@@ -404,11 +404,12 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             CreateDate=role.create_date,
         )
         if include_trust_policy and role.assume_role_policy_document:
-            api_role["AssumeRolePolicyDocument"] = role.assume_role_policy_document
+            # URL-encode the trust policy per AWS behavior
+            api_role["AssumeRolePolicyDocument"] = quote(role.assume_role_policy_document)
         if role.description:
             api_role["Description"] = role.description
-        if role.max_session_duration != 3600:  # Only include if non-default
-            api_role["MaxSessionDuration"] = role.max_session_duration
+        # Always include MaxSessionDuration (AWS always returns this)
+        api_role["MaxSessionDuration"] = role.max_session_duration
         if role.permission_boundary:
             api_role["PermissionsBoundary"] = AttachedPermissionsBoundary(
                 PermissionsBoundaryArn=role.permission_boundary.permissions_boundary_arn,
@@ -416,11 +417,14 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             )
         if role.tags:
             api_role["Tags"] = tags_to_list(role.tags)
+        # Always include RoleLastUsed (empty dict if never used)
         if role.last_used and role.last_used.last_used_date:
             api_role["RoleLastUsed"] = RoleLastUsedType(
                 LastUsedDate=role.last_used.last_used_date,
                 Region=role.last_used.region,
             )
+        else:
+            api_role["RoleLastUsed"] = {}
         return api_role
 
     @handler("CreateRole", expand=False)
@@ -1830,7 +1834,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         if not user:
             raise NoSuchEntityException(f"User {user_name} cannot be found.")
 
-        user.permissions_boundary = PermissionsBoundary(
+        user.permission_boundary = PermissionsBoundary(
             permissions_boundary_type="Policy",
             permissions_boundary_arn=permissions_boundary,
         )
@@ -1848,7 +1852,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         if not user:
             raise NoSuchEntityException(f"User {user_name} cannot be found.")
 
-        user.permissions_boundary = None
+        user.permission_boundary = None
 
     # =========================================================================
     # User CRUD Operations (Native Implementation)
@@ -1970,6 +1974,18 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                         CreateDate=datetime.now(),
                         PasswordLastUsed=datetime.now(),
                     )
+                )
+            elif ":user/" in caller_arn:
+                # IAM user calling GetUser without username - return their own info
+                # Look up the user by access key
+                access_key = store.get_access_key(access_key_id)
+                if access_key:
+                    user = store.get_user(access_key.user_name)
+                    if user:
+                        return GetUserResponse(User=self._user_model_to_api(user))
+                # Fallback if access key or user not found
+                raise NoSuchEntityException(
+                    "The request was rejected because the credential used to sign the request is invalid."
                 )
             else:
                 raise CommonServiceException(
