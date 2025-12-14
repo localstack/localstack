@@ -1,4 +1,3 @@
-import inspect
 import json
 import logging
 import random
@@ -6,7 +5,7 @@ import re
 import string
 import uuid
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import TypeVar
 from urllib.parse import quote
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -18,7 +17,6 @@ from localstack.aws.api.iam import (
     ActionNameType,
     accountAliasType,
     assignmentStatusType,
-    attachedPoliciesListType,
     AttachedPermissionsBoundary,
     AttachedPolicy,
     authenticationCodeType,
@@ -42,13 +40,11 @@ from localstack.aws.api.iam import (
     CreateUserResponse,
     CreateVirtualMFADeviceResponse,
     CredentialReportNotPresentException,
-    CredentialReportNotReadyException,
     DeleteConflictException,
     DeleteServiceLinkedRoleResponse,
     DeletionTaskIdType,
     DeletionTaskStatusType,
     EntityAlreadyExistsException,
-    EntityTemporarilyUnmodifiableException,
     EntityType,
     EvaluationResult,
     GenerateCredentialReportResponse,
@@ -111,7 +107,6 @@ from localstack.aws.api.iam import (
     ListUserTagsResponse,
     ListUsersResponse,
     ListVirtualMFADevicesResponse,
-    MalformedPolicyDocumentException,
     maxPasswordAgeType,
     MFADevice,
     minimumPasswordLengthType,
@@ -152,7 +147,6 @@ from localstack.aws.api.iam import (
     SigningCertificate as SigningCertificateType,
     summaryKeyType,
     thumbprintListType,
-    thumbprintType,
     UpdateRoleResponse,
     UpdateSAMLProviderResponse,
     UploadServerCertificateResponse,
@@ -210,7 +204,6 @@ from localstack.services.iam.models import (
     PermissionsBoundary,
     PolicyVersion,
     Role as RoleModel,
-    RoleLastUsed,
     SAMLProvider as SAMLProviderModel,
     ServerCertificate as ServerCertificateModel,
     SigningCertificate as SigningCertificateModel,
@@ -249,8 +242,6 @@ from localstack.services.iam.validation import (
     check_policy_versions_limit,
     check_role_limit,
     check_user_limit,
-    entity_exists_error,
-    entity_not_found_error,
     tags_to_list,
     validate_group_name,
     validate_inline_policy_name,
@@ -482,7 +473,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         # Validate max session duration (3600 - 43200 seconds)
         if max_session_duration < 3600 or max_session_duration > 43200:
             raise InvalidInputException(
-                f"MaxSessionDuration must be between 3600 and 43200 seconds."
+                "MaxSessionDuration must be between 3600 and 43200 seconds."
             )
 
         # Generate role ID and ARN
@@ -4202,7 +4193,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         # Count resources
         users_count = len(store.users)
         groups_count = len(store.groups)
-        roles_count = len(store.roles)
         policies_count = len(store.policies)
         server_certs_count = len(store.server_certificates)
         mfa_devices_count = len(store.virtual_mfa_devices)
@@ -4580,12 +4570,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         **kwargs,
     ) -> CreateVirtualMFADeviceResponse:
         """Create a virtual MFA device."""
-        import base64
         import secrets
         import string
 
         store = self.get_store(context.account_id, context.region)
-        path = path or "/"
 
         # Build the serial number (ARN)
         serial_number = build_mfa_device_arn(context.account_id, virtual_mfa_device_name)
@@ -6031,7 +6019,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         # Build policy list
         for policy in store.policies.values():
-            default_version = policy.get_default_version()
             policies_list.append(Policy(
                 PolicyName=policy.policy_name,
                 PolicyId=policy.policy_id,
