@@ -485,7 +485,7 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
         return result
     
     # ==========================================
-    # [FIX] Issue #13488: 修复 NextToken 无效的问题
+    # [FIX] Issue #13488
     # ==========================================
     @handler("DescribeInstanceCreditSpecifications", expand=False)
     def describe_instance_credit_specifications(
@@ -493,16 +493,20 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
         context: RequestContext,
         request: DescribeInstanceCreditSpecificationsRequest,
     ) -> DescribeInstanceCreditSpecificationsResult:
-        # 1. 调用底层的 Moto 获取原始结果
-        # Moto 会返回包含 'NextToken': 'string' 的错误数据
+        """
+        Fix for issue #13488: Remove invalid NextToken in response.
+        Moto returns a NextToken with value 'string' even when there are no more pages,
+        which causes Terraform to hang waiting for more results.
+        """
         result = call_moto(context)
-
-        # 2. 【核心修复】暴力删除 NextToken
-        # 只有当真的有分页数据时，NextToken 才有意义。
-        # 这里直接删掉它，Terraform 就不会以为还有下一页了。
-        result.pop("NextToken", None)
+        if "NextToken" in result:
+            if result["NextToken"] == "string":
+                result.pop("NextToken")
+            elif not result["NextToken"]:
+                result.pop("NextToken")
 
         return result
+       
 
     @handler("CreateFlowLogs", expand=False)
     def create_flow_logs(
