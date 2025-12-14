@@ -34,22 +34,45 @@ _aws_managed_policies_loaded = False
 _aws_managed_policies_cache: dict[str, "ManagedPolicy"] = {}
 
 
+def _parse_iso_datetime(date_str: str) -> datetime:
+    """
+    Parse an ISO 8601 datetime string, handling timezone offsets.
+
+    :param date_str: ISO 8601 formatted datetime string
+    :return: datetime object (naive, in UTC)
+    """
+    # Remove timezone suffix for naive datetime (we assume UTC)
+    # Handle formats like: 2015-02-06T18:39:46+00:00, 2015-02-06T18:39:46Z
+    clean_str = date_str.replace("Z", "").replace("+00:00", "")
+    # Handle other timezone offsets by truncating at + or - after the time
+    if "+" in clean_str[10:]:
+        clean_str = clean_str[: clean_str.rindex("+")]
+    elif "-" in clean_str[10:] and clean_str.count("-") > 2:
+        # Find the timezone offset (last - after position 10)
+        last_dash = clean_str.rindex("-")
+        if last_dash > 10:
+            clean_str = clean_str[:last_dash]
+    return datetime.fromisoformat(clean_str)
+
+
 def _load_aws_managed_policies() -> dict[str, "ManagedPolicy"]:
     """
     Load AWS managed policies from the JSON file.
 
     This function is called lazily when AWS managed policies are first accessed.
-    The policies are cached in memory for subsequent accesses.
+    The policies are cached in memory for subsequent accesses. Uses double-checked
+    locking pattern for thread safety with minimal contention.
 
     :return: Dictionary mapping policy ARN to ManagedPolicy object
     """
     global _aws_managed_policies_loaded, _aws_managed_policies_cache
 
+    # Fast path: already loaded (no lock needed)
     if _aws_managed_policies_loaded:
         return _aws_managed_policies_cache
 
     with _aws_managed_policies_lock:
-        # Double-check after acquiring lock
+        # Double-check after acquiring lock (another thread may have loaded)
         if _aws_managed_policies_loaded:
             return _aws_managed_policies_cache
 
@@ -61,49 +84,59 @@ def _load_aws_managed_policies() -> dict[str, "ManagedPolicy"]:
             return _aws_managed_policies_cache
 
         try:
-            with open(policies_file, "r") as f:
+            with open(policies_file, "r", encoding="utf-8") as f:
                 raw_policies = json.load(f)
 
             for policy_name, policy_data in raw_policies.items():
-                arn = policy_data.get("Arn", f"arn:aws:iam::aws:policy/{policy_name}")
-                document = policy_data.get("Document", {})
+                try:
+                    arn = policy_data.get("Arn", f"arn:aws:iam::aws:policy/{policy_name}")
+                    document = policy_data.get("Document", {})
 
-                # Create policy version
-                version = PolicyVersion(
-                    version_id=policy_data.get("DefaultVersionId", "v1"),
-                    document=json.dumps(document) if isinstance(document, dict) else document,
-                    is_default_version=True,
-                    create_date=datetime.fromisoformat(
-                        policy_data.get("CreateDate", "2015-02-06T18:39:46+00:00").replace(
-                            "+00:00", ""
-                        )
-                    ),
-                )
+                    # Parse dates with fallback
+                    create_date_str = policy_data.get("CreateDate", "2015-02-06T18:39:46+00:00")
+                    update_date_str = policy_data.get("UpdateDate", create_date_str)
+                    create_date = _parse_iso_datetime(create_date_str)
+                    update_date = _parse_iso_datetime(update_date_str)
 
-                # Parse dates
-                create_date = policy_data.get("CreateDate", "2015-02-06T18:39:46+00:00")
-                update_date = policy_data.get("UpdateDate", create_date)
+                    # Create policy version
+                    version = PolicyVersion(
+                        version_id=policy_data.get("DefaultVersionId", "v1"),
+                        document=json.dumps(document) if isinstance(document, dict) else document,
+                        is_default_version=True,
+                        create_date=create_date,
+                    )
 
-                # Create managed policy
-                policy = ManagedPolicy(
-                    policy_name=policy_name,
-                    policy_id=f"ANPA{policy_name[:16].upper()}",  # Generate deterministic ID
-                    arn=arn,
-                    path=policy_data.get("Path", "/"),
-                    create_date=datetime.fromisoformat(create_date.replace("+00:00", "")),
-                    update_date=datetime.fromisoformat(update_date.replace("+00:00", "")),
-                    description=f"AWS managed policy: {policy_name}",
-                    default_version_id=policy_data.get("DefaultVersionId", "v1"),
-                    is_attachable=True,
-                    versions=[version],
-                )
+                    # Generate deterministic policy ID from name
+                    # Use alphanumeric chars only, padded to ensure consistent length
+                    safe_name = "".join(c for c in policy_name if c.isalnum()).upper()[:16]
+                    policy_id = f"ANPA{safe_name.ljust(16, 'X')}"
 
-                _aws_managed_policies_cache[arn] = policy
+                    # Create managed policy
+                    policy = ManagedPolicy(
+                        policy_name=policy_name,
+                        policy_id=policy_id,
+                        arn=arn,
+                        path=policy_data.get("Path", "/"),
+                        create_date=create_date,
+                        update_date=update_date,
+                        description=f"AWS managed policy: {policy_name}",
+                        default_version_id=policy_data.get("DefaultVersionId", "v1"),
+                        is_attachable=True,
+                        versions=[version],
+                    )
+
+                    _aws_managed_policies_cache[arn] = policy
+
+                except (KeyError, ValueError, TypeError) as e:
+                    LOG.warning("Failed to parse AWS managed policy '%s': %s", policy_name, e)
+                    continue
 
             LOG.debug("Loaded %d AWS managed policies", len(_aws_managed_policies_cache))
 
-        except Exception as e:
-            LOG.error("Failed to load AWS managed policies: %s", e)
+        except json.JSONDecodeError as e:
+            LOG.error("Failed to parse AWS managed policies JSON: %s", e)
+        except OSError as e:
+            LOG.error("Failed to read AWS managed policies file: %s", e)
 
         _aws_managed_policies_loaded = True
         return _aws_managed_policies_cache
