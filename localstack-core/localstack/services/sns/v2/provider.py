@@ -1195,6 +1195,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> None:
         topic = self._get_topic(resource_arn, context)
         topic["data_protection_policy"] = data_protection_policy
+        # This seems to trigger the creation and visibility of the effective delivery policy in the attributes.
+        topic["attributes"]["EffectiveDeliveryPolicy"] = _create_default_effective_delivery_policy()
 
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
@@ -1291,6 +1293,26 @@ def _default_attributes(topic: Topic, context: RequestContext) -> TopicAttribute
             }
         )
     return default_attributes
+
+
+def _create_default_effective_delivery_policy():
+    return json.dumps(
+        {
+            "http": {
+                "defaultHealthyRetryPolicy": {
+                    "minDelayTarget": 20,
+                    "maxDelayTarget": 20,
+                    "numRetries": 3,
+                    "numMaxDelayRetries": 0,
+                    "numNoDelayRetries": 0,
+                    "numMinDelayRetries": 0,
+                    "backoffFunction": "linear",
+                },
+                "disableSubscriptionOverrides": False,
+                "defaultRequestPolicy": {"headerContentType": "text/plain; charset=UTF-8"},
+            }
+        }
+    )
 
 
 def _create_default_topic_policy(topic: Topic, context: RequestContext) -> str:
