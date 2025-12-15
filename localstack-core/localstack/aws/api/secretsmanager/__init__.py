@@ -56,6 +56,13 @@ class FilterNameStringType(StrEnum):
     all = "all"
 
 
+class SortByType(StrEnum):
+    created_date = "created-date"
+    last_accessed_date = "last-accessed-date"
+    last_changed_date = "last-changed-date"
+    name = "name"
+
+
 class SortOrderType(StrEnum):
     asc = "asc"
     desc = "desc"
@@ -407,6 +414,7 @@ class ListSecretsRequest(ServiceRequest):
     NextToken: NextTokenType | None
     Filters: FiltersListType | None
     SortOrder: SortOrderType | None
+    SortBy: SortByType | None
 
 
 class SecretListEntry(TypedDict, total=False):
@@ -688,6 +696,7 @@ class SecretsmanagerApi:
         next_token: NextTokenType | None = None,
         filters: FiltersListType | None = None,
         sort_order: SortOrderType | None = None,
+        sort_by: SortByType | None = None,
         **kwargs,
     ) -> ListSecretsResponse:
         raise NotImplementedError
