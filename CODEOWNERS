@@ -165,10 +165,10 @@
 /tests/aws/services/iam/ @dfangl @pinzon
 
 # kms
-/localstack-core/localstack/aws/api/kms/ @sannya-singal
-/localstack-core/localstack/services/kms/ @sannya-singal
-/tests/aws/services/kms/ @sannya-singal
-/tests/unit/services/kms/ @sannya-singal
+/localstack-core/localstack/aws/api/kms/ @sannya-singal @k-a-il
+/localstack-core/localstack/services/kms/ @sannya-singal @k-a-il
+/tests/aws/services/kms/ @sannya-singal @k-a-il
+/tests/unit/services/kms/ @sannya-singal @k-a-il
 
 # lambda
 /localstack-core/localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
@@ -189,7 +189,7 @@
 /tests/unit/services/opensearch/ @alexrashed @silv-io
 
 # pipes
-/localstack-core/localstack/aws/api/pipes/ @tiurin @gregfurman @joe4dev
+/localstack-core/localstack/aws/api/pipes/ @tiurin @gregfurman @joe4dev @carole-lavillonniere
 
 # resourcegroupstaggingapi
 /localstack-core/localstack/aws/api/resourcegroupstaggingapi/ @aidehn
@@ -245,10 +245,10 @@
 /tests/aws/services/ssm/ @viren-nadkarni @dominikschubert
 
 # stepfunctions
-/localstack-core/localstack/aws/api/stepfunctions/ @dominikschubert @joe4dev @gregfurman
-/localstack-core/localstack/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman
-/tests/aws/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman
-/tests/unit/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman
+/localstack-core/localstack/aws/api/stepfunctions/ @dominikschubert @joe4dev @gregfurman @tiurin
+/localstack-core/localstack/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman @tiurin
+/tests/aws/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman @tiurin
+/tests/unit/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman @tiurin
 
 # sts
 /localstack-core/localstack/aws/api/sts/ @pinzon @dfangl
@@ -256,6 +256,6 @@
 /tests/aws/services/sts/ @pinzon @dfangl
 
 # transcribe
-/localstack-core/localstack/aws/api/transcribe/ @sannya-singal
-/localstack-core/localstack/services/transcribe/ @sannya-singal
-/tests/aws/services/transcribe/ @sannya-singal
+/localstack-core/localstack/aws/api/transcribe/ @sannya-singal @silv-io @k-a-il
+/localstack-core/localstack/services/transcribe/ @sannya-singal @silv-io @k-a-il
+/tests/aws/services/transcribe/ @sannya-singal @silv-io @k-a-il
