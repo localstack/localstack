@@ -619,6 +619,7 @@ class TestSNSTopicCrudV2:
         snapshot.match("topic-not-found", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Not implemented in moto")
     def test_data_protection_policy_crud(self, snapshot, aws_client):
         topic_name = f"topic-{short_uid()}"
         topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
