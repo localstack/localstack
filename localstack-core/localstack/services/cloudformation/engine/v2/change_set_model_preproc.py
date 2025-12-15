@@ -292,7 +292,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             return property_value
         elif resource_type and should_ignore_unsupported_resource_type(
             resource_type=resource_type,
-            change_set_type=getattr(self._change_set, "change_set_type", None),
+            change_set_type=self._change_set.change_set_type,
         ):
             return MOCKED_REFERENCE
 

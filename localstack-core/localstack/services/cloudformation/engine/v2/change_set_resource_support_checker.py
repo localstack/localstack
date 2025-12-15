@@ -83,12 +83,12 @@ def _build_resource_failure_message(
 
 
 class ChangeSetResourceSupportChecker(ChangeSetModelVisitor):
-    change_set_type: ChangeSetType | str | None
+    change_set_type: ChangeSetType
     catalog: CatalogPlugin
 
     TITLE_MESSAGE = "Unsupported resources detected:"
 
-    def __init__(self, change_set_type: ChangeSetType | str | None = None):
+    def __init__(self, change_set_type: ChangeSetType):
         self._resource_failure_messages: dict[str, str] = {}
         self.change_set_type = change_set_type
         self.catalog = get_aws_catalog()

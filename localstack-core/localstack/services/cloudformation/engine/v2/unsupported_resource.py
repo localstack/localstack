@@ -5,7 +5,7 @@ from localstack.aws.api.cloudformation import ChangeSetType
 
 
 def should_ignore_unsupported_resource_type(
-    resource_type: str, change_set_type: ChangeSetType | str | None
+    resource_type: str, change_set_type: ChangeSetType
 ) -> bool:
     if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
         return True
