@@ -192,7 +192,8 @@ class LiveSchemaProvider:
 
     def schema(self, type_name: ResourceName) -> ResourceSchema:
         """
-        Given a CloudFormation resource type name (e.g. AWS::S3::Bucket), return the resource schema as dict.
+        Given a CloudFormation ResourceName (representing something like "AWS::S3::Bucket"), return the resource
+        schema as dict.
         """
         response = self.cfn_client.describe_type(
             Type="RESOURCE",
