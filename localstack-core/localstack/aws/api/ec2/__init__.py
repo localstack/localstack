@@ -2643,6 +2643,19 @@ class InstanceType(StrEnum):
     r8a_48xlarge = "r8a.48xlarge"
     r8a_metal_24xl = "r8a.metal-24xl"
     r8a_metal_48xl = "r8a.metal-48xl"
+    p6_b300_48xlarge = "p6-b300.48xlarge"
+    c8a_medium = "c8a.medium"
+    c8a_large = "c8a.large"
+    c8a_xlarge = "c8a.xlarge"
+    c8a_2xlarge = "c8a.2xlarge"
+    c8a_4xlarge = "c8a.4xlarge"
+    c8a_8xlarge = "c8a.8xlarge"
+    c8a_12xlarge = "c8a.12xlarge"
+    c8a_16xlarge = "c8a.16xlarge"
+    c8a_24xlarge = "c8a.24xlarge"
+    c8a_48xlarge = "c8a.48xlarge"
+    c8a_metal_24xl = "c8a.metal-24xl"
+    c8a_metal_48xl = "c8a.metal-48xl"
 
 
 class InstanceTypeHypervisor(StrEnum):

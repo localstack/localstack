@@ -53,6 +53,7 @@ InstanceTypeString = str
 Integer = int
 IntegerClass = int
 Issue = str
+KmsKeyArn = str
 KmsKeyId = str
 LicenseFilepath = str
 LimitName = str
@@ -1300,6 +1301,7 @@ class CreateApplicationRequest(ServiceRequest):
     iamIdentityCenterOptions: IamIdentityCenterOptionsInput | None
     appConfigs: AppConfigs | None
     tagList: TagList | None
+    kmsKeyArn: KmsKeyArn | None
 
 
 class IamIdentityCenterOptions(TypedDict, total=False):
@@ -1318,6 +1320,7 @@ class CreateApplicationResponse(TypedDict, total=False):
     appConfigs: AppConfigs | None
     tagList: TagList | None
     createdAt: Timestamp | None
+    kmsKeyArn: KmsKeyArn | None
 
 
 class SoftwareUpdateOptions(TypedDict, total=False):
@@ -2186,6 +2189,7 @@ class GetApplicationResponse(TypedDict, total=False):
     appConfigs: AppConfigs | None
     createdAt: Timestamp | None
     lastUpdatedAt: Timestamp | None
+    kmsKeyArn: KmsKeyArn | None
 
 
 class GetCompatibleVersionsRequest(ServiceRequest):
@@ -2800,6 +2804,7 @@ class OpensearchApi:
         iam_identity_center_options: IamIdentityCenterOptionsInput | None = None,
         app_configs: AppConfigs | None = None,
         tag_list: TagList | None = None,
+        kms_key_arn: KmsKeyArn | None = None,
         **kwargs,
     ) -> CreateApplicationResponse:
         raise NotImplementedError

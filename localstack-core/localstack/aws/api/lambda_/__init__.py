@@ -430,6 +430,7 @@ class Runtime(StrEnum):
     nodejs24_x = "nodejs24.x"
     python3_14 = "python3.14"
     java25 = "java25"
+    dotnet10 = "dotnet10"
 
 
 class SchemaRegistryEventRecordFormat(StrEnum):
