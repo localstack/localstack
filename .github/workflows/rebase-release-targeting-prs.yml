@@ -15,7 +15,7 @@ jobs:
           script: |
             // remove the ref prefx "refs/heads/"
             return context.payload.ref.substr(11)
-      - uses: peter-evans/rebase@v3
+      - uses: peter-evans/rebase@v4
         with:
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           base: ${{steps.determine-base-ref.outputs.result}}
