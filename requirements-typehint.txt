@@ -374,8 +374,6 @@ mypy-boto3-iot==1.42.3
     # via boto3-stubs
 mypy-boto3-iot-data==1.42.3
     # via boto3-stubs
-mypy-boto3-iotanalytics==1.42.3
-    # via boto3-stubs
 mypy-boto3-iotwireless==1.42.3
     # via boto3-stubs
 mypy-boto3-kafka==1.42.3
