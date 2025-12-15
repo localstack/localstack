@@ -20,6 +20,14 @@ from localstack.utils.sync import retry
 
 
 class TestDNSServer:
+    """
+    End to end tests of our DNS server implementation.
+    These tests use the `example.org` and `example.com` domains for testing, and also tests the fallback to the public DNS
+    Changes in the upstream name resolution of those domains might lead to test failures.
+
+    TODO we should investigate creating our own test domain with a fixed behavior to avoid potential test failures
+    """
+
     @pytest.fixture
     def dns_server(self):
         dns_port = get_free_udp_port()
@@ -176,12 +184,11 @@ class TestDNSServer:
         assert "something.org." in answer.to_text()
         assert "noc.something.org." in answer.to_text()
 
-    @pytest.mark.skip(reason="failing as of 2025-12-11")
     def test_dns_server_subdomain_of_route(self, dns_server, query_dns):
         """Test querying a subdomain of a record entry without a wildcard"""
         # add ipv4 host
-        dns_server.add_host("example.org", TargetRecord("127.0.0.1", RecordType.A))
-        answer = query_dns("nonexistent.example.org", "A")
+        dns_server.add_host("example.com", TargetRecord("127.0.0.1", RecordType.A))
+        answer = query_dns("nonexistent.example.com", "A")
         assert not answer.answer
         # should still have authority section
         # TODO uncomment once it is clear why in CI the authority section is missing
