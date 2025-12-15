@@ -1320,6 +1320,7 @@ class TestPseudoParameters:
 
 
 @markers.aws.validated
+@skip_if_legacy_engine()
 def test_no_type(aws_client, snapshot):
     template = {
         "Resources": {
