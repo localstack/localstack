@@ -94,6 +94,7 @@ from localstack.aws.api.apigateway import (
     UsagePlans,
     VpcLink,
     VpcLinks,
+    VpcLinkStatus,
 )
 from localstack.aws.connect import connect_to
 from localstack.aws.forwarder import create_aws_request_context
@@ -1823,7 +1824,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> VpcLink:
         region_details = get_apigateway_store(context=context)
         link_id = short_uid()
-        entry = {"id": link_id, "status": "AVAILABLE"}
+        entry = {
+            "id": link_id,
+            "status": VpcLinkStatus.PENDING,
+            "name": name,
+            "description": description,
+            "targetArns": target_arns,
+        }
         region_details.vpc_links[link_id] = entry
         result = to_vpc_link_response_json(entry)
         return VpcLink(**result)
