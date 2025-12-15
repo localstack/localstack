@@ -6,7 +6,7 @@
 #
 asn1crypto==1.5.1
     # via localstack-core (pyproject.toml)
-cachetools==6.2.2
+cachetools==6.2.3
     # via localstack-core (pyproject.toml)
 certifi==2025.11.12
     # via requests
@@ -48,5 +48,5 @@ rich==14.2.0
     # via localstack-core (pyproject.toml)
 semver==3.0.4
     # via localstack-core (pyproject.toml)
-urllib3==2.6.1
+urllib3==2.6.2
     # via requests
