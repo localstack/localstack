@@ -9,6 +9,7 @@ from typing import Any, Final, TypedDict, cast
 from typing_extensions import TypeVar
 
 from localstack.aws.api.cloudformation import ChangeAction
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.resource_provider import ResourceProviderExecutor
 from localstack.services.cloudformation.v2.types import (
     EngineParameter,
@@ -1079,6 +1080,15 @@ class ChangeSetModel:
         scope_type, (before_type, after_type) = self._safe_access_in(
             scope, TypeKey, before_resource, after_resource
         )
+
+        # If both before and after types are Nothing then the user did
+        # not specify a value for the type of this resource, which is
+        # a hard error in cloudFormation.
+        if is_nothing(before_type) and is_nothing(after_type):
+            raise ValidationError(
+                f"Template format error: [{scope}] Every Resources object must contain a Type member."
+            )
+
         terminal_value_type = self._visit_type(
             scope=scope_type, before_type=before_type, after_type=after_type
         )
