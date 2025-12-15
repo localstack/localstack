@@ -1822,6 +1822,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         tags: MapOfStringToString = None,
         **kwargs,
     ) -> VpcLink:
+        # TODO add tag support
+        if not name:
+            raise BadRequestException("Name cannot be empty")
+        for arn in target_arns:
+            try:
+                parse_arn(arn)
+            except InvalidArnException:
+                raise BadRequestException(f"Invalid ARN. ARN is not well formed {arn}")
+
         region_details = get_apigateway_store(context=context)
         link_id = short_uid()
         entry = {
@@ -1833,6 +1842,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         }
         region_details.vpc_links[link_id] = entry
         result = to_vpc_link_response_json(entry)
+
+        # update the status and status message of the store object
+        entry["status"] = VpcLinkStatus.AVAILABLE
+        entry["statusMessage"] = "Your vpc link is ready for use"
+
         return VpcLink(**result)
 
     def get_vpc_links(
@@ -1852,7 +1866,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         region_details = get_apigateway_store(context=context)
         vpc_link = region_details.vpc_links.get(vpc_link_id)
         if vpc_link is None:
-            raise NotFoundException(f'VPC link ID "{vpc_link_id}" not found')
+            raise NotFoundException("Invalid Vpc Link identifier specified")
         result = to_vpc_link_response_json(vpc_link)
         return VpcLink(**result)
 
@@ -1866,7 +1880,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         region_details = get_apigateway_store(context=context)
         vpc_link = region_details.vpc_links.get(vpc_link_id)
         if vpc_link is None:
-            raise NotFoundException(f'VPC link ID "{vpc_link_id}" not found')
+            raise NotFoundException("Invalid Vpc Link identifier specified")
         result = apply_json_patch_safe(vpc_link, patch_operations)
         result = to_vpc_link_response_json(result)
         return VpcLink(**result)
@@ -1875,7 +1889,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         region_details = get_apigateway_store(context=context)
         vpc_link = region_details.vpc_links.pop(vpc_link_id, None)
         if vpc_link is None:
-            raise NotFoundException(f'VPC link ID "{vpc_link_id}" not found for deletion')
+            raise NotFoundException("Invalid Vpc Link identifier specified")
 
     # request validators
 
