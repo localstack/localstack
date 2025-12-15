@@ -37,6 +37,9 @@ class TestStateTemplate(TemplateLoader):
     )
 
     BASE_MAP_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/base_map_state.json5")
+    BASE_MAP_STATE_WITH_RESULT_WRITER: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_map_state_result_writer.json5"
+    )
     BASE_MAP_STATE_CATCH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/base_map_state_catch.json5"
     )
@@ -123,4 +126,8 @@ class TestStateMachineTemplate(TemplateLoader):
 
     LOCALSTACK_BLOGPOST_SCENARIO_STATE_MACHINE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/localstack_blogpost_scenario_state_machine.json5"
+    )
+
+    BASE_INVALID_STATE_DEFINITION: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_invalid_state_definition.json5"
     )

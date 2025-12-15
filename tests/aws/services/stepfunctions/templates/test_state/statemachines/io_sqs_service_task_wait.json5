@@ -3,7 +3,7 @@
     "Type": "Task",
     "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
     "Parameters": {
-        "QueueUrl": "https://sqs.us-east-2.amazonaws.com/123456789012/myQueue",
+        "QueueUrl": "__QUEUE_URL__",
         "MessageBody": {
             "Message": "Hello from Step Functions!",
             "TaskToken.$": "$$.Task.Token"

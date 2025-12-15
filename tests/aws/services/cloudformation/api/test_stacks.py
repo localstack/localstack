@@ -340,6 +340,7 @@ class TestStacksApi:
         )
 
     @markers.aws.validated
+    @skip_if_legacy_engine()
     def test_update_stack_actual_update(self, deploy_cfn_template, aws_client):
         template = load_file(
             os.path.join(os.path.dirname(__file__), "../../../templates/sqs_queue_update.yml")
@@ -703,8 +704,6 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
 
 @markers.aws.validated
 def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups):
-    stack_name = f"test-stack-{short_uid()}"
-    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/cfn_parameter_list_type.yaml"
@@ -715,6 +714,35 @@ def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups):
     )
 
     assert stack.outputs["ParamValue"] == "foo|bar"
+
+
+@markers.aws.validated
+def test_subnet_id_parameter_type(aws_client, deploy_cfn_template, cleanups, snapshot):
+    vpc_id = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
+    cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc_id))
+    aws_client.ec2.get_waiter("vpc_available").wait(VpcIds=[vpc_id])
+    subnet_id_1 = aws_client.ec2.create_subnet(VpcId=vpc_id, CidrBlock="10.0.0.0/24")["Subnet"][
+        "SubnetId"
+    ]
+    cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet_id_1))
+    subnet_id_2 = aws_client.ec2.create_subnet(VpcId=vpc_id, CidrBlock="10.0.1.0/24")["Subnet"][
+        "SubnetId"
+    ]
+    cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet_id_2))
+
+    subnets_list = ",".join([subnet_id_1, subnet_id_2])
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_parameter_list_subnet_id_type.yaml"
+        ),
+        parameters={
+            "ParamsList": subnets_list,
+        },
+    )
+
+    snapshot.add_transformer(snapshot.transform.regex(subnet_id_1, "subnet-id-1"))
+    snapshot.add_transformer(snapshot.transform.regex(subnet_id_2, "subnet-id-2"))
+    snapshot.match("outputs", stack.outputs)
 
 
 @markers.aws.validated

@@ -13,6 +13,7 @@ from botocore.config import Config
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, TooManyRequestsException
 from localstack.services.lambda_.analytics import (
+    FunctionInitializationType,
     FunctionOperation,
     FunctionStatus,
     function_counter,
@@ -198,22 +199,22 @@ class Poller:
     def handle_message(self, message: dict) -> None:
         failure_cause = None
         qualifier = self.version_manager.function_version.id.qualifier
+        function_config = self.version_manager.function_version.config
         event_invoke_config = self.version_manager.function.event_invoke_configs.get(qualifier)
         runtime = None
         status = None
+        # TODO: handle initialization_type provisioned-concurrency, which requires enriching invocation_result
+        initialization_type = (
+            FunctionInitializationType.lambda_managed_instances
+            if function_config.CapacityProviderConfig
+            else FunctionInitializationType.on_demand
+        )
         try:
             sqs_invocation = SQSInvocation.decode(message["Body"])
             invocation = sqs_invocation.invocation
             try:
                 invocation_result = self.version_manager.invoke(invocation=invocation)
-                function_config = self.version_manager.function_version.config
-                function_counter.labels(
-                    operation=FunctionOperation.invoke,
-                    runtime=function_config.runtime or "n/a",
-                    status=FunctionStatus.success,
-                    invocation_type=InvocationType.Event,
-                    package_type=function_config.package_type,
-                ).increment()
+                status = FunctionStatus.success
             except Exception as e:
                 # Reserved concurrency == 0
                 if self.version_manager.function.reserved_concurrent_executions == 0:
@@ -223,6 +224,7 @@ class Poller:
                 elif not has_enough_time_for_retry(sqs_invocation, event_invoke_config):
                     failure_cause = "EventAgeExceeded"
                     status = FunctionStatus.event_age_exceeded_error
+
                 if failure_cause:
                     invocation_result = InvocationResult(
                         is_error=True, request_id=invocation.request_id, payload=None, logs=None
@@ -240,14 +242,14 @@ class Poller:
                 sqs_client.delete_message(
                     QueueUrl=self.event_queue_url, ReceiptHandle=message["ReceiptHandle"]
                 )
-                # status MUST be set before returning
-                package_type = self.version_manager.function_version.config.package_type
+                assert status, "status MUST be set before returning"
                 function_counter.labels(
                     operation=FunctionOperation.invoke,
                     runtime=runtime or "n/a",
                     status=status,
                     invocation_type=InvocationType.Event,
-                    package_type=package_type,
+                    package_type=function_config.package_type,
+                    initialization_type=initialization_type,
                 ).increment()
 
             # Good summary blogpost: https://haithai91.medium.com/aws-lambdas-retry-behaviors-edff90e1cf1b
@@ -256,6 +258,8 @@ class Poller:
             max_retry_attempts = 2
             if event_invoke_config and event_invoke_config.maximum_retry_attempts is not None:
                 max_retry_attempts = event_invoke_config.maximum_retry_attempts
+
+            assert invocation_result, "Invocation result MUST exist if we are not returning before"
 
             # An invocation error either leads to a terminal failure or to a scheduled retry
             if invocation_result.is_error:  # invocation error

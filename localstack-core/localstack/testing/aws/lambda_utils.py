@@ -261,7 +261,7 @@ def concurrency_update_done(client, function_name, qualifier):
 
 def get_invoke_init_type(
     client, function_name, qualifier
-) -> Literal["on-demand", "provisioned-concurrency"]:
+) -> Literal["on-demand", "provisioned-concurrency", "lambda-managed-instances"]:
     """check the environment in the lambda for AWS_LAMBDA_INITIALIZATION_TYPE indicating ondemand/provisioned"""
     invoke_result = client.invoke(FunctionName=function_name, Qualifier=qualifier)
     return json.load(invoke_result["Payload"])

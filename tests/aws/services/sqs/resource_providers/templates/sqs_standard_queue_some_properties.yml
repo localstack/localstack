@@ -1,0 +1,38 @@
+#
+# A standard SQS queue with some properties set, but not all. The properties set have valid values, and the unset
+# properties will take their default values.
+#
+Resources:
+  StandardQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: 'MyStandardQueueWithAllProperties'
+      DelaySeconds: 17
+      VisibilityTimeout: 43
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 7
+      SqsManagedSseEnabled: false
+      Tags:
+        - Key: 'Environment'
+          Value: 'Pre-Production'
+
+  DeadLetterQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      RedriveAllowPolicy:
+        redrivePermission: 'allowAll'
+
+Outputs:
+  QueueUrl:
+    Description: 'URL of the SQS Standard Queue'
+    Value: !Ref StandardQueue
+  QueueArn:
+    Description: 'ARN of the SQS Standard Queue'
+    Value: !GetAtt StandardQueue.Arn
+  DeadLetterQueueUrl:
+    Description: 'URL of the Dead Letter Queue'
+    Value: !Ref DeadLetterQueue
+  DeadLetterQueueArn:
+    Description: 'ARN of the Dead Letter Queue'
+    Value: !GetAtt DeadLetterQueue.Arn

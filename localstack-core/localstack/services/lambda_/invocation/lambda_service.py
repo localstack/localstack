@@ -29,6 +29,7 @@ from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.analytics import (
+    FunctionInitializationType,
     FunctionOperation,
     FunctionStatus,
     function_counter,
@@ -313,6 +314,12 @@ class LambdaService:
             raise ResourceNotFoundException(f"Function not found: {invoked_arn}", Type="User")
         runtime = version.config.runtime or "n/a"
         package_type = version.config.package_type
+        # Not considering provisioned concurrency for such early errors
+        initialization_type = (
+            FunctionInitializationType.lambda_managed_instances
+            if version.config.CapacityProviderConfig
+            else FunctionInitializationType.on_demand
+        )
         if version.config.CapacityProviderConfig and qualifier == "$LATEST":
             if function.versions.get("$LATEST.PUBLISHED"):
                 raise InvalidParameterValueException(
@@ -355,6 +362,7 @@ class LambdaService:
                 status=status,
                 invocation_type=invocation_type,
                 package_type=package_type,
+                initialization_type=initialization_type,
             ).increment()
             raise ResourceConflictException(
                 f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
@@ -373,6 +381,7 @@ class LambdaService:
                     status=FunctionStatus.invalid_payload_error,
                     invocation_type=invocation_type,
                     package_type=package_type,
+                    initialization_type=initialization_type,
                 ).increment()
                 # MAYBE: improve parity of detailed exception message (quite cumbersome)
                 raise InvalidRequestContentException(
@@ -417,12 +426,14 @@ class LambdaService:
             if invocation_result.is_error
             else FunctionStatus.success
         )
+        # TODO: handle initialization_type provisioned-concurrency, requires enriching invocation_result
         function_counter.labels(
             operation=FunctionOperation.invoke,
             runtime=runtime,
             status=status,
             invocation_type=invocation_type,
             package_type=package_type,
+            initialization_type=initialization_type,
         ).increment()
         return invocation_result
 

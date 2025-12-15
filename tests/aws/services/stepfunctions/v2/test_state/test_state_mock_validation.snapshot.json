@@ -1,0 +1,194 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-PassState]": {
+    "recorded-date": "10-12-2025, 00:28:08",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "State type 'Pass' is not supported when a mock is specified"
+        },
+        "message": "State type 'Pass' is not supported when a mock is specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-FailState]": {
+    "recorded-date": "10-12-2025, 00:28:09",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "State type 'Fail' is not supported when a mock is specified"
+        },
+        "message": "State type 'Fail' is not supported when a mock is specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_result-SucceedState]": {
+    "recorded-date": "10-12-2025, 00:28:09",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "State type 'Succeed' is not supported when a mock is specified"
+        },
+        "message": "State type 'Succeed' is not supported when a mock is specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-PassState]": {
+    "recorded-date": "10-12-2025, 00:28:09",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "State type 'Pass' is not supported when a mock is specified"
+        },
+        "message": "State type 'Pass' is not supported when a mock is specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-FailState]": {
+    "recorded-date": "10-12-2025, 00:28:09",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "State type 'Fail' is not supported when a mock is specified"
+        },
+        "message": "State type 'Fail' is not supported when a mock is specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_does_not_accept_mock[mock_error_output-SucceedState]": {
+    "recorded-date": "10-12-2025, 00:28:09",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "State type 'Succeed' is not supported when a mock is specified"
+        },
+        "message": "State type 'Succeed' is not supported when a mock is specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_requires_mock[MapState]": {
+    "recorded-date": "10-12-2025, 00:28:10",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "TestState API does not support Map or Parallel states. Supported state types include: [Task, Wait, Pass, Succeed, Fail, Choice]"
+        },
+        "message": "TestState API does not support Map or Parallel states. Supported state types include: [Task, Wait, Pass, Succeed, Fail, Choice]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_requires_mock[MapTaskState]": {
+    "recorded-date": "10-12-2025, 00:28:10",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "TestState API does not support Map or Parallel states. Supported state types include: [Task, Wait, Pass, Succeed, Fail, Choice]"
+        },
+        "message": "TestState API does not support Map or Parallel states. Supported state types include: [Task, Wait, Pass, Succeed, Fail, Choice]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_both_mock_result_and_mock_error_output_are_set": {
+    "recorded-date": "10-12-2025, 00:28:10",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "A test mock should have only one of the following fields: [result, errorOutput]."
+        },
+        "message": "A test mock should have only one of the following fields: [result, errorOutput].",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_reveal_secrets_is_true_and_mock_result_is_set": {
+    "recorded-date": "10-12-2025, 00:28:10",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "TestState does not support RevealSecrets when a mock is specified."
+        },
+        "message": "TestState does not support RevealSecrets when a mock is specified.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_is_not_array_on_map_state_without_result_writer": {
+    "recorded-date": "10-12-2025, 00:28:10",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Mocked result must be an array."
+        },
+        "message": "Mocked result must be an array.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_is_not_object_on_map_state_with_result_writer": {
+    "recorded-date": "10-12-2025, 00:28:11",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Mocked result must be a JSON object."
+        },
+        "message": "Mocked result must be a JSON object.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

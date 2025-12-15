@@ -1,5 +1,5 @@
 import json
-from typing import Any, Final
+from typing import Final
 
 import pytest
 
@@ -12,8 +12,6 @@ from tests.aws.services.stepfunctions.templates.test_state.test_state_templates 
 TEST_STATE_NAME: Final[str] = "State0"
 
 HELLO_WORLD_INPUT = json.dumps({"Value": "HelloWorld"})
-
-MOCK_STATE_VALUE: dict[str, Any] = {"result": "__tbd__"}
 
 BASE_TEMPLATE_INPUT_BINDINGS: list[tuple[str, str, str]] = [
     (TSMT.BASE_PASS_STATE_MACHINE, "State0", HELLO_WORLD_INPUT),
@@ -40,25 +38,19 @@ class TestStateMachineScenarios:
     )
     def test_base_state_name(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
-        create_state_machine,
         sfn_snapshot,
         tct_template,
         state_name,
         execution_input,
         inspection_level,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         template = TSMT.load_sfn_template(tct_template)
         definition = json.dumps(template)
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             stateName=state_name,
             definition=definition,
-            roleArn=sfn_role_arn,
             input=execution_input,
             inspectionLevel=inspection_level,
         )
@@ -71,23 +63,17 @@ class TestStateMachineScenarios:
     )
     def test_base_state_name_multi_state(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
-        create_state_machine,
         sfn_snapshot,
         state_name,
         inspection_level,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         template = TSMT.load_sfn_template(TSMT.BASE_MULTI_STATE_MACHINE)
         definition = json.dumps(template)
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             stateName=state_name,
             definition=definition,
-            roleArn=sfn_role_arn,
             input=HELLO_WORLD_INPUT,
             inspectionLevel=inspection_level,
         )
@@ -101,15 +87,10 @@ class TestStateMachineScenarios:
     )
     def test_base_state_name_validation_failures(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
-        create_state_machine,
         sfn_snapshot,
         state_name,
     ):
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         template = TSMT.load_sfn_template(TSMT.BASE_PASS_STATE_MACHINE)
         definition = json.dumps(template)
 
@@ -117,7 +98,6 @@ class TestStateMachineScenarios:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 stateName=state_name,
                 definition=definition,
-                roleArn=sfn_role_arn,
                 input=HELLO_WORLD_INPUT,
                 inspectionLevel=InspectionLevel.INFO,
             )
@@ -125,3 +105,28 @@ class TestStateMachineScenarios:
         sfn_snapshot.match(
             "exception", {"exception_typename": ex.typename, "exception_value": ex.value}
         )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    # ANTLR parser message has different wording but the same meaning as AWS response. Not investing time now to convert to the exact same wording - relying on error code for test.
+    # TODO match wording and hide implementation details (ANTLR)
+    # expected:
+    # /Error/Message "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: The field 'Type' should have one of these values: [Task, Wait, Pass, Succeed, Fail, Choice, Parallel, Map] at /States/ExistingButInvalidState/Type'"
+    # actual:
+    # 'ASLParserException line 1:170, at "TypeThatDoesNotExist", mismatched input \'"TypeThatDoesNotExist"\' expecting {\'"Task"\', \'"Choice"\', \'"Fail"\', \'"Succeed"\', \'"Pass"\', \'"Wait"\', \'"Parallel"\', \'"Map"\'}'
+    def test_state_name_invalid_state_definition(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TSMT.load_sfn_template(TSMT.BASE_INVALID_STATE_DEFINITION)
+        definition = json.dumps(template)
+
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                stateName="ExistingButInvalidState",
+                definition=definition,
+                input=HELLO_WORLD_INPUT,
+                inspectionLevel=InspectionLevel.INFO,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)

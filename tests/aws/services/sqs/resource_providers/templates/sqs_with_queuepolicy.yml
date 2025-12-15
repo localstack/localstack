@@ -1,3 +1,6 @@
+#
+# A standard SQS queue with an associated queue policy allowing a few actions.
+#
 Resources:
   Queue4A7E3555:
     Type: AWS::SQS::Queue
@@ -10,7 +13,7 @@ Resources:
               - sqs:SendMessage
               - sqs:GetQueueAttributes
               - sqs:GetQueueUrl
-            Effect: Deny
+            Effect: Allow
             Principal: "*"
             Resource:
               Fn::GetAtt:

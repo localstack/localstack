@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[INFO-BASE_PASS_STATE_MACHINE]": {
-    "recorded-date": "14-11-2025, 13:22:06",
+    "recorded-date": "03-12-2025, 00:48:38",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -15,7 +15,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[INFO-BASE_FAIL_STATE_MACHINE]": {
-    "recorded-date": "14-11-2025, 13:22:21",
+    "recorded-date": "03-12-2025, 00:48:38",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -29,7 +29,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[DEBUG-BASE_PASS_STATE_MACHINE]": {
-    "recorded-date": "14-11-2025, 13:22:51",
+    "recorded-date": "03-12-2025, 00:48:39",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -61,7 +61,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[DEBUG-BASE_FAIL_STATE_MACHINE]": {
-    "recorded-date": "14-11-2025, 13:23:06",
+    "recorded-date": "03-12-2025, 00:48:39",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -80,7 +80,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[TRACE-BASE_PASS_STATE_MACHINE]": {
-    "recorded-date": "14-11-2025, 13:23:35",
+    "recorded-date": "03-12-2025, 00:48:39",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -112,7 +112,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[TRACE-BASE_FAIL_STATE_MACHINE]": {
-    "recorded-date": "14-11-2025, 13:23:49",
+    "recorded-date": "03-12-2025, 00:48:40",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -131,7 +131,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[INFO-State0]": {
-    "recorded-date": "14-11-2025, 13:11:27",
+    "recorded-date": "03-12-2025, 00:48:40",
     "recorded-content": {
       "test_case_response": {
         "nextState": "State1",
@@ -147,7 +147,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[INFO-State1]": {
-    "recorded-date": "14-11-2025, 13:11:43",
+    "recorded-date": "03-12-2025, 00:48:40",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -161,7 +161,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[DEBUG-State0]": {
-    "recorded-date": "14-11-2025, 13:11:58",
+    "recorded-date": "03-12-2025, 00:48:40",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -182,7 +182,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[DEBUG-State1]": {
-    "recorded-date": "14-11-2025, 13:12:12",
+    "recorded-date": "03-12-2025, 00:48:41",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -201,7 +201,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[TRACE-State0]": {
-    "recorded-date": "14-11-2025, 13:12:27",
+    "recorded-date": "03-12-2025, 00:48:41",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -222,7 +222,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[TRACE-State1]": {
-    "recorded-date": "14-11-2025, 13:12:42",
+    "recorded-date": "03-12-2025, 00:48:41",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -241,7 +241,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_validation_failures[dne]": {
-    "recorded-date": "29-10-2025, 11:53:42",
+    "recorded-date": "03-12-2025, 00:48:41",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -250,7 +250,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_validation_failures[invalid]": {
-    "recorded-date": "29-10-2025, 11:53:57",
+    "recorded-date": "03-12-2025, 00:48:42",
     "recorded-content": {
       "exception": {
         "exception_typename": "ValidationException",
@@ -259,7 +259,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_validation_failures[empty]": {
-    "recorded-date": "29-10-2025, 11:54:11",
+    "recorded-date": "03-12-2025, 00:48:42",
     "recorded-content": {
       "exception": {
         "exception_typename": "ParamValidationError",
@@ -268,7 +268,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[INFO-BASE_MAP_STATE_MACHINE]": {
-    "recorded-date": "14-11-2025, 13:22:36",
+    "recorded-date": "03-12-2025, 00:48:39",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -283,7 +283,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[DEBUG-BASE_MAP_STATE_MACHINE]": {
-    "recorded-date": "14-11-2025, 13:23:20",
+    "recorded-date": "03-12-2025, 00:48:39",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -315,7 +315,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[TRACE-BASE_MAP_STATE_MACHINE]": {
-    "recorded-date": "14-11-2025, 13:24:04",
+    "recorded-date": "03-12-2025, 00:48:40",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -342,6 +342,22 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_state_name_invalid_state_definition": {
+    "recorded-date": "04-12-2025, 12:16:39",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: The field 'Type' should have one of these values: [Task, Wait, Pass, Succeed, Fail, Choice, Parallel, Map] at /States/ExistingButInvalidState/Type'"
+        },
+        "message": "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: The field 'Type' should have one of these values: [Task, Wait, Pass, Succeed, Fail, Choice, Parallel, Map] at /States/ExistingButInvalidState/Type'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

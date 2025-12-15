@@ -26,9 +26,7 @@ class TestFieldValidationModeNone:
     @pytest.mark.parametrize("result", SFN_VALIDATION_ERRORS)
     def test_none_mode_sfn_task(
         self,
-        aws_client,
         aws_client_no_sync_prefix,
-        create_state_machine_iam_role,
         account_id,
         region_name,
         sfn_snapshot,
@@ -53,11 +51,8 @@ class TestFieldValidationModeNone:
 
         mock = {"result": json.dumps(result), "fieldValidationMode": "NONE"}
 
-        sfn_role_arn = create_state_machine_iam_role(aws_client)
-
         test_state_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,
-            roleArn=sfn_role_arn,
             input=exec_input,
             inspectionLevel=InspectionLevel.INFO,
             mock=mock,

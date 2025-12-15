@@ -1,0 +1,334 @@
+{
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_standard_queue_with_required_properties": {
+    "recorded-date": "07-12-2025, 19:18:58",
+    "recorded-content": {
+      "attributes": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "0",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "1048576",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "<queue-arn>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_standard_queue_with_all_properties": {
+    "recorded-date": "07-12-2025, 19:20:20",
+    "recorded-content": {
+      "attributes": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "17",
+          "KmsDataKeyReusePeriodSeconds": "297",
+          "KmsMasterKeyId": "alias/aws/sqs",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "1234",
+          "MessageRetentionPeriod": "13579",
+          "QueueArn": "<queue-arn>",
+          "ReceiveMessageWaitTimeSeconds": "18",
+          "RedrivePolicy": {
+            "deadLetterTargetArn": "<dlq-queue-arn>",
+            "maxReceiveCount": 7
+          },
+          "SqsManagedSseEnabled": "false",
+          "VisibilityTimeout": "45"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tags": {
+        "Tags": {
+          "Department": "Finance",
+          "Environment": "Production"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dlq_attributes": {
+        "Attributes": {
+          "RedriveAllowPolicy": {
+            "redrivePermission": "allowAll"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_fifo_queue_with_required_properties": {
+    "recorded-date": "07-12-2025, 19:22:08",
+    "recorded-content": {
+      "attributes": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "false",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "queue",
+          "DelaySeconds": "0",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perQueue",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "1048576",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "<queue-arn>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_fifo_queue_with_all_properties": {
+    "recorded-date": "07-12-2025, 19:23:29",
+    "recorded-content": {
+      "attributes": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "true",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "messageGroup",
+          "DelaySeconds": "13",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perMessageGroupId",
+          "KmsDataKeyReusePeriodSeconds": "200",
+          "KmsMasterKeyId": "alias/aws/sqs",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "3232",
+          "MessageRetentionPeriod": "13425",
+          "QueueArn": "<queue-arn>",
+          "ReceiveMessageWaitTimeSeconds": "15",
+          "RedrivePolicy": {
+            "deadLetterTargetArn": "<dlq-queue-arn>",
+            "maxReceiveCount": 7
+          },
+          "SqsManagedSseEnabled": "false",
+          "VisibilityTimeout": "42"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tags": {
+        "Tags": {
+          "Department": "Finance",
+          "Environment": "Production"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dlq_attributes": {
+        "Attributes": {
+          "RedriveAllowPolicy": {
+            "redrivePermission": "allowAll"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_modify_properties_in_place": {
+    "recorded-date": "07-12-2025, 19:26:04",
+    "recorded-content": {
+      "updated_attributes": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "16",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "4321",
+          "MessageRetentionPeriod": "17539",
+          "QueueArn": "<queue-arn>",
+          "ReceiveMessageWaitTimeSeconds": "17",
+          "RedrivePolicy": {
+            "deadLetterTargetArn": "<dlq-queue-arn>",
+            "maxReceiveCount": 3
+          },
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "40"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated_tags": {
+        "Tags": {
+          "Department": "Sales",
+          "Environment": "Staging"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_add_properties_with_replacement": {
+    "recorded-date": "07-12-2025, 19:29:14",
+    "recorded-content": {
+      "updated_attributes": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "15",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "4444",
+          "MessageRetentionPeriod": "17777",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:MyStandardQueueWithADifferentName",
+          "ReceiveMessageWaitTimeSeconds": "14",
+          "RedrivePolicy": {
+            "deadLetterTargetArn": "<<dlq-queue-arn>:1>",
+            "maxReceiveCount": 4
+          },
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "35"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated_tags": {
+        "Tags": {
+          "Department": "Marketing",
+          "Environment": "Pre-Test"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.NonExistentQueue",
+          "Message": "The specified queue does not exist.",
+          "QueryErrorCode": "QueueDoesNotExist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_remove_some_properties": {
+    "recorded-date": "07-12-2025, 19:31:50",
+    "recorded-content": {
+      "updated_attributes": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "17",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "<queue-arn>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "RedrivePolicy": {
+            "deadLetterTargetArn": "<<dlq-queue-arn>:1>",
+            "maxReceiveCount": 7
+          },
+          "SqsManagedSseEnabled": "false",
+          "VisibilityTimeout": "43"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated_tags": {
+        "Tags": {
+          "Environment": "Pre-Production"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_completely_remove_resource": {
+    "recorded-date": "07-12-2025, 19:34:25",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.NonExistentQueue",
+          "Message": "The specified queue does not exist.",
+          "QueryErrorCode": "QueueDoesNotExist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_without_explicit_name": {
+    "recorded-date": "07-12-2025, 19:36:25",
+    "recorded-content": {
+      "updated_attributes": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "0",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "4321",
+          "MessageRetentionPeriod": "17539",
+          "QueueArn": "<queue-arn>",
+          "ReceiveMessageWaitTimeSeconds": "17",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

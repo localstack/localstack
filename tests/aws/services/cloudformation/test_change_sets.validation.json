@@ -89,6 +89,15 @@
       "total": 125.07
     }
   },
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_queue_update": {
+    "last_validated_date": "2025-12-05T10:45:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.96,
+      "call": 123.03,
+      "teardown": 33.91,
+      "total": 157.9
+    }
+  },
   "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_single_resource_static_update": {
     "last_validated_date": "2025-08-05T14:26:48+00:00",
     "durations_in_seconds": {

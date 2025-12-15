@@ -608,6 +608,10 @@ class StorageLensGroupLevel(TypedDict, total=False):
     SelectionCriteria: StorageLensGroupLevelSelectionCriteria | None
 
 
+class AdvancedPerformanceMetrics(TypedDict, total=False):
+    IsEnabled: IsEnabled | None
+
+
 class DetailedStatusCodesMetrics(TypedDict, total=False):
     IsEnabled: IsEnabled | None
 
@@ -645,6 +649,7 @@ class BucketLevel(TypedDict, total=False):
     AdvancedCostOptimizationMetrics: AdvancedCostOptimizationMetrics | None
     AdvancedDataProtectionMetrics: AdvancedDataProtectionMetrics | None
     DetailedStatusCodesMetrics: DetailedStatusCodesMetrics | None
+    AdvancedPerformanceMetrics: AdvancedPerformanceMetrics | None
 
 
 class AccountLevel(TypedDict, total=False):
@@ -653,6 +658,7 @@ class AccountLevel(TypedDict, total=False):
     AdvancedCostOptimizationMetrics: AdvancedCostOptimizationMetrics | None
     AdvancedDataProtectionMetrics: AdvancedDataProtectionMetrics | None
     DetailedStatusCodesMetrics: DetailedStatusCodesMetrics | None
+    AdvancedPerformanceMetrics: AdvancedPerformanceMetrics | None
     StorageLensGroupLevel: StorageLensGroupLevel | None
 
 
@@ -1944,6 +1950,11 @@ class StorageLensDataExportEncryption(TypedDict, total=False):
     SSEKMS: SSEKMS | None
 
 
+class StorageLensTableDestination(TypedDict, total=False):
+    IsEnabled: IsEnabled
+    Encryption: StorageLensDataExportEncryption | None
+
+
 class S3BucketDestination(TypedDict, total=False):
     Format: Format
     OutputSchemaVersion: OutputSchemaVersion
@@ -1953,9 +1964,15 @@ class S3BucketDestination(TypedDict, total=False):
     Encryption: StorageLensDataExportEncryption | None
 
 
+class StorageLensExpandedPrefixesDataExport(TypedDict, total=False):
+    S3BucketDestination: S3BucketDestination | None
+    StorageLensTableDestination: StorageLensTableDestination | None
+
+
 class StorageLensDataExport(TypedDict, total=False):
     S3BucketDestination: S3BucketDestination | None
     CloudWatchMetrics: CloudWatchMetrics | None
+    StorageLensTableDestination: StorageLensTableDestination | None
 
 
 class Include(TypedDict, total=False):
@@ -1969,9 +1986,11 @@ class StorageLensConfiguration(TypedDict, total=False):
     Include: Include | None
     Exclude: Exclude | None
     DataExport: StorageLensDataExport | None
+    ExpandedPrefixesDataExport: StorageLensExpandedPrefixesDataExport | None
     IsEnabled: IsEnabled
     AwsOrg: StorageLensAwsOrg | None
     StorageLensArn: StorageLensArn | None
+    PrefixDelimiter: StorageLensPrefixLevelDelimiter | None
 
 
 class GetStorageLensConfigurationResult(TypedDict, total=False):

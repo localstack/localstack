@@ -101,6 +101,7 @@ from localstack.services.sqs.utils import (
     parse_queue_url,
 )
 from localstack.services.stores import AccountRegionBundle
+from localstack.state import StateVisitor
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.cloudwatch.cloudwatch_util import (
@@ -658,6 +659,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._message_move_task_manager = MessageMoveTaskManager()
         self._router_rules = []
         self._init_cloudwatch_metrics_reporting()
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(sqs_stores)
 
     @staticmethod
     def get_store(account_id: str, region: str) -> SqsStore:
@@ -1269,7 +1273,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         for k, v in attributes.items():
             if k in sqs_constants.INTERNAL_QUEUE_ATTRIBUTES:
                 raise InvalidAttributeName(f"Unknown Attribute {k}.")
-            queue.attributes[k] = v
+            if k in sqs_constants.DELETE_IF_DEFAULT and v == sqs_constants.DELETE_IF_DEFAULT[k]:
+                if k in queue.attributes:
+                    del queue.attributes[k]
+            else:
+                queue.attributes[k] = v
 
         # Special cases
         if queue.attributes.get(QueueAttributeName.Policy) == "":

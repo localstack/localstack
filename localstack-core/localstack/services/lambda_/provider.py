@@ -43,6 +43,7 @@ from localstack.aws.api.lambda_ import (
     DeleteFunctionResponse,
     Description,
     DestinationConfig,
+    DurableExecutionName,
     EventSourceMappingConfiguration,
     FunctionCodeLocation,
     FunctionConfiguration,
@@ -157,6 +158,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.analytics import (
+    FunctionInitializationType,
     FunctionOperation,
     FunctionStatus,
     function_counter,
@@ -305,20 +307,26 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             for region_name, state in account_bundle.items():
                 for fn in state.functions.values():
                     for fn_version in fn.versions.values():
-                        # restore the "Pending" state for every function version and start it
                         try:
-                            new_state = VersionState(
-                                state=State.Pending,
-                                code=StateReasonCode.Creating,
-                                reason="The function is being created.",
+                            # $LATEST is not invokable for Lambda functions with a capacity provider
+                            # and has a different State (i.e., ActiveNonInvokable)
+                            is_capacity_provider_latest = (
+                                fn_version.config.CapacityProviderConfig
+                                and fn_version.id.qualifier == "$LATEST"
                             )
-                            new_config = dataclasses.replace(fn_version.config, state=new_state)
-                            new_version = dataclasses.replace(fn_version, config=new_config)
-                            fn.versions[fn_version.id.qualifier] = new_version
-                            # TODO: consider skipping this for $LATEST versions of functions with a capacity provider
-                            self.lambda_service.create_function_version(fn_version).result(
-                                timeout=5
-                            )
+                            if not is_capacity_provider_latest:
+                                # Restore the "Pending" state for the function version and start it
+                                new_state = VersionState(
+                                    state=State.Pending,
+                                    code=StateReasonCode.Creating,
+                                    reason="The function is being created.",
+                                )
+                                new_config = dataclasses.replace(fn_version.config, state=new_state)
+                                new_version = dataclasses.replace(fn_version, config=new_config)
+                                fn.versions[fn_version.id.qualifier] = new_version
+                                self.lambda_service.create_function_version(fn_version).result(
+                                    timeout=5
+                                )
                         except Exception:
                             LOG.warning(
                                 "Failed to restore function version %s",
@@ -1168,12 +1176,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
             fn.versions["$LATEST"] = version_post_response or version
             state.functions[function_name] = fn
+        initialization_type = (
+            FunctionInitializationType.lambda_managed_instances
+            if capacity_provider_config
+            else FunctionInitializationType.on_demand
+        )
         function_counter.labels(
             operation=FunctionOperation.create,
             runtime=runtime or "n/a",
             status=FunctionStatus.success,
             invocation_type="n/a",
             package_type=package_type,
+            initialization_type=initialization_type,
         )
         # TODO: consider potential other side effects of not having a function version for $LATEST
         # Provisioning happens upon publishing for functions using a capacity provider
@@ -1388,6 +1402,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             new_mode = request.get("TracingConfig", {}).get("Mode")
             if new_mode:
                 replace_kwargs["tracing_config_mode"] = new_mode
+
+        if "CapacityProviderConfig" in request:
+            if latest_version.config.CapacityProviderConfig and not request[
+                "CapacityProviderConfig"
+            ].get("LambdaManagedInstancesCapacityProviderConfig"):
+                raise ValidationException(
+                    "1 validation error detected: Value null at 'capacityProviderConfig.lambdaManagedInstancesCapacityProviderConfig' failed to satisfy constraint: Member must not be null"
+                )
+            if not latest_version.config.CapacityProviderConfig:
+                raise InvalidParameterValueException(
+                    "CapacityProviderConfig isn't supported for Lambda Default functions.",
+                    Type="User",
+                )
 
         new_latest_version = dataclasses.replace(
             latest_version,
@@ -1727,6 +1754,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         invocation_type: InvocationType | None = None,
         log_type: LogType | None = None,
         client_context: String | None = None,
+        durable_execution_name: DurableExecutionName | None = None,
         payload: IO[Blob] | None = None,
         qualifier: NumericLatestPublishedOrAliasQualifier | None = None,
         tenant_id: TenantId | None = None,
@@ -2236,6 +2264,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     raise Exception("unknown version")  # TODO: cover via test
             elif qualifier == "$LATEST":
                 pass
+            elif qualifier == "$LATEST.PUBLISHED":
+                if fn.versions.get(qualifier):
+                    pass
             else:
                 raise Exception("invalid functionname")  # TODO: cover via test
             fn_arn = api_utils.qualified_lambda_arn(function_name, qualifier, account, region)

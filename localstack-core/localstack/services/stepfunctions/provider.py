@@ -57,7 +57,6 @@ from localstack.aws.api.stepfunctions import (
     LongArn,
     MaxConcurrency,
     MissingRequiredParameter,
-    MockInput,
     Name,
     PageSize,
     PageToken,
@@ -162,6 +161,7 @@ from localstack.services.stepfunctions.stepfunctions_utils import (
     normalise_max_results,
 )
 from localstack.state import StateVisitor
+from localstack.utils.aws import arns
 from localstack.utils.aws.arns import (
     ARN_PARTITION_REGEX,
     stepfunctions_activity_arn,
@@ -241,12 +241,6 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         raise InvalidArn(
             f"Invalid Arn: 'Resource type not valid in this context: {lower_resource_type}'"
         )
-
-    @staticmethod
-    def _validate_test_state_mock_input(mock_input: MockInput) -> None:
-        if {"result", "errorOutput"} <= mock_input.keys():
-            # FIXME create proper error
-            raise ValidationException("Cannot define both 'result' and 'errorOutput'")
 
     @staticmethod
     def _validate_activity_name(name: str) -> None:
@@ -1514,11 +1508,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             raise ValidationException("State not found in definition")
 
         mock_input = request.get("mock")
-        if mock_input is not None:
-            self._validate_test_state_mock_input(mock_input)
-            TestStateStaticAnalyser.validate_mock(
-                mock_input=mock_input, definition=definition, state_name=state_name
-            )
+        TestStateStaticAnalyser.validate_mock(test_state_input=request)
 
         if state_configuration := request.get("stateConfiguration"):
             # TODO: Add validations for this i.e assert len(input) <= failureCount
@@ -1543,10 +1533,27 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         arn = stepfunctions_state_machine_arn(
             name=name, account_id=context.account_id, region_name=context.region
         )
+        role_arn = request.get("roleArn")
+        if role_arn is None:
+            TestStateStaticAnalyser.validate_role_arn_required(
+                mock_input=mock_input, definition=definition, state_name=state_name
+            )
+            # HACK: Added dummy role ARN because it is a required field in Execution.
+            # To allow optional roleArn for the test state but preserve the mandatory one for regular executions
+            # we likely need to remove inheritance TestStateExecution(Execution) in favor of composition.
+            # TestState execution starts to have too many simplifications compared to a regular execution
+            # which renders the inheritance mechanism harmful.
+            # TODO make role_arn optional in TestStateExecution
+            role_arn = arns.iam_role_arn(
+                role_name=f"RoleFor-{name}",
+                account_id=context.account_id,
+                region_name=context.region,
+            )
+
         state_machine = TestStateMachine(
             name=name,
             arn=arn,
-            role_arn=request["roleArn"],
+            role_arn=role_arn,
             definition=request["definition"],
         )
 
@@ -1561,7 +1568,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         execution = TestStateExecution(
             name=exec_name,
-            role_arn=request["roleArn"],
+            role_arn=role_arn,
             exec_arn=exec_arn,
             account_id=context.account_id,
             region_name=context.region,

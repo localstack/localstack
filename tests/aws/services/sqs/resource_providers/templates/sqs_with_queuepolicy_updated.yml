@@ -1,3 +1,7 @@
+#
+# A standard SQS queue with an associated queue policy allowing a slightly different set of actions compared
+# to sqs_with_queuepolicy.yml.
+#
 Resources:
   Queue4A7E3555:
     Type: AWS::SQS::Queue
@@ -10,6 +14,7 @@ Resources:
               - sqs:SendMessage
               - sqs:GetQueueAttributes
               - sqs:GetQueueUrl
+              - sqs:DeleteMessage
             Effect: Allow
             Principal: "*"
             Resource:

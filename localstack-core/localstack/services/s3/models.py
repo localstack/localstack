@@ -16,6 +16,7 @@ from localstack.aws.api.s3 import (
     BadDigest,
     BucketAccelerateStatus,
     BucketKeyEnabled,
+    BucketLocationConstraint,
     BucketName,
     BucketRegion,
     BucketVersioningStatus,
@@ -76,7 +77,11 @@ from localstack.services.s3.constants import (
     S3_UPLOAD_PART_MIN_SIZE,
 )
 from localstack.services.s3.exceptions import InvalidRequest
-from localstack.services.s3.utils import CombinedCrcHash, get_s3_checksum, rfc_1123_datetime
+from localstack.services.s3.utils import (
+    CombinedCrcHash,
+    get_s3_checksum,
+    rfc_1123_datetime,
+)
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -101,6 +106,7 @@ class S3Bucket:
     name: BucketName
     bucket_account_id: AccountId
     bucket_region: BucketRegion
+    location_constraint: BucketLocationConstraint | Literal[""]
     creation_date: datetime
     multiparts: dict[MultipartUploadId, "S3Multipart"]
     objects: Union["KeyStore", "VersionedKeyStore"]
@@ -137,10 +143,12 @@ class S3Bucket:
         acl: AccessControlPolicy = None,
         object_ownership: ObjectOwnership = None,
         object_lock_enabled_for_bucket: bool = None,
+        location_constraint: BucketLocationConstraint | Literal[""] = "",
     ):
         self.name = name
         self.bucket_account_id = account_id
         self.bucket_region = bucket_region
+        self.location_constraint = location_constraint
         # If ObjectLock is enabled, it forces the bucket to be versioned as well
         self.versioning_status = None if not object_lock_enabled_for_bucket else "Enabled"
         self.objects = KeyStore() if not object_lock_enabled_for_bucket else VersionedKeyStore()

@@ -1,0 +1,18 @@
+#
+# A template defining only a dead-letter SQS queue without any additional properties. This template does not
+# contain the main queue, so applying this template should remove any existing main queue.
+#
+Resources:
+  DeadLetterQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      RedriveAllowPolicy:
+        redrivePermission: 'allowAll'
+
+Outputs:
+  DeadLetterQueueUrl:
+    Description: 'URL of the Dead Letter Queue'
+    Value: !Ref DeadLetterQueue
+  DeadLetterQueueArn:
+    Description: 'ARN of the Dead Letter Queue'
+    Value: !GetAtt DeadLetterQueue.Arn

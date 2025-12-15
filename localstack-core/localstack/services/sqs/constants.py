@@ -31,6 +31,12 @@ INTERNAL_QUEUE_ATTRIBUTES = [
     QueueAttributeName.QueueArn,
 ]
 
+#
+# If these attributes are set to their default values, they are effectively
+# deleted from the queue attributes and not returned in future calls to get_queue_attributes()
+#
+DELETE_IF_DEFAULT = {"KmsMasterKeyId": "", "KmsDataKeyReusePeriodSeconds": "300"}
+
 INVALID_STANDARD_QUEUE_ATTRIBUTES = [
     QueueAttributeName.FifoQueue,
     QueueAttributeName.ContentBasedDeduplication,

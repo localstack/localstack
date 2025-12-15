@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 
 import pytest
 from botocore.exceptions import WaiterError
@@ -779,6 +780,55 @@ class TestCaptureUpdateProcess:
 
         parameter = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]
         snapshot.match("parameter-2", parameter)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PhysicalResourceId"])
+    def test_queue_update(
+        self, aws_client, deploy_cfn_template, capture_per_resource_events, snapshot
+    ):
+        """
+        A test where one of the templates creates a resource without any specified properties. We
+        make sure the second operation on that resource is an UPDATE not CREATE.
+        """
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+        template1 = os.path.join(
+            os.path.dirname(__file__), "../../templates/sqs_queue_update_1.yaml"
+        )
+        template2 = os.path.join(
+            os.path.dirname(__file__), "../../templates/sqs_queue_update_2.yaml"
+        )
+
+        # Deploy order:
+        # - 1
+        # - 2
+        # - 1
+
+        stack = deploy_cfn_template(template_path=template1)
+        outputs = stack.outputs
+
+        queue_url = outputs["QueueUrl"]
+
+        queue_attributes = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["All"]
+        )
+        snapshot.match("queue-attributes-1", queue_attributes)
+
+        deploy_cfn_template(template_path=template2, is_update=True, stack_name=stack.stack_id)
+        queue_attributes = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["All"]
+        )
+        snapshot.match("queue-attributes-2", queue_attributes)
+
+        deploy_cfn_template(template_path=template1, is_update=True, stack_name=stack.stack_id)
+        queue_attributes = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["All"]
+        )
+        snapshot.match("queue-attributes-3", queue_attributes)
+
+        per_resource_events = capture_per_resource_events(stack.stack_id)
+
+        snapshot.match("events", per_resource_events["StandardQueue"])
 
 
 @skip_if_legacy_engine()

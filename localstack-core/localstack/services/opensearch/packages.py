@@ -107,19 +107,31 @@ class OpensearchPackageInstaller(PackageInstaller):
                 # setup security based on the version
                 self._setup_security(install_dir, parsed_version)
 
+                # Determine network configuration to use for plugin downloads
+                sys_props = {
+                    **java_system_properties_proxy(),
+                    **java_system_properties_ssl(
+                        os.path.join(install_dir, "jdk", "bin", "keytool"),
+                        {"JAVA_HOME": os.path.join(install_dir, "jdk")},
+                    ),
+                }
+                java_opts = system_properties_to_cli_args(sys_props)
+
+                keystore_binary = os.path.join(install_dir, "bin", "opensearch-keystore")
+                if os.path.exists(keystore_binary):
+                    # initialize and create the keystore. Concurrent starts of ES will all try to create it at the same
+                    # time, and fail with a race condition. Creating once when installing solves the issue without
+                    # the need to lock the starts
+                    # Ultimately, each cluster should have its own `config` file and maybe not share the same one
+                    output = run(
+                        [keystore_binary, "create"],
+                        env_vars={"OPENSEARCH_JAVA_OPTS": " ".join(java_opts)},
+                    )
+                    LOG.debug("Keystore init output: %s", output)
+
                 # install other default plugins for opensearch 1.1+
                 # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
                 if parsed_version >= "1.1.0":
-                    # Determine network configuration to use for plugin downloads
-                    sys_props = {
-                        **java_system_properties_proxy(),
-                        **java_system_properties_ssl(
-                            os.path.join(install_dir, "jdk", "bin", "keytool"),
-                            {"JAVA_HOME": os.path.join(install_dir, "jdk")},
-                        ),
-                    }
-                    java_opts = system_properties_to_cli_args(sys_props)
-
                     for plugin in OPENSEARCH_PLUGIN_LIST:
                         plugin_binary = os.path.join(install_dir, "bin", "opensearch-plugin")
                         plugin_dir = os.path.join(install_dir, "plugins", plugin)
@@ -322,6 +334,18 @@ class ElasticsearchPackageInstaller(PackageInstaller):
                         if not os.environ.get("IGNORE_ES_DOWNLOAD_ERRORS"):
                             raise
 
+            keystore_binary = os.path.join(install_dir, "bin", "elasticsearch-keystore")
+            if os.path.exists(keystore_binary):
+                # initialize and create the keystore. Concurrent starts of ES will all try to create it at the same
+                # time, and fail with a race condition. Creating once when installing solves the issue without
+                # the need to lock the starts
+                # Ultimately, each cluster should have its own `config` file and maybe not share the same one
+                output = run(
+                    [keystore_binary, "create"],
+                    env_vars={"ES_JAVA_OPTS": " ".join(java_opts)},
+                )
+                LOG.debug("Keystore init output: %s", output)
+
         # delete some plugins to free up space
         for plugin in ELASTICSEARCH_DELETE_MODULES:
             module_dir = os.path.join(install_dir, "modules", plugin)
@@ -330,16 +354,6 @@ class ElasticsearchPackageInstaller(PackageInstaller):
         # disable x-pack-ml plugin (not working on Alpine)
         xpack_dir = os.path.join(install_dir, "modules", "x-pack-ml", "platform")
         rm_rf(xpack_dir)
-
-        # patch JVM options file - replace hardcoded heap size settings
-        jvm_options_file = os.path.join(install_dir, "config", "jvm.options")
-        if os.path.exists(jvm_options_file):
-            jvm_options = load_file(jvm_options_file)
-            jvm_options_replaced = re.sub(
-                r"(^-Xm[sx][a-zA-Z0-9.]+$)", r"# \1", jvm_options, flags=re.MULTILINE
-            )
-            if jvm_options != jvm_options_replaced:
-                save_file(jvm_options_file, jvm_options_replaced)
 
         # patch JVM options file - replace hardcoded heap size settings
         jvm_options_file = os.path.join(install_dir, "config", "jvm.options")

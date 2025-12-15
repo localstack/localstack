@@ -4648,6 +4648,29 @@ class TestSqsProvider:
         )
         snapshot.match("sse_sqs_attributes", response)
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Attributes.SqsManagedSseEnabled"])
+    def test_set_queue_attributes_default_values(self, sqs_create_queue, snapshot, aws_sqs_client):
+        queue_url = sqs_create_queue()
+        response = aws_sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+        snapshot.match("get-queue-attributes-initial-values", response)
+
+        updated_attributes = {
+            "KmsMasterKeyId": "testKeyId",
+            "KmsDataKeyReusePeriodSeconds": "6000",
+        }
+        aws_sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=updated_attributes)
+        response = aws_sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+        snapshot.match("get-queue-attributes-after-update", response)
+
+        default_attributes = {
+            "KmsMasterKeyId": "",
+            "KmsDataKeyReusePeriodSeconds": "300",
+        }
+        aws_sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=default_attributes)
+        response = aws_sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+        snapshot.match("get-queue-attributes-after-set-to-defaults", response)
+
     @pytest.mark.skip(reason="validation currently not implemented in localstack")
     @markers.aws.validated
     def test_sse_kms_and_sqs_are_mutually_exclusive(
