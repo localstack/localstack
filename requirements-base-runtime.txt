@@ -11,7 +11,7 @@ attrs==25.4.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.29.2
+awscrt==0.30.0
     # via localstack-core (pyproject.toml)
 boto3==1.42.4
     # via localstack-core (pyproject.toml)
@@ -20,7 +20,7 @@ botocore==1.42.4
     #   boto3
     #   localstack-core (pyproject.toml)
     #   s3transfer
-cachetools==6.2.2
+cachetools==6.2.3
     # via localstack-core (pyproject.toml)
 cbor2==5.7.1
     # via localstack-core (pyproject.toml)
@@ -107,7 +107,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-openapi-core==0.19.4
+openapi-core==0.20.0
     # via localstack-core (pyproject.toml)
 openapi-schema-validator==0.6.3
     # via
@@ -185,8 +185,9 @@ typing-extensions==4.15.0
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
+    #   openapi-core
     #   readerwriterlock
-urllib3==2.6.1
+urllib3==2.6.2
     # via
     #   botocore
     #   docker
