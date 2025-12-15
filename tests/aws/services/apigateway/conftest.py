@@ -2,6 +2,7 @@ from itertools import count
 
 import pytest
 from botocore.config import Config
+from mypy_boto3_ec2.type_defs import VpcTypeDef
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
@@ -297,3 +298,12 @@ def apigw_test_invoke_response_formatter(snapshot):
         return response
 
     return transform_response
+
+
+@pytest.fixture
+def default_vpc(aws_client) -> VpcTypeDef:
+    vpcs = aws_client.ec2.describe_vpcs()
+    for vpc in vpcs["Vpcs"]:
+        if vpc.get("IsDefault"):
+            return vpc
+    raise Exception("Default VPC not found")

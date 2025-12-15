@@ -3,13 +3,16 @@ import logging
 import os.path
 import time
 from operator import itemgetter
+from typing import Unpack
 
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from mypy_boto3_apigateway.type_defs import CreateVpcLinkRequestTypeDef, VpcLinkResponseTypeDef
 
 from localstack.aws.api.apigateway import PutMode
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
@@ -96,6 +99,28 @@ def apigw_create_rest_api(aws_client, aws_client_factory):
 
     for rest_api_id in rest_apis:
         delete_rest_api_retry(apigateway_client, rest_api_id)
+
+
+@pytest.fixture
+def apigw_create_vpc_link(aws_client):
+    vpc_links: list[tuple[ServiceLevelClientFactory, str]] = []
+
+    def _create_vpc_link(
+        client: ServiceLevelClientFactory | None = None,
+        **kwargs: Unpack[CreateVpcLinkRequestTypeDef],
+    ) -> "VpcLinkResponseTypeDef":
+        client = client or aws_client
+        vpc_link = client.apigateway.create_vpc_link(**kwargs)
+        vpc_links.append((aws_client, vpc_link["id"]))
+        return vpc_link
+
+    yield _create_vpc_link
+
+    for _client, vpc_link_id in vpc_links:
+        try:
+            _client.apigateway.delete_vpc_link(vpcLinkId=vpc_link_id)
+        except ClientError as e:
+            LOG.error("Error deleting VPC link: %s", e)
 
 
 class TestApiGatewayApiRestApi:
@@ -2650,6 +2675,135 @@ class TestApiGatewayGatewayResponse:
             snapshot.match(
                 f"update-gateway-replace-invalid-parameter-{index}-none", e.value.response
             )
+
+
+class TestApiGatewayVpcLink:
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$.update_vpc_link.tags", "$.get_vpc_link.tags"])
+    def test_vpc_link_lifecycle(
+        self,
+        aws_client,
+        snapshot,
+        cleanups,
+        default_vpc,
+        region_name,
+        apigw_create_vpc_link,
+        account_id,
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("nlb-arn"))
+
+        retries = 240 if is_aws_cloud() else 3
+        sleep = 3 if is_aws_cloud() else 1
+
+        if is_aws_cloud():
+            vpc_id = default_vpc["VpcId"]
+            subnets = aws_client.ec2.describe_subnets(
+                Filters=[{"Name": "vpc-id", "Values": [vpc_id]}]
+            )["Subnets"]
+            # require at least 2 subnets for the NLB
+            assert len(subnets) >= 2
+            nlb = aws_client.elbv2.create_load_balancer(
+                Name=f"nlb-{short_uid()}",
+                Type="network",
+                Subnets=[subnets[0]["SubnetId"], subnets[1]["SubnetId"]],
+            )["LoadBalancers"][0]
+            nlb_arn = nlb["LoadBalancerArn"]
+            cleanups.append(lambda: aws_client.elbv2.delete_load_balancer(LoadBalancerArn=nlb_arn))
+            waiter = aws_client.elbv2.get_waiter("load_balancer_available")
+            waiter.wait(
+                LoadBalancerArns=[nlb_arn], WaiterConfig={"Delay": sleep, "MaxAttempts": retries}
+            )
+        else:
+            # ElbV2 is not available in community, so we just use a dummy arn
+            nlb_arn = f"arn:aws:elasticloadbalancing:{region_name}:{account_id}:loadbalancer/net/my-load-balancer/50dc6c495c0c9188"
+
+        snapshot.match("nlb-arn", nlb_arn)
+
+        # create vpc link
+        vpc_link_name = f"test-vpc-link-{short_uid()}"
+        create_vpc_link_response = apigw_create_vpc_link(name=vpc_link_name, targetArns=[nlb_arn])
+        snapshot.match("create_vpc_link", create_vpc_link_response)
+        vpc_link_id = create_vpc_link_response["id"]
+
+        # get vpc link
+        # AWS needs some time to make the VPC link available
+        def _wait_for_vpc_link_available():
+            get_vpc_link_response = aws_client.apigateway.get_vpc_link(vpcLinkId=vpc_link_id)
+            assert get_vpc_link_response["status"] == "AVAILABLE"
+            return get_vpc_link_response
+
+        vpc_link_response = retry(_wait_for_vpc_link_available, retries=retries, sleep=sleep)
+        snapshot.match("get_vpc_link", vpc_link_response)
+
+        # get vpc links
+        get_vpc_links_response = aws_client.apigateway.get_vpc_links()
+        # for the snapshot to be stable, we need to filter for the VPC link we created
+        get_vpc_links_response["items"] = [
+            item for item in get_vpc_links_response["items"] if item["id"] == vpc_link_id
+        ]
+        snapshot.match("get_vpc_links", get_vpc_links_response)
+
+        # update vpc link
+        patch_operations = [
+            {"op": "replace", "path": "/name", "value": f"{vpc_link_name}-updated"},
+        ]
+        update_vpc_link_response = aws_client.apigateway.update_vpc_link(
+            vpcLinkId=vpc_link_id, patchOperations=patch_operations
+        )
+        snapshot.match("update_vpc_link", update_vpc_link_response)
+
+        delete_response = aws_client.apigateway.delete_vpc_link(vpcLinkId=vpc_link_id)
+        snapshot.match("delete_vpc_link", delete_response)
+
+        def _wait_for_deleted():
+            try:
+                vpc_link = aws_client.apigateway.get_vpc_link(vpcLinkId=vpc_link_id)
+                # this assertion shouldn't happen, but this will ensure failure if the vpc link is still being deleted
+                assert vpc_link["status"] == "DELETED"
+            except aws_client.apigateway.exceptions.NotFoundException:
+                pass
+
+        # waiting for delete, as it takes a long time and would prevent NLB deletion
+        retry(_wait_for_deleted, retries=retries, sleep=sleep)
+
+    @markers.aws.validated
+    def test_create_vpc_link_invalid_parameters(self, aws_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.create_vpc_link(
+                name=f"test-vpc-link-{short_uid()}",
+                targetArns=["invalid-arn"],
+            )
+        snapshot.match("create_vpc_link_invalid_target_arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.create_vpc_link(
+                name="",
+                targetArns=[],
+            )
+        snapshot.match("create_vpc_link_empty_name", e.value.response)
+
+    @markers.aws.validated
+    def test_get_vpc_link_invalid_id(self, aws_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.get_vpc_link(vpcLinkId="invalid-id")
+        snapshot.match("get_vpc_link_invalid_id", e.value.response)
+
+    @markers.aws.validated
+    def test_delete_vpc_link_invalid_id(self, aws_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.delete_vpc_link(vpcLinkId="invalid-id")
+        snapshot.match("delete_vpc_link_invalid_id", e.value.response)
+
+    @markers.aws.validated
+    def test_update_vpc_link_invalid_id(self, aws_client, snapshot):
+        patch_operations = [
+            {"op": "replace", "path": "/name", "value": "new-name"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_vpc_link(
+                vpcLinkId="invalid-id", patchOperations=patch_operations
+            )
+        snapshot.match("update_vpc_link_invalid_id", e.value.response)
 
 
 class TestApigatewayTestInvoke:

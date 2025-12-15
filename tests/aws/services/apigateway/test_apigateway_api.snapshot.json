@@ -5049,5 +5049,149 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayVpcLink::test_vpc_link_lifecycle": {
+    "recorded-date": "15-12-2025, 08:04:55",
+    "recorded-content": {
+      "nlb-arn": "<nlb-arn:1>",
+      "create_vpc_link": {
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "status": "PENDING",
+        "targetArns": [
+          "<nlb-arn:1>"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "get_vpc_link": {
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "status": "AVAILABLE",
+        "statusMessage": "Your vpc link is ready for use",
+        "tags": {},
+        "targetArns": [
+          "<nlb-arn:1>"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_vpc_links": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "name": "<name:1>",
+            "status": "AVAILABLE",
+            "statusMessage": "Your vpc link is ready for use",
+            "targetArns": [
+              "<nlb-arn:1>"
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_vpc_link": {
+        "id": "<id:1>",
+        "name": "<name:1>-updated",
+        "status": "AVAILABLE",
+        "statusMessage": "Your vpc link is ready for use",
+        "tags": {},
+        "targetArns": [
+          "<nlb-arn:1>"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_vpc_link": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayVpcLink::test_create_vpc_link_invalid_parameters": {
+    "recorded-date": "15-12-2025, 04:55:32",
+    "recorded-content": {
+      "create_vpc_link_invalid_target_arn": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid ARN. ARN is not well formed invalid-arn"
+        },
+        "message": "Invalid ARN. ARN is not well formed invalid-arn",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_vpc_link_empty_name": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Name cannot be empty"
+        },
+        "message": "Name cannot be empty",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayVpcLink::test_get_vpc_link_invalid_id": {
+    "recorded-date": "15-12-2025, 04:55:32",
+    "recorded-content": {
+      "get_vpc_link_invalid_id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Vpc Link identifier specified"
+        },
+        "message": "Invalid Vpc Link identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayVpcLink::test_delete_vpc_link_invalid_id": {
+    "recorded-date": "15-12-2025, 04:55:32",
+    "recorded-content": {
+      "delete_vpc_link_invalid_id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Vpc Link identifier specified"
+        },
+        "message": "Invalid Vpc Link identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayVpcLink::test_update_vpc_link_invalid_id": {
+    "recorded-date": "15-12-2025, 04:55:32",
+    "recorded-content": {
+      "update_vpc_link_invalid_id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Vpc Link identifier specified"
+        },
+        "message": "Invalid Vpc Link identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
