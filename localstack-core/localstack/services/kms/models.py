@@ -232,7 +232,10 @@ class KmsCryptoKey:
 
         if key_spec.startswith("RSA"):
             key_size = RSA_CRYPTO_KEY_LENGTHS.get(key_spec)
-            key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
+            if key_material:
+                key = crypto_serialization.load_der_private_key(key_material, password=None)
+            else:
+                key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
         elif key_spec.startswith("ECC"):
             curve = ECC_CURVES.get(key_spec)
             if key_material:
@@ -636,7 +639,8 @@ class KmsKey:
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_TagResource.html
         # "To edit a tag, specify an existing tag key and a new tag value."
         for i, tag in enumerate(tags, start=1):
-            validate_tag(i, tag)
+            if tag.get("TagKey") != TAG_KEY_CUSTOM_KEY_MATERIAL:
+                validate_tag(i, tag)
             self.tags[tag.get("TagKey")] = tag.get("TagValue")
 
     def schedule_key_deletion(self, pending_window_in_days: int) -> None:
