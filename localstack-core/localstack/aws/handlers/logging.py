@@ -121,6 +121,9 @@ class ResponseLogger:
                         "output_type": context.service_exception.code,
                         "output": context.service_exception.message,
                         "response_headers": dict(response.headers),
+                        "service": context.service.service_name,
+                        "operation_name": context.operation.name,
+                        "status_code": context.service_exception.status_code,
                     },
                 )
             else:
@@ -145,6 +148,9 @@ class ResponseLogger:
                         else "Response",
                         "output": context.service_response,
                         "response_headers": dict(response.headers),
+                        "service": context.service.service_name,
+                        "operation_name": context.operation.name,
+                        "status_code": response.status_code,
                     },
                 )
         else:
