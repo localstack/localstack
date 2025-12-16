@@ -71,7 +71,6 @@ if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_managedblockchain import ManagedBlockchainClient
     from mypy_boto3_mediaconvert import MediaConvertClient
-    from mypy_boto3_mediastore import MediaStoreClient
     from mypy_boto3_mq import MQClient
     from mypy_boto3_mwaa import MWAAClient
     from mypy_boto3_neptune import NeptuneClient
@@ -197,7 +196,6 @@ class TypedServiceClientFactory(abc.ABC):
         "ManagedBlockchainClient", "MetadataRequestInjector[ManagedBlockchainClient]"
     ]
     mediaconvert: Union["MediaConvertClient", "MetadataRequestInjector[MediaConvertClient]"]
-    mediastore: Union["MediaStoreClient", "MetadataRequestInjector[MediaStoreClient]"]
     mq: Union["MQClient", "MetadataRequestInjector[MQClient]"]
     mwaa: Union["MWAAClient", "MetadataRequestInjector[MWAAClient]"]
     neptune: Union["NeptuneClient", "MetadataRequestInjector[NeptuneClient]"]

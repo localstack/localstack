@@ -204,7 +204,6 @@ class TestClientFactory:
             "kms",
             "lakeformation",
             "logs",
-            "mediastore",
             "mq",
             "mwaa",
             "neptune",
