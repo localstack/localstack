@@ -1,4 +1,5 @@
 from itertools import count
+from typing import TYPE_CHECKING
 
 import pytest
 from botocore.config import Config
@@ -18,6 +19,9 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     import_rest_api,
 )
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO_STATUS_CODE
+
+if TYPE_CHECKING:
+    from mypy_boto3_ec2.type_defs import VpcTypeDef
 
 # default name used for created REST API stages
 DEFAULT_STAGE_NAME = "dev"
@@ -297,3 +301,12 @@ def apigw_test_invoke_response_formatter(snapshot):
         return response
 
     return transform_response
+
+
+@pytest.fixture
+def default_vpc(aws_client) -> "VpcTypeDef":
+    vpcs = aws_client.ec2.describe_vpcs()
+    for vpc in vpcs["Vpcs"]:
+        if vpc.get("IsDefault"):
+            return vpc
+    raise Exception("Default VPC not found")

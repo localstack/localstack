@@ -888,15 +888,6 @@ def test_integration_mock_with_vtl_map_assignation(create_rest_apigw, aws_client
 
 
 @pytest.fixture
-def default_vpc(aws_client):
-    vpcs = aws_client.ec2.describe_vpcs()
-    for vpc in vpcs["Vpcs"]:
-        if vpc.get("IsDefault"):
-            return vpc
-    raise Exception("Default VPC not found")
-
-
-@pytest.fixture
 def create_vpc_endpoint(default_vpc, aws_client):
     endpoints = []
 
