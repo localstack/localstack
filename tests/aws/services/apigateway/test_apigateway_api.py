@@ -3,13 +3,12 @@ import logging
 import os.path
 import time
 from operator import itemgetter
-from typing import Unpack
+from typing import TYPE_CHECKING, Unpack
 
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from mypy_boto3_apigateway.type_defs import CreateVpcLinkRequestTypeDef, VpcLinkResponseTypeDef
 
 from localstack.aws.api.apigateway import PutMode
 from localstack.aws.connect import ServiceLevelClientFactory
@@ -26,6 +25,10 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     create_rest_resource_method,
 )
 from tests.aws.services.apigateway.conftest import is_next_gen_api
+
+if TYPE_CHECKING:
+    from mypy_boto3_apigateway.type_defs import CreateVpcLinkRequestTypeDef, VpcLinkResponseTypeDef
+
 
 LOG = logging.getLogger(__name__)
 
@@ -107,7 +110,7 @@ def apigw_create_vpc_link(aws_client):
 
     def _create_vpc_link(
         client: ServiceLevelClientFactory | None = None,
-        **kwargs: Unpack[CreateVpcLinkRequestTypeDef],
+        **kwargs: Unpack["CreateVpcLinkRequestTypeDef"],
     ) -> "VpcLinkResponseTypeDef":
         client = client or aws_client
         vpc_link = client.apigateway.create_vpc_link(**kwargs)
