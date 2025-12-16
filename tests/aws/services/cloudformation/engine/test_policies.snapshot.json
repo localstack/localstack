@@ -1,0 +1,81 @@
+{
+  "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy[dev]": {
+    "recorded-date": "16-12-2025, 23:22:42",
+    "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy": {
+    "recorded-date": "16-12-2025, 23:23:12",
+    "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy_with_deletion": {
+    "recorded-date": "16-12-2025, 23:42:40",
+    "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy_with_retain": {
+    "recorded-date": "17-12-2025, 00:07:35",
+    "recorded-content": {
+      "per-resource-events": {
+        "MyParameter": [
+          {
+            "LogicalResourceId": "MyParameter",
+            "PhysicalResourceId": "CFN-MyParameter-ViVP5LdeVqex",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "MyParameter",
+            "PhysicalResourceId": "CFN-MyParameter-ViVP5LdeVqex",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "MyParameter",
+            "PhysicalResourceId": "CFN-MyParameter-ViVP5LdeVqex",
+            "ResourceStatus": "DELETE_SKIPPED",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "Stack": [
+          {
+            "LogicalResourceId": "<stack-name>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/<resource:1>",
+            "ResourceStatus": "REVIEW_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/<resource:1>",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/<resource:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/<resource:1>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/<resource:1>",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          }
+        ]
+      }
+    }
+  }
+}
