@@ -114,7 +114,7 @@ def apigw_create_vpc_link(aws_client):
     ) -> "VpcLinkResponseTypeDef":
         client = client or aws_client
         vpc_link = client.apigateway.create_vpc_link(**kwargs)
-        vpc_links.append((aws_client, vpc_link["id"]))
+        vpc_links.append((client, vpc_link["id"]))
         return vpc_link
 
     yield _create_vpc_link
