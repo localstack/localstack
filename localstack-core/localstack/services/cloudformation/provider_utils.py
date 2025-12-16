@@ -297,6 +297,8 @@ def resource_tags_to_remove_or_update(
 
 #  LocalStack specific utilities
 def get_schema_path(file_path: Path) -> dict:
-    file_name_base = file_path.name.removesuffix(".py").removesuffix(".py.enc")
+    file_name_base = (
+        file_path.name.removesuffix("_base.py").removesuffix(".py").removesuffix(".py.enc")
+    )
     with Path(file_path).parent.joinpath(f"{file_name_base}.schema.json").open() as fd:
         return json.load(fd)

@@ -280,6 +280,7 @@ class FileType(Enum):
     # service code
     plugin = auto()
     provider = auto()
+    provider_base = auto()
 
     # test files
     integration_test = auto()
@@ -325,6 +326,7 @@ class TemplateRenderer:
         template_mapping = {
             FileType.plugin: "plugin_template.py.j2",
             FileType.provider: "provider_template.py.j2",
+            FileType.provider_base: "provider_base_template.py.j2",
             FileType.getatt_test: "test_getatt_template.py.j2",
             FileType.integration_test: "test_integration_template.py.j2",
             # FileType.cloudcontrol_test: "test_cloudcontrol_template.py.j2",
@@ -352,6 +354,11 @@ class TemplateRenderer:
                     )
                 )
             case FileType.provider:
+                kwargs["service"] = resource_name.python_compatible_service_name.lower()
+                kwargs["lower_resource"] = resource_name.resource.lower()
+                kwargs["pro"] = self.pro
+                pass
+            case FileType.provider_base:
                 property_ir = generate_ir_for_type(
                     [self.schema],
                     resource_name.full_name,
@@ -588,11 +595,20 @@ class FileWriter:
                 "resource_providers",
                 f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
+            FileType.provider_base: root_dir(self.pro).joinpath(
+                *base_path,
+                "services",
+                self.resource_name.python_compatible_service_name.lower(),
+                "resource_providers",
+                "generated",
+                f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_base.py",
+            ),
             FileType.plugin: root_dir(self.pro).joinpath(
                 *base_path,
                 "services",
                 self.resource_name.python_compatible_service_name.lower(),
                 "resource_providers",
+                "generated",
                 f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_plugin.py",
             ),
             FileType.schema: root_dir(self.pro).joinpath(
@@ -600,6 +616,7 @@ class FileWriter:
                 "services",
                 self.resource_name.python_compatible_service_name.lower(),
                 "resource_providers",
+                "generated",
                 f"aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.schema.json",
             ),
             FileType.integration_test: tests_root_dir(self.pro).joinpath(
@@ -656,6 +673,10 @@ class FileWriter:
                 self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
                 self.console.print(f"Written provider to {file_destination}")
+            case FileType.provider_base:
+                self.ensure_python_init_files(destination_path)
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written provider base to {file_destination}")
             case FileType.plugin:
                 self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
@@ -776,6 +797,9 @@ class Output:
             # service code
             case FileType.provider:
                 self.printer.print("\n[underline]Provider template[/underline]\n")
+                self.printer.print(Syntax(self.contents, "python"))
+            case FileType.provider_base:
+                self.printer.print("\n[underline]Provider base template[/underline]\n")
                 self.printer.print(Syntax(self.contents, "python"))
             case FileType.plugin:
                 self.printer.print("\n[underline]Plugin[/underline]\n")
