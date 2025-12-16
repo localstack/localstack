@@ -140,6 +140,7 @@ from localstack.services.stepfunctions.asl.static_analyser.usage_metrics_static_
 from localstack.services.stepfunctions.backend.activity import Activity, ActivityTask
 from localstack.services.stepfunctions.backend.alias import Alias
 from localstack.services.stepfunctions.backend.execution import Execution, SyncExecution
+from localstack.services.stepfunctions.backend.manager import ExecutionWorkerManager
 from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
     StateMachineRevision,
@@ -177,6 +178,11 @@ LOG = logging.getLogger(__name__)
 
 class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     _TEST_STATE_MAX_TIMEOUT_SECONDS: Final[int] = 300  # 5 minutes.
+
+    execution_worker_manager: ExecutionWorkerManager
+
+    def on_after_init(self):
+        self.execution_worker_manager = ExecutionWorkerManager()
 
     @staticmethod
     def get_store(context: RequestContext) -> SFNStore:
@@ -883,7 +889,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         store.executions[exec_arn] = execution
 
-        execution.start()
+        self.execution_worker_manager.create_execution_worker(execution)
+        self.execution_worker_manager.start_worker(execution.exec_arn)
         return execution.to_start_output()
 
     def start_sync_execution(
@@ -959,7 +966,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
         self.get_store(context).executions[exec_arn] = execution
 
-        execution.start()
+        self.execution_worker_manager.create_execution_worker(execution)
+        self.execution_worker_manager.start_worker(execution.exec_arn)
         return execution.to_start_sync_execution_output()
 
     def describe_execution(
@@ -1276,7 +1284,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             self._raise_resource_type_not_in_context(resource_type=execution.sm_type)
 
         stop_date = datetime.datetime.now(tz=datetime.UTC)
-        execution.stop(stop_date=stop_date, cause=cause, error=error)
+        self.execution_worker_manager.stop_worker(
+            arn=execution_arn, stop_date=stop_date, cause=cause, error=error
+        )
         return StopExecutionOutput(stopDate=stop_date)
 
     def update_state_machine(
@@ -1579,7 +1589,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             activity_store=self.get_store(context).activities,
             mock=state_mock,
         )
-        execution.start()
+        self.execution_worker_manager.create_execution_worker(execution)
+        self.execution_worker_manager.start_worker(execution.exec_arn)
 
         test_state_output = execution.to_test_state_output(
             inspection_level=request.get("inspectionLevel", InspectionLevel.INFO)

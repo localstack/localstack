@@ -14,7 +14,6 @@ from localstack.aws.api.stepfunctions import (
     ExecutionStatus,
     GetExecutionHistoryOutput,
     HistoryEventList,
-    InvalidName,
     SensitiveCause,
     SensitiveError,
     StartExecutionOutput,
@@ -48,7 +47,6 @@ from localstack.services.stepfunctions.asl.static_analyser.variable_references_s
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.activity import Activity
 from localstack.services.stepfunctions.backend.execution_worker import (
-    ExecutionWorker,
     SyncExecutionWorker,
 )
 from localstack.services.stepfunctions.backend.execution_worker_comm import (
@@ -124,8 +122,6 @@ class Execution:
     error: SensitiveError | None
     cause: SensitiveCause | None
 
-    exec_worker: ExecutionWorker | None
-
     _activity_store: dict[Arn, Activity]
 
     def __init__(
@@ -168,7 +164,6 @@ class Execution:
         self.stop_date = None
         self.output = None
         self.output_details = CloudWatchEventsExecutionDataDetails(included=True)
-        self.exec_worker = None
         self.error = None
         self.cause = None
         self._activity_store = activity_store
@@ -292,33 +287,6 @@ class Execution:
             typ=self.state_machine.sm_type,
             definition=self.state_machine.definition,
         )
-
-    def _get_start_execution_worker(self) -> ExecutionWorker:
-        return ExecutionWorker(
-            evaluation_details=EvaluationDetails(
-                aws_execution_details=self._get_start_aws_execution_details(),
-                execution_details=self.get_start_execution_details(),
-                state_machine_details=self.get_start_state_machine_details(),
-            ),
-            exec_comm=self._get_start_execution_worker_comm(),
-            cloud_watch_logging_session=self._cloud_watch_logging_session,
-            activity_store=self._activity_store,
-            local_mock_test_case=self.local_mock_test_case,
-        )
-
-    def start(self) -> None:
-        # TODO: checks exec_worker does not exists already?
-        if self.exec_worker:
-            raise InvalidName()  # TODO.
-        self.exec_worker = self._get_start_execution_worker()
-        self.exec_status = ExecutionStatus.RUNNING
-        self.publish_execution_status_change_event()
-        self.exec_worker.start()
-
-    def stop(self, stop_date: datetime.datetime, error: str | None, cause: str | None):
-        exec_worker: ExecutionWorker | None = self.exec_worker
-        if exec_worker:
-            exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
 
     def publish_execution_status_change_event(self):
         input_value = (
