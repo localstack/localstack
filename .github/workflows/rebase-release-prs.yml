@@ -28,7 +28,7 @@ jobs:
       matrix:
         head: ${{ fromJson(needs.find-release-branches.outputs.matrix) }}
     steps:
-      - uses: peter-evans/rebase@v3
+      - uses: peter-evans/rebase@v4
         with:
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           head: ${{ matrix.head }}
