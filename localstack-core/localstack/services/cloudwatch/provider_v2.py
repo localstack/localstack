@@ -9,6 +9,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
     AccountId,
     ActionPrefix,
+    AlarmHistoryItem,
     AlarmName,
     AlarmNamePrefix,
     AlarmNames,
@@ -760,7 +761,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         alarm: LocalStackAlarm,
-        state_value: str,
+        state_value: StateValue,
         state_reason: str,
         state_reason_data: dict = None,
     ):
@@ -780,18 +781,17 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 "stateReasonData": state_reason_data,
             },
         }
-        store.histories.append(
-            {
-                "Timestamp": timestamp_millis(alarm.alarm["StateUpdatedTimestamp"]),
-                "HistoryItemType": HistoryItemType.StateUpdate,
-                "AlarmName": alarm.alarm["AlarmName"],
-                "HistoryData": json.dumps(history_data),
-                "HistorySummary": f"Alarm updated from {old_state} to {state_value}",
-                "AlarmType": "MetricAlarm"
-                if isinstance(alarm, LocalStackMetricAlarm)
-                else "CompositeAlarm",
-            }
+        alarm_history_item = AlarmHistoryItem(
+            Timestamp=alarm.alarm["StateUpdatedTimestamp"],
+            HistoryItemType=HistoryItemType.StateUpdate,
+            AlarmName=alarm.alarm["AlarmName"],
+            HistoryData=json.dumps(history_data),
+            HistorySummary=f"Alarm updated from {old_state} to {state_value}",
+            AlarmType="MetricAlarm"
+            if isinstance(alarm, LocalStackMetricAlarm)
+            else "CompositeAlarm",
         )
+        store.histories.append(alarm_history_item)
         alarm.alarm["StateValue"] = state_value
         alarm.alarm["StateReason"] = state_reason
         if state_reason_data:
@@ -837,15 +837,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         if alarm_name:
             history = [h for h in history if h["AlarmName"] == alarm_name]
 
-        def _get_timestamp(input: dict):
-            if timestamp_string := input.get("Timestamp"):
-                return datetime.datetime.fromisoformat(timestamp_string)
-            return None
-
         if start_date:
-            history = [h for h in history if (date := _get_timestamp(h)) and date >= start_date]
+            history = [h for h in history if (date := h.get("Timestamp")) and date >= start_date]
         if end_date:
-            history = [h for h in history if (date := _get_timestamp(h)) and date <= end_date]
+            history = [h for h in history if (date := h.get("Timestamp")) and date <= end_date]
         return DescribeAlarmHistoryOutput(AlarmHistoryItems=history)
 
     def _evaluate_composite_alarms(self, context: RequestContext, triggering_alarm):
