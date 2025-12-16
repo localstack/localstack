@@ -1,0 +1,29 @@
+{
+  "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy": {
+    "last_validated_date": "2025-12-16T23:23:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.77,
+      "call": 20.43,
+      "teardown": 14.63,
+      "total": 35.83
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy_with_deletion": {
+    "last_validated_date": "2025-12-16T23:42:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 14.82,
+      "teardown": 0.08,
+      "total": 15.73
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy_with_retain": {
+    "last_validated_date": "2025-12-17T00:07:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.8,
+      "call": 12.78,
+      "teardown": 0.1,
+      "total": 13.68
+    }
+  }
+}

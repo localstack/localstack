@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Minimal DynamoDB Conditional DeletionPolicy Example
+
+Parameters:
+  ParameterValue:
+    Type: String
+  EnvType:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+    Description: Environment name. Use 'prod' to trigger Retain policy.
+
+Conditions:
+  IsPermanentEnvironment: !Equals [!Ref EnvType, prod]
+
+Resources:
+  MyParameter:
+    Type: AWS::SSM::Parameter
+    DeletionPolicy: !If [IsPermanentEnvironment, Retain, Delete]
+    Properties:
+        Type: String
+        Value: !Ref ParameterValue
+
+Outputs:
+  ParameterName:
+    Value: !Ref MyParameter
