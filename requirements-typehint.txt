@@ -54,7 +54,7 @@ boto3==1.42.9
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.42.9
+boto3-stubs==1.42.10
     # via localstack-core (pyproject.toml)
 botocore==1.42.9
     # via
@@ -64,9 +64,9 @@ botocore==1.42.9
     #   localstack-core
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.42.9
+botocore-stubs==1.42.10
     # via boto3-stubs
-cachetools==6.2.3
+cachetools==6.2.4
     # via
     #   airspeed-ext
     #   localstack-core
@@ -148,7 +148,7 @@ docutils==0.19
     # via awscli
 events==0.5
     # via opensearch-py
-filelock==3.20.0
+filelock==3.20.1
     # via virtualenv
 graphql-core==3.2.7
     # via moto-ext
@@ -249,7 +249,7 @@ kclpy-ext==3.0.5
     # via localstack-core
 lazy-object-proxy==1.12.0
     # via openapi-spec-validator
-librt==0.7.3
+librt==0.7.4
     # via mypy
 localstack-snapshot==0.3.2
     # via localstack-core
@@ -335,7 +335,7 @@ mypy-boto3-dynamodb==1.42.3
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.42.3
     # via boto3-stubs
-mypy-boto3-ec2==1.42.5
+mypy-boto3-ec2==1.42.10
     # via boto3-stubs
 mypy-boto3-ecr==1.42.3
     # via boto3-stubs
@@ -363,7 +363,7 @@ mypy-boto3-firehose==1.42.3
     # via boto3-stubs
 mypy-boto3-fis==1.42.3
     # via boto3-stubs
-mypy-boto3-glacier==1.42.3
+mypy-boto3-glacier==1.42.10
     # via boto3-stubs
 mypy-boto3-glue==1.42.3
     # via boto3-stubs
@@ -389,7 +389,7 @@ mypy-boto3-lakeformation==1.42.3
     # via boto3-stubs
 mypy-boto3-lambda==1.42.8
     # via boto3-stubs
-mypy-boto3-logs==1.42.3
+mypy-boto3-logs==1.42.10
     # via boto3-stubs
 mypy-boto3-managedblockchain==1.42.3
     # via boto3-stubs
@@ -425,9 +425,9 @@ mypy-boto3-resourcegroupstaggingapi==1.42.3
     # via boto3-stubs
 mypy-boto3-route53==1.42.6
     # via boto3-stubs
-mypy-boto3-route53resolver==1.42.3
+mypy-boto3-route53resolver==1.42.10
     # via boto3-stubs
-mypy-boto3-s3==1.42.3
+mypy-boto3-s3==1.42.10
     # via boto3-stubs
 mypy-boto3-s3control==1.42.3
     # via boto3-stubs

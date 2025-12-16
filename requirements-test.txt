@@ -62,7 +62,7 @@ botocore==1.42.9
     #   localstack-core
     #   moto-ext
     #   s3transfer
-cachetools==6.2.3
+cachetools==6.2.4
     # via
     #   airspeed-ext
     #   localstack-core

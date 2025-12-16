@@ -20,7 +20,7 @@ botocore==1.42.9
     #   boto3
     #   localstack-core (pyproject.toml)
     #   s3transfer
-cachetools==6.2.3
+cachetools==6.2.4
     # via localstack-core (pyproject.toml)
 cbor2==5.7.1
     # via localstack-core (pyproject.toml)
