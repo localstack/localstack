@@ -1,12 +1,16 @@
 import logging
 from datetime import datetime
 
-from localstack.aws.api.stepfunctions import Arn, ExecutionStatus
+from localstack.aws.api.stepfunctions import Arn, ExecutionStatus, GetExecutionHistoryOutput
 from localstack.services.stepfunctions.asl.eval.evaluation_details import EvaluationDetails
 from localstack.services.stepfunctions.backend.execution import Execution, SyncExecution
 from localstack.services.stepfunctions.backend.execution_worker import (
     ExecutionWorker,
     SyncExecutionWorker,
+)
+from localstack.services.stepfunctions.backend.test_state.execution import TestStateExecution
+from localstack.services.stepfunctions.backend.test_state.execution_worker import (
+    TestStateExecutionWorker,
 )
 
 LOG = logging.getLogger(__name__)
@@ -20,6 +24,19 @@ class ExecutionWorkerManager:
 
     def create_execution_worker(self, execution: Execution) -> ExecutionWorker:
         match execution:
+            case TestStateExecution():
+                worker = TestStateExecutionWorker(
+                    evaluation_details=EvaluationDetails(
+                        aws_execution_details=execution._get_start_aws_execution_details(),
+                        execution_details=execution.get_start_execution_details(),
+                        state_machine_details=execution.get_start_state_machine_details(),
+                    ),
+                    exec_comm=execution._get_start_execution_worker_comm(),
+                    cloud_watch_logging_session=execution._cloud_watch_logging_session,
+                    activity_store=execution._activity_store,
+                    state_name=execution.state_name,
+                    mock=execution.mock,
+                )
             case SyncExecution():
                 worker = SyncExecutionWorker(
                     evaluation_details=EvaluationDetails(
@@ -41,7 +58,6 @@ class ExecutionWorkerManager:
                     ),
                     exec_comm=execution._get_start_execution_worker_comm(),
                     cloud_watch_logging_session=execution._cloud_watch_logging_session,
-                    # TODO: This is not good would need to get removed
                     activity_store=execution._activity_store,
                     local_mock_test_case=execution.local_mock_test_case,
                 )
@@ -67,3 +83,15 @@ class ExecutionWorkerManager:
         if worker:
             worker.stop(stop_date=stop_date, cause=cause, error=error)
         return None
+
+    def to_history_output(self, arn: Arn) -> GetExecutionHistoryOutput:
+        if not self.arn_to_execution_and_worker.get(arn):
+            return None
+
+        _, worker = self.arn_to_execution_and_worker[arn]
+        env = worker.env
+        event_history = []
+        if env is not None:
+            # The execution has not started yet
+            event_history = env.event_manager.get_event_history()
+        return GetExecutionHistoryOutput(events=event_history)

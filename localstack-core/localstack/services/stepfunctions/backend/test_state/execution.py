@@ -12,7 +12,6 @@ from localstack.aws.api.stepfunctions import (
     TestStateOutput,
     Timestamp,
 )
-from localstack.services.stepfunctions.asl.eval.evaluation_details import EvaluationDetails
 from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramEnded,
     ProgramError,
@@ -30,16 +29,12 @@ from localstack.services.stepfunctions.backend.execution import (
     Execution,
 )
 from localstack.services.stepfunctions.backend.state_machine import StateMachineInstance
-from localstack.services.stepfunctions.backend.test_state.execution_worker import (
-    TestStateExecutionWorker,
-)
 from localstack.services.stepfunctions.backend.test_state.test_state_mock import TestStateMock
 
 LOG = logging.getLogger(__name__)
 
 
 class TestStateExecution(Execution):
-    exec_worker: TestStateExecutionWorker | None
     next_state: str | None
     state_name: str | None
     mock: TestStateMock | None
@@ -101,20 +96,6 @@ class TestStateExecution(Execution):
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
         return self.TestCaseExecutionWorkerCommunication(self)
-
-    def _get_start_execution_worker(self) -> TestStateExecutionWorker:
-        return TestStateExecutionWorker(
-            evaluation_details=EvaluationDetails(
-                aws_execution_details=self._get_start_aws_execution_details(),
-                execution_details=self.get_start_execution_details(),
-                state_machine_details=self.get_start_state_machine_details(),
-            ),
-            exec_comm=self._get_start_execution_worker_comm(),
-            cloud_watch_logging_session=self._cloud_watch_logging_session,
-            activity_store=self._activity_store,
-            state_name=self.state_name,
-            mock=self.mock,
-        )
 
     def publish_execution_status_change_event(self):
         # Do not publish execution status change events during test state execution.

@@ -1200,7 +1200,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if execution.sm_type != StateMachineType.STANDARD:
             self._raise_resource_type_not_in_context(resource_type=execution.sm_type)
 
-        history: GetExecutionHistoryOutput = execution.to_history_output()
+        history: GetExecutionHistoryOutput = self.execution_worker_manager.to_history_output(
+            execution_arn
+        )
         if reverse_order:
             history["events"].reverse()
         return history

@@ -12,8 +12,6 @@ from localstack.aws.api.stepfunctions import (
     DescribeStateMachineForExecutionOutput,
     ExecutionListItem,
     ExecutionStatus,
-    GetExecutionHistoryOutput,
-    HistoryEventList,
     SensitiveCause,
     SensitiveError,
     StartExecutionOutput,
@@ -27,7 +25,6 @@ from localstack.aws.api.stepfunctions import (
 from localstack.aws.connect import connect_to
 from localstack.services.stepfunctions.asl.eval.evaluation_details import (
     AWSExecutionDetails,
-    EvaluationDetails,
     ExecutionDetails,
     StateMachineDetails,
 )
@@ -46,9 +43,6 @@ from localstack.services.stepfunctions.asl.static_analyser.variable_references_s
 )
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.activity import Activity
-from localstack.services.stepfunctions.backend.execution_worker import (
-    SyncExecutionWorker,
-)
 from localstack.services.stepfunctions.backend.execution_worker_comm import (
     ExecutionWorkerCommunication,
 )
@@ -250,14 +244,6 @@ class Execution:
             item["stateMachineAliasArn"] = self.state_machine_alias_arn
         return item
 
-    def to_history_output(self) -> GetExecutionHistoryOutput:
-        env = self.exec_worker.env
-        event_history: HistoryEventList = []
-        if env is not None:
-            # The execution has not started yet.
-            event_history: HistoryEventList = env.event_manager.get_event_history()
-        return GetExecutionHistoryOutput(events=event_history)
-
     @staticmethod
     def _to_serialized_date(timestamp: datetime.datetime) -> str:
         """See test in tests.aws.services.stepfunctions.v2.base.test_base.TestSnfBase.test_execution_dateformat"""
@@ -347,19 +333,6 @@ class SyncExecutionWorkerCommunication(BaseExecutionWorkerCommunication):
 
 class SyncExecution(Execution):
     sync_execution_status: SyncExecutionStatus | None = None
-
-    def _get_start_execution_worker(self) -> SyncExecutionWorker:
-        return SyncExecutionWorker(
-            evaluation_details=EvaluationDetails(
-                aws_execution_details=self._get_start_aws_execution_details(),
-                execution_details=self.get_start_execution_details(),
-                state_machine_details=self.get_start_state_machine_details(),
-            ),
-            exec_comm=self._get_start_execution_worker_comm(),
-            cloud_watch_logging_session=self._cloud_watch_logging_session,
-            activity_store=self._activity_store,
-            local_mock_test_case=self.local_mock_test_case,
-        )
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
         return SyncExecutionWorkerCommunication(self)
