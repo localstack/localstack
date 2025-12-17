@@ -111,6 +111,8 @@ DEFAULT_EFFECTIVE_DELIVERY_POLICY = {
 
 TOPIC_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,256}$")
 PLATFORM_APP_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]{1,256}$")
+SMS_ALLOWED_CHARS_RE = re.compile(r"[^0-9+./-]")
+SMS_NORMALIZABLE_RE = re.compile(r"^\+?[0-9](?:[0-9]|[./-](?=[0-9]))*$")
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
@@ -311,6 +313,17 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 topic_attrs["Policy"] = json.dumps(attribute_value)
             return
 
+        if attribute_name == "DeliveryPolicy":
+            if attribute_value == "":
+                topic_attrs.pop("DeliveryPolicy", None)
+                topic_attrs["EffectiveDeliveryPolicy"] = json.dumps(DEFAULT_EFFECTIVE_DELIVERY_POLICY)
+                return
+
+            delivery_policy, effective_delivery_policy = _normalize_delivery_policy(attribute_value)
+            topic_attrs["DeliveryPolicy"] = json.dumps(delivery_policy)
+            topic_attrs["EffectiveDeliveryPolicy"] = json.dumps(effective_delivery_policy)
+            return
+
         topic_attrs[attribute_name] = attribute_value
 
     # ----------
@@ -386,8 +399,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             )
         if protocol in ["http", "https"] and not endpoint.startswith(f"{protocol}://"):
             raise InvalidParameterException("Invalid parameter: Endpoint must match the specified protocol")
-        if protocol == "sms" and not is_e164(endpoint):
-            raise InvalidParameterException(f"Invalid SMS endpoint: {endpoint}")
+        if protocol == "sms":
+            raw_endpoint = endpoint
+            endpoint = normalize_sms_phone_number(endpoint)
+            if not endpoint:
+                raise InvalidParameterException(f"Invalid SMS endpoint: {raw_endpoint}")
         if protocol == "sqs":
             try:
                 parse_arn(endpoint)
@@ -569,9 +585,13 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_subscription_attributes(
         self, context: RequestContext, subscription_arn: subscriptionARN, **kwargs
     ) -> GetSubscriptionAttributesResponse:
-        store = self.get_store(account_id=context.account_id, region_name=context.region)
+        parsed_arn, arn_count = parse_and_validate_subscription_arn(subscription_arn)
+        store = self.get_store(account_id=parsed_arn["account"], region_name=parsed_arn["region"])
         sub = store.subscriptions.get(subscription_arn)
         if not sub:
+            # For topic-like ARNs (missing the subscription id suffix), AWS uses "Invalid parameter: SubscriptionId"
+            if arn_count == 6:
+                raise InvalidParameterException("Invalid parameter: SubscriptionId")
             raise NotFoundException("Subscription does not exist")
         removed_attrs = ["sqs_queue_url"]
         if "FilterPolicyScope" in sub and not sub.get("FilterPolicy"):
@@ -590,7 +610,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         attribute_value: attributeValue = None,
         **kwargs,
     ) -> None:
-        store = self.get_store(account_id=context.account_id, region_name=context.region)
+        parsed_arn, _arn_count = parse_and_validate_subscription_arn(subscription_arn)
+        store = self.get_store(account_id=parsed_arn["account"], region_name=parsed_arn["region"])
         sub = store.subscriptions.get(subscription_arn)
         if not sub:
             raise NotFoundException("Subscription does not exist")
@@ -874,14 +895,26 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         has_principal = "PlatformPrincipal" in attributes
         has_credential = "PlatformCredential" in attributes
-        if has_principal and not has_credential:
-            raise InvalidParameterException(
-                "Invalid parameter: Attributes Reason: PlatformPrincipal attribute provided without PlatformCredential"
-            )
-        if has_credential and not has_principal:
-            raise InvalidParameterException(
-                "Invalid parameter: Attributes Reason: PlatformCredential attribute provided without PlatformPrincipal"
-            )
+
+        platform_requires_principal = platform not in ("GCM", "FCM")
+        if platform_requires_principal:
+            if has_principal and not has_credential:
+                raise InvalidParameterException(
+                    "Invalid parameter: Attributes Reason: PlatformPrincipal attribute provided without PlatformCredential"
+                )
+            if has_credential and not has_principal:
+                raise InvalidParameterException(
+                    "Invalid parameter: Attributes Reason: PlatformCredential attribute provided without PlatformPrincipal"
+                )
+        else:
+            if not has_credential:
+                raise InvalidParameterException(
+                    "Invalid parameter: Attributes Reason: PlatformCredential attribute required"
+                )
+            if has_principal and not has_credential:
+                raise InvalidParameterException(
+                    "Invalid parameter: Attributes Reason: PlatformPrincipal attribute provided without PlatformCredential"
+                )
 
         store = self.get_store(context.account_id, context.region)
         partition = get_partition(context.region)
@@ -1078,6 +1111,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def check_if_phone_number_is_opted_out(
         self, context: RequestContext, phone_number: PhoneNumber, **kwargs
     ) -> CheckIfPhoneNumberIsOptedOutResponse:
+        if not is_e164(phone_number):
+            raise InvalidParameterException(
+                "Invalid parameter: PhoneNumber Reason: input incorrectly formatted"
+            )
         store = self.get_store(context.account_id, context.region)
         return {"isOptedOut": phone_number in store.PHONE_NUMBERS_OPTED_OUT}
 
@@ -1090,6 +1127,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def opt_in_phone_number(
         self, context: RequestContext, phone_number: PhoneNumber, **kwargs
     ) -> OptInPhoneNumberResponse:
+        if not is_e164(phone_number):
+            raise InvalidParameterException(
+                "Invalid parameter: PhoneNumber Reason: input incorrectly formatted"
+            )
         store = self.get_store(context.account_id, context.region)
         with contextlib.suppress(ValueError):
             store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
@@ -1098,6 +1139,18 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
 def is_e164(value: str) -> bool:
     return bool(sns_constants.E164_REGEX.match(value or ""))
+
+
+def normalize_sms_phone_number(phone_number: str | None) -> str | None:
+    if not phone_number:
+        return None
+    if not SMS_NORMALIZABLE_RE.fullmatch(phone_number):
+        return None
+    stripped = SMS_ALLOWED_CHARS_RE.sub("", phone_number)
+    normalized = stripped.replace("/", "").replace("-", "").replace(".", "")
+    if is_e164(normalized):
+        return normalized
+    return None
 
 
 def _topic_arn(account_id: str, region_name: str, name: str) -> str:
@@ -1152,8 +1205,71 @@ def _normalize_create_topic_attributes(attrs: TopicAttributesMap, topic_arn: str
         normalized["FifoTopic"] = "true"
         normalized["ContentBasedDeduplication"] = attrs.get("ContentBasedDeduplication", "false")
 
+    delivery_policy = attrs.get("DeliveryPolicy")
+    if delivery_policy is not None:
+        dp, edp = _normalize_delivery_policy(delivery_policy)
+        normalized["DeliveryPolicy"] = json.dumps(dp)
+        normalized["EffectiveDeliveryPolicy"] = json.dumps(edp)
+
     # ignore "FifoTopic": "false" to match AWS snapshots (key omitted)
     return normalized
+
+
+def _normalize_delivery_policy(delivery_policy_value: str | None) -> tuple[dict, dict]:
+    """
+    Normalize DeliveryPolicy and compute EffectiveDeliveryPolicy.
+    Values are stored as JSON strings by the query API layer; snapshots decode them for matching.
+    """
+    if not delivery_policy_value:
+        delivery_policy = {}
+    else:
+        try:
+            delivery_policy = json.loads(delivery_policy_value)
+            if not isinstance(delivery_policy, dict):
+                delivery_policy = {}
+        except json.JSONDecodeError:
+            raise InvalidParameterException("Invalid parameter: DeliveryPolicy")
+
+    # Remove keys explicitly set to null
+    for proto, cfg in list(delivery_policy.items()):
+        if not isinstance(cfg, dict):
+            delivery_policy.pop(proto, None)
+            continue
+        delivery_policy[proto] = {k: v for k, v in cfg.items() if v is not None}
+        delivery_policy[proto].setdefault("disableSubscriptionOverrides", False)
+
+    # If "http" is present but empty, still include disableSubscriptionOverrides
+    if "http" in delivery_policy and not delivery_policy["http"]:
+        delivery_policy["http"] = {"disableSubscriptionOverrides": False}
+
+    effective = copy.deepcopy(DEFAULT_EFFECTIVE_DELIVERY_POLICY)
+    http_cfg = delivery_policy.get("http", {})
+    if http_cfg:
+        effective.setdefault("http", {})
+        # recompute from defaults, then overlay policy values
+        base = copy.deepcopy(DEFAULT_EFFECTIVE_DELIVERY_POLICY.get("http", {}))
+        if "defaultHealthyRetryPolicy" in http_cfg:
+            base_hrp = base.get("defaultHealthyRetryPolicy", {})
+            base_hrp |= http_cfg.get("defaultHealthyRetryPolicy") or {}
+            base["defaultHealthyRetryPolicy"] = base_hrp
+        if "defaultRequestPolicy" in http_cfg:
+            base["defaultRequestPolicy"] = http_cfg["defaultRequestPolicy"]
+        base["disableSubscriptionOverrides"] = http_cfg.get("disableSubscriptionOverrides", False)
+        effective["http"] = base
+
+    return delivery_policy, effective
+
+
+def parse_and_validate_subscription_arn(subscription_arn: str | None) -> tuple[ArnData, int]:
+    subscription_arn = subscription_arn or ""
+    count = len(subscription_arn.split(":"))
+    try:
+        parsed = parse_arn(subscription_arn)
+    except InvalidArnException:
+        raise InvalidParameterException(
+            f"Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not {count}"
+        )
+    return parsed, count
 
 
 def parse_and_validate_topic_arn(topic_arn: str | None) -> ArnData:

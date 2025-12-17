@@ -4230,7 +4230,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_topic_delivery_policy_crud": {
-    "recorded-date": "03-10-2024, 21:46:17",
+    "recorded-date": "17-12-2025, 10:22:13",
     "recorded-content": {
       "get-topic-attrs": {
         "Attributes": {
@@ -5791,7 +5791,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_sms_obscure_phone_number": {
-    "recorded-date": "06-10-2025, 11:39:51",
+    "recorded-date": "17-12-2025, 10:22:13",
     "recorded-content": {
       "subscribe-sms-2": {
         "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<topic>:<resource:1>",
@@ -5803,35 +5803,90 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_attributes": {
-    "recorded-date": "06-10-2025, 11:40:42",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription_with_attributes": {
-    "recorded-date": "06-10-2025, 11:40:44",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_delete_subscriptions_on_delete_topic": {
-    "recorded-date": "06-10-2025, 11:40:45",
+    "recorded-date": "17-12-2025, 10:22:15",
     "recorded-content": {
-      "get-sub-after-topic-delete": {
-        "Error": {
-          "Code": "InvalidParameter",
-          "Message": "Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not 1",
-          "Type": "Sender"
+      "get-subscription-attributes": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 400
+          "HTTPStatusCode": 200
         }
       }
     }
   },
-  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_set_subscription_attributes": {
-    "recorded-date": "06-10-2025, 11:40:47",
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription_with_attributes": {
+    "recorded-date": "17-12-2025, 10:22:16",
+    "recorded-content": {
+      "subscription-create-with-attributes": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscription-with-attributes": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:1>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_delete_subscriptions_on_delete_topic": {
+    "recorded-date": "17-12-2025, 10:21:01",
     "recorded-content": {}
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_set_subscription_attributes": {
+    "recorded-date": "17-12-2025, 10:22:18",
+    "recorded-content": {
+      "set-subscription-attributes-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-subscription-attributes": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_invalid_filter_policy": {
-    "recorded-date": "06-10-2025, 11:40:48",
+    "recorded-date": "17-12-2025, 10:22:18",
     "recorded-content": {
       "subscribe-invalid-filter-policy": {
         "Error": {
@@ -5847,16 +5902,36 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_check_not_opted_out": {
-    "recorded-date": "06-10-2025, 11:40:48",
-    "recorded-content": {}
+    "recorded-date": "17-12-2025, 10:22:18",
+    "recorded-content": {
+      "check-not-opted-out": {
+        "isOptedOut": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_check_opted_out": {
     "recorded-date": "06-10-2025, 11:40:49",
     "recorded-content": {}
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_check_opted_out_invalid": {
-    "recorded-date": "06-10-2025, 11:40:49",
-    "recorded-content": {}
+    "recorded-date": "17-12-2025, 10:22:18",
+    "recorded-content": {
+      "check-opted-out-invalid": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: PhoneNumber Reason: input incorrectly formatted",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_list_opted_out": {
     "recorded-date": "06-10-2025, 11:40:50",
@@ -5879,7 +5954,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_get_subscription_attributes_error_not_exists": {
-    "recorded-date": "06-10-2025, 11:40:51",
+    "recorded-date": "17-12-2025, 10:22:18",
     "recorded-content": {
       "get-sub-attrs-nonexistent": {
         "Error": {
