@@ -24,7 +24,7 @@ from localstack.aws.api.logs import (
     PutLogEventsResponse,
     RejectedLogEventsInfo,
     ResourceAlreadyExistsException,
-    ResourceNotFoundException,
+    ResourceNotFoundException, ValidationException,
 )
 from localstack.services.logs.db import db_helper
 from localstack.services.logs.models import LogGroup, LogStream, logs_stores
@@ -56,7 +56,11 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         store.log_groups[log_group_name] = LogGroup(
             logGroupName=log_group_name,
             creationTime=now_utc(),
-            arn=arn,
+            arn=f"{arn}:*",
+            logGroupArn=arn,
+            logGroupClass=request.get("logGroupClass", LogGroupClass.STANDARD),
+            storedBytes=0,
+            metricFilterCount=0
         )
         store.log_streams[log_group_name] = {}
 
@@ -82,8 +86,9 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             ]
 
         if log_group_name_pattern:
-            # TODO: add support for logGroupNamePattern
-            pass
+            log_groups = [
+                lg for lg in log_groups if log_group_name_pattern in lg["logGroupName"]
+            ]
 
         return DescribeLogGroupsResponse(logGroups=log_groups)
 
@@ -96,13 +101,12 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         log_group_name_pattern = request.get("logGroupNamePattern")
 
         if log_group_name_pattern:
-            # TODO: add support for logGroupNamePattern
-            pass
+            log_groups = [log_group for log_group in log_groups if log_group_name_pattern in log_group["logGroupName"]]
 
         groups = [
             LogGroupSummary(
                 logGroupName=lg["logGroupName"],
-                logGroupArn=lg["arn"],
+                logGroupArn=lg["logGroupArn"],
                 logGroupClass=LogGroupClass.STANDARD,
             )
             for lg in log_groups
@@ -142,6 +146,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             logStreamName=log_stream_name,
             creationTime=now_utc(),
             arn=arn,
+            storedBytes=0,
         )
 
     @handler("DescribeLogStreams", expand=False)
@@ -156,7 +161,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         log_stream_name_prefix = request.get("logStreamNamePrefix")
 
         if log_group_name and log_group_identifier:
-            raise InvalidParameterException(
+            raise ValidationException(
                 "LogGroup name and LogGroup ARN are mutually exclusive parameters."
             )
 
@@ -171,6 +176,10 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         if log_stream_name_prefix:
             log_streams = [
                 ls for ls in log_streams if ls["logStreamName"].startswith(log_stream_name_prefix)
+            ]
+        elif log_group_name:
+            log_streams = [
+                ls for ls in log_streams if log_group_name in ls["arn"]
             ]
 
         return DescribeLogStreamsResponse(logStreams=log_streams)
