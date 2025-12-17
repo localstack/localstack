@@ -29,6 +29,7 @@ class Topic(TypedDict, total=True):
     arn: str
     name: str
     attributes: TopicAttributesMap
+    data_protection_policy: str
     subscriptions: list[str]
 
 

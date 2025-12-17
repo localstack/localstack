@@ -145,7 +145,8 @@ class TestSNSTopicCrud:
         paths=[
             "$.get-topic-attrs.Attributes.DeliveryPolicy",  # TODO: remove this with the v2 provider switch
             "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
-        ]
+        ],
+        condition=is_sns_v1_provider,
     )
     def test_create_topic_with_attributes(self, sns_create_topic, snapshot, aws_client):
         create_topic = sns_create_topic(
@@ -215,7 +216,8 @@ class TestSNSTopicCrud:
         paths=[
             "$.get-topic-attrs.Attributes.DeliveryPolicy",  # TODO: remove this with the v2 provider switch
             "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
-        ]
+        ],
+        condition=is_sns_v1_provider,
     )
     def test_create_topic_test_arn(self, sns_create_topic, snapshot, aws_client, account_id):
         topic_name = "topic-test-create"
@@ -380,15 +382,11 @@ class TestSNSTopicCrudV2:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.EffectiveDeliveryPolicy",
-        ]
-    )
-    @markers.snapshot.skip_snapshot_verify(
         # skipped only for v1
         condition=is_sns_v1_provider,
         paths=[
             "$..Attributes.DeliveryPolicy",
+            "$..Attributes.EffectiveDeliveryPolicy",
         ],
     )
     def test_create_topic_should_be_idempotent(self, snapshot, sns_create_topic, aws_client):
@@ -436,15 +434,11 @@ class TestSNSTopicCrudV2:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.EffectiveDeliveryPolicy",
-        ]
-    )
-    @markers.snapshot.skip_snapshot_verify(
         # skipped only for v1
         condition=is_sns_v1_provider,
         paths=[
             "$..Attributes.DeliveryPolicy",
+            "$..Attributes.EffectiveDeliveryPolicy",
         ],
     )
     def test_create_topic_in_multiple_regions(
@@ -497,11 +491,6 @@ class TestSNSTopicCrudV2:
 
     @pytest.mark.skipif(is_sns_v1_provider(), reason="not covered in v1")
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.EffectiveDeliveryPolicy",
-        ]
-    )
     def test_topic_get_attributes_with_fifo_false(self, sns_create_topic, aws_client, snapshot):
         resp = sns_create_topic(
             Name=f"standard-topic-{short_uid()}", Attributes={"FifoTopic": "false"}
@@ -617,6 +606,44 @@ class TestSNSTopicCrudV2:
             aws_client.sns.remove_permission(TopicArn=f"{topic_arn}-not-existing", Label="test")
 
         snapshot.match("topic-not-found", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Not implemented in moto")
+    def test_data_protection_policy_crud(self, snapshot, aws_client):
+        topic_name = f"topic-{short_uid()}"
+        topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
+
+        policy_doc = {
+            "Name": "data_protection_policy",
+            "Description": "Test Policy",
+            "Version": "2021-06-01",
+            "Statement": [
+                {
+                    "Sid": "test-statement",
+                    "DataDirection": "Inbound",
+                    "Principal": ["*"],
+                    "DataIdentifier": [
+                        "arn:aws:dataprotection:us-east-1::data-identifier/EmailAddress"
+                    ],
+                    "Operation": {"Deny": {}},
+                }
+            ],
+        }
+
+        response = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("get-topic-attributes-before-policy", response)
+
+        response = aws_client.sns.put_data_protection_policy(
+            ResourceArn=topic_arn, DataProtectionPolicy=json.dumps(policy_doc)
+        )
+        snapshot.match("put-data-protection-policy", response)
+
+        response = aws_client.sns.get_data_protection_policy(ResourceArn=topic_arn)
+        snapshot.match("get-data-protection-policy", response)
+
+        # check if policy shows up in the attributes
+        response = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("get-topic-attributes-after-policy", response)
 
 
 class TestSNSPublishCrud:
@@ -3158,7 +3185,8 @@ class TestSNSSubscriptionSQSFifo:
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
-        ]
+        ],
+        condition=is_sns_v1_provider,
     )
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_publish_fifo_messages_to_dlq(
@@ -3317,12 +3345,17 @@ class TestSNSSubscriptionSQSFifo:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            "$.republish-batch-response-fifo.Successful..MessageId",  # TODO: SNS doesnt keep track of duplicate
+            "$.republish-batch-response-fifo.Successful..SequenceNumber",  # TODO: SNS doesnt keep track of duplicate
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
-            "$.republish-batch-response-fifo.Successful..MessageId",  # TODO: SNS doesnt keep track of duplicate
-            "$.republish-batch-response-fifo.Successful..SequenceNumber",  # TODO: SNS doesnt keep track of duplicate
-        ]
+        ],
+        condition=is_sns_v1_provider,
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
@@ -6006,7 +6039,8 @@ class TestSNSPublishDelivery:
             "$..Attributes.DeliveryPolicy",
             "$..Attributes.EffectiveDeliveryPolicy",
             "$..Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
-        ]
+        ],
+        condition=is_sns_v1_provider,
     )
     @skip_if_sns_v2
     def test_delivery_lambda(

@@ -1197,10 +1197,22 @@
     "last_validated_date": "2025-02-19T01:29:14+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
-    "last_validated_date": "2023-11-09T20:10:33+00:00"
+    "last_validated_date": "2025-12-17T14:14:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 7.37,
+      "teardown": 0.92,
+      "total": 8.29
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[True]": {
-    "last_validated_date": "2023-11-09T20:10:27+00:00"
+    "last_validated_date": "2025-12-17T14:14:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.93,
+      "call": 8.94,
+      "teardown": 0.91,
+      "total": 10.78
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_fifo_messages_to_dlq[False]": {
     "last_validated_date": "2025-11-24T12:29:56+00:00",
@@ -1338,6 +1350,15 @@
       "call": 1.89,
       "teardown": 0.47,
       "total": 3.5
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_data_protection_policy_crud": {
+    "last_validated_date": "2025-12-17T13:06:58+00:00",
+    "durations_in_seconds": {
+      "setup": 1.14,
+      "call": 2.36,
+      "teardown": 0.02,
+      "total": 3.52
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_delete_non_existent_topic": {

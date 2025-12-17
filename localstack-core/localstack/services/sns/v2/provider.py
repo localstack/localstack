@@ -21,6 +21,7 @@ from localstack.aws.api.sns import (
     DelegatesList,
     Endpoint,
     EndpointDisabledException,
+    GetDataProtectionPolicyResponse,
     GetEndpointAttributesResponse,
     GetPlatformApplicationAttributesResponse,
     GetSMSAttributesResponse,
@@ -213,6 +214,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             name_match = re.match(SNS_TOPIC_NAME_PATTERN, name)
             if not name_match:
                 raise InvalidParameterException("Invalid parameter: Topic Name")
+
+        attributes["EffectiveDeliveryPolicy"] = _create_default_effective_delivery_policy()
 
         topic = _create_topic(name=name, attributes=attributes, context=context)
         if tags:
@@ -1173,6 +1176,28 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         policy["Statement"] = statements
         topic["attributes"]["Policy"] = json.dumps(policy)
 
+    #
+    # Data Protection Policy operations
+    #
+
+    def get_data_protection_policy(
+        self, context: RequestContext, resource_arn: topicARN, **kwargs
+    ) -> GetDataProtectionPolicyResponse:
+        topic = self._get_topic(resource_arn, context)
+        return GetDataProtectionPolicyResponse(
+            DataProtectionPolicy=topic.get("data_protection_policy")
+        )
+
+    def put_data_protection_policy(
+        self,
+        context: RequestContext,
+        resource_arn: topicARN,
+        data_protection_policy: attributeValue,
+        **kwargs,
+    ) -> None:
+        topic = self._get_topic(resource_arn, context)
+        topic["data_protection_policy"] = data_protection_policy
+
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceResponse:
@@ -1268,6 +1293,26 @@ def _default_attributes(topic: Topic, context: RequestContext) -> TopicAttribute
             }
         )
     return default_attributes
+
+
+def _create_default_effective_delivery_policy():
+    return json.dumps(
+        {
+            "http": {
+                "defaultHealthyRetryPolicy": {
+                    "minDelayTarget": 20,
+                    "maxDelayTarget": 20,
+                    "numRetries": 3,
+                    "numMaxDelayRetries": 0,
+                    "numNoDelayRetries": 0,
+                    "numMinDelayRetries": 0,
+                    "backoffFunction": "linear",
+                },
+                "disableSubscriptionOverrides": False,
+                "defaultRequestPolicy": {"headerContentType": "text/plain; charset=UTF-8"},
+            }
+        }
+    )
 
 
 def _create_default_topic_policy(topic: Topic, context: RequestContext) -> str:
