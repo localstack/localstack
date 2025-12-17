@@ -28,11 +28,12 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
     _AWS_URL_SUFFIX,
     MOCKED_REFERENCE,
     ChangeSetModelPreproc,
+    DeletionPolicy,
     PreprocEntityDelta,
     PreprocOutput,
     PreprocProperties,
     PreprocResource,
-    DeletionPolicy,
+    UpdateReplacePolicy,
 )
 from localstack.services.cloudformation.engine.v2.unsupported_resource import (
     should_ignore_unsupported_resource_type,
@@ -342,27 +343,37 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     )
 
                     def cleanup():
-                        self._process_event(
-                            action=ChangeAction.Remove,
-                            logical_resource_id=name,
-                            event_status=OperationStatus.IN_PROGRESS,
-                            resource_type=before.resource_type,
-                        )
-                        event = self._execute_resource_action(
-                            action=ChangeAction.Remove,
-                            logical_resource_id=name,
-                            resource_type=before.resource_type,
-                            before_properties=before_properties,
-                            after_properties=None,
-                            part_of_replacement=True,
-                        )
-                        self._process_event(
-                            action=ChangeAction.Remove,
-                            logical_resource_id=name,
-                            event_status=event.status,
-                            resource_type=before.resource_type,
-                            reason=event.message,
-                        )
+                        # TODO: handle other update replace policy values
+                        if after.update_replace_policy == UpdateReplacePolicy.Delete:
+                            self._process_event(
+                                action=ChangeAction.Remove,
+                                logical_resource_id=name,
+                                event_status=OperationStatus.IN_PROGRESS,
+                                resource_type=before.resource_type,
+                            )
+                            event = self._execute_resource_action(
+                                action=ChangeAction.Remove,
+                                logical_resource_id=name,
+                                resource_type=before.resource_type,
+                                before_properties=before_properties,
+                                after_properties=None,
+                                part_of_replacement=True,
+                            )
+                            self._process_event(
+                                action=ChangeAction.Remove,
+                                logical_resource_id=name,
+                                event_status=event.status,
+                                resource_type=before.resource_type,
+                                reason=event.message,
+                            )
+                        else:
+                            self._process_event(
+                                action=ChangeAction.Remove,
+                                logical_resource_id=name,
+                                event_status=OperationStatus.SUCCESS,
+                                resource_type=before.resource_type,
+                                custom_status=ResourceStatus.DELETE_SKIPPED,
+                            )
 
                     self._defer_action(f"cleanup-from-replacement-{name}", cleanup)
                 else:
