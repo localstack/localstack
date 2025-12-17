@@ -1,5 +1,6 @@
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.logs import (
+    AmazonResourceName,
     CreateLogGroupRequest,
     CreateLogStreamRequest,
     DeleteLogGroupRequest,
@@ -16,7 +17,10 @@ from localstack.aws.api.logs import (
     InvalidParameterException,
     ListLogGroupsRequest,
     ListLogGroupsResponse,
+    ListTagsForResourceResponse,
+    ListTagsLogGroupResponse,
     LogGroupClass,
+    LogGroupName,
     LogGroupSummary,
     LogsApi,
     OutputLogEvent,
@@ -24,7 +28,11 @@ from localstack.aws.api.logs import (
     PutLogEventsResponse,
     RejectedLogEventsInfo,
     ResourceAlreadyExistsException,
-    ResourceNotFoundException, ValidationException,
+    ResourceNotFoundException,
+    TagKeyList,
+    TagList,
+    Tags,
+    ValidationException,
 )
 from localstack.services.logs.db import db_helper
 from localstack.services.logs.models import LogGroup, LogStream, logs_stores
@@ -60,7 +68,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             logGroupArn=arn,
             logGroupClass=request.get("logGroupClass", LogGroupClass.STANDARD),
             storedBytes=0,
-            metricFilterCount=0
+            metricFilterCount=0,
         )
         store.log_streams[log_group_name] = {}
 
@@ -86,9 +94,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             ]
 
         if log_group_name_pattern:
-            log_groups = [
-                lg for lg in log_groups if log_group_name_pattern in lg["logGroupName"]
-            ]
+            log_groups = [lg for lg in log_groups if log_group_name_pattern in lg["logGroupName"]]
 
         return DescribeLogGroupsResponse(logGroups=log_groups)
 
@@ -101,7 +107,11 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         log_group_name_pattern = request.get("logGroupNamePattern")
 
         if log_group_name_pattern:
-            log_groups = [log_group for log_group in log_groups if log_group_name_pattern in log_group["logGroupName"]]
+            log_groups = [
+                log_group
+                for log_group in log_groups
+                if log_group_name_pattern in log_group["logGroupName"]
+            ]
 
         groups = [
             LogGroupSummary(
@@ -178,9 +188,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
                 ls for ls in log_streams if ls["logStreamName"].startswith(log_stream_name_prefix)
             ]
         elif log_group_name:
-            log_streams = [
-                ls for ls in log_streams if log_group_name in ls["arn"]
-            ]
+            log_streams = [ls for ls in log_streams if log_group_name in ls["arn"]]
 
         return DescribeLogStreamsResponse(logStreams=log_streams)
 
@@ -234,10 +242,10 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
     ) -> GetLogEventsResponse:
         region = context.region
         account_id = context.account_id
-
         store = logs_stores[context.account_id][context.region]
         log_group_name = request["logGroupName"]
         log_stream_name = request["logStreamName"]
+
         if log_group_name not in store.log_groups:
             raise ResourceNotFoundException("The specified log group does not exist.")
         if log_stream_name not in store.log_streams.get(log_group_name, {}):
@@ -293,3 +301,91 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             return FilterLogEventsResponse(events=events)
         except ValueError as e:
             raise self._get_exception_for_value_error(e, log_group_name)
+
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
+    ) -> ListTagsForResourceResponse:
+        self._check_resource_arn_tagging(resource_arn)
+        store = logs_stores[context.account_id][context.region]
+        tags = store.TAGS.get(resource_arn, {})
+        return ListTagsForResourceResponse(tags=tags)
+
+    def untag_resource(
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        tag_keys: TagKeyList,
+        **kwargs,
+    ) -> None:
+        self._check_resource_arn_tagging(resource_arn)
+        store = logs_stores[context.account_id][context.region]
+        tags_stored = store.TAGS.get(resource_arn, {})
+        for tag in tag_keys:
+            tags_stored.pop(tag, None)
+
+    def untag_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName, tags: TagList, **kwargs
+    ) -> None:
+        # deprecated implementation -> new one: untag_resource
+        self._verify_log_group_exists(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        resource_arn = arns.log_group_arn(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        store = logs_stores[context.account_id][context.region]
+        tags_stored = store.TAGS.get(resource_arn, {})
+        for tag in tags:
+            tags_stored.pop(tag, None)
+
+    def tag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags, **kwargs
+    ) -> None:
+        self._check_resource_arn_tagging(resource_arn)
+        store = logs_stores[context.account_id][context.region]
+        store.TAGS.get(resource_arn, {}).update(tags or {})
+
+    def tag_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName, tags: Tags, **kwargs
+    ) -> None:
+        # deprecated implementation -> new one: tag_resource
+        self._verify_log_group_exists(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        resource_arn = arns.log_group_arn(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        store = logs_stores[context.account_id][context.region]
+        store.TAGS.get(resource_arn, {}).update(tags or {})
+
+    def list_tags_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName, **kwargs
+    ) -> ListTagsLogGroupResponse:
+        store = logs_stores[context.account_id][context.region]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        resource_arn = arns.log_group_arn(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        tags = store.TAGS.get(resource_arn, {})
+        return ListTagsLogGroupResponse(tags=tags)
+
+    def _check_resource_arn_tagging(self, resource_arn):
+        service = arns.extract_service_from_arn(resource_arn)
+        region = arns.extract_region_from_arn(resource_arn)
+        account = arns.extract_account_id_from_arn(resource_arn)
+
+        # AWS currently only supports tagging for Log Group and Destinations
+        # LS: we only verify if log group exists, and create tags for other resources
+        if service.lower().startswith("log-group:"):
+            self._verify_log_group_exists(
+                service.split(":")[-1], account_id=account, region_name=region
+            )
+
+    def _verify_log_group_exists(self, group_name: LogGroupName, account_id: str, region_name: str):
+        store = logs_stores[account_id][region_name]
+
+        if group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
