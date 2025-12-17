@@ -141,6 +141,13 @@ def sns_provider():
 
 class TestSNSTopicCrud:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.get-topic-attrs.Attributes.DeliveryPolicy",  # TODO: remove this with the v2 provider switch
+            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
+        ],
+        condition=is_sns_v1_provider,
+    )
     def test_create_topic_with_attributes(self, sns_create_topic, snapshot, aws_client):
         create_topic = sns_create_topic(
             Name="topictest.fifo",
