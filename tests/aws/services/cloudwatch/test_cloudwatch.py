@@ -1,6 +1,7 @@
 import gzip
 import json
 import logging
+import re
 import threading
 import time
 from datetime import UTC, datetime, timedelta, timezone
@@ -3025,6 +3026,36 @@ class TestCloudWatchMultiProtocol:
             payload=get_metric_input,
         )
         snapshot.match("get-metric-data", response)
+
+        # we need special assertions for raw timestamp values, based on the protocol:
+        if protocol == "query":
+            timestamp = response["GetMetricDataResponse"]["GetMetricDataResult"][
+                "MetricDataResults"
+            ]["member"][0]["Timestamps"]["member"]
+            assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", timestamp)
+
+        elif protocol == "json":
+            timestamp = response["MetricDataResults"][0]["Timestamps"][0]
+            assert isinstance(timestamp, float)
+            # assert this format: 1765977780.0
+            assert re.match(r"^\d{10}\.0", str(timestamp))
+        else:
+            timestamp = response["MetricDataResults"][0]["Timestamps"][0]
+            assert isinstance(timestamp, datetime)
+            assert timestamp.microsecond == 0
+            assert timestamp.year == now.year
+            assert now.day - 1 <= timestamp.day <= now.day + 1
+
+            # we need to decode more for CBOR, to verify we encode it the same way as AWS (datetime format + proper
+            # underlying format (float)
+            # See https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html#timestamp-type-serialization
+            # https://datatracker.ietf.org/doc/html/rfc8949.html#section-3.4
+            response_raw = http_client.post_raw(
+                operation="GetMetricData",
+                payload=get_metric_input,
+            )
+            # assert that the timestamp is encoded as a Tag (6 major type) with Double of length 8
+            assert b"Timestamps\x9f\xc1\xfbA" in response_raw.content
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="Wrong behavior in v1 in SetAlarmState")

@@ -277,7 +277,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             # Paginate
             timestamp_value_dicts = [
                 {
-                    "Timestamp": timestamp,
+                    "Timestamp": datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC),
                     "Value": float(value),
                 }
                 for timestamp, value in zip(timestamps, values, strict=False)

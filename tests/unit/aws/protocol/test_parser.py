@@ -1452,7 +1452,6 @@ def test_restxml_ignores_get_body():
 def test_smithy_rpc_v2_cbor():
     # we are using a service that LocalStack does not implement yet because it implements `smithy-rpc-v2-cbor`
     # we can replace this service by CloudWatch once it has support in Botocore
-    # TODO: test timestamp parsing
     # example taken from:
     # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/arc-region-switch/client/create_plan.html
 
@@ -1523,6 +1522,23 @@ def test_smithy_rpc_v2_cbor():
         primaryRegion="string",
         tags={"string": "string"},
     )
+
+
+def test_rpc_v2_cbor_timestamp_parsing():
+    # This is a real request from the Java SDK v2
+    # It does not encode Timestamps like Botocore: it encodes them as Double of Length 8 (botocore uses Integer)
+    request = HttpRequest(
+        method="POST",
+        path="/v1/service/GraniteServiceVersion20100801/operation/PutMetricData",
+        body=b"\xbfiNamespacelSITE/TRAFFICjMetricData\x81\xbfjMetricNamemPAGES_VISITEDjDimensions\x81\xbfdNamelUNIQUE_PAGESeValuedURLS\xffiTimestamp\xc1\xfbA\xdaP\xaf+\x88\xa3\xd7eValue\xfb?\xf3\xbfg\xf4\xdb\xdf\x8fdUnitdNone\xff\xff",
+    )
+    parser = create_parser(load_service("cloudwatch"), protocol="smithy-rpc-v2-cbor")
+    parsed_operation_model, parsed_request = parser.parse(request)
+    timestamp = parsed_request["MetricData"][0]["Timestamp"]
+    assert isinstance(timestamp, datetime)
+    assert timestamp.microsecond == 135000
+    assert timestamp.minute == 38
+    assert timestamp.tzinfo == UTC
 
 
 @pytest.mark.parametrize("protocol", ("json", "smithy-rpc-v2-cbor"))

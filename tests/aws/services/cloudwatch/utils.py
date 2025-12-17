@@ -5,7 +5,9 @@ from typing import Any
 import xmltodict
 from botocore.auth import SigV4Auth
 from botocore.serialize import create_serializer
-from cbor2._decoder import loads as cbor2_loads
+
+# import the unpatched cbor2 on purpose to avoid being polluted by Kinesis-only patches
+from cbor2 import loads as cbor2_loads
 from requests import Response
 
 from localstack import constants
@@ -45,9 +47,9 @@ class BaseCloudWatchHttpClient(abc.ABC):
     def _serialize_body(self, body: dict, operation: str) -> str | bytes:
         # here we use the Botocore serializer directly, since it has some complex behavior,
         # and we know CloudWatch supports it by default
-        query_serializer = create_serializer(self.protocol)
+        protocol_serializer = create_serializer(self.protocol)
         operation_model = self.service_model.operation_model(operation)
-        request = query_serializer.serialize_to_request(body, operation_model)
+        request = protocol_serializer.serialize_to_request(body, operation_model)
         return request["body"]
 
     @property

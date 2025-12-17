@@ -1124,8 +1124,13 @@ class BaseCBORRequestParser(RequestParser, ABC):
             raise ProtocolParserError(f"Found CBOR tag not supported by botocore: {tag}")
 
     def _parse_type_datetime(self, value: int | float) -> datetime.datetime:
+        # CBOR overrides any timestamp format defined in the spec:
+        # https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html#timestamp-type-serialization
+        # > This protocol uses epoch-seconds, also known as Unix timestamps, with millisecond (1/1000th of a second)
+        # > resolution. The timestampFormat MUST NOT be respected to customize timestamp serialization.
         if isinstance(value, (int, float)):
-            return self._convert_str_to_timestamp(str(value))
+            milli_precision_ts = int(value * 1000) / 1000
+            return datetime.datetime.fromtimestamp(milli_precision_ts, tz=datetime.UTC)
         else:
             raise ProtocolParserError(f"Unable to parse datetime value: {value}")
 
