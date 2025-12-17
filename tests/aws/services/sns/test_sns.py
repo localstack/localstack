@@ -4980,6 +4980,19 @@ class TestSNSSMS:
         response = aws_client.sns.opt_in_phone_number(phoneNumber=phone_number)
         snapshot.match("opt-in-phone-number", response)
 
+    @markers.aws.only_localstack
+    @pytest.mark.skipif(is_sns_v1_provider(), reason="Not implemented in v1")
+    def test_opt_out_phone_number_via_endpoint(
+        self, phone_number, aws_client, snapshot, sns_provider, account_id, cleanups
+    ):
+        response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
+        assert not response["isOptedOut"]
+        data = {"phoneNumber": phone_number, "accountId": account_id}
+        requests.post("http://localhost:4566/_aws/sns/phone-opt-outs", data=json.dumps(data))
+
+        response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
+        assert response["isOptedOut"]
+
     @markers.aws.validated
     def test_opt_in_non_existing_phone_number(
         self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name
