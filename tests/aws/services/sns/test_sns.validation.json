@@ -1197,21 +1197,21 @@
     "last_validated_date": "2025-02-19T01:29:14+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
-    "last_validated_date": "2025-12-17T13:21:45+00:00",
+    "last_validated_date": "2025-12-17T14:14:22+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 7.58,
-      "teardown": 0.8,
-      "total": 8.38
+      "call": 7.37,
+      "teardown": 0.92,
+      "total": 8.29
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[True]": {
-    "last_validated_date": "2025-12-17T13:21:37+00:00",
+    "last_validated_date": "2025-12-17T14:14:14+00:00",
     "durations_in_seconds": {
-      "setup": 0.77,
-      "call": 8.83,
+      "setup": 0.93,
+      "call": 8.94,
       "teardown": 0.91,
-      "total": 10.51
+      "total": 10.78
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_fifo_messages_to_dlq[False]": {

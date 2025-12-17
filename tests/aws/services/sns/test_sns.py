@@ -3338,6 +3338,12 @@ class TestSNSSubscriptionSQSFifo:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            "$.republish-batch-response-fifo.Successful..MessageId",  # TODO: SNS doesnt keep track of duplicate
+            "$.republish-batch-response-fifo.Successful..SequenceNumber",  # TODO: SNS doesnt keep track of duplicate
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
