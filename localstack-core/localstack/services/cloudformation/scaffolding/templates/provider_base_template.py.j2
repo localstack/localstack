@@ -121,3 +121,19 @@ class {{ resource }}ProviderBase(ResourceProvider[{{ resource }}Properties], ABC
         {%- endif %}
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def list(
+        self,
+        request: ResourceRequest[{{ resource }}Properties],
+    ) -> ProgressEvent[{{ resource }}Properties]:
+        """
+        List available resources of this type
+        {% if list_permissions -%}
+        IAM permissions required:
+        {%- for permission in list_permissions %}
+          - {{ permission }}
+        {%- endfor %}
+        {%- endif %}
+        """
+        raise NotImplementedError

@@ -86,3 +86,12 @@ class SQSQueuePolicyProvider(SQSQueuePolicyProviderBase):
             status=OperationStatus.SUCCESS,
             resource_model=model,
         )
+
+    def list(
+        self,
+        request: ResourceRequest[SQSQueuePolicyProperties],
+    ) -> ProgressEvent[SQSQueuePolicyProperties]:
+        """
+        List available resources of this type
+        """
+        raise NotImplementedError
