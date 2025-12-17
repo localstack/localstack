@@ -1,12 +1,28 @@
+import logging
+import os
 import sqlite3
 import threading
 from typing import Any
 
+from localstack import config
+
+LOG = logging.getLogger(__name__)
+
 
 class DatabaseHelper:
+    DB_NAME = "logs.db"
+    LOGS_DATA_ROOT: str = os.path.join(config.dirs.data, "logs")
+    LOGS_DB: str = os.path.join(LOGS_DATA_ROOT, DB_NAME)
+    LOGS_DB_READ_ONLY: str = f"file:{LOGS_DB}?mode=ro"
+    TABLE_LOG_EVENTS = "LOG_EVENTS"
+    DATABASE_LOCK: threading.RLock
+
     def __init__(self, db_file: str):
         self.db_file = db_file
         self.lock = threading.RLock()
+        if os.path.exists(self.LOGS_DB):
+            LOG.debug("database for logs already exists (%s)", self.LOGS_DB)
+            return
         self._create_tables()
 
     def _get_connection(self):
@@ -16,8 +32,8 @@ class DatabaseHelper:
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS log_events (
+                f"""
+                CREATE TABLE IF NOT EXISTS {self.TABLE_LOG_EVENTS} (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     log_group_name TEXT NOT NULL,
                     log_stream_name TEXT NOT NULL,
@@ -42,7 +58,7 @@ class DatabaseHelper:
             cursor = conn.cursor()
             for event in log_events:
                 cursor.execute(
-                    "INSERT INTO log_events (log_group_name, log_stream_name, timestamp, message, region, account_id) VALUES (?, ?, ?, ?, ?, ?)",
+                    f"INSERT INTO {self.TABLE_LOG_EVENTS} (log_group_name, log_stream_name, timestamp, message, region, account_id) VALUES (?, ?, ?, ?, ?, ?)",
                     (
                         log_group_name,
                         log_stream_name,
@@ -67,9 +83,9 @@ class DatabaseHelper:
     ) -> list[dict[str, Any]]:
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
-            query = """
+            query = f"""
                 SELECT timestamp, message
-                FROM log_events
+                FROM {self.TABLE_LOG_EVENTS}
                 WHERE log_group_name = ? AND log_stream_name = ? AND region = ? AND account_id = ?
             """
             params = [log_group_name, log_stream_name, region, account_id]
@@ -108,9 +124,9 @@ class DatabaseHelper:
     ) -> list[dict[str, Any]]:
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
-            query = """
+            query = f"""
                 SELECT log_stream_name, timestamp, message
-                FROM log_events
+                FROM {self.TABLE_LOG_EVENTS}
                 WHERE log_group_name = ? AND region = ? AND account_id = ?
             """
             params = [log_group_name, region, account_id]
