@@ -72,6 +72,13 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         )
         store.log_streams[log_group_name] = {}
 
+        if tags := request.get("tags"):
+            resource_arn = arns.log_group_arn(
+                group_name=log_group_name, account_id=context.account_id, region_name=context.region
+            )
+            store = logs_stores[context.account_id][context.region]
+            store.TAGS.setdefault(resource_arn, {}).update(tags)
+
     @handler("DescribeLogGroups", expand=False)
     def describe_log_groups(
         self,
