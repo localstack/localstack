@@ -4805,7 +4805,7 @@ class TestSNSSMS:
             sns_store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
 
         if not is_aws_cloud():
-            sns_store.PHONE_NUMBERS_OPTED_OUT.append(phone_number)
+            sns_store.PHONE_NUMBERS_OPTED_OUT.add(phone_number)
             cleanups.append(cleanup_store)
 
         response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
@@ -4825,7 +4825,7 @@ class TestSNSSMS:
             sns_store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
 
         if not is_aws_cloud():
-            sns_store.PHONE_NUMBERS_OPTED_OUT.append(phone_number)
+            sns_store.PHONE_NUMBERS_OPTED_OUT.add(phone_number)
             cleanups.append(cleanup_store)
 
         snapshot.add_transformer(
@@ -4853,7 +4853,7 @@ class TestSNSSMS:
             sns_store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
 
         if not is_aws_cloud():
-            sns_store.PHONE_NUMBERS_OPTED_OUT.append(phone_number)
+            sns_store.PHONE_NUMBERS_OPTED_OUT.add(phone_number)
             cleanups.append(cleanup_store)
         response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
         assert response["isOptedOut"]
