@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
 import zipfile
 from collections.abc import Generator
 from dataclasses import dataclass
@@ -353,12 +355,7 @@ class TemplateRenderer:
                         resource_name, FileType.attribute_template, tests_output_path, pro=self.pro
                     )
                 )
-            case FileType.provider:
-                kwargs["service"] = resource_name.python_compatible_service_name.lower()
-                kwargs["lower_resource"] = resource_name.resource.lower()
-                kwargs["pro"] = self.pro
-                pass
-            case FileType.provider_base:
+            case FileType.provider | FileType.provider_base:
                 property_ir = generate_ir_for_type(
                     [self.schema],
                     resource_name.full_name,
@@ -384,6 +381,9 @@ class TemplateRenderer:
                 kwargs["list_permissions"] = (
                     self.schema.get("handlers", {}).get("list", {}).get("permissions")
                 )
+                kwargs["service"] = resource_name.python_compatible_service_name.lower()
+                kwargs["lower_resource"] = resource_name.resource.lower()
+                kwargs["pro"] = self.pro
             case FileType.plugin:
                 kwargs["service"] = resource_name.python_compatible_service_name.lower()
                 kwargs["lower_resource"] = resource_name.resource.lower()
@@ -728,12 +728,24 @@ class FileWriter:
 
         :return True if file should be (over-)written, False otherwise
         """
-        return self.overwrite or click.confirm("Destination files already exist, overwrite?")
+        return self.overwrite or click.confirm(
+            f"Destination file {destination_file} already exists, overwrite?"
+        )
 
     @staticmethod
     def write_text(contents: str, destination: Path):
         with destination.open("wt") as outfile:
             print(contents, file=outfile)
+
+        # for Python files, use ruff to clean up formatting errors introduced by scaffolding
+        if destination.suffix == ".py":
+            command = [sys.executable, "-m", "ruff", "format", destination]
+            try:
+                subprocess.run(command, check=True, capture_output=True, text=True)
+            except subprocess.CalledProcessError as e:
+                print(
+                    f"Ruff fix command failed (exit code {e.returncode}):\n{e.stdout}\n{e.stderr}"
+                )
 
     @staticmethod
     def ensure_python_init_files(path: Path):

@@ -22,6 +22,44 @@ class {{ resource }}Provider({{ resource }}ProviderBase):
         self,
         request: ResourceRequest[{{ resource }}Properties],
     ) -> ProgressEvent[{{ resource }}Properties]:
+        """
+        Create a new resource.
+
+        {% if primary_identifier -%}
+        Primary identifier fields:
+        {%- for property in primary_identifier %}
+          - {{ property }}
+        {%- endfor %}
+        {%- endif %}
+
+        {% if required_properties -%}
+        Required properties:
+        {%- for property in required_properties %}
+          - {{ property }}
+        {%- endfor %}
+        {%- endif %}
+
+        {% if create_only_properties -%}
+        Create-only properties:
+        {%- for property in create_only_properties %}
+          - {{ property }}
+        {%- endfor %}
+        {%- endif %}
+
+        {% if read_only_properties -%}
+        Read-only properties:
+        {%- for property in read_only_properties %}
+          - {{ property }}
+        {%- endfor %}
+        {%- endif %}
+
+        {% if create_permissions -%}
+        IAM permissions required:
+        {%- for permission in create_permissions %}
+          - {{ permission }}
+        {%- endfor -%}
+        {%- endif %}
+        """
         model = request.desired_state
 
         # TODO: validations
@@ -50,16 +88,61 @@ class {{ resource }}Provider({{ resource }}ProviderBase):
         self,
         request: ResourceRequest[{{ resource }}Properties],
     ) -> ProgressEvent[{{ resource }}Properties]:
+        """
+        Fetch resource information
+
+        {% if read_permissions -%}
+        IAM permissions required:
+        {%- for permission in read_permissions %}
+          - {{ permission }}
+        {%- endfor %}
+        {%- endif %}
+        """
         raise NotImplementedError
 
     def delete(
         self,
         request: ResourceRequest[{{ resource }}Properties],
     ) -> ProgressEvent[{{ resource }}Properties]:
+        """
+        Delete a resource
+
+        {% if delete_permissions -%}
+        IAM permissions required:
+        {%- for permission in delete_permissions %}
+          - {{ permission }}
+        {%- endfor %}
+        {%- endif %}
+        """
         raise NotImplementedError
 
     def update(
         self,
         request: ResourceRequest[{{ resource }}Properties],
     ) -> ProgressEvent[{{ resource }}Properties]:
+        """
+        Update a resource
+
+        {% if update_permissions -%}
+        IAM permissions required:
+        {%- for permission in update_permissions %}
+          - {{ permission }}
+        {%- endfor %}
+        {%- endif %}
+        """
+        raise NotImplementedError
+
+    def list(
+        self,
+        request: ResourceRequest[{{ resource }}Properties],
+    ) -> ProgressEvent[{{ resource }}Properties]:
+        """
+        List available resources of this type
+        {% if list_permissions -%}
+        IAM permissions required:
+        {%- for permission in list_permissions %}
+          - {{ permission }}
+        {%- endfor %}
+        {%- endif %}
+        """
         raise NotImplementedError
