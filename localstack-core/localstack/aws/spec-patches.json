@@ -1372,43 +1372,5 @@
       "path": "/operations/CreateApiMapping/http/responseCode",
       "value": 200
     }
-  ],
-  "cloudwatch/2010-08-01/service-2": [
-    {
-      "op": "add",
-      "path": "/metadata/awsQueryCompatible",
-      "value": {}
-    },
-    {
-      "op": "add",
-      "path": "/metadata/jsonVersion",
-      "value": "1.0"
-    },
-    {
-      "op": "add",
-      "path": "/metadata/targetPrefix",
-      "value": "GraniteServiceVersion20100801"
-    },
-    {
-      "op": "replace",
-      "path": "/metadata/protocol",
-      "value": "smithy-rpc-v2-cbor"
-    },
-    {
-      "op": "replace",
-      "path": "/metadata/protocols",
-      "value": [
-        "smithy-rpc-v2-cbor",
-        "json",
-        "query"
-      ]
-    },
-    {
-      "op": "add",
-      "path": "/shapes/ConflictException/error",
-      "value": {
-        "httpStatusCode": 409
-      }
-    }
   ]
 }
