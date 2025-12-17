@@ -2764,7 +2764,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[True]": {
-    "recorded-date": "07-12-2023, 10:10:22",
+    "recorded-date": "17-12-2025, 13:21:07",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -2969,7 +2969,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
-    "recorded-date": "07-12-2023, 10:10:29",
+    "recorded-date": "17-12-2025, 13:21:15",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -7030,8 +7030,68 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_data_protection_policy_crud": {
-    "recorded-date": "12-12-2025, 09:39:19",
+    "recorded-date": "17-12-2025, 13:06:58",
     "recorded-content": {
+      "get-topic-attributes-before-policy": {
+        "Attributes": {
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "put-data-protection-policy": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7064,7 +7124,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "get-topic-attributes": {
+      "get-topic-attributes-after-policy": {
         "Attributes": {
           "DisplayName": "",
           "EffectiveDeliveryPolicy": {

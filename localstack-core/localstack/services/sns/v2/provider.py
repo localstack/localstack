@@ -215,6 +215,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             if not name_match:
                 raise InvalidParameterException("Invalid parameter: Topic Name")
 
+        attributes["EffectiveDeliveryPolicy"] = _create_default_effective_delivery_policy()
+
         topic = _create_topic(name=name, attributes=attributes, context=context)
         if tags:
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
@@ -1195,8 +1197,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> None:
         topic = self._get_topic(resource_arn, context)
         topic["data_protection_policy"] = data_protection_policy
-        # This seems to trigger the creation and visibility of the effective delivery policy in the attributes.
-        topic["attributes"]["EffectiveDeliveryPolicy"] = _create_default_effective_delivery_policy()
 
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
