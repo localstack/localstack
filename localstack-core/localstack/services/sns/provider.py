@@ -58,6 +58,12 @@ from localstack.aws.api.sns import (
 )
 from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Request, Response, Router, route
+from localstack.services.aws_models import (
+    SNSPlatformEndpointMessagesResponse,
+    SNSSMSMessagesResponse,
+    SNSSubscriptionTokenError,
+    SNSSubscriptionTokenResponse,
+)
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -1198,9 +1204,17 @@ class SNSServicePlatformEndpointMessagesApiResource(SNSInternalResource):
         "MessageId",
     ]
 
-    @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
+    @route(
+        sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT,
+        methods=["GET"],
+        openapi={
+            "summary": "Retrieve SNS platform endpoint messages",
+            "description": "Get messages sent to platform endpoints via SNS. Supports filtering by endpoint ARN, account ID, and region.",
+            "tags": ["aws"],
+        },
+    )
     @count_usage
-    def on_get(self, request: Request):
+    def on_get(self, request: Request) -> SNSPlatformEndpointMessagesResponse:
         filter_endpoint_arn = request.args.get("endpointArn")
         account_id = (
             request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
@@ -1230,7 +1244,15 @@ class SNSServicePlatformEndpointMessagesApiResource(SNSInternalResource):
             "region": region,
         }
 
-    @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
+    @route(
+        sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT,
+        methods=["DELETE"],
+        openapi={
+            "summary": "Discard SNS platform endpoint messages",
+            "description": "Delete messages sent to platform endpoints via SNS. Supports filtering by endpoint ARN, account ID, and region.",
+            "tags": ["aws"],
+        },
+    )
     @count_usage
     def on_delete(self, request: Request) -> Response:
         filter_endpoint_arn = request.args.get("endpointArn")
@@ -1247,10 +1269,10 @@ class SNSServicePlatformEndpointMessagesApiResource(SNSInternalResource):
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             store.platform_endpoint_messages.pop(filter_endpoint_arn, None)
-            return Response("", status=204)
+            return Response(status=204)
 
         store.platform_endpoint_messages.clear()
-        return Response("", status=204)
+        return Response(status=204)
 
 
 class SNSServiceSMSMessagesApiResource(SNSInternalResource):
@@ -1276,9 +1298,17 @@ class SNSServiceSMSMessagesApiResource(SNSInternalResource):
         "Subject",
     ]
 
-    @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["GET"])
+    @route(
+        sns_constants.SMS_MSGS_ENDPOINT,
+        methods=["GET"],
+        openapi={
+            "summary": "Retrieve SNS SMS messages",
+            "description": "Get SMS messages sent via SNS. Supports filtering by phone number, account ID, and region.",
+            "tags": ["aws"],
+        },
+    )
     @count_usage
-    def on_get(self, request: Request):
+    def on_get(self, request: Request) -> SNSSMSMessagesResponse:
         account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
         region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_phone_number = request.args.get("phoneNumber")
@@ -1303,7 +1333,15 @@ class SNSServiceSMSMessagesApiResource(SNSInternalResource):
             "region": region,
         }
 
-    @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["DELETE"])
+    @route(
+        sns_constants.SMS_MSGS_ENDPOINT,
+        methods=["DELETE"],
+        openapi={
+            "summary": "Discard SNS SMS messages",
+            "description": "Delete SMS messages sent via SNS. Supports filtering by phone number, account ID, and region.",
+            "tags": ["aws"],
+        },
+    )
     @count_usage
     def on_delete(self, request: Request) -> Response:
         account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
@@ -1314,10 +1352,10 @@ class SNSServiceSMSMessagesApiResource(SNSInternalResource):
             store.sms_messages = [
                 m for m in store.sms_messages if m.get("PhoneNumber") != filter_phone_number
             ]
-            return Response("", status=204)
+            return Response(status=204)
 
         store.sms_messages.clear()
-        return Response("", status=204)
+        return Response(status=204)
 
 
 class SNSServiceSubscriptionTokenApiResource(SNSInternalResource):
@@ -1332,9 +1370,19 @@ class SNSServiceSubscriptionTokenApiResource(SNSInternalResource):
     - GET `subscription_arn`: `subscriptionArn`resource in SNS for which you want the SubscriptionToken
     """
 
-    @route(f"{sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT}/<path:subscription_arn>", methods=["GET"])
+    @route(
+        f"{sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT}/<path:subscription_arn>",
+        methods=["GET"],
+        openapi={
+            "summary": "Retrieve SNS subscription token",
+            "description": "Get the subscription confirmation token for an SNS subscription ARN. Used for confirming subscriptions when tokens are not accessible via email or external HTTPS endpoints.",
+            "tags": ["aws"],
+        },
+    )
     @count_usage
-    def on_get(self, _request: Request, subscription_arn: str):
+    def on_get(
+        self, _request: Request, subscription_arn: str
+    ) -> SNSSubscriptionTokenResponse | SNSSubscriptionTokenError:
         try:
             parsed_arn = parse_arn(subscription_arn)
         except InvalidArnException:

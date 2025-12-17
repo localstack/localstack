@@ -1526,10 +1526,10 @@ class SNSServicePlatformEndpointMessagesApiResource(SNSInternalResource):
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             store.platform_endpoint_messages.pop(filter_endpoint_arn, None)
-            return Response("", status=204)
+            return Response(status=204)
 
         store.platform_endpoint_messages.clear()
-        return Response("", status=204)
+        return Response(status=204)
 
 
 def register_sns_api_resource(router: Router):
@@ -1619,10 +1619,10 @@ class SNSServiceSMSMessagesApiResource(SNSInternalResource):
             store.sms_messages = [
                 m for m in store.sms_messages if m.get("PhoneNumber") != filter_phone_number
             ]
-            return Response("", status=204)
+            return Response(status=204)
 
         store.sms_messages.clear()
-        return Response("", status=204)
+        return Response(status=204)
 
 
 class SNSServiceSubscriptionTokenApiResource(SNSInternalResource):

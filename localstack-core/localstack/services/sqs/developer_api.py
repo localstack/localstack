@@ -75,7 +75,15 @@ class SqsDeveloperApi:
     def __init__(self, stores=None):
         self.stores = stores or sqs_stores
 
-    @route("/_aws/sqs/messages", methods=["GET", "POST"])
+    @route(
+        "/_aws/sqs/messages",
+        methods=["GET", "POST"],
+        openapi={
+            "summary": "List SQS queue messages without side effects",
+            "description": "Retrieve messages from an SQS queue without modifying visibility or receive counts. Supports both GET and POST methods.",
+            "tags": ["aws"],
+        },
+    )
     @sqs_auto_protocol_aws_response_serializer("sqs", "ReceiveMessage")
     def list_messages(self, request: Request) -> ReceiveMessageResult:
         """
@@ -114,7 +122,14 @@ class SqsDeveloperApi:
 
         return self._get_and_serialize_messages(request, region, account_id, queue_name)
 
-    @route("/_aws/sqs/messages/<region>/<account_id>/<queue_name>")
+    @route(
+        "/_aws/sqs/messages/<region>/<account_id>/<queue_name>",
+        openapi={
+            "summary": "List SQS messages for specific queue",
+            "description": "Retrieve messages from a specific SQS queue by region, account ID, and queue name without modifying visibility or receive counts.",
+            "tags": ["aws"],
+        },
+    )
     @sqs_auto_protocol_aws_response_serializer("sqs", "ReceiveMessage")
     def list_messages_for_queue_url(
         self, request: Request, region: str, account_id: str, queue_name: str

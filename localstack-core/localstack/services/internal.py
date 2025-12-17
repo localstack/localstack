@@ -12,7 +12,7 @@ from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
-from localstack.http import Request, Resource, Response, Router
+from localstack.http import Request, Resource, Response, Router, resource
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.runtime.legacy import signal_supervisor_restart
 from localstack.utils.analytics.metadata import (
@@ -24,6 +24,17 @@ from localstack.utils.collections import merge_recursive
 from localstack.utils.functions import call_safe
 from localstack.utils.numbers import is_number
 from localstack.utils.objects import singleton_factory
+
+from .internal_models import (
+    ConfigUpdateResponse,
+    DiagnoseResponse,
+    HealthActionRequest,
+    HealthResponse,
+    InfoResponse,
+    InitScriptsResponse,
+    PluginDetails,
+    PluginsResponse,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -50,6 +61,35 @@ class DeprecatedResource:
                 setattr(self, fn_name, wrapped)
 
 
+@resource(
+    "/_localstack/health",
+    openapi={
+        "get": {
+            "summary": "Get LocalStack health status",
+            "description": "Returns the health status of LocalStack, including service states. Add ?reload query parameter to force reload service states.",
+            "tags": ["info"],
+        },
+        "post": {
+            "summary": "Control LocalStack instance",
+            "description": "Backdoor API to restart or kill the LocalStack instance. Requires JSON body with 'action' field set to 'restart' or 'kill'.",
+            "tags": ["internal"],
+            "responses": {
+                "200": {"description": "Action completed successfully"},
+                "400": {"description": "Invalid request (missing or empty body)"},
+            },
+        },
+        "head": {
+            "summary": "Check if LocalStack is running",
+            "description": "Simple endpoint to check if LocalStack is alive",
+            "tags": ["info"],
+        },
+        "put": {
+            "summary": "Update health state",
+            "description": "Updates internal health state. Keys with ':' are interpreted as nested paths (e.g., 'features:initScripts').",
+            "tags": ["internal"],
+        },
+    },
+)
 class HealthResource:
     """
     Resource for the LocalStack /health endpoint. It provides access to the service states and other components of
@@ -62,22 +102,23 @@ class HealthResource:
         self.service_manager = service_manager
         self.state = {}
 
-    def on_post(self, request: Request):
-        data = request.get_json(True, True)
-        if not data:
-            return Response("invalid request", 400)
+    def on_post(self, request: Request, action: HealthActionRequest):
+        """
+        Control the LocalStack instance (restart or kill).
 
+        The action parameter is automatically parsed and validated from the JSON request body.
+        """
         # backdoor API to support restarting the instance
-        if data.get("action") == "restart":
+        if action.get("action") == "restart":
             signal_supervisor_restart()
-        elif data.get("action") == "kill":
+        elif action.get("action") == "kill":
             from localstack.runtime import get_current_runtime
 
             get_current_runtime().exit(0)
 
         return Response("ok", 200)
 
-    def on_get(self, request: Request):
+    def on_get(self, request: Request) -> HealthResponse:
         path = request.path
 
         reload = "reload" in path
@@ -119,17 +160,27 @@ class HealthResource:
         return {"status": "OK"}
 
 
+@resource(
+    "/_localstack/info",
+    openapi={
+        "get": {
+            "summary": "Get LocalStack instance information",
+            "description": "Returns general information about the current LocalStack instance, including version, edition, session ID, and system details.",
+            "tags": ["info"],
+        }
+    },
+)
 class InfoResource:
     """
     Resource that is exposed to /_localstack/info and used to get generalized information about the current
     localstack instance.
     """
 
-    def on_get(self, request):
+    def on_get(self, request) -> InfoResponse:
         return self.get_info_data()
 
     @staticmethod
-    def get_info_data() -> dict:
+    def get_info_data() -> InfoResponse:
         client_metadata = get_client_metadata()
         uptime = int(time.time() - config.load_start_time)
 
@@ -146,6 +197,16 @@ class InfoResource:
         }
 
 
+@resource(
+    "/_localstack/usage",
+    openapi={
+        "get": {
+            "summary": "Get LocalStack usage statistics",
+            "description": "Returns usage statistics for the LocalStack instance.",
+            "tags": ["info"],
+        }
+    },
+)
 class UsageResource:
     def on_get(self, request):
         from localstack.utils import diagnose
@@ -153,8 +214,18 @@ class UsageResource:
         return call_safe(diagnose.get_usage) or {}
 
 
+@resource(
+    "/_localstack/diagnose",
+    openapi={
+        "get": {
+            "summary": "Get diagnostic information",
+            "description": "Returns comprehensive diagnostic information about LocalStack, including version details, configuration, Docker state, logs, and service statistics.",
+            "tags": ["info"],
+        }
+    },
+)
 class DiagnoseResource:
-    def on_get(self, request):
+    def on_get(self, request) -> DiagnoseResponse:
         from localstack.utils import diagnose
 
         return {
@@ -177,6 +248,16 @@ class DiagnoseResource:
         }
 
 
+@resource(
+    "/_localstack/plugins",
+    openapi={
+        "get": {
+            "summary": "List LocalStack plugins",
+            "description": "Returns information about all loaded plux plugins, organized by namespace. Includes service providers, init script runners, and runtime hooks.",
+            "tags": ["internal"],
+        }
+    },
+)
 class PluginsResource:
     """
     Resource to list information about plux plugins.
@@ -200,7 +281,7 @@ class PluginsResource:
         PluginsResource.plugin_managers.append(hooks.on_infra_start.manager)
         PluginsResource.plugin_managers.append(hooks.on_infra_shutdown.manager)
 
-    def on_get(self, request):
+    def on_get(self, request) -> PluginsResponse:
         return {
             manager.namespace: [
                 self._get_plugin_details(manager, name) for name in manager.list_names()
@@ -208,7 +289,7 @@ class PluginsResource:
             for manager in self.plugin_managers
         }
 
-    def _get_plugin_details(self, manager: PluginManager, plugin_name: str) -> dict:
+    def _get_plugin_details(self, manager: PluginManager, plugin_name: str) -> PluginDetails:
         container = manager.get_container(plugin_name)
 
         details = {
@@ -230,8 +311,18 @@ class PluginsResource:
         return details
 
 
+@resource(
+    "/_localstack/init",
+    openapi={
+        "get": {
+            "summary": "Get init scripts status",
+            "description": "Returns the status of all init scripts, including which stages have completed and the state of individual scripts.",
+            "tags": ["internal"],
+        }
+    },
+)
 class InitScriptsResource:
-    def on_get(self, request):
+    def on_get(self, request) -> InitScriptsResponse:
         from localstack.runtime.init import init_script_manager
 
         manager = init_script_manager()
@@ -252,8 +343,18 @@ class InitScriptsResource:
         }
 
 
+@resource(
+    "/_localstack/init/<stage>",
+    openapi={
+        "get": {
+            "summary": "Get init scripts status for a specific stage",
+            "description": "Returns the status of init scripts for a specific stage (BOOT, START, READY, SHUTDOWN).",
+            "tags": ["internal"],
+        }
+    },
+)
 class InitScriptsStageResource:
-    def on_get(self, request, stage: str):
+    def on_get(self, request, stage: str) -> InitScriptsResponse:
         from localstack.runtime.init import Stage, init_script_manager
 
         manager = init_script_manager()
@@ -276,13 +377,31 @@ class InitScriptsStageResource:
         }
 
 
+@resource(
+    "/_localstack/config",
+    openapi={
+        "get": {
+            "summary": "Get LocalStack configuration",
+            "description": "Returns the current LocalStack configuration settings.",
+            "tags": ["internal"],
+        },
+        "post": {
+            "summary": "Update configuration variable",
+            "description": "Updates a LocalStack configuration variable at runtime. The variable name must be alphanumeric with underscores.",
+            "tags": ["internal"],
+            "responses": {
+                "400": {"description": "Invalid variable name"},
+            },
+        },
+    },
+)
 class ConfigResource:
     def on_get(self, request):
         from localstack.utils import diagnose
 
         return call_safe(diagnose.get_localstack_config)
 
-    def on_post(self, request: Request):
+    def on_post(self, request: Request) -> ConfigUpdateResponse:
         from localstack.utils.config_listener import update_config_variable
 
         data = request.get_json(force=True)
