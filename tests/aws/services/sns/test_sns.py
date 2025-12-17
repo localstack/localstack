@@ -3,6 +3,7 @@ import contextlib
 import importlib
 import json
 import logging
+import os
 import queue
 import random
 import time
@@ -127,10 +128,13 @@ def sns_create_platform_endpoint(aws_client):
 @pytest.fixture
 def sns_provider():
     def factory(**kwargs):
-        if is_sns_v1_provider():
-            provider = "localstack.services.sns.provider"
-        else:
+        override = os.environ.get("PROVIDER_OVERRIDE_SNS")
+        if override == "v3":
+            provider = "localstack.services.sns.v3.provider"
+        elif override == "v2":
             provider = "localstack.services.sns.v2.provider"
+        else:
+            provider = "localstack.services.sns.provider"
         # TODO: remove once legacy provider is retired completely and import normally
         module = importlib.import_module(provider)
         SnsProvider = module.SnsProvider
@@ -4493,7 +4497,9 @@ class TestSNSPlatformEndpoint:
 
             # Create an Apple platform application
             app_arn = sns_create_platform_application(
-                Name=application_platform_name, Platform=platform_type, Attributes={}
+                Name=application_platform_name,
+                Platform=platform_type,
+                Attributes={"PlatformPrincipal": "dummy", "PlatformCredential": "dummy"},
             )["PlatformApplicationArn"]
 
             endpoint_arn = aws_client.sns.create_platform_endpoint(

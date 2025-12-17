@@ -326,6 +326,14 @@ def sns_v2():
     return Service.for_provider(provider)
 
 
+@aws_provider(api="sns", name="v3")
+def sns_v3():
+    from localstack.services.sns.v3.provider import SnsProvider
+
+    provider = SnsProvider()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def sqs():
     from localstack.services.sqs.provider import SqsProvider

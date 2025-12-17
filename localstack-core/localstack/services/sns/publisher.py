@@ -30,7 +30,6 @@ from localstack.services.sns.models import (
     SnsStore,
     SnsSubscription,
 )
-from localstack.services.sns.v2.utils import get_topic_subscriptions
 from localstack.utils.aws.arns import (
     PARTITION_NAMES,
     extract_account_id_from_arn,
@@ -49,6 +48,18 @@ from localstack.utils.strings import long_uid, md5, to_bytes, to_str
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
+
+
+def get_topic_subscriptions(store: SnsStore, topic_arn: str) -> list[SnsSubscription]:
+    """
+    Compatibility wrapper to retrieve topic subscriptions from different SNS store implementations.
+    """
+    if hasattr(store, "get_topic_subscriptions"):
+        return store.get_topic_subscriptions(topic_arn)
+
+    topic_subscription_arns = getattr(store, "topic_subscriptions", {}).get(topic_arn, [])
+    subscriptions = getattr(store, "subscriptions", {})
+    return [sub for arn in topic_subscription_arns if (sub := subscriptions.get(arn))]
 
 
 @dataclass
@@ -1205,8 +1216,9 @@ class PublishDispatcher:
         )
 
     def shutdown(self):
-        self.executor.shutdown(wait=False)
-        self.topic_partitioned_executor.shutdown(wait=False)
+        # Ensure no non-daemon worker threads block interpreter shutdown (notably in test runs).
+        self.executor.shutdown(wait=True)
+        self.topic_partitioned_executor.shutdown(wait=True)
 
     def _should_publish(
         self,

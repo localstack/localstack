@@ -151,6 +151,9 @@ class SnsSubscription(TypedDict, total=False):
 
 
 class SnsStore(BaseStore):
+    # maps topic ARN to topic attributes (values are stored in a snapshot-friendly structure)
+    topics: dict[topicARN, dict] = LocalAttribute(default=dict)
+
     # maps topic ARN to subscriptions ARN
     topic_subscriptions: dict[str, list[str]] = LocalAttribute(default=dict)
 
@@ -169,8 +172,29 @@ class SnsStore(BaseStore):
     # list of sent SMS messages
     sms_messages: list[dict] = LocalAttribute(default=list)
 
+    # account/region-scoped SMS attributes
+    sms_attributes: dict[str, str] = LocalAttribute(default=dict)
+
+    # list of phone numbers opted out from SMS delivery (used in tests + internal API)
+    PHONE_NUMBERS_OPTED_OUT: list[str] = LocalAttribute(default=list)
+
     # filter policy are stored as JSON string in subscriptions, store the decoded result Dict
     subscription_filter_policy: dict[subscriptionARN, dict] = LocalAttribute(default=dict)
+
+    # maps platform application ARN to attributes exposed via GetPlatformApplicationAttributes
+    platform_applications: dict[str, dict[str, str]] = LocalAttribute(default=dict)
+
+    # maps platform application ARN to (platform, application_name)
+    platform_application_meta: dict[str, dict[str, str]] = LocalAttribute(default=dict)
+
+    # maps endpoint ARN to endpoint attributes exposed via GetEndpointAttributes
+    platform_endpoints: dict[str, dict[str, str]] = LocalAttribute(default=dict)
+
+    # maps platform application ARN to list of endpoint ARNs
+    platform_application_endpoints: dict[str, list[str]] = LocalAttribute(default=dict)
+
+    # maps (platform_application_arn, token) to endpoint ARN for idempotency
+    platform_endpoint_tokens: dict[str, str] = LocalAttribute(default=dict)
 
     def get_topic_subscriptions(self, topic_arn: str) -> list[SnsSubscription]:
         topic_subscriptions = self.topic_subscriptions.get(topic_arn, [])
