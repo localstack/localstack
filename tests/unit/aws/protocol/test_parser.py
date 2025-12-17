@@ -1537,7 +1537,8 @@ def test_rpc_v2_cbor_timestamp_parsing():
     timestamp = parsed_request["MetricData"][0]["Timestamp"]
     assert isinstance(timestamp, datetime)
     assert timestamp.microsecond == 135000
-    assert timestamp.minute == 38
+    assert timestamp.second == 38
+    assert timestamp.minute == 22
     assert timestamp.tzinfo == UTC
 
 
