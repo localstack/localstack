@@ -17,28 +17,6 @@ class DatabaseHelper:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                CREATE TABLE IF NOT EXISTS log_groups (
-                    arn TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    region TEXT NOT NULL,
-                    account_id TEXT NOT NULL
-                )
-                """
-            )
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS log_streams (
-                    arn TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    log_group_name TEXT NOT NULL,
-                    region TEXT NOT NULL,
-                    account_id TEXT NOT NULL,
-                    FOREIGN KEY (log_group_name) REFERENCES log_groups (name) ON DELETE CASCADE
-                )
-                """
-            )
-            cursor.execute(
-                """
                 CREATE TABLE IF NOT EXISTS log_events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     log_group_name TEXT NOT NULL,
@@ -46,153 +24,9 @@ class DatabaseHelper:
                     timestamp INTEGER NOT NULL,
                     message TEXT NOT NULL,
                     region TEXT NOT NULL,
-                    account_id TEXT NOT NULL,
-                    FOREIGN KEY (log_group_name) REFERENCES log_groups (name) ON DELETE CASCADE,
-                    FOREIGN KEY (log_stream_name) REFERENCES log_streams (name) ON DELETE CASCADE
+                    account_id TEXT NOT NULL
                 )
                 """
-            )
-            conn.commit()
-
-    def _log_group_exists(self, log_group_name: str, region: str, account_id: str) -> bool:
-        with self.lock, self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT 1 FROM log_groups WHERE name = ? AND region = ? AND account_id = ?",
-                (log_group_name, region, account_id),
-            )
-            return cursor.fetchone() is not None
-
-    def _log_stream_exists(
-        self, log_stream_name: str, log_group_name: str, region: str, account_id: str
-    ) -> bool:
-        with self.lock, self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT 1 FROM log_streams WHERE name = ? AND log_group_name = ? AND region = ? AND account_id = ?",
-                (log_stream_name, log_group_name, region, account_id),
-            )
-            return cursor.fetchone() is not None
-
-    def create_log_group(self, arn: str, log_group_name: str, region: str, account_id: str):
-        if self._log_group_exists(log_group_name, region, account_id):
-            raise ValueError("ResourceAlreadyExistsException")
-        with self.lock, self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO log_groups (arn, name, region, account_id) VALUES (?, ?, ?, ?)",
-                (arn, log_group_name, region, account_id),
-            )
-            conn.commit()
-
-    def describe_log_groups(
-        self,
-        region: str,
-        account_id: str,
-        log_group_name_prefix: str | None = None,
-        log_group_name_pattern: str | None = None,
-    ) -> list[dict[str, str]]:
-        with self.lock, self._get_connection() as conn:
-            cursor = conn.cursor()
-            query = "SELECT arn, name FROM log_groups WHERE region = ? AND account_id = ?"
-            params = [region, account_id]
-
-            if log_group_name_prefix:
-                query += " AND name LIKE ?"
-                params.append(f"{log_group_name_prefix}%")
-            if log_group_name_pattern:
-                # Basic wildcard support, not full regex
-                query += " AND name LIKE ?"
-                params.append(f"%{log_group_name_pattern}%")
-
-            cursor.execute(query, tuple(params))
-            rows = cursor.fetchall()
-            return [{"arn": row[0], "logGroupName": row[1]} for row in rows]
-
-    def list_log_groups(
-        self,
-        region: str,
-        account_id: str,
-        log_group_name_pattern: str | None = None,
-    ) -> list[dict[str, str]]:
-        with self.lock, self._get_connection() as conn:
-            cursor = conn.cursor()
-            query = "SELECT arn, name FROM log_groups WHERE region = ? AND account_id = ?"
-            params = [region, account_id]
-
-            if log_group_name_pattern:
-                # Basic wildcard support, not full regex
-                query += " AND name LIKE ?"
-                params.append(log_group_name_pattern.replace("*", "%"))
-
-            cursor.execute(query, tuple(params))
-            rows = cursor.fetchall()
-            return [{"arn": row[0], "logGroupName": row[1]} for row in rows]
-
-    def delete_log_group(self, log_group_name: str, region: str, account_id: str):
-        if not self._log_group_exists(log_group_name, region, account_id):
-            raise ValueError("ResourceNotFoundException")
-        with self.lock, self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "DELETE FROM log_groups WHERE name = ? AND region = ? AND account_id = ?",
-                (log_group_name, region, account_id),
-            )
-            conn.commit()
-
-    def create_log_stream(
-        self, arn: str, log_stream_name: str, log_group_name: str, region: str, account_id: str
-    ):
-        if not self._log_group_exists(log_group_name, region, account_id):
-            raise ValueError("ResourceNotFoundException")
-        if self._log_stream_exists(log_stream_name, log_group_name, region, account_id):
-            raise ValueError("ResourceAlreadyExistsException")
-        with self.lock, self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO log_streams (arn, name, log_group_name, region, account_id) VALUES (?, ?, ?, ?, ?)",
-                (
-                    arn,
-                    log_stream_name,
-                    log_group_name,
-                    region,
-                    account_id,
-                ),
-            )
-            conn.commit()
-
-    def describe_log_streams(
-        self,
-        log_group_name: str,
-        region: str,
-        account_id: str,
-        log_stream_name_prefix: str | None = None,
-    ) -> list[dict[str, str]]:
-        if not self._log_group_exists(log_group_name, region, account_id):
-            raise ValueError("ResourceNotFoundException")
-        with self.lock, self._get_connection() as conn:
-            cursor = conn.cursor()
-            query = "SELECT arn, name FROM log_streams WHERE log_group_name = ? AND region = ? AND account_id = ?"
-            params = [log_group_name, region, account_id]
-
-            if log_stream_name_prefix:
-                query += " AND name LIKE ?"
-                params.append(f"{log_stream_name_prefix}%")
-
-            cursor.execute(query, tuple(params))
-            rows = cursor.fetchall()
-            return [{"arn": row[0], "logStreamName": row[1]} for row in rows]
-
-    def delete_log_stream(
-        self, log_group_name: str, log_stream_name: str, region: str, account_id: str
-    ):
-        if not self._log_stream_exists(log_stream_name, log_group_name, region, account_id):
-            raise ValueError("ResourceNotFoundException")
-        with self.lock, self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "DELETE FROM log_streams WHERE name = ? AND log_group_name = ? AND region = ? AND account_id = ?",
-                (log_stream_name, log_group_name, region, account_id),
             )
             conn.commit()
 
@@ -204,8 +38,6 @@ class DatabaseHelper:
         region: str,
         account_id: str,
     ):
-        if not self._log_stream_exists(log_stream_name, log_group_name, region, account_id):
-            raise ValueError("ResourceNotFoundException")
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
             for event in log_events:
@@ -233,8 +65,6 @@ class DatabaseHelper:
         limit: int | None = None,
         start_from_head: bool | None = False,
     ) -> list[dict[str, Any]]:
-        if not self._log_stream_exists(log_stream_name, log_group_name, region, account_id):
-            raise ValueError("ResourceNotFoundException")
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
             query = """
@@ -276,9 +106,6 @@ class DatabaseHelper:
         filter_pattern: str | None = None,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
-        if not self._log_group_exists(log_group_name, region, account_id):
-            raise ValueError("ResourceNotFoundException")
-
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
             query = """
