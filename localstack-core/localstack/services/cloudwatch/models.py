@@ -107,7 +107,7 @@ class CloudWatchStore(BaseStore):
 
     # Contains all the Alarm Histories. Per documentation, an alarm history is retained even if the alarm is deleted,
     # making it necessary to save this at store level
-    histories: list[dict[str, AlarmHistoryItem]] = LocalAttribute(default=list)
+    histories: list[AlarmHistoryItem] = LocalAttribute(default=list)
 
     dashboards: dict[str, LocalStackDashboard] = LocalAttribute(default=dict)
 
