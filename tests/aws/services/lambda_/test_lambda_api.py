@@ -104,11 +104,6 @@ class TestRuntimeValidation:
             func_name=function_name,
             runtime=Runtime.python3_7,
             role=lambda_su_role,
-            MemorySize=256,
-            Timeout=5,
-            LoggingConfig={
-                "LogFormat": LogFormat.JSON,
-            },
         )
 
     @markers.aws.validated
@@ -128,11 +123,6 @@ class TestRuntimeValidation:
                 func_name=function_name,
                 runtime=runtime,
                 role=lambda_su_role,
-                MemorySize=256,
-                Timeout=5,
-                LoggingConfig={
-                    "LogFormat": LogFormat.JSON,
-                },
             )
         snapshot.match("deprecation_error", e.value.response)
 
@@ -5563,6 +5553,7 @@ class TestLambdaEventSourceMappings:
     def test_event_source_mapping_lifecycle_delete_function(
         self,
         create_lambda_function,
+        create_event_source_mapping,
         snapshot,
         sqs_create_queue,
         cleanups,
@@ -5594,7 +5585,7 @@ class TestLambdaEventSourceMappings:
             role=lambda_su_role,
         )
         # "minimal"
-        create_response = aws_client.lambda_.create_event_source_mapping(
+        create_response = create_event_source_mapping(
             FunctionName=function_name,
             EventSourceArn=stream_arn,
             DestinationConfig={"OnFailure": {"Destination": destination_queue_arn}},
@@ -5605,7 +5596,6 @@ class TestLambdaEventSourceMappings:
         )
 
         uuid = create_response["UUID"]
-        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
         snapshot.match("create_response", create_response)
 
         # the stream might not be active immediately(!)
@@ -5626,7 +5616,7 @@ class TestLambdaEventSourceMappings:
 
         get_response_post_delete = aws_client.lambda_.get_event_source_mapping(UUID=uuid)
         snapshot.match("get_response_post_delete", get_response_post_delete)
-        #
+
         delete_response = aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
         snapshot.match("delete_response", delete_response)
 
@@ -5869,6 +5859,7 @@ class TestLambdaEventSourceMappings:
         create_lambda_function,
         lambda_su_role,
         dynamodb_create_table,
+        create_event_source_mapping,
         snapshot,
         aws_client,
     ):
@@ -5891,14 +5882,17 @@ class TestLambdaEventSourceMappings:
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
         stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
 
-        response = aws_client.lambda_.create_event_source_mapping(
+        response = create_event_source_mapping(
             FunctionName=function_name,
             EventSourceArn=stream_arn,
             StartingPosition="LATEST",
             FilterCriteria={"Filters": []},
         )
         snapshot.match("response-with-empty-filters", response)
+        # Wait until ESM is enabled to mitigate cleanup failure
+        _await_event_source_mapping_enabled(aws_client.lambda_, response["UUID"])
 
         with pytest.raises(ParamValidationError):
             aws_client.lambda_.create_event_source_mapping(

@@ -108,12 +108,12 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_filter_criteria_validation": {
-    "last_validated_date": "2025-11-25T02:48:23+00:00",
+    "last_validated_date": "2025-12-18T15:07:44+00:00",
     "durations_in_seconds": {
-      "setup": 0.01,
-      "call": 10.92,
-      "teardown": 2.08,
-      "total": 13.01
+      "setup": 12.13,
+      "call": 22.59,
+      "teardown": 2.65,
+      "total": 37.37
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_source_self_managed": {
@@ -1935,75 +1935,75 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[dotnetcore3.1]": {
-    "last_validated_date": "2025-11-25T02:26:09+00:00",
+    "last_validated_date": "2025-12-18T15:11:17+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.16,
-      "teardown": 0.01,
-      "total": 0.17
+      "call": 0.27,
+      "teardown": 0.0,
+      "total": 0.27
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[go1.x]": {
-    "last_validated_date": "2025-11-25T02:26:08+00:00",
+    "last_validated_date": "2025-12-18T15:11:16+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.14,
-      "teardown": 0.01,
-      "total": 0.15
+      "setup": 0.01,
+      "call": 0.26,
+      "teardown": 0.0,
+      "total": 0.27
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[java8]": {
-    "last_validated_date": "2025-11-25T02:26:08+00:00",
+    "last_validated_date": "2025-12-18T15:11:15+00:00",
     "durations_in_seconds": {
-      "setup": 11.1,
-      "call": 0.37,
-      "teardown": 0.01,
-      "total": 11.48
+      "setup": 12.15,
+      "call": 0.71,
+      "teardown": 0.0,
+      "total": 12.86
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs12.x]": {
-    "last_validated_date": "2025-11-25T02:26:09+00:00",
+    "last_validated_date": "2025-12-18T15:11:18+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.16,
-      "teardown": 0.01,
-      "total": 0.17
+      "setup": 0.01,
+      "call": 0.29,
+      "teardown": 0.76,
+      "total": 1.06
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs14.x]": {
-    "last_validated_date": "2025-11-25T02:26:08+00:00",
+    "last_validated_date": "2025-12-18T15:11:17+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.18,
-      "teardown": 0.01,
-      "total": 0.19
+      "call": 0.28,
+      "teardown": 0.0,
+      "total": 0.28
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[provided]": {
-    "last_validated_date": "2025-11-25T02:26:08+00:00",
+    "last_validated_date": "2025-12-18T15:11:16+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.14,
-      "teardown": 0.01,
-      "total": 0.15
+      "call": 0.27,
+      "teardown": 0.0,
+      "total": 0.27
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[python3.7]": {
-    "last_validated_date": "2025-11-25T02:26:09+00:00",
+    "last_validated_date": "2025-12-18T15:11:17+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.17,
-      "teardown": 0.01,
-      "total": 0.18
+      "setup": 0.01,
+      "call": 0.27,
+      "teardown": 0.0,
+      "total": 0.28
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[ruby2.7]": {
-    "last_validated_date": "2025-11-25T02:26:08+00:00",
+    "last_validated_date": "2025-12-18T15:11:16+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.16,
-      "teardown": 0.01,
-      "total": 0.17
+      "call": 0.27,
+      "teardown": 0.0,
+      "total": 0.27
     }
   }
 }
