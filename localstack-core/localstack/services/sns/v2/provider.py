@@ -238,6 +238,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise NotFoundException("Topic does not exist")
 
     def delete_topic(self, context: RequestContext, topic_arn: topicARN, **kwargs) -> None:
+        arn_data = parse_and_validate_topic_arn(topic_arn)
+        if context.region != arn_data["region"]:
+            raise InvalidParameterException("Invalid parameter: TopicArn")
         store = self.get_store(context.account_id, context.region)
 
         store.topics.pop(topic_arn, None)

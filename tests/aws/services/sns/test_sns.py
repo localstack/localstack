@@ -5885,7 +5885,6 @@ class TestSNSMultiAccounts:
         assert sns_secondary_client.delete_topic(TopicArn=topic_arn)
 
     @markers.aws.only_localstack
-    @skip_if_sns_v2
     def test_cross_account_publish_to_sqs(
         self,
         sns_create_topic,
@@ -6009,7 +6008,6 @@ class TestSNSMultiRegions:
         return aws_client_factory(region_name=secondary_region_name).sqs
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_cross_region_access(self, sns_region1_client, sns_region2_client, snapshot, cleanups):
         # We do not have a list of supported Cross-region access for operations.
         # This test is validating that Cross-account does not mean Cross-region most of the time
