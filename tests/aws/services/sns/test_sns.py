@@ -4695,7 +4695,6 @@ class TestSNSPlatformEndpoint:
 
     @markers.requires_in_process
     @markers.aws.only_localstack
-    @skip_if_sns_v2
     def test_publish_to_platform_endpoint_is_dispatched(
         self,
         sns_create_topic,
@@ -4705,7 +4704,10 @@ class TestSNSPlatformEndpoint:
         account_id,
         region_name,
         sns_provider,
+        platform_credentials,
     ):
+        client_id, client_secret = platform_credentials
+        attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
         topic_arn = sns_create_topic()["TopicArn"]
         endpoints_arn = {}
         for platform_type in ["APNS", "GCM"]:
@@ -4713,7 +4715,7 @@ class TestSNSPlatformEndpoint:
 
             # Create an Apple platform application
             app_arn = sns_create_platform_application(
-                Name=application_platform_name, Platform=platform_type, Attributes={}
+                Name=application_platform_name, Platform=platform_type, Attributes=attributes
             )["PlatformApplicationArn"]
 
             endpoint_arn = aws_client.sns.create_platform_endpoint(
