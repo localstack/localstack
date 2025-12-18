@@ -5,6 +5,7 @@ import copy
 import json
 import logging
 import re
+import tempfile
 import time
 import uuid
 from collections.abc import Callable
@@ -16,10 +17,25 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Generic, NotRequired, TypedDict, TypeVar
 
 import botocore
+import jpype.imports
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 from botocore.model import OperationModel
+from jpype import JImplements, JOverride
+from jpype.types import *
 from plux import Plugin, PluginManager
+
+if not jpype.isJVMStarted():
+    jpype.startJVM(
+        classpath=[
+            # TODO: set up classpath on startup
+        ]
+    )
+
+from java.io import FileInputStream
+from java.io import FileOutputStream
+from software.amazon.sns.topic import HandlerWrapper
+
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack import config
@@ -248,7 +264,128 @@ class HandlerPayload(TypedDict, Generic[Properties]):
     callbackContext: NotRequired[Any]
 
 
-class FirstPartyResourceProvider(ResourceProvider, abc.ABC):
+class FirstPartyResourceProvider(abc.ABC):
+    @abc.abstractmethod
+    def _get_jar_path(self) -> Path: ...
+
+    @property
+    @abc.abstractmethod
+    def function_name(self) -> str: ...
+
+    @property
+    @abc.abstractmethod
+    def handler_name(self) -> str: ...
+
+    def get_jar_path(self) -> Path:
+        path = self._get_jar_path()
+        assert path.is_file()
+        return path
+
+    def _convert_handler_payload(
+        self, request: ResourceRequest[Properties]
+    ) -> HandlerPayload[Properties]:
+        return HandlerPayload(
+            credentials=Credentials(
+                accessKeyId=request.aws_client_factory._client_creation_params["aws_access_key_id"],
+                secretAccessKey=request.aws_client_factory._client_creation_params[
+                    "aws_secret_access_key"
+                ],
+                sessionToken=request.aws_client_factory._client_creation_params[
+                    "aws_session_token"
+                ],
+            ),
+            action=HandlerAction.CREATE,
+            request=HandlerRequest(
+                clientRequestToken=str(uuid.uuid4()),
+                logicalResourceIdentifier=request.logical_resource_id,
+                stackId=request.stack_id,
+                region=request.region_name,
+                awsAccountId=request.account_id,
+                awsPartition="aws",
+                desiredResourceState=request.desired_state,
+            ),
+        )
+
+    @property
+    def execution_role_arn(self) -> str:
+        # Stub role for now
+        return "arn:aws:iam::000000000000:role/lambda-role"
+
+
+@JImplements("com.amazonaws.services.lambda.runtime.LambdaLogger")
+class TestLogger:
+    @JOverride
+    def log(self, message):
+        pass
+
+
+@JImplements("com.amazonaws.services.lambda.runtime.Context")
+class Context:
+    @JOverride
+    def getAwsRequestId(self):
+        return "495b12a8-xmpl-4eca-8168-160484189f99"
+
+    @JOverride
+    def getRemainingTimeInMillis(self):
+        return 300000
+
+    @JOverride
+    def getLogger(self):
+        return TestLogger()
+
+    @JOverride
+    def getLogGroupName(self):
+        return "/aws/lambda/my-function"
+
+    @JOverride
+    def getLogStreamName(self):
+        return "2020/02/26/[$LATEST]704f8dxmpla04097b9134246b8438f1a"
+
+    @JOverride
+    def getFunctionName(self):
+        return "my-function"
+
+    @JOverride
+    def getFunctionVersion(self):
+        return "$LATEST"
+
+    @JOverride
+    def getInvokedFunctionArn(self):
+        return "arn:aws:lambda:us-east-2:123456789012:function:my-function"
+
+    @JOverride
+    def getIdentity(self):
+        return None
+
+    @JOverride
+    def getClientContext(self):
+        return None
+
+    @JOverride
+    def getMemoryLimitInMB(self):
+        return 512
+
+
+class FirstPartyResourceProviderJpype(FirstPartyResourceProvider, abc.ABC):
+    def create(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        wrapper = HandlerWrapper()
+        context = Context()
+
+        with tempfile.NamedTemporaryFile("wb") as output_file:
+            with tempfile.NamedTemporaryFile("rb") as input_file:
+                # TODO: write file contents
+                input_stream = FileInputStream(input_file.name)
+                output_stream = FileOutputStream(output_file.name)
+
+                wrapper.testEntrypoint(input_stream, output_stream, context)
+
+            output_file.seek(0)
+            output = json.load(output_file)
+
+        # TODO: handle response
+
+
+class FirstPartyResourceProviderLambda(FirstPartyResourceProvider, abc.ABC):
     """
     Wraps an official AWS resource provider
     """
@@ -320,59 +457,13 @@ class FirstPartyResourceProvider(ResourceProvider, abc.ABC):
 
         client.get_waiter("function_active_v2").wait(FunctionName=self.function_name)
 
-    @property
-    def execution_role_arn(self) -> str:
-        # Stub role for now
-        return "arn:aws:iam::000000000000:role/lambda-role"
-
-    def _convert_handler_payload(
-        self, request: ResourceRequest[Properties]
-    ) -> HandlerPayload[Properties]:
-        return HandlerPayload(
-            credentials=Credentials(
-                accessKeyId=request.aws_client_factory._client_creation_params["aws_access_key_id"],
-                secretAccessKey=request.aws_client_factory._client_creation_params[
-                    "aws_secret_access_key"
-                ],
-                sessionToken=request.aws_client_factory._client_creation_params[
-                    "aws_session_token"
-                ],
-            ),
-            action=HandlerAction.CREATE,
-            request=HandlerRequest(
-                clientRequestToken=str(uuid.uuid4()),
-                logicalResourceIdentifier=request.logical_resource_id,
-                stackId=request.stack_id,
-                region=request.region_name,
-                awsAccountId=request.account_id,
-                awsPartition="aws",
-                desiredResourceState=request.desired_state,
-            ),
-        )
-
     def _invoke_handler(self, handler_payload: HandlerPayload[Properties]) -> dict:
         client = connect_to().lambda_
         result = client.invoke(FunctionName=self.function_name, Payload=json.dumps(handler_payload))
         return json.loads(result["Payload"].read().decode())
 
-    @abc.abstractmethod
-    def _get_jar_path(self) -> Path: ...
 
-    @property
-    @abc.abstractmethod
-    def function_name(self) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def handler_name(self) -> str: ...
-
-    def get_jar_path(self) -> Path:
-        path = self._get_jar_path()
-        assert path.is_file()
-        return path
-
-
-class FirstPartySNSTopicResourceProvider(FirstPartyResourceProvider):
+class FirstPartySNSTopicResourceProvider(FirstPartyResourceProviderLambda):
     SCHEMA: dict = util.get_schema_path(
         Path(__file__).parent.joinpath("../sns/resource_providers/aws_sns_topic.py").resolve()
     )
