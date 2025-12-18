@@ -3,8 +3,13 @@
 # to sqs_with_queuepolicy.yml.
 #
 Resources:
-  Queue4A7E3555:
+  Queue1:
     Type: AWS::SQS::Queue
+  Queue2:
+    Type: AWS::SQS::Queue
+  Queue3:
+    Type: AWS::SQS::Queue
+
   QueuePolicy25439813:
     Type: AWS::SQS::QueuePolicy
     Properties:
@@ -19,12 +24,18 @@ Resources:
             Principal: "*"
             Resource:
               Fn::GetAtt:
-                - Queue4A7E3555
+                - Queue1
                 - Arn
         Version: "2012-10-17"
       Queues:
-        - Ref: Queue4A7E3555
+        - Ref: Queue1
 Outputs:
-  QueueUrlOutput:
+  Queue1Url:
     Value:
-      Ref: Queue4A7E3555
+      Ref: Queue1
+  Queue2Url:
+    Value:
+      Ref: Queue2
+  Queue3Url:
+    Value:
+      Ref: Queue3

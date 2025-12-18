@@ -76,9 +76,18 @@ class SQSQueuePolicyProvider(SQSQueuePolicyProviderBase):
         """
         model = request.desired_state
         sqs = request.aws_client_factory.sqs
-        for queue in model.get("Queues", []):
+
+        # handle new/updated queues
+        desired_queues = model.get("Queues", [])
+        for queue in desired_queues:
             policy = json.dumps(model["PolicyDocument"])
             sqs.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": policy})
+
+        # handle queues no longer in the desired state
+        previous_queues = request.previous_state.get("Queues", [])
+        outdated_queues = set(previous_queues) - set(desired_queues)
+        for queue in outdated_queues:
+            sqs.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": ""})
 
         model["Id"] = request.previous_state["Id"]
 

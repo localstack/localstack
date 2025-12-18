@@ -1,0 +1,27 @@
+#
+# A standard SQS queue with an associated queue inline policy allowing a few actions.
+#
+
+Resources:
+  MyQueue:
+    Type: AWS::SQS::Queue
+
+  Policy:
+    Type: AWS::SQS::QueueInlinePolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action:
+              - sqs:SendMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+            Resource: !GetAtt MyQueue.Arn
+      Queue: !Ref MyQueue
+
+Outputs:
+    QueueUrl:
+        Value:
+            Ref: MyQueue

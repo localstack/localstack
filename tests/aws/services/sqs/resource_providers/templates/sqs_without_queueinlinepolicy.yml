@@ -1,0 +1,12 @@
+#
+# A standard SQS queue with an associated queue inline policy allowing a few actions.
+#
+
+Resources:
+  MyQueue:
+    Type: AWS::SQS::Queue
+
+Outputs:
+    QueueUrl:
+        Value:
+            Ref: MyQueue
