@@ -490,7 +490,8 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             after_properties=after_properties,
         )
         resource_provider = self.resource_provider_executor.try_load_resource_provider(
-            resource_type
+            resource_type,
+            action=action,
         )
         track_resource_operation(action, resource_type, missing=resource_provider is not None)
 

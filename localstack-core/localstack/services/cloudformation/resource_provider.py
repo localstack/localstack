@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import abc
 import copy
+import json
 import logging
 import re
 import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 from logging import Logger
 from math import ceil
-from typing import TYPE_CHECKING, Any, Generic, TypedDict, TypeVar
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Generic, NotRequired, TypedDict, TypeVar
 
 import botocore
 from botocore.client import BaseClient
@@ -18,8 +21,10 @@ from botocore.exceptions import ClientError
 from botocore.model import OperationModel
 from plux import Plugin, PluginManager
 
+import localstack.services.cloudformation.provider_utils as util
 from localstack import config
-from localstack.aws.connect import InternalClientFactory, ServiceLevelClientFactory
+from localstack.aws.api.cloudformation import ChangeAction
+from localstack.aws.connect import InternalClientFactory, ServiceLevelClientFactory, connect_to
 from localstack.services.cloudformation.deployment_utils import (
     check_not_found_exception,
     convert_data_types,
@@ -219,6 +224,169 @@ class ResourceProvider(Generic[Properties]):
 
     def list(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
         raise NotImplementedError
+
+
+# TODO: why is this not a generated type?!
+class HandlerAction(StrEnum):
+    CREATE = "CREATE"
+
+
+class HandlerRequest(TypedDict, Generic[Properties]):
+    clientRequestToken: str
+    desiredResourceState: Properties
+    logicalResourceIdentifier: str
+    stackId: str
+    region: str
+    awsAccountId: str
+    awsPartition: str
+
+
+class HandlerPayload(TypedDict, Generic[Properties]):
+    credentials: Credentials
+    action: HandlerAction
+    request: HandlerRequest[Properties]
+    callbackContext: NotRequired[Any]
+
+
+class FirstPartyResourceProvider(ResourceProvider, abc.ABC):
+    """
+    Wraps an official AWS resource provider
+    """
+
+    def create(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        handler_payload = self._convert_handler_payload(request)
+        self._ensure_handler(action=ChangeAction(request.action))
+        result = self._invoke_handler(handler_payload)
+        # TODO: handle errors and failures
+        # TODO: handle callback context etc.
+        # TODO: handle other parameters
+
+        match result["status"]:
+            case "FAILED":
+                return ProgressEvent(
+                    status=OperationStatus.FAILED,
+                    error_code=result["errorCode"],
+                    message=result["message"],
+                )
+            case "SUCCESS":
+                return ProgressEvent(
+                    status=OperationStatus.SUCCESS,
+                    resource_model=result["resourceModel"],
+                )
+            case other:
+                raise RuntimeError(f"Unhandled state: {other}")
+
+    def _ensure_handler(self, action: ChangeAction):
+        # TODO: different handlers depending on action
+        # if lambda function does not exist, deploy it
+        if not self._handler_exists():
+            self._deploy_handler()
+
+    def _handler_exists(self) -> bool:
+        client = connect_to().lambda_
+
+        # Check if the Lambda function exists
+        try:
+            client.get_function(FunctionName=self.function_name)
+            return True
+        except client.exceptions.ResourceNotFoundException:
+            return False
+
+    def _deploy_handler(self):
+        client = connect_to().lambda_
+
+        # Prepare parameters for Lambda function creation
+        jar_path = self.get_jar_path()
+
+        # Lambda function configuration - update as needed
+        lambda_kwargs = {
+            "FunctionName": self.function_name,
+            "Runtime": "java8.al2",
+            "Role": self.execution_role_arn,
+            "Handler": "software.amazon.sns.topic.HandlerWrapper::testEntrypoint",
+            "Code": {
+                "ZipFile": jar_path.read_bytes(),
+            },
+            "MemorySize": 1024,
+            "Timeout": 30,
+        }
+
+        # Create the Lambda function
+        try:
+            client.create_function(**lambda_kwargs)
+        except client.exceptions.ResourceConflictException:
+            # Function already exists, can ignore
+            pass
+
+        client.get_waiter("function_active_v2").wait(FunctionName=self.function_name)
+
+    @property
+    def execution_role_arn(self) -> str:
+        # Stub role for now
+        return "arn:aws:iam::000000000000:role/lambda-role"
+
+    def _convert_handler_payload(
+        self, request: ResourceRequest[Properties]
+    ) -> HandlerPayload[Properties]:
+        return HandlerPayload(
+            credentials=Credentials(
+                accessKeyId=request.aws_client_factory._client_creation_params["aws_access_key_id"],
+                secretAccessKey=request.aws_client_factory._client_creation_params[
+                    "aws_secret_access_key"
+                ],
+                sessionToken=request.aws_client_factory._client_creation_params[
+                    "aws_session_token"
+                ],
+            ),
+            action=HandlerAction.CREATE,
+            request=HandlerRequest(
+                clientRequestToken=str(uuid.uuid4()),
+                logicalResourceIdentifier=request.logical_resource_id,
+                stackId=request.stack_id,
+                region=request.region_name,
+                awsAccountId=request.account_id,
+                awsPartition="aws",
+                desiredResourceState=request.desired_state,
+            ),
+        )
+
+    def _invoke_handler(self, handler_payload: HandlerPayload[Properties]) -> dict:
+        client = connect_to().lambda_
+        result = client.invoke(FunctionName=self.function_name, Payload=json.dumps(handler_payload))
+        return json.loads(result["Payload"].read().decode())
+
+    @abc.abstractmethod
+    def _get_jar_path(self) -> Path: ...
+
+    @property
+    @abc.abstractmethod
+    def function_name(self) -> str: ...
+
+    @property
+    @abc.abstractmethod
+    def handler_name(self) -> str: ...
+
+    def get_jar_path(self) -> Path:
+        path = self._get_jar_path()
+        assert path.is_file()
+        return path
+
+
+class FirstPartySNSTopicResourceProvider(FirstPartyResourceProvider):
+    SCHEMA: dict = util.get_schema_path(
+        Path(__file__).parent.joinpath("../sns/resource_providers/aws_sns_topic.py").resolve()
+    )
+
+    def _get_jar_path(self) -> Path:
+        return Path(config.dirs.mounted_tmp) / "aws-sns-topic-handler-1.0-SNAPSHOT.jar"
+
+    @property
+    def function_name(self) -> str:
+        return "cfn-sns-topic-create-handler"
+
+    @property
+    def handler_name(self) -> str:
+        return "software.amazon.sns.topic.HandlerWrapper::testEntrypoint"
 
 
 # legacy helpers
@@ -566,12 +734,18 @@ class ResourceProviderExecutor:
                 raise NotImplementedError(change_type)  # TODO: change error type
 
     @staticmethod
-    def try_load_resource_provider(resource_type: str) -> ResourceProvider | None:
+    def try_load_resource_provider(
+        resource_type: str, action: ChangeAction | None = None
+    ) -> ResourceProvider | None:
         # TODO: unify namespace of plugins
         if resource_type and resource_type.startswith("Custom"):
             resource_type = "AWS::CloudFormation::CustomResource"
 
-        # 1. try to load pro resource provider
+        # 1. try to load the official resource provider
+        if resource_type == "AWS::SNS::Topic" and action == ChangeAction.Add:
+            return FirstPartySNSTopicResourceProvider()
+
+        # 2. try to load pro resource provider
         # prioritise pro resource providers
         if PRO_RESOURCE_PROVIDERS:
             try:
@@ -587,7 +761,7 @@ class ResourceProviderExecutor:
                     exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
 
-        # 2. try to load community resource provider
+        # 3. try to load community resource provider
         try:
             plugin = plugin_manager.load(resource_type)
             return plugin.factory()
