@@ -1,7 +1,13 @@
 from moto.logs.models import LogsBackend as MotoLogsBackend
 from moto.logs.models import logs_backends as moto_logs_backend
 
-from localstack.aws.api.logs import LogGroup, LogGroupName, LogStream, LogStreamName
+from localstack.aws.api.logs import (
+    LogGroup,
+    LogGroupName,
+    LogStream,
+    LogStreamName,
+    SubscriptionFilter,
+)
 from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
 
 
@@ -18,6 +24,8 @@ class LogsStore(BaseStore):
     log_streams: dict[LogGroupName, dict[LogStreamName, LogStream]] = CrossRegionAttribute(
         default=dict
     )
+
+    subscription_filters: dict[LogGroupName, list[SubscriptionFilter]] = {}
 
 
 logs_stores = AccountRegionBundle("logs", LogsStore)
