@@ -7030,7 +7030,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_data_protection_policy_crud": {
-    "recorded-date": "17-12-2025, 13:06:58",
+    "recorded-date": "18-12-2025, 07:54:08",
     "recorded-content": {
       "get-topic-attributes-before-policy": {
         "Attributes": {

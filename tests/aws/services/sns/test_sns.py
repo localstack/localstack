@@ -609,7 +609,7 @@ class TestSNSTopicCrudV2:
 
     @markers.aws.validated
     @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Not implemented in moto")
-    def test_data_protection_policy_crud(self, snapshot, aws_client):
+    def test_data_protection_policy_crud(self, snapshot, aws_client, region_name):
         topic_name = f"topic-{short_uid()}"
         topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
 
@@ -623,7 +623,7 @@ class TestSNSTopicCrudV2:
                     "DataDirection": "Inbound",
                     "Principal": ["*"],
                     "DataIdentifier": [
-                        "arn:aws:dataprotection:us-east-1::data-identifier/EmailAddress"
+                        f"arn:aws:dataprotection:{region_name}::data-identifier/EmailAddress"
                     ],
                     "Operation": {"Deny": {}},
                 }
