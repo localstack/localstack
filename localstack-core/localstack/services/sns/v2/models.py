@@ -166,6 +166,7 @@ class PlatformApplicationDetails:
 
 
 class SnsStore(BaseStore):
+    # maps topic ARN to Topic
     topics: dict[str, Topic] = LocalAttribute(default=dict)
 
     # maps subscription ARN to SnsSubscription

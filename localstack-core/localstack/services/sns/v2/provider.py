@@ -1254,7 +1254,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if not multi_region and context.region != arn_data["region"]:
             raise InvalidParameterException("Invalid parameter: TopicArn")
         try:
-            store = SnsProvider.get_store(context.account_id, context.region)
+            store = SnsProvider.get_store(arn_data["account"], arn_data["region"])
             return store.topics[arn]
         except KeyError:
             raise NotFoundException("Topic does not exist")
