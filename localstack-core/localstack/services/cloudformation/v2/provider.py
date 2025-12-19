@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+from pathlib import Path
 import re
 from collections import defaultdict
 from datetime import UTC, datetime
@@ -96,6 +97,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model_describer imp
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_executor import (
     ChangeSetModelExecutor,
+)
+from localstack.services.cloudformation.engine.v2.change_set_model_serializer import (
+    ChangeSetModelSerializer,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
     ChangeSetModelTransform,
@@ -621,6 +625,15 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
 
         stack.change_set_ids.add(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
+
+        # temp: add serializer to serialize the change set to the filesystem
+        assert change_set.update_model is not None
+        serializer = ChangeSetModelSerializer()
+        serialized_bytes: bytes = serializer.serialize(change_set.update_model)
+        output_file_path = Path(config.dirs.mounted_tmp) / "change_set"
+        with output_file_path.open("wb") as f:
+            f.write(serialized_bytes)
+
         return CreateChangeSetOutput(StackId=stack.stack_id, Id=change_set.change_set_id)
 
     @handler("ExecuteChangeSet")
