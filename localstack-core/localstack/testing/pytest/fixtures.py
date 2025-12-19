@@ -1547,8 +1547,10 @@ def create_event_source_mapping(aws_client):
     for uuid in uuids:
         try:
             aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
-        except Exception:
-            LOG.debug("Unable to delete event source mapping %s in cleanup", uuid)
+        except aws_client.lambda_.exceptions.ResourceNotFoundException:
+            pass
+        except Exception as ex:
+            LOG.debug("Unable to delete event source mapping %s in cleanup: %s", uuid, ex)
 
 
 @pytest.fixture

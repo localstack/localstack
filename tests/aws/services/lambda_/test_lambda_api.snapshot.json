@@ -17872,7 +17872,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_filter_criteria_validation": {
-    "recorded-date": "25-11-2025, 02:48:23",
+    "recorded-date": "18-12-2025, 15:04:51",
     "recorded-content": {
       "response-with-empty-filters": {
         "BatchSize": 100,
