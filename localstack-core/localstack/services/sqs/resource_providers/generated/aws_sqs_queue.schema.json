@@ -123,8 +123,13 @@
     "taggable": true,
     "tagOnCreate": true,
     "tagUpdatable": true,
-    "cloudFormationSystemTags": true,
-    "tagProperty": "/properties/Tags"
+    "cloudFormationSystemTags": false,
+    "tagProperty": "/properties/Tags",
+    "permissions": [
+      "sqs:TagQueue",
+      "sqs:UntagQueue",
+      "sqs:ListQueueTags"
+    ]
   },
   "handlers": {
     "create": {

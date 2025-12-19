@@ -1,6 +1,6 @@
 {
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_standard_queue_with_required_properties": {
-    "recorded-date": "07-12-2025, 19:18:58",
+    "recorded-date": "18-12-2025, 22:04:55",
     "recorded-content": {
       "attributes": {
         "Attributes": {
@@ -25,7 +25,7 @@
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_standard_queue_with_all_properties": {
-    "recorded-date": "07-12-2025, 19:20:20",
+    "recorded-date": "18-12-2025, 22:06:15",
     "recorded-content": {
       "attributes": {
         "Attributes": {
@@ -77,7 +77,7 @@
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_fifo_queue_with_required_properties": {
-    "recorded-date": "07-12-2025, 19:22:08",
+    "recorded-date": "18-12-2025, 22:08:03",
     "recorded-content": {
       "attributes": {
         "Attributes": {
@@ -106,7 +106,7 @@
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_fifo_queue_with_all_properties": {
-    "recorded-date": "07-12-2025, 19:23:29",
+    "recorded-date": "18-12-2025, 22:09:23",
     "recorded-content": {
       "attributes": {
         "Attributes": {
@@ -162,7 +162,7 @@
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_modify_properties_in_place": {
-    "recorded-date": "07-12-2025, 19:26:04",
+    "recorded-date": "18-12-2025, 22:12:01",
     "recorded-content": {
       "updated_attributes": {
         "Attributes": {
@@ -201,7 +201,7 @@
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_add_properties_with_replacement": {
-    "recorded-date": "07-12-2025, 19:29:14",
+    "recorded-date": "18-12-2025, 22:15:10",
     "recorded-content": {
       "updated_attributes": {
         "Attributes": {
@@ -252,7 +252,7 @@
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_remove_some_properties": {
-    "recorded-date": "07-12-2025, 19:31:50",
+    "recorded-date": "18-12-2025, 22:17:47",
     "recorded-content": {
       "updated_attributes": {
         "Attributes": {
@@ -290,7 +290,7 @@
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_completely_remove_resource": {
-    "recorded-date": "07-12-2025, 19:34:25",
+    "recorded-date": "18-12-2025, 22:20:21",
     "recorded-content": {
       "error": {
         "Error": {
@@ -307,7 +307,7 @@
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_without_explicit_name": {
-    "recorded-date": "07-12-2025, 19:36:25",
+    "recorded-date": "18-12-2025, 22:22:23",
     "recorded-content": {
       "updated_attributes": {
         "Attributes": {

@@ -1,0 +1,117 @@
+{
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queueinlinepolicy.py::test_create_sqs_with_inlinepolicy": {
+    "recorded-date": "18-12-2025, 22:24:13",
+    "recorded-content": {
+      "policy": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queueinlinepolicy.py::test_update_sqs_with_inlinepolicy": {
+    "recorded-date": "18-12-2025, 22:28:18",
+    "recorded-content": {
+      "policy_before": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy_after": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl",
+                  "sqs:DeleteMessage",
+                  "sqs:ReceiveMessage"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queueinlinepolicy.py::test_update_sqs_remove_inlinepolicy": {
+    "recorded-date": "18-12-2025, 22:32:22",
+    "recorded-content": {
+      "policy_before": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy_after": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

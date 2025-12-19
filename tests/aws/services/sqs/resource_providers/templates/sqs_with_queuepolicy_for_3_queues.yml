@@ -18,6 +18,7 @@ Resources:
               - sqs:SendMessage
               - sqs:GetQueueAttributes
               - sqs:GetQueueUrl
+              - sqs:ChangeMessageVisibility
             Effect: Allow
             Principal: "*"
             Resource:
@@ -27,6 +28,9 @@ Resources:
         Version: "2012-10-17"
       Queues:
         - Ref: Queue1
+        - Ref: Queue2
+        - Ref: Queue3
+
 Outputs:
   Queue1Url:
     Value:

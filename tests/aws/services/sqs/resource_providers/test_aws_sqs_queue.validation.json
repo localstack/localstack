@@ -1,83 +1,83 @@
 {
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_fifo_queue_with_all_properties": {
-    "last_validated_date": "2025-12-07T19:24:35+00:00",
+    "last_validated_date": "2025-12-18T22:10:29+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 45.71,
-      "teardown": 66.19,
-      "total": 111.9
+      "call": 45.37,
+      "teardown": 66.13,
+      "total": 111.5
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_fifo_queue_with_required_properties": {
-    "last_validated_date": "2025-12-07T19:22:43+00:00",
+    "last_validated_date": "2025-12-18T22:08:38+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 41.17,
-      "teardown": 35.19,
-      "total": 76.36
+      "call": 42.49,
+      "teardown": 34.51,
+      "total": 77.0
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_standard_queue_with_all_properties": {
-    "last_validated_date": "2025-12-07T19:21:27+00:00",
+    "last_validated_date": "2025-12-18T22:07:21+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 46.56,
-      "teardown": 66.83,
-      "total": 113.39
+      "call": 45.72,
+      "teardown": 66.09,
+      "total": 111.81
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_create_standard_queue_with_required_properties": {
-    "last_validated_date": "2025-12-07T19:19:33+00:00",
+    "last_validated_date": "2025-12-18T22:05:29+00:00",
     "durations_in_seconds": {
-      "setup": 1.3,
-      "call": 44.27,
-      "teardown": 34.85,
-      "total": 80.42
+      "setup": 1.03,
+      "call": 43.56,
+      "teardown": 34.51,
+      "total": 79.1
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_completely_remove_resource": {
-    "last_validated_date": "2025-12-07T19:35:02+00:00",
+    "last_validated_date": "2025-12-18T22:20:56+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 88.6,
-      "teardown": 36.74,
-      "total": 125.34
+      "call": 87.4,
+      "teardown": 34.94,
+      "total": 122.34
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_add_properties_with_replacement": {
-    "last_validated_date": "2025-12-07T19:30:21+00:00",
+    "last_validated_date": "2025-12-18T22:16:16+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 123.16,
-      "teardown": 67.12,
-      "total": 190.28
+      "call": 122.66,
+      "teardown": 66.53,
+      "total": 189.19
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_modify_properties_in_place": {
-    "last_validated_date": "2025-12-07T19:27:11+00:00",
+    "last_validated_date": "2025-12-18T22:13:07+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 88.67,
-      "teardown": 67.42,
-      "total": 156.09
+      "call": 91.09,
+      "teardown": 66.39,
+      "total": 157.48
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_remove_some_properties": {
-    "last_validated_date": "2025-12-07T19:32:56+00:00",
+    "last_validated_date": "2025-12-18T22:18:54+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 88.91,
-      "teardown": 65.94,
-      "total": 154.85
+      "call": 91.05,
+      "teardown": 66.57,
+      "total": 157.62
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_without_explicit_name": {
-    "last_validated_date": "2025-12-07T19:37:01+00:00",
+    "last_validated_date": "2025-12-18T22:22:58+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 83.75,
-      "teardown": 35.43,
-      "total": 119.18
+      "call": 86.74,
+      "teardown": 35.07,
+      "total": 121.81
     }
   }
 }
