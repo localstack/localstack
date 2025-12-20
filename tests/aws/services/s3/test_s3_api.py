@@ -3037,6 +3037,76 @@ class TestS3ObjectWritePrecondition:
         )
         snapshot.match("complete-multipart-if-match-overwrite-multipart", complete_multipart_1)
 
+    @markers.aws.validated
+    def test_copy_object_if_none_match(self, s3_bucket, aws_client, snapshot):
+        """Test CopyObject with If-None-Match header (destination conditional)"""
+        src_key = "source-object"
+        dest_key = "dest-object"
+
+        # Create source object
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="source content")
+
+        # Copy should succeed when destination doesn't exist
+        copy_result = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{src_key}",
+            Key=dest_key,
+            IfNoneMatch="*",
+        )
+        snapshot.match("copy-obj", copy_result)
+
+        # Copy should fail when destination already exists
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{src_key}",
+                Key=dest_key,
+                IfNoneMatch="*",
+            )
+        snapshot.match("copy-obj-if-none-match-fail", e.value.response)
+
+    @markers.aws.validated
+    def test_copy_object_if_match(self, s3_bucket, aws_client, snapshot):
+        """Test CopyObject with If-Match header (destination conditional)"""
+        src_key = "source-object"
+        dest_key = "dest-object"
+
+        # Create source object
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="source content")
+
+        # Create initial destination object
+        put_result = aws_client.s3.put_object(Bucket=s3_bucket, Key=dest_key, Body="initial content")
+        dest_etag = put_result["ETag"]
+
+        # Copy should succeed when destination ETag matches
+        copy_result = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{src_key}",
+            Key=dest_key,
+            IfMatch=dest_etag,
+        )
+        snapshot.match("copy-obj-if-match", copy_result)
+
+        # Copy should fail when destination ETag doesn't match (wrong ETag)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{src_key}",
+                Key=dest_key,
+                IfMatch='"wrong-etag"',
+            )
+        snapshot.match("copy-obj-if-match-fail-wrong-etag", e.value.response)
+
+        # Copy should fail when destination doesn't exist
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{src_key}",
+                Key="non-existent-key",
+                IfMatch=dest_etag,
+            )
+        snapshot.match("copy-obj-if-match-fail-no-object", e.value.response)
+
 
 class TestS3MetricsConfiguration:
     @markers.aws.validated

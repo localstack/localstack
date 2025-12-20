@@ -5478,5 +5478,72 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_none_match": {
+    "recorded-date": "20-12-2025, 20:18:12",
+    "recorded-content": {
+      "copy-obj": {
+        "CopyObjectResult": {
+          "ChecksumCRC32": "wmoL/Q==",
+          "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-obj-if-none-match-fail": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-None-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_match": {
+    "recorded-date": "20-12-2025, 20:18:12",
+    "recorded-content": {
+      "copy-obj-if-match": {
+        "CopyObjectResult": {
+          "ChecksumCRC32": "wmoL/Q==",
+          "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-obj-if-match-fail-wrong-etag": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "copy-obj-if-match-fail-no-object": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "non-existent-key",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

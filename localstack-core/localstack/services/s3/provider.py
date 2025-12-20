@@ -1488,6 +1488,27 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # request_payer: RequestPayer = None,  # TODO:
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
+
+        # Extract destination conditional headers
+        if_match = request.get("IfMatch")
+        if_none_match = request.get("IfNoneMatch")
+
+        # Validate conditional headers
+        if if_none_match and if_match:
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header="If-Match,If-None-Match",
+                additionalMessage="Multiple conditional request headers present in the request",
+            )
+
+        elif (if_none_match and if_none_match != "*") or (if_match and if_match == "*"):
+            header_name = "If-None-Match" if if_none_match else "If-Match"
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header=header_name,
+                additionalMessage=f"We don't accept the provided value of {header_name} header for this API",
+            )
+
         validate_object_key(dest_key)
         store, dest_s3_bucket = self._get_cross_account_bucket(context, dest_bucket)
 
@@ -1628,6 +1649,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             acl=acl,
             owner=dest_s3_bucket.owner,
         )
+
+        # Check destination write preconditions
+        if if_none_match and object_exists_for_precondition_write(dest_s3_bucket, dest_key):
+            raise PreconditionFailed(
+                "At least one of the pre-conditions you specified did not hold",
+                Condition="If-None-Match",
+            )
+
+        elif if_match:
+            verify_object_equality_precondition_write(dest_s3_bucket, dest_key, if_match)
 
         with self._storage_backend.copy(
             src_bucket=src_bucket,
