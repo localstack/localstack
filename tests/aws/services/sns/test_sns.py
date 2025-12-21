@@ -992,6 +992,128 @@ class TestSNSPublishCrud:
         assert publish_batch["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @markers.aws.validated
+    def test_publish_batch_invalid_entry_id(self, sns_create_topic, snapshot, aws_client):
+        """Test validation of batch entry ID according to AWS specifications.
+
+        Entry IDs must:
+        - Only contain alphanumeric characters, hyphens, and underscores
+        - Be at most 80 characters long
+        """
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        # Test 1: ID with invalid character (dot)
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "message.id",
+                        "Message": "test message",
+                    }
+                ],
+            )
+        snapshot.match("invalid-char-dot", e.value.response)
+
+        # Test 2: ID with multiple invalid characters
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "msg@123#test",
+                        "Message": "test message",
+                    }
+                ],
+            )
+        snapshot.match("invalid-char-special", e.value.response)
+
+        # Test 3: ID that is too long (81 characters)
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "a" * 81,
+                        "Message": "test message",
+                    }
+                ],
+            )
+        snapshot.match("id-too-long-81", e.value.response)
+
+        # Test 4: ID that is way too long (91 characters)
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "myreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallylongid",
+                        "Message": "test message",
+                    }
+                ],
+            )
+        snapshot.match("id-too-long-91", e.value.response)
+
+        # Test 5: Valid ID with exactly 80 characters (should succeed)
+        publish_batch_response = aws_client.sns.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=[
+                {
+                    "Id": "a" * 80,
+                    "Message": "test message",
+                }
+            ],
+        )
+        assert publish_batch_response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert len(publish_batch_response["Successful"]) == 1
+        snapshot.match("valid-id-80-chars", publish_batch_response)
+
+        # Test 6: Valid ID with allowed characters (should succeed)
+        publish_batch_response = aws_client.sns.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=[
+                {
+                    "Id": "valid-message_123",
+                    "Message": "test message",
+                }
+            ],
+        )
+        assert publish_batch_response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert len(publish_batch_response["Successful"]) == 1
+        snapshot.match("valid-id-with-hyphen-underscore", publish_batch_response)
+
+    @markers.aws.only_localstack
+    def test_publish_batch_invalid_entry_id_simple(self, sns_create_topic, aws_client):
+        """Simple test for batch entry ID validation without snapshots - can run immediately."""
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        # Test: ID with invalid character (dot) should fail
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[{"Id": "message.id", "Message": "test"}],
+            )
+        assert e.value.response["Error"]["Code"] == "InvalidBatchEntryId"
+        assert "impermissible character" in e.value.response["Error"]["Message"]
+
+        # Test: ID too long (81 characters) should fail
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[{"Id": "a" * 81, "Message": "test"}],
+            )
+        assert e.value.response["Error"]["Code"] == "InvalidBatchEntryId"
+        assert "too long" in e.value.response["Error"]["Message"]
+
+        # Test: Valid ID should succeed
+        response = aws_client.sns.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=[{"Id": "valid-id_123", "Message": "test"}],
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert len(response["Successful"]) == 1
+        assert len(response["Failed"]) == 0
+
+    @markers.aws.validated
     def test_message_structure_json_exc(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         # TODO: add batch
