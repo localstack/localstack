@@ -151,5 +151,14 @@
       "teardown": 50.06,
       "total": 90.44
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::test_no_type": {
+    "last_validated_date": "2025-12-15T10:55:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.75,
+      "call": 0.27,
+      "teardown": 0.0,
+      "total": 1.02
+    }
   }
 }

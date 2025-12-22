@@ -700,5 +700,11 @@
         "TopicName": "<parameter-value>"
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::test_no_type": {
+    "recorded-date": "15-12-2025, 10:55:28",
+    "recorded-content": {
+      "error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template format error: [/Resources/Foo] Every Resources object must contain a Type member."
+    }
   }
 }

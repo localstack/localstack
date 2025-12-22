@@ -17,6 +17,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
     PreprocEntityDelta,
     PreprocResource,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
 
 
 class ChangeSetModelValidator(ChangeSetModelPreproc):
@@ -162,6 +163,10 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
             return self.visit(node_intrinsic_function.arguments)
 
     def visit_node_resource(self, node_resource: NodeResource) -> PreprocEntityDelta:
+        if is_nothing(node_resource.type_.value):
+            raise ValidationError(
+                f"Template format error: [{node_resource.scope}] Every Resources object must contain a Type member."
+            )
         try:
             if delta := super().visit_node_resource(node_resource):
                 return delta

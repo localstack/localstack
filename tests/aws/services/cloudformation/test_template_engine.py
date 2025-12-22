@@ -1317,3 +1317,29 @@ class TestPseudoParameters:
         snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
 
         snapshot.match("StackId", stack.outputs["StackId"])
+
+
+@markers.aws.validated
+@skip_if_legacy_engine()
+def test_no_type(aws_client, snapshot):
+    template = {
+        "Resources": {
+            "Foo": {
+                "Properties": {
+                    "Name": "foo",
+                },
+            },
+        },
+    }
+
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"cs-{short_uid()}"
+    with pytest.raises(ClientError) as e:
+        aws_client.cloudformation.create_change_set(
+            ChangeSetName=change_set_name,
+            StackName=stack_name,
+            TemplateBody=json.dumps(template),
+            ChangeSetType="CREATE",
+        )
+
+    snapshot.match("error", e.value)
