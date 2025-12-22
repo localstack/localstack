@@ -330,6 +330,7 @@ class NodeType(StrEnum):
     Data = "Data"
     Ultrawarm = "Ultrawarm"
     Master = "Master"
+    Warm = "Warm"
 
 
 class OpenSearchPartitionInstanceType(StrEnum):
