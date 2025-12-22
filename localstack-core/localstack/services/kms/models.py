@@ -864,9 +864,6 @@ class KmsStore(BaseStore):
     # maps grant ids to grants
     grants: dict[str, KmsGrant] = LocalAttribute(default=dict)
 
-    # maps from (grant names (used for idempotency), key id) to grant ids
-    grant_names: dict[tuple[str, str], str] = LocalAttribute(default=dict)
-
     # maps grant tokens to grant ids
     grant_tokens: dict[str, str] = LocalAttribute(default=dict)
 
