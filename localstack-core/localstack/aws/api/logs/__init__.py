@@ -15,6 +15,7 @@ AnomalyId = str
 ApplyOnTransformedLogs = bool
 Arn = str
 Baseline = bool
+BatchId = str
 Boolean = bool
 ClientToken = str
 CollectionRetentionDays = int
@@ -49,6 +50,7 @@ EntityAttributesKey = str
 EntityAttributesValue = str
 EntityKeyAttributesKey = str
 EntityKeyAttributesValue = str
+ErrorMessage = str
 EventId = str
 EventMessage = str
 EventsLimit = int
@@ -74,6 +76,7 @@ GetScheduledQueryHistoryMaxResults = int
 GrokMatch = str
 GroupingIdentifierKey = str
 GroupingIdentifierValue = str
+ImportId = str
 IncludeLinkedAccounts = bool
 InferredTokenName = str
 Integer = int
@@ -261,6 +264,13 @@ class ExportTaskStatusCode(StrEnum):
 class FlattenedElement(StrEnum):
     first = "first"
     last = "last"
+
+
+class ImportStatus(StrEnum):
+    IN_PROGRESS = "IN_PROGRESS"
+    CANCELLED = "CANCELLED"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
 
 
 class IndexSource(StrEnum):
@@ -726,6 +736,25 @@ class CancelExportTaskRequest(ServiceRequest):
     taskId: ExportTaskId
 
 
+class CancelImportTaskRequest(ServiceRequest):
+    importId: ImportId
+
+
+StoredBytes = int
+
+
+class ImportStatistics(TypedDict, total=False):
+    bytesImported: StoredBytes | None
+
+
+class CancelImportTaskResponse(TypedDict, total=False):
+    importId: ImportId | None
+    importStatistics: ImportStatistics | None
+    importStatus: ImportStatus | None
+    creationTime: Timestamp | None
+    lastUpdatedTime: Timestamp | None
+
+
 RecordFields = list[FieldHeader]
 OutputFormats = list[OutputFormat]
 
@@ -817,6 +846,23 @@ CreateExportTaskRequest = TypedDict(
 
 class CreateExportTaskResponse(TypedDict, total=False):
     taskId: ExportTaskId | None
+
+
+class ImportFilter(TypedDict, total=False):
+    startEventTime: Timestamp | None
+    endEventTime: Timestamp | None
+
+
+class CreateImportTaskRequest(ServiceRequest):
+    importSourceArn: Arn
+    importRoleArn: RoleArn
+    importFilter: ImportFilter | None
+
+
+class CreateImportTaskResponse(TypedDict, total=False):
+    importId: ImportId | None
+    importDestinationArn: Arn | None
+    creationTime: Timestamp | None
 
 
 class CreateLogAnomalyDetectorRequest(ServiceRequest):
@@ -1191,6 +1237,60 @@ class DescribeFieldIndexesResponse(TypedDict, total=False):
     nextToken: NextToken | None
 
 
+ImportStatusList = list[ImportStatus]
+
+
+class DescribeImportTaskBatchesRequest(ServiceRequest):
+    importId: ImportId
+    batchImportStatus: ImportStatusList | None
+    limit: DescribeLimit | None
+    nextToken: NextToken | None
+
+
+class ImportBatch(TypedDict, total=False):
+    batchId: BatchId
+    status: ImportStatus
+    errorMessage: ErrorMessage | None
+
+
+ImportBatchList = list[ImportBatch]
+
+
+class DescribeImportTaskBatchesResponse(TypedDict, total=False):
+    importSourceArn: Arn | None
+    importId: ImportId | None
+    importBatches: ImportBatchList | None
+    nextToken: NextToken | None
+
+
+class DescribeImportTasksRequest(ServiceRequest):
+    importId: ImportId | None
+    importStatus: ImportStatus | None
+    importSourceArn: Arn | None
+    limit: DescribeLimit | None
+    nextToken: NextToken | None
+
+
+class Import(TypedDict, total=False):
+    importId: ImportId | None
+    importSourceArn: Arn | None
+    importStatus: ImportStatus | None
+    importDestinationArn: Arn | None
+    importStatistics: ImportStatistics | None
+    importFilter: ImportFilter | None
+    creationTime: Timestamp | None
+    lastUpdatedTime: Timestamp | None
+    errorMessage: ErrorMessage | None
+
+
+ImportList = list[Import]
+
+
+class DescribeImportTasksResponse(TypedDict, total=False):
+    imports: ImportList | None
+    nextToken: NextToken | None
+
+
 DescribeIndexPoliciesLogGroupIdentifiers = list[LogGroupIdentifier]
 
 
@@ -1230,7 +1330,6 @@ class DescribeLogGroupsRequest(ServiceRequest):
 
 
 InheritedProperties = list[InheritedProperty]
-StoredBytes = int
 
 
 class LogGroup(TypedDict, total=False):
@@ -2602,6 +2701,12 @@ class LogsApi:
     def cancel_export_task(self, context: RequestContext, task_id: ExportTaskId, **kwargs) -> None:
         raise NotImplementedError
 
+    @handler("CancelImportTask")
+    def cancel_import_task(
+        self, context: RequestContext, import_id: ImportId, **kwargs
+    ) -> CancelImportTaskResponse:
+        raise NotImplementedError
+
     @handler("CreateDelivery")
     def create_delivery(
         self,
@@ -2620,6 +2725,17 @@ class LogsApi:
     def create_export_task(
         self, context: RequestContext, request: CreateExportTaskRequest, **kwargs
     ) -> CreateExportTaskResponse:
+        raise NotImplementedError
+
+    @handler("CreateImportTask")
+    def create_import_task(
+        self,
+        context: RequestContext,
+        import_source_arn: Arn,
+        import_role_arn: RoleArn,
+        import_filter: ImportFilter | None = None,
+        **kwargs,
+    ) -> CreateImportTaskResponse:
         raise NotImplementedError
 
     @handler("CreateLogAnomalyDetector")
@@ -2902,6 +3018,31 @@ class LogsApi:
         next_token: NextToken | None = None,
         **kwargs,
     ) -> DescribeFieldIndexesResponse:
+        raise NotImplementedError
+
+    @handler("DescribeImportTaskBatches")
+    def describe_import_task_batches(
+        self,
+        context: RequestContext,
+        import_id: ImportId,
+        batch_import_status: ImportStatusList | None = None,
+        limit: DescribeLimit | None = None,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> DescribeImportTaskBatchesResponse:
+        raise NotImplementedError
+
+    @handler("DescribeImportTasks")
+    def describe_import_tasks(
+        self,
+        context: RequestContext,
+        import_id: ImportId | None = None,
+        import_status: ImportStatus | None = None,
+        import_source_arn: Arn | None = None,
+        limit: DescribeLimit | None = None,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> DescribeImportTasksResponse:
         raise NotImplementedError
 
     @handler("DescribeIndexPolicies")

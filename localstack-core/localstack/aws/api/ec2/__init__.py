@@ -3239,6 +3239,12 @@ class Metric(StrEnum):
     spot_avg_run_time_before_interruption_inst = "spot-avg-run-time-before-interruption-inst"
     spot_max_run_time_before_interruption_inst = "spot-max-run-time-before-interruption-inst"
     spot_min_run_time_before_interruption_inst = "spot-min-run-time-before-interruption-inst"
+    spot_total_interruptions_inst = "spot-total-interruptions-inst"
+    spot_total_interruptions_vcpu = "spot-total-interruptions-vcpu"
+    spot_total_count_inst = "spot-total-count-inst"
+    spot_total_count_vcpu = "spot-total-count-vcpu"
+    spot_interruption_rate_inst = "spot-interruption-rate-inst"
+    spot_interruption_rate_vcpu = "spot-interruption-rate-vcpu"
 
 
 class MetricType(StrEnum):
@@ -7907,6 +7913,7 @@ class FleetLaunchTemplateOverrides(TypedDict, total=False):
     InstanceRequirements: InstanceRequirements | None
     ImageId: ImageId | None
     BlockDeviceMappings: BlockDeviceMappingResponseList | None
+    AvailabilityZoneId: AvailabilityZoneId | None
 
 
 class FleetLaunchTemplateSpecification(TypedDict, total=False):
@@ -8054,6 +8061,7 @@ class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
     BlockDeviceMappings: FleetBlockDeviceMappingRequestList | None
     InstanceRequirements: InstanceRequirementsRequest | None
     ImageId: String | None
+    AvailabilityZoneId: AvailabilityZoneId | None
 
 
 FleetLaunchTemplateOverridesListRequest = list[FleetLaunchTemplateOverridesRequest]
@@ -16368,6 +16376,7 @@ class LaunchTemplateOverrides(TypedDict, total=False):
     WeightedCapacity: Double | None
     Priority: Double | None
     InstanceRequirements: InstanceRequirements | None
+    AvailabilityZoneId: AvailabilityZoneId | None
 
 
 LaunchTemplateOverridesList = list[LaunchTemplateOverrides]
@@ -16393,6 +16402,7 @@ class SpotPlacement(TypedDict, total=False):
     AvailabilityZone: String | None
     GroupName: PlacementGroupName | None
     Tenancy: Tenancy | None
+    AvailabilityZoneId: String | None
 
 
 class InstanceNetworkInterfaceSpecification(TypedDict, total=False):

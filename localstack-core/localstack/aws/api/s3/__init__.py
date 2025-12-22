@@ -432,6 +432,7 @@ class InventoryOptionalField(StrEnum):
     ChecksumAlgorithm = "ChecksumAlgorithm"
     ObjectAccessControlList = "ObjectAccessControlList"
     ObjectOwner = "ObjectOwner"
+    LifecycleExpirationDate = "LifecycleExpirationDate"
 
 
 class JSONType(StrEnum):

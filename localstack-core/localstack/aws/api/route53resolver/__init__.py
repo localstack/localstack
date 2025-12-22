@@ -42,6 +42,7 @@ ResolverQueryLogConfigPolicy = str
 ResolverRulePolicy = str
 ResourceId = str
 Rfc3339TimeString = str
+RniEnhancedMetricsEnabled = bool
 ServerNameIndication = str
 ServicePrinciple = str
 SortByKey = str
@@ -50,6 +51,7 @@ String = str
 SubnetId = str
 TagKey = str
 TagValue = str
+TargetNameServerMetricsEnabled = bool
 Unsigned = int
 
 
@@ -444,6 +446,8 @@ class ResolverEndpoint(TypedDict, total=False):
     PreferredInstanceType: OutpostInstanceType | None
     ResolverEndpointType: ResolverEndpointType | None
     Protocols: ProtocolList | None
+    RniEnhancedMetricsEnabled: RniEnhancedMetricsEnabled | None
+    TargetNameServerMetricsEnabled: TargetNameServerMetricsEnabled | None
 
 
 class AssociateResolverEndpointIpAddressResponse(TypedDict, total=False):
@@ -623,6 +627,8 @@ class CreateResolverEndpointRequest(ServiceRequest):
     Tags: TagList | None
     ResolverEndpointType: ResolverEndpointType | None
     Protocols: ProtocolList | None
+    RniEnhancedMetricsEnabled: RniEnhancedMetricsEnabled | None
+    TargetNameServerMetricsEnabled: TargetNameServerMetricsEnabled | None
 
 
 class CreateResolverEndpointResponse(TypedDict, total=False):
@@ -1363,6 +1369,8 @@ class UpdateResolverEndpointRequest(ServiceRequest):
     ResolverEndpointType: ResolverEndpointType | None
     UpdateIpAddresses: UpdateIpAddresses | None
     Protocols: ProtocolList | None
+    RniEnhancedMetricsEnabled: RniEnhancedMetricsEnabled | None
+    TargetNameServerMetricsEnabled: TargetNameServerMetricsEnabled | None
 
 
 class UpdateResolverEndpointResponse(TypedDict, total=False):
@@ -1500,6 +1508,8 @@ class Route53ResolverApi:
         tags: TagList | None = None,
         resolver_endpoint_type: ResolverEndpointType | None = None,
         protocols: ProtocolList | None = None,
+        rni_enhanced_metrics_enabled: RniEnhancedMetricsEnabled | None = None,
+        target_name_server_metrics_enabled: TargetNameServerMetricsEnabled | None = None,
         **kwargs,
     ) -> CreateResolverEndpointResponse:
         raise NotImplementedError
@@ -2027,6 +2037,8 @@ class Route53ResolverApi:
         resolver_endpoint_type: ResolverEndpointType | None = None,
         update_ip_addresses: UpdateIpAddresses | None = None,
         protocols: ProtocolList | None = None,
+        rni_enhanced_metrics_enabled: RniEnhancedMetricsEnabled | None = None,
+        target_name_server_metrics_enabled: TargetNameServerMetricsEnabled | None = None,
         **kwargs,
     ) -> UpdateResolverEndpointResponse:
         raise NotImplementedError
