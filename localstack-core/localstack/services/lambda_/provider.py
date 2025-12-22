@@ -1557,7 +1557,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 function_name=function_name,
                 region=region,
                 account_id=account_id,
-                publish_to=request.get("PublishTo"),
+                publish_to=publish_to,
                 is_active=True,
             )
         return api_utils.map_config_out(
