@@ -571,14 +571,21 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         grant_name = request.get("Name")
 
         store = self._get_store(context.account_id, context.region)
-        if grant_name and (grant_name, key_id) in store.grant_names:
-            grant = store.grants[store.grant_names[(grant_name, key_id)]]
-        else:
+
+        # Check for existing grant with the same name for idempotency
+        grant: KmsGrant | None = None
+        if grant_name:
+            for existing_grant in store.grants.values():
+                if existing_grant.metadata.get("Name") != grant_name:
+                    continue
+                if existing_grant.metadata.get("KeyId") == key_id:
+                    grant = existing_grant
+                    break
+
+        if grant is None:
             grant = KmsGrant(request, context.account_id, context.region)
             grant_id = grant.metadata["GrantId"]
             store.grants[grant_id] = grant
-            if grant_name:
-                store.grant_names[(grant_name, key_id)] = grant_id
             store.grant_tokens[grant.token] = grant_id
 
         # At the moment we do not support multiple GrantTokens for grant creation request. Instead, we always use
@@ -643,7 +650,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise ValidationError(f"Invalid KeyId={key_id} specified for grant {grant_id}")
 
         store.grant_tokens.pop(grant.token)
-        store.grant_names.pop((grant.metadata.get("Name"), key_id), None)
         store.grants.pop(grant_id)
 
     def revoke_grant(
