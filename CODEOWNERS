@@ -165,10 +165,10 @@
 /tests/aws/services/iam/ @dfangl @pinzon
 
 # kms
-/localstack-core/localstack/aws/api/kms/ @sannya-singal @k-a-il
-/localstack-core/localstack/services/kms/ @sannya-singal @k-a-il
-/tests/aws/services/kms/ @sannya-singal @k-a-il
-/tests/unit/services/kms/ @sannya-singal @k-a-il
+/localstack-core/localstack/aws/api/kms/ @k-a-il
+/localstack-core/localstack/services/kms/ @k-a-il
+/tests/aws/services/kms/ @k-a-il
+/tests/unit/services/kms/ @k-a-il
 
 # lambda
 /localstack-core/localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
@@ -256,6 +256,6 @@
 /tests/aws/services/sts/ @pinzon @dfangl
 
 # transcribe
-/localstack-core/localstack/aws/api/transcribe/ @sannya-singal @silv-io @k-a-il
-/localstack-core/localstack/services/transcribe/ @sannya-singal @silv-io @k-a-il
-/tests/aws/services/transcribe/ @sannya-singal @silv-io @k-a-il
+/localstack-core/localstack/aws/api/transcribe/ @silv-io @k-a-il
+/localstack-core/localstack/services/transcribe/ @silv-io @k-a-il
+/tests/aws/services/transcribe/ @silv-io @k-a-il
