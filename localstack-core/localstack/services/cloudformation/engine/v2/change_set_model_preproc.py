@@ -1234,10 +1234,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
-        if is_nothing(node_resource.type_.value):
-            raise ValidationError(
-                f"Template format error: [{node_resource.scope}] Every Resources object must contain a Type member."
-            )
         if not VALID_LOGICAL_RESOURCE_ID_RE.match(node_resource.name):
             raise ValidationError(
                 f"Template format error: Resource name {node_resource.name} is non alphanumeric."
