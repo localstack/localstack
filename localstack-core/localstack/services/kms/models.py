@@ -862,6 +862,7 @@ class KmsStore(BaseStore):
     # "Cross-account use: Yes. You can retire a grant on a KMS key in a different AWS account."
 
     # maps grant ids to grants
+    # TODO: KmsKey might hold the grant
     grants: dict[str, KmsGrant] = LocalAttribute(default=dict)
 
     # maps grant tokens to grant ids
