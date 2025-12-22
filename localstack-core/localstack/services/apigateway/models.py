@@ -3,7 +3,10 @@ from typing import Any
 from requests.structures import CaseInsensitiveDict
 
 from localstack.aws.api.apigateway import (
+    Account,
     Authorizer,
+    BasePathMapping,
+    ClientCertificate,
     DocumentationPart,
     DocumentationVersion,
     DomainName,
@@ -13,6 +16,7 @@ from localstack.aws.api.apigateway import (
     RequestValidator,
     Resource,
     RestApi,
+    VpcLink,
 )
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -40,7 +44,7 @@ class RestApiContainer:
     # maps Model name -> Model
     models: dict[str, Model]
     # maps Model name -> resolved dict Model, so we don't need to load the JSON everytime
-    resolved_models: dict[str, dict]
+    resolved_models: dict[str, dict[str, Any]]
     # maps ResourceId of a Resource to its children ResourceIds
     resource_children: dict[str, list[str]]
 
@@ -88,6 +92,10 @@ class MergedRestApi(RestApiContainer):
 
 
 class RestApiDeployment:
+    account_id: str
+    region: str
+    rest_api: MergedRestApi
+
     def __init__(
         self,
         account_id: str,
@@ -105,16 +113,16 @@ class ApiGatewayStore(BaseStore):
     rest_apis: dict[str, RestApiContainer] = LocalAttribute(default=CaseInsensitiveDict)
 
     # account details
-    _account: dict[str, Any] = LocalAttribute(default=dict)
+    _account: Account = LocalAttribute(default=dict)
 
     # maps (domain_name) -> [path_mappings]
-    base_path_mappings: dict[str, list[dict]] = LocalAttribute(default=dict)
+    base_path_mappings: dict[str, list[BasePathMapping]] = LocalAttribute(default=dict)
 
     # maps ID to VPC link details
-    vpc_links: dict[str, dict] = LocalAttribute(default=dict)
+    vpc_links: dict[str, VpcLink] = LocalAttribute(default=dict)
 
     # maps cert ID to client certificate details
-    client_certificates: dict[str, dict] = LocalAttribute(default=dict)
+    client_certificates: dict[str, ClientCertificate] = LocalAttribute(default=dict)
 
     # maps domain name to domain name model
     domain_names: dict[str, DomainName] = LocalAttribute(default=dict)
@@ -137,7 +145,7 @@ class ApiGatewayStore(BaseStore):
         super().__init__()
 
     @property
-    def account(self):
+    def account(self) -> Account:
         if not self._account:
             self._account.update(
                 {
