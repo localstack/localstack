@@ -578,8 +578,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             for existing_grant in store.grants.values():
                 if existing_grant.metadata.get("Name") != grant_name:
                     continue
-                _, _, grant_key_id = parse_key_arn(existing_grant.metadata["KeyArn"])
-                if grant_key_id == key_id:
+                if existing_grant.metadata.get("KeyId") == key_id:
                     grant = existing_grant
                     break
 
