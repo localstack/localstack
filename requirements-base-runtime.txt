@@ -107,7 +107,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-openapi-core==0.20.0
+openapi-core==0.22.0
     # via localstack-core (pyproject.toml)
 openapi-schema-validator==0.6.3
     # via
@@ -117,8 +117,6 @@ openapi-spec-validator==0.7.2
     # via openapi-core
 packaging==25.0
     # via incremental
-parse==1.20.2
-    # via openapi-core
 pathable==0.4.4
     # via jsonschema-path
 plux==1.13.0

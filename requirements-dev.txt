@@ -35,9 +35,9 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==48.20.0
     # via aws-cdk-lib
-aws-cdk-lib==2.232.2
+aws-cdk-lib==2.233.0
     # via localstack-core
-aws-sam-translator==1.105.0
+aws-sam-translator==1.106.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -201,7 +201,7 @@ joserfc==1.6.0
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.121.0
+jsii==1.122.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -261,7 +261,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.18.post34
+moto-ext==5.1.18.post58
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -275,9 +275,9 @@ networkx==3.6.1
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
-nodeenv==1.9.1
+nodeenv==1.10.0
     # via pre-commit
-openapi-core==0.20.0
+openapi-core==0.22.0
     # via localstack-core
 openapi-schema-validator==0.6.3
     # via
@@ -305,8 +305,6 @@ packaging==25.0
     #   requirements-parser
 pandoc==2.4
     # via localstack-core (pyproject.toml)
-parse==1.20.2
-    # via openapi-core
 pathable==0.4.4
     # via jsonschema-path
 pathspec==0.12.1
@@ -328,7 +326,7 @@ ply==3.11
     #   jsonpath-ng
     #   jsonpath-rw
     #   pandoc
-pre-commit==4.5.0
+pre-commit==4.5.1
     # via localstack-core (pyproject.toml)
 priority==1.3.0
     # via
@@ -373,7 +371,7 @@ pyopenssl==25.3.0
     #   localstack-twisted
 pypandoc==1.16.2
     # via localstack-core (pyproject.toml)
-pyparsing==3.2.5
+pyparsing==3.3.1
     # via moto-ext
 pytest==8.4.2
     # via
@@ -456,7 +454,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.14.9
+ruff==0.14.10
     # via localstack-core (pyproject.toml)
 s3transfer==0.16.0
     # via
