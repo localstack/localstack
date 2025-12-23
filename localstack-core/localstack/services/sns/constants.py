@@ -42,6 +42,7 @@ MSG_ATTR_NAME_REGEX = re.compile(r"^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9_\-.]+$")
 ATTR_TYPE_REGEX = re.compile(r"^(String|Number|Binary)\..+$")
 VALID_MSG_ATTR_NAME_CHARS = set(ascii_letters + digits + "." + "-" + "_")
 E164_REGEX = re.compile(r"^\+?[1-9]\d{1,14}$")
+BATCH_ENTRY_ID_REGEX = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
 GCM_URL = "https://fcm.googleapis.com/fcm/send"

@@ -554,6 +554,15 @@
       "total": 1.13
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_batch_invalid_entry_id": {
+    "last_validated_date": "2025-12-23T17:39:15+00:00",
+    "durations_in_seconds": {
+      "setup": 5.45,
+      "call": 1.98,
+      "teardown": 0.16,
+      "total": 7.59
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_batch_too_long_message": {
     "last_validated_date": "2025-11-19T12:41:05+00:00",
     "durations_in_seconds": {

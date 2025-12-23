@@ -23,6 +23,7 @@ from localstack.aws.api.sns import (
     EndpointDisabledException,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
+    InvalidBatchEntryIdException,
     InvalidParameterException,
     InvalidParameterValueException,
     ListSubscriptionsByTopicResponse,
@@ -217,6 +218,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise BatchEntryIdsNotDistinctException(
                 "Two or more batch entries in the request have the same Id."
             )
+
+        # Validate each batch entry ID according to AWS specifications
+        for entry_id in ids:
+            validate_batch_entry_id(entry_id)
 
         response: PublishBatchResponse = {"Successful": [], "Failed": []}
 
@@ -1045,6 +1050,29 @@ def validate_message_attribute_name(name: str) -> None:
                 raise InvalidParameterValueException(
                     "Message attribute name can not have successive '.' character."
                 )
+
+
+def validate_batch_entry_id(entry_id: str) -> None:
+    """
+    Validate the batch entry ID according to AWS specifications.
+    The ID can only contain alphanumeric characters, hyphens, and underscores,
+    and must be between 1 and 80 characters in length.
+    See: https://docs.aws.amazon.com/sns/latest/api/API_PublishBatchRequestEntry.html
+
+    :param entry_id: the batch entry ID to validate
+    :raises InvalidBatchEntryIdException: if the ID does not conform to the spec
+    """
+    # Check length constraint (1-80 characters)
+    if len(entry_id) > 80:
+        raise InvalidBatchEntryIdException(
+            f"The Id of a batch entry in the batch request is too long: {entry_id}"
+        )
+
+    # Check character pattern (alphanumeric, hyphen, underscore only)
+    if not sns_constants.BATCH_ENTRY_ID_REGEX.match(entry_id):
+        raise InvalidBatchEntryIdException(
+            f"The Id of a batch entry in the batch request contains an impermissible character: {entry_id}"
+        )
 
 
 def extract_tags(
