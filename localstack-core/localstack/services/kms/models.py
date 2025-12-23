@@ -295,6 +295,7 @@ class KmsKey:
     rotation_period_in_days: int
     next_rotation_date: datetime.datetime | None
     previous_keys: list[str]
+    _internal_key_id: uuid.UUID
 
     def __init__(
         self,
