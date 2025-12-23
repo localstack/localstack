@@ -1063,8 +1063,6 @@ class TestSNSPublishCrud:
                 }
             ],
         )
-        assert publish_batch_response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert len(publish_batch_response["Successful"]) == 1
         snapshot.match("valid-id-80-chars", publish_batch_response)
 
         # Test 6: Valid ID with allowed characters (should succeed)
@@ -1077,41 +1075,7 @@ class TestSNSPublishCrud:
                 }
             ],
         )
-        assert publish_batch_response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert len(publish_batch_response["Successful"]) == 1
         snapshot.match("valid-id-with-hyphen-underscore", publish_batch_response)
-
-    @markers.aws.only_localstack
-    def test_publish_batch_invalid_entry_id_simple(self, sns_create_topic, aws_client):
-        """Simple test for batch entry ID validation without snapshots - can run immediately."""
-        topic_arn = sns_create_topic()["TopicArn"]
-
-        # Test: ID with invalid character (dot) should fail
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.publish_batch(
-                TopicArn=topic_arn,
-                PublishBatchRequestEntries=[{"Id": "message.id", "Message": "test"}],
-            )
-        assert e.value.response["Error"]["Code"] == "InvalidBatchEntryId"
-        assert "impermissible character" in e.value.response["Error"]["Message"]
-
-        # Test: ID too long (81 characters) should fail
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.publish_batch(
-                TopicArn=topic_arn,
-                PublishBatchRequestEntries=[{"Id": "a" * 81, "Message": "test"}],
-            )
-        assert e.value.response["Error"]["Code"] == "InvalidBatchEntryId"
-        assert "too long" in e.value.response["Error"]["Message"]
-
-        # Test: Valid ID should succeed
-        response = aws_client.sns.publish_batch(
-            TopicArn=topic_arn,
-            PublishBatchRequestEntries=[{"Id": "valid-id_123", "Message": "test"}],
-        )
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert len(response["Successful"]) == 1
-        assert len(response["Failed"]) == 0
 
     @markers.aws.validated
     def test_message_structure_json_exc(self, sns_create_topic, snapshot, aws_client):

@@ -7187,7 +7187,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_batch_invalid_entry_id": {
-    "recorded-date": "21-12-2025, 21:36:23",
+    "recorded-date": "23-12-2025, 17:39:15",
     "recorded-content": {
       "invalid-char-dot": {
         "Error": {
