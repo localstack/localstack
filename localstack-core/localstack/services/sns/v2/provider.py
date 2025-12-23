@@ -27,6 +27,7 @@ from localstack.aws.api.sns import (
     GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
+    InvalidBatchEntryIdException,
     InvalidParameterException,
     InvalidParameterValueException,
     ListEndpointsByPlatformApplicationResponse,
@@ -82,6 +83,7 @@ from localstack.services.sns.analytics import internal_api_calls
 from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.constants import (
     ATTR_TYPE_REGEX,
+    BATCH_ENTRY_ID_REGEX,
     DUMMY_SUBSCRIPTION_PRINCIPAL,
     MAXIMUM_MESSAGE_LENGTH,
     MSG_ATTR_NAME_REGEX,
@@ -772,6 +774,17 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise BatchEntryIdsNotDistinctException(
                 "Two or more batch entries in the request have the same Id."
             )
+
+        # Validate each entry ID
+        for entry_id in ids:
+            if len(entry_id) > 80:
+                raise InvalidBatchEntryIdException(
+                    f"The Id of a batch entry in the batch request is too long: {entry_id}"
+                )
+            if not BATCH_ENTRY_ID_REGEX.match(entry_id):
+                raise InvalidBatchEntryIdException(
+                    f"The Id of a batch entry in the batch request contains an impermissible character: {entry_id}"
+                )
 
         response: PublishBatchResponse = {"Successful": [], "Failed": []}
 
