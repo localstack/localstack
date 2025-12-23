@@ -293,7 +293,7 @@ class KmsKey:
     policy: str
     is_key_rotation_enabled: bool
     rotation_period_in_days: int
-    next_rotation_date: datetime.datetime
+    next_rotation_date: datetime.datetime | None
     previous_keys: list[str]
 
     def __init__(
