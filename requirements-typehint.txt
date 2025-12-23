@@ -35,9 +35,9 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==48.20.0
     # via aws-cdk-lib
-aws-cdk-lib==2.232.2
+aws-cdk-lib==2.233.0
     # via localstack-core
-aws-sam-translator==1.105.0
+aws-sam-translator==1.106.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -54,7 +54,7 @@ boto3==1.42.14
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.42.10
+boto3-stubs==1.42.15
     # via localstack-core (pyproject.toml)
 botocore==1.42.14
     # via
@@ -64,7 +64,7 @@ botocore==1.42.14
     #   localstack-core
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.42.10
+botocore-stubs==1.42.15
     # via boto3-stubs
 cachetools==6.2.4
     # via
@@ -205,7 +205,7 @@ joserfc==1.6.0
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.121.0
+jsii==1.122.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -265,7 +265,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.18.post34
+moto-ext==5.1.18.post58
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -335,11 +335,11 @@ mypy-boto3-dynamodb==1.42.3
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.42.3
     # via boto3-stubs
-mypy-boto3-ec2==1.42.10
+mypy-boto3-ec2==1.42.15
     # via boto3-stubs
-mypy-boto3-ecr==1.42.3
+mypy-boto3-ecr==1.42.13
     # via boto3-stubs
-mypy-boto3-ecs==1.42.4
+mypy-boto3-ecs==1.42.13
     # via boto3-stubs
 mypy-boto3-efs==1.42.3
     # via boto3-stubs
@@ -353,7 +353,7 @@ mypy-boto3-elbv2==1.42.3
     # via boto3-stubs
 mypy-boto3-emr==1.42.3
     # via boto3-stubs
-mypy-boto3-emr-serverless==1.42.3
+mypy-boto3-emr-serverless==1.42.14
     # via boto3-stubs
 mypy-boto3-es==1.42.3
     # via boto3-stubs
@@ -371,7 +371,7 @@ mypy-boto3-iam==1.42.4
     # via boto3-stubs
 mypy-boto3-identitystore==1.42.5
     # via boto3-stubs
-mypy-boto3-iot==1.42.3
+mypy-boto3-iot==1.42.14
     # via boto3-stubs
 mypy-boto3-iot-data==1.42.3
     # via boto3-stubs
@@ -393,7 +393,7 @@ mypy-boto3-logs==1.42.10
     # via boto3-stubs
 mypy-boto3-managedblockchain==1.42.3
     # via boto3-stubs
-mypy-boto3-mediaconvert==1.42.3
+mypy-boto3-mediaconvert==1.42.12
     # via boto3-stubs
 mypy-boto3-mq==1.42.3
     # via boto3-stubs
@@ -401,7 +401,7 @@ mypy-boto3-mwaa==1.42.3
     # via boto3-stubs
 mypy-boto3-neptune==1.42.3
     # via boto3-stubs
-mypy-boto3-opensearch==1.42.7
+mypy-boto3-opensearch==1.42.13
     # via boto3-stubs
 mypy-boto3-organizations==1.42.8
     # via boto3-stubs
@@ -431,7 +431,7 @@ mypy-boto3-s3==1.42.10
     # via boto3-stubs
 mypy-boto3-s3control==1.42.3
     # via boto3-stubs
-mypy-boto3-sagemaker==1.42.3
+mypy-boto3-sagemaker==1.42.12
     # via boto3-stubs
 mypy-boto3-sagemaker-runtime==1.42.3
     # via boto3-stubs
@@ -443,7 +443,7 @@ mypy-boto3-servicediscovery==1.42.3
     # via boto3-stubs
 mypy-boto3-ses==1.42.3
     # via boto3-stubs
-mypy-boto3-sesv2==1.42.8
+mypy-boto3-sesv2==1.42.13
     # via boto3-stubs
 mypy-boto3-sns==1.42.3
     # via boto3-stubs
@@ -475,9 +475,9 @@ networkx==3.6.1
     # via
     #   cfn-lint
     #   localstack-core
-nodeenv==1.9.1
+nodeenv==1.10.0
     # via pre-commit
-openapi-core==0.20.0
+openapi-core==0.22.0
     # via localstack-core
 openapi-schema-validator==0.6.3
     # via
@@ -505,8 +505,6 @@ packaging==25.0
     #   requirements-parser
 pandoc==2.4
     # via localstack-core
-parse==1.20.2
-    # via openapi-core
 pathable==0.4.4
     # via jsonschema-path
 pathspec==0.12.1
@@ -528,7 +526,7 @@ ply==3.11
     #   jsonpath-ng
     #   jsonpath-rw
     #   pandoc
-pre-commit==4.5.0
+pre-commit==4.5.1
     # via localstack-core
 priority==1.3.0
     # via
@@ -573,7 +571,7 @@ pyopenssl==25.3.0
     #   localstack-twisted
 pypandoc==1.16.2
     # via localstack-core
-pyparsing==3.2.5
+pyparsing==3.3.1
     # via moto-ext
 pytest==8.4.2
     # via
@@ -656,7 +654,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.14.9
+ruff==0.14.10
     # via localstack-core
 s3transfer==0.16.0
     # via

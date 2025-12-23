@@ -25,7 +25,7 @@ attrs==25.4.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-sam-translator==1.105.0
+aws-sam-translator==1.106.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
@@ -194,7 +194,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.18.post34
+moto-ext==5.1.18.post58
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -202,7 +202,7 @@ multipart==1.3.0
     # via moto-ext
 networkx==3.6.1
     # via cfn-lint
-openapi-core==0.20.0
+openapi-core==0.22.0
     # via localstack-core
 openapi-schema-validator==0.6.3
     # via
@@ -221,8 +221,6 @@ packaging==25.0
     #   apispec
     #   incremental
     #   jpype1
-parse==1.20.2
-    # via openapi-core
 pathable==0.4.4
     # via jsonschema-path
 plux==1.13.0
@@ -265,7 +263,7 @@ pyopenssl==25.3.0
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
-pyparsing==3.2.5
+pyparsing==3.3.1
     # via moto-ext
 python-dateutil==2.9.0.post0
     # via
