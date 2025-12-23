@@ -1,8 +1,10 @@
-from localstack.services.cloudformation.engine.v2.change_set_model import (
-    NodeResource,
-)
+from localstack.aws.api.cloudformation import ChangeSetType
+from localstack.services.cloudformation.engine.v2.change_set_model import NodeResource
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
+)
+from localstack.services.cloudformation.engine.v2.unsupported_resource import (
+    should_ignore_unsupported_resource_type,
 )
 from localstack.services.cloudformation.resources import AWS_AVAILABLE_CFN_RESOURCES
 from localstack.utils.catalog.catalog import (
@@ -81,17 +83,23 @@ def _build_resource_failure_message(
 
 
 class ChangeSetResourceSupportChecker(ChangeSetModelVisitor):
+    change_set_type: ChangeSetType
     catalog: CatalogPlugin
 
     TITLE_MESSAGE = "Unsupported resources detected:"
 
-    def __init__(self):
+    def __init__(self, change_set_type: ChangeSetType):
         self._resource_failure_messages: dict[str, str] = {}
+        self.change_set_type = change_set_type
         self.catalog = get_aws_catalog()
 
     def visit_node_resource(self, node_resource: NodeResource):
         resource_type = node_resource.type_.value
-        if resource_type not in self._resource_failure_messages:
+        ignore_unsupported = should_ignore_unsupported_resource_type(
+            resource_type=resource_type, change_set_type=self.change_set_type
+        )
+
+        if resource_type not in self._resource_failure_messages and not ignore_unsupported:
             if resource_type not in AWS_AVAILABLE_CFN_RESOURCES:
                 # Ignore non-AWS resources
                 pass

@@ -50,6 +50,9 @@ from localstack.services.cloudformation.engine.v2.resolving import (
     extract_dynamic_reference,
     perform_dynamic_reference_lookup,
 )
+from localstack.services.cloudformation.engine.v2.unsupported_resource import (
+    should_ignore_unsupported_resource_type,
+)
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import (
     exports_map,
@@ -274,6 +277,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 f"No deployed instances of resource '{resource_logical_id}' were found"
             )
         properties = resolved_resource.get("Properties", {})
+        resource_type = resolved_resource.get("Type")
         # TODO support structured properties, e.g. NestedStack.Outputs.OutputName
         property_value: Any | None = get_value_from_path(properties, property_name)
 
@@ -286,7 +290,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     f"Accessing property '{property_name}' from '{resource_logical_id}' resulted in a non-string value nor list"
                 )
             return property_value
-        elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+        elif resource_type and should_ignore_unsupported_resource_type(
+            resource_type=resource_type,
+            change_set_type=self._change_set.change_set_type,
+        ):
             return MOCKED_REFERENCE
 
         return property_value
