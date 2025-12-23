@@ -462,6 +462,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
     @staticmethod
+    def _validate_publish_to(publish_to: str):
+        if publish_to != FunctionVersionLatestPublished.LATEST_PUBLISHED:
+            raise ValidationException(
+                message=f"1 validation error detected: Value '{publish_to}' at 'publishTo' failed to satisfy constraint: Member must satisfy enum value set: [LATEST_PUBLISHED]"
+            )
+
+    @staticmethod
     def _resolve_fn_qualifier(resolved_fn: Function, qualifier: str | None) -> tuple[str, str]:
         """Attempts to resolve a given qualifier and returns a qualifier that exists or
         raises an appropriate ResourceNotFoundException.
@@ -1001,6 +1008,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         if snap_start := request.get("SnapStart"):
             self._validate_snapstart(snap_start, runtime)
+        if publish_to := request.get("PublishTo"):
+            self._validate_publish_to(publish_to)
         state = lambda_stores[context_account_id][context_region]
 
         with self.create_fn_lock:
@@ -1404,6 +1413,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 replace_kwargs["tracing_config_mode"] = new_mode
 
         if "CapacityProviderConfig" in request:
+            capacity_provider_config = request["CapacityProviderConfig"]
+            self._validate_capacity_provider_config(capacity_provider_config, context)
+
             if latest_version.config.CapacityProviderConfig and not request[
                 "CapacityProviderConfig"
             ].get("LambdaManagedInstancesCapacityProviderConfig"):
@@ -1479,6 +1491,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
+        if publish_to := request.get("PublishTo"):
+            self._validate_publish_to(publish_to)
+
         if zip_file := request.get("ZipFile"):
             code = store_lambda_archive(
                 archive_file=zip_file,
@@ -1542,8 +1557,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 function_name=function_name,
                 region=region,
                 account_id=account_id,
-                # TODO: validations for PublishTo without Publish=True
-                publish_to=request.get("PublishTo"),
+                publish_to=publish_to,
                 is_active=True,
             )
         return api_utils.map_config_out(
@@ -1835,6 +1849,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> FunctionConfiguration:
         account_id, region = api_utils.get_account_and_region(function_name, context)
         function_name = api_utils.get_function_name(function_name, context)
+        if publish_to:
+            self._validate_publish_to(publish_to)
         new_version = self._publish_version_from_existing_version(
             function_name=function_name,
             description=description,
