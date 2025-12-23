@@ -698,16 +698,27 @@ class ExternalBypassDnsClientFactory(ExternalAwsClientFactory):
         if ca_cert := os.getenv("REQUESTS_CA_BUNDLE"):
             LOG.debug("Creating External AWS Client with REQUESTS_CA_BUNDLE=%s", ca_cert)
 
+        proxy_config = Config(
+            proxies={
+                "http": localstack_config.OUTBOUND_HTTP_PROXY,
+                "https": localstack_config.OUTBOUND_HTTPS_PROXY,
+            }
+        )
+        if config:
+            proxy_config = config.merge(proxy_config)
+
         super().__init__(
             use_ssl=localstack_config.is_env_not_false("USE_SSL"),
             verify=ca_cert or True,
             session=session,
-            config=config,
+            config=proxy_config,
         )
 
     def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
         client = super()._get_client_post_hook(client)
-        client._endpoint.http_session = ExternalBypassDnsSession(verify=self._verify)
+        client._endpoint.http_session = ExternalBypassDnsSession(
+            verify=self._verify, proxies=self._config.proxies
+        )
         return client
 
 
