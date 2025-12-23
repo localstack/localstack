@@ -2502,7 +2502,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     @staticmethod
     def _validate_qualifier(qualifier: str) -> None:
-        if qualifier == "$LATEST" or (qualifier and api_utils.qualifier_is_version(qualifier)):
+        if qualifier in ["$LATEST", "$LATEST.PUBLISHED"] or (
+            qualifier and api_utils.qualifier_is_version(qualifier)
+        ):
             raise ValidationException(
                 f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
             )
