@@ -218,11 +218,29 @@ class S3Code(ArchiveCode):
             if target_path.exists():
                 return
             LOG.debug("Saving code %s to disk", self.id)
-            target_path.mkdir(parents=True, exist_ok=True)
-            with tempfile.NamedTemporaryFile() as file:
-                self._download_archive_to_file(file)
-                unzip(file.name, str(target_path))
-                chmod_r(str(target_path), 0o755)
+            
+            # Use a temp directory for atomic operation to prevent partial reads
+            # if the process crashes or is killed during unzip.
+            temp_path = Path(str(target_path) + ".tmp")
+            if temp_path.exists():
+                shutil.rmtree(temp_path)
+            
+            temp_path.mkdir(parents=True, exist_ok=True)
+            
+            try:
+                with tempfile.NamedTemporaryFile() as file:
+                    self._download_archive_to_file(file)
+                    unzip(file.name, str(temp_path))
+                    chmod_r(str(temp_path), 0o755)
+                
+                # Atomic move/rename
+                temp_path.rename(target_path)
+                
+            except Exception:
+                # Cleanup on failure
+                if temp_path.exists():
+                    shutil.rmtree(temp_path)
+                raise
 
     def destroy_cached(self) -> None:
         """
