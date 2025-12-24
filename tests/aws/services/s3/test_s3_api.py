@@ -3107,6 +3107,123 @@ class TestS3ObjectWritePrecondition:
             )
         snapshot.match("copy-obj-if-match-fail-no-object", e.value.response)
 
+    @markers.aws.validated
+    def test_copy_object_if_none_match_versioned_bucket(self, s3_bucket, aws_client, snapshot):
+        """Test CopyObject with If-None-Match header in a versioned bucket.
+
+        For buckets with versioning enabled, S3 checks for the presence of a current object version.
+        If the current object version is a delete marker, the copy should succeed with If-None-Match.
+        """
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        src_key = "source-object"
+        dest_key = "dest-object"
+
+        # Create source object
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="source content")
+
+        # Copy should succeed when destination doesn't exist
+        copy_result = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{src_key}",
+            Key=dest_key,
+            IfNoneMatch="*",
+        )
+        snapshot.match("copy-obj", copy_result)
+
+        # Copy should fail when destination already exists
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{src_key}",
+                Key=dest_key,
+                IfNoneMatch="*",
+            )
+        snapshot.match("copy-obj-if-none-match-fail", e.value.response)
+
+        # Delete the destination object (creates a delete marker in versioned bucket)
+        del_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=dest_key)
+        snapshot.match("del-obj", del_obj)
+
+        # Copy should succeed when current version is a delete marker
+        copy_after_del = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{src_key}",
+            Key=dest_key,
+            IfNoneMatch="*",
+        )
+        snapshot.match("copy-obj-after-del", copy_after_del)
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-object-versions", list_object_versions)
+
+    @markers.aws.validated
+    def test_copy_object_if_match_versioned_bucket(self, s3_bucket, aws_client, snapshot):
+        """Test CopyObject with If-Match header in a versioned bucket.
+
+        For versioned buckets, If-Match checks against the current object version's ETag.
+        If the current version is a delete marker, the copy should fail.
+        """
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        src_key = "source-object"
+        dest_key = "dest-object"
+
+        # Create source object
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="source content")
+
+        # Create initial destination object
+        put_result = aws_client.s3.put_object(Bucket=s3_bucket, Key=dest_key, Body="initial content")
+        snapshot.match("put-obj", put_result)
+        dest_etag_1 = put_result["ETag"]
+
+        # Copy should fail with wrong ETag
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{src_key}",
+                Key=dest_key,
+                IfMatch='"wrong-etag"',
+            )
+        snapshot.match("copy-obj-if-match-wrong-etag", e.value.response)
+
+        # Delete the destination object (creates a delete marker)
+        del_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=dest_key)
+        snapshot.match("del-obj", del_obj)
+
+        # Copy should fail when current version is a delete marker (even with correct old ETag)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{src_key}",
+                Key=dest_key,
+                IfMatch=dest_etag_1,
+            )
+        snapshot.match("copy-obj-after-del-exc", e.value.response)
+
+        # Create a new destination object
+        put_result_2 = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=dest_key, Body="new content after delete"
+        )
+        snapshot.match("put-obj-after-del", put_result_2)
+        dest_etag_2 = put_result_2["ETag"]
+
+        # Copy should succeed with correct current ETag
+        copy_result = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{src_key}",
+            Key=dest_key,
+            IfMatch=dest_etag_2,
+        )
+        snapshot.match("copy-obj-if-match", copy_result)
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-object-versions", list_object_versions)
+
 
 class TestS3MetricsConfiguration:
     @markers.aws.validated

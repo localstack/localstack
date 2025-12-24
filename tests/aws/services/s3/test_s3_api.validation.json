@@ -443,6 +443,33 @@
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_on_existing_bucket": {
     "last_validated_date": "2025-01-21T18:11:36+00:00"
   },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_match_versioned_bucket": {
+    "last_validated_date": "2025-12-23T18:48:40+00:00",
+    "durations_in_seconds": {
+      "setup": 1.63,
+      "call": 2.91,
+      "teardown": 3.24,
+      "total": 7.78
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_none_match": {
+    "last_validated_date": "2025-12-23T19:00:22+00:00",
+    "durations_in_seconds": {
+      "setup": 2.2,
+      "call": 0.29,
+      "teardown": 0.95,
+      "total": 3.44
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_none_match_versioned_bucket": {
+    "last_validated_date": "2025-12-23T18:48:32+00:00",
+    "durations_in_seconds": {
+      "setup": 2.07,
+      "call": 1.64,
+      "teardown": 2.46,
+      "total": 6.17
+    }
+  },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_etag": {
     "last_validated_date": "2025-03-17T20:16:09+00:00"
   },

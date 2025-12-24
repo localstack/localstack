@@ -5480,7 +5480,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_none_match": {
-    "recorded-date": "20-12-2025, 20:18:12",
+    "recorded-date": "23-12-2025, 19:00:22",
     "recorded-content": {
       "copy-obj": {
         "CopyObjectResult": {
@@ -5542,6 +5542,293 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_none_match_versioned_bucket": {
+    "recorded-date": "23-12-2025, 18:48:32",
+    "recorded-content": {
+      "copy-obj": {
+        "CopyObjectResult": {
+          "ChecksumCRC32": "wmoL/Q==",
+          "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:4>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-obj-if-none-match-fail": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-None-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "del-obj": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "copy-obj-after-del": {
+        "CopyObjectResult": {
+          "ChecksumCRC32": "wmoL/Q==",
+          "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:4>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-versions": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": false,
+            "Key": "dest-object",
+            "LastModified": "datetime",
+            "Owner": {
+              "ID": "<i-d:1>"
+            },
+            "VersionId": "<version-id:2>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+            "IsLatest": true,
+            "Key": "dest-object",
+            "LastModified": "datetime",
+            "Owner": {
+              "ID": "<i-d:1>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+            "IsLatest": false,
+            "Key": "dest-object",
+            "LastModified": "datetime",
+            "Owner": {
+              "ID": "<i-d:1>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+            "IsLatest": true,
+            "Key": "source-object",
+            "LastModified": "datetime",
+            "Owner": {
+              "ID": "<i-d:1>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_match_versioned_bucket": {
+    "recorded-date": "23-12-2025, 18:48:40",
+    "recorded-content": {
+      "put-obj": {
+        "ChecksumCRC32": "P8fZPQ==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"38370d56e3e114d73ebedd6ac7b19028\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-obj-if-match-wrong-etag": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "del-obj": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "copy-obj-after-del-exc": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "dest-object",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-obj-after-del": {
+        "ChecksumCRC32": "ORgJnw==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"06becddd7457b4bad77f1d3bca3a3ad1\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-obj-if-match": {
+        "CopyObjectResult": {
+          "ChecksumCRC32": "wmoL/Q==",
+          "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:5>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-versions": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": false,
+            "Key": "dest-object",
+            "LastModified": "datetime",
+            "Owner": {
+              "ID": "<i-d:1>"
+            },
+            "VersionId": "<version-id:2>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+            "IsLatest": true,
+            "Key": "dest-object",
+            "LastModified": "datetime",
+            "Owner": {
+              "ID": "<i-d:1>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:4>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"06becddd7457b4bad77f1d3bca3a3ad1\"",
+            "IsLatest": false,
+            "Key": "dest-object",
+            "LastModified": "datetime",
+            "Owner": {
+              "ID": "<i-d:1>"
+            },
+            "Size": 24,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"38370d56e3e114d73ebedd6ac7b19028\"",
+            "IsLatest": false,
+            "Key": "dest-object",
+            "LastModified": "datetime",
+            "Owner": {
+              "ID": "<i-d:1>"
+            },
+            "Size": 15,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+            "IsLatest": true,
+            "Key": "source-object",
+            "LastModified": "datetime",
+            "Owner": {
+              "ID": "<i-d:1>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

@@ -1611,6 +1611,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             system_metadata = src_s3_object.system_metadata
 
         dest_version_id = generate_version_id(dest_s3_bucket.versioning_status)
+        if dest_version_id != "null":
+            # if we are in a versioned bucket, we need to lock around the full key (all the versions)
+            # because object versions have locks per version
+            precondition_lock = self._preconditions_locks[dest_bucket][dest_key]
+        else:
+            precondition_lock = contextlib.nullcontext()
 
         encryption_parameters = get_encryption_parameters_from_request_and_bucket(
             request,
@@ -1650,22 +1656,25 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             owner=dest_s3_bucket.owner,
         )
 
-        # Check destination write preconditions
-        if if_none_match and object_exists_for_precondition_write(dest_s3_bucket, dest_key):
-            raise PreconditionFailed(
-                "At least one of the pre-conditions you specified did not hold",
-                Condition="If-None-Match",
-            )
+        with (
+            precondition_lock,
+            self._storage_backend.copy(
+                src_bucket=src_bucket,
+                src_object=src_s3_object,
+                dest_bucket=dest_bucket,
+                dest_object=s3_object,
+            ) as s3_stored_object,
+        ):
+            # Check destination write preconditions inside the lock to prevent race conditions.
+            if if_none_match and object_exists_for_precondition_write(dest_s3_bucket, dest_key):
+                raise PreconditionFailed(
+                    "At least one of the pre-conditions you specified did not hold",
+                    Condition="If-None-Match",
+                )
 
-        elif if_match:
-            verify_object_equality_precondition_write(dest_s3_bucket, dest_key, if_match)
+            elif if_match:
+                verify_object_equality_precondition_write(dest_s3_bucket, dest_key, if_match)
 
-        with self._storage_backend.copy(
-            src_bucket=src_bucket,
-            src_object=src_s3_object,
-            dest_bucket=dest_bucket,
-            dest_object=s3_object,
-        ) as s3_stored_object:
             s3_object.checksum_value = s3_stored_object.checksum or src_s3_object.checksum_value
             s3_object.etag = s3_stored_object.etag or src_s3_object.etag
 
