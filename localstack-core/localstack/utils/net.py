@@ -458,6 +458,33 @@ class PortRange:
 
 
 @singleton_factory
+def get_docker_bridge_ip() -> str:
+    """
+    Lazily detect the Docker bridge IP by pinging candidate addresses.
+    This is called only when needed, to avoid I/O operations at module import time.
+
+    :return: The Docker bridge IP address
+    """
+    # If explicitly set via environment variable, use that
+    if config.DOCKER_BRIDGE_IP and config.DOCKER_BRIDGE_IP != "172.17.0.1":
+        return config.DOCKER_BRIDGE_IP
+
+    # Default bridge IP
+    default_ip = "172.17.0.1"
+
+    # Only try to detect if we're inside Docker
+    if config.is_in_docker:
+        candidates = (default_ip, "172.18.0.1")
+        for ip in candidates:
+            # Import ping here to avoid circular dependency
+            from localstack.config import ping
+            if ping(ip):
+                return ip
+
+    return default_ip
+
+
+@singleton_factory
 def get_docker_host_from_container() -> str:
     """
     Get the hostname/IP to connect to the host from within a Docker container (e.g., Lambda function).
@@ -465,9 +492,9 @@ def get_docker_host_from_container() -> str:
       1. return `host.docker.internal` if we're running in host mode, in a non-Linux OS
       2. return the IP address that `host.docker.internal` (or alternatively `host.containers.internal`)
         resolves to, if we're inside Docker
-      3. return the Docker bridge IP (config.DOCKER_BRIDGE_IP) as a fallback, if option (2) fails
+      3. return the Docker bridge IP (get_docker_bridge_ip()) as a fallback, if option (2) fails
     """
-    result = config.DOCKER_BRIDGE_IP
+    result = get_docker_bridge_ip()
     try:
         if not config.is_in_docker and not config.is_in_linux:
             # If we're running outside Docker (in host mode), and would like the Lambda containers to be able

@@ -298,14 +298,6 @@ DEPRECATIONS = [
         " Please remove PROVIDER_OVERRIDE_STEPFUNCTIONS.",
     ),
     EnvVarDeprecation(
-        "EVENT_RULE_ENGINE",
-        "4.0.3",
-        "This option is ignored because the Java-based event ruler has been removed since 4.1.0."
-        " Our latest Python-native implementation introduced in 4.0.3"
-        " is faster, achieves great AWS parity, and fixes compatibility issues with the StepFunctions JSONata feature."
-        " Please remove EVENT_RULE_ENGINE.",
-    ),
-    EnvVarDeprecation(
         "STEPFUNCTIONS_LAMBDA_ENDPOINT",
         "4.0.0",
         "This is only supported for the legacy provider. URL to use as the Lambda service endpoint in Step Functions. "
