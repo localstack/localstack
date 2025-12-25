@@ -758,7 +758,8 @@ GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
 GATEWAY_SERVER = os.environ.get("GATEWAY_SERVER", "").strip() or "twisted"
 
 # IP of the docker bridge used to enable access between containers
-DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
+# Note: The actual IP detection is done lazily in utils.net.get_docker_bridge_ip() to avoid I/O at import time
+DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip() or "172.17.0.1"
 
 # Default timeout for Docker API calls sent by the Docker SDK client, in seconds.
 DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS = int(os.environ.get("DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS") or 60)
@@ -847,27 +848,10 @@ else:
 # additional CLI commands, can be set by plugins
 CLI_COMMANDS = {}
 
-# determine IP of Docker bridge
-if not DOCKER_BRIDGE_IP:
-    DOCKER_BRIDGE_IP = "172.17.0.1"
-    if is_in_docker:
-        candidates = (DOCKER_BRIDGE_IP, "172.18.0.1")
-        for ip in candidates:
-            # TODO: remove from here - should not perform I/O operations in top-level config.py
-            if ping(ip):
-                DOCKER_BRIDGE_IP = ip
-                break
-
 # AWS account used to store internal resources such as Lambda archives or internal SQS queues.
 # It should not be modified by the user, or visible to him, except as through a presigned url with the
 # get-function call.
 INTERNAL_RESOURCE_ACCOUNT = os.environ.get("INTERNAL_RESOURCE_ACCOUNT") or "949334387222"
-
-# TODO: remove with 4.1.0
-# Determine which implementation to use for the event rule / event filtering engine used by multiple services:
-# EventBridge, EventBridge Pipes, Lambda Event Source Mapping
-# Options: python (default) | java (deprecated since 4.0.3)
-EVENT_RULE_ENGINE = os.environ.get("EVENT_RULE_ENGINE", "python").strip()
 
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
@@ -1329,7 +1313,6 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
     "ENABLE_CONFIG_UPDATES",
-    "EVENT_RULE_ENGINE",
     "EXTRA_CORS_ALLOWED_HEADERS",
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",
