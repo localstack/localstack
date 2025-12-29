@@ -9832,6 +9832,7 @@ class CreatePlacementGroupRequest(ServiceRequest):
     PartitionCount: Integer | None
     TagSpecifications: TagSpecificationList | None
     SpreadLevel: SpreadLevel | None
+    LinkedGroupId: PlacementGroupId | None
     DryRun: Boolean | None
     GroupName: String | None
     Strategy: PlacementStrategy | None
@@ -9846,6 +9847,7 @@ class PlacementGroup(TypedDict, total=False):
     Tags: TagList | None
     GroupArn: String | None
     SpreadLevel: SpreadLevel | None
+    LinkedGroupId: PlacementGroupId | None
 
 
 class CreatePlacementGroupResult(TypedDict, total=False):
@@ -24224,6 +24226,7 @@ class Ec2Api:
         partition_count: Integer | None = None,
         tag_specifications: TagSpecificationList | None = None,
         spread_level: SpreadLevel | None = None,
+        linked_group_id: PlacementGroupId | None = None,
         dry_run: Boolean | None = None,
         group_name: String | None = None,
         strategy: PlacementStrategy | None = None,
