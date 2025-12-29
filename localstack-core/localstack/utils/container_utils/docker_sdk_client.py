@@ -342,12 +342,15 @@ class SdkDockerClient(ContainerClient):
         docker_image: str,
         platform: DockerPlatform | None = None,
         log_handler: Callable[[str], None] | None = None,
+        auth_config: dict[str, str] | None = None,
     ) -> None:
         LOG.debug("Pulling Docker image: %s", docker_image)
         # some path in the docker image string indicates a custom repository
 
         docker_image = self.registry_resolver_strategy.resolve(docker_image)
-        kwargs: dict[str, str | bool] = {"platform": platform}
+        kwargs: dict[str, str | bool | dict[str, str]] = {"platform": platform}
+        if auth_config:
+            kwargs["auth_config"] = auth_config
         try:
             if log_handler:
                 # Use a lower-level API, as the 'stream' argument is not available in the higher-level `pull`-API
@@ -731,6 +734,7 @@ class SdkDockerClient(ContainerClient):
         log_config: LogConfig | None = None,
         cpu_shares: int | None = None,
         mem_limit: int | str | None = None,
+        auth_config: dict[str, str] | None = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
@@ -828,7 +832,7 @@ class SdkDockerClient(ContainerClient):
                 container = create_container()
             except ImageNotFound:
                 LOG.debug("Image not found. Pulling image %s", image_name)
-                self.pull_image(image_name, platform)
+                self.pull_image(image_name, platform, auth_config=auth_config)
                 container = create_container()
             return container.id
         except ImageNotFound:

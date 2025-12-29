@@ -13,6 +13,7 @@ from localstack.utils.container_utils.container_client import (
     PortMappings,
     Ulimit,
     Util,
+    get_registry_from_image_name,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 
@@ -388,3 +389,64 @@ class TestPortMappings:
         }
         result = port_mappings.to_dict()
         assert result == expected_result
+
+
+class TestGetRegistryFromImageName:
+    """Tests for the get_registry_from_image_name utility function."""
+
+    @pytest.mark.parametrize(
+        "image_name,expected",
+        [
+            # Docker Hub images (no explicit registry)
+            ("nginx", "docker.io"),
+            ("nginx:latest", "docker.io"),
+            ("localstack/localstack", "docker.io"),
+            ("localstack/localstack:latest", "docker.io"),
+            # Images with explicit registry
+            ("private-registry.com/localstack/localstack", "private-registry.com"),
+            ("private-registry.com/localstack", "private-registry.com"),
+            ("registry.example.com/my-image:v1.0", "registry.example.com"),
+            # Localhost registries
+            ("localhost:5000/myimage", "localhost:5000"),
+            ("localhost/myimage", "localhost"),
+            # Docker Hub with explicit domain
+            ("docker.io/nginx", "docker.io"),
+            ("docker.io/nginx:latest", "docker.io"),
+            # AWS ECR
+            (
+                "123456789.dkr.ecr.us-east-1.amazonaws.com/my-repo",
+                "123456789.dkr.ecr.us-east-1.amazonaws.com",
+            ),
+            (
+                "123456789.dkr.ecr.us-east-1.amazonaws.com/my-repo:tag",
+                "123456789.dkr.ecr.us-east-1.amazonaws.com",
+            ),
+            # Google Container Registry
+            ("gcr.io/my-project/my-image", "gcr.io"),
+            ("gcr.io/my-project/my-image:latest", "gcr.io"),
+            # Registry with port
+            ("registry.example.com:5000/image", "registry.example.com:5000"),
+            ("registry.example.com:443/image:tag", "registry.example.com:443"),
+            # LocalStack ECR
+            (
+                "000000000000.dkr.ecr.us-east-1.localhost.localstack.cloud:4566/repo",
+                "000000000000.dkr.ecr.us-east-1.localhost.localstack.cloud:4566",
+            ),
+        ],
+    )
+    def test_extract_registry_from_various_image_formats(self, image_name, expected):
+        """Test extracting registry from various Docker image name formats."""
+        assert get_registry_from_image_name(image_name) == expected
+
+    @pytest.mark.parametrize(
+        "prefix,image_name,expected",
+        [
+            ("my-mirror.example.com", "nginx:latest", "my-mirror.example.com"),
+            ("my-mirror.example.com", "docker.io/nginx:latest", "my-mirror.example.com"),
+            ("my-mirror.example.com", "registry.example.com/image", "my-mirror.example.com"),
+            ("harbor.example.com", "localhost:5000/myimage", "harbor.example.com"),
+        ],
+    )
+    def test_with_docker_global_image_prefix(self, image_name, expected, prefix, monkeypatch):
+        monkeypatch.setattr(config, "DOCKER_GLOBAL_IMAGE_PREFIX", prefix)
+        assert get_registry_from_image_name(image_name) == expected

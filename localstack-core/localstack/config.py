@@ -495,6 +495,9 @@ LEGACY_DOCKER_CLIENT = is_env_true("LEGACY_DOCKER_CLIENT")
 # Docker image to use when starting up containers for port checks
 PORTS_CHECK_DOCKER_IMAGE = os.environ.get("PORTS_CHECK_DOCKER_IMAGE", "").strip()
 
+# global prefix to prepend to Docker image names (e.g., for using a custom registry mirror)
+DOCKER_GLOBAL_IMAGE_PREFIX = os.environ.get("DOCKER_GLOBAL_IMAGE_PREFIX", "").strip()
+
 
 def is_trace_logging_enabled():
     if LS_LOG:
