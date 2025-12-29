@@ -30,6 +30,7 @@ from localstack.utils.container_utils.container_client import (
     Ulimit,
     Util,
     VolumeMappingSpecification,
+    get_registry_from_image_name,
 )
 from localstack.utils.run import run
 from localstack.utils.strings import first_char_to_upper, to_str
@@ -366,7 +367,21 @@ class CmdDockerClient(ContainerClient):
         docker_image: str,
         platform: DockerPlatform | None = None,
         log_handler: Callable[[str], None] | None = None,
+        auth_config: dict[str, str] | None = None,
     ) -> None:
+        if auth_config:
+            LOG.warning(
+                "Using global docker login for authentication in docker_cmd_client. "
+                "This may lead to unexpected behaviors with concurrent requests to different registries. "
+                "Consider stop using LEGACY_DOCKER_CLIENT for thread-safe authentication."
+            )
+            # Extract registry from the image name
+            registry = get_registry_from_image_name(docker_image)
+            self.login(
+                username=auth_config.get("username", ""),
+                password=auth_config.get("password", ""),
+                registry=registry,
+            )
         cmd = self._docker_cmd()
         docker_image = self.registry_resolver_strategy.resolve(docker_image)
         cmd += ["pull", docker_image]
@@ -674,6 +689,20 @@ class CmdDockerClient(ContainerClient):
             return False
 
     def create_container(self, image_name: str, **kwargs) -> str:
+        # Extract auth_config if provided
+        auth_config = kwargs.pop("auth_config", None)
+        if auth_config:
+            LOG.warning(
+                "Using global docker login for authentication in docker_cmd_client. "
+                "This may lead to unexpected behaviors with concurrent requests to different registries. "
+                "Consider using docker_sdk_client for thread-safe authentication."
+            )
+            registry = get_registry_from_image_name(image_name)
+            self.login(
+                username=auth_config.get("username", ""),
+                password=auth_config.get("password", ""),
+                registry=registry,
+            )
         image_name = self.registry_resolver_strategy.resolve(image_name)
         cmd, env_file = self._build_run_create_cmd("create", image_name, **kwargs)
         LOG.debug("Create container with cmd: %s", cmd)
