@@ -365,10 +365,13 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def push_image(self, docker_image: str) -> None:
+    def push_image(self, docker_image: str, auth_config: dict[str, str] | None = None) -> None:
         LOG.debug("Pushing Docker image: %s", docker_image)
+        kwargs: dict[str, dict[str, str]] = {}
+        if auth_config:
+            kwargs["auth_config"] = auth_config
         try:
-            result = self.client().images.push(docker_image)
+            result = self.client().images.push(docker_image, **kwargs)
             # some SDK clients (e.g., 5.0.0) seem to return an error string, instead of raising
             if isinstance(result, (str, bytes)) and '"errorDetail"' in to_str(result):
                 if "image does not exist locally" in to_str(result):
@@ -379,7 +382,17 @@ class SdkDockerClient(ContainerClient):
                     raise AccessDenied(docker_image)
                 if "access token has insufficient scopes" in to_str(result):
                     raise AccessDenied(docker_image)
+                if "authorization failed: no basic auth credentials" in to_str(result):
+                    raise AccessDenied(docker_image)
+                if "401 Unauthorized" in to_str(result):
+                    raise AccessDenied(docker_image)
+                if "no basic auth credentials" in to_str(result):
+                    raise AccessDenied(docker_image)
+                if "unauthorized: authentication required" in to_str(result):
+                    raise AccessDenied(docker_image)
                 if "connection refused" in to_str(result):
+                    raise RegistryConnectionError(result)
+                if "failed to do request:" in to_str(result):
                     raise RegistryConnectionError(result)
                 raise ContainerException(result)
         except ImageNotFound:
