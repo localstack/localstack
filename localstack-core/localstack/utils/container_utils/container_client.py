@@ -790,8 +790,13 @@ class ContainerClient(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def push_image(self, docker_image: str) -> None:
-        """Pushes an image with a given name to a Docker registry"""
+    def push_image(self, docker_image: str, auth_config: dict[str, str] | None = None) -> None:
+        """
+        Pushes an image with a given name to a Docker registry
+
+        :param docker_image: Image name and tag to push
+        :param auth_config: Optional authentication configuration for private registries. Dict with keys: username, password, registry
+        """
 
     @abstractmethod
     def build_image(
