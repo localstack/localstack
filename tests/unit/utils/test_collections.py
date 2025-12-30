@@ -7,6 +7,7 @@ from localstack.utils.collections import (
     HashableList,
     ImmutableDict,
     ImmutableList,
+    OrderedSet,
     convert_to_typed_dict,
     is_comma_delimited_list,
     optional_list,
@@ -207,3 +208,64 @@ def test_is_comma_limited_list():
 )
 def test_optional_list(condition, input, expected):
     assert optional_list(condition, input) == expected
+
+
+def test_ordered_set_init_with_iterable():
+    s = OrderedSet([1, 2, 3, 2, 1])
+    assert len(s) == 3
+    assert list(s) == [1, 2, 3]
+
+
+def test_ordered_set_add():
+    s = OrderedSet()
+    s.add(1)
+    s.add(2)
+    s.add(1)
+    assert len(s) == 2
+    assert list(s) == [1, 2]
+
+
+def test_ordered_set_contains():
+    s = OrderedSet([1, 2, 3])
+    assert 2 in s
+    assert 4 not in s
+
+
+def test_ordered_set_remove():
+    s = OrderedSet([1, 2, 3])
+    s.remove(2)
+    assert 2 not in s
+    assert list(s) == [1, 3]
+
+
+def test_ordered_set_remove_raises_key_error():
+    s = OrderedSet([1, 2, 3])
+    with pytest.raises(KeyError):
+        s.remove(4)
+
+
+def test_ordered_set_discard():
+    s = OrderedSet([1, 2, 3])
+    s.discard(2)
+    assert 2 not in s
+    s.discard(4)
+    assert len(s) == 2
+
+
+def test_ordered_set_iteration_order():
+    s = OrderedSet([3, 1, 4, 1, 5])
+    assert list(s) == [3, 1, 4, 5]
+
+
+def test_ordered_set_pop():
+    s = OrderedSet([1, 2, 3])
+    item = s.pop()
+    assert item == 3
+    assert len(s) == 2
+
+
+def test_ordered_set_clear():
+    s = OrderedSet([1, 2, 3])
+    s.clear()
+    assert len(s) == 0
+    assert list(s) == []

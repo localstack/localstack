@@ -43,6 +43,7 @@ from localstack.services.sqs.utils import (
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.arns import get_partition
+from localstack.utils.collections import OrderedSet
 from localstack.utils.strings import long_uid
 from localstack.utils.time import now
 from localstack.utils.urls import localstack_host
@@ -314,8 +315,7 @@ class SqsQueue:
     purge_timestamp: float | None
 
     delayed: set[SqsMessage]
-    # Simulating an ordered set in python. Only the keys are used and of interest.
-    inflight: dict[SqsMessage, None]
+    inflight: OrderedSet[SqsMessage]
     receipts: dict[str, SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
@@ -327,7 +327,7 @@ class SqsQueue:
         self.tags = tags or {}
 
         self.delayed = set()
-        self.inflight = {}
+        self.inflight = OrderedSet[SqsMessage]()
         self.receipts = {}
 
         self.attributes = self.default_attributes()
@@ -514,7 +514,7 @@ class SqsQueue:
                 )
                 # Terminating the visibility timeout for a message
                 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
-                del self.inflight[standard_message]
+                self.inflight.remove(standard_message)
                 self._put_message(standard_message)
 
     def remove(self, receipt_handle: str):
@@ -607,16 +607,8 @@ class SqsQueue:
                     standard_message,
                     self.arn,
                 )
-                del self.inflight[standard_message]
+                self.inflight.remove(standard_message)
                 self._put_message(standard_message)
-
-    def add_inflight_message(self, message: SqsMessage):
-        """
-        We are simulating an ordered set with a dict. When a value is added, it is added as key to the dict, which
-        is all we need. Hence all "values" in this ordered set are None
-        :param message: The message to put in flight
-        """
-        self.inflight[message] = None
 
     def enqueue_delayed_messages(self):
         if not self.delayed:
@@ -931,13 +923,13 @@ class StandardQueue(SqsQueue):
             if message.visibility_timeout == 0:
                 self.visible.put_nowait(message)
             else:
-                self.add_inflight_message(message)
+                self.inflight.add(message)
 
         return result
 
     def _on_remove_message(self, message: SqsMessage):
         try:
-            del self.inflight[message]
+            self.inflight.remove(message)
         except KeyError:
             # this likely means the message was removed with an expired receipt handle unfortunately this
             # means we need to scan the queue for the element and remove it from there, and then re-heapify
@@ -1174,7 +1166,7 @@ class FifoQueue(SqsQueue):
                     standard_message,
                     self.arn,
                 )
-                del self.inflight[standard_message]
+                self.inflight.remove(standard_message)
                 self._put_message(standard_message)
 
     def remove_expired_messages(self):
@@ -1306,7 +1298,7 @@ class FifoQueue(SqsQueue):
                 if message.visibility_timeout == 0:
                     self._put_message(message)
                 else:
-                    self.add_inflight_message(message)
+                    self.inflight.add(message)
         return result
 
     def _on_remove_message(self, message: SqsMessage):
@@ -1315,7 +1307,7 @@ class FifoQueue(SqsQueue):
 
         with self.mutex:
             try:
-                del self.inflight[message]
+                self.inflight.remove(message)
             except KeyError:
                 # in FIFO queues, this should not happen, as expired receipt handles cannot be used to
                 # delete a message.

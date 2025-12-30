@@ -5,9 +5,10 @@ and manipulate python collection (dicts, list, sets).
 
 import logging
 import re
-from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sized
+from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, MutableSet, Sized
 from typing import (
     Any,
+    Generic,
     Optional,
     TypedDict,
     TypeVar,
@@ -552,3 +553,44 @@ def iter_chunks(items: list[_E], chunk_size: int) -> Generator[list[_E], None, N
     """
     for i in range(0, len(items), chunk_size):
         yield items[i : i + chunk_size]
+
+
+class OrderedSet(MutableSet, Generic[_E]):
+    """
+    An ordered set implementation that maintains insertion order. It uses a ``dict`` to hold data as they are ordered
+    by definition since Python 3.7.
+    """
+
+    def __init__(self, iterable: Iterable[_E] | None = None):
+        self._data = {}
+        if iterable is not None:
+            for item in iterable:
+                self.add(item)
+
+    def add(self, item: _E) -> None:
+        self._data[item] = None
+
+    def discard(self, item: _E) -> None:
+        self._data.pop(item, None)
+
+    def remove(self, item: _E) -> None:
+        del self._data[item]
+
+    def __contains__(self, item: _E) -> bool:
+        return item in self._data
+
+    def __iter__(self) -> Iterator[_E]:
+        return iter(self._data)
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def pop(self) -> _E:
+        if not self._data:
+            raise KeyError("pop from an empty set")
+        key = next(reversed(self._data))
+        del self._data[key]
+        return key
+
+    def __repr__(self) -> str:
+        return f"OrderedSet({list(self._data.keys())})"
