@@ -22,7 +22,7 @@ botocore==1.42.17
     #   s3transfer
 cachetools==6.2.4
     # via localstack-core (pyproject.toml)
-cbor2==5.7.1
+cbor2==5.8.0
     # via localstack-core (pyproject.toml)
 certifi==2025.11.12
     # via requests

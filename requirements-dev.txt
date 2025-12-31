@@ -69,7 +69,7 @@ cachetools==6.2.4
     #   localstack-core (pyproject.toml)
 cattrs==25.3.0
     # via jsii
-cbor2==5.7.1
+cbor2==5.8.0
     # via localstack-core
 certifi==2025.11.12
     # via
