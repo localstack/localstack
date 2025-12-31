@@ -56,7 +56,7 @@ ReceiptHandle = str
 class SqsMessage:
     message: Message
     created: float
-    visibility_timeout: int
+    visibility_timeout: int | None
     receive_count: int
     delay_seconds: int | None
     receipt_handles: set[str]
@@ -65,9 +65,7 @@ class SqsMessage:
     visibility_deadline: float | None
     deleted: bool
     priority: float
-    message_deduplication_id: str
-    message_group_id: str
-    sequence_number: str
+    sequence_number: str | None
 
     def __init__(
         self,
@@ -85,6 +83,7 @@ class SqsMessage:
         self.delay_seconds = None
         self.last_received = None
         self.first_received = None
+        self.visibility_timeout = None
         self.visibility_deadline = None
         self.deleted = False
         self.priority = priority
