@@ -54,7 +54,7 @@ boto3==1.42.17
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.42.15
+boto3-stubs==1.42.18
     # via localstack-core (pyproject.toml)
 botocore==1.42.17
     # via
@@ -64,7 +64,7 @@ botocore==1.42.17
     #   localstack-core
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.42.15
+botocore-stubs==1.42.18
     # via boto3-stubs
 cachetools==6.2.4
     # via
@@ -100,7 +100,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.4
     # via aws-cdk-lib
-coverage==7.13.0
+coverage==7.13.1
     # via
     #   coveralls
     #   localstack-core
@@ -203,7 +203,7 @@ joserfc==1.6.0
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.122.0
+jsii==1.123.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -247,7 +247,7 @@ kclpy-ext==3.0.5
     # via localstack-core
 lazy-object-proxy==1.12.0
     # via openapi-spec-validator
-librt==0.7.4
+librt==0.7.5
     # via mypy
 localstack-snapshot==0.3.2
     # via localstack-core
@@ -425,7 +425,7 @@ mypy-boto3-route53==1.42.6
     # via boto3-stubs
 mypy-boto3-route53resolver==1.42.10
     # via boto3-stubs
-mypy-boto3-s3==1.42.10
+mypy-boto3-s3==1.42.16
     # via boto3-stubs
 mypy-boto3-s3control==1.42.3
     # via boto3-stubs
@@ -532,7 +532,7 @@ priority==1.3.0
     #   localstack-twisted
 protobuf==6.33.2
     # via opensearch-protobufs
-psutil==7.1.3
+psutil==7.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)

@@ -34,7 +34,7 @@ from dnslib import (
     DNSRecord,
 )
 from dnslib.server import DNSHandler, DNSServer
-from psutil._common import snicaddr
+from psutil._ntuples import snicaddr
 
 import dns.flags
 import dns.message

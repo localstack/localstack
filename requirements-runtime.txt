@@ -235,7 +235,7 @@ priority==1.3.0
     #   localstack-twisted
 protobuf==6.33.2
     # via opensearch-protobufs
-psutil==7.1.3
+psutil==7.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
