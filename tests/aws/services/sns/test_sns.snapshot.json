@@ -7185,5 +7185,80 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_batch_invalid_entry_id": {
+    "recorded-date": "23-12-2025, 17:39:15",
+    "recorded-content": {
+      "invalid-char-dot": {
+        "Error": {
+          "Code": "InvalidBatchEntryId",
+          "Message": "The Id of a batch entry in the batch request contains an impermissible character: message.id",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-char-special": {
+        "Error": {
+          "Code": "InvalidBatchEntryId",
+          "Message": "The Id of a batch entry in the batch request contains an impermissible character: msg@123#test",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "id-too-long-81": {
+        "Error": {
+          "Code": "InvalidBatchEntryId",
+          "Message": "The Id of a batch entry in the batch request is too long: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "id-too-long-91": {
+        "Error": {
+          "Code": "InvalidBatchEntryId",
+          "Message": "The Id of a batch entry in the batch request is too long: myreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallylongid",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "valid-id-80-chars": {
+        "Failed": [],
+        "Successful": [
+          {
+            "Id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "MessageId": "<uuid:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "valid-id-with-hyphen-underscore": {
+        "Failed": [],
+        "Successful": [
+          {
+            "Id": "valid-message_123",
+            "MessageId": "<uuid:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
