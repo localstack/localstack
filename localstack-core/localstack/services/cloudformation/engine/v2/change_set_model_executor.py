@@ -25,9 +25,11 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
+    ChangeSetModelPreproc,
+)
+from localstack.services.cloudformation.engine.v2.change_set_model_static_preproc import (
     _AWS_URL_SUFFIX,
     MOCKED_REFERENCE,
-    ChangeSetModelPreproc,
     PreprocEntityDelta,
     PreprocOutput,
     PreprocProperties,
