@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
 import zipfile
 from collections.abc import Generator
 from dataclasses import dataclass
@@ -280,6 +282,7 @@ class FileType(Enum):
     # service code
     plugin = auto()
     provider = auto()
+    provider_base = auto()
 
     # test files
     integration_test = auto()
@@ -325,6 +328,7 @@ class TemplateRenderer:
         template_mapping = {
             FileType.plugin: "plugin_template.py.j2",
             FileType.provider: "provider_template.py.j2",
+            FileType.provider_base: "provider_base_template.py.j2",
             FileType.getatt_test: "test_getatt_template.py.j2",
             FileType.integration_test: "test_integration_template.py.j2",
             # FileType.cloudcontrol_test: "test_cloudcontrol_template.py.j2",
@@ -351,7 +355,7 @@ class TemplateRenderer:
                         resource_name, FileType.attribute_template, tests_output_path, pro=self.pro
                     )
                 )
-            case FileType.provider:
+            case FileType.provider | FileType.provider_base:
                 property_ir = generate_ir_for_type(
                     [self.schema],
                     resource_name.full_name,
@@ -377,6 +381,9 @@ class TemplateRenderer:
                 kwargs["list_permissions"] = (
                     self.schema.get("handlers", {}).get("list", {}).get("permissions")
                 )
+                kwargs["service"] = resource_name.python_compatible_service_name.lower()
+                kwargs["lower_resource"] = resource_name.resource.lower()
+                kwargs["pro"] = self.pro
             case FileType.plugin:
                 kwargs["service"] = resource_name.python_compatible_service_name.lower()
                 kwargs["lower_resource"] = resource_name.resource.lower()
@@ -588,11 +595,20 @@ class FileWriter:
                 "resource_providers",
                 f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
+            FileType.provider_base: root_dir(self.pro).joinpath(
+                *base_path,
+                "services",
+                self.resource_name.python_compatible_service_name.lower(),
+                "resource_providers",
+                "generated",
+                f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_base.py",
+            ),
             FileType.plugin: root_dir(self.pro).joinpath(
                 *base_path,
                 "services",
                 self.resource_name.python_compatible_service_name.lower(),
                 "resource_providers",
+                "generated",
                 f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_plugin.py",
             ),
             FileType.schema: root_dir(self.pro).joinpath(
@@ -600,6 +616,7 @@ class FileWriter:
                 "services",
                 self.resource_name.python_compatible_service_name.lower(),
                 "resource_providers",
+                "generated",
                 f"aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.schema.json",
             ),
             FileType.integration_test: tests_root_dir(self.pro).joinpath(
@@ -656,6 +673,10 @@ class FileWriter:
                 self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
                 self.console.print(f"Written provider to {file_destination}")
+            case FileType.provider_base:
+                self.ensure_python_init_files(destination_path)
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written provider base to {file_destination}")
             case FileType.plugin:
                 self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
@@ -707,12 +728,24 @@ class FileWriter:
 
         :return True if file should be (over-)written, False otherwise
         """
-        return self.overwrite or click.confirm("Destination files already exist, overwrite?")
+        return self.overwrite or click.confirm(
+            f"Destination file {destination_file} already exists, overwrite?"
+        )
 
     @staticmethod
     def write_text(contents: str, destination: Path):
         with destination.open("wt") as outfile:
             print(contents, file=outfile)
+
+        # for Python files, use ruff to clean up formatting errors introduced by scaffolding
+        if destination.suffix == ".py":
+            command = [sys.executable, "-m", "ruff", "format", destination]
+            try:
+                subprocess.run(command, check=True, capture_output=True, text=True)
+            except subprocess.CalledProcessError as e:
+                print(
+                    f"Ruff fix command failed (exit code {e.returncode}):\n{e.stdout}\n{e.stderr}"
+                )
 
     @staticmethod
     def ensure_python_init_files(path: Path):
@@ -776,6 +809,9 @@ class Output:
             # service code
             case FileType.provider:
                 self.printer.print("\n[underline]Provider template[/underline]\n")
+                self.printer.print(Syntax(self.contents, "python"))
+            case FileType.provider_base:
+                self.printer.print("\n[underline]Provider base template[/underline]\n")
                 self.printer.print(Syntax(self.contents, "python"))
             case FileType.plugin:
                 self.printer.print("\n[underline]Plugin[/underline]\n")

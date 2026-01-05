@@ -1,0 +1,61 @@
+{
+  "typeName": "AWS::SQS::QueuePolicy",
+  "description": "Resource Type definition for AWS::SQS::QueuePolicy",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-sqs.git",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "type": "string",
+      "description": "The provider-assigned unique ID for this managed resource."
+    },
+    "PolicyDocument": {
+      "type": [
+        "object",
+        "string"
+      ],
+      "description": "A policy document that contains the permissions for the specified Amazon SQS queues. For more information about Amazon SQS policies, see Creating Custom Policies Using the Access Policy Language in the Amazon Simple Queue Service Developer Guide."
+    },
+    "Queues": {
+      "type": "array",
+      "description": "The URLs of the queues to which you want to add the policy. You can use the Ref function to specify an AWS::SQS::Queue resource.",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "PolicyDocument",
+    "Queues"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ],
+  "tagging": {
+    "taggable": false,
+    "tagOnCreate": false,
+    "tagUpdatable": false,
+    "cloudFormationSystemTags": false
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "sqs:SetQueueAttributes"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "sqs:SetQueueAttributes"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "sqs:SetQueueAttributes"
+      ]
+    }
+  }
+}
