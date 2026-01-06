@@ -176,7 +176,7 @@ exclude = ["tests*"]
 "localstack" = [
     "aws/**/*.json",
     "services/**/*.html",
-    "services/**/resource_providers/*.schema.json",
+    "services/**/resource_providers/**/*.schema.json",
     "utils/kinesis/java/cloud/localstack/*.*",
     "openapi.yaml",
     "http/resources/swagger/templates/index.html"
