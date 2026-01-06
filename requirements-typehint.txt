@@ -54,7 +54,7 @@ boto3==1.42.17
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.42.18
+boto3-stubs==1.42.22
     # via localstack-core (pyproject.toml)
 botocore==1.42.17
     # via
@@ -64,7 +64,7 @@ botocore==1.42.17
     #   localstack-core
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.42.18
+botocore-stubs==1.42.22
     # via boto3-stubs
 cachetools==6.2.4
     # via
@@ -73,9 +73,9 @@ cachetools==6.2.4
     #   localstack-core (pyproject.toml)
 cattrs==25.3.0
     # via jsii
-cbor2==5.7.1
+cbor2==5.8.0
     # via localstack-core
-certifi==2025.11.12
+certifi==2026.1.4
     # via
     #   httpcore
     #   httpx
@@ -115,7 +115,7 @@ cryptography==46.0.3
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-cython==3.2.3
+cython==3.2.4
     # via localstack-core
 decorator==5.2.1
     # via jsonpath-rw
@@ -146,7 +146,7 @@ docutils==0.19
     # via awscli
 events==0.5
     # via opensearch-py
-filelock==3.20.1
+filelock==3.20.2
     # via virtualenv
 graphql-core==3.2.7
     # via moto-ext
@@ -199,18 +199,18 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.6.0
+joserfc==1.6.1
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.123.0
+jsii==1.125.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
     #   constructs
-json5==0.12.1
+json5==0.13.0
     # via localstack-core
 jsonpatch==1.33
     # via
@@ -247,7 +247,7 @@ kclpy-ext==3.0.5
     # via localstack-core
 lazy-object-proxy==1.12.0
     # via openapi-spec-validator
-librt==0.7.5
+librt==0.7.7
     # via mypy
 localstack-snapshot==0.3.2
     # via localstack-core
@@ -367,7 +367,7 @@ mypy-boto3-glue==1.42.3
     # via boto3-stubs
 mypy-boto3-iam==1.42.4
     # via boto3-stubs
-mypy-boto3-identitystore==1.42.5
+mypy-boto3-identitystore==1.42.20
     # via boto3-stubs
 mypy-boto3-iot==1.42.14
     # via boto3-stubs
@@ -425,7 +425,7 @@ mypy-boto3-route53==1.42.6
     # via boto3-stubs
 mypy-boto3-route53resolver==1.42.10
     # via boto3-stubs
-mypy-boto3-s3==1.42.16
+mypy-boto3-s3==1.42.21
     # via boto3-stubs
 mypy-boto3-s3control==1.42.3
     # via boto3-stubs
@@ -505,7 +505,7 @@ pandoc==2.4
     # via localstack-core
 pathable==0.4.4
     # via jsonschema-path
-pathspec==0.12.1
+pathspec==1.0.0
     # via mypy
 platformdirs==4.5.1
     # via virtualenv

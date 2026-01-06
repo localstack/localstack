@@ -69,9 +69,9 @@ cachetools==6.2.4
     #   localstack-core (pyproject.toml)
 cattrs==25.3.0
     # via jsii
-cbor2==5.7.1
+cbor2==5.8.0
     # via localstack-core
-certifi==2025.11.12
+certifi==2026.1.4
     # via
     #   httpcore
     #   httpx
@@ -176,18 +176,18 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.6.0
+joserfc==1.6.1
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.123.0
+jsii==1.125.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
     #   constructs
-json5==0.12.1
+json5==0.13.0
     # via localstack-core (pyproject.toml)
 jsonpatch==1.33
     # via
