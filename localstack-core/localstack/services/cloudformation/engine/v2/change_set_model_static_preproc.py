@@ -371,7 +371,7 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
             case _:
                 raise RuntimeError(f"The use of '{pseudo_parameter_name}' is currently unsupported")
 
-    def _resolve_reference(self, logical_id: str) -> PreprocEntityDelta:
+    def _resolve_reference(self, logical_id: str) -> PreprocEntityDelta | None:
         if logical_id in _PSEUDO_PARAMETERS:
             pseudo_parameter_value = self._resolve_pseudo_parameter(
                 pseudo_parameter_name=logical_id
@@ -384,13 +384,7 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
             parameter_delta = self.visit(node_parameter)
             return parameter_delta
 
-        node_resource = self._get_node_resource_for(
-            resource_name=logical_id, node_template=self._change_set.update_model.node_template
-        )
-        resource_delta = self.visit(node_resource)
-        before = resource_delta.before
-        after = resource_delta.after
-        return PreprocEntityDelta(before=before, after=after)
+        return None
 
     def _resolve_mapping(
         self, map_name: str, top_level_key: str, second_level_key
@@ -569,83 +563,10 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
                 after[name] = delta_after
         return PreprocEntityDelta(before=before, after=after)
 
-    def _resolve_attribute(self, arguments: str | list[str], select_before: bool) -> str:
-        # TODO: add arguments validation.
-        arguments_list: list[str]
-        if isinstance(arguments, str):
-            arguments_list = arguments.split(".")
-        else:
-            arguments_list = arguments
-
-        if len(arguments_list) < 2:
-            raise ValidationError(
-                "Template error: every Fn::GetAtt object requires two non-empty parameters, the resource name and the resource attribute"
-            )
-
-        logical_name_of_resource = arguments_list[0]
-        attribute_name = ".".join(arguments_list[1:])
-
-        node_resource = self._get_node_resource_for(
-            resource_name=logical_name_of_resource,
-            node_template=self._change_set.update_model.node_template,
-        )
-
-        if not is_nothing(node_resource.condition_reference):
-            condition = self._get_node_condition_if_exists(node_resource.condition_reference.value)
-            evaluation_result = self._resolve_condition(condition.name)
-
-            if select_before and not evaluation_result.before:
-                raise ValidationError(
-                    f"Template format error: Unresolved resource dependencies [{logical_name_of_resource}] in the Resources block of the template"
-                )
-
-            if not select_before and not evaluation_result.after:
-                raise ValidationError(
-                    f"Template format error: Unresolved resource dependencies [{logical_name_of_resource}] in the Resources block of the template"
-                )
-
-        # Custom Resources can mutate their definition
-        # So the preproc should search first in the resource values and then check the template
-        if select_before:
-            value = self._before_deployed_property_value_of(
-                resource_logical_id=logical_name_of_resource,
-                property_name=attribute_name,
-            )
-        else:
-            value = self._after_deployed_property_value_of(
-                resource_logical_id=logical_name_of_resource,
-                property_name=attribute_name,
-            )
-        if value is not None:
-            return value
-
-        node_property: NodeProperty | None = self._get_node_property_for(
-            property_name=attribute_name, node_resource=node_resource
-        )
-        if node_property is not None:
-            # The property is statically defined in the template and its value can be computed.
-            property_delta = self.visit(node_property)
-            value = property_delta.before if select_before else property_delta.after
-
-        return value
-
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        # TODO: validate the return value according to the spec.
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-        before_arguments: Maybe[str | list[str]] = arguments_delta.before
-        after_arguments: Maybe[str | list[str]] = arguments_delta.after
-
-        before = self._before_cache.get(node_intrinsic_function.scope, Nothing)
-        if is_nothing(before) and not is_nothing(before_arguments):
-            before = self._resolve_attribute(arguments=before_arguments, select_before=True)
-
-        after = self._after_cache.get(node_intrinsic_function.scope, Nothing)
-        if is_nothing(after) and not is_nothing(after_arguments):
-            after = self._resolve_attribute(arguments=after_arguments, select_before=False)
-
-        return PreprocEntityDelta(before=before, after=after)
+        return self.visit(node_intrinsic_function.arguments)
 
     def visit_node_intrinsic_function_fn_equals(
         self, node_intrinsic_function: NodeIntrinsicFunction
@@ -804,17 +725,18 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
 
                 # Try to resolve the variable name as GetAtt.
                 elif "." in template_variable_name:
-                    try:
-                        template_variable_value = self._resolve_attribute(
-                            arguments=template_variable_name, select_before=select_before
-                        )
-                    except RuntimeError:
-                        pass
+                    # not valid for static resolution
+                    # TODO: should we still continue to visit the referenced resource?
+                    continue
 
                 # Try to resolve the variable name as Ref.
                 else:
                     try:
                         resource_delta = self._resolve_reference(logical_id=template_variable_name)
+                        if not resource_delta:
+                            # reference is a resource so skip in the static preproc
+                            continue
+
                         template_variable_value = (
                             resource_delta.before if select_before else resource_delta.after
                         )
@@ -934,20 +856,22 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         )
         return delta
 
+    def _compute_fn_split(self, args: list[Any]) -> Any:
+        delimiter = args[0]
+        if not isinstance(delimiter, str) or not delimiter:
+            raise RuntimeError(f"Invalid delimiter value for Fn::Split: '{delimiter}'")
+        source_string = args[1]
+        try:
+            split_string = source_string.split(delimiter)
+            return split_string
+        except Exception:
+            # may be a deployment time only value
+            return source_string
+
     def visit_node_intrinsic_function_fn_split(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ):
         # TODO: add further support for schema validation
-        def _compute_fn_split(args: list[Any]) -> Any:
-            delimiter = args[0]
-            if not isinstance(delimiter, str) or not delimiter:
-                raise RuntimeError(f"Invalid delimiter value for Fn::Split: '{delimiter}'")
-            source_string = args[1]
-            if not isinstance(source_string, str):
-                raise RuntimeError(f"Invalid source string value for Fn::Split: '{source_string}'")
-            split_string = source_string.split(delimiter)
-            return split_string
-
         arguments_delta = self.visit(node_intrinsic_function.arguments)
 
         if not (
@@ -963,7 +887,7 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         delta = self._cached_apply(
             scope=node_intrinsic_function.scope,
             arguments_delta=arguments_delta,
-            resolver=_compute_fn_split,
+            resolver=self._compute_fn_split,
         )
         return delta
 
@@ -1127,11 +1051,14 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_ref(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        def _compute_fn_ref(logical_id: str) -> PreprocEntityDelta:
+        def _compute_fn_ref(logical_id: str) -> PreprocEntityDelta | None:
             if logical_id == "AWS::NoValue":
                 return Nothing
 
-            reference_delta: PreprocEntityDelta = self._resolve_reference(logical_id=logical_id)
+            reference_delta = self._resolve_reference(logical_id=logical_id)
+            if not reference_delta:
+                return None
+
             if isinstance(before := reference_delta.before, PreprocResource):
                 reference_delta.before = before.physical_resource_id
             if isinstance(after := reference_delta.after, PreprocResource):

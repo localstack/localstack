@@ -1,0 +1,21 @@
+{
+  "Resources": {
+    "TopicBFC7AF6E": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "ArchivePolicy": {
+          "MessageRetentionPeriod": 30
+        },
+        "FifoTopic": true,
+        "TopicName": "stack1abe7e1e-Topic-88F1060F.fifo"
+      }
+    }
+  },
+  "Outputs": {
+    "TopicArn": {
+      "Value": {
+        "Ref": "TopicBFC7AF6E"
+      }
+    }
+  }
+}

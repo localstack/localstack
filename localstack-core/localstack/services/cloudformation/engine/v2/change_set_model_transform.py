@@ -36,10 +36,8 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     Scope,
     is_nothing,
 )
-from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
-    ChangeSetModelPreproc,
-)
 from localstack.services.cloudformation.engine.v2.change_set_model_static_preproc import (
+    ChangeSetModelStaticPreproc,
     PreprocEntityDelta,
     PreprocProperties,
 )
@@ -91,7 +89,7 @@ class TransformPreprocParameter(TypedDict):
     ParameterType: str | None
 
 
-class ChangeSetModelTransform(ChangeSetModelPreproc):
+class ChangeSetModelTransform(ChangeSetModelStaticPreproc):
     _before_parameters: Final[dict[str, EngineParameter] | None]
     _after_parameters: Final[dict[str, EngineParameter] | None]
     _before_template: Final[Maybe[dict]]
