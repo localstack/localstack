@@ -9,7 +9,7 @@ from localstack import config
 LOG = logging.getLogger(__name__)
 
 
-class DatabaseHelper:
+class LogsDatabaseHelper:
     DB_NAME = "logs.db"
     LOGS_DATA_ROOT: str = os.path.join(config.dirs.data, "logs")
     LOGS_DB: str = os.path.join(LOGS_DATA_ROOT, DB_NAME)
@@ -17,8 +17,7 @@ class DatabaseHelper:
     TABLE_LOG_EVENTS = "LOG_EVENTS"
     DATABASE_LOCK: threading.RLock
 
-    def __init__(self, db_file: str):
-        self.db_file = db_file
+    def __init__(self):
         self.lock = threading.RLock()
         if os.path.exists(self.LOGS_DB):
             LOG.debug("database for logs already exists (%s)", self.LOGS_DB)
@@ -164,5 +163,10 @@ class DatabaseHelper:
                 for row in rows
             ]
 
-
-db_helper = DatabaseHelper("logs.db")
+    def clear_tables(self):
+        with self.DATABASE_LOCK, sqlite3.connect(self.LOGS_DB) as conn:
+            cur = conn.cursor()
+            cur.execute(f"DELETE FROM {self.TABLE_LOG_EVENTS}")
+            conn.commit()
+            cur.execute("VACUUM")
+            conn.commit()

@@ -56,7 +56,7 @@ from localstack.aws.api.logs import (
     ValidationException,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.logs.db import db_helper
+from localstack.services.logs.db import LogsDatabaseHelper
 from localstack.services.logs.models import LogGroup, LogStream, SubscriptionFilter, logs_stores
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns
@@ -71,6 +71,15 @@ def get_pattern_matcher(pattern: str) -> Callable[[str, dict], bool]:
 
 
 class LogsProviderV2(ServiceLifecycleHook, LogsApi):
+    def __init__(self):
+        self.db_helper = LogsDatabaseHelper()
+
+    def on_before_state_reset(self):
+        self.db_helper.clear_tables()
+
+    def on_after_state_reset(self):
+        self.db_helper = LogsDatabaseHelper()
+
     @handler("CreateLogGroup", expand=False)
     def create_log_group(
         self,
@@ -257,7 +266,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         if log_stream_name not in store.log_streams.get(log_group_name, {}):
             raise ResourceNotFoundException("The specified log stream does not exist.")
 
-        db_helper.put_log_events(
+        self.db_helper.put_log_events(
             log_group_name,
             log_stream_name,
             log_events,
@@ -376,7 +385,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         if log_stream_name not in store.log_streams.get(log_group_name, {}):
             raise ResourceNotFoundException("The specified log stream does not exist.")
         try:
-            events_data = db_helper.get_log_events(
+            events_data = self.db_helper.get_log_events(
                 log_group_name,
                 log_stream_name,
                 region,
@@ -404,7 +413,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         account_id = context.account_id
         log_group_name = request["logGroupName"]
         try:
-            events_data = db_helper.filter_log_events(
+            events_data = self.db_helper.filter_log_events(
                 log_group_name,
                 region,
                 account_id,
