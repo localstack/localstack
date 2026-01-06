@@ -6,6 +6,7 @@ from localstack.aws.api.logs import (
     LogGroupName,
     LogStream,
     LogStreamName,
+    MetricFilter,
     SubscriptionFilter,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
@@ -26,6 +27,7 @@ class LogsStore(BaseStore):
     )
 
     subscription_filters: dict[LogGroupName, list[SubscriptionFilter]] = {}
+    metric_filters: dict[LogGroupName, list[MetricFilter]] = {}
 
 
 logs_stores = AccountRegionBundle("logs", LogsStore)

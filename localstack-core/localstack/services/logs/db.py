@@ -25,7 +25,7 @@ class LogsDatabaseHelper:
         self._create_tables()
 
     def _get_connection(self):
-        return sqlite3.connect(self.db_file, check_same_thread=False)
+        return sqlite3.connect(self.DB_NAME, check_same_thread=False)
 
     def _create_tables(self):
         with self.lock, self._get_connection() as conn:
@@ -52,7 +52,7 @@ class LogsDatabaseHelper:
         log_events: list[dict[str, Any]],
         region: str,
         account_id: str,
-    ):
+    ) -> list[dict[str, Any]]:
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
             for event in log_events:
@@ -67,7 +67,10 @@ class LogsDatabaseHelper:
                         account_id,
                     ),
                 )
+                event_id = cursor.lastrowid
+                event["event_id"] = event_id
             conn.commit()
+            return log_events
 
     def get_log_events(
         self,

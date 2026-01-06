@@ -283,6 +283,9 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
                 region=context.region,
             )
 
+        def _send_events_to_metrics(*_):
+            pass
+
         start_worker_thread(_send_events_to_subscriptions)
 
         return PutLogEventsResponse(rejectedLogEventsInfo=RejectedLogEventsInfo())
