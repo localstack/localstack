@@ -20,6 +20,7 @@ from localstack.aws.api.logs import (
     DescribeLogGroupsResponse,
     DescribeLogStreamsRequest,
     DescribeLogStreamsResponse,
+    DescribeMetricFiltersResponse,
     DescribeSubscriptionFiltersResponse,
     DestinationArn,
     Distribution,
@@ -42,6 +43,10 @@ from localstack.aws.api.logs import (
     LogGroupName,
     LogGroupSummary,
     LogsApi,
+    MetricFilter,
+    MetricName,
+    MetricNamespace,
+    MetricTransformations,
     NextToken,
     OutputLogEvent,
     PutLogEventsRequest,
@@ -650,3 +655,79 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         filters = [_filter for _filter in filters if _filter["filterName"] != filter_name]
 
         store.subscription_filters.update({log_group_name: filters})
+
+    def _find_metric_filter(
+        log_group_name: str, filter_name: str, account_id: str, region_name: str
+    ) -> MetricFilter | None:
+        store = logs_stores[account_id][region_name]
+        if metric_filters := store.metric_filters.get(log_group_name):
+            for metric_filter in metric_filters:
+                if metric_filter.get("filterName") == filter_name:
+                    return metric_filter
+
+        return None
+
+    def put_metric_filter(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name: FilterName,
+        filter_pattern: FilterPattern,
+        metric_transformations: MetricTransformations,
+        apply_on_transformed_logs: ApplyOnTransformedLogs | None = None,
+        field_selection_criteria: FieldSelectionCriteria | None = None,
+        emit_system_field_dimensions: EmitSystemFields | None = None,
+        **kwargs,
+    ) -> None:
+        if self._find_metric_filter(log_group_name, filter_name):
+            # TODO find correct name
+            raise InvalidParameterException(
+                f"Filter with name $'{filter_name}' already exists for '{log_group_name}'"
+            )
+
+        store = logs_stores[context.account_id][context.region]
+        metric_filer = MetricFilter(
+            logGroupName=log_group_name,
+            filterName=filter_name,
+            filterPattern=filter_pattern,
+            metricTransformations=metric_transformations,
+            applyOnTransformedLogs=apply_on_transformed_logs,
+            fieldSelectionCriteria=field_selection_criteria,
+            emitSystemFieldDimensions=emit_system_field_dimensions,
+        )
+
+        previous_filters = store.metric_filters.get(log_group_name, [])
+        previous_filters.append(metric_filer)
+        store.metric_filters.update({log_group_name: previous_filters})
+
+    def delete_metric_filter(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name: FilterName,
+        **kwargs,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+        filters = store.metric_filters.get(log_group_name, [])
+        filters = [_filter for _filter in filters if _filter["filterName"] != filter_name]
+        store.metric_filters.update({log_group_name: filters})
+
+    def describe_metric_filters(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName | None = None,
+        filter_name_prefix: FilterName | None = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
+        metric_name: MetricName | None = None,
+        metric_namespace: MetricNamespace | None = None,
+        **kwargs,
+    ) -> DescribeMetricFiltersResponse:
+        filter_name_prefix = filter_name_prefix or ""
+        store = logs_stores[context.account_id][context.region]
+        filters = store.subscription_filters.get(log_group_name, [])
+        filters = [
+            _filter for _filter in filters if _filter["filterName"].startswith(filter_name_prefix)
+        ]
+        # TODO add the other filter methods e.g. metric_name, metric_namespace
+        return DescribeMetricFiltersResponse(metricFilters=filters)
