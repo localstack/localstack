@@ -2135,8 +2135,28 @@ def cleanups():
     for cleanup_callback in cleanup_fns[::-1]:
         try:
             cleanup_callback()
+        except ClientError as e:
+            http_code = e.response["ResponseMetadata"]["HTTPStatusCode"]
+            # Covers non-standardized error codes such as NotFoundException, NoSuchEntity (IAM), NoSuchBucket (S3), etc
+            if http_code == 404:
+                LOG.warning(
+                    "Failed to execute cleanup because a resource was not found. "
+                    "This cleanup might be unnecessary. %s",
+                    str(e),
+                    exc_info=e,
+                )
+            else:
+                LOG.warning(
+                    "Failed to execute cleanup due to ClientError: %s",
+                    str(e),
+                    exc_info=e,
+                )
         except Exception as e:
-            LOG.warning("Failed to execute cleanup", exc_info=e)
+            LOG.warning(
+                "Failed to execute cleanup due to unexpected error: %s",
+                str(e),
+                exc_info=e,
+            )
 
 
 @pytest.fixture(scope="session")
