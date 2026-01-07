@@ -2,6 +2,7 @@ import base64
 import datetime
 import io
 import json
+import logging
 from collections.abc import Callable
 from gzip import GzipFile
 
@@ -66,8 +67,11 @@ from localstack.services.logs.models import LogGroup, LogStream, SubscriptionFil
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.numbers import is_number
 from localstack.utils.threads import start_worker_thread
 from localstack.utils.time import now_utc
+
+LOG = logging.getLogger(__name__)
 
 
 def get_pattern_matcher(pattern: str) -> Callable[[str, dict], bool]:
@@ -279,7 +283,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             context.account_id,
         )
 
-        def _send_events_to_subscriptions(*_):
+        def _send_events(*_):
             self._send_events_to_subscription(
                 log_group_name,
                 log_stream_name,
@@ -288,12 +292,43 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
                 region=context.region,
             )
 
-        def _send_events_to_metrics(*_):
-            pass
+            self._send_events_metrics(
+                log_group_name,
+                log_stream_name,
+                log_events,
+                account_id=context.account_id,
+                region=context.region,
+            )
 
-        start_worker_thread(_send_events_to_subscriptions)
+        start_worker_thread(_send_events)
 
         return PutLogEventsResponse(rejectedLogEventsInfo=RejectedLogEventsInfo())
+
+    def _send_events_metrics(self, log_group_name, log_stream_name, events, account_id, region):
+        store = logs_stores[account_id][region]
+        metric_filters = store.metric_filters.get(log_group_name, [])
+        client = connect_to(aws_access_key_id=account_id, region_name=region).cloudwatch
+
+        for metric_filter in metric_filters:
+            pattern = metric_filter.get("filterPattern", "")
+            transformations = metric_filter.get("metricTransformations", [])
+            matches = get_pattern_matcher(pattern)
+            for log_event in events:
+                if matches(pattern, log_event):
+                    for tf in transformations:
+                        value = tf.get("metricValue") or "1"
+                        if "$size" in value:
+                            LOG.info(
+                                "Expression not yet supported for log filter metricValue", value
+                            )
+                        value = float(value) if is_number(value) else 1
+                        data = [{"MetricName": tf["metricName"], "Value": value}]
+                        try:
+                            client.put_metric_data(Namespace=tf["metricNamespace"], MetricData=data)
+                        except Exception as e:
+                            LOG.info(
+                                "Unable to put metric data for matching CloudWatch log events", e
+                            )
 
     def _send_events_to_subscription(
         self, log_group_name, log_stream_name, events, account_id, region
