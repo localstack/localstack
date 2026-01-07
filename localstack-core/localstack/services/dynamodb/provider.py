@@ -1327,7 +1327,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             for key in ["Put", "Update", "Delete","ConditionCheck"]:
                 inner_item: Put | Delete | Update = item.get(key)
                 if inner_item:
-                    # We formar ARN to just the table name because currently DynamoDB Local does not support
+                    # We format ARN to just the table name because currently DynamoDB Local does not support
                     # ARN for table name: https://github.com/awslabs/amazon-dynamodb-local-samples/issues/34
                     inner_item["TableName"] = inner_item["TableName"].split(":table/")[-1]
                     table_name = inner_item["TableName"]
@@ -1360,7 +1360,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         #We modify the request so it matches the TransactItem object formatted.
         data = json.loads(context.request.data)
         data["TransactItems"] = transact_items
-        context.request.data = to_bytes(json.dumps(data))
+        context.request.data = to_bytes(json.dumps(data, cls=BytesEncoder))
 
         if existing_items_to_fetch:
             existing_items = ItemFinder.find_existing_items(
