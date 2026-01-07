@@ -43,7 +43,12 @@ from localstack.utils.docker_utils import (
     reserve_available_container_port,
     reserve_container_port,
 )
-from localstack.utils.net import Port, PortNotAvailableException, get_free_tcp_port
+from localstack.utils.net import (
+    Port,
+    PortNotAvailableException,
+    get_addressable_container_host,
+    get_free_tcp_port,
+)
 from localstack.utils.strings import to_bytes
 from localstack.utils.sync import retry
 from localstack.utils.threads import FuncThread
@@ -166,35 +171,7 @@ def authenticated_registry(docker_client: ContainerClient, create_container):
     )
     docker_client.start_container(registry_container.container_id)
 
-    def _get_registry_host():
-        import socket
-
-        # Try host.docker.internal
-        try:
-            host = socket.gethostbyname("host.docker.internal")
-            return host
-        except socket.gaierror:
-            pass
-
-        # On Linux, get the gateway IP from /proc/net/route (the Docker host)
-        try:
-            with open("/proc/net/route") as f:
-                for line in f:
-                    fields = line.strip().split()
-                    if len(fields) >= 3 and fields[1] == "00000000":  # Default route
-                        # Gateway is in hex, little-endian
-                        gateway_hex = fields[2]
-                        gateway_ip = ".".join(
-                            str(int(gateway_hex[i : i + 2], 16)) for i in (6, 4, 2, 0)
-                        )
-                        return gateway_ip
-        except (FileNotFoundError, IndexError, ValueError):
-            pass
-
-        # Fallback to localhost (works when running tests directly on host)
-        return "127.0.0.1"
-
-    registry_host = _get_registry_host()
+    registry_host = get_addressable_container_host()
 
     def _check_registry_auth():
         import requests
