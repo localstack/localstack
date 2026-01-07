@@ -106,6 +106,8 @@ from localstack.aws.api.kms import (
     ScheduleKeyDeletionResponse,
     SignRequest,
     SignResponse,
+    Tag,
+    TagList,
     TagResourceRequest,
     UnsupportedOperationException,
     UntagResourceRequest,
@@ -388,6 +390,16 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     @staticmethod
     def _is_rsa_spec(key_spec: str) -> bool:
         return key_spec in [KeySpec.RSA_2048, KeySpec.RSA_3072, KeySpec.RSA_4096]
+
+    def _get_key_tags(self, key_id: str, account_id: str, region: str) -> TagList:
+        tags = self._get_kms_key(
+            account_id,
+            region,
+            key_id,
+            enabled_key_allowed=True,
+            disabled_key_allowed=True,
+        ).tags
+        return [Tag(TagKey=key, TagValue=value) for key, value in tags.items()]
 
     #
     # Operation Handlers
