@@ -1324,11 +1324,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         for item in transact_items:
             item: TransactWriteItem
-            for key in ["Put", "Update", "Delete"]:
+            for key in ["Put", "Update", "Delete","ConditionCheck"]:
                 inner_item: Put | Delete | Update = item.get(key)
                 if inner_item:
+                    # We formar ARN to just the table name because currently DynamoDB Local does not support
+                    # ARN for table name: https://github.com/awslabs/amazon-dynamodb-local-samples/issues/34
+                    inner_item["TableName"] = inner_item["TableName"].split(":table/")[-1]
                     table_name = inner_item["TableName"]
-                    # if we've seen the table already and it does not have streams, skip
+                    # if we've seen the table already exists and it does not have streams, skip
                     if table_name in no_stream_tables:
                         continue
 
@@ -1354,6 +1357,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         updated_items_to_fetch_for_table.append(inner_item)
 
                     continue
+        #We modify the request so it matches the TransactItem object formatted.
+        data = json.loads(context.request.data)
+        data["TransactItems"] = transact_items
+        context.request.data = to_bytes(json.dumps(data))
 
         if existing_items_to_fetch:
             existing_items = ItemFinder.find_existing_items(

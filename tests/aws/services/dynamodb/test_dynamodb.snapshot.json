@@ -191,9 +191,15 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transaction_write_items": {
-    "recorded-date": "08-10-2025, 12:35:45",
+    "recorded-date": "07-01-2026, 10:30:09",
     "recorded-content": {
       "Response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "Response_using_table_arn": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
