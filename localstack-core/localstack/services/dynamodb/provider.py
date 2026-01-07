@@ -1324,7 +1324,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         for item in transact_items:
             item: TransactWriteItem
-            for key in ["Put", "Update", "Delete","ConditionCheck"]:
+            for key in ["Put", "Update", "Delete", "ConditionCheck"]:
                 inner_item: Put | Delete | Update = item.get(key)
                 if inner_item:
                     # We format ARN to just the table name because currently DynamoDB Local does not support
@@ -1357,7 +1357,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         updated_items_to_fetch_for_table.append(inner_item)
 
                     continue
-        #We modify the request so it matches the TransactItem object formatted.
+        # We modify the request so it matches the TransactItem object formatted.
         data = json.loads(context.request.data)
         data["TransactItems"] = transact_items
         context.request.data = to_bytes(json.dumps(data, cls=BytesEncoder))
