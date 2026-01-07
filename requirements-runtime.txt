@@ -55,9 +55,9 @@ cachetools==6.2.4
     #   airspeed-ext
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cbor2==5.7.1
+cbor2==5.8.0
     # via localstack-core
-certifi==2025.11.12
+certifi==2026.1.4
     # via
     #   opensearch-py
     #   requests
@@ -142,7 +142,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.6.0
+joserfc==1.6.1
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core (pyproject.toml)

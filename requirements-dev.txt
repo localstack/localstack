@@ -69,9 +69,9 @@ cachetools==6.2.4
     #   localstack-core (pyproject.toml)
 cattrs==25.3.0
     # via jsii
-cbor2==5.7.1
+cbor2==5.8.0
     # via localstack-core
-certifi==2025.11.12
+certifi==2026.1.4
     # via
     #   httpcore
     #   httpx
@@ -111,7 +111,7 @@ cryptography==46.0.3
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-cython==3.2.3
+cython==3.2.4
     # via localstack-core (pyproject.toml)
 decorator==5.2.1
     # via jsonpath-rw
@@ -142,7 +142,7 @@ docutils==0.19
     # via awscli
 events==0.5
     # via opensearch-py
-filelock==3.20.1
+filelock==3.20.2
     # via virtualenv
 graphql-core==3.2.7
     # via moto-ext
@@ -195,18 +195,18 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.6.0
+joserfc==1.6.1
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.123.0
+jsii==1.125.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
     #   constructs
-json5==0.12.1
+json5==0.13.0
     # via localstack-core
 jsonpatch==1.33
     # via
@@ -243,7 +243,7 @@ kclpy-ext==3.0.5
     # via localstack-core
 lazy-object-proxy==1.12.0
     # via openapi-spec-validator
-librt==0.7.5
+librt==0.7.7
     # via mypy
 localstack-snapshot==0.3.2
     # via localstack-core
@@ -305,7 +305,7 @@ pandoc==2.4
     # via localstack-core (pyproject.toml)
 pathable==0.4.4
     # via jsonschema-path
-pathspec==0.12.1
+pathspec==1.0.0
     # via mypy
 platformdirs==4.5.1
     # via virtualenv
