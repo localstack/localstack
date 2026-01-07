@@ -1,5 +1,5 @@
 #
-# A standard SQS queue with an associated queue policy allowing a few actions.
+# A set of three standard SQS queues without any associated queue policies.
 #
 Resources:
   Queue1:

@@ -1,5 +1,5 @@
 #
-# A standard SQS queue with an associated queue inline policy allowing a few actions.
+# A standard SQS queue without an associated queue (inline) policy.
 #
 
 Resources:
