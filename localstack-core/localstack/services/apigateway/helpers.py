@@ -984,20 +984,20 @@ def is_variable_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("}")
 
 
-def get_domain_name_hash(domain_name: str) -> str:
+def get_domain_name_hash(domain_name: str, region_name: str) -> str:
     """
     Return a hash of the given domain name, which help construct regional domain names for APIs.
     TODO: use this in the future to dispatch API Gateway API invocations made to the regional domain name
     """
-    return hashlib.shake_128(to_bytes(domain_name)).hexdigest(4)
+    return hashlib.shake_128(to_bytes(domain_name + region_name)).hexdigest(4)
 
 
-def get_regional_domain_name(domain_name: str) -> str:
+def get_regional_domain_name(domain_name: str, region_name: str) -> str:
     """
     Return the regional domain name for the given domain name.
     In real AWS, this would look something like: "d-oplm2qchq0.execute-api.us-east-1.amazonaws.com"
     In LocalStack, we're returning this format: "d-<domain_hash>.execute-api.localhost.localstack.cloud"
     """
-    domain_name_hash = get_domain_name_hash(domain_name)
+    domain_name_hash = get_domain_name_hash(domain_name, region_name)
     host = localstack_host().host
     return f"d-{domain_name_hash}.execute-api.{host}"
