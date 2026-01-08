@@ -89,6 +89,7 @@ from localstack.services.sns.constants import (
     MSG_ATTR_NAME_REGEX,
     PLATFORM_ENDPOINT_MSGS_ENDPOINT,
     SMS_MSGS_ENDPOINT,
+    SMS_PHONE_NUMBER_OPT_OUT_ENDPOINT,
     SNS_CERT_ENDPOINT,
     SNS_PROTOCOLS,
     SUBSCRIPTION_TOKENS_ENDPOINT,
@@ -1654,6 +1655,7 @@ def register_sns_api_resource(router: Router):
     router.add(SNSServicePlatformEndpointMessagesApiResource())
     router.add(SNSServiceSMSMessagesApiResource())
     router.add(SNSServiceSubscriptionTokenApiResource())
+    router.add(SNSServiceSMSPhoneOptOutResource())
 
 
 def _format_messages(sent_messages: list[dict[str, str]], validated_keys: list[str]):
@@ -1786,3 +1788,27 @@ class SNSServiceSubscriptionTokenApiResource(SNSInternalResource):
             }
         )
         return response
+
+
+class SNSServiceSMSPhoneOptOutResource(SNSInternalResource):
+    resource_type = "phone-number-opt-out"
+    """Provides a REST API for adding phone numbers to the opt out list for testing purposes.
+    In AWS this seems to be handled by pin-point, which is scheduled for deprecation.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint accepts:
+    - POST data `phoneNumber`: phone number to be opted out in SNS
+    - POST data `accountId`: account ID
+    """
+
+    @route(SMS_PHONE_NUMBER_OPT_OUT_ENDPOINT, methods=["POST"])
+    @count_usage
+    def on_post(self, request: Request):
+        data = json.loads(request.data) or {}
+        account_id = data.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = AWS_REGION_US_EAST_1  # opt-out list is account-wide
+        opt_out_phone_number = data.get("phoneNumber")
+        store: SnsStore = sns_stores[account_id][region]
+        if opt_out_phone_number:
+            store.PHONE_NUMBERS_OPTED_OUT.add(opt_out_phone_number)

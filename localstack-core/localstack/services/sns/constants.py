@@ -51,6 +51,7 @@ GCM_URL = "https://fcm.googleapis.com/fcm/send"
 PLATFORM_ENDPOINT_MSGS_ENDPOINT = "/_aws/sns/platform-endpoint-messages"
 SMS_MSGS_ENDPOINT = "/_aws/sns/sms-messages"
 SUBSCRIPTION_TOKENS_ENDPOINT = "/_aws/sns/subscription-tokens"
+SMS_PHONE_NUMBER_OPT_OUT_ENDPOINT = "/_aws/sns/phone-opt-outs"
 
 # we add hex chars to respect the format of AWS with certificate ID, hardcoded for now
 # we could parametrize the certificate ID in the future
