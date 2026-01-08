@@ -8,7 +8,6 @@ from collections import defaultdict
 from datetime import datetime
 
 from plux import PluginManager
-from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
@@ -260,8 +259,8 @@ class InitScriptsStageResource:
 
         try:
             stage = Stage[stage.upper()]
-        except KeyError as e:
-            raise NotFound(f"no such stage {stage}") from e
+        except KeyError:
+            return Response(f"no such stage {stage}", 404)
 
         return {
             "completed": manager.stage_completed.get(stage),
