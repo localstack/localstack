@@ -1,6 +1,6 @@
 {
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queuepolicy.py::test_sqs_queue_policy": {
-    "recorded-date": "07-12-2025, 18:56:21",
+    "recorded-date": "18-12-2025, 22:33:40",
     "recorded-content": {
       "policy": {
         "Attributes": {
@@ -28,7 +28,7 @@
     }
   },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queuepolicy.py::test_update_sqs_queuepolicy": {
-    "recorded-date": "07-12-2025, 18:58:54",
+    "recorded-date": "18-12-2025, 22:36:17",
     "recorded-content": {
       "policy1": {
         "Version": "2012-10-17",
@@ -60,6 +60,264 @@
             "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
           }
         ]
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queuepolicy.py::test_update_add_two_additional_queues_to_policy": {
+    "recorded-date": "18-12-2025, 22:38:51",
+    "recorded-content": {
+      "queue_1_before": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue_2_before": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue_3_before": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue_1_after": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl",
+                  "sqs:ChangeMessageVisibility"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue_2_after": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl",
+                  "sqs:ChangeMessageVisibility"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue_3_after": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl",
+                  "sqs:ChangeMessageVisibility"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queuepolicy.py::test_update_remove_two_queues_from_policy": {
+    "recorded-date": "18-12-2025, 22:41:27",
+    "recorded-content": {
+      "queue_1_before": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl",
+                  "sqs:ChangeMessageVisibility"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue_2_before": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl",
+                  "sqs:ChangeMessageVisibility"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue_3_before": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl",
+                  "sqs:ChangeMessageVisibility"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue_1_after": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue_2_after": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "queue_3_after": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queuepolicy.py::test_update_to_remove_queuepolicy_from_template": {
+    "recorded-date": "18-12-2025, 22:43:59",
+    "recorded-content": {
+      "policy_before": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": [
+                  "sqs:SendMessage",
+                  "sqs:GetQueueAttributes",
+                  "sqs:GetQueueUrl"
+                ],
+                "Resource": "<resource:1>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy_after": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   }

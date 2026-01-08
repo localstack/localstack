@@ -1,0 +1,21 @@
+#
+# A set of three standard SQS queues without any associated queue policies.
+#
+Resources:
+  Queue1:
+    Type: AWS::SQS::Queue
+  Queue2:
+    Type: AWS::SQS::Queue
+  Queue3:
+    Type: AWS::SQS::Queue
+
+Outputs:
+  Queue1Url:
+    Value:
+      Ref: Queue1
+  Queue2Url:
+    Value:
+      Ref: Queue2
+  Queue3Url:
+    Value:
+      Ref: Queue3

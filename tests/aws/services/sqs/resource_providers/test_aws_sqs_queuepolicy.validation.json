@@ -1,11 +1,38 @@
 {
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queuepolicy.py::test_sqs_queue_policy": {
-    "last_validated_date": "2025-12-07T18:57:27+00:00",
+    "last_validated_date": "2025-12-18T22:34:49+00:00",
     "durations_in_seconds": {
-      "setup": 1.1,
-      "call": 44.01,
-      "teardown": 66.41,
-      "total": 111.52
+      "setup": 0.0,
+      "call": 43.41,
+      "teardown": 68.6,
+      "total": 112.01
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queuepolicy.py::test_update_add_two_additional_queues_to_policy": {
+    "last_validated_date": "2025-12-18T22:39:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 87.32,
+      "teardown": 67.71,
+      "total": 155.03
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queuepolicy.py::test_update_remove_two_queues_from_policy": {
+    "last_validated_date": "2025-12-18T22:42:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 87.92,
+      "teardown": 66.76,
+      "total": 154.68
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queuepolicy.py::test_update_sqs_queuepolicy": {
+    "last_validated_date": "2025-12-18T22:37:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 87.64,
+      "teardown": 67.44,
+      "total": 155.08
     }
   }
 }
