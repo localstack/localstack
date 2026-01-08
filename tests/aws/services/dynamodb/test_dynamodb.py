@@ -1742,6 +1742,18 @@ class TestDynamoDB:
         )
         snapshot.match("TransactGetItems", result)
 
+        table_name_arn = f"test-ddb-table-{short_uid()}"
+        table = dynamodb_create_table(
+            table_name=table_name_arn,
+            partition_key=PARTITION_KEY,
+        )
+        table_arn = table["TableDescription"]["TableArn"]
+        aws_client.dynamodb.put_item(TableName=table_name_arn, Item={"id": {"S": "Sarah"}})
+        result = aws_client.dynamodb.transact_get_items(
+            TransactItems=[{"Get": {"Key": {"id": {"S": "Sarah"}}, "TableName": table_arn}}]
+        )
+        snapshot.match("TransactGetItems-with-TableArn", result)
+
     @markers.aws.validated
     def test_batch_write_items(self, dynamodb_create_table_with_parameters, snapshot, aws_client):
         table_name = f"test-ddb-table-{short_uid()}"
