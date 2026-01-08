@@ -1056,7 +1056,9 @@ paths:
           description: Information about init scripts in a specific stage
         '404':
           content:
-            text/xml: {}
+            text/plain:
+              schema:
+                type: string
           description: Stage not found
   /_localstack/plugins:
     get:
