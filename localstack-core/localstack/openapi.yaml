@@ -1055,6 +1055,8 @@ paths:
                 $ref: '#/components/schemas/InitScriptsStage'
           description: Information about init scripts in a specific stage
         '404':
+          content:
+            text/xml: {}
           description: Stage not found
   /_localstack/plugins:
     get:
