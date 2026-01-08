@@ -81,10 +81,10 @@ components:
             START:
               type: boolean
           required:
-          - BOOT
-          - START
-          - READY
-          - SHUTDOWN
+            - BOOT
+            - START
+            - READY
+            - SHUTDOWN
           type: object
         scripts:
           items:
@@ -97,14 +97,14 @@ components:
               state:
                 type: string
             required:
-            - stage
-            - name
-            - state
+              - stage
+              - name
+              - state
             type: object
           type: array
       required:
-      - completed
-      - scripts
+        - completed
+        - scripts
       type: object
     InitScriptsStage:
       additionalProperties: false
@@ -162,7 +162,7 @@ components:
             text_part:
               type: string
           required:
-          - text_part
+            - text_part
           type: object
         Destination:
           $ref: '#/components/schemas/SESDestination'
@@ -183,10 +183,10 @@ components:
         Timestamp:
           type: string
       required:
-      - Id
-      - Region
-      - Timestamp
-      - Source
+        - Id
+        - Region
+        - Timestamp
+        - Source
       type: object
     SessionInfo:
       additionalProperties: false
@@ -210,15 +210,15 @@ components:
         version:
           type: string
       required:
-      - version
-      - edition
-      - is_license_activated
-      - session_id
-      - machine_id
-      - system
-      - is_docker
-      - server_time_utc
-      - uptime
+        - version
+        - edition
+        - is_license_activated
+        - session_id
+        - machine_id
+        - system
+        - is_docker
+        - server_time_utc
+        - uptime
       type: object
     SnsSubscriptionTokenError:
       additionalProperties: false
@@ -228,8 +228,8 @@ components:
         subscription_arn:
           type: string
       required:
-      - error
-      - subscription_arn
+        - error
+        - subscription_arn
       type: object
     SNSPlatformEndpointMessage:
       type: object
@@ -456,7 +456,7 @@ paths:
                     description: Number of expired items that were deleted
                     type: integer
                 required:
-                - ExpiredItems
+                  - ExpiredItems
                 type: object
           description: Operation was successful
   /_aws/events/rules/{rule_arn}/trigger:
@@ -465,12 +465,12 @@ paths:
       operationId: trigger_event_bridge_rule
       tags: [aws]
       parameters:
-      - description: EventBridge rule ARN
-        in: path
-        name: rule_arn
-        required: true
-        schema:
-          type: string
+        - description: EventBridge rule ARN
+          in: path
+          name: rule_arn
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: EventBridge rule was triggered
@@ -492,16 +492,16 @@ paths:
       operationId: get_lambda_runtimes
       tags: [aws]
       parameters:
-      - in: query
-        name: filter
-        required: false
-        schema:
-          default: supported
-          enum:
-          - all
-          - deprecated
-          - supported
-          type: string
+        - in: query
+          name: filter
+          required: false
+          schema:
+            default: supported
+            enum:
+              - all
+              - deprecated
+              - supported
+            type: string
       responses:
         '200':
           content:
@@ -514,7 +514,7 @@ paths:
                       type: string
                     type: array
                 required:
-                - Runtimes
+                  - Runtimes
                 type: object
           description: Available Lambda runtimes
   /_aws/ses:
@@ -523,7 +523,7 @@ paths:
       operationId: discard_ses_messages
       tags: [aws]
       parameters:
-      - $ref: '#/components/parameters/SesIdFilter'
+        - $ref: '#/components/parameters/SesIdFilter'
       responses:
         '204':
           description: Message was successfully discarded
@@ -532,8 +532,8 @@ paths:
       operationId: get_ses_messages
       tags: [aws]
       parameters:
-      - $ref: '#/components/parameters/SesIdFilter'
-      - $ref: '#/components/parameters/SesEmailFilter'
+        - $ref: '#/components/parameters/SesIdFilter'
+        - $ref: '#/components/parameters/SesEmailFilter'
       responses:
         '200':
           content:
@@ -546,7 +546,7 @@ paths:
                       $ref: '#/components/schemas/SesSentEmail'
                     type: array
                 required:
-                - messages
+                  - messages
                 type: object
           description: List of sent messages
   /_aws/sns/platform-endpoint-messages:
@@ -555,9 +555,9 @@ paths:
       operationId: discard_sns_endpoint_messages
       tags: [aws]
       parameters:
-      - $ref: '#/components/parameters/SnsAccountId'
-      - $ref: '#/components/parameters/SnsRegion'
-      - $ref: '#/components/parameters/SnsEndpointArn'
+        - $ref: '#/components/parameters/SnsAccountId'
+        - $ref: '#/components/parameters/SnsRegion'
+        - $ref: '#/components/parameters/SnsEndpointArn'
       responses:
         '204':
           description: Platform endpoint message was discarded
@@ -566,9 +566,9 @@ paths:
       operationId: get_sns_endpoint_messages
       tags: [aws]
       parameters:
-      - $ref: '#/components/parameters/SnsAccountId'
-      - $ref: '#/components/parameters/SnsRegion'
-      - $ref: '#/components/parameters/SnsEndpointArn'
+        - $ref: '#/components/parameters/SnsAccountId'
+        - $ref: '#/components/parameters/SnsRegion'
+        - $ref: '#/components/parameters/SnsEndpointArn'
       responses:
         '200':
           content:
@@ -582,9 +582,9 @@ paths:
       operationId: discard_sns_sms_messages
       tags: [aws]
       parameters:
-      - $ref: '#/components/parameters/SnsAccountId'
-      - $ref: '#/components/parameters/SnsRegion'
-      - $ref: '#/components/parameters/SnsPhoneNumber'
+        - $ref: '#/components/parameters/SnsAccountId'
+        - $ref: '#/components/parameters/SnsRegion'
+        - $ref: '#/components/parameters/SnsPhoneNumber'
       responses:
         '204':
           description: SMS message was discarded
@@ -593,9 +593,9 @@ paths:
       operationId: get_sns_sms_messages
       tags: [aws]
       parameters:
-      - $ref: '#/components/parameters/SnsAccountId'
-      - $ref: '#/components/parameters/SnsRegion'
-      - $ref: '#/components/parameters/SnsPhoneNumber'
+        - $ref: '#/components/parameters/SnsAccountId'
+        - $ref: '#/components/parameters/SnsRegion'
+        - $ref: '#/components/parameters/SnsPhoneNumber'
       responses:
         '200':
           content:
@@ -609,12 +609,12 @@ paths:
       operationId: get_sns_subscription_token
       tags: [aws]
       parameters:
-      - description: '`subscriptionArn` resource of subscription token'
-        in: path
-        name: subscription_arn
-        required: true
-        schema:
-          type: string
+        - description: '`subscriptionArn` resource of subscription token'
+          in: path
+          name: subscription_arn
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           content:
@@ -627,8 +627,8 @@ paths:
                   subscription_token:
                     type: string
                 required:
-                - subscription_token
-                - subscription_arn
+                  - subscription_token
+                  - subscription_arn
                 type: object
           description: Subscription token
         '400':
@@ -649,12 +649,12 @@ paths:
       operationId: list_all_sqs_messages
       tags: [aws]
       parameters:
-      - description: SQS queue URL
-        in: query
-        name: QueueUrl
-        required: false
-        schema:
-          type: string
+        - description: SQS queue URL
+          in: query
+          name: QueueUrl
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           content:
@@ -686,10 +686,10 @@ paths:
         content:
           application/x-www-form-urlencoded:
             schema:
-               $ref: '#/components/schemas/ReceiveMessageRequest'
+              $ref: '#/components/schemas/ReceiveMessageRequest'
           application/json:
             schema:
-               $ref: '#/components/schemas/ReceiveMessageRequest'
+              $ref: '#/components/schemas/ReceiveMessageRequest'
       responses:
         '200':
           content:
@@ -714,24 +714,24 @@ paths:
       operationId: list_sqs_messages
       tags: [aws]
       parameters:
-      - description: SQS queue region
-        in: path
-        name: region
-        required: true
-        schema:
-          type: string
-      - description: SQS queue account ID
-        in: path
-        name: account_id
-        required: true
-        schema:
-          type: string
-      - description: SQS queue name
-        in: path
-        name: queue_name
-        required: true
-        schema:
-          type: string
+        - description: SQS queue region
+          in: path
+          name: region
+          required: true
+          schema:
+            type: string
+        - description: SQS queue account ID
+          in: path
+          name: account_id
+          required: true
+          schema:
+            type: string
+        - description: SQS queue name
+          in: path
+          name: queue_name
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           content:
@@ -762,6 +762,8 @@ paths:
               schema:
                 type: object
           description: Current LocalStack configuration
+        '404':
+          description: Not found
     post:
       description: Configuration option to update with new value
       operationId: update_config_option
@@ -774,14 +776,14 @@ paths:
               properties:
                 value:
                   type:
-                  - number
-                  - string
+                    - number
+                    - string
                 variable:
                   pattern: ^[_a-zA-Z0-9]+$
                   type: string
               required:
-              - variable
-              - value
+                - variable
+                - value
               type: object
         required: true
       responses:
@@ -793,19 +795,21 @@ paths:
                 properties:
                   value:
                     type:
-                    - number
-                    - string
+                      - number
+                      - string
                   variable:
                     type: string
                 required:
-                - variable
-                - value
+                  - variable
+                  - value
                 type: object
           description: Configuration option is updated
         '400':
           content:
             application/json: {}
           description: Bad request
+        '404':
+          description: Not found
   /_localstack/diagnose:
     get:
       description: Get diagnostics report
@@ -819,6 +823,8 @@ paths:
                 additionalProperties: false
                 properties:
                   config:
+                    type: object
+                  docker-dependent-image-hashes:
                     type: object
                   docker-dependent-image-hosts:
                     type: object
@@ -836,7 +842,7 @@ paths:
                       docker:
                         type: string
                     required:
-                    - docker
+                      - docker
                     type: object
                   services:
                     type: object
@@ -851,7 +857,7 @@ paths:
                           kernel:
                             type: string
                         required:
-                        - kernel
+                          - kernel
                         type: object
                       image-version:
                         additionalProperties: false
@@ -865,47 +871,47 @@ paths:
                           tag:
                             type: string
                         required:
-                        - id
-                        - sha256
-                        - tag
-                        - created
+                          - id
+                          - sha256
+                          - tag
+                          - created
                         type: object
                       localstack-version:
                         additionalProperties: false
                         properties:
                           build-date:
                             type:
-                            - string
-                            - 'null'
+                              - string
+                              - 'null'
                           build-git-hash:
                             type:
-                            - string
-                            - 'null'
+                              - string
+                              - 'null'
                           build-version:
                             type:
-                            - string
-                            - 'null'
+                              - string
+                              - 'null'
                         required:
-                        - build-date
-                        - build-git-hash
-                        - build-version
+                          - build-date
+                          - build-git-hash
+                          - build-version
                         type: object
                     required:
-                    - image-version
-                    - localstack-version
-                    - host
+                      - image-version
+                      - localstack-version
+                      - host
                     type: object
                 required:
-                - version
-                - info
-                - services
-                - config
-                - docker-inspect
-                - docker-dependent-image-hosts
-                - file-tree
-                - important-endpoints
-                - logs
-                - usage
+                  - version
+                  - info
+                  - services
+                  - config
+                  - docker-inspect
+                  - docker-dependent-image-hosts
+                  - file-tree
+                  - important-endpoints
+                  - logs
+                  - usage
                 type: object
           description: Diagnostics report
   /_localstack/health:
@@ -914,12 +920,12 @@ paths:
       operationId: get_features_and_services
       tags: [localstack]
       parameters:
-      - allowEmptyValue: true
-        in: query
-        name: reload
-        required: false
-        schema:
-          type: string
+        - allowEmptyValue: true
+          in: query
+          name: reload
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           content:
@@ -929,10 +935,10 @@ paths:
                 properties:
                   edition:
                     enum:
-                    - community
-                    - pro
-                    - enterprise
-                    - unknown
+                      - community
+                      - pro
+                      - enterprise
+                      - unknown
                     type: string
                   features:
                     type: object
@@ -941,9 +947,9 @@ paths:
                   version:
                     type: string
                 required:
-                - edition
-                - services
-                - version
+                  - edition
+                  - services
+                  - version
                 type: object
           description: Available LocalStack features and AWS services
     head:
@@ -966,11 +972,11 @@ paths:
               properties:
                 action:
                   enum:
-                  - restart
-                  - kill
+                    - restart
+                    - kill
                   type: string
               required:
-              - action
+                - action
               type: object
         description: Action to perform
         required: true
@@ -1003,7 +1009,7 @@ paths:
                   status:
                     type: string
                 required:
-                - status
+                  - status
                 type: object
           description: Data was saved
   /_localstack/info:
@@ -1036,11 +1042,11 @@ paths:
       operationId: get_init_script_info_stage
       tags: [localstack]
       parameters:
-      - in: path
-        name: stage
-        required: true
-        schema:
-          type: string
+        - in: path
+          name: stage
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           content:
@@ -1048,6 +1054,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/InitScriptsStage'
           description: Information about init scripts in a specific stage
+        '404':
+          content:
+            text/xml: {}
+          description: Stage not found
   /_localstack/plugins:
     get:
       description: ''

@@ -194,7 +194,7 @@ class SnsStore(BaseStore):
 
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
-    PHONE_NUMBERS_OPTED_OUT: list[PhoneNumber] = CrossRegionAttribute(default=list)
+    PHONE_NUMBERS_OPTED_OUT: set[PhoneNumber] = CrossRegionAttribute(default=set)
 
 
 sns_stores = AccountRegionBundle("sns", SnsStore)

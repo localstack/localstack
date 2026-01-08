@@ -185,7 +185,7 @@ typing-extensions==4.15.0
     #   localstack-twisted
     #   openapi-core
     #   readerwriterlock
-urllib3==2.6.2
+urllib3==2.6.3
     # via
     #   botocore
     #   docker
