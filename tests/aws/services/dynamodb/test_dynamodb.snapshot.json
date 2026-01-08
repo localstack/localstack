@@ -233,7 +233,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_get_items": {
-    "recorded-date": "08-10-2025, 12:36:06",
+    "recorded-date": "08-01-2026, 19:22:29",
     "recorded-content": {
       "TransactGetItems": {
         "Responses": [
@@ -241,6 +241,21 @@
             "Item": {
               "id": {
                 "S": "John"
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "TransactGetItems-with-TableArn": {
+        "Responses": [
+          {
+            "Item": {
+              "id": {
+                "S": "Sarah"
               }
             }
           }
