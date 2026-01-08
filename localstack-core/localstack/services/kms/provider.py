@@ -401,6 +401,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         ).tags
         return [Tag(TagKey=key, TagValue=value) for key, value in tags.items()]
 
+    def _set_key_tags(self, key_id: str, account_id: str, region: str, tags: TagList) -> None:
+        # Already handled by _create_key utility, storing tags on the key itself. Overridden in Pro.
+        return
+
     #
     # Operation Handlers
     #
@@ -412,6 +416,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         request: CreateKeyRequest = None,
     ) -> CreateKeyResponse:
         key = self._create_kms_key(context.account_id, context.region, request)
+        self._set_key_tags(
+            key.metadata["KeyId"], context.account_id, context.region, request.get("Tags", [])
+        )
         return CreateKeyResponse(KeyMetadata=key.metadata)
 
     @handler("ScheduleKeyDeletion", expand=False)
@@ -1486,7 +1493,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             next_token=request.get("Marker"),
             page_size=request.get("Limit", 50),
         )
-        kwargs = {"NextMarker": next_token, "Truncated": True} if next_token else {}
+        kwargs = (
+            {"NextMarker": next_token, "Truncated": True} if next_token else {"Truncated": False}
+        )
         return ListResourceTagsResponse(Tags=page, **kwargs)
 
     @handler("RotateKeyOnDemand", expand=False)
