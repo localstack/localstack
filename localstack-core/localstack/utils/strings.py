@@ -7,8 +7,12 @@ import re
 import string
 import uuid
 import zlib
+from typing import TYPE_CHECKING, Any
 
 from localstack.config import DEFAULT_ENCODING
+
+if TYPE_CHECKING:
+    from localstack.utils.objects import ComplexType
 
 _unprintables = (
     range(0x00, 0x09),
@@ -27,13 +31,13 @@ REGEX_UNPRINTABLE_CHARS = re.compile(
 )
 
 
-def to_str(obj: str | bytes, encoding: str = DEFAULT_ENCODING, errors="strict") -> str:
+def to_str(obj: str | bytes, encoding: str = DEFAULT_ENCODING, errors: str = "strict") -> str:
     """If ``obj`` is an instance of ``binary_type``, return
     ``obj.decode(encoding, errors)``, otherwise return ``obj``"""
     return obj.decode(encoding, errors) if isinstance(obj, bytes) else obj
 
 
-def to_bytes(obj: str | bytes, encoding: str = DEFAULT_ENCODING, errors="strict") -> bytes:
+def to_bytes(obj: str | bytes, encoding: str = DEFAULT_ENCODING, errors: str = "strict") -> bytes:
     """If ``obj`` is an instance of ``text_type``, return
     ``obj.encode(encoding, errors)``, otherwise return ``obj``"""
     return obj.encode(encoding, errors) if isinstance(obj, str) else obj
@@ -44,7 +48,7 @@ def truncate(data: str, max_length: int = 100) -> str:
     return (f"{data[:max_length]}...") if len(data) > max_length else data
 
 
-def is_string(s, include_unicode=True, exclude_binary=False):
+def is_string(s: Any, include_unicode: bool = True, exclude_binary: bool = False) -> bool:
     if isinstance(s, bytes) and exclude_binary:
         return False
     if isinstance(s, str):
@@ -54,13 +58,13 @@ def is_string(s, include_unicode=True, exclude_binary=False):
     return False
 
 
-def is_string_or_bytes(s):
+def is_string_or_bytes(s: Any) -> bool:
     return is_string(s) or isinstance(s, str) or isinstance(s, bytes)
 
 
-def is_base64(s):
+def is_base64(s: Any) -> bool:
     regex = r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
-    return is_string(s) and re.match(regex, s)
+    return is_string(s) and re.match(regex, s) is not None
 
 
 _re_camel_to_snake_case = re.compile("((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
@@ -85,21 +89,20 @@ def canonicalize_bool_to_str(val: bool) -> str:
     return "true" if str(val).lower() == "true" else "false"
 
 
-def convert_to_printable_chars(value: list | dict | str) -> str:
+def convert_to_printable_chars(value: "str | ComplexType") -> "ComplexType":
     """Removes all unprintable characters from the given string."""
     from localstack.utils.objects import recurse_object
 
-    if isinstance(value, (dict, list)):
+    if isinstance(value, str):
+        return REGEX_UNPRINTABLE_CHARS.sub("", value)
+    else:
 
-        def _convert(obj, **kwargs):
+        def _convert(obj: Any, **kwargs: Any) -> "ComplexType":
             if isinstance(obj, str):
                 return convert_to_printable_chars(obj)
             return obj
 
         return recurse_object(value, _convert)
-
-    result = REGEX_UNPRINTABLE_CHARS.sub("", value)
-    return result
 
 
 def first_char_to_lower(s: str) -> str:
@@ -110,7 +113,7 @@ def first_char_to_upper(s: str) -> str:
     return s and f"{s[0].upper()}{s[1:]}"
 
 
-def str_to_bool(value):
+def str_to_bool(value: Any) -> Any:
     """Return the boolean value of the given string, or the verbatim value if it is not a string"""
     if isinstance(value, str):
         true_strings = ["true", "True"]
@@ -118,12 +121,12 @@ def str_to_bool(value):
     return value
 
 
-def str_insert(string, index, content):
+def str_insert(string: str, index: int, content: str) -> str:
     """Insert a substring into an existing string at a certain index."""
     return f"{string[:index]}{content}{string[index:]}"
 
 
-def str_remove(string, index, end_index=None):
+def str_remove(string: str, index: int, end_index: int | None = None) -> str:
     """Remove a substring from an existing string at a certain from-to index range."""
     end_index = end_index or (index + 1)
     return f"{string[:index]}{string[end_index:]}"
@@ -159,7 +162,7 @@ def checksum_crc32(string: str | bytes) -> str:
     return base64.b64encode(checksum.to_bytes(4, "big")).decode()
 
 
-def checksum_crc32c(string: str | bytes):
+def checksum_crc32c(string: str | bytes) -> str:
     # import botocore locally here to avoid a dependency of the CLI to botocore
     from botocore.httpchecksum import CrtCrc32cChecksum
 
@@ -168,7 +171,7 @@ def checksum_crc32c(string: str | bytes):
     return base64.b64encode(checksum.digest()).decode()
 
 
-def checksum_crc64nvme(string: str | bytes):
+def checksum_crc64nvme(string: str | bytes) -> str:
     # import botocore locally here to avoid a dependency of the CLI to botocore
     from botocore.httpchecksum import CrtCrc64NvmeChecksum
 
@@ -223,7 +226,9 @@ def prepend_with_slash(input: str) -> str:
     return input
 
 
-def key_value_pairs_to_dict(pairs: str, delimiter: str = ",", separator: str = "=") -> dict:
+def key_value_pairs_to_dict(
+    pairs: str, delimiter: str = ",", separator: str = "="
+) -> dict[str, str]:
     """
     Converts a string of key-value pairs to a dictionary.
 
