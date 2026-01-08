@@ -53,6 +53,7 @@ from localstack.aws.api.dynamodb import (
     ExecuteStatementOutput,
     ExecuteTransactionInput,
     ExecuteTransactionOutput,
+    Get,
     GetItemInput,
     GetItemOutput,
     GlobalTableAlreadyExistsException,
@@ -972,6 +973,18 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         transact_items: TransactGetItemList,
         return_consumed_capacity: ReturnConsumedCapacity = None,
     ) -> TransactGetItemsOutput:
+        for transact_item in transact_items["TransactItems"]:
+            item: Get = transact_item.get("Get")
+            if item:
+                # We format ARN to just the table name because currently DynamoDB Local does not support
+                # ARN for table name: https://github.com/awslabs/amazon-dynamodb-local-samples/issues/34
+                item["TableName"] = item["TableName"].split(":table/")[-1]
+
+        # We modify the request so it matches the formatted TransactItem object.
+        data = json.loads(context.request.data)
+        data["TransactItems"] = transact_items["TransactItems"]
+        context.request.data = to_bytes(json.dumps(data, cls=BytesEncoder))
+
         return self.forward_request(context)
 
     @handler("ExecuteTransaction", expand=False)
