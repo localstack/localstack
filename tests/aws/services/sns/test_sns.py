@@ -32,6 +32,7 @@ from localstack.constants import (
 from localstack.services.sns.constants import (
     PLATFORM_ENDPOINT_MSGS_ENDPOINT,
     SMS_MSGS_ENDPOINT,
+    SMS_PHONE_NUMBER_OPT_OUT_ENDPOINT,
     SUBSCRIPTION_TOKENS_ENDPOINT,
 )
 from localstack.testing.aws.util import is_aws_cloud
@@ -4981,6 +4982,7 @@ class TestSNSSMS:
         snapshot.match("opt-in-phone-number", response)
 
     @markers.aws.only_localstack
+    @markers.requires_in_process
     @pytest.mark.skipif(is_sns_v1_provider(), reason="Not implemented in v1")
     def test_opt_out_phone_number_via_endpoint(
         self, phone_number, aws_client, snapshot, sns_provider, account_id, cleanups
@@ -4988,7 +4990,8 @@ class TestSNSSMS:
         response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
         assert not response["isOptedOut"]
         data = {"phoneNumber": phone_number, "accountId": account_id}
-        requests.post("http://localhost:4566/_aws/sns/phone-opt-outs", data=json.dumps(data))
+        phone_url = config.external_service_url() + SMS_PHONE_NUMBER_OPT_OUT_ENDPOINT
+        requests.post(phone_url, data=json.dumps(data))
 
         response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
         assert response["isOptedOut"]
