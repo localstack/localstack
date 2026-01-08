@@ -142,7 +142,7 @@ from localstack.utils.aws.request_context import (
 )
 from localstack.utils.collections import select_attributes, select_from_typed_dict
 from localstack.utils.common import short_uid, to_bytes
-from localstack.utils.json import canonical_json, BytesEncoder
+from localstack.utils.json import BytesEncoder, canonical_json
 from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.threads import FuncThread, start_thread
@@ -950,7 +950,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     # We format ARN to just the table name because currently DynamoDB Local does not support
                     # ARN for table name: https://github.com/awslabs/amazon-dynamodb-local-samples/issues/34
                     inner_item["TableName"] = inner_item["TableName"].split(":table/")[-1]
-                    table_name = inner_item["TableName"]
 
         # We modify the request so it matches the TransactItem object formatted.
         data = json.loads(context.request.data)
