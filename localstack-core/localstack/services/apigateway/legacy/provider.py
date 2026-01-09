@@ -562,7 +562,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             domainName=domain_name,
             certificateName=certificate_name,
             certificateArn=certificate_arn,
-            regionalDomainName=get_regional_domain_name(domain_name),
+            regionalDomainName=get_regional_domain_name(domain_name, context.region),
             domainNameStatus=DomainNameStatus.AVAILABLE,
             regionalHostedZoneId=zone_id,
             regionalCertificateName=regional_certificate_name,
