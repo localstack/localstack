@@ -7,7 +7,6 @@ import threading
 from collections import defaultdict
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, PackageType, Runtime
@@ -54,15 +53,13 @@ IMAGE_PREFIX = "public.ecr.aws/lambda/"
 
 RAPID_ENTRYPOINT = "/var/rapid/init"
 
-InitializationType = Literal["on-demand", "provisioned-concurrency"]
-
 LAMBDA_DOCKERFILE = """FROM {base_img}
 COPY init {rapid_entrypoint}
 COPY code/ /var/task
 """
 
-PULLED_IMAGES: set[(str, DockerPlatform)] = set()
-PULL_LOCKS: dict[(str, DockerPlatform), threading.RLock] = defaultdict(threading.RLock)
+PULLED_IMAGES: set[tuple[str, DockerPlatform]] = set()
+PULL_LOCKS: dict[tuple[str, DockerPlatform], threading.RLock] = defaultdict(threading.RLock)
 
 HOT_RELOADING_ENV_VARIABLE = "LOCALSTACK_HOT_RELOADING_PATHS"
 

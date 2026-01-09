@@ -11,8 +11,9 @@ import tempfile
 import threading
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
+from enum import StrEnum
 from pathlib import Path
-from typing import IO, Literal, Optional, TypedDict
+from typing import IO, Optional, TypedDict
 
 import boto3
 from botocore.exceptions import ClientError
@@ -80,7 +81,10 @@ class Invocation:
     user_agent: str | None = None
 
 
-InitializationType = Literal["on-demand", "provisioned-concurrency"]
+class InitializationType(StrEnum):
+    on_demand = "on-demand"
+    provisioned_concurrency = "provisioned-concurrency"
+    lambda_managed_instances = "lambda-managed-instances"
 
 
 class ArchiveCode(metaclass=ABCMeta):

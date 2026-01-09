@@ -41,6 +41,7 @@ class FunctionStatus(StrEnum):
 
 class FunctionInitializationType(StrEnum):
     # Maps to the Lambda environment variable AWS_LAMBDA_INITIALIZATION_TYPE
+    # Matches with lambda_models.InitializationType
     on_demand = "on-demand"
     lambda_managed_instances = "lambda-managed-instances"
     # Only applies to the operation "invoke" because provisioned concurrency is not configured on "create"

@@ -6,9 +6,10 @@ import subprocess
 import zipfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Optional, overload
+from typing import TYPE_CHECKING, Optional, overload
 
 from localstack import config
+from localstack.services.lambda_.invocation.lambda_models import InitializationType
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.utils.files import load_file
 from localstack.utils.platform import Arch, get_arch
@@ -259,9 +260,7 @@ def concurrency_update_done(client, function_name, qualifier):
     return _concurrency_update_done
 
 
-def get_invoke_init_type(
-    client, function_name, qualifier
-) -> Literal["on-demand", "provisioned-concurrency", "lambda-managed-instances"]:
+def get_invoke_init_type(client, function_name, qualifier) -> InitializationType:
     """check the environment in the lambda for AWS_LAMBDA_INITIALIZATION_TYPE indicating ondemand/provisioned"""
     invoke_result = client.invoke(FunctionName=function_name, Qualifier=qualifier)
     return json.load(invoke_result["Payload"])

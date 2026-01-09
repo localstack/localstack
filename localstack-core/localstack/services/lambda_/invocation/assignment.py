@@ -1,6 +1,7 @@
 import contextlib
 import logging
 from collections import defaultdict
+from collections.abc import Generator
 from concurrent.futures import Future, ThreadPoolExecutor
 
 from localstack.services.lambda_.invocation.execution_environment import (
@@ -43,7 +44,7 @@ class AssignmentService(OtherServiceEndpoint):
         version_manager_id: str,
         function_version: FunctionVersion,
         provisioning_type: InitializationType,
-    ) -> contextlib.AbstractContextManager[ExecutionEnvironment]:
+    ) -> Generator[ExecutionEnvironment, None, None]:
         applicable_envs = (
             env
             for env in self.environments[version_manager_id].values()
@@ -59,11 +60,11 @@ class AssignmentService(OtherServiceEndpoint):
                 pass
 
         if execution_environment is None:
-            if provisioning_type == "provisioned-concurrency":
+            if provisioning_type == InitializationType.provisioned_concurrency:
                 raise AssignmentException(
                     "No provisioned concurrency environment available despite lease."
                 )
-            elif provisioning_type == "on-demand":
+            elif provisioning_type == InitializationType.on_demand:
                 execution_environment = self.start_environment(version_manager_id, function_version)
                 self.environments[version_manager_id][execution_environment.id] = (
                     execution_environment
@@ -88,9 +89,9 @@ class AssignmentService(OtherServiceEndpoint):
         self, version_manager_id: str, function_version: FunctionVersion
     ) -> ExecutionEnvironment:
         LOG.debug("Starting new environment")
-        initialization_type = "on-demand"
+        initialization_type = InitializationType.on_demand
         if function_version.config.CapacityProviderConfig:
-            initialization_type = "lambda-managed-instances"
+            initialization_type = InitializationType.lambda_managed_instances
         execution_environment = ExecutionEnvironment(
             function_version=function_version,
             initialization_type=initialization_type,
@@ -141,7 +142,7 @@ class AssignmentService(OtherServiceEndpoint):
         current_provisioned_environments = [
             e
             for e in self.environments[version_manager_id].values()
-            if e.initialization_type == "provisioned-concurrency"
+            if e.initialization_type == InitializationType.provisioned_concurrency
         ]
         # TODO: refine scaling loop to re-use existing environments instead of re-creating all
         # current_provisioned_environments_count = len(current_provisioned_environments)
@@ -154,7 +155,7 @@ class AssignmentService(OtherServiceEndpoint):
         for _ in range(target_provisioned_environments):
             execution_environment = ExecutionEnvironment(
                 function_version=function_version,
-                initialization_type="provisioned-concurrency",
+                initialization_type=InitializationType.provisioned_concurrency,
                 on_timeout=self.on_timeout,
                 version_manager_id=version_manager_id,
             )
