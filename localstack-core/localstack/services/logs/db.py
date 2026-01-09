@@ -25,7 +25,7 @@ class LogsDatabaseHelper:
         self._create_tables()
 
     def _get_connection(self):
-        return sqlite3.connect(self.DB_NAME, check_same_thread=False)
+        return sqlite3.connect(self.LOGS_DB, check_same_thread=False)
 
     def _create_tables(self):
         with self.lock, self._get_connection() as conn:
