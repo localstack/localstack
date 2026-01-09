@@ -12,7 +12,7 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.12.0
+anyio==4.12.1
     # via httpx
 apispec==6.9.0
     # via localstack-core
@@ -46,7 +46,7 @@ aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.44.7
     # via localstack-core
-awscrt==0.30.0
+awscrt==0.31.0
     # via localstack-core
 boto3==1.42.17
     # via
@@ -238,7 +238,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.18.post58
+moto-ext==5.1.19.post44
     # via localstack-core
 mpmath==1.3.0
     # via sympy
