@@ -62,7 +62,7 @@ from localstack.aws.api.logs import (
     ValidationException,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.logs.db import LogsDatabaseHelper
+from localstack.services.logs.logs_database_helper import LogsDatabaseHelper
 from localstack.services.logs.models import LogGroup, LogStream, SubscriptionFilter, logs_stores
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns
