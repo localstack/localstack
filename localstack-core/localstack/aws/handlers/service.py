@@ -13,7 +13,6 @@ from localstack import config
 from localstack.http import Response
 
 from ...utils.catalog.plugins import get_aws_catalog
-from ...utils.coverage_docs import get_coverage_link_for_service
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
 from ..catalog_exceptions import get_service_availability_exception
@@ -195,9 +194,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
             operation_name = operation.name
             exception_message: str | None = exception.args[0] if exception.args else None
             if exception_message is not None:
-                message = exception_message or get_coverage_link_for_service(
-                    service_name, operation_name
-                )
+                message = exception_message
                 error = CommonServiceException("InternalFailure", message, status_code=501)
             else:
                 service_status = get_aws_catalog().get_aws_service_status(
