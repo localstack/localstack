@@ -12,12 +12,13 @@ from localstack.aws.api import (
     ServiceException,
 )
 from localstack.aws.api.core import ServiceRequest, ServiceRequestHandler, ServiceResponse
+from localstack.aws.catalog_exceptions import get_service_availability_exception
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.protocol.serializer import ResponseSerializer, create_serializer
 from localstack.aws.spec import load_service
 from localstack.http import Response
 from localstack.utils import analytics
-from localstack.utils.coverage_docs import get_coverage_link_for_service
+from localstack.utils.catalog.plugins import get_aws_catalog
 
 LOG = logging.getLogger(__name__)
 
@@ -212,16 +213,30 @@ class Skeleton:
         """
         operation = context.operation
 
-        action_name = operation.name
+        operation_name = operation.name
         service_name = operation.service_model.service_name
         exception_message: str | None = exception.args[0] if exception.args else None
-        message = exception_message or get_coverage_link_for_service(service_name, action_name)
+        if exception_message is not None:
+            message = exception_message
+            error = CommonServiceException("InternalFailure", message, status_code=501)
+            # record event
+            analytics.log.event(
+                "services_notimplemented", payload={"s": service_name, "a": operation_name}
+            )
+        else:
+            service_status = get_aws_catalog().get_aws_service_status(service_name, operation_name)
+            error = get_service_availability_exception(service_name, operation_name, service_status)
+            message = error.message
+            analytics.log.event(
+                "services_notimplemented",
+                payload={
+                    "s": service_name,
+                    "a": operation_name,
+                    "c": error.error_code,
+                },  # TODO: proper error code reporting
+            )
+
         LOG.info(message)
-        error = CommonServiceException("InternalFailure", message, status_code=501)
-        # record event
-        analytics.log.event(
-            "services_notimplemented", payload={"s": service_name, "a": action_name}
-        )
         context.service_exception = error
 
         return serializer.serialize_error_to_response(
