@@ -9,7 +9,7 @@ import tarfile
 import tempfile
 from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
-from enum import Enum, unique
+from enum import Enum, StrEnum, unique
 from pathlib import Path
 from typing import (
     Literal,
@@ -125,7 +125,7 @@ class CancellableStream(Protocol):
         raise NotImplementedError
 
 
-class DockerPlatform(str):
+class DockerPlatform(StrEnum):
     """Platform in the format ``os[/arch[/variant]]``"""
 
     linux_amd64 = "linux/amd64"
