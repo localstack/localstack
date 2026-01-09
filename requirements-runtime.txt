@@ -360,7 +360,7 @@ urllib3==2.6.3
     #   opensearch-py
     #   requests
     #   responses
-werkzeug==3.1.4
+werkzeug==3.1.5
     # via
     #   localstack-core
     #   moto-ext

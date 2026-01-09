@@ -507,7 +507,7 @@ virtualenv==20.35.4
     # via pre-commit
 websocket-client==1.9.0
     # via localstack-core
-werkzeug==3.1.4
+werkzeug==3.1.5
     # via
     #   localstack-core
     #   moto-ext
