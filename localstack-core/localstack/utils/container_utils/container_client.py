@@ -9,7 +9,7 @@ import tarfile
 import tempfile
 from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
-from enum import Enum, StrEnum, unique
+from enum import Enum, unique
 from pathlib import Path
 from typing import (
     Literal,
@@ -125,7 +125,8 @@ class CancellableStream(Protocol):
         raise NotImplementedError
 
 
-class DockerPlatform(StrEnum):
+# TODO: Migrate to StrEnum once the CLI does not need to support Python 3.10 (EOL Oct'26) anymore
+class DockerPlatform(str):
     """Platform in the format ``os[/arch[/variant]]``"""
 
     linux_amd64 = "linux/amd64"
