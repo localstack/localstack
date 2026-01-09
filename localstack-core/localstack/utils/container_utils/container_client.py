@@ -34,6 +34,27 @@ LOG = logging.getLogger(__name__)
 WELL_KNOWN_IMAGE_REPO_PREFIXES = ("localhost/", "docker.io/library/")
 
 
+def get_registry_from_image_name(image_name: str) -> str:
+    parts = image_name.split("/", maxsplit=1)
+
+    if prefix := config.DOCKER_GLOBAL_IMAGE_PREFIX:
+        return prefix
+
+    if len(parts) == 1:
+        # If no slash is present at all, it's an image name
+        return "docker.io"
+
+    potential_registry = parts[0]
+
+    registry_indicators = (".", ":", "localhost")
+    if any(indicator in potential_registry for indicator in registry_indicators):
+        # This indicates a registry domain or a local registry
+        return potential_registry
+
+    # No explicit registry, assume Docker Hub
+    return "docker.io"
+
+
 @unique
 class DockerContainerStatus(Enum):
     DOWN = -1
@@ -546,6 +567,7 @@ class ContainerConfiguration:
     log_config: LogConfig | None = None
     cpu_shares: int | None = None
     mem_limit: int | str | None = None
+    auth_config: dict[str, str] | None = None
 
 
 class ContainerConfigurator(Protocol):
@@ -757,16 +779,23 @@ class ContainerClient(metaclass=ABCMeta):
         docker_image: str,
         platform: DockerPlatform | None = None,
         log_handler: Callable[[str], None] | None = None,
+        auth_config: dict[str, str] | None = None,
     ) -> None:
         """
         Pulls an image with a given name from a Docker registry
 
         :log_handler: Optional parameter that can be used to process the logs. Logs will be streamed if possible, but this is not guaranteed.
+        :auth_config: Optional authentication configuration for private registries. Dict with keys: username, password, registry
         """
 
     @abstractmethod
-    def push_image(self, docker_image: str) -> None:
-        """Pushes an image with a given name to a Docker registry"""
+    def push_image(self, docker_image: str, auth_config: dict[str, str] | None = None) -> None:
+        """
+        Pushes an image with a given name to a Docker registry
+
+        :param docker_image: Image name and tag to push
+        :param auth_config: Optional authentication configuration for private registries. Dict with keys: username, password, registry
+        """
 
     @abstractmethod
     def build_image(
@@ -983,6 +1012,7 @@ class ContainerClient(metaclass=ABCMeta):
             log_config=container_config.log_config,
             cpu_shares=container_config.cpu_shares,
             mem_limit=container_config.mem_limit,
+            auth_config=container_config.auth_config,
         )
 
     @abstractmethod
@@ -1017,6 +1047,7 @@ class ContainerClient(metaclass=ABCMeta):
         log_config: LogConfig | None = None,
         cpu_shares: int | None = None,
         mem_limit: int | str | None = None,
+        auth_config: dict[str, str] | None = None,
     ) -> str:
         """Creates a container with the given image
 
