@@ -106,6 +106,8 @@ from localstack.aws.api.kms import (
     ScheduleKeyDeletionResponse,
     SignRequest,
     SignResponse,
+    Tag,
+    TagList,
     TagResourceRequest,
     UnsupportedOperationException,
     UntagResourceRequest,
@@ -389,6 +391,20 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def _is_rsa_spec(key_spec: str) -> bool:
         return key_spec in [KeySpec.RSA_2048, KeySpec.RSA_3072, KeySpec.RSA_4096]
 
+    def _get_key_tags(self, key_id: str, account_id: str, region: str) -> TagList:
+        tags = self._get_kms_key(
+            account_id,
+            region,
+            key_id,
+            enabled_key_allowed=True,
+            disabled_key_allowed=True,
+        ).tags
+        return [Tag(TagKey=key, TagValue=value) for key, value in tags.items()]
+
+    def _set_key_tags(self, key_id: str, account_id: str, region: str, tags: TagList) -> None:
+        # Already handled by _create_key utility, storing tags on the key itself. Overridden in Pro.
+        return
+
     #
     # Operation Handlers
     #
@@ -400,6 +416,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         request: CreateKeyRequest = None,
     ) -> CreateKeyResponse:
         key = self._create_kms_key(context.account_id, context.region, request)
+        self._set_key_tags(
+            key.metadata["KeyId"], context.account_id, context.region, request.get("Tags", [])
+        )
         return CreateKeyResponse(KeyMetadata=key.metadata)
 
     @handler("ScheduleKeyDeletion", expand=False)
@@ -1474,7 +1493,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             next_token=request.get("Marker"),
             page_size=request.get("Limit", 50),
         )
-        kwargs = {"NextMarker": next_token, "Truncated": True} if next_token else {}
+        kwargs = (
+            {"NextMarker": next_token, "Truncated": True} if next_token else {"Truncated": False}
+        )
         return ListResourceTagsResponse(Tags=page, **kwargs)
 
     @handler("RotateKeyOnDemand", expand=False)
