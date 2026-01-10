@@ -1043,26 +1043,20 @@ class ChangeSetModel:
 
     def _visit_deletion_policy(
         self, scope: Scope, before_deletion_policy: Any, after_deletion_policy: Any
-    ) -> TerminalValue:
+    ) -> ChangeSetEntity:
         value = self._visit_value(
             scope=scope, before_value=before_deletion_policy, after_value=after_deletion_policy
         )
-        if not isinstance(value, TerminalValue):
-            # TODO: decide where template schema validation should occur.
-            raise RuntimeError()
         return value
 
     def _visit_update_replace_policy(
         self, scope: Scope, before_update_replace_policy: Any, after_deletion_policy: Any
-    ) -> TerminalValue:
+    ) -> ChangeSetEntity:
         value = self._visit_value(
             scope=scope,
             before_value=before_update_replace_policy,
             after_value=after_deletion_policy,
         )
-        if not isinstance(value, TerminalValue):
-            # TODO: decide where template schema validation should occur.
-            raise RuntimeError()
         return value
 
     def _visit_resource(

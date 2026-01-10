@@ -1,0 +1,18 @@
+Parameters:
+  ParameterValue:
+    Type: String
+
+  ParameterName:
+    Type: String
+
+  PolicyType:
+    Type: String
+
+Resources:
+  MyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Ref ParameterName
+      Type: String
+      Value: !Ref ParameterValue
+    UpdateReplacePolicy: !Ref PolicyType
