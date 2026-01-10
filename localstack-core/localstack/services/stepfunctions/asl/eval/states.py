@@ -18,7 +18,7 @@ _STATES_ERROR_OUTPUT_PREFIX: Final[str] = "$states.errorOutput"
 
 class ExecutionData(TypedDict):
     Id: str
-    Input: Any | None
+    Input: dict[str, Any] | None
     Name: str
     RoleArn: str
     StartTime: str  # Format: ISO 8601.

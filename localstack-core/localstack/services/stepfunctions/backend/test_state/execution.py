@@ -39,7 +39,6 @@ LOG = logging.getLogger(__name__)
 
 
 class TestStateExecution(Execution):
-    exec_worker: TestStateExecutionWorker | None
     next_state: str | None
     state_name: str | None
     mock: TestStateMock | None
