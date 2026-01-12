@@ -164,9 +164,9 @@ class TestServiceExceptionSerializer:
         ],
     )
     def test_not_implemented_error_uses_catalog_when_message_is_empty(
-        self, catalog_status, expected_message, aws_catalog
+        self, catalog_status, expected_message, aws_catalog_mock
     ):
-        catalog = aws_catalog("localstack.aws.handlers.service.get_aws_catalog")
+        catalog = aws_catalog_mock("localstack.aws.handlers.service.get_aws_catalog")
         catalog.get_aws_service_status.return_value = catalog_status
         context = create_aws_request_context(
             "opensearch", "DescribeDomain", "rest-json", {"DomainName": "foobar"}

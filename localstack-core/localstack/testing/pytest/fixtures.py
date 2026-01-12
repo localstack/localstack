@@ -2811,7 +2811,7 @@ def clean_up(
 
 
 @pytest.fixture
-def aws_catalog(monkeypatch):
+def aws_catalog_mock(monkeypatch):
     def _mock_catalog(path):
         catalog = MagicMock()
         monkeypatch.setattr(path, lambda: catalog)

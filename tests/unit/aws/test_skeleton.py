@@ -214,9 +214,9 @@ def test_skeleton_e2e_sqs_send_message():
     ],
 )
 def test_skeleton_e2e_sqs_send_message_not_implemented(
-    api_class, service_support_status, oracle_message, aws_catalog
+    api_class, service_support_status, oracle_message, aws_catalog_mock
 ):
-    catalog = aws_catalog("localstack.aws.skeleton.get_aws_catalog")
+    catalog = aws_catalog_mock("localstack.aws.skeleton.get_aws_catalog")
     catalog.get_aws_service_status.return_value = service_support_status
 
     sqs_service = load_service("sqs-query")
@@ -293,8 +293,8 @@ def test_dispatch_common_service_exception():
     }
 
 
-def test_dispatch_missing_method_returns_internal_failure(aws_catalog):
-    catalog = aws_catalog("localstack.aws.skeleton.get_aws_catalog")
+def test_dispatch_missing_method_returns_internal_failure(aws_catalog_mock):
+    catalog = aws_catalog_mock("localstack.aws.skeleton.get_aws_catalog")
     catalog.get_aws_service_status.return_value = AwsServiceSupportAtRuntime.NOT_IMPLEMENTED
     table: DispatchTable = {}
 

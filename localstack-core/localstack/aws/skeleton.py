@@ -233,7 +233,7 @@ class Skeleton:
                     "s": service_name,
                     "a": operation_name,
                     "c": error.error_code,
-                },  # TODO: proper error code reporting
+                },
             )
 
         LOG.info(message)
