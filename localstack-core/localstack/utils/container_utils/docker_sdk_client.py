@@ -885,6 +885,7 @@ class SdkDockerClient(ContainerClient):
         log_config: LogConfig | None = None,
         cpu_shares: int | None = None,
         mem_limit: int | str | None = None,
+        auth_config: dict[str, str] | None = None,
     ) -> tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
@@ -918,6 +919,7 @@ class SdkDockerClient(ContainerClient):
                 log_config=log_config,
                 cpu_shares=cpu_shares,
                 mem_limit=mem_limit,
+                auth_config=auth_config,
             )
             result = self.start_container(
                 container_name_or_id=container,

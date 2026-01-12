@@ -1088,6 +1088,7 @@ class ContainerClient(metaclass=ABCMeta):
         log_config: LogConfig | None = None,
         cpu_shares: int | None = None,
         mem_limit: int | str | None = None,
+        auth_config: dict[str, str] | None = None,
     ) -> tuple[bytes, bytes]:
         """Creates and runs a given docker container
 
@@ -1128,6 +1129,7 @@ class ContainerClient(metaclass=ABCMeta):
             log_config=container_config.log_config,
             cpu_shares=container_config.cpu_shares,
             mem_limit=container_config.mem_limit,
+            auth_config=container_config.auth_config,
         )
 
     @abstractmethod

@@ -20,6 +20,7 @@ from localstack.utils.common import is_ipv4_address, save_file, short_uid, to_st
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
     ContainerClient,
+    ContainerConfiguration,
     ContainerException,
     DockerContainerStats,
     DockerContainerStatus,
@@ -208,7 +209,7 @@ def authenticated_registry(docker_client: ContainerClient, create_container):
         docker_client.stop_container(registry_name)
         docker_client.remove_container(registry_name)
     except Exception:
-        pass
+        LOG.warning("Failed to clean up registry container: %s", registry_name, exc_info=True)
 
 
 class TestDockerClient:
@@ -1419,6 +1420,68 @@ class TestDockerClient:
         try:
             with pytest.raises(AccessDenied):
                 docker_client.push_image(test_image)
+
+        finally:
+            try:
+                docker_client.remove_image(test_image)
+            except Exception:
+                pass
+
+    @markers.skip_offline
+    @pytest.mark.parametrize(
+        "method,use_config",
+        [
+            ("create", False),
+            ("run", False),
+            ("create", True),
+            ("run", True),
+        ],
+        ids=[
+            "create_container",
+            "run_container",
+            "create_container_from_config",
+            "run_container_from_config",
+        ],
+    )
+    def test_container_operations_with_auth_config(
+        self, docker_client: ContainerClient, authenticated_registry, method: str, use_config: bool
+    ):
+        registry_port = authenticated_registry["port"]
+        docker_host = authenticated_registry["docker_host"]
+        auth_config = authenticated_registry["auth_config"]
+        test_image = f"{docker_host}:{registry_port}/test-hello-{short_uid()}:latest"
+
+        try:
+            _pull_image_if_not_exists(docker_client, "hello-world")
+            docker_client.tag_image("hello-world", test_image)
+            docker_client.push_image(test_image, auth_config=auth_config)
+            docker_client.remove_image(test_image)
+
+            # Execute the appropriate method
+            if use_config:
+                container_config = ContainerConfiguration(
+                    image_name=test_image,
+                    auth_config=auth_config,
+                )
+                if method == "create":
+                    container = docker_client.create_container_from_config(container_config)
+                    output, _ = docker_client.start_container(container, attach=True)
+                else:  # method == "run"
+                    output, _ = docker_client.run_container_from_config(container_config)
+            else:
+                if method == "create":
+                    container = docker_client.create_container(
+                        image_name=test_image,
+                        auth_config=auth_config,
+                    )
+                    output, _ = docker_client.start_container(container, attach=True)
+                else:  # method == "run"
+                    output, _ = docker_client.run_container(
+                        image_name=test_image,
+                        auth_config=auth_config,
+                    )
+
+            assert "hello" in output.decode(config.DEFAULT_ENCODING)
 
         finally:
             try:
