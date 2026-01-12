@@ -1223,9 +1223,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceResponse:
-        store = sns_stores[context.account_id][context.region]
-        tags = store.TAGS.list_tags_for_resource(resource_arn)
-        return ListTagsForResourceResponse(Tags=tags.get("Tags"))
+        tags = self._list_resource_tags(context, resource_arn)
+        return ListTagsForResourceResponse(Tags=tags)
 
     def tag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
@@ -1277,6 +1276,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             return store.platform_applications[platform_application_arn].platform_application
         except KeyError:
             raise NotFoundException("PlatformApplication does not exist")
+
+    def _list_resource_tags(self, context: RequestContext, resource_arn: str) -> TagList:
+        store = self.get_store(context.account_id, context.region)
+        tags = store.TAGS.list_tags_for_resource(resource_arn).get("Tags")
+        return tags
 
     def _tag_resource(self, context: RequestContext, resource_arn: str, tags: list[dict[str, str]]) -> None:
         store = self.get_store(context.account_id, context.region)
