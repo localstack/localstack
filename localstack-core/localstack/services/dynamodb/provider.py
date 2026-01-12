@@ -1329,7 +1329,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 if inner_item:
                     # Extract the table name from the ARN; DynamoDB Local does not currently support
                     # full ARNs in this operation: https://github.com/awslabs/amazon-dynamodb-local-samples/issues/34
-                    inner_item["TableName"] = table_name = inner_item["TableName"].split(":table/")[-1]
+                    inner_item["TableName"] = table_name = inner_item["TableName"].split(":table/")[
+                        -1
+                    ]
                     # if we've seen the table already exists and it does not have streams, skip
                     if table_name in no_stream_tables:
                         continue
