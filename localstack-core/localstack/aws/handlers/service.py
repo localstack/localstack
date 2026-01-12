@@ -193,7 +193,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
         if operation and isinstance(exception, NotImplementedError):
             operation_name = operation.name
             exception_message: str | None = exception.args[0] if exception.args else None
-            if exception_message is not None:
+            if exception_message:
                 message = exception_message
                 error = CommonServiceException("InternalFailure", message, status_code=501)
             else:

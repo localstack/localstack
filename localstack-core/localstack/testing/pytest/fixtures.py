@@ -8,6 +8,7 @@ import textwrap
 import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Unpack
+from unittest.mock import MagicMock
 
 import botocore.auth
 import botocore.config
@@ -2807,3 +2808,13 @@ def clean_up(
             call_safe(_delete_log_group)
 
     yield _clean_up
+
+
+@pytest.fixture
+def aws_catalog(monkeypatch):
+    def _mock_catalog(path):
+        catalog = MagicMock()
+        monkeypatch.setattr(path, lambda: catalog)
+        return catalog
+
+    return _mock_catalog

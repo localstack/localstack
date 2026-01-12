@@ -10,6 +10,7 @@ from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.handlers.service import ServiceExceptionSerializer, ServiceResponseParser
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.http import Request, Response
+from localstack.utils.catalog.common import AwsServiceSupportAtRuntime
 
 
 @pytest.fixture
@@ -150,21 +151,45 @@ class TestServiceResponseHandler:
 
 class TestServiceExceptionSerializer:
     @pytest.mark.parametrize(
-        "message, output",
+        "catalog_status, expected_message",
         [
-            ("", "not available in your current license plan or has not yet been emulated"),
-            ("Ups!", "Ups!"),
+            (
+                AwsServiceSupportAtRuntime.AVAILABLE_WITH_LICENSE_UPGRADE,
+                "is not supported with your LocalStack license",
+            ),
+            (
+                None,
+                "The API for service opensearch is either not included in your current license plan or has not yet been emulated by LocalStack.",
+            ),
         ],
     )
-    def test_not_implemented_error(self, message, output):
+    def test_not_implemented_error_uses_catalog_when_message_is_empty(
+        self, catalog_status, expected_message, aws_catalog
+    ):
+        catalog = aws_catalog("localstack.aws.handlers.service.get_aws_catalog")
+        catalog.get_aws_service_status.return_value = catalog_status
         context = create_aws_request_context(
             "opensearch", "DescribeDomain", "rest-json", {"DomainName": "foobar"}
         )
-        not_implemented_exception = NotImplementedError(message)
+        not_implemented_exception = NotImplementedError("")
 
         ServiceExceptionSerializer().create_exception_response(not_implemented_exception, context)
 
-        assert output in context.service_exception.message
+        assert expected_message in context.service_exception.message
+        assert context.service_exception.code == "InternalFailure"
+        assert not context.service_exception.sender_fault
+        assert context.service_exception.status_code == 501
+
+    def test_not_implemented_error_with_custom_message(self):
+        context = create_aws_request_context(
+            "opensearch", "DescribeDomain", "rest-json", {"DomainName": "foobar"}
+        )
+        custom_message = "Ups!"
+        not_implemented_exception = NotImplementedError(custom_message)
+
+        ServiceExceptionSerializer().create_exception_response(not_implemented_exception, context)
+
+        assert context.service_exception.message == custom_message
         assert context.service_exception.code == "InternalFailure"
         assert not context.service_exception.sender_fault
         assert context.service_exception.status_code == 501
