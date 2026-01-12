@@ -1324,7 +1324,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         for item in transact_items:
             item: TransactWriteItem
-            for key in ["Put", "Update", "Delete"]:
+            for key in ["Put", "Update", "Delete", "ConditionCheck"]:
                 inner_item: Put | Delete | Update = item.get(key)
                 if inner_item:
                     # Extract the table name from the ARN; DynamoDB Local does not currently support
