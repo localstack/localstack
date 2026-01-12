@@ -246,8 +246,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if context.region != arn_data["region"]:
             raise InvalidParameterException("Invalid parameter: TopicArn")
         store = self.get_store(context.account_id, context.region)
-
+        self._remove_resource_tags(context, topic_arn)
         store.topics.pop(topic_arn, None)
+
 
     def list_topics(
         self, context: RequestContext, next_token: nextToken | None = None, **kwargs
@@ -1284,6 +1285,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def _untag_resource(self, context: RequestContext, resource_arn: str, tag_keys: list[str]) -> None:
         store = self.get_store(context.account_id, context.region)
         store.TAGS.untag_resource(resource_arn, tag_keys)
+
+    # No tag deletion logic to handle in Community. Overwritten in Pro implementation.s
+    def _remove_resource_tags(self, context: RequestContext, resource_arn: str) -> None:
+        return
 
 def _create_topic(name: str, attributes: dict, context: RequestContext) -> Topic:
     topic_arn = sns_topic_arn(
