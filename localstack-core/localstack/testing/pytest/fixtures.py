@@ -2489,7 +2489,10 @@ def hosted_zone(aws_client):
     yield factory
 
     for zone_id in zone_ids[::-1]:
-        aws_client.route53.delete_hosted_zone(Id=zone_id)
+        try:
+            aws_client.route53.delete_hosted_zone(Id=zone_id)
+        except ClientError as e:
+            LOG.debug("failed to delete hosted zone %s: %s", zone_id, e)
 
 
 @pytest.fixture
