@@ -1324,11 +1324,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         for item in transact_items:
             item: TransactWriteItem
-            for key in ["Put", "Update", "Delete"]:
+            for key in ["Put", "Update", "Delete", "ConditionCheck"]:
                 inner_item: Put | Delete | Update = item.get(key)
                 if inner_item:
-                    table_name = inner_item["TableName"]
-                    # if we've seen the table already and it does not have streams, skip
+                    # Extract the table name from the ARN; DynamoDB Local does not currently support
+                    # full ARNs in this operation: https://github.com/awslabs/amazon-dynamodb-local-samples/issues/34
+                    inner_item["TableName"] = table_name = inner_item["TableName"].split(":table/")[
+                        -1
+                    ]
+                    # if we've seen the table already exists and it does not have streams, skip
                     if table_name in no_stream_tables:
                         continue
 
@@ -1354,6 +1358,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         updated_items_to_fetch_for_table.append(inner_item)
 
                     continue
+        # Normalize the request structure to ensure it matches the expected format for DynamoDB Local.
+        data = json.loads(context.request.data)
+        data["TransactItems"] = transact_items
+        context.request.data = to_bytes(json.dumps(data, cls=BytesEncoder))
 
         if existing_items_to_fetch:
             existing_items = ItemFinder.find_existing_items(
@@ -1404,6 +1412,17 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         transact_items: TransactGetItemList,
         return_consumed_capacity: ReturnConsumedCapacity = None,
     ) -> TransactGetItemsOutput:
+        for transact_item in transact_items["TransactItems"]:
+            if item := transact_item.get("Get"):
+                # Extract the table name from the ARN; DynamoDB Local does not currently support
+                # full ARNs in this operation: https://github.com/awslabs/amazon-dynamodb-local-samples/issues/34
+                item["TableName"] = item["TableName"].split(":table/")[-1]
+
+        # Normalize the request structure to ensure it matches the expected format for DynamoDB Local.
+        data = json.loads(context.request.data)
+        data["TransactItems"] = transact_items["TransactItems"]
+        context.request.data = to_bytes(json.dumps(data, cls=BytesEncoder))
+
         return self.forward_request(context)
 
     @handler("ExecuteTransaction", expand=False)

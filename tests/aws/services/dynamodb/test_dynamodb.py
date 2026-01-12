@@ -1627,6 +1627,42 @@ class TestDynamoDB:
         )
         snapshot.match("Response", response)
 
+        table_name_arn = f"test-ddb-table-{short_uid()}"
+        table = dynamodb_create_table_with_parameters(
+            TableName=table_name_arn,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            Tags=TEST_DDB_TAGS,
+        )
+
+        table_arn = table["TableDescription"]["TableArn"]
+        response_arn = aws_client.dynamodb.transact_write_items(
+            TransactItems=[
+                {
+                    "ConditionCheck": {
+                        "TableName": table_arn,
+                        "ConditionExpression": "attribute_not_exists(id)",
+                        "Key": {"id": {"S": "test1"}},
+                    }
+                },
+                {"Put": {"TableName": table_arn, "Item": {"id": {"S": "test2"}}}},
+                {
+                    "Update": {
+                        "TableName": table_arn,
+                        "Key": {"id": {"S": "test3"}},
+                        "UpdateExpression": "SET attr1 = :v1, attr2 = :v2",
+                        "ExpressionAttributeValues": {
+                            ":v1": {"S": "value1"},
+                            ":v2": {"S": "value2"},
+                        },
+                    }
+                },
+                {"Delete": {"TableName": table_arn, "Key": {"id": {"S": "test4"}}}},
+            ]
+        )
+        snapshot.match("Response_using_table_arn", response_arn)
+
     @markers.aws.validated
     def test_transaction_write_canceled(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
@@ -1705,6 +1741,18 @@ class TestDynamoDB:
             TransactItems=[{"Get": {"Key": {"id": {"S": "John"}}, "TableName": table_name}}]
         )
         snapshot.match("TransactGetItems", result)
+
+        table_name_arn = f"test-ddb-table-{short_uid()}"
+        table = dynamodb_create_table(
+            table_name=table_name_arn,
+            partition_key=PARTITION_KEY,
+        )
+        table_arn = table["TableDescription"]["TableArn"]
+        aws_client.dynamodb.put_item(TableName=table_name_arn, Item={"id": {"S": "Sarah"}})
+        result = aws_client.dynamodb.transact_get_items(
+            TransactItems=[{"Get": {"Key": {"id": {"S": "Sarah"}}, "TableName": table_arn}}]
+        )
+        snapshot.match("TransactGetItems-with-TableArn", result)
 
     @markers.aws.validated
     def test_batch_write_items(self, dynamodb_create_table_with_parameters, snapshot, aws_client):
