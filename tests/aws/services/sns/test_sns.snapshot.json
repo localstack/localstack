@@ -5803,25 +5803,67 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_attributes": {
-    "recorded-date": "06-10-2025, 11:40:42",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription_with_attributes": {
-    "recorded-date": "06-10-2025, 11:40:44",
-    "recorded-content": {}
-  },
-  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_delete_subscriptions_on_delete_topic": {
-    "recorded-date": "06-10-2025, 11:40:45",
+    "recorded-date": "12-01-2026, 13:03:28",
     "recorded-content": {
-      "get-sub-after-topic-delete": {
-        "Error": {
-          "Code": "InvalidParameter",
-          "Message": "Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not 1",
-          "Type": "Sender"
+      "get-subscription-attributes": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 400
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription_with_attributes": {
+    "recorded-date": "12-01-2026, 13:08:24",
+    "recorded-content": {
+      "subscription-with-attributes": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_delete_subscriptions_on_delete_topic": {
+    "recorded-date": "12-01-2026, 13:09:31",
+    "recorded-content": {
+      "get-sub-after-topic-delete": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

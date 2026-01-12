@@ -238,6 +238,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise NotFoundException("Topic does not exist")
 
     def delete_topic(self, context: RequestContext, topic_arn: topicARN, **kwargs) -> None:
+        # This also deletes all subscriptions for the topic. In AWS, this is not immediately the case;
+        # the subs still exist for a certain period of time (~48h), detached, after which they are garbage collected
         arn_data = parse_and_validate_topic_arn(topic_arn)
         if context.region != arn_data["region"]:
             raise InvalidParameterException("Invalid parameter: TopicArn")

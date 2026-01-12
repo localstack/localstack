@@ -1723,51 +1723,53 @@ class TestSNSSubscriptionCrudV2:
         resp = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
         assert "NextToken" in resp
 
-    @pytest.mark.skip(reason="TODO")
+    # TODO: parametrize for http and email protocol
     @markers.aws.validated
-    def test_subscribe_attributes(self, sns_create_topic, aws_client, snapshot):
-        topic_arn = sns_create_topic(Name=f"sub-attrs-{short_uid()}")["TopicArn"]
+    def test_subscribe_attributes(
+        self,
+        sns_create_topic,
+        aws_client,
+        snapshot,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        sns_subscription,
+    ):
+        topic_arn = sns_create_topic(Name=f"get-subs-{short_uid()}")["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}")
 
-        sub_arn = aws_client.sns.subscribe(
+        subscribe_response = sns_subscription(
             TopicArn=topic_arn,
-            Protocol="email",
-            Endpoint="test@example.com",
-        )["SubscriptionArn"]
+            Protocol="sqs",
+            Endpoint=sqs_get_queue_arn(queue_url),
+        )
+        sub_arn = subscribe_response["SubscriptionArn"]
 
         resp = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
         snapshot.match("get-subscription-attributes", resp)
 
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
-    def test_creating_subscription_with_attributes(self, sns_create_topic, aws_client, snapshot):
-        topic_arn = sns_create_topic(Name=f"sub-with-attrs-{short_uid()}")["TopicArn"]
+    # TODO: parametrize for http and email protocol
+    @markers.aws.validated
+    def test_creating_subscription_with_attributes(
+        self,
+        sns_create_topic,
+        aws_client,
+        snapshot,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        sns_subscription,
+    ):
+        topic_arn = sns_create_topic(Name=f"get-subs-{short_uid()}")["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}")
 
-        sub_arn = aws_client.sns.subscribe(
+        sub_arn = sns_subscription(
             TopicArn=topic_arn,
-            Protocol="email",
-            Endpoint="test@example.com",
+            Protocol="sqs",
+            Endpoint=sqs_get_queue_arn(queue_url),
             Attributes={"RawMessageDelivery": "true"},
         )["SubscriptionArn"]
 
         attrs = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
         snapshot.match("subscription-with-attributes", attrs)
-
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
-    def test_delete_subscriptions_on_delete_topic(self, sns_create_topic, aws_client, snapshot):
-        topic_arn = sns_create_topic(Name=f"del-subs-topic-{short_uid()}")["TopicArn"]
-
-        sub_arn = aws_client.sns.subscribe(
-            TopicArn=topic_arn,
-            Protocol="email",
-            Endpoint="test@example.com",
-        )["SubscriptionArn"]
-
-        aws_client.sns.delete_topic(TopicArn=topic_arn)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
-        snapshot.match("get-sub-after-topic-delete", e.value.response)
 
     @pytest.mark.skip(reason="TODO")
     @markers.aws.needs_fixing
@@ -3884,6 +3886,14 @@ def platform_credentials() -> tuple[str, str]:
     client_id = "dummy"
     client_secret = "dummy"
     return client_id, client_secret
+
+
+@pytest.fixture(scope="class")
+def e_mail_address() -> str:
+    # this address must be real and accessible if you want to test email subscriptions
+    # e_mail = "test@example.com"
+    e_mail = "bernhard.matyas@localstack.cloud"
+    return e_mail
 
 
 @pytest.fixture(scope="class")
