@@ -269,7 +269,7 @@ class ExecutionEnvironment:
                 )
             self.status = RuntimeStatus.READY
 
-        if self.initialization_type == "on-demand":
+        if self.initialization_type == InitializationType.on_demand:
             self.keepalive_timer = Timer(config.LAMBDA_KEEPALIVE_MS / 1000, self.keepalive_passed)
             self.keepalive_timer.start()
 

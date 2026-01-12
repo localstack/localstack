@@ -1,6 +1,7 @@
 import contextlib
 import logging
 from collections import defaultdict
+from collections.abc import Iterator
 from threading import RLock
 
 from localstack import config
@@ -66,12 +67,12 @@ class CountingService:
     """
 
     # (account, region) => ConcurrencyTracker (unqualified arn) => concurrent executions
-    on_demand_concurrency_trackers: dict[(str, str), ConcurrencyTracker]
+    on_demand_concurrency_trackers: dict[tuple[str, str], ConcurrencyTracker]
     # Lock for safely initializing new on-demand concurrency trackers
     on_demand_init_lock: RLock
 
     # (account, region) => ConcurrencyTracker (qualified arn) => concurrent executions
-    provisioned_concurrency_trackers: dict[(str, str), ConcurrencyTracker]
+    provisioned_concurrency_trackers: dict[tuple[str, str], ConcurrencyTracker]
     # Lock for safely initializing new provisioned concurrency trackers
     provisioned_concurrency_init_lock: RLock
 
@@ -84,7 +85,7 @@ class CountingService:
     @contextlib.contextmanager
     def get_invocation_lease(
         self, function: Function | None, function_version: FunctionVersion
-    ) -> InitializationType:
+    ) -> Iterator[InitializationType]:
         """An invocation lease reserves the right to schedule an invocation.
         The returned lease type can either be on-demand or provisioned.
         Scheduling preference:
@@ -151,7 +152,7 @@ class CountingService:
                     )
                     if available_provisioned_concurrency > 0:
                         provisioned_tracker.increment(qualified_arn)
-                        lease_type = "provisioned-concurrency"
+                        lease_type = InitializationType.provisioned_concurrency
 
         if not lease_type:
             with on_demand_tracker.lock:
@@ -169,7 +170,7 @@ class CountingService:
                     )
                     if available_reserved_concurrency > 0:
                         on_demand_tracker.increment(unqualified_function_arn)
-                        lease_type = "on-demand"
+                        lease_type = InitializationType.on_demand
                     else:
                         extras = {
                             "available_reserved_concurrency": available_reserved_concurrency,
@@ -211,7 +212,7 @@ class CountingService:
                     )
                     if available_unreserved_concurrency > 0:
                         on_demand_tracker.increment(unqualified_function_arn)
-                        lease_type = "on-demand"
+                        lease_type = InitializationType.on_demand
                     else:
                         if available_unreserved_concurrency < 0:
                             LOG.error(
@@ -233,9 +234,9 @@ class CountingService:
         try:
             yield lease_type
         finally:
-            if lease_type == "provisioned-concurrency":
+            if lease_type == InitializationType.provisioned_concurrency:
                 provisioned_tracker.atomic_decrement(qualified_arn)
-            elif lease_type == "on-demand":
+            elif lease_type == InitializationType.on_demand:
                 on_demand_tracker.atomic_decrement(unqualified_function_arn)
             else:
                 LOG.error(

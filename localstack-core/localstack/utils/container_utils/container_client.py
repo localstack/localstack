@@ -125,6 +125,7 @@ class CancellableStream(Protocol):
         raise NotImplementedError
 
 
+# TODO: Migrate to StrEnum once the CLI does not need to support Python 3.10 (EOL Oct'26) anymore
 class DockerPlatform(str):
     """Platform in the format ``os[/arch[/variant]]``"""
 
