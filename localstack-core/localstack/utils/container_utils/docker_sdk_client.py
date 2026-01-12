@@ -342,12 +342,15 @@ class SdkDockerClient(ContainerClient):
         docker_image: str,
         platform: DockerPlatform | None = None,
         log_handler: Callable[[str], None] | None = None,
+        auth_config: dict[str, str] | None = None,
     ) -> None:
         LOG.debug("Pulling Docker image: %s", docker_image)
         # some path in the docker image string indicates a custom repository
 
         docker_image = self.registry_resolver_strategy.resolve(docker_image)
-        kwargs: dict[str, str | bool] = {"platform": platform}
+        kwargs: dict[str, str | bool | dict[str, str]] = {"platform": platform}
+        if auth_config:
+            kwargs["auth_config"] = auth_config
         try:
             if log_handler:
                 # Use a lower-level API, as the 'stream' argument is not available in the higher-level `pull`-API
@@ -362,10 +365,13 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def push_image(self, docker_image: str) -> None:
+    def push_image(self, docker_image: str, auth_config: dict[str, str] | None = None) -> None:
         LOG.debug("Pushing Docker image: %s", docker_image)
+        kwargs: dict[str, dict[str, str]] = {}
+        if auth_config:
+            kwargs["auth_config"] = auth_config
         try:
-            result = self.client().images.push(docker_image)
+            result = self.client().images.push(docker_image, **kwargs)
             # some SDK clients (e.g., 5.0.0) seem to return an error string, instead of raising
             if isinstance(result, (str, bytes)) and '"errorDetail"' in to_str(result):
                 if "image does not exist locally" in to_str(result):
@@ -376,7 +382,17 @@ class SdkDockerClient(ContainerClient):
                     raise AccessDenied(docker_image)
                 if "access token has insufficient scopes" in to_str(result):
                     raise AccessDenied(docker_image)
+                if "authorization failed: no basic auth credentials" in to_str(result):
+                    raise AccessDenied(docker_image)
+                if "401 Unauthorized" in to_str(result):
+                    raise AccessDenied(docker_image)
+                if "no basic auth credentials" in to_str(result):
+                    raise AccessDenied(docker_image)
+                if "unauthorized: authentication required" in to_str(result):
+                    raise AccessDenied(docker_image)
                 if "connection refused" in to_str(result):
+                    raise RegistryConnectionError(result)
+                if "failed to do request:" in to_str(result):
                     raise RegistryConnectionError(result)
                 raise ContainerException(result)
         except ImageNotFound:
@@ -731,6 +747,7 @@ class SdkDockerClient(ContainerClient):
         log_config: LogConfig | None = None,
         cpu_shares: int | None = None,
         mem_limit: int | str | None = None,
+        auth_config: dict[str, str] | None = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
@@ -828,7 +845,7 @@ class SdkDockerClient(ContainerClient):
                 container = create_container()
             except ImageNotFound:
                 LOG.debug("Image not found. Pulling image %s", image_name)
-                self.pull_image(image_name, platform)
+                self.pull_image(image_name, platform, auth_config=auth_config)
                 container = create_container()
             return container.id
         except ImageNotFound:
@@ -868,6 +885,7 @@ class SdkDockerClient(ContainerClient):
         log_config: LogConfig | None = None,
         cpu_shares: int | None = None,
         mem_limit: int | str | None = None,
+        auth_config: dict[str, str] | None = None,
     ) -> tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
@@ -901,6 +919,7 @@ class SdkDockerClient(ContainerClient):
                 log_config=log_config,
                 cpu_shares=cpu_shares,
                 mem_limit=mem_limit,
+                auth_config=auth_config,
             )
             result = self.start_container(
                 container_name_or_id=container,
