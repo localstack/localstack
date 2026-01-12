@@ -1232,8 +1232,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         unique_tag_keys = {tag["Key"] for tag in tags}
         if len(unique_tag_keys) < len(tags):
             raise InvalidParameterException("Invalid parameter: Duplicated keys are not allowed.")
-        store = sns_stores[context.account_id][context.region]
-        store.TAGS.tag_resource(resource_arn, tags)
+
+        self._tag_resource(context, resource_arn, tags)
         return TagResourceResponse()
 
     def untag_resource(
@@ -1243,8 +1243,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         tag_keys: TagKeyList,
         **kwargs,
     ) -> UntagResourceResponse:
-        store = sns_stores[context.account_id][context.region]
-        store.TAGS.untag_resource(resource_arn, tag_keys)
+        self._untag_resource(context, resource_arn, tag_keys)
         return UntagResourceResponse()
 
     @staticmethod
@@ -1278,6 +1277,13 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         except KeyError:
             raise NotFoundException("PlatformApplication does not exist")
 
+    def _tag_resource(self, context: RequestContext, resource_arn: str, tags: list[dict[str, str]]) -> None:
+        store = self.get_store(context.account_id, context.region)
+        store.TAGS.tag_resource(resource_arn, tags)
+
+    def _untag_resource(self, context: RequestContext, resource_arn: str, tag_keys: list[str]) -> None:
+        store = self.get_store(context.account_id, context.region)
+        store.TAGS.untag_resource(resource_arn, tag_keys)
 
 def _create_topic(name: str, attributes: dict, context: RequestContext) -> Topic:
     topic_arn = sns_topic_arn(
