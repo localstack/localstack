@@ -11,6 +11,7 @@ from localstack.aws.api.route53 import (
     ChangeStatus,
     CreateHostedZoneResponse,
     DeleteHealthCheckResponse,
+    DeleteHostedZoneResponse,
     DNSName,
     GetChangeResponse,
     GetHealthCheckResponse,
@@ -35,6 +36,10 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
 
         visitor.visit(route53_backends)
         visitor.visit(route53_stores)
+
+    # No tag deletion logic to handle in Community. Overwritten in Pro implementation.
+    def _remove_resource_tags(self, resource_type: str, resource_id: str) -> None:
+        return
 
     def create_hosted_zone(
         self,
@@ -114,6 +119,13 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
             )
         )
 
+    def delete_hosted_zone(
+        self, context: RequestContext, id: ResourceId, **kwargs
+    ) -> DeleteHostedZoneResponse:
+        response = call_moto(context)
+        self._remove_resource_tags(resource_type="hostedzone", resource_id=id)
+        return response
+
     def delete_health_check(
         self, context: RequestContext, health_check_id: HealthCheckId, **kwargs
     ) -> DeleteHealthCheckResponse:
@@ -126,4 +138,6 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
             )
 
         route53_backends[context.account_id][context.partition].delete_health_check(health_check_id)
-        return {}
+        self._remove_resource_tags(resource_type="healthcheck", resource_id=health_check_id)
+
+        return DeleteHealthCheckResponse()
