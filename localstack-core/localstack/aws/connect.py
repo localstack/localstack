@@ -704,14 +704,12 @@ class ExternalBypassDnsClientFactory(ExternalAwsClientFactory):
                 "https": localstack_config.OUTBOUND_HTTPS_PROXY,
             }
         )
-        if config:
-            proxy_config = config.merge(proxy_config)
 
         super().__init__(
             use_ssl=localstack_config.is_env_not_false("USE_SSL"),
             verify=ca_cert or True,
             session=session,
-            config=proxy_config,
+            config=config.merge(proxy_config) if config else proxy_config,
         )
 
     def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
