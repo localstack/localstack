@@ -7,6 +7,6 @@ build:
 	cp build/handler.zip handler.zip
 
 clean:
-	$(RM) -r build handler.zip
+	$(RM) -rf build handler.zip
 
 .PHONY: build clean

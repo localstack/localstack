@@ -21,6 +21,6 @@ build:
 	docker run --rm --platform $(DOCKER_PLATFORM) -v $$(pwd)/src:/app -v $$(pwd)/build:/out $(DOCKER_GOLANG_IMAGE) /bin/bash -c "cd /app && GOOS=linux GOARCH=$(GOARCH) CGO_ENABLED=0 go build -trimpath -ldflags=-buildid= -o /out/bootstrap main.go && chown $$(id -u):$$(id -g) /out/bootstrap"
 
 clean:
-	$(RM) -r build handler.zip
+	$(RM) -rf build handler.zip
 
 .PHONY: build clean

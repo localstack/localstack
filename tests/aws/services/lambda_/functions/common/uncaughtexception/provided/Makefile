@@ -27,6 +27,6 @@ build:
 		bash -c "rustup target add $(RUST_TARGET) && mkdir -p /app2 && cp -r /app/* /app2 && cd /app2 && cargo build --release --target $(RUST_TARGET) && cp ./target/$(RUST_TARGET)/release/bootstrap /out && chown $$(id -u):$$(id -g) /out/bootstrap"
 
 clean:
-	$(RM) -r build handler.zip
+	$(RM) -rf build handler.zip
 
 .PHONY: build clean

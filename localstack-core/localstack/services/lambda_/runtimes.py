@@ -13,7 +13,7 @@ from localstack.aws.api.lambda_ import Runtime
 # 2. Add the new runtime to these variables below:
 # a) `IMAGE_MAPPING`
 # b) `RUNTIMES_AGGREGATED`
-# c) `SNAP_START_SUPPORTED_RUNTIMES` if supported (currently only new Java runtimes)
+# c) `SNAP_START_SUPPORTED_RUNTIMES` if supported
 # 3. Re-create snapshots for Lambda tests with the marker @markers.lambda_runtime_update
 # => Filter the tests using pytest -m lambda_runtime_update (i.e., additional arguments in PyCharm)
 # Depending on the runtime, `test_lambda_runtimes.py` might require further snapshot updates.
@@ -26,7 +26,8 @@ from localstack.aws.api.lambda_ import Runtime
 # a) [pro] tests.aws.services.lambda_.test_lambda_endpoint_injection
 # 7. Before merging, run the ext integration tests to cover transparent endpoint injection testing.
 # 8. Add the new runtime to the K8 image build: https://github.com/localstack/lambda-images
-# 9. Inform the web team to update the resource browser (consider offering an endpoint in the future)
+# 9. Check that the Resource Browser shows the new runtime or reach out to the web team.
+#    The internal endpoint /_aws/lambda/runtimes yields all supported runtimes
 
 # Mapping from a) AWS Lambda runtime identifier => b) official AWS image on Amazon ECR Public
 # a) AWS Lambda runtimes: https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
@@ -55,6 +56,7 @@ IMAGE_MAPPING: dict[Runtime, str] = {
     Runtime.java11: "java:11",
     Runtime.java8_al2: "java:8.al2",
     Runtime.java8: "java:8",  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    Runtime.dotnet10: "dotnet:10",
     Runtime.dotnet8: "dotnet:8",
     # dotnet7 (container only)
     Runtime.dotnet6: "dotnet:6",
@@ -143,6 +145,7 @@ RUNTIMES_AGGREGATED = {
     "dotnet": [
         Runtime.dotnet6,
         Runtime.dotnet8,
+        Runtime.dotnet10,
     ],
     "provided": [
         Runtime.provided_al2023,
@@ -165,9 +168,10 @@ SNAP_START_SUPPORTED_RUNTIMES = [
     Runtime.python3_12,
     Runtime.python3_13,
     Runtime.dotnet8,
+    Runtime.dotnet10,
 ]
 
 # An ordered list of all Lambda runtimes considered valid by AWS. Matching snapshots in test_create_lambda_exceptions
-VALID_RUNTIMES: str = "[nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs24.x, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9]"
+VALID_RUNTIMES: str = "[nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs24.x, nodejs22.x, java25, python3.10, python3.11, java21, ruby3.3, ruby3.4, ruby3.2, python3.8, python3.9, java17, nodejs16.x, dotnet10, dotnet8, java11, dotnet6, nodejs18.x, provided.al2, java8.al2]"
 # An ordered list of all Lambda runtimes for layers considered valid by AWS. Matching snapshots in test_layer_exceptions
 VALID_LAYER_RUNTIMES: str = "[ruby3.5, ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java25, java17, nodejs, nodejs4.3, java8.al2, go1.x, dotnet10, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs24.x, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, nodejs26.x, python3.13, python3.14, nodejs16.x, python3.15, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby3.4, ruby2.5, python3.6, python2.7]"
