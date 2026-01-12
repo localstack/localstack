@@ -1,7 +1,7 @@
 import contextlib
 import logging
 from collections import defaultdict
-from collections.abc import Generator
+from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
 
 from localstack.services.lambda_.invocation.execution_environment import (
@@ -44,7 +44,7 @@ class AssignmentService(OtherServiceEndpoint):
         version_manager_id: str,
         function_version: FunctionVersion,
         provisioning_type: InitializationType,
-    ) -> Generator[ExecutionEnvironment, None, None]:
+    ) -> Iterator[ExecutionEnvironment]:
         applicable_envs = (
             env
             for env in self.environments[version_manager_id].values()

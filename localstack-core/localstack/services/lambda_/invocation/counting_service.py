@@ -1,9 +1,8 @@
 import contextlib
 import logging
 from collections import defaultdict
-from collections.abc import Generator
+from collections.abc import Iterator
 from threading import RLock
-from typing import Any
 
 from localstack import config
 from localstack.aws.api.lambda_ import TooManyRequestsException
@@ -86,7 +85,7 @@ class CountingService:
     @contextlib.contextmanager
     def get_invocation_lease(
         self, function: Function | None, function_version: FunctionVersion
-    ) -> Generator[InitializationType, Any, None]:
+    ) -> Iterator[InitializationType]:
         """An invocation lease reserves the right to schedule an invocation.
         The returned lease type can either be on-demand or provisioned.
         Scheduling preference:
