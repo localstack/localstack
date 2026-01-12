@@ -38,7 +38,9 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
         visitor.visit(route53_stores)
 
     # No tag deletion logic to handle in Community. Overwritten in Pro implementation.
-    def _remove_resource_tags(self, resource_type: str, resource_id: str) -> None:
+    def _remove_resource_tags(
+        self, context: RequestContext, resource_type: str, resource_id: str
+    ) -> None:
         return
 
     def create_hosted_zone(
@@ -123,7 +125,7 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
         self, context: RequestContext, id: ResourceId, **kwargs
     ) -> DeleteHostedZoneResponse:
         response = call_moto(context)
-        self._remove_resource_tags(resource_type="hostedzone", resource_id=id)
+        self._remove_resource_tags(context=context, resource_type="hostedzone", resource_id=id)
         return response
 
     def delete_health_check(
@@ -138,6 +140,8 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
             )
 
         route53_backends[context.account_id][context.partition].delete_health_check(health_check_id)
-        self._remove_resource_tags(resource_type="healthcheck", resource_id=health_check_id)
+        self._remove_resource_tags(
+            context=context, resource_type="healthcheck", resource_id=health_check_id
+        )
 
         return DeleteHealthCheckResponse()
