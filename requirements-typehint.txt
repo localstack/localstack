@@ -146,7 +146,7 @@ docutils==0.19
     # via awscli
 events==0.5
     # via opensearch-py
-filelock==3.20.2
+filelock==3.20.3
     # via virtualenv
 graphql-core==3.2.7
     # via moto-ext
