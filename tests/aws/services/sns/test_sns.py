@@ -1771,15 +1771,24 @@ class TestSNSSubscriptionCrudV2:
         attrs = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
         snapshot.match("subscription-with-attributes", attrs)
 
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
-    def test_set_subscription_attributes(self, sns_create_topic, aws_client, snapshot):
-        topic_arn = sns_create_topic(Name=f"set-attr-sub-{short_uid()}")["TopicArn"]
+    # TODO: parametrize for http and email protocol
+    @markers.aws.validated
+    def test_set_subscription_attributes(
+        self,
+        sns_create_topic,
+        aws_client,
+        snapshot,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        sns_subscription,
+    ):
+        topic_arn = sns_create_topic(Name=f"get-subs-{short_uid()}")["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}")
 
-        sub_arn = aws_client.sns.subscribe(
+        sub_arn = sns_subscription(
             TopicArn=topic_arn,
-            Protocol="email",
-            Endpoint="test@example.com",
+            Protocol="sqs",
+            Endpoint=sqs_get_queue_arn(queue_url),
         )["SubscriptionArn"]
 
         aws_client.sns.set_subscription_attributes(
@@ -1789,11 +1798,13 @@ class TestSNSSubscriptionCrudV2:
         )
 
         attrs = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
-        assert attrs["Attributes"]["RawMessageDelivery"] == "true"
         snapshot.match("set-subscription-attributes", attrs)
 
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Error.Message"],
+        # AWS adds a strange stacktrace that contains REDACTED at the end. The "regular" error message matches
+    )
+    @markers.aws.validated
     def test_subscribe_invalid_filter_policy(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic(Name=f"filter-policy-{short_uid()}")["TopicArn"]
 
@@ -1805,44 +1816,6 @@ class TestSNSSubscriptionCrudV2:
                 Attributes={"FilterPolicy": "invalid-json"},
             )
         snapshot.match("subscribe-invalid-filter-policy", e.value.response)
-
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
-    def test_check_not_opted_out(self, sns_create_topic, aws_client, snapshot):
-        sns_create_topic(Name=f"optout-{short_uid()}")["TopicArn"]
-
-        resp = aws_client.sns.check_if_phone_number_is_opted_out(PhoneNumber="+1234567890")
-        snapshot.match("check-not-opted-out", resp)
-
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
-    def test_check_opted_out(self, sns_create_topic, aws_client, snapshot):
-        sns_create_topic(Name=f"opted-{short_uid()}")["TopicArn"]
-
-        # Simulate opt-out
-        aws_client.sns.opt_in_phone_number(PhoneNumber="+1234567890")
-        resp = aws_client.sns.check_if_phone_number_is_opted_out(PhoneNumber="+1234567890")
-        snapshot.match("check-opted-out", resp)
-
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
-    def test_check_opted_out_invalid(self, sns_create_topic, aws_client, snapshot):
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.check_if_phone_number_is_opted_out(PhoneNumber="invalid-number")
-        snapshot.match("check-opted-out-invalid", e.value.response)
-
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
-    def test_list_opted_out(self, sns_create_topic, aws_client, snapshot):
-        resp = aws_client.sns.list_phone_numbers_opted_out()
-        snapshot.match("list-opted-out", resp)
-
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
-    def test_opt_in(self, sns_create_topic, aws_client, snapshot):
-        aws_client.sns.opt_in_phone_number(PhoneNumber="+1234567890")
-        resp = aws_client.sns.check_if_phone_number_is_opted_out(PhoneNumber="+1234567890")
-        snapshot.match("opt-in", resp)
 
     @pytest.mark.skip(reason="TODO")
     @markers.aws.needs_fixing
@@ -3891,8 +3864,7 @@ def platform_credentials() -> tuple[str, str]:
 @pytest.fixture(scope="class")
 def e_mail_address() -> str:
     # this address must be real and accessible if you want to test email subscriptions
-    # e_mail = "test@example.com"
-    e_mail = "bernhard.matyas@localstack.cloud"
+    e_mail = "test@example.com"
     return e_mail
 
 
@@ -5000,6 +4972,14 @@ class TestSNSSMS:
         response = aws_client.sns.opt_in_phone_number(phoneNumber=non_existing_number)
 
         snapshot.match("opt-in-non-existing-number", response)
+
+    @markers.aws.validated
+    def test_opt_in_invalid_number(self, phone_number, aws_client, snapshot):
+        invalid_number = "invalid"
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.opt_in_phone_number(phoneNumber=invalid_number)
+
+        snapshot.match("opt-in-non-existing-number", e.value.response)
 
 
 class TestSNSSubscriptionHttp:

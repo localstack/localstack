@@ -692,6 +692,15 @@
       "total": 0.16
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_opt_in_invalid_number": {
+    "last_validated_date": "2026-01-13T09:38:15+00:00",
+    "durations_in_seconds": {
+      "setup": 1.02,
+      "call": 0.79,
+      "teardown": 0.03,
+      "total": 1.84
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_opt_in_non_existing_phone_number": {
     "last_validated_date": "2025-12-02T12:58:54+00:00",
     "durations_in_seconds": {
@@ -974,6 +983,15 @@
       "total": 0.29
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_set_subscription_attributes": {
+    "last_validated_date": "2026-01-13T09:21:16+00:00",
+    "durations_in_seconds": {
+      "setup": 1.07,
+      "call": 2.51,
+      "teardown": 0.63,
+      "total": 4.21
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_attributes": {
     "last_validated_date": "2026-01-12T13:03:28+00:00",
     "durations_in_seconds": {
@@ -993,12 +1011,12 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_invalid_filter_policy": {
-    "last_validated_date": "2025-10-06T11:40:48+00:00",
+    "last_validated_date": "2026-01-13T09:26:43+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.61,
-      "teardown": 0.3,
-      "total": 0.91
+      "setup": 0.96,
+      "call": 1.06,
+      "teardown": 0.27,
+      "total": 2.29
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_invalid_sms": {
