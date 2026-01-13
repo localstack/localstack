@@ -107,6 +107,7 @@ from localstack.aws.api.kms import (
     SignRequest,
     SignResponse,
     Tag,
+    TagKeyList,
     TagList,
     TagResourceRequest,
     UnsupportedOperationException,
@@ -117,7 +118,7 @@ from localstack.aws.api.kms import (
     VerifyMacResponse,
     VerifyRequest,
     VerifyResponse,
-    WrappingKeySpec, TagKeyList,
+    WrappingKeySpec,
 )
 from localstack.services.kms.exceptions import ValidationException
 from localstack.services.kms.models import (
