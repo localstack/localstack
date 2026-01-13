@@ -2,7 +2,7 @@ import re
 from collections.abc import Callable
 from typing import TypeVar
 
-from localstack.aws.api.kms import DryRunOperationException, Tag, TagException
+from localstack.aws.api.kms import DryRunOperationException, Tag, TagException, TagList
 from localstack.services.kms.exceptions import ValidationException
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX
 
@@ -61,6 +61,14 @@ def validate_tag(tag_position: int, tag: Tag) -> None:
 
     if tag_key.lower().startswith("aws:"):
         raise TagException("Tags beginning with aws: are reserved")
+
+
+def validate_tag_list(tag_list: TagList) -> None:
+    unique_tag_keys = {tag["TagKey"] for tag in tag_list}
+    if len(unique_tag_keys) < len(tag_list):
+        raise TagException("Duplicate tag keys")
+    if len(tag_list) > 50:
+        raise TagException("Too many tags")
 
 
 def execute_dry_run_capable(func: Callable[..., T], dry_run: bool, *args, **kwargs) -> T:
