@@ -28,6 +28,7 @@ from localstack.aws.api.lambda_ import Runtime
 # 8. Add the new runtime to the K8 image build: https://github.com/localstack/lambda-images
 # 9. Check that the Resource Browser shows the new runtime or reach out to the web team.
 #    The internal endpoint /_aws/lambda/runtimes yields all supported runtimes
+# 10. Inform #devrel to announce the new feature in social media
 
 # Mapping from a) AWS Lambda runtime identifier => b) official AWS image on Amazon ECR Public
 # a) AWS Lambda runtimes: https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
