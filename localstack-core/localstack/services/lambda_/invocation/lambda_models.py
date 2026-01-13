@@ -218,10 +218,11 @@ class S3Code(ArchiveCode):
             if target_path.exists():
                 return
             LOG.debug("Saving code %s to disk", self.id)
-
+            target_path.parent.mkdir(parents=True, exist_ok=True)
             # Use a temp directory for atomic operation to prevent partial reads
             # if the process crashes or is killed during unzip.
-            with tempfile.TemporaryDirectory() as temp_dir:
+            # Create temp dir in same parent to ensure same filesystem for atomic rename.
+            with tempfile.TemporaryDirectory(dir=target_path.parent) as temp_dir:
                 temp_path = Path(temp_dir)
 
                 with tempfile.NamedTemporaryFile() as file:
