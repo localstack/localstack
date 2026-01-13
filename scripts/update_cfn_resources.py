@@ -170,11 +170,14 @@ def main() -> int:
         LOG.error("Could not determine any regions to scan.")
         return 1
 
+    print(f"Scanning CloudFormation resource types in {len(regions)} regions")
     resources, successful_regions = collect_all_resource_types(session, regions)
     if not resources:
         LOG.error("No CloudFormation resources were discovered.")
         return 1
+    print(f"Collected {len(resources)} resources across {len(successful_regions)} regions:")
 
+    print("Updating resource file...")
     content = render_resource_file(resources, successful_regions)
 
     if args.dry_run:
