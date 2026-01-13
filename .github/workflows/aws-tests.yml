@@ -117,7 +117,7 @@ on:
         required: true
 
 env:
-  PROVIDER_OVERRIDE_SNS: ${{ inputs.sns_v2 }}
+  LOCALSTACK_PROVIDER_OVERRIDE_SNS: ${{ inputs.sns_v2 }}
   PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}
   IMAGE_NAME: "localstack/localstack"
   TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=dist/testselection/test-selection.txt ' || '' }}"
