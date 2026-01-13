@@ -53,11 +53,6 @@ on:
         required: false
         type: string
         default: 'test'
-      sns_v2:
-        description: 'REMOVE THIS: only for testing sns v2 MA/MR'
-        required: false
-        type: string
-        default: 'v2'
   workflow_call:
     inputs:
       disableCaching:
@@ -117,7 +112,7 @@ on:
         required: true
 
 env:
-  LOCALSTACK_PROVIDER_OVERRIDE_SNS: ${{ inputs.sns_v2 }}
+  LOCALSTACK_PROVIDER_OVERRIDE_SNS: "v2"
   PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}
   IMAGE_NAME: "localstack/localstack"
   TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=dist/testselection/test-selection.txt ' || '' }}"
