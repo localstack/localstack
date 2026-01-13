@@ -503,7 +503,7 @@ urllib3==2.6.3
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.35.4
+virtualenv==20.36.1
     # via pre-commit
 websocket-client==1.9.0
     # via localstack-core
