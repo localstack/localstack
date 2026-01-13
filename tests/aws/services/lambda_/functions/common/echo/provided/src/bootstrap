@@ -19,5 +19,5 @@ do
   RESPONSE=$($(echo "$_HANDLER" | cut -d. -f2) "$EVENT_DATA")
 
   # Send the response (using stdin to circumvent max input length)
-  echo ${RESPONSE} | curl -X POST "http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/$REQUEST_ID/response" --data @'-'
+  echo "$RESPONSE" | curl -X POST "http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/${REQUEST_ID}/response" --data @'-'
 done

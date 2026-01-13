@@ -6,7 +6,7 @@ else
 endif
 
 # Target Dotnet framework version
-FRAMEWORK ?= net8.0
+FRAMEWORK ?= net10.0
 
 # Forward build for different Dotnet framework version to avoid code duplication
 build:

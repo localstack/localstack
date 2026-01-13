@@ -3,6 +3,6 @@ build:
 	cp -r ./src/* build/
 
 clean:
-	$(RM) -r build handler.zip
+	$(RM) -rf build handler.zip
 
 .PHONY: build clean

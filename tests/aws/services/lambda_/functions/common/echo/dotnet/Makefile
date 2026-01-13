@@ -9,13 +9,13 @@ endif
 FUNCTION_ARCHITECTURE ?= $(ARCHITECTURE)
 
 # Target Dotnet framework version
-FRAMEWORK ?= net8.0
+FRAMEWORK ?= net10.0
 # Workaround for a Docker race condition causing an I/O error upon zipping to /out/handler.zip if
 # two builds are executed in short succession. Example: `make -C dotnet build && make -C dotnet6 build`
 BUILD_DIR ?= build-$(FRAMEWORK)
 
-# https://gallery.ecr.aws/sam/build-dotnet8
-IMAGE ?= public.ecr.aws/sam/build-dotnet8:1.112.0
+# https://gallery.ecr.aws/sam/build-dotnet10
+IMAGE ?= public.ecr.aws/sam/build-dotnet10:1.151.0
 
 # Emulated builds with Dotnet8 are currently (2024-03-19) broken as discussed in many issues:
 # https://github.com/NuGet/Home/issues/12227
@@ -27,10 +27,10 @@ IMAGE ?= public.ecr.aws/sam/build-dotnet8:1.112.0
 
 build:
 	mkdir -p $(BUILD_DIR) && \
-	docker run --rm -v $$(pwd)/src:/app -v $$(pwd)/$(BUILD_DIR):/out $(IMAGE) bash -c "mkdir -p /app2 && cp /app/* /app2 && cd /app2 && dotnet lambda package --framework $(FRAMEWORK) --function-architecture $(FUNCTION_ARCHITECTURE) -o ../out/handler.zip" && \
+	docker run --rm -v $$(pwd)/src:/app -v $$(pwd)/$(BUILD_DIR):/out $(IMAGE) bash -c "mkdir -p /app2 && cp -r /app/* /app2 && cd /app2 && dotnet lambda package --framework $(FRAMEWORK) --function-architecture $(FUNCTION_ARCHITECTURE) -o ../out/handler.zip" && \
 	cp $(BUILD_DIR)/handler.zip handler.zip
 
 clean:
-	$(RM) -r $(BUILD_DIR) handler.zip
+	$(RM) -rf $(BUILD_DIR) handler.zip
 
 .PHONY: build clean

@@ -1,7 +1,7 @@
 function handler () {
-  EVENT_DATA=$1
+  EVENT_DATA="$1"
   echo "$EVENT_DATA" 1>&2;
-  RESPONSE=$EVENT_DATA
+  RESPONSE="$EVENT_DATA"
 
-  echo $RESPONSE
+  echo "$RESPONSE"
 }
