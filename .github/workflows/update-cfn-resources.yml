@@ -3,6 +3,10 @@ name: Update CloudFormation Resources
 on:
   schedule:
     - cron: '0 6 * * TUE'
+  pull_request:
+    paths:
+      - '.github/workflows/update-cfn-resources.yml'
+      - 'scripts/update_cfn_resources.py'
   workflow_dispatch:
 
 jobs:
@@ -47,6 +51,7 @@ jobs:
             python scripts/update_cfn_resources.py --resource-file localstack-core/localstack/services/cloudformation/resources.py
 
       - name: Create Pull Request
+        if: ${{ github.event_name != 'pull_request' }}
         uses: peter-evans/create-pull-request@v8
         with:
           title: "Update CloudFormation resource availability"
