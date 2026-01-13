@@ -16,15 +16,12 @@ To make sure we cover all resources, we rely on the list of available types from
 """
 
 import argparse
-import logging
 import sys
 from collections.abc import Iterable
 from pathlib import Path
 
 import boto3
 from botocore.exceptions import ClientError
-
-LOG = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RESOURCE_FILE = (
@@ -60,7 +57,7 @@ def collect_region_resource_types(
                 params["NextToken"] = token
             response = client.list_types(**params)
         except ClientError as exc:
-            LOG.warning("Skipping region %s due to error while listing types: %s", region, exc)
+            print(f"Skipping region {region} due to error while listing types: {exc}")
             succeeded = False
             break
 
@@ -162,18 +159,18 @@ def main() -> int:
     try:
         session = boto3.session.Session(**session_kwargs)
     except Exception as exc:
-        LOG.error("Failed to create boto3 session: %s", exc)
+        print(f"Failed to create boto3 session: {exc}")
         return 1
 
     regions = get_regions(session, args.regions)
     if not regions:
-        LOG.error("Could not determine any regions to scan.")
+        print("Could not determine any regions to scan.")
         return 1
 
     print(f"Scanning CloudFormation resource types in {len(regions)} regions")
     resources, successful_regions = collect_all_resource_types(session, regions)
     if not resources:
-        LOG.error("No CloudFormation resources were discovered.")
+        print("No CloudFormation resources were discovered.")
         return 1
     print(f"Collected {len(resources)} resources across {len(successful_regions)} regions:")
 
