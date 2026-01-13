@@ -98,7 +98,7 @@ runtime = [
     "jsonpath-rw>=1.4.0",
     # version that has a built wheel
     "kclpy-ext>=3.0.0",
-    "moto-ext[all]>=5.1.12.post22,!=5.1.19.post57,!=5.1.19.post61",
+    "moto-ext[all]>=5.1.12.post22,!=5.1.19.post44,!=5.1.19.post57,!=5.1.19.post61",
     "opensearch-py>=2.4.1",
     "pydantic>=2.11.9",
     "pymongo>=4.2.0",
