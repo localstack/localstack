@@ -5006,6 +5006,7 @@ class TestSNSSMS:
 
         snapshot.match("opt-in-non-existing-number", response)
 
+    @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
     @markers.aws.validated
     def test_opt_in_invalid_number(self, phone_number, aws_client, snapshot):
         invalid_number = "invalid"
