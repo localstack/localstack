@@ -4,9 +4,6 @@ from typing import TypeAlias
 
 from plux import Plugin
 
-from localstack.services.cloudformation.resource_provider import (
-    plugin_manager as cfn_plugin_manager,
-)
 from localstack.utils.catalog.catalog_loader import RemoteCatalogLoader
 from localstack.utils.catalog.common import (
     AwsServiceOperationsSupportInLatest,
@@ -53,6 +50,10 @@ class CatalogPlugin(Plugin):
 
     @staticmethod
     def _get_cfn_resources_available_at_runtime() -> set[CfnResourceName]:
+        from localstack.services.cloudformation.resource_provider import (
+            plugin_manager as cfn_plugin_manager,
+        )
+
         return set(cfn_plugin_manager.list_names())
 
     @abstractmethod
