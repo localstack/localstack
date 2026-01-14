@@ -46,7 +46,7 @@ from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
-from tests.aws.services.sns.conftest import is_sns_v1_provider, skip_if_sns_v2
+from tests.aws.services.sns.conftest import is_sns_v1_provider
 
 LOG = logging.getLogger(__name__)
 
@@ -6151,7 +6151,6 @@ class TestSNSPublishDelivery:
         ],
         condition=is_sns_v1_provider,
     )
-    @skip_if_sns_v2
     def test_delivery_lambda(
         self,
         sns_create_topic,
