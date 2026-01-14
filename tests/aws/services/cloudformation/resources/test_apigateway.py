@@ -756,3 +756,36 @@ def test_apigateway_deployment_canary_settings(deploy_cfn_template, snapshot, aw
 
     deployments = aws_client.apigateway.get_deployments(restApiId=api_id)
     snapshot.match("get-deployments", deployments)
+
+
+class TestApiGatewayBasePathMapping:
+    @markers.aws.only_localstack
+    def test_delete_base_path_mapping_missing_base_path(
+        self,
+        deploy_cfn_template,
+        aws_client_factory,
+        aws_client,
+    ):
+        """
+        Ensure correct deletion of the AWS::ApiGateway::BasePathMapping resource.
+
+        Note: this test is `only_localstack` because it requires a valid ACM certificate
+        which is difficult to do wtih our sandbox accounts
+        """
+        # Certificates must always be created in us-east-1
+        acm_client = aws_client_factory(region_name="us-east-1").acm
+        domain_name = f"api-{short_uid()}.localhost.localstack.cloud"
+        cert_arn = acm_client.request_certificate(DomainName=domain_name)["CertificateArn"]
+
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/apigateway_basepath_mapping.yaml"
+        )
+
+        stack = deploy_cfn_template(
+            template_path=template_path,
+            parameters={
+                "CertificateArn": cert_arn,
+                "DomainName": domain_name,
+            },
+        )
+        stack.destroy()
