@@ -1,9 +1,12 @@
 import json
 
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
+
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
+@skip_if_legacy_engine()
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..PhysicalResourceId"])
 def test_requires_replacement(
