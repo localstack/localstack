@@ -249,7 +249,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self._remove_resource_tags(context, topic_arn)
         store.topics.pop(topic_arn, None)
 
-
     def list_topics(
         self, context: RequestContext, next_token: nextToken | None = None, **kwargs
     ) -> ListTopicsResponse:
@@ -1282,17 +1281,22 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         tags = store.TAGS.list_tags_for_resource(resource_arn).get("Tags")
         return tags
 
-    def _tag_resource(self, context: RequestContext, resource_arn: str, tags: list[dict[str, str]]) -> None:
+    def _tag_resource(
+        self, context: RequestContext, resource_arn: str, tags: list[dict[str, str]]
+    ) -> None:
         store = self.get_store(context.account_id, context.region)
         store.TAGS.tag_resource(resource_arn, tags)
 
-    def _untag_resource(self, context: RequestContext, resource_arn: str, tag_keys: list[str]) -> None:
+    def _untag_resource(
+        self, context: RequestContext, resource_arn: str, tag_keys: list[str]
+    ) -> None:
         store = self.get_store(context.account_id, context.region)
         store.TAGS.untag_resource(resource_arn, tag_keys)
 
     # No tag deletion logic to handle in Community. Overwritten in Pro implementation.s
     def _remove_resource_tags(self, context: RequestContext, resource_arn: str) -> None:
         return
+
 
 def _create_topic(name: str, attributes: dict, context: RequestContext) -> Topic:
     topic_arn = sns_topic_arn(
