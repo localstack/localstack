@@ -5935,21 +5935,29 @@
     "recorded-content": {}
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_confirm_subscription": {
-    "recorded-date": "06-10-2025, 11:40:51",
-    "recorded-content": {}
+    "recorded-date": "14-01-2026, 09:45:12",
+    "recorded-content": {
+      "confirm-subscription": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:confirm-sub-e46f689a:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_get_subscription_attributes_error_not_exists": {
-    "recorded-date": "06-10-2025, 11:40:51",
+    "recorded-date": "14-01-2026, 10:27:15",
     "recorded-content": {
       "get-sub-attrs-nonexistent": {
         "Error": {
-          "Code": "InvalidParameter",
-          "Message": "Invalid parameter: SubscriptionId",
+          "Code": "NotFound",
+          "Message": "Subscription does not exist",
           "Type": "Sender"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 400
+          "HTTPStatusCode": 404
         }
       }
     }

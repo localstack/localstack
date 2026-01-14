@@ -920,6 +920,15 @@
       "total": 3.8
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_confirm_subscription": {
+    "last_validated_date": "2026-01-14T09:45:12+00:00",
+    "durations_in_seconds": {
+      "setup": 49.43,
+      "call": 9.88,
+      "teardown": 1.51,
+      "total": 60.82
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription": {
     "last_validated_date": "2025-10-07T07:40:45+00:00",
     "durations_in_seconds": {
@@ -957,12 +966,12 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_get_subscription_attributes_error_not_exists": {
-    "last_validated_date": "2025-10-06T11:40:51+00:00",
+    "last_validated_date": "2026-01-14T10:27:15+00:00",
     "durations_in_seconds": {
-      "setup": 0.01,
-      "call": 0.14,
-      "teardown": 0.03,
-      "total": 0.18
+      "setup": 1.65,
+      "call": 25.2,
+      "teardown": 0.0,
+      "total": 26.85
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_getting_subscriptions_by_topic": {

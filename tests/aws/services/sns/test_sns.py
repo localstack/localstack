@@ -1817,28 +1817,61 @@ class TestSNSSubscriptionCrudV2:
             )
         snapshot.match("subscribe-invalid-filter-policy", e.value.response)
 
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
-    def test_confirm_subscription(self, sns_create_topic, aws_client, snapshot):
+    # FIXME
+    @pytest.mark.skip(
+        reason="Https for aws lambda URL required but not implemented in localstack lambda"
+    )
+    @markers.aws.validated
+    def test_confirm_subscription(
+        self, sns_create_topic, aws_client, snapshot, create_lambda_function
+    ):
+        snapshot.add_transformer(TransformerUtility.key_value("SubscriptionArn"))
         topic_arn = sns_create_topic(Name=f"confirm-sub-{short_uid()}")["TopicArn"]
+        function_name = f"lambda-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+        )
+
+        url_config = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name, AuthType="NONE"
+        )
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunctionUrl",
+            StatementId="AllowSNSInvoke",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
 
         aws_client.sns.subscribe(
             TopicArn=topic_arn,
-            Protocol="email",
-            Endpoint="test@example.com",
+            Protocol="https",
+            Endpoint=url_config["FunctionUrl"],
         )
 
+        def _get_token():
+            token_message = aws_client.logs.filter_log_events(
+                logGroupName=f"/aws/lambda/{function_name}", filterPattern="Token="
+            )["events"][0]["message"]
+            confirmation_url = json.loads(json.loads(token_message)["body"])["SubscribeURL"]
+            token = confirmation_url.split("Token=")[1]
+            return token
+
+        token = retry(_get_token, retries=5, sleep=2)
         resp = aws_client.sns.confirm_subscription(
-            TopicArn=topic_arn, Token="fake-token", AuthenticateOnUnsubscribe="true"
+            TopicArn=topic_arn, Token=token, AuthenticateOnUnsubscribe="true"
         )
         snapshot.match("confirm-subscription", resp)
 
-    @pytest.mark.skip(reason="TODO")
-    @markers.aws.needs_fixing
-    def test_get_subscription_attributes_error_not_exists(self, aws_client, snapshot):
+    @markers.aws.validated
+    def test_get_subscription_attributes_error_not_exists(
+        self, aws_client, snapshot, account_id, region_name
+    ):
         with pytest.raises(ClientError) as e:
             aws_client.sns.get_subscription_attributes(
-                SubscriptionArn=f"arn:aws:sns:us-east-1:000000000000:nonexistent-{short_uid()}"
+                SubscriptionArn=f"arn:aws:sns:{region_name}:{account_id}:nonexistent:{uuid.uuid4()}"
             )
         snapshot.match("get-sub-attrs-nonexistent", e.value.response)
 
