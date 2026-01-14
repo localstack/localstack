@@ -11,7 +11,9 @@ from localstack.utils.strings import short_uid
 
 class TestLambdaUnzipCrash:
     @markers.aws.only_localstack
-    def test_unzip_crash_leaves_no_corrupted_files(self, aws_client, tmp_path, monkeypatch):
+    def test_unzip_crash_leaves_no_corrupted_files(
+        self, aws_client, tmp_path, monkeypatch, account_id
+    ):
         """
         Integration test to test fix for issue https://github.com/localstack/localstack/issues/13555
         Simulates what happens when we crash during Lambda code unzipping.
@@ -34,7 +36,7 @@ class TestLambdaUnzipCrash:
 
         s3_code = S3Code(
             id=function_id,
-            account_id="000000000000",
+            account_id=account_id,
             s3_bucket="test-bucket",
             s3_key="test.zip",
             s3_object_version=None,
