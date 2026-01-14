@@ -34,6 +34,10 @@ def is_valid_e164_number(number: str) -> bool:
     return E164_REGEX.match(number) is not None
 
 
+def snake_to_pascal_case(snake_case_string: str) -> str:
+    return "".join(word.capitalize() for word in snake_case_string.split("_"))
+
+
 def validate_subscription_attribute(
     attribute_name: str,
     attribute_value: str,

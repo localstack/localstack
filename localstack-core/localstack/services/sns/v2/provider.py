@@ -85,6 +85,7 @@ from localstack.services.sns.constants import (
     ATTR_TYPE_REGEX,
     BATCH_ENTRY_ID_REGEX,
     DUMMY_SUBSCRIPTION_PRINCIPAL,
+    E164_REGEX,
     MAXIMUM_MESSAGE_LENGTH,
     MSG_ATTR_NAME_REGEX,
     PLATFORM_ENDPOINT_MSGS_ENDPOINT,
@@ -239,6 +240,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise NotFoundException("Topic does not exist")
 
     def delete_topic(self, context: RequestContext, topic_arn: topicARN, **kwargs) -> None:
+        # This also deletes all subscriptions for the topic. In AWS, this is not immediately the case;
+        # the subs still exist for a certain period of time (~48h), detached, after which they are garbage collected
+        arn_data = parse_and_validate_topic_arn(topic_arn)
+        if context.region != arn_data["region"]:
+            raise InvalidParameterException("Invalid parameter: TopicArn")
         store = self.get_store(context.account_id, context.region)
 
         store.topics.pop(topic_arn, None)
@@ -1130,6 +1136,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def opt_in_phone_number(
         self, context: RequestContext, phone_number: PhoneNumber, **kwargs
     ) -> OptInPhoneNumberResponse:
+        _validate_phone_number(phone_number)
         store = self.get_store(context.account_id, context.region)
         if phone_number in store.PHONE_NUMBERS_OPTED_OUT:
             store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
@@ -1255,7 +1262,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if not multi_region and context.region != arn_data["region"]:
             raise InvalidParameterException("Invalid parameter: TopicArn")
         try:
-            store = SnsProvider.get_store(context.account_id, context.region)
+            store = SnsProvider.get_store(arn_data["account"], arn_data["region"])
             return store.topics[arn]
         except KeyError:
             raise NotFoundException("Topic does not exist")
@@ -1500,6 +1507,13 @@ def _validate_sms_attributes(attributes: dict) -> None:
 def _set_sms_attribute_default(store: SnsStore) -> None:
     # TODO: don't call this on every sms attribute crud api call
     store.sms_attributes.setdefault("MonthlySpendLimit", "1")
+
+
+def _validate_phone_number(phone_number: str):
+    if not re.match(E164_REGEX, phone_number):
+        raise InvalidParameterException(
+            "Invalid parameter: PhoneNumber Reason: input incorrectly formatted"
+        )
 
 
 def _check_matching_tags(topic_arn: str, tags: TagList | None, store: SnsStore) -> bool:

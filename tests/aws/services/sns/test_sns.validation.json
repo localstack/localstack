@@ -692,6 +692,15 @@
       "total": 0.16
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_opt_in_invalid_number": {
+    "last_validated_date": "2026-01-13T09:38:15+00:00",
+    "durations_in_seconds": {
+      "setup": 1.02,
+      "call": 0.79,
+      "teardown": 0.03,
+      "total": 1.84
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_opt_in_non_existing_phone_number": {
     "last_validated_date": "2025-12-02T12:58:54+00:00",
     "durations_in_seconds": {
@@ -911,6 +920,15 @@
       "total": 3.8
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_confirm_subscription": {
+    "last_validated_date": "2026-01-14T09:45:12+00:00",
+    "durations_in_seconds": {
+      "setup": 49.43,
+      "call": 9.88,
+      "teardown": 1.51,
+      "total": 60.82
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription": {
     "last_validated_date": "2025-10-07T07:40:45+00:00",
     "durations_in_seconds": {
@@ -920,13 +938,22 @@
       "total": 2.87
     }
   },
-  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_delete_subscriptions_on_delete_topic": {
-    "last_validated_date": "2025-10-06T11:40:45+00:00",
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription_with_attributes": {
+    "last_validated_date": "2026-01-12T13:08:24+00:00",
     "durations_in_seconds": {
-      "setup": 0.01,
-      "call": 1.21,
-      "teardown": 0.31,
-      "total": 1.53
+      "setup": 1.2,
+      "call": 2.79,
+      "teardown": 0.72,
+      "total": 4.71
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_delete_subscriptions_on_delete_topic": {
+    "last_validated_date": "2026-01-12T13:09:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.8,
+      "call": 3.09,
+      "teardown": 0.8,
+      "total": 4.69
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_double_subscription": {
@@ -939,12 +966,12 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_get_subscription_attributes_error_not_exists": {
-    "last_validated_date": "2025-10-06T11:40:51+00:00",
+    "last_validated_date": "2026-01-14T10:27:15+00:00",
     "durations_in_seconds": {
-      "setup": 0.01,
-      "call": 0.14,
-      "teardown": 0.03,
-      "total": 0.18
+      "setup": 1.65,
+      "call": 25.2,
+      "teardown": 0.0,
+      "total": 26.85
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_getting_subscriptions_by_topic": {
@@ -965,6 +992,24 @@
       "total": 0.29
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_set_subscription_attributes": {
+    "last_validated_date": "2026-01-13T09:21:16+00:00",
+    "durations_in_seconds": {
+      "setup": 1.07,
+      "call": 2.51,
+      "teardown": 0.63,
+      "total": 4.21
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_attributes": {
+    "last_validated_date": "2026-01-12T13:03:28+00:00",
+    "durations_in_seconds": {
+      "setup": 1.02,
+      "call": 2.72,
+      "teardown": 0.85,
+      "total": 4.59
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_bad_sms": {
     "last_validated_date": "2025-10-06T11:39:57+00:00",
     "durations_in_seconds": {
@@ -975,12 +1020,12 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_invalid_filter_policy": {
-    "last_validated_date": "2025-10-06T11:40:48+00:00",
+    "last_validated_date": "2026-01-13T09:26:43+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.61,
-      "teardown": 0.3,
-      "total": 0.91
+      "setup": 0.96,
+      "call": 1.06,
+      "teardown": 0.27,
+      "total": 2.29
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_invalid_sms": {

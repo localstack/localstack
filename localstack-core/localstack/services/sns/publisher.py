@@ -30,7 +30,7 @@ from localstack.services.sns.models import (
     SnsStore,
     SnsSubscription,
 )
-from localstack.services.sns.v2.utils import get_topic_subscriptions
+from localstack.services.sns.v2.utils import get_topic_subscriptions, snake_to_pascal_case
 from localstack.utils.aws.arns import (
     PARTITION_NAMES,
     extract_account_id_from_arn,
@@ -1095,7 +1095,6 @@ def store_delivery_log(
     # SMS is a special case: https://docs.aws.amazon.com/sns/latest/dg/sms_stats_cloudwatch.html
     # seems like you need to configure on the Console, leave it on by default now in LocalStack
     protocol = subscriber.get("Protocol")
-
     if protocol != "sms":
         if protocol not in available_delivery_logs_services or not topic_attributes:
             # this service does not have DeliveryLogs feature, return
@@ -1110,7 +1109,11 @@ def store_delivery_log(
         # TODO: on purpose not using walrus operator to show that we get the RoleArn here for CloudWatch
         role_arn = topic_attributes.get(topic_attribute)
         if not role_arn:
-            return
+            # TODO: remove snake case access once v1 is completely obsolete
+            topic_attribute = snake_to_pascal_case(topic_attribute)
+            role_arn = topic_attributes.get(topic_attribute)
+            if not role_arn:
+                return
 
     if not is_api_enabled("logs"):
         LOG.warning(
