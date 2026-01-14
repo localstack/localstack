@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/cloudformation/engine/test_replacement.py::test_requires_replacement": {
+    "last_validated_date": "2026-01-14T14:00:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.81,
+      "call": 111.56,
+      "teardown": 35.27,
+      "total": 147.64
+    }
+  }
+}
