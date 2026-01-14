@@ -69,7 +69,7 @@ CATALOG = AwsRemoteCatalog(
 
 
 @pytest.fixture(scope="class", autouse=True)
-def aws_catalog_with_static_data():
+def aws_catalog():
     return AwsCatalogRemoteStatePlugin(FakeCatalogLoader(CATALOG))
 
 
@@ -82,8 +82,8 @@ class TestAwsCatalog:
             ("nonexistent", AwsServicesSupportInLatest.NOT_SUPPORTED),
         ],
     )
-    def test_get_service_status(self, aws_catalog_with_static_data, service_name, expected_status):
-        result = aws_catalog_with_static_data.get_aws_service_status(service_name)
+    def test_get_service_status(self, aws_catalog, service_name, expected_status):
+        result = aws_catalog.get_aws_service_status(service_name)
         assert result == expected_status
 
     @pytest.mark.parametrize(
@@ -99,22 +99,21 @@ class TestAwsCatalog:
         ],
     )
     def test_get_service_status_with_operation(
-        self, aws_catalog_with_static_data, service_name, operation_name, expected_status
+        self, aws_catalog, service_name, operation_name, expected_status
     ):
-        result = aws_catalog_with_static_data.get_aws_service_status(service_name, operation_name)
+        result = aws_catalog.get_aws_service_status(service_name, operation_name)
         assert result == expected_status
 
-    def test_get_service_status_with_only_one_emulator_type(self, aws_catalog_with_static_data):
-        result = aws_catalog_with_static_data.get_aws_service_status("athena")
+    def test_get_service_status_with_only_one_emulator_type(self, aws_catalog):
+        result = aws_catalog.get_aws_service_status("athena")
         assert result == AwsServicesSupportInLatest.SUPPORTED_WITH_LICENSE_UPGRADE
 
-    def test_get_service_status_with_empty_operation(self, aws_catalog_with_static_data):
+    def test_get_service_status_with_empty_operation(self, aws_catalog):
         assert (
-            aws_catalog_with_static_data.get_aws_service_status("s3", None)
-            == AwsServicesSupportInLatest.SUPPORTED
+            aws_catalog.get_aws_service_status("s3", None) == AwsServicesSupportInLatest.SUPPORTED
         )
         assert (
-            aws_catalog_with_static_data.get_aws_service_status("s3", "")
+            aws_catalog.get_aws_service_status("s3", "")
             == AwsServiceOperationsSupportInLatest.SUPPORTED
         )
 
@@ -136,20 +135,14 @@ class TestAwsCatalog:
         ],
     )
     def test_get_cfn_resource_status(
-        self, aws_catalog_with_static_data, resource_name, service_name, expected_status
+        self, aws_catalog, resource_name, service_name, expected_status
     ):
-        result = aws_catalog_with_static_data.get_cloudformation_resource_status(
-            resource_name, service_name
-        )
+        result = aws_catalog.get_cloudformation_resource_status(resource_name, service_name)
         assert result == expected_status
 
-    def test_build_cfn_catalog_resources(self, aws_catalog_with_static_data):
-        community_resources = aws_catalog_with_static_data.cfn_resources_in_latest[
-            LocalstackEmulatorType.COMMUNITY
-        ]
+    def test_build_cfn_catalog_resources(self, aws_catalog):
+        community_resources = aws_catalog.cfn_resources_in_latest[LocalstackEmulatorType.COMMUNITY]
         assert set(community_resources) == {"AWS::S3::Bucket", "AWS::KMS::Key"}
 
-        pro_resources = aws_catalog_with_static_data.cfn_resources_in_latest[
-            LocalstackEmulatorType.PRO
-        ]
+        pro_resources = aws_catalog.cfn_resources_in_latest[LocalstackEmulatorType.PRO]
         assert set(pro_resources) == {"AWS::Athena::CapacitiesReservation"}
