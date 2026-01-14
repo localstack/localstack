@@ -12,9 +12,10 @@ from plux.core.plugin import PluginDisabled
 from localstack import config
 from localstack.http import Response
 
-from ...utils.coverage_docs import get_coverage_link_for_service
+from ...utils.catalog.plugins import get_aws_catalog
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
+from ..catalog_exceptions import get_service_availability_exception
 from ..chain import CompositeResponseHandler, ExceptionHandler, Handler, HandlerChain
 from ..client import parse_response, parse_service_exception
 from ..protocol.parser import RequestParser, create_parser
@@ -190,12 +191,21 @@ class ServiceExceptionSerializer(ExceptionHandler):
         error = exception
 
         if operation and isinstance(exception, NotImplementedError):
-            action_name = operation.name
+            operation_name = operation.name
             exception_message: str | None = exception.args[0] if exception.args else None
-            message = exception_message or get_coverage_link_for_service(service_name, action_name)
-            error = CommonServiceException("InternalFailure", message, status_code=501)
+            if exception_message:
+                message = exception_message
+                error = CommonServiceException("InternalFailure", message, status_code=501)
+            else:
+                service_status = get_aws_catalog().get_aws_service_status(
+                    service_name, operation_name
+                )
+                error = get_service_availability_exception(
+                    service_name, operation_name, service_status
+                )
+                message = error.message
             LOG.info(message)
-
+            context.service_exception = error
         elif isinstance(exception, self._moto_service_exception):
             # Translate Moto ServiceException to native ServiceException if Moto is available.
             # This allows handler chain to gracefully handles Moto errors when provider handlers invoke Moto methods directly.
