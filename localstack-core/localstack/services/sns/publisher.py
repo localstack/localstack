@@ -1109,7 +1109,7 @@ def store_delivery_log(
         # TODO: on purpose not using walrus operator to show that we get the RoleArn here for CloudWatch
         role_arn = topic_attributes.get(topic_attribute)
         if not role_arn:
-            # TODO: remove this once v1 is completely obesolete
+            # TODO: remove snake case access once v1 is completely obsolete
             topic_attribute = snake_to_pascal_case(topic_attribute)
             role_arn = topic_attributes.get(topic_attribute)
             if not role_arn:
