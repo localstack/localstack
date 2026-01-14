@@ -5,7 +5,7 @@ Resources:
   FifoQueue:
     Type: 'AWS::SQS::Queue'
     Properties:
-      QueueName: 'MyFifoQueueWithAllProperties.fifo'
+      QueueName: 'MyFifoQueue.fifo'
       FifoQueue: true
       ContentBasedDeduplication: true
       DeduplicationScope: 'messageGroup'
