@@ -876,10 +876,10 @@ class ChangeSetModel:
             property.replace("/properties/", "", 1) for property in create_only_properties
         ]
         for node_property in node_properties.properties:
-            if (
-                node_property.change_type == ChangeType.MODIFIED
-                and node_property.name in create_only_properties
-            ):
+            if node_property.name not in create_only_properties:
+                continue
+
+            if node_property.change_type != ChangeType.UNCHANGED:
                 return True
         return False
 

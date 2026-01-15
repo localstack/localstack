@@ -1,0 +1,51 @@
+{
+  "tests/aws/services/cloudformation/engine/test_replacement.py::test_requires_replacement": {
+    "recorded-date": "14-01-2026, 14:00:11",
+    "recorded-content": {
+      "queue-events": [
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<queue-name-1>",
+          "LogicalResourceId": "MyQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "CREATE_IN_PROGRESS",
+          "Timestamp": "timestamp"
+        },
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<queue-name-1>",
+          "LogicalResourceId": "MyQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "Timestamp": "timestamp"
+        },
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/queue-47128d25",
+          "LogicalResourceId": "MyQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "UPDATE_IN_PROGRESS",
+          "Timestamp": "timestamp"
+        },
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/queue-47128d25",
+          "LogicalResourceId": "MyQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "UPDATE_COMPLETE",
+          "Timestamp": "timestamp"
+        },
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<queue-name-1>",
+          "LogicalResourceId": "MyQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "DELETE_IN_PROGRESS",
+          "Timestamp": "timestamp"
+        },
+        {
+          "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<queue-name-1>",
+          "LogicalResourceId": "MyQueue",
+          "ResourceType": "AWS::SQS::Queue",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "Timestamp": "timestamp"
+        }
+      ]
+    }
+  }
+}
