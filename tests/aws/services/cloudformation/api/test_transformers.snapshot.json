@@ -153,7 +153,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach": {
-    "recorded-date": "02-07-2025, 20:00:41",
+    "recorded-date": "20-10-2025, 22:46:34",
     "recorded-content": {
       "resources": {
         "StackResources": [
@@ -165,7 +165,7 @@
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<topic-name-0>.fifo",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/3727e570-577f-11f0-84c2-027a12c5d007",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/9d0ac190-ae06-11f0-90b3-0a160153ade1",
             "StackName": "<stack-name>",
             "Timestamp": "timestamp"
           },
@@ -177,7 +177,7 @@
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<topic-name-1>.fifo",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/3727e570-577f-11f0-84c2-027a12c5d007",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/9d0ac190-ae06-11f0-90b3-0a160153ade1",
             "StackName": "<stack-name>",
             "Timestamp": "timestamp"
           },
@@ -189,7 +189,7 @@
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<topic-name-2>.fifo",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/3727e570-577f-11f0-84c2-027a12c5d007",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/9d0ac190-ae06-11f0-90b3-0a160153ade1",
             "StackName": "<stack-name>",
             "Timestamp": "timestamp"
           }
