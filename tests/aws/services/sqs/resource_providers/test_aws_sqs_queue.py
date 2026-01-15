@@ -186,6 +186,62 @@ def test_update_standard_queue_remove_some_properties(deploy_cfn_template, aws_c
 
 
 @markers.aws.validated
+def test_update_fifo_queue_remove_all_properties(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_stack(deploy_cfn_template, "sqs_fifo_queue_all_properties.yml")
+    queue_url = stack.outputs["QueueUrl"]
+
+    # Update the stack to remove optional properties, reverting to only the required properties
+    updated_stack = deploy_stack(
+        deploy_cfn_template,
+        "sqs_fifo_queue_required_properties.yml",
+        is_update=True,
+        stack_name=stack.stack_name,
+    )
+
+    # URL will change, because queue name is auto-generated when QueueName is not specified
+    updated_queue_url = updated_stack.outputs["QueueUrl"]
+    assert queue_url != updated_queue_url
+
+    snapshot.match(
+        "updated_attributes",
+        aws_client.sqs.get_queue_attributes(QueueUrl=updated_queue_url, AttributeNames=["All"]),
+    )
+    snapshot.match("updated_tags", aws_client.sqs.list_queue_tags(QueueUrl=updated_queue_url))
+    snapshot.add_transformer(
+        snapshot.transform.regex(updated_stack.outputs["QueueArn"], "<queue-arn>")
+    )
+
+
+@markers.aws.validated
+def test_update_fifo_queue_remove_all_properties_except_queuename(
+    deploy_cfn_template, aws_client, snapshot
+):
+    stack = deploy_stack(deploy_cfn_template, "sqs_fifo_queue_all_properties.yml")
+    queue_url = stack.outputs["QueueUrl"]
+
+    # Update the stack to remove optional properties, reverting to only providing the QueueName property
+    updated_stack = deploy_stack(
+        deploy_cfn_template,
+        "sqs_fifo_queue_with_name_only.yml",
+        is_update=True,
+        stack_name=stack.stack_name,
+    )
+
+    # URL will remain the same, because queue name is explicitly specified
+    updated_queue_url = updated_stack.outputs["QueueUrl"]
+    assert queue_url == updated_queue_url
+
+    snapshot.match(
+        "updated_attributes",
+        aws_client.sqs.get_queue_attributes(QueueUrl=updated_queue_url, AttributeNames=["All"]),
+    )
+    snapshot.match("updated_tags", aws_client.sqs.list_queue_tags(QueueUrl=updated_queue_url))
+    snapshot.add_transformer(
+        snapshot.transform.regex(updated_stack.outputs["QueueArn"], "<queue-arn>")
+    )
+
+
+@markers.aws.validated
 def test_update_completely_remove_resource(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_stack(deploy_cfn_template, "sqs_standard_queue_all_properties.yml")
     queue_url = stack.outputs["QueueUrl"]
