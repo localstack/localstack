@@ -517,6 +517,21 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
             for domain_name in store.opensearch_domains.keys():
                 cluster_manager().remove(DomainKey(domain_name, region, account_id).arn)
 
+    def _add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
+        self.get_store(context.account_id, context.region).TAGS.tag_resource(arn, tag_list)
+
+    def _remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
+        self.get_store(context.account_id, context.region).TAGS.untag_resource(arn, tag_keys)
+
+    def _list_tags(self, context: RequestContext, arn: ARN) -> TagList:
+        # The tagging service returns a dictionary with the given root name
+        store = self.get_store(context.account_id, context.region)
+        tags = store.TAGS.list_tags_for_resource(arn=arn, root_name="root")
+        # Extract the actual list of tags for the typed response
+        tag_list: TagList = tags["root"]
+
+        return tag_list
+
     @handler("CreateDomain", expand=False)
     def create_domain(
         self, context: RequestContext, request: CreateDomainRequest
@@ -724,20 +739,15 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
 
     def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList, **kwargs) -> None:
         _ensure_domain_exists(arn)
-        self.get_store(context.account_id, context.region).TAGS.tag_resource(arn, tag_list)
+        self._add_tags(context, arn, tag_list)
 
     def list_tags(self, context: RequestContext, arn: ARN, **kwargs) -> ListTagsResponse:
         _ensure_domain_exists(arn)
-
-        # The tagging service returns a dictionary with the given root name
-        store = self.get_store(context.account_id, context.region)
-        tags = store.TAGS.list_tags_for_resource(arn=arn, root_name="root")
-        # Extract the actual list of tags for the typed response
-        tag_list: TagList = tags["root"]
+        tag_list = self._list_tags(context, arn)
         return ListTagsResponse(TagList=tag_list)
 
     def remove_tags(
         self, context: RequestContext, arn: ARN, tag_keys: StringList, **kwargs
     ) -> None:
         _ensure_domain_exists(arn)
-        self.get_store(context.account_id, context.region).TAGS.untag_resource(arn, tag_keys)
+        self._remove_tags(context, arn, tag_keys)
