@@ -5,6 +5,7 @@ import threading
 from typing import Any
 
 from localstack import config
+from localstack.utils.files import mkdir
 
 LOG = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class LogsDatabaseHelper:
         if os.path.exists(self.LOGS_DB):
             LOG.debug("database for logs already exists (%s)", self.LOGS_DB)
             return
+        mkdir(self.LOGS_DATA_ROOT)
         self._create_tables()
 
     def _get_connection(self):
@@ -68,7 +70,7 @@ class LogsDatabaseHelper:
                     ),
                 )
                 event_id = cursor.lastrowid
-                event["event_id"] = event_id
+                event["id"] = str(event_id)
             conn.commit()
             return log_events
 
@@ -127,7 +129,7 @@ class LogsDatabaseHelper:
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
             query = f"""
-                SELECT log_stream_name, timestamp, message
+                SELECT id, log_stream_name, timestamp, message
                 FROM {self.TABLE_LOG_EVENTS}
                 WHERE log_group_name = ? AND region = ? AND account_id = ?
             """
@@ -158,10 +160,10 @@ class LogsDatabaseHelper:
 
             return [
                 {
-                    "logStreamName": row[0],
-                    "timestamp": row[1],
-                    "message": row[2],
-                    "eventId": f"{row[0]}-{row[1]}",  # Simple eventId for now
+                    "logStreamName": row[1],
+                    "timestamp": row[2],
+                    "message": row[3],
+                    "id": f"{row[0]}",  # Simple eventId for now
                 }
                 for row in rows
             ]

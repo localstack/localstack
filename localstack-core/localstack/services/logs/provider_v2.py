@@ -1,5 +1,4 @@
 import base64
-import datetime
 import io
 import json
 import logging
@@ -39,7 +38,6 @@ from localstack.aws.api.logs import (
     ListLogGroupsResponse,
     ListTagsForResourceResponse,
     ListTagsLogGroupResponse,
-    LogEvent,
     LogGroupClass,
     LogGroupName,
     LogGroupSummary,
@@ -304,7 +302,14 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
 
         return PutLogEventsResponse(rejectedLogEventsInfo=RejectedLogEventsInfo())
 
-    def _send_events_metrics(self, log_group_name, log_stream_name, events, account_id, region):
+    def _send_events_metrics(
+        self,
+        log_group_name: str,
+        log_stream_name: str,
+        events: list[dict],
+        account_id: str,
+        region: str,
+    ):
         store = logs_stores[account_id][region]
         metric_filters = store.metric_filters.get(log_group_name, [])
         client = connect_to(aws_access_key_id=account_id, region_name=region).cloudwatch
@@ -331,7 +336,12 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
                             )
 
     def _send_events_to_subscription(
-        self, log_group_name, log_stream_name, events, account_id, region
+        self,
+        log_group_name: str,
+        log_stream_name: str,
+        events: list[dict],
+        account_id: str,
+        region: str,
     ):
         store = logs_stores[account_id][region]
         subscription_filters = store.subscription_filters.get(log_group_name, [])
@@ -339,7 +349,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             if subscription_filter.get("filterPattern"):
                 matches = get_pattern_matcher(subscription_filter.filter_pattern)
                 events = [
-                    LogEvent(datetime.datetime.now(), event)
+                    event
                     for event in events
                     if matches(subscription_filter.get("filterPattern"), event)
                 ]
@@ -348,7 +358,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
                 destination_arn = subscription_filter.get("destinationArn")
                 log_events = [
                     {
-                        "id": event.get("event_id", "0"),
+                        "id": event.get("id", "0"),
                         "timestamp": event.get("timestamp"),
                         "message": event.get("message"),
                     }
@@ -471,7 +481,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
                     logStreamName=data["logStreamName"],
                     timestamp=data["timestamp"],
                     message=data["message"],
-                    eventId=data["eventId"],
+                    eventId=data["id"],
                 )
                 for data in events_data
             ]
@@ -721,7 +731,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             )
 
         store = logs_stores[context.account_id][context.region]
-        metric_filer = MetricFilter(
+        metric_filter = MetricFilter(
             logGroupName=log_group_name,
             filterName=filter_name,
             filterPattern=filter_pattern,
@@ -732,7 +742,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         )
 
         previous_filters = store.metric_filters.get(log_group_name, [])
-        previous_filters.append(metric_filer)
+        previous_filters.append(metric_filter)
         store.metric_filters.update({log_group_name: previous_filters})
 
     def delete_metric_filter(
