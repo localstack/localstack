@@ -56,6 +56,7 @@ class Environment:
     map_run_record_pool_manager: MapRunRecordPoolManager
     activity_store: Final[dict[Arn, Activity]]
     local_mock_test_case: LocalMockTestCase | None = None
+    state_invocation_counter: dict[str, int]  # Tracks invocation count per state for mock cycling
 
     _frames: Final[list[Environment]]
     _is_frame: bool = False
@@ -93,6 +94,7 @@ class Environment:
         self.activity_store = activity_store
 
         self.local_mock_test_case = local_mock_test_case
+        self.state_invocation_counter = {}
 
         self._frames = []
         self._is_frame = False
@@ -143,6 +145,7 @@ class Environment:
             variable_store=variable_store,
         )
         frame.local_mock_test_case = env.local_mock_test_case
+        frame.state_invocation_counter = env.state_invocation_counter  # Share counter with parent
         frame._is_frame = True
         frame.event_manager = env.event_manager
         if "State" in env.states.context_object.context_object_data:
@@ -297,10 +300,14 @@ class Environment:
         )
         if state_mocked_responses is None:
             raise RuntimeError(f"No Local mocked response definition for state '{state_name}'")
-        retry_count = self.states.context_object.context_object_data["State"]["RetryCount"]
-        if len(state_mocked_responses.mocked_responses) <= retry_count:
+
+        # Get and increment the invocation counter for this state
+        invocation_count = self.state_invocation_counter.get(state_name, 0)
+        self.state_invocation_counter[state_name] = invocation_count + 1
+
+        if len(state_mocked_responses.mocked_responses) <= invocation_count:
             raise RuntimeError(
                 f"No Local mocked response definition for state '{state_name}' "
-                f"and retry number '{retry_count}'"
+                f"and invocation number '{invocation_count}'"
             )
-        return state_mocked_responses.mocked_responses[retry_count]
+        return state_mocked_responses.mocked_responses[invocation_count]
