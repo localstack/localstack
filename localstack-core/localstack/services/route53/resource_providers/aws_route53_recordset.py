@@ -184,6 +184,8 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
             ]
         if "TTL" in model:
             rrset_kwargs["TTL"] = int(model["TTL"])
+        if "SetIdentifier" in model:
+            rrset_kwargs["SetIdentifier"] = model["SetIdentifier"]
 
         route53.change_resource_record_sets(
             HostedZoneId=model["HostedZoneId"],
