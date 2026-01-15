@@ -49,8 +49,8 @@ from localstack.aws.api.kms import (
     UnsupportedOperationException,
 )
 from localstack.constants import TAG_KEY_CUSTOM_ID
-from localstack.services.kms.exceptions import TagException, ValidationException
-from localstack.services.kms.utils import is_valid_key_arn, validate_tag
+from localstack.services.kms.exceptions import ValidationException
+from localstack.services.kms.utils import is_valid_key_arn, validate_tag, validate_tag_list
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.arns import get_partition, kms_alias_arn, kms_key_arn
 from localstack.utils.crypto import decrypt, encrypt
@@ -630,12 +630,7 @@ class KmsKey:
         if not tags:
             return
 
-        unique_tag_keys = {tag["TagKey"] for tag in tags}
-        if len(unique_tag_keys) < len(tags):
-            raise TagException("Duplicate tag keys")
-
-        if len(tags) > 50:
-            raise TagException("Too many tags")
+        validate_tag_list(tags)
 
         # Do not care if we overwrite an existing tag:
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_TagResource.html
