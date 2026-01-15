@@ -246,7 +246,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if context.region != arn_data["region"]:
             raise InvalidParameterException("Invalid parameter: TopicArn")
         store = self.get_store(context.account_id, context.region)
-
+        self._remove_resource_tags(context, topic_arn)
         store.topics.pop(topic_arn, None)
 
     def list_topics(
@@ -1222,9 +1222,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceResponse:
-        store = sns_stores[context.account_id][context.region]
-        tags = store.TAGS.list_tags_for_resource(resource_arn)
-        return ListTagsForResourceResponse(Tags=tags.get("Tags"))
+        tags = self._list_resource_tags(context, resource_arn)
+        return ListTagsForResourceResponse(Tags=tags)
 
     def tag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
@@ -1232,8 +1231,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         unique_tag_keys = {tag["Key"] for tag in tags}
         if len(unique_tag_keys) < len(tags):
             raise InvalidParameterException("Invalid parameter: Duplicated keys are not allowed.")
-        store = sns_stores[context.account_id][context.region]
-        store.TAGS.tag_resource(resource_arn, tags)
+
+        self._tag_resource(context, resource_arn, tags)
         return TagResourceResponse()
 
     def untag_resource(
@@ -1243,8 +1242,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         tag_keys: TagKeyList,
         **kwargs,
     ) -> UntagResourceResponse:
-        store = sns_stores[context.account_id][context.region]
-        store.TAGS.untag_resource(resource_arn, tag_keys)
+        self._untag_resource(context, resource_arn, tag_keys)
         return UntagResourceResponse()
 
     @staticmethod
@@ -1277,6 +1275,27 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             return store.platform_applications[platform_application_arn].platform_application
         except KeyError:
             raise NotFoundException("PlatformApplication does not exist")
+
+    def _list_resource_tags(self, context: RequestContext, resource_arn: str) -> TagList:
+        store = self.get_store(context.account_id, context.region)
+        tags = store.TAGS.list_tags_for_resource(resource_arn).get("Tags")
+        return tags
+
+    def _tag_resource(
+        self, context: RequestContext, resource_arn: str, tags: list[dict[str, str]]
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        store.TAGS.tag_resource(resource_arn, tags)
+
+    def _untag_resource(
+        self, context: RequestContext, resource_arn: str, tag_keys: list[str]
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        store.TAGS.untag_resource(resource_arn, tag_keys)
+
+    # No tag deletion logic to handle in Community. Overwritten in Pro implementation.s
+    def _remove_resource_tags(self, context: RequestContext, resource_arn: str) -> None:
+        return
 
 
 def _create_topic(name: str, attributes: dict, context: RequestContext) -> Topic:
