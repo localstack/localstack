@@ -523,6 +523,9 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
     def _remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
         self.get_store(context.account_id, context.region).TAGS.untag_resource(arn, tag_keys)
 
+    def _remove_all_tags(self, context: RequestContext, arn: ARN) -> None:
+        self.get_store(context.account_id, context.region).TAGS.del_resource(arn)
+
     def _list_tags(self, context: RequestContext, arn: ARN) -> TagList:
         # The tagging service returns a dictionary with the given root name
         store = self.get_store(context.account_id, context.region)
@@ -595,6 +598,7 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
 
             status = get_domain_status(domain_key, deleted=True)
             _remove_cluster(domain_key)
+            self._remove_all_tags(context, domain_key.arn)
 
         return DeleteDomainResponse(DomainStatus=status)
 
