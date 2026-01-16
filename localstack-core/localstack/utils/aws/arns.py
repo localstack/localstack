@@ -212,6 +212,10 @@ def log_group_arn(group_name: str, account_id: str, region_name: str) -> str:
     return _resource_arn(group_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def log_stream_arn(group_name, stream_name: str, account_id: str, region_name: str) -> str:
+    return f"arn:{get_partition(region_name)}:logs:{region_name}:{account_id}:log-group:{group_name}:log-stream:{stream_name}"
+
+
 #
 # Events
 #

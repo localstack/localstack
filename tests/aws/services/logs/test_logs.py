@@ -291,6 +291,7 @@ class TestCloudWatchLogs:
         paths=[
             "$..Statement.Condition.StringEquals",
             "$..add_permission.ResponseMetadata.HTTPStatusCode",
+            "$..subscriptionFilters..applyOnTransformedLogs",
         ]
     )
     def test_put_subscription_filter_lambda(
