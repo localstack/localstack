@@ -29,13 +29,20 @@ class Activity:
     Activities are used for manual task execution in Step Functions workflows.
     This class now includes a TagManager to support full tagging operations.
     """
+
     arn: Final[Arn]
     name: Final[Name]
     creation_date: Final[Timestamp]
     _tasks: Final[deque[ActivityTask]]
     tag_manager: Final[TagManager]  # Tag manager for activity tagging operations
 
-    def __init__(self, arn: Arn, name: Name, tags: TagList | None = None, creation_date: Timestamp | None = None):
+    def __init__(
+        self,
+        arn: Arn,
+        name: Name,
+        tags: TagList | None = None,
+        creation_date: Timestamp | None = None,
+    ):
         """
         Initialize a new Activity.
 

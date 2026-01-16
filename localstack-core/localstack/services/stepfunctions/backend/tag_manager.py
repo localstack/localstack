@@ -4,6 +4,7 @@ Shared tag management utilities for Step Functions resources (state machines and
 This module provides a common TagManager class used to handle tag operations
 across different Step Functions resource types.
 """
+
 from collections import OrderedDict
 from typing import Final
 
@@ -17,6 +18,7 @@ class TagManager:
     Provides methods to add, remove, and list tags while enforcing AWS tag validation rules.
     Tags are stored in an OrderedDict to maintain insertion order.
     """
+
     _tags: Final[dict[str, str | None]]
 
     def __init__(self):

@@ -220,7 +220,10 @@ class TestSnfApiTagging:
         activity_name = f"activity_{short_uid()}"
         creation_resp = aws_client.stepfunctions.create_activity(name=activity_name)
         activity_arn = creation_resp["activityArn"]
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(activity_arn, "activity_arn"))
+        sfn_snapshot.add_transformer(
+            sfn_snapshot.transform.sfn_activity_create_arn(creation_resp, 0)
+        )
+
         sfn_snapshot.match("creation_resp", creation_resp)
 
         tag_resource_resp = aws_client.stepfunctions.tag_resource(
@@ -251,7 +254,9 @@ class TestSnfApiTagging:
         activity_name = f"activity_{short_uid()}"
         creation_resp = aws_client.stepfunctions.create_activity(name=activity_name)
         activity_arn = creation_resp["activityArn"]
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(activity_arn, "activity_arn"))
+        sfn_snapshot.add_transformer(
+            sfn_snapshot.transform.sfn_activity_create_arn(creation_resp, 0)
+        )
         sfn_snapshot.match("creation_resp", creation_resp)
 
         # Add tags first
@@ -281,7 +286,9 @@ class TestSnfApiTagging:
             tags=[Tag(key="key1", value="value1"), Tag(key="key2", value="value2")],
         )
         activity_arn = creation_resp["activityArn"]
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(activity_arn, "activity_arn"))
+        sfn_snapshot.add_transformer(
+            sfn_snapshot.transform.sfn_activity_create_arn(creation_resp, 0)
+        )
         sfn_snapshot.match("creation_resp", creation_resp)
 
         list_resources_res = aws_client.stepfunctions.list_tags_for_resource(

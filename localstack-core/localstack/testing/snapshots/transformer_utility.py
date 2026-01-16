@@ -18,6 +18,7 @@ from localstack_snapshot.snapshots.transformer import (
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
 from localstack.aws.api.stepfunctions import (
+    CreateActivityOutput,
     CreateStateMachineOutput,
     LongArn,
     StartExecutionOutput,
@@ -713,6 +714,12 @@ class TransformerUtility:
     def sfn_sm_create_arn(create_sm_res: CreateStateMachineOutput, index: int):
         arn_part_repl = f"<ArnPart_{index}idx>"
         arn_part: str = "".join(create_sm_res["stateMachineArn"].rpartition(":")[-1])
+        return RegexTransformer(arn_part, arn_part_repl)
+
+    @staticmethod
+    def sfn_activity_create_arn(create_sm_res: CreateActivityOutput, index: int):
+        arn_part_repl = f"<ArnPart_{index}idx>"
+        arn_part: str = "".join(create_sm_res["activityArn"].rpartition(":")[-1])
         return RegexTransformer(arn_part, arn_part_repl)
 
     @staticmethod

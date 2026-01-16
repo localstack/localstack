@@ -1408,7 +1408,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         store = self.get_store(context)
 
         # Check if it's an activity ARN (contains ':activity:' in the ARN)
-        if ':activity:' in resource_arn:
+        if ":activity:" in resource_arn:
             activity = store.activities.get(resource_arn)
             if activity is None:
                 raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
@@ -1437,7 +1437,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         store = self.get_store(context)
 
         # Check if it's an activity ARN (contains ':activity:' in the ARN)
-        if ':activity:' in resource_arn:
+        if ":activity:" in resource_arn:
             activity = store.activities.get(resource_arn)
             if activity is None:
                 raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
@@ -1465,7 +1465,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         store = self.get_store(context)
 
         # Check if it's an activity ARN (contains ':activity:' in the ARN)
-        if ':activity:' in resource_arn:
+        if ":activity:" in resource_arn:
             activity = store.activities.get(resource_arn)
             if activity is None:
                 raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
