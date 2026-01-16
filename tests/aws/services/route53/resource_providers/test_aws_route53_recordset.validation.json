@@ -1,0 +1,29 @@
+{
+  "tests/aws/services/route53/resource_providers/test_aws_route53_recordset.py::test_create_record_set_via_id": {
+    "last_validated_date": "2026-01-15T17:27:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 43.43,
+      "teardown": 35.61,
+      "total": 79.53
+    }
+  },
+  "tests/aws/services/route53/resource_providers/test_aws_route53_recordset.py::test_create_record_set_via_name": {
+    "last_validated_date": "2026-01-15T17:32:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 40.54,
+      "teardown": 34.81,
+      "total": 75.82
+    }
+  },
+  "tests/aws/services/route53/resource_providers/test_aws_route53_recordset.py::test_create_record_set_without_resource_record": {
+    "last_validated_date": "2026-01-15T17:37:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 42.68,
+      "teardown": 34.81,
+      "total": 77.96
+    }
+  }
+}

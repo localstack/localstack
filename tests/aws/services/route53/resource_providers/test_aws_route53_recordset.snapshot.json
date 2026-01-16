@@ -1,0 +1,164 @@
+{
+  "tests/aws/services/route53/resource_providers/test_aws_route53_recordset.py::test_create_record_set_via_id": {
+    "recorded-date": "15-01-2026, 17:26:46",
+    "recorded-content": {
+      "record-sets": {
+        "IsTruncated": false,
+        "MaxItems": "100",
+        "ResourceRecordSets": [
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1>"
+              }
+            ],
+            "TTL": 900,
+            "Type": "A"
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:2>"
+              },
+              {
+                "Value": "<resource-record:3>"
+              },
+              {
+                "Value": "<resource-record:4>"
+              },
+              {
+                "Value": "<resource-record:5>"
+              }
+            ],
+            "TTL": 172800,
+            "Type": "NS"
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:2> awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400"
+              }
+            ],
+            "TTL": 900,
+            "Type": "SOA"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/route53/resource_providers/test_aws_route53_recordset.py::test_create_record_set_via_name": {
+    "recorded-date": "15-01-2026, 17:31:53",
+    "recorded-content": {
+      "record-sets": {
+        "IsTruncated": false,
+        "MaxItems": "100",
+        "ResourceRecordSets": [
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1>"
+              }
+            ],
+            "TTL": 900,
+            "Type": "A"
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:2>"
+              },
+              {
+                "Value": "<resource-record:3>"
+              },
+              {
+                "Value": "<resource-record:4>"
+              },
+              {
+                "Value": "<resource-record:5>"
+              }
+            ],
+            "TTL": 172800,
+            "Type": "NS"
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:2> awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400"
+              }
+            ],
+            "TTL": 900,
+            "Type": "SOA"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/route53/resource_providers/test_aws_route53_recordset.py::test_create_record_set_without_resource_record": {
+    "recorded-date": "15-01-2026, 17:36:56",
+    "recorded-content": {
+      "record-sets": {
+        "IsTruncated": false,
+        "MaxItems": "100",
+        "ResourceRecordSets": [
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1>"
+              }
+            ],
+            "TTL": 900,
+            "Type": "A"
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:2>"
+              },
+              {
+                "Value": "<resource-record:3>"
+              },
+              {
+                "Value": "<resource-record:4>"
+              },
+              {
+                "Value": "<resource-record:5>"
+              }
+            ],
+            "TTL": 172800,
+            "Type": "NS"
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:2> awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400"
+              }
+            ],
+            "TTL": 900,
+            "Type": "SOA"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/resources/test_route53.py::test_create_health_check": {
+  "tests/aws/services/route53/resource_providers/test_aws_route53_healthcheck.py::test_create_health_check": {
     "recorded-date": "22-09-2023, 13:50:49",
     "recorded-content": {
       "HealthCheck": {
