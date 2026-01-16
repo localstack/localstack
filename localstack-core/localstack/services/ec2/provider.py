@@ -2,6 +2,10 @@ import copy
 import json
 import logging
 import re
+from localstack.aws.api.ec2 import (
+    DescribeInstanceCreditSpecificationsRequest,
+    DescribeInstanceCreditSpecificationsResult,
+)
 from abc import ABC
 from datetime import UTC, datetime
 
@@ -479,6 +483,30 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
                 endpoint["PolicyDocument"] = json.dumps(policy)
 
         return result
+    
+    # ==========================================
+    # [FIX] Issue #13488
+    # ==========================================
+    @handler("DescribeInstanceCreditSpecifications", expand=False)
+    def describe_instance_credit_specifications(
+        self,
+        context: RequestContext,
+        request: DescribeInstanceCreditSpecificationsRequest,
+    ) -> DescribeInstanceCreditSpecificationsResult:
+        """
+        Fix for issue #13488: Remove invalid NextToken in response.
+        Moto returns a NextToken with value 'string' even when there are no more pages,
+        which causes Terraform to hang waiting for more results.
+        """
+        result = call_moto(context)
+        if "NextToken" in result:
+            if result["NextToken"] == "string":
+                result.pop("NextToken")
+            elif not result["NextToken"]:
+                result.pop("NextToken")
+
+        return result
+       
 
     @handler("CreateFlowLogs", expand=False)
     def create_flow_logs(
