@@ -303,7 +303,7 @@ publication==0.0.3
     #   jsii
 py-partiql-parser==0.6.3
     # via moto-ext
-pyasn1==0.6.1
+pyasn1==0.6.2
     # via rsa
 pycparser==2.23
     # via cffi
