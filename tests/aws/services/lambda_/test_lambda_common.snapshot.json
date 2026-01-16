@@ -344,7 +344,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided.al2]": {
-    "recorded-date": "25-11-2025, 02:34:35",
+    "recorded-date": "13-01-2026, 14:03:50",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1313,7 +1313,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided.al2023]": {
-    "recorded-date": "25-11-2025, 02:34:30",
+    "recorded-date": "13-01-2026, 14:03:37",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2420,7 +2420,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[provided.al2]": {
-    "recorded-date": "25-11-2025, 02:36:46",
+    "recorded-date": "13-01-2026, 14:03:02",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2854,7 +2854,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[provided.al2023]": {
-    "recorded-date": "25-11-2025, 02:36:41",
+    "recorded-date": "13-01-2026, 14:02:49",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [

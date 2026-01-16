@@ -549,21 +549,21 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided.al2023]": {
-    "last_validated_date": "2026-01-12T14:49:45+00:00",
+    "last_validated_date": "2026-01-13T14:03:37+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 4.99,
-      "teardown": 0.35,
-      "total": 5.34
+      "setup": 12.11,
+      "call": 15.08,
+      "teardown": 0.33,
+      "total": 27.52
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided.al2]": {
-    "last_validated_date": "2026-01-12T14:49:50+00:00",
+    "last_validated_date": "2026-01-13T14:03:51+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 4.91,
-      "teardown": 0.36,
-      "total": 5.27
+      "call": 12.86,
+      "teardown": 1.22,
+      "total": 14.08
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.10]": {
@@ -981,21 +981,21 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[provided.al2023]": {
-    "last_validated_date": "2026-01-12T14:51:38+00:00",
+    "last_validated_date": "2026-01-13T14:02:49+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 5.96,
-      "teardown": 0.35,
-      "total": 6.31
+      "setup": 12.22,
+      "call": 13.39,
+      "teardown": 0.37,
+      "total": 25.98
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[provided.al2]": {
-    "last_validated_date": "2026-01-12T14:51:43+00:00",
+    "last_validated_date": "2026-01-13T14:03:03+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 4.65,
-      "teardown": 0.35,
-      "total": 5.0
+      "call": 12.72,
+      "teardown": 1.19,
+      "total": 13.91
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[python3.10]": {
