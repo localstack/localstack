@@ -110,6 +110,40 @@ def tests_create_schedule_with_invalid_schedule_expression(
 
 
 @markers.aws.validated
+@pytest.mark.parametrize(
+    "schedule_expression",
+    [
+        "cron(0-15/1 8-8 ? * 2,3,4,5,6,7 *)",
+        "cron(30-30 13-13 ? * 2,4,6 *)",
+        "cron(1-31/30 1-1 ? * 1,7 *)",
+        "cron(0 18 ? * MON-FRI *)",
+        "cron(*/15 * * * ? *)",
+        "cron(0-59/10 0-23/2 ? * * *)",
+    ],
+)
+def test_create_schedule_with_valid_cron_expressions(
+    schedule_expression, aws_client, region_name, account_id, cleanups, snapshot, scheduler_role
+):
+    # regression test for https://github.com/localstack/localstack/issues/13572
+    snapshot.add_transformer(snapshot.transform.key_value("ScheduleArn"))
+    scheduler_name = f"test-scheduler-{short_uid()}"
+
+    response = aws_client.scheduler.create_schedule(
+        Name=scheduler_name,
+        ScheduleExpression=schedule_expression,
+        FlexibleTimeWindow={"Mode": "OFF"},
+        Target={
+            "Arn": f"arn:aws:lambda:{region_name}:{account_id}:function:dummy",
+            "RoleArn": scheduler_role,
+        },
+    )
+
+    cleanups.append(lambda: aws_client.scheduler.delete_schedule(Name=scheduler_name))
+
+    snapshot.match("create-schedule", response)
+
+
+@markers.aws.validated
 def tests_create_schedule_with_valid_schedule_expression(
     create_role, aws_client, region_name, account_id, cleanups, snapshot
 ):

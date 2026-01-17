@@ -311,5 +311,77 @@
         }
       }
     }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(0-15/1 8-8 ? * 2,3,4,5,6,7 *)]": {
+    "recorded-date": "17-01-2026, 18:20:57",
+    "recorded-content": {
+      "create-schedule": {
+        "ScheduleArn": "<schedule-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(30-30 13-13 ? * 2,4,6 *)]": {
+    "recorded-date": "17-01-2026, 18:21:07",
+    "recorded-content": {
+      "create-schedule": {
+        "ScheduleArn": "<schedule-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(1-31/30 1-1 ? * 1,7 *)]": {
+    "recorded-date": "17-01-2026, 18:21:18",
+    "recorded-content": {
+      "create-schedule": {
+        "ScheduleArn": "<schedule-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(0 18 ? * MON-FRI *)]": {
+    "recorded-date": "17-01-2026, 18:21:28",
+    "recorded-content": {
+      "create-schedule": {
+        "ScheduleArn": "<schedule-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(*/15 * * * ? *)]": {
+    "recorded-date": "17-01-2026, 18:21:39",
+    "recorded-content": {
+      "create-schedule": {
+        "ScheduleArn": "<schedule-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(0-59/10 0-23/2 ? * * *)]": {
+    "recorded-date": "17-01-2026, 18:21:50",
+    "recorded-content": {
+      "create-schedule": {
+        "ScheduleArn": "<schedule-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
