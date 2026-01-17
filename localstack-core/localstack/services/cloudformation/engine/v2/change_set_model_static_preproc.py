@@ -4,6 +4,7 @@ import base64
 import copy
 import re
 from collections.abc import Callable
+from functools import wraps
 from typing import Any, Final, Generic, TypeVar
 
 from botocore.exceptions import ClientError
@@ -89,6 +90,50 @@ REGEX_OUTPUT_APIGATEWAY = re.compile(
 MOCKED_REFERENCE = "unknown"
 
 VALID_LOGICAL_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9]+$")
+
+
+class UnresolvedType:
+    """Sentinel value representing that the intrinsic function cannot compute the result of its arguments"""
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self) -> str:
+        return "Unresolved"
+
+
+U = TypeVar("U")
+Unresolved = UnresolvedType()
+type MaybeUnresolved[U] = U | Unresolved
+
+
+def is_resolved[U](value: MaybeUnresolved[U]) -> bool:
+    return value is not Unresolved
+
+
+def is_unresolved(value: Any) -> bool:
+    return not is_resolved(value)
+
+
+def early_return_on_unresolved(fn: Callable):
+    """
+    Decorator to handle arguments that are unresolved
+    """
+
+    @wraps(fn)
+    def inner(args: Any, **kwargs):
+        # short circuit
+        if is_unresolved(args):
+            return Unresolved
+        if isinstance(args, list) and any(is_unresolved(value) for value in args):
+            return Unresolved
+
+        return fn(args, **kwargs)
+
+    return inner
 
 
 class PreprocEntityDelta(Generic[TBefore, TAfter]):
@@ -572,13 +617,17 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         before = self._before_cache.get(node_intrinsic_function.scope, Nothing)
         if is_nothing(before) and not is_nothing(before_arguments):
             self._validate_getatt_args(before_arguments)
+            before = Unresolved
         after = self._after_cache.get(node_intrinsic_function.scope, Nothing)
         if is_nothing(after) and not is_nothing(after_arguments):
             self._validate_getatt_args(after_arguments)
+            after = Unresolved
 
-        return arguments_delta
+        return PreprocEntityDelta(before=before, after=after)
 
-    def _validate_getatt_args(self, arguments: str | list[str]):
+    @staticmethod
+    @early_return_on_unresolved
+    def _validate_getatt_args(arguments: str | list[str]):
         arguments_list: list[str]
         if isinstance(arguments, str):
             arguments_list = arguments.split(".")
@@ -713,6 +762,7 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_sub(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
+        @early_return_on_unresolved
         def _compute_sub(args: str | list[Any], select_before: bool) -> str:
             # TODO: add further schema validation.
             string_template: str
@@ -815,6 +865,7 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
     ) -> PreprocEntityDelta:
         # TODO: add support for schema validation.
         # TODO: add tests for joining non string values.
+        @early_return_on_unresolved
         def _compute_fn_join(args: list[Any]) -> str | NothingType:
             if not (isinstance(args, list) and len(args) == 2):
                 return Nothing
@@ -846,42 +897,56 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
 
     def visit_node_intrinsic_function_fn_select(
         self, node_intrinsic_function: NodeIntrinsicFunction
-    ):
-        # TODO: add further support for schema validation
-        def _compute_fn_select(args: list[Any]) -> Any:
-            values = args[1]
-            # defer evaluation if the selection list contains unresolved elements (e.g., unresolved intrinsics)
-            if isinstance(values, list) and not all(isinstance(value, str) for value in values):
-                raise RuntimeError("Fn::Select list contains unresolved elements")
-
-            if not isinstance(values, list) or not values:
-                raise ValidationError(
-                    "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
-                )
-            try:
-                index: int = int(args[0])
-            except ValueError as e:
-                raise ValidationError(
-                    "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
-                ) from e
-
-            values_len = len(values)
-            if index < 0 or index >= values_len:
-                raise ValidationError(
-                    "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
-                )
-            selection = values[index]
-            return selection
-
+    ) -> MaybeUnresolved[PreprocEntityDelta]:
         arguments_delta = self.visit(node_intrinsic_function.arguments)
-        delta = self._cached_apply(
-            scope=node_intrinsic_function.scope,
-            arguments_delta=arguments_delta,
-            resolver=_compute_fn_select,
-        )
-        return delta
+        before_arguments: Maybe[str | list[str]] = arguments_delta.before
+        after_arguments: Maybe[str | list[str]] = arguments_delta.after
+        before = self._before_cache.get(node_intrinsic_function.scope, Nothing)
+        if is_nothing(before) and not is_nothing(before_arguments):
+            before = self._resolve_select(before_arguments)
+        after = self._after_cache.get(node_intrinsic_function.scope, Nothing)
+        if is_nothing(after) and not is_nothing(after_arguments):
+            after = self._resolve_select(after_arguments)
+        return PreprocEntityDelta(before=before, after=after)
 
-    def _compute_fn_split(self, args: list[Any]) -> Any:
+    @staticmethod
+    @early_return_on_unresolved
+    def _resolve_select(args: Any) -> MaybeUnresolved[str]:
+        values = args[1]
+
+        # defer evaluation if the selection list contains unresolved elements (e.g., unresolved intrinsics)
+        if isinstance(values, list) and not all(
+            isinstance(value, (str, UnresolvedType)) for value in values
+        ):
+            raise RuntimeError("Fn::Select list contains unresolved elements")
+
+        if not isinstance(values, list) or not values:
+            raise ValidationError(
+                "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
+            )
+        try:
+            index: int = int(args[0])
+        except ValueError as e:
+            raise ValidationError(
+                "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
+            ) from e
+
+        # shortcut - if any of the arguments are Unresolved, then we cannot continue resolution so early return
+        if any(not is_resolved(argument) for argument in args[1]):
+            return Unresolved
+
+        values_len = len(values)
+        if index < 0 or index >= values_len:
+            raise ValidationError(
+                "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
+            )
+
+        selection = values[index]
+        return selection
+
+    @staticmethod
+    @early_return_on_unresolved
+    def _compute_fn_split(args: list[Any]) -> Any:
         delimiter = args[0]
         if not isinstance(delimiter, str) or not delimiter:
             raise RuntimeError(f"Invalid delimiter value for Fn::Split: '{delimiter}'")
@@ -1076,6 +1141,7 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_ref(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
+        @early_return_on_unresolved
         def _compute_fn_ref(logical_id: str) -> PreprocEntityDelta | None:
             if logical_id == "AWS::NoValue":
                 return Nothing
@@ -1125,9 +1191,14 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
             delta: PreprocEntityDelta = self.visit(change_set_entity=change_set_entity)
             delta_before = delta.before
             delta_after = delta.after
-            if not is_nothing(before) and not is_nothing(delta_before):
+            if not is_resolved(before):
+                before.append(Unresolved)
+            elif not is_nothing(before) and not is_nothing(delta_before):
                 before.append(delta_before)
-            if not is_nothing(after) and not is_nothing(delta_after):
+
+            if not is_resolved(after):
+                after.append(Unresolved)
+            elif not is_nothing(after) and not is_nothing(delta_after):
                 after.append(delta_after)
         return PreprocEntityDelta(before=before, after=after)
 

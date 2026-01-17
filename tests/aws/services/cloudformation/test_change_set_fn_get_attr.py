@@ -313,9 +313,7 @@ class TestChangeSetFnGetAttr:
         capture_update_process(snapshot, template_1, template_2)
 
     @markers.aws.validated
-    @pytest.mark.parametrize(
-        "template_name", ["getatt_validation.yml"]
-    )  # , "getatt_validation2.yml"])
+    @pytest.mark.parametrize("template_name", ["getatt_validation.yml", "getatt_validation2.yml"])
     def test_invalid_structure(self, snapshot, deploy_cfn_template, aws_client, template_name):
         cs_name = f"cs-{short_uid()}"
         stack_name = f"stack-{short_uid()}"
