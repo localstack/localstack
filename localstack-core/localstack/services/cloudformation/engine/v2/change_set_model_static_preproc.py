@@ -566,7 +566,32 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        return self.visit(node_intrinsic_function.arguments)
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        before_arguments: Maybe[str | list[str]] = arguments_delta.before
+        after_arguments: Maybe[str | list[str]] = arguments_delta.after
+        before = self._before_cache.get(node_intrinsic_function.scope, Nothing)
+        if is_nothing(before) and not is_nothing(before_arguments):
+            self._validate_getatt_args(before_arguments)
+        after = self._after_cache.get(node_intrinsic_function.scope, Nothing)
+        if is_nothing(after) and not is_nothing(after_arguments):
+            self._validate_getatt_args(after_arguments)
+
+        return arguments_delta
+
+    def _validate_getatt_args(self, arguments: str | list[str]):
+        arguments_list: list[str]
+        if isinstance(arguments, str):
+            arguments_list = arguments.split(".")
+        else:
+            arguments_list = arguments
+
+        if len(arguments_list) < 2:
+            raise ValidationError(
+                "Template error: every Fn::GetAtt object requires two non-empty parameters, the resource name and the resource attribute"
+            )
+
+        # _logical_name_of_resource = arguments_list[0]
+        # _attribute_name = ".".join(arguments_list[1:])
 
     def visit_node_intrinsic_function_fn_equals(
         self, node_intrinsic_function: NodeIntrinsicFunction
