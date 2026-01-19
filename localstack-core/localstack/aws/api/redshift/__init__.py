@@ -243,6 +243,7 @@ class UsageLimitFeatureType(StrEnum):
     spectrum = "spectrum"
     concurrency_scaling = "concurrency-scaling"
     cross_region_datasharing = "cross-region-datasharing"
+    extra_compute_for_automatic_optimization = "extra-compute-for-automatic-optimization"
 
 
 class UsageLimitLimitType(StrEnum):
@@ -1645,6 +1646,7 @@ class Cluster(TypedDict, total=False):
     MultiAZSecondary: SecondaryClusterInfo | None
     LakehouseRegistrationStatus: String | None
     CatalogArn: String | None
+    ExtraComputeForAutomaticOptimization: String | None
 
 
 class ClusterCredentials(TypedDict, total=False):
@@ -1859,6 +1861,7 @@ class CreateClusterMessage(ServiceRequest):
     MultiAZ: BooleanOptional | None
     RedshiftIdcApplicationArn: String | None
     CatalogName: CatalogNameString | None
+    ExtraComputeForAutomaticOptimization: BooleanOptional | None
 
 
 class CreateClusterParameterGroupMessage(ServiceRequest):
@@ -3197,6 +3200,7 @@ class ModifyClusterMessage(ServiceRequest):
     MasterPasswordSecretKmsKeyId: String | None
     IpAddressType: String | None
     MultiAZ: BooleanOptional | None
+    ExtraComputeForAutomaticOptimization: BooleanOptional | None
 
 
 class ModifyClusterParameterGroupMessage(ServiceRequest):
@@ -3844,6 +3848,7 @@ class RedshiftApi:
         multi_az: BooleanOptional | None = None,
         redshift_idc_application_arn: String | None = None,
         catalog_name: CatalogNameString | None = None,
+        extra_compute_for_automatic_optimization: BooleanOptional | None = None,
         **kwargs,
     ) -> CreateClusterResult:
         raise NotImplementedError
@@ -4884,6 +4889,7 @@ class RedshiftApi:
         master_password_secret_kms_key_id: String | None = None,
         ip_address_type: String | None = None,
         multi_az: BooleanOptional | None = None,
+        extra_compute_for_automatic_optimization: BooleanOptional | None = None,
         **kwargs,
     ) -> ModifyClusterResult:
         raise NotImplementedError
