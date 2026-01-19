@@ -1,0 +1,17 @@
+#
+# Define an SQS FIFO Queue with only the QueueName attribute set.
+#
+Resources:
+  FifoQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: 'MyFifoQueue.fifo'
+      FifoQueue: true
+
+Outputs:
+  QueueUrl:
+    Description: 'URL of the SQS Fifo Queue'
+    Value: !Ref FifoQueue
+  QueueArn:
+    Description: 'ARN of the SQS Fifo Queue'
+    Value: !GetAtt FifoQueue.Arn

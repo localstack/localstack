@@ -44,6 +44,24 @@
       "total": 122.34
     }
   },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_fifo_queue_remove_all_properties": {
+    "last_validated_date": "2026-01-14T16:35:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.97,
+      "call": 153.78,
+      "teardown": 35.22,
+      "total": 189.97
+    }
+  },
+  "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_fifo_queue_remove_all_properties_except_queuename": {
+    "last_validated_date": "2026-01-14T16:38:10+00:00",
+    "durations_in_seconds": {
+      "setup": 1.11,
+      "call": 122.59,
+      "teardown": 35.1,
+      "total": 158.8
+    }
+  },
   "tests/aws/services/sqs/resource_providers/test_aws_sqs_queue.py::test_update_standard_queue_add_properties_with_replacement": {
     "last_validated_date": "2025-12-18T22:16:16+00:00",
     "durations_in_seconds": {
