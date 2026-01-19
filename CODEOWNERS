@@ -234,10 +234,10 @@
 /tests/unit/services/sns/ @bentsku @baermat
 
 # sqs
-/localstack-core/localstack/aws/api/sqs/ @thrau @baermat @gregfurman
-/localstack-core/localstack/services/sqs/ @thrau @baermat @gregfurman
-/tests/aws/services/sqs/ @thrau @baermat @gregfurman
-/tests/unit/services/sqs/ @thrau @baermat @gregfurman
+/localstack-core/localstack/aws/api/sqs/ @baermat @gregfurman @thrau
+/localstack-core/localstack/services/sqs/ @baermat @gregfurman @thrau
+/tests/aws/services/sqs/ @baermat @gregfurman @thrau
+/tests/unit/services/sqs/ @baermat @gregfurman @thrau
 
 # ssm
 /localstack-core/localstack/aws/api/ssm/ @viren-nadkarni @dominikschubert
