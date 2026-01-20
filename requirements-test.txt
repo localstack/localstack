@@ -29,13 +29,13 @@ attrs==25.4.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.258
+aws-cdk-asset-awscli-v1==2.2.261
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==48.20.0
     # via aws-cdk-lib
-aws-cdk-lib==2.234.1
+aws-cdk-lib==2.235.1
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.106.0
     # via
@@ -46,7 +46,7 @@ aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.44.20
     # via localstack-core
-awscrt==0.31.0
+awscrt==0.31.1
     # via localstack-core
 boto3==1.42.30
     # via
@@ -91,7 +91,7 @@ colorama==0.4.6
     # via awscli
 constantly==23.10.4
     # via localstack-twisted
-constructs==10.4.4
+constructs==10.4.5
     # via aws-cdk-lib
 coverage==7.13.1
     # via localstack-core (pyproject.toml)
@@ -303,7 +303,7 @@ publication==0.0.3
     #   jsii
 py-partiql-parser==0.6.3
     # via moto-ext
-pyasn1==0.6.1
+pyasn1==0.6.2
     # via rsa
 pycparser==2.23
     # via cffi
@@ -367,7 +367,7 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2025.11.3
+regex==2026.1.15
     # via cfn-lint
 requests==2.32.5
     # via
