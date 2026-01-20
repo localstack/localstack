@@ -34,7 +34,7 @@ aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.44.20
     # via localstack-core (pyproject.toml)
-awscrt==0.31.0
+awscrt==0.31.1
     # via localstack-core
 boto3==1.42.30
     # via
@@ -241,7 +241,7 @@ psutil==7.2.1
     #   localstack-core (pyproject.toml)
 py-partiql-parser==0.6.3
     # via moto-ext
-pyasn1==0.6.1
+pyasn1==0.6.2
     # via rsa
 pycparser==2.23
     # via cffi
@@ -289,7 +289,7 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2025.11.3
+regex==2026.1.15
     # via cfn-lint
 requests==2.32.5
     # via

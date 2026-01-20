@@ -29,13 +29,13 @@ attrs==25.4.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.258
+aws-cdk-asset-awscli-v1==2.2.261
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==48.20.0
     # via aws-cdk-lib
-aws-cdk-lib==2.234.1
+aws-cdk-lib==2.235.1
     # via localstack-core
 aws-sam-translator==1.106.0
     # via
@@ -46,7 +46,7 @@ aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.44.20
     # via localstack-core
-awscrt==0.31.0
+awscrt==0.31.1
     # via localstack-core
 boto3==1.42.30
     # via
@@ -54,7 +54,7 @@ boto3==1.42.30
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.42.26
+boto3-stubs==1.42.30
     # via localstack-core (pyproject.toml)
 botocore==1.42.30
     # via
@@ -64,7 +64,7 @@ botocore==1.42.30
     #   localstack-core
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.42.26
+botocore-stubs==1.42.30
     # via boto3-stubs
 cachetools==6.2.4
     # via
@@ -98,7 +98,7 @@ colorama==0.4.6
     # via awscli
 constantly==23.10.4
     # via localstack-twisted
-constructs==10.4.4
+constructs==10.4.5
     # via aws-cdk-lib
 coverage==7.13.1
     # via
@@ -247,7 +247,7 @@ kclpy-ext==3.0.5
     # via localstack-core
 lazy-object-proxy==1.12.0
     # via openapi-spec-validator
-librt==0.7.7
+librt==0.7.8
     # via mypy
 localstack-snapshot==0.3.3
     # via localstack-core
@@ -297,7 +297,7 @@ mypy-boto3-backup==1.42.3
     # via boto3-stubs
 mypy-boto3-batch==1.42.3
     # via boto3-stubs
-mypy-boto3-ce==1.42.23
+mypy-boto3-ce==1.42.28
     # via boto3-stubs
 mypy-boto3-cloudcontrol==1.42.3
     # via boto3-stubs
@@ -333,15 +333,15 @@ mypy-boto3-dynamodb==1.42.3
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.42.3
     # via boto3-stubs
-mypy-boto3-ec2==1.42.15
+mypy-boto3-ec2==1.42.29
     # via boto3-stubs
 mypy-boto3-ecr==1.42.13
     # via boto3-stubs
-mypy-boto3-ecs==1.42.13
+mypy-boto3-ecs==1.42.29
     # via boto3-stubs
 mypy-boto3-efs==1.42.3
     # via boto3-stubs
-mypy-boto3-eks==1.42.3
+mypy-boto3-eks==1.42.28
     # via boto3-stubs
 mypy-boto3-elasticache==1.42.3
     # via boto3-stubs
@@ -361,7 +361,7 @@ mypy-boto3-firehose==1.42.3
     # via boto3-stubs
 mypy-boto3-fis==1.42.3
     # via boto3-stubs
-mypy-boto3-glacier==1.42.10
+mypy-boto3-glacier==1.42.30
     # via boto3-stubs
 mypy-boto3-glue==1.42.25
     # via boto3-stubs
@@ -383,7 +383,7 @@ mypy-boto3-kinesisanalyticsv2==1.42.3
     # via boto3-stubs
 mypy-boto3-kms==1.42.3
     # via boto3-stubs
-mypy-boto3-lakeformation==1.42.3
+mypy-boto3-lakeformation==1.42.29
     # via boto3-stubs
 mypy-boto3-lambda==1.42.8
     # via boto3-stubs
@@ -409,11 +409,11 @@ mypy-boto3-pinpoint==1.42.3
     # via boto3-stubs
 mypy-boto3-pipes==1.42.3
     # via boto3-stubs
-mypy-boto3-rds==1.42.5
+mypy-boto3-rds==1.42.28
     # via boto3-stubs
 mypy-boto3-rds-data==1.42.3
     # via boto3-stubs
-mypy-boto3-redshift==1.42.3
+mypy-boto3-redshift==1.42.28
     # via boto3-stubs
 mypy-boto3-redshift-data==1.42.3
     # via boto3-stubs
@@ -429,7 +429,7 @@ mypy-boto3-s3==1.42.21
     # via boto3-stubs
 mypy-boto3-s3control==1.42.3
     # via boto3-stubs
-mypy-boto3-sagemaker==1.42.26
+mypy-boto3-sagemaker==1.42.30
     # via boto3-stubs
 mypy-boto3-sagemaker-runtime==1.42.3
     # via boto3-stubs
@@ -546,7 +546,7 @@ publication==0.0.3
     #   jsii
 py-partiql-parser==0.6.3
     # via moto-ext
-pyasn1==0.6.1
+pyasn1==0.6.2
     # via rsa
 pycparser==2.23
     # via cffi
@@ -613,7 +613,7 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2025.11.3
+regex==2026.1.15
     # via cfn-lint
 requests==2.32.5
     # via
@@ -652,7 +652,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.14.11
+ruff==0.14.13
     # via localstack-core
 s3transfer==0.16.0
     # via
@@ -678,7 +678,7 @@ typeguard==2.13.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-types-awscrt==0.31.0
+types-awscrt==0.31.1
     # via botocore-stubs
 types-s3transfer==0.16.0
     # via boto3-stubs
