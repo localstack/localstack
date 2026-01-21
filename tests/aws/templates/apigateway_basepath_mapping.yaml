@@ -1,0 +1,57 @@
+Parameters:
+  CertificateArn:
+    Type: String
+
+  DomainName:
+    Type: String
+Resources:
+  MyRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: test-api
+  MyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId:
+        Ref: MyRestApi
+      ResourceId:
+        Fn::GetAtt:
+          - MyRestApi
+          - RootResourceId
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+  MyDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: MyRestApi
+    DependsOn:
+      - MyMethod
+  MyStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId:
+        Ref: MyRestApi
+      DeploymentId:
+        Ref: MyDeployment
+      StageName: prod
+  MyDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: !Ref DomainName
+      CertificateArn: !Ref CertificateArn
+  MyBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName:
+        Ref: MyDomainName
+      RestApiId:
+        Ref: MyRestApi
+      Stage:
+        Ref: MyStage

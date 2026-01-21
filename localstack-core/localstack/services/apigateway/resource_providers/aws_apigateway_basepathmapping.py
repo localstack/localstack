@@ -66,6 +66,7 @@ class ApiGatewayBasePathMappingProvider(ResourceProvider[ApiGatewayBasePathMappi
         }
         response = apigw.create_base_path_mapping(**params)
         model["RestApiId"] = response["restApiId"]
+        model["BasePath"] = response["basePath"]
         # TODO: validations
 
         return ProgressEvent(
