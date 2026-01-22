@@ -206,6 +206,109 @@ class TestEventsTargetApiDestination:
                 assert oauth_request.headers["oauthheader"] == "value2"
                 assert oauth_request.args["oauthquery"] == "value3"
 
+    @markers.requires_in_process  # uses pytest httpserver
+    @markers.aws.only_localstack
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    def test_put_events_returns_immediately_with_slow_api_destination(
+        self, httpserver: HTTPServer, aws_client, clean_up
+    ):
+        """
+        Test that put_events returns immediately even when the target API destination
+        has a slow response time. This validates the fix for GitHub issue #12107.
+
+        The test verifies that:
+        1. put_events returns in under 2 seconds even with a 5-second slow endpoint
+        2. The event is eventually delivered to the slow endpoint asynchronously
+        """
+        # Create a slow endpoint that takes 5 seconds to respond
+        def _slow_handler(_request: Request):
+            time.sleep(5)
+            return Response(json.dumps({"status": "received"}), mimetype="application/json")
+
+        httpserver.expect_request("").respond_with_handler(_slow_handler)
+        http_endpoint = httpserver.url_for("/")
+
+        # Create connection with BASIC auth (simplest for this test)
+        connection_name = f"test-conn-{short_uid()}"
+        connection_arn = aws_client.events.create_connection(
+            Name=connection_name,
+            AuthorizationType="BASIC",
+            AuthParameters={
+                "BasicAuthParameters": {
+                    "Username": "user",
+                    "Password": "pass",
+                },
+            },
+        )["ConnectionArn"]
+
+        # Create API destination
+        dest_name = f"test-dest-{short_uid()}"
+        dest_arn = aws_client.events.create_api_destination(
+            Name=dest_name,
+            ConnectionArn=connection_arn,
+            InvocationEndpoint=http_endpoint,
+            HttpMethod="POST",
+        )["ApiDestinationArn"]
+
+        # Create rule and target
+        rule_name = f"test-rule-{short_uid()}"
+        target_id = f"target-{short_uid()}"
+        pattern = json.dumps({"source": ["test.async"], "detail-type": ["async.test"]})
+
+        aws_client.events.put_rule(Name=rule_name, EventPattern=pattern)
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": dest_arn,
+                    "Input": '{"test": "async_behavior"}',
+                }
+            ],
+        )
+
+        # Send event and measure time taken
+        start_time = time.time()
+        response = aws_client.events.put_events(
+            Entries=[
+                {
+                    "Source": "test.async",
+                    "DetailType": "async.test",
+                    "Detail": '{"message": "testing async behavior"}',
+                }
+            ]
+        )
+        elapsed_time = time.time() - start_time
+
+        # Verify put_events returned immediately (should be under 2 seconds)
+        # even though the endpoint takes 5 seconds to respond
+        assert elapsed_time < 2.0, (
+            f"put_events took {elapsed_time:.2f}s, expected < 2s. "
+            "This suggests synchronous processing instead of async."
+        )
+
+        # Verify the event was accepted (EventId returned)
+        assert response["FailedEntryCount"] == 0
+        assert len(response["Entries"]) == 1
+        assert "EventId" in response["Entries"][0]
+
+        # Verify the event is eventually delivered to the slow endpoint
+        # (this proves background processing is working)
+        assert poll_condition(
+            lambda: len(httpserver.log) >= 1,
+            timeout=10
+        ), "Event was not delivered to the API destination within 10 seconds"
+
+        # Verify the correct data was sent to the endpoint
+        event_request, _ = httpserver.log[0]
+        event_data = event_request.get_json(force=True)
+        assert event_data["test"] == "async_behavior"
+
+        # Clean up
+        aws_client.events.delete_connection(Name=connection_name)
+        aws_client.events.delete_api_destination(Name=dest_name)
+        clean_up(rule_name=rule_name, target_ids=target_id)
+
 
 class TestEventsTargetApiGateway:
     @markers.aws.validated
@@ -1327,6 +1430,75 @@ class TestEventsTargetSqs:
             ],
         )
         snapshot.match("messages", messages)
+
+    @markers.aws.only_localstack
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    def test_put_events_returns_immediately(self, aws_client, clean_up):
+        """
+        Simple test to verify put_events returns immediately without waiting
+        for event delivery. This is a lightweight test that complements the
+        slow API destination test.
+        """
+        # Create SQS queue
+        queue_name = f"test-queue-{short_uid()}"
+        queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
+        queue_arn = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+
+        # Create rule and target
+        rule_name = f"test-rule-{short_uid()}"
+        target_id = f"target-{short_uid()}"
+        pattern = json.dumps({"source": ["test.source"], "detail-type": ["test.type"]})
+
+        aws_client.events.put_rule(Name=rule_name, EventPattern=pattern)
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                }
+            ],
+        )
+
+        # Put events and measure timing
+        start_time = time.time()
+        response = aws_client.events.put_events(
+            Entries=[
+                {
+                    "Source": "test.source",
+                    "DetailType": "test.type",
+                    "Detail": '{"test": "data"}',
+                }
+            ]
+        )
+        elapsed_time = time.time() - start_time
+
+        # Verify put_events returned quickly (under 1 second)
+        assert elapsed_time < 1.0, (
+            f"put_events took {elapsed_time:.2f}s, expected < 1s. "
+            "API should return immediately."
+        )
+
+        # Verify event was accepted
+        assert response["FailedEntryCount"] == 0
+        assert len(response["Entries"]) == 1
+        assert "EventId" in response["Entries"][0]
+
+        # Verify event eventually reaches the queue
+        def _get_messages():
+            result = aws_client.sqs.receive_message(
+                QueueUrl=queue_url, WaitTimeSeconds=2, MaxNumberOfMessages=1
+            )
+            return result.get("Messages", [])
+
+        messages = retry(_get_messages, retries=5, sleep=1)
+        assert len(messages) == 1, "Event should have been delivered to SQS queue"
+
+        # Clean up
+        aws_client.sqs.delete_queue(QueueUrl=queue_url)
+        clean_up(rule_name=rule_name, target_ids=target_id)
 
 
 class TestEventsTargetStepFunctions:
