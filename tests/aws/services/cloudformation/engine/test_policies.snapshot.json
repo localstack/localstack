@@ -16,27 +16,27 @@
     }
   },
   "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy_with_retain": {
-    "recorded-date": "17-12-2025, 00:07:35",
+    "recorded-date": "23-01-2026, 11:54:35",
     "recorded-content": {
       "per-resource-events": {
         "MyParameter": [
           {
             "LogicalResourceId": "MyParameter",
-            "PhysicalResourceId": "CFN-MyParameter-ViVP5LdeVqex",
+            "PhysicalResourceId": "CFN-MyParameter-q9PCAwkUG44j",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "MyParameter",
-            "PhysicalResourceId": "CFN-MyParameter-ViVP5LdeVqex",
+            "PhysicalResourceId": "CFN-MyParameter-q9PCAwkUG44j",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "MyParameter",
-            "PhysicalResourceId": "CFN-MyParameter-ViVP5LdeVqex",
+            "PhysicalResourceId": "CFN-MyParameter-q9PCAwkUG44j",
             "ResourceStatus": "DELETE_SKIPPED",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
