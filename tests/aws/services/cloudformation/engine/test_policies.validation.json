@@ -9,12 +9,12 @@
     }
   },
   "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy_with_deletion": {
-    "last_validated_date": "2025-12-16T23:42:40+00:00",
+    "last_validated_date": "2026-01-23T11:51:09+00:00",
     "durations_in_seconds": {
-      "setup": 0.83,
-      "call": 14.82,
+      "setup": 0.73,
+      "call": 14.75,
       "teardown": 0.08,
-      "total": 15.73
+      "total": 15.56
     }
   },
   "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy_with_retain": {

@@ -9,8 +9,15 @@ from localstack.utils.strings import short_uid
 
 
 class TestDeletionPolicyHandling:
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # our message is different. The AWS message does not seem to include the parameter
+            # name but ours does
+            "$..message",
+        ]
+    )
     @markers.aws.validated
-    def test_deletion_policy_with_deletion(self, aws_client, deploy_cfn_template):
+    def test_deletion_policy_with_deletion(self, aws_client, deploy_cfn_template, snapshot):
         template_path = os.path.join(
             os.path.dirname(__file__),
             "../../../templates/deletion_policy.yaml",
@@ -30,11 +37,10 @@ class TestDeletionPolicyHandling:
 
         stack.destroy()
 
-        with pytest.raises(ClientError):
+        with pytest.raises(ClientError) as exc_info:
             aws_client.ssm.get_parameter(Name=parameter_name)
 
-        # TODO: provider parity issue with error message
-        # snapshot.match("error", exc_info.value)
+        snapshot.match("error", {"message": str(exc_info.value)})
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

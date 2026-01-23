@@ -8,8 +8,12 @@
     "recorded-content": {}
   },
   "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy_with_deletion": {
-    "recorded-date": "16-12-2025, 23:42:40",
-    "recorded-content": {}
+    "recorded-date": "23-01-2026, 11:51:09",
+    "recorded-content": {
+      "error": {
+        "message": "An error occurred (ParameterNotFound) when calling the GetParameter operation: "
+      }
+    }
   },
   "tests/aws/services/cloudformation/engine/test_policies.py::TestDeletionPolicyHandling::test_deletion_policy_with_retain": {
     "recorded-date": "17-12-2025, 00:07:35",
