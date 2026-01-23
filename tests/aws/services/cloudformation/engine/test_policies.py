@@ -50,7 +50,7 @@ class TestDeletionPolicyHandling:
     )
     @skip_if_legacy_engine()
     def test_deletion_policy_with_retain(
-        self, aws_client, deploy_cfn_template, capture_per_resource_events, snapshot
+        self, aws_client, deploy_cfn_template, capture_per_resource_events, snapshot, cleanups
     ):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         template_path = os.path.join(
@@ -69,6 +69,10 @@ class TestDeletionPolicyHandling:
         snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
 
         parameter_name = stack.outputs["ParameterName"]
+
+        # make sure we clean up the parameter
+        cleanups.append(lambda: aws_client.ssm.delete_parameter(Name=parameter_name))
+
         value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"]
         assert value == parameter_value
 
