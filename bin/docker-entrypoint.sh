@@ -3,17 +3,27 @@
 set -eo pipefail
 shopt -s nullglob
 
+if [ -z $LOCALSTACK_AUTH_TOKEN ]; then
+    echo "WARNING"
+    echo "================================================================================"
+    echo "  You are starting the LocalStack Community Docker image."
+    echo "  We move towards a unified LocalStack for AWS image in March 2026."
+    echo "  Go to this page for more infos: https://localstack.cloud/2026-updates"
+    echo "================================================================================"
+    echo ""
+fi
+
 # When trying to activate pro features in the community version, raise a warning
 if [[ -n $LOCALSTACK_API_KEY || -n $LOCALSTACK_AUTH_TOKEN ]]; then
     echo "WARNING"
-    echo "============================================================================"
-    echo "  It seems you are trying to use the LocalStack Pro version without using "
-    echo "  the dedicated Pro image."
+    echo "================================================================================"
+    echo "  It seems you are trying to use the LocalStack Pro version without using the"
+    echo "  dedicated Pro image."
     echo "  LocalStack will only start with community services enabled."
     echo "  To fix this warning, use localstack/localstack-pro instead."
     echo ""
     echo "  See: https://github.com/localstack/localstack/issues/7882"
-    echo "============================================================================"
+    echo "================================================================================"
     echo ""
 fi
 
