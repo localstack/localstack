@@ -34,6 +34,8 @@ from localstack.aws.api.ec2 import (
     CurrencyCodeValues,
     DescribeAvailabilityZonesRequest,
     DescribeAvailabilityZonesResult,
+    DescribeNetworkAclsRequest,
+    DescribeNetworkAclsResult,
     DescribeReservedInstancesOfferingsRequest,
     DescribeReservedInstancesOfferingsResult,
     DescribeReservedInstancesRequest,
@@ -139,6 +141,46 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
             ]
             return DescribeAvailabilityZonesResult(AvailabilityZones=availability_zones)
         return call_moto(context)
+
+    @handler("DescribeNetworkAcls", expand=False)
+    def describe_network_acls(
+        self,
+        context: RequestContext,
+        request: DescribeNetworkAclsRequest,
+    ) -> DescribeNetworkAclsResult:
+        filters = request.get("Filters", [])
+        association_ids = []
+        safe_filters = []
+
+        if filters:
+            for f in filters:
+                if f.get("Name") == "association.association-id":
+                    association_ids.extend(f.get("Values", []))
+                else:
+                    safe_filters.append(f)
+
+            request["Filters"] = safe_filters
+
+        try:
+            result = call_moto(context)
+        finally:
+            if filters:
+                request["Filters"] = filters
+
+        if association_ids:
+            filtered_acls = []
+            for acl in result.get("NetworkAcls", []):
+                match = False
+                for assoc in acl.get("Associations", []):
+                    if assoc.get("NetworkAclAssociationId") in association_ids:
+                        match = True
+                        break
+                if match:
+                    filtered_acls.append(acl)
+
+            result["NetworkAcls"] = filtered_acls
+
+        return result
 
     @handler("DescribeReservedInstancesOfferings", expand=False)
     def describe_reserved_instances_offerings(
