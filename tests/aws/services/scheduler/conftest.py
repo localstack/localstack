@@ -32,7 +32,7 @@ def events_scheduler_create_schedule_group(aws_client):
             LOG.info("Failed to delete schedule group %s", schedule_group_arn)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def scheduler_role(aws_client):
     role_name = f"test-scheduler-role-{short_uid()}"
     trust_policy = {
