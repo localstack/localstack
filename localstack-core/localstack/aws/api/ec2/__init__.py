@@ -137,6 +137,7 @@ DiskCount = int
 Double = float
 DoubleWithConstraints = float
 DrainSeconds = int
+EbsCardIndex = int
 EfaSupportedFlag = bool
 EgressOnlyInternetGatewayId = str
 EipAllocationPublicIp = str
@@ -173,6 +174,7 @@ GpuDeviceCount = int
 GpuDeviceManufacturerName = str
 GpuDeviceMemorySize = int
 GpuDeviceName = str
+GpuPartitionSize = float
 HibernationFlag = bool
 HostReservationId = str
 Hour = int
@@ -248,6 +250,7 @@ LocalGatewayRoutetableId = str
 LocalGatewayVirtualInterfaceGroupId = str
 LocalGatewayVirtualInterfaceId = str
 Location = str
+LogicalGpuCount = int
 MacModificationTaskId = str
 MarketplaceProductCode = str
 MarketplaceProductCodeRequest = str
@@ -260,6 +263,7 @@ MaximumBandwidthInMbps = int
 MaximumDaysSinceCreatedValue = int
 MaximumDaysSinceDeprecatedValue = int
 MaximumEbsAttachments = int
+MaximumEbsCards = int
 MaximumEfaInterfaces = int
 MaximumEnaQueueCount = int
 MaximumEnaQueueCountPerInterface = int
@@ -406,6 +410,7 @@ VpnConnectionDeviceSampleConfiguration = str
 VpnConnectionDeviceTypeId = str
 VpnConnectionId = str
 VpnGatewayId = str
+Workload = str
 customerGatewayConfiguration = str
 maxResults = int
 preSharedKey = str
@@ -6001,6 +6006,7 @@ class AttachVolumeRequest(ServiceRequest):
     Device: String
     InstanceId: InstanceId
     VolumeId: VolumeId
+    EbsCardIndex: BoxedInteger | None
     DryRun: Boolean | None
 
 
@@ -6314,6 +6320,7 @@ class EbsBlockDevice(TypedDict, total=False):
     Encrypted: Boolean | None
     VolumeInitializationRate: Integer | None
     AvailabilityZoneId: String | None
+    EbsCardIndex: Integer | None
 
 
 class BlockDeviceMapping(TypedDict, total=False):
@@ -7380,6 +7387,7 @@ class VolumeAttachment(TypedDict, total=False):
     DeleteOnTermination: Boolean | None
     AssociatedResource: String | None
     InstanceOwningService: String | None
+    EbsCardIndex: Integer | None
     VolumeId: String | None
     InstanceId: String | None
     Device: String | None
@@ -8903,6 +8911,7 @@ class LaunchTemplateEbsBlockDeviceRequest(TypedDict, total=False):
     VolumeType: VolumeType | None
     Throughput: Integer | None
     VolumeInitializationRate: Integer | None
+    EbsCardIndex: Integer | None
 
 
 class LaunchTemplateBlockDeviceMappingRequest(TypedDict, total=False):
@@ -9185,6 +9194,7 @@ class LaunchTemplateEbsBlockDevice(TypedDict, total=False):
     VolumeType: VolumeType | None
     Throughput: Integer | None
     VolumeInitializationRate: Integer | None
+    EbsCardIndex: Integer | None
 
 
 class LaunchTemplateBlockDeviceMapping(TypedDict, total=False):
@@ -14425,10 +14435,16 @@ class GpuDeviceMemoryInfo(TypedDict, total=False):
     SizeInMiB: GpuDeviceMemorySize | None
 
 
+WorkloadsList = list[Workload]
+
+
 class GpuDeviceInfo(TypedDict, total=False):
     Name: GpuDeviceName | None
     Manufacturer: GpuDeviceManufacturerName | None
     Count: GpuDeviceCount | None
+    LogicalGpuCount: LogicalGpuCount | None
+    GpuPartitionSize: GpuPartitionSize | None
+    Workloads: WorkloadsList | None
     MemoryInfo: GpuDeviceMemoryInfo | None
 
 
@@ -14476,6 +14492,19 @@ class NetworkInfo(TypedDict, total=False):
     FlexibleEnaQueuesSupport: FlexibleEnaQueuesSupport | None
 
 
+class EbsCardInfo(TypedDict, total=False):
+    EbsCardIndex: EbsCardIndex | None
+    BaselineBandwidthInMbps: BaselineBandwidthInMbps | None
+    BaselineThroughputInMBps: BaselineThroughputInMBps | None
+    BaselineIops: BaselineIops | None
+    MaximumBandwidthInMbps: MaximumBandwidthInMbps | None
+    MaximumThroughputInMBps: MaximumThroughputInMBps | None
+    MaximumIops: MaximumIops | None
+
+
+EbsCardInfoList = list[EbsCardInfo]
+
+
 class EbsOptimizedInfo(TypedDict, total=False):
     BaselineBandwidthInMbps: BaselineBandwidthInMbps | None
     BaselineThroughputInMBps: BaselineThroughputInMBps | None
@@ -14492,6 +14521,8 @@ class EbsInfo(TypedDict, total=False):
     NvmeSupport: EbsNvmeSupport | None
     MaximumEbsAttachments: MaximumEbsAttachments | None
     AttachmentLimitType: AttachmentLimitType | None
+    MaximumEbsCards: MaximumEbsCards | None
+    EbsCards: EbsCardInfoList | None
 
 
 DiskSize = int
@@ -14745,6 +14776,7 @@ class EbsInstanceBlockDevice(TypedDict, total=False):
     AssociatedResource: String | None
     VolumeOwnerId: String | None
     Operator: OperatorResponse | None
+    EbsCardIndex: Integer | None
 
 
 class InstanceBlockDeviceMapping(TypedDict, total=False):
@@ -23208,6 +23240,7 @@ class Ec2Api:
         device: String,
         instance_id: InstanceId,
         volume_id: VolumeId,
+        ebs_card_index: BoxedInteger | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> VolumeAttachment:
