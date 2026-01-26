@@ -1,4 +1,5 @@
 import enum
+import traceback
 from typing import Self
 
 from localstack.aws.api.cloudformation import ChangeAction
@@ -71,13 +72,20 @@ def track_resource_operation(
     ).increment()
 
 
-def emit_stack_failure(reason: str, exception: Exception | None = None):
+def emit_stack_failure(reason: str, exception: Exception | None = None) -> None:
     """
     Capture the stack failure reason in telemetry
     """
-    import traceback
 
-    tb = "".join(traceback.format_exception(exception))
+    payload = {
+        "reason": reason,
+        "version": FAILURE_ANALYTICS_VERSION,
+    }
+    if exception:
+        tb = "".join(traceback.format_exception(exception))
+        payload["tb"] = tb
+
     log.event(
-        FAILURE_ANALYTICS_NAMESPACE, reason=reason, traceback=tb, version=FAILURE_ANALYTICS_VERSION
+        FAILURE_ANALYTICS_NAMESPACE,
+        payload,
     )
