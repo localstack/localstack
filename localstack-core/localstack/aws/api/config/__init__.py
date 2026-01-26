@@ -3023,6 +3023,7 @@ class PutConformancePackRequest(ServiceRequest):
     DeliveryS3KeyPrefix: DeliveryS3KeyPrefix | None
     ConformancePackInputParameters: ConformancePackInputParameters | None
     TemplateSSMDocumentDetails: TemplateSSMDocumentDetails | None
+    Tags: TagsList | None
 
 
 class PutConformancePackResponse(TypedDict, total=False):
@@ -4002,6 +4003,7 @@ class ConfigApi:
         delivery_s3_key_prefix: DeliveryS3KeyPrefix | None = None,
         conformance_pack_input_parameters: ConformancePackInputParameters | None = None,
         template_ssm_document_details: TemplateSSMDocumentDetails | None = None,
+        tags: TagsList | None = None,
         **kwargs,
     ) -> PutConformancePackResponse:
         raise NotImplementedError

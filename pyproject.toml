@@ -51,9 +51,9 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.42.30",
+    "boto3==1.42.34",
     # pinned / updated by ASF update action
-    "botocore==1.42.30",
+    "botocore==1.42.34",
     # transitive dependency of botocore, added to avoid specific version
     "awscrt>=0.13.14,!=0.27.1",
     "cbor2>=5.5.0",
@@ -83,7 +83,7 @@ base-runtime = [
 runtime = [
     "localstack-core[base-runtime]",
     # pinned / updated by ASF update action
-    "awscli==1.44.20",
+    "awscli==1.44.24",
     "airspeed-ext>=0.6.3",
     # antlr4-python3-runtime: exact pin because antlr4 runtime is tightly coupled to the generated parser code
     "antlr4-python3-runtime==4.13.2",
