@@ -143,9 +143,9 @@ Plugins provided by [https://github.com/localstack/plux](https://github.com/loca
 -   Hooks
 -   Extensions
 
-Key points to understand are that plugins use [Python entry points, which are part of the PyPA specification](https://packaging.python.org/en/latest/specifications/entry-points/). Entry points are discovered from the code during a build step rather than defined manually (this is the main differentiator of Plux to other code loading tools). In LocalStack, the `make entrypoints` make target does that, which is also part of `make install`.
+Key points to understand are that plugins use [Python entry points, which are part of the PyPA specification](https://packaging.python.org/en/latest/specifications/entry-points/). Entry points are discovered from the code and maintained in the `plux.ini` file, which is version-controlled. This file is used at build time to generate the entry points for the Python package.
 
-When you add new hooks or service providers, or any other plugin, make sure to run `make entrypoints`.
+When you add new hooks or service providers, or any other plugin, make sure to run `make entrypoints` to update the `plux.ini` file, and commit the changes to version control.
 
 When writing plugins, it is important to understand that any code that sits in the same module as the plugin, will be imported when the plugin is _resolved_. That is, _before_ it is loaded. Resolving a plugin simply means discovering the entry points and loading the code the underlying entry point points to. This is why many times you will see imports deferred to the actual loading of the plugin.
 

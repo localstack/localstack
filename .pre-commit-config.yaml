@@ -1,5 +1,6 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+# TODO add pre-commit hook for plux entrypoints reconciliation on changed files
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
@@ -21,6 +22,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
+        exclude: "plux.ini"
       - id: trailing-whitespace
       - id: check-json
         files: .*\.(snapshot|validation)\.json
