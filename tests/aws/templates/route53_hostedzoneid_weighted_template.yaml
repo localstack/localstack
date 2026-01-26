@@ -1,0 +1,46 @@
+Parameters:
+  Name:
+    Type: String
+  HostedZoneId:
+    Type: String
+  BucketRegionOneHost:
+    Type: String
+  BucketRegionOneHostedZoneId:
+    Type: String
+  BucketRegionTwoHost:
+    Type: String
+  BucketRegionTwoHostedZoneId:
+    Type: String
+  WeightBucketOne:
+    Type: Number
+    Default: 255
+  WeightBucketTwo:
+    Type: Number
+    Default: 0
+
+Resources:
+  ApiWeightedRecordSetOne:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Name
+      Type: A
+      SetIdentifier: region-1
+      Weight: !Ref WeightBucketOne
+      AliasTarget:
+        DNSName: !Ref BucketRegionOneHost
+        HostedZoneId: !Ref BucketRegionOneHostedZoneId
+        EvaluateTargetHealth: false
+
+  ApiWeightedRecordSetTwo:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Name
+      Type: A
+      SetIdentifier: region-2
+      Weight: !Ref WeightBucketTwo
+      AliasTarget:
+        DNSName: !Ref BucketRegionTwoHost
+        HostedZoneId: !Ref BucketRegionTwoHostedZoneId
+        EvaluateTargetHealth: false

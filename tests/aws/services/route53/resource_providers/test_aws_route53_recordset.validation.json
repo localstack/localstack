@@ -1,4 +1,13 @@
 {
+  "tests/aws/services/route53/resource_providers/test_aws_route53_recordset.py::test_create_multiple_weighted_alias_target_record_sets": {
+    "last_validated_date": "2026-01-26T18:32:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 45.67,
+      "teardown": 37.98,
+      "total": 84.14
+    }
+  },
   "tests/aws/services/route53/resource_providers/test_aws_route53_recordset.py::test_create_record_set_via_id": {
     "last_validated_date": "2026-01-15T17:27:21+00:00",
     "durations_in_seconds": {
