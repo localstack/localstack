@@ -1,4 +1,58 @@
 {
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(*/15 * * * ? *)]": {
+    "last_validated_date": "2026-01-17T18:21:39+00:00",
+    "durations_in_seconds": {
+      "setup": 10.17,
+      "call": 0.22,
+      "teardown": 0.28,
+      "total": 10.67
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(0 18 ? * MON-FRI *)]": {
+    "last_validated_date": "2026-01-17T18:21:29+00:00",
+    "durations_in_seconds": {
+      "setup": 10.17,
+      "call": 0.16,
+      "teardown": 0.23,
+      "total": 10.56
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(0-15/1 8-8 ? * 2,3,4,5,6,7 *)]": {
+    "last_validated_date": "2026-01-17T18:20:57+00:00",
+    "durations_in_seconds": {
+      "setup": 10.9,
+      "call": 0.24,
+      "teardown": 0.25,
+      "total": 11.39
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(0-59/10 0-23/2 ? * * *)]": {
+    "last_validated_date": "2026-01-17T18:21:50+00:00",
+    "durations_in_seconds": {
+      "setup": 10.19,
+      "call": 0.17,
+      "teardown": 0.24,
+      "total": 10.6
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(1-31/30 1-1 ? * 1,7 *)]": {
+    "last_validated_date": "2026-01-17T18:21:18+00:00",
+    "durations_in_seconds": {
+      "setup": 10.17,
+      "call": 0.2,
+      "teardown": 0.25,
+      "total": 10.62
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::test_create_schedule_with_valid_cron_expressions[cron(30-30 13-13 ? * 2,4,6 *)]": {
+    "last_validated_date": "2026-01-17T18:21:07+00:00",
+    "durations_in_seconds": {
+      "setup": 10.18,
+      "call": 0.22,
+      "teardown": 0.29,
+      "total": 10.69
+    }
+  },
   "tests/aws/services/scheduler/test_scheduler.py::test_list_schedules": {
     "last_validated_date": "2024-06-11T22:50:50+00:00"
   },
