@@ -159,11 +159,7 @@ class TestEventsTargetApiDestination:
         ]
         aws_client.events.put_events(Entries=entries)
 
-        # clean up
-        aws_client.events.delete_connection(Name=connection_name)
-        aws_client.events.delete_api_destination(Name=dest_name)
-        clean_up(rule_name=rule_name, target_ids=target_id)
-
+        # Wait for event delivery before cleanup
         to_recv = 2 if auth["type"] == "OAUTH_CLIENT_CREDENTIALS" else 1
         assert poll_condition(lambda: len(httpserver.log) >= to_recv, timeout=5)
 
@@ -206,6 +202,11 @@ class TestEventsTargetApiDestination:
                 assert oauth_login["oauthbody"] == "value1"
                 assert oauth_request.headers["oauthheader"] == "value2"
                 assert oauth_request.args["oauthquery"] == "value3"
+
+        # Clean up after verification
+        aws_client.events.delete_connection(Name=connection_name)
+        aws_client.events.delete_api_destination(Name=dest_name)
+        clean_up(rule_name=rule_name, target_ids=target_id)
 
     @markers.requires_in_process  # uses pytest httpserver
     @markers.aws.only_localstack
