@@ -1293,7 +1293,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         store = self.get_store(context.account_id, context.region)
         store.TAGS.untag_resource(resource_arn, tag_keys)
 
-    # No tag deletion logic to handle in Community. Overwritten in Pro implementation.s
+    # No tag deletion logic to handle in Community. Overwritten in Pro.
     def _remove_resource_tags(self, context: RequestContext, resource_arn: str) -> None:
         return
 
