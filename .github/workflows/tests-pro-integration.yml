@@ -280,21 +280,6 @@ jobs:
           source .venv/bin/activate
           pip install -e ../localstack[runtime,test]
 
-      - name: Create Community Entrypoints
-        working-directory: localstack
-        # Entrypoints need to be generated _after_ the community edition has been linked into the venv
-        run: |
-          VENV_DIR="../localstack-pro/.venv" make entrypoints
-          ../localstack-pro/.venv/bin/python -m plux show
-
-      - name: Create Pro Entrypoints
-        working-directory: localstack-pro
-        # Entrypoints need to be generated _after_ the community edition has been linked into the venv
-        run: |
-          make entrypoints
-          cd localstack-pro-core
-          ../.venv/bin/python -m plux show
-
       - name: Test Pro Startup
         env:
           DEBUG: 1

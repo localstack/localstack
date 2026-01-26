@@ -76,7 +76,7 @@ COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 ARG LOCALSTACK_BUILD_VERSION
 
 # add project files necessary to install all dependencies
-ADD Makefile pyproject.toml requirements-base-runtime.txt ./
+ADD Makefile pyproject.toml plux.ini requirements-base-runtime.txt ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
@@ -88,10 +88,6 @@ RUN --mount=type=cache,target=/root/.cache \
     . .venv/bin/activate && \
     SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
     pip install -e .[base-runtime]
-
-# Generate the plugin entrypoints
-RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
-    make entrypoints
 
 # Generate service catalog cache in static libs dir
 RUN . .venv/bin/activate && python3 -m localstack.aws.spec
