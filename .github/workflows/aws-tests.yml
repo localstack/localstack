@@ -226,7 +226,6 @@ jobs:
         run: make lint
 
       - name: Verify Plux Entrypoints
-        working-directory: localstack-pro
         run: make entrypoints && git diff --exit-code plux.ini
 
       - name: Check AWS compatibility markers
