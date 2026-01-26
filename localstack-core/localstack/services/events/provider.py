@@ -1934,7 +1934,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         pass
 
     def _process_rules_async(self, params: dict) -> None:
-        """Process rules asynchronously in a background thread."""
+        """Process rules asynchronously in a background thread.
+
+        TODO: Use a worker pool (similar to SNS) instead of spawning a new thread
+              for each request to improve performance and resource management.
+        """
         rules = params["rules"]
         region = params["region"]
         account_id = params["account_id"]
@@ -1946,6 +1950,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 # we do not want to execute Scheduled Rules on PutEvents
                 continue
 
+            # TODO: Process each rule asynchronously instead of sequentially to further
+            #       improve performance when multiple rules need to be evaluated.
             self._process_rules(rule, region, account_id, event_formatted, trace_header)
 
     def _process_rules(
