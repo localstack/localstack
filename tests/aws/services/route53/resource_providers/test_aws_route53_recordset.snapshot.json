@@ -162,7 +162,7 @@
     }
   },
   "tests/aws/services/route53/resource_providers/test_aws_route53_recordset.py::test_create_multiple_weighted_alias_target_record_sets": {
-    "recorded-date": "26-01-2026, 18:32:12",
+    "recorded-date": "26-01-2026, 18:57:04",
     "recorded-content": {
       "record-sets": {
         "IsTruncated": false,
@@ -189,6 +189,255 @@
             "SetIdentifier": "region-2",
             "Type": "A",
             "Weight": 0
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1>"
+              },
+              {
+                "Value": "<resource-record:2>"
+              },
+              {
+                "Value": "<resource-record:3>"
+              },
+              {
+                "Value": "<resource-record:4>"
+              }
+            ],
+            "TTL": 172800,
+            "Type": "NS"
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1> awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400"
+              }
+            ],
+            "TTL": 900,
+            "Type": "SOA"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/route53/resource_providers/test_aws_route53_recordset.py::test_update_multiple_weighted_alias_target_record_sets": {
+    "recorded-date": "26-01-2026, 18:51:15",
+    "recorded-content": {
+      "record-sets": {
+        "IsTruncated": false,
+        "MaxItems": "100",
+        "ResourceRecordSets": [
+          {
+            "AliasTarget": {
+              "DNSName": "<d-n-s-name:1>",
+              "EvaluateTargetHealth": false,
+              "HostedZoneId": "Z3AQBSTGFYJSTF"
+            },
+            "Name": "<record-name:1>",
+            "SetIdentifier": "region-1",
+            "Type": "A",
+            "Weight": 255
+          },
+          {
+            "AliasTarget": {
+              "DNSName": "<d-n-s-name:2>",
+              "EvaluateTargetHealth": false,
+              "HostedZoneId": "Z2F56UZL2M1ACD"
+            },
+            "Name": "<record-name:1>",
+            "SetIdentifier": "region-2",
+            "Type": "A",
+            "Weight": 0
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1>"
+              },
+              {
+                "Value": "<resource-record:2>"
+              },
+              {
+                "Value": "<resource-record:3>"
+              },
+              {
+                "Value": "<resource-record:4>"
+              }
+            ],
+            "TTL": 172800,
+            "Type": "NS"
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1> awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400"
+              }
+            ],
+            "TTL": 900,
+            "Type": "SOA"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "record-sets-update-weights": {
+        "IsTruncated": false,
+        "MaxItems": "100",
+        "ResourceRecordSets": [
+          {
+            "AliasTarget": {
+              "DNSName": "<d-n-s-name:1>",
+              "EvaluateTargetHealth": false,
+              "HostedZoneId": "Z3AQBSTGFYJSTF"
+            },
+            "Name": "<record-name:1>",
+            "SetIdentifier": "region-1",
+            "Type": "A",
+            "Weight": 50
+          },
+          {
+            "AliasTarget": {
+              "DNSName": "<d-n-s-name:2>",
+              "EvaluateTargetHealth": false,
+              "HostedZoneId": "Z2F56UZL2M1ACD"
+            },
+            "Name": "<record-name:1>",
+            "SetIdentifier": "region-2",
+            "Type": "A",
+            "Weight": 100
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1>"
+              },
+              {
+                "Value": "<resource-record:2>"
+              },
+              {
+                "Value": "<resource-record:3>"
+              },
+              {
+                "Value": "<resource-record:4>"
+              }
+            ],
+            "TTL": 172800,
+            "Type": "NS"
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1> awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400"
+              }
+            ],
+            "TTL": 900,
+            "Type": "SOA"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "record-sets-update-alias-target": {
+        "IsTruncated": false,
+        "MaxItems": "100",
+        "ResourceRecordSets": [
+          {
+            "AliasTarget": {
+              "DNSName": "<d-n-s-name:1>",
+              "EvaluateTargetHealth": false,
+              "HostedZoneId": "Z3AQBSTGFYJSTF"
+            },
+            "Name": "<record-name:1>",
+            "SetIdentifier": "region-1",
+            "Type": "A",
+            "Weight": 50
+          },
+          {
+            "AliasTarget": {
+              "DNSName": "<d-n-s-name:1>",
+              "EvaluateTargetHealth": false,
+              "HostedZoneId": "Z3AQBSTGFYJSTF"
+            },
+            "Name": "<record-name:1>",
+            "SetIdentifier": "region-2",
+            "Type": "A",
+            "Weight": 100
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1>"
+              },
+              {
+                "Value": "<resource-record:2>"
+              },
+              {
+                "Value": "<resource-record:3>"
+              },
+              {
+                "Value": "<resource-record:4>"
+              }
+            ],
+            "TTL": 172800,
+            "Type": "NS"
+          },
+          {
+            "Name": "<record-name:1>",
+            "ResourceRecords": [
+              {
+                "Value": "<resource-record:1> awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400"
+              }
+            ],
+            "TTL": 900,
+            "Type": "SOA"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "record-sets-update-set-identifier": {
+        "IsTruncated": false,
+        "MaxItems": "100",
+        "ResourceRecordSets": [
+          {
+            "AliasTarget": {
+              "DNSName": "<d-n-s-name:1>",
+              "EvaluateTargetHealth": false,
+              "HostedZoneId": "Z3AQBSTGFYJSTF"
+            },
+            "Name": "<record-name:1>",
+            "SetIdentifier": "region-1",
+            "Type": "A",
+            "Weight": 50
+          },
+          {
+            "AliasTarget": {
+              "DNSName": "<d-n-s-name:1>",
+              "EvaluateTargetHealth": false,
+              "HostedZoneId": "Z3AQBSTGFYJSTF"
+            },
+            "Name": "<record-name:1>",
+            "SetIdentifier": "region-3",
+            "Type": "A",
+            "Weight": 100
           },
           {
             "Name": "<record-name:1>",

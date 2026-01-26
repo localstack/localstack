@@ -187,3 +187,89 @@ def test_create_multiple_weighted_alias_target_record_sets(
     )
     rr_sets = aws_client.route53.list_resource_record_sets(HostedZoneId=hosted_zone_id)
     snapshot.match("record-sets", rr_sets)
+
+
+@markers.aws.validated
+# @markers.snapshot.skip_snapshot_verify(
+#     paths=[
+#         # Moto returns a different value (300 instead of 100) when not provided
+#         "$..MaxItems",
+#         # Different hardcoded value in the SOA record compared to Amazon
+#         "$..ResourceRecordSets.[3].ResourceRecords.[0].Value",
+#     ]
+# )
+def test_update_multiple_weighted_alias_target_record_sets(
+    route53_hosted_zone,
+    aws_client,
+    deploy_cfn_template,
+    snapshot,
+    record_set_transformers,
+    get_s3_website_host_and_hosted_zone_id,
+):
+    snapshot.add_transformer(snapshot.transform.key_value("DNSName"))
+    bucket_1_host, bucket_1_hosted_zone_id = get_s3_website_host_and_hosted_zone_id(
+        AWS_REGION_US_EAST_1
+    )
+    bucket_2_host, bucket_2_hosted_zone_id = get_s3_website_host_and_hosted_zone_id("us-west-1")
+    create_zone_response = route53_hosted_zone()
+    hosted_zone_id = create_zone_response["HostedZone"]["Id"]
+    route53_name = create_zone_response["HostedZone"]["Name"]
+    parameters = {
+        "HostedZoneId": hosted_zone_id,
+        "Name": route53_name,
+        "BucketRegionOneHost": bucket_1_host,
+        "BucketRegionOneHostedZoneId": bucket_1_hosted_zone_id,
+        "BucketRegionTwoHost": bucket_2_host,
+        "BucketRegionTwoHostedZoneId": bucket_2_hosted_zone_id,
+    }
+    template_path = os.path.join(
+        os.path.dirname(__file__),
+        "../../../templates/route53_hostedzoneid_weighted_template.yaml",
+    )
+
+    result = deploy_cfn_template(
+        template_path=template_path,
+        parameters=parameters,
+        max_wait=300 if is_aws_cloud() else 60,
+    )
+    stack_name = result.stack_name
+    rr_sets = aws_client.route53.list_resource_record_sets(HostedZoneId=hosted_zone_id)
+    snapshot.match("record-sets", rr_sets)
+
+    parameters["WeightBucketOne"] = "50"
+    parameters["WeightBucketTwo"] = "100"
+
+    deploy_cfn_template(
+        template_path=template_path,
+        parameters=parameters,
+        max_wait=300 if is_aws_cloud() else 60,
+        is_update=True,
+        stack_name=stack_name,
+    )
+    rr_sets = aws_client.route53.list_resource_record_sets(HostedZoneId=hosted_zone_id)
+    snapshot.match("record-sets-update-weights", rr_sets)
+
+    parameters["BucketRegionTwoHost"] = bucket_1_host
+    parameters["BucketRegionTwoHostedZoneId"] = bucket_1_hosted_zone_id
+
+    deploy_cfn_template(
+        template_path=template_path,
+        parameters=parameters,
+        max_wait=300 if is_aws_cloud() else 60,
+        is_update=True,
+        stack_name=stack_name,
+    )
+    rr_sets = aws_client.route53.list_resource_record_sets(HostedZoneId=hosted_zone_id)
+    snapshot.match("record-sets-update-alias-target", rr_sets)
+
+    parameters["BucketTwoSetIdentifier"] = "region-3"
+
+    deploy_cfn_template(
+        template_path=template_path,
+        parameters=parameters,
+        max_wait=300 if is_aws_cloud() else 60,
+        is_update=True,
+        stack_name=stack_name,
+    )
+    rr_sets = aws_client.route53.list_resource_record_sets(HostedZoneId=hosted_zone_id)
+    snapshot.match("record-sets-update-set-identifier", rr_sets)

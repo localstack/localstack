@@ -17,6 +17,12 @@ Parameters:
   WeightBucketTwo:
     Type: Number
     Default: 0
+  BucketOneSetIdentifier:
+    Type: String
+    Default: region-1
+  BucketTwoSetIdentifier:
+    Type: String
+    Default: region-2
 
 Resources:
   ApiWeightedRecordSetOne:
@@ -25,7 +31,7 @@ Resources:
       HostedZoneId: !Ref HostedZoneId
       Name: !Ref Name
       Type: A
-      SetIdentifier: region-1
+      SetIdentifier: !Ref BucketOneSetIdentifier
       Weight: !Ref WeightBucketOne
       AliasTarget:
         DNSName: !Ref BucketRegionOneHost
@@ -38,9 +44,17 @@ Resources:
       HostedZoneId: !Ref HostedZoneId
       Name: !Ref Name
       Type: A
-      SetIdentifier: region-2
+      SetIdentifier: !Ref BucketTwoSetIdentifier
       Weight: !Ref WeightBucketTwo
       AliasTarget:
         DNSName: !Ref BucketRegionTwoHost
         HostedZoneId: !Ref BucketRegionTwoHostedZoneId
         EvaluateTargetHealth: false
+
+Outputs:
+  RecordSetOneId:
+    Value:
+      Ref: ApiWeightedRecordSetOne
+  RecordSetTwoId:
+    Value:
+      Ref: ApiWeightedRecordSetTwo
