@@ -5,9 +5,9 @@ We welcome contributions to LocalStack! Please refer to the following sections t
 ## Sections
 
 - [Contribution Guidelines](#contribution-guidelines)
-- [Development Environment Setup](development-environment-setup/README.md)
-- [LocalStack Concepts](localstack-concepts/README.md)
-- [Testing](testing/README.md)
+- [Development Environment Setup](/docs/development-environment-setup/README.md)
+- [LocalStack Concepts](/docs/localstack-concepts/README.md)
+- [Testing](/docs/testing/README.md)
 
 ## Contribution Guidelines
 
