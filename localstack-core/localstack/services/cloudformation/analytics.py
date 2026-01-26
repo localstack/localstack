@@ -2,10 +2,14 @@ import enum
 from typing import Self
 
 from localstack.aws.api.cloudformation import ChangeAction
+from localstack.utils.analytics import log
 from localstack.utils.analytics.metrics import LabeledCounter
 
 COUNTER_NAMESPACE = "cloudformation"
 COUNTER_VERSION = 2
+
+FAILURE_ANALYTICS_NAMESPACE = "cfn_stack_deploy_failures"
+FAILURE_ANALYTICS_VERSION = 1
 
 
 class ActionOptions(enum.StrEnum):
@@ -65,3 +69,15 @@ def track_resource_operation(
         missing=missing,
         action=ActionOptions.from_action(action),
     ).increment()
+
+
+def emit_stack_failure(reason: str, exception: Exception | None = None):
+    """
+    Capture the stack failure reason in telemetry
+    """
+    import traceback
+
+    tb = "".join(traceback.format_exception(exception))
+    log.event(
+        FAILURE_ANALYTICS_NAMESPACE, reason=reason, traceback=tb, version=FAILURE_ANALYTICS_VERSION
+    )

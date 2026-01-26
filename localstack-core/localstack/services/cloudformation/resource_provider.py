@@ -548,6 +548,7 @@ class ResourceProviderExecutor:
                         status=OperationStatus.FAILED,
                         resource_model={},
                         message=f"Failed to delete resource with id {request.logical_resource_id} of type {request.resource_type}",
+                        custom_context={"exception": e},
                     )
             case "Remove":
                 try:
@@ -561,6 +562,7 @@ class ResourceProviderExecutor:
                         status=OperationStatus.FAILED,
                         resource_model={},
                         message=f"Failed to delete resource with id {request.logical_resource_id} of type {request.resource_type}",
+                        custom_context={"exception": e},
                     )
             case _:
                 raise NotImplementedError(change_type)  # TODO: change error type
