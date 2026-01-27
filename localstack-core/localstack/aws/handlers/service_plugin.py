@@ -73,6 +73,7 @@ class ServiceLoader(Handler):
         except PluginDisabled as e:
             if e.reason == "This feature is not part of the active license agreement":
                 raise PluginNotIncludedInUserLicenseError()
+            raise
 
 
 class ServiceLoaderForDataPlane(Handler):
