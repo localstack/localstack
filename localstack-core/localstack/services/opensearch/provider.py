@@ -576,7 +576,8 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
             )
 
             # set the tags
-            self.add_tags(context, domain_key.arn, request.get("TagList"))
+            if tags := request.get("TagList", []):
+                self.add_tags(context, domain_key.arn, tags)
 
             # get the (updated) status
             status = get_domain_status(domain_key)
