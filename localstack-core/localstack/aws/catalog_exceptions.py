@@ -65,7 +65,7 @@ def get_service_availability_exception(
         case AwsServiceOperationsSupportInLatest.SUPPORTED_WITH_LICENSE_UPGRADE:
             return LicenseUpgradeRequiredException(service_name, operation_name)
         case AwsServicesSupportInLatest.NOT_SUPPORTED | AwsServiceSupportAtRuntime.NOT_IMPLEMENTED:
-            return ServiceOrOperationNotSupportedException(service_name)
+            return ServiceOrOperationNotSupportedException(service_name, operation_name)
         case _:
             return AwsServiceAvailabilityException(
                 message=f"The API for service {service_name} is either not included in your current license plan or has not yet been emulated by LocalStack.",

@@ -13,7 +13,7 @@ from ...utils.bootstrap import is_api_enabled
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
 from ..protocol.service_router import determine_aws_service_model_for_data_plane
-from .service import ServiceRequestRouter
+from .service import PluginNotIncludedInUserLicense, ServiceRequestRouter
 
 LOG = logging.getLogger(__name__)
 
@@ -70,8 +70,9 @@ class ServiceLoader(Handler):
                         service_name,
                         type(service_plugin),
                     )
-        except PluginDisabled:
-            raise NotImplementedError()
+        except PluginDisabled as e:
+            if e.reason == "This feature is not part of the active license agreement":
+                raise PluginNotIncludedInUserLicense()
 
 
 class ServiceLoaderForDataPlane(Handler):
