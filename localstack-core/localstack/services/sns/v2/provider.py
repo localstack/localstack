@@ -197,7 +197,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 if not attrs.get(k) or not attrs.get(k) == v:
                     # TODO:
                     raise InvalidParameterException("Fix this Exception message and type")
-            tag_resource_success = _check_matching_tags(topic_arn, tags, store)
+            tag_resource_success = self._check_matching_tags(topic_arn, tags, store)
             if not tag_resource_success:
                 raise InvalidParameterException(
                     "Invalid parameter: Tags Reason: Topic already exists with different tags"
@@ -1276,7 +1276,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         except KeyError:
             raise NotFoundException("PlatformApplication does not exist")
 
-    def _check_matching_tags(self, context: RequestContext, topic_arn: str, tags: TagList | None) -> bool:
+    def _check_matching_tags(
+        self, context: RequestContext, topic_arn: str, tags: TagList | None
+    ) -> bool:
         """
         Checks if a topic to be created doesn't already exist with different tags
         :param context: The context of the original request
@@ -1554,6 +1556,7 @@ def _validate_phone_number(phone_number: str):
         raise InvalidParameterException(
             "Invalid parameter: PhoneNumber Reason: input incorrectly formatted"
         )
+
 
 def _get_total_publish_size(
     message_body: str, message_attributes: MessageAttributeMap | None
