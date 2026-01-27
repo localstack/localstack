@@ -233,6 +233,7 @@ from localstack.services.lambda_.runtimes import (
     DEPRECATED_RUNTIMES_UPGRADES,
     RUNTIMES_AGGREGATED,
     SNAP_START_SUPPORTED_RUNTIMES,
+    VALID_MANAGED_INSTANCE_RUNTIMES,
     VALID_RUNTIMES,
 )
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
@@ -1076,6 +1077,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if "CapacityProviderConfig" in request:
                 capacity_provider_config = request["CapacityProviderConfig"]
                 self._validate_capacity_provider_config(capacity_provider_config, context)
+                self._validate_managed_instances_runtime(runtime)
 
                 default_config = CapacityProviderConfig(
                     LambdaManagedInstancesCapacityProviderConfig=LambdaManagedInstancesCapacityProviderConfig(
@@ -1250,6 +1252,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise InvalidParameterValueException(
                 f"Value {runtime} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                 Type="User",
+            )
+
+    def _validate_managed_instances_runtime(self, runtime):
+        if runtime not in VALID_MANAGED_INSTANCE_RUNTIMES:
+            raise InvalidParameterValueException(
+                f"Runtime Enum {runtime} does not support specified feature: Lambda Managed Instances"
             )
 
     def _check_for_recomended_migration_target(self, deprecated_runtime):
