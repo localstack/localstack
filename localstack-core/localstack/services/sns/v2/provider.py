@@ -223,7 +223,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         topic = _create_topic(name=name, attributes=attributes, context=context)
         if tags:
-            self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
+            self._tag_resource(context, resource_arn=topic_arn, tags=tags)
 
         store.topics[topic_arn] = topic
 
