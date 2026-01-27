@@ -718,7 +718,7 @@ class SqsQueue:
             return {}
 
         if QueueAttributeName.All in attribute_names:
-            attribute_names = self.attributes.keys()
+            attribute_names = list(self.attributes.keys()) + APPROXIMATE_DYNAMIC_ATTRIBUTES
 
         result: dict[QueueAttributeName, str] = {}
 
@@ -729,7 +729,7 @@ class SqsQueue:
                 raise InvalidAttributeName(f"Unknown Attribute {attr}.")
 
             if attr in APPROXIMATE_DYNAMIC_ATTRIBUTES:
-                value = getattr(self, camel_to_snake_case(attr))
+                value = str(getattr(self, camel_to_snake_case(attr)))
             else:
                 value = self.attributes.get(attr)
             if value == "False" or value == "True":
