@@ -10,8 +10,6 @@ import time
 from datetime import datetime
 from queue import Empty
 
-from moto.stepfunctions.parser.utils import camel_to_snake_case
-
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sqs import (
@@ -46,7 +44,7 @@ from localstack.services.sqs.utils import (
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.arns import get_partition
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import camel_to_snake_case, long_uid
 from localstack.utils.time import now
 from localstack.utils.urls import localstack_host
 
