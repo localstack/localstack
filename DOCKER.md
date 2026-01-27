@@ -1,7 +1,7 @@
-> ℹ️ **Important**
+> # ℹ️ **Important**
 >
-> We’re moving toward a unified LocalStack for AWS image, updating how access works.
-> For details on timing and impact please refer [to this blog post](https://localstack.cloud/2026-updates).
+> ## We’re moving toward a unified LocalStack for AWS image, updating how access works.
+> ## For details on timing and impact please refer [to this blog post](https://localstack.cloud/2026-updates).
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/localstack/localstack/main/docs/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
