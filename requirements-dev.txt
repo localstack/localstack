@@ -29,13 +29,13 @@ attrs==25.4.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.261
+aws-cdk-asset-awscli-v1==2.2.263
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==48.20.0
     # via aws-cdk-lib
-aws-cdk-lib==2.235.1
+aws-cdk-lib==2.236.0
     # via localstack-core
 aws-sam-translator==1.106.0
     # via
@@ -62,7 +62,7 @@ botocore==1.42.34
     #   localstack-core
     #   moto-ext
     #   s3transfer
-cachetools==6.2.4
+cachetools==6.2.5
     # via
     #   airspeed-ext
     #   localstack-core
@@ -96,7 +96,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.5
     # via aws-cdk-lib
-coverage==7.13.1
+coverage==7.13.2
     # via
     #   coveralls
     #   localstack-core
@@ -191,7 +191,7 @@ jinja2==3.1.6
     # via
     #   localstack-core
     #   moto-ext
-jmespath==1.0.1
+jmespath==1.1.0
     # via
     #   boto3
     #   botocore
@@ -199,7 +199,7 @@ joserfc==1.6.1
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.125.0
+jsii==1.126.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -292,7 +292,7 @@ opensearch-py==3.1.0
     # via localstack-core
 orderly-set==5.5.0
     # via deepdiff
-packaging==25.0
+packaging==26.0
     # via
     #   apispec
     #   deptry
@@ -305,7 +305,7 @@ pandoc==2.4
     # via localstack-core (pyproject.toml)
 pathable==0.4.4
     # via jsonschema-path
-pathspec==1.0.3
+pathspec==1.0.4
     # via mypy
 platformdirs==4.5.1
     # via virtualenv
@@ -315,7 +315,7 @@ pluggy==1.6.0
     #   pytest
 plumbum==1.10.0
     # via pandoc
-plux==1.13.0
+plux==1.14.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -348,7 +348,7 @@ py-partiql-parser==0.6.3
     # via moto-ext
 pyasn1==0.6.2
     # via rsa
-pycparser==2.23
+pycparser==3.0
     # via cffi
 pydantic==2.12.4
     # via
@@ -369,7 +369,7 @@ pyopenssl==25.3.0
     #   localstack-twisted
 pypandoc==1.16.2
     # via localstack-core (pyproject.toml)
-pyparsing==3.3.1
+pyparsing==3.3.2
     # via moto-ext
 pytest==8.4.2
     # via
@@ -438,7 +438,7 @@ responses==0.25.8
     #   moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==14.2.0
+rich==14.3.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -452,7 +452,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.14.13
+ruff==0.14.14
     # via localstack-core (pyproject.toml)
 s3transfer==0.16.0
     # via
