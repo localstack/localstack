@@ -10,6 +10,8 @@ import time
 from datetime import datetime
 from queue import Empty
 
+from moto.stepfunctions.parser.utils import camel_to_snake_case
+
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sqs import (
@@ -24,6 +26,7 @@ from localstack.aws.api.sqs import (
     TagMap,
 )
 from localstack.services.sqs import constants as sqs_constants
+from localstack.services.sqs.constants import APPROXIMATE_DYNAMIC_ATTRIBUTES
 from localstack.services.sqs.exceptions import (
     InvalidAttributeValue,
     InvalidParameterValueException,
@@ -346,15 +349,6 @@ class SqsQueue:
 
     def default_attributes(self) -> QueueAttributeMap:
         return {
-            QueueAttributeName.ApproximateNumberOfMessages: lambda: str(
-                self.approx_number_of_messages
-            ),
-            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: str(
-                self.approx_number_of_messages_not_visible
-            ),
-            QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: str(
-                self.approx_number_of_messages_delayed
-            ),
             QueueAttributeName.CreatedTimestamp: str(now()),
             QueueAttributeName.DelaySeconds: "0",
             QueueAttributeName.LastModifiedTimestamp: str(now()),
@@ -473,15 +467,15 @@ class SqsQueue:
         return int(self.attributes[QueueAttributeName.MaximumMessageSize])
 
     @property
-    def approx_number_of_messages(self) -> int:
+    def approximate_number_of_messages(self) -> int:
         raise NotImplementedError
 
     @property
-    def approx_number_of_messages_not_visible(self) -> int:
+    def approximate_number_of_messages_not_visible(self) -> int:
         return len(self.inflight)
 
     @property
-    def approx_number_of_messages_delayed(self) -> int:
+    def approximate_number_of_messages_delayed(self) -> int:
         return len(self.delayed)
 
     def validate_receipt_handle(self, receipt_handle: str):
@@ -734,13 +728,11 @@ class SqsQueue:
             except AttributeError:
                 raise InvalidAttributeName(f"Unknown Attribute {attr}.")
 
-            value = self.attributes.get(attr)
-            if callable(value):
-                func = value
-                value = func()
-                if value is not None:
-                    result[attr] = value
-            elif value == "False" or value == "True":
+            if attr in APPROXIMATE_DYNAMIC_ATTRIBUTES:
+                value = getattr(self, camel_to_snake_case(attr))
+            else:
+                value = self.attributes.get(attr)
+            if value == "False" or value == "True":
                 result[attr] = value.lower()
             elif value is not None:
                 result[attr] = value
@@ -799,7 +791,7 @@ class StandardQueue(SqsQueue):
             self.visible.queue.clear()
 
     @property
-    def approx_number_of_messages(self):
+    def approximate_number_of_messages(self):
         return self.visible.qsize()
 
     def shutdown(self):
@@ -1025,7 +1017,7 @@ class FifoQueue(SqsQueue):
         self.deduplication_scope = self.attributes[QueueAttributeName.DeduplicationScope]
 
     @property
-    def approx_number_of_messages(self):
+    def approximate_number_of_messages(self):
         n = 0
         for message_group in self.message_groups.values():
             n += len(message_group.messages)
