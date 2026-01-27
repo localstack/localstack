@@ -6,7 +6,7 @@
 #
 asn1crypto==1.5.1
     # via localstack-core (pyproject.toml)
-cachetools==6.2.4
+cachetools==6.2.5
     # via localstack-core (pyproject.toml)
 certifi==2026.1.4
     # via requests
@@ -28,11 +28,11 @@ markdown-it-py==4.0.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py
-plux==1.13.0
+plux==1.14.0
     # via localstack-core (pyproject.toml)
 psutil==7.2.1
     # via localstack-core (pyproject.toml)
-pycparser==2.23
+pycparser==3.0
     # via cffi
 pygments==2.19.2
     # via rich
@@ -42,7 +42,7 @@ pyyaml==6.0.3
     # via localstack-core (pyproject.toml)
 requests==2.32.5
     # via localstack-core (pyproject.toml)
-rich==14.2.0
+rich==14.3.1
     # via localstack-core (pyproject.toml)
 semver==3.0.4
     # via localstack-core (pyproject.toml)
