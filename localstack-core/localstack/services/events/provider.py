@@ -172,6 +172,7 @@ from localstack.state import StateVisitor
 from localstack.utils.common import truncate
 from localstack.utils.event_matcher import matches_event
 from localstack.utils.strings import long_uid
+from localstack.utils.threads import start_worker_thread
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 from localstack.utils.xray.trace_header import TraceHeader
 
@@ -1903,13 +1904,19 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         # Always add the successful EventId entry, even if target processing might fail
         processed_entries.append({"EventId": event_formatted["id"]})
 
+        # Process rules asynchronously to match AWS behavior where put-events returns immediately
         if configured_rules := list(event_bus.rules.values()):
-            for rule in configured_rules:
-                if rule.schedule_expression:
-                    # we do not want to execute Scheduled Rules on PutEvents
-                    continue
-
-                self._process_rules(rule, region, account_id, event_formatted, trace_header)
+            start_worker_thread(
+                self._process_rules_async,
+                params={
+                    "rules": configured_rules,
+                    "region": region,
+                    "account_id": account_id,
+                    "event_formatted": event_formatted,
+                    "trace_header": trace_header,
+                },
+                name="events-process-rules",
+            )
         else:
             LOG.info(
                 json.dumps(
@@ -1925,6 +1932,27 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> None:
         # only required for EventStudio to capture input event if no rule is configured
         pass
+
+    def _process_rules_async(self, params: dict) -> None:
+        """Process rules asynchronously in a background thread.
+
+        TODO: Use a worker pool (similar to SNS) instead of spawning a new thread
+              for each request to improve performance and resource management.
+        """
+        rules = params["rules"]
+        region = params["region"]
+        account_id = params["account_id"]
+        event_formatted = params["event_formatted"]
+        trace_header = params["trace_header"]
+
+        for rule in rules:
+            if rule.schedule_expression:
+                # we do not want to execute Scheduled Rules on PutEvents
+                continue
+
+            # TODO: Process each rule asynchronously instead of sequentially to further
+            #       improve performance when multiple rules need to be evaluated.
+            self._process_rules(rule, region, account_id, event_formatted, trace_header)
 
     def _process_rules(
         self,
@@ -1983,7 +2011,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                             )
                         )
         else:
-            LOG.info(
+            LOG.debug(
                 json.dumps(
                     {
                         "InfoCode": "InternalInfoEvents at matches_rule",

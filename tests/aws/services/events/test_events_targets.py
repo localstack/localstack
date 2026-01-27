@@ -4,6 +4,7 @@ Classes are ordered alphabetically."""
 
 import base64
 import json
+import threading
 import time
 
 import aws_cdk as cdk
@@ -158,11 +159,7 @@ class TestEventsTargetApiDestination:
         ]
         aws_client.events.put_events(Entries=entries)
 
-        # clean up
-        aws_client.events.delete_connection(Name=connection_name)
-        aws_client.events.delete_api_destination(Name=dest_name)
-        clean_up(rule_name=rule_name, target_ids=target_id)
-
+        # Wait for event delivery before cleanup
         to_recv = 2 if auth["type"] == "OAUTH_CLIENT_CREDENTIALS" else 1
         assert poll_condition(lambda: len(httpserver.log) >= to_recv, timeout=5)
 
@@ -205,6 +202,113 @@ class TestEventsTargetApiDestination:
                 assert oauth_login["oauthbody"] == "value1"
                 assert oauth_request.headers["oauthheader"] == "value2"
                 assert oauth_request.args["oauthquery"] == "value3"
+
+        # Clean up after verification
+        aws_client.events.delete_connection(Name=connection_name)
+        aws_client.events.delete_api_destination(Name=dest_name)
+        clean_up(rule_name=rule_name, target_ids=target_id)
+
+    @markers.requires_in_process  # uses pytest httpserver
+    @markers.aws.only_localstack
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    def test_put_events_returns_immediately_with_slow_api_destination(
+        self, httpserver: HTTPServer, aws_client, clean_up
+    ):
+        """
+        Test that put_events returns immediately even when the target API destination
+        is blocked and cannot respond. This validates the fix for GitHub issue #12107.
+
+        The test verifies that:
+        1. put_events returns successfully while the API destination handler is blocked
+        2. The event is eventually delivered to the destination asynchronously
+        """
+        # Create a blocking event to control when the handler can respond
+        blocking_event = threading.Event()
+
+        # Create an endpoint that blocks until the event is set
+        def _blocking_handler(_request: Request):
+            # Block until event is set (with timeout for test cleanup)
+            if not blocking_event.wait(timeout=20.0):
+                raise TimeoutError("Test timed out waiting for blocking event")
+            return Response(json.dumps({"status": "received"}), mimetype="application/json")
+
+        httpserver.expect_request("").respond_with_handler(_blocking_handler)
+        http_endpoint = httpserver.url_for("/")
+
+        # Create connection with BASIC auth (simplest for this test)
+        connection_name = f"test-conn-{short_uid()}"
+        connection_arn = aws_client.events.create_connection(
+            Name=connection_name,
+            AuthorizationType="BASIC",
+            AuthParameters={
+                "BasicAuthParameters": {
+                    "Username": "user",
+                    "Password": "pass",
+                },
+            },
+        )["ConnectionArn"]
+
+        # Create API destination
+        dest_name = f"test-dest-{short_uid()}"
+        dest_arn = aws_client.events.create_api_destination(
+            Name=dest_name,
+            ConnectionArn=connection_arn,
+            InvocationEndpoint=http_endpoint,
+            HttpMethod="POST",
+        )["ApiDestinationArn"]
+
+        # Create rule and target
+        rule_name = f"test-rule-{short_uid()}"
+        target_id = f"target-{short_uid()}"
+        pattern = json.dumps({"source": ["test.async"], "detail-type": ["async.test"]})
+
+        aws_client.events.put_rule(Name=rule_name, EventPattern=pattern)
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": dest_arn,
+                    "Input": '{"test": "async_behavior"}',
+                }
+            ],
+        )
+
+        # Send event - this should return immediately even though handler is blocked
+        response = aws_client.events.put_events(
+            Entries=[
+                {
+                    "Source": "test.async",
+                    "DetailType": "async.test",
+                    "Detail": '{"message": "testing async behavior"}',
+                }
+            ]
+        )
+
+        # Verify the event was accepted (EventId returned) even while handler is blocked
+        # This proves put_events is non-blocking
+        assert response["FailedEntryCount"] == 0
+        assert len(response["Entries"]) == 1
+        assert "EventId" in response["Entries"][0]
+
+        # Now unblock the handler so the event can be delivered
+        blocking_event.set()
+
+        # Verify the event is eventually delivered to the destination
+        # (this proves background processing is working)
+        assert poll_condition(lambda: len(httpserver.log) >= 1, timeout=10), (
+            "Event was not delivered to the API destination within 10 seconds"
+        )
+
+        # Verify the correct data was sent to the endpoint
+        event_request, _ = httpserver.log[0]
+        event_data = event_request.get_json(force=True)
+        assert event_data["test"] == "async_behavior"
+
+        # Clean up
+        aws_client.events.delete_connection(Name=connection_name)
+        aws_client.events.delete_api_destination(Name=dest_name)
+        clean_up(rule_name=rule_name, target_ids=target_id)
 
 
 class TestEventsTargetApiGateway:
