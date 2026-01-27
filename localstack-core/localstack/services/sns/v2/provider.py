@@ -1276,6 +1276,27 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         except KeyError:
             raise NotFoundException("PlatformApplication does not exist")
 
+    def _check_matching_tags(self, context: RequestContext, topic_arn: str, tags: TagList | None) -> bool:
+        """
+        Checks if a topic to be created doesn't already exist with different tags
+        :param context: The context of the original request
+        :param topic_arn: Arn of the topic
+        :param tags: Tags to be checked
+        :return: False if there is a mismatch in tags, True otherwise
+        """
+        store = self.get_store(context.account_id, context.region)
+        existing_tags = self._list_resource_tags(context, resource_arn=topic_arn)
+        # if this is none there is nothing to check
+        if topic_arn in store.topics:
+            if tags is None:
+                tags = []
+            for tag in tags:
+                # this means topic already created with empty tags and when we try to create it
+                # again with other tag value then it should fail according to aws documentation.
+                if existing_tags is not None and tag not in existing_tags:
+                    return False
+        return True
+
     def _list_resource_tags(self, context: RequestContext, resource_arn: str) -> TagList:
         store = self.get_store(context.account_id, context.region)
         tags = store.TAGS.list_tags_for_resource(resource_arn).get("Tags")
@@ -1533,28 +1554,6 @@ def _validate_phone_number(phone_number: str):
         raise InvalidParameterException(
             "Invalid parameter: PhoneNumber Reason: input incorrectly formatted"
         )
-
-
-def _check_matching_tags(topic_arn: str, tags: TagList | None, store: SnsStore) -> bool:
-    """
-    Checks if a topic to be created doesn't already exist with different tags
-    :param topic_arn: Arn of the topic
-    :param tags: Tags to be checked
-    :param store: Store object that holds the topics and tags
-    :return: False if there is a mismatch in tags, True otherwise
-    """
-    existing_tags = store.TAGS.list_tags_for_resource(topic_arn)["Tags"]
-    # if this is none there is nothing to check
-    if topic_arn in store.topics:
-        if tags is None:
-            tags = []
-        for tag in tags:
-            # this means topic already created with empty tags and when we try to create it
-            # again with other tag value then it should fail according to aws documentation.
-            if existing_tags is not None and tag not in existing_tags:
-                return False
-    return True
-
 
 def _get_total_publish_size(
     message_body: str, message_attributes: MessageAttributeMap | None
