@@ -15,7 +15,7 @@ class AwsServiceAvailabilityException(CommonServiceException):
 
 
 class ServiceOrOperationNotSupportedException(AwsServiceAvailabilityException):
-    def __init__(self, service_name: str, operation_name: str):
+    def __init__(self, service_name: str, operation_name: str | None = None):
         if operation_name is None:
             message = f"Sorry, the {service_name} service is not currently supported by LocalStack."
             error_code = 3
@@ -53,16 +53,19 @@ def get_service_availability_exception(
     status: AwsServicesSupportInLatest | AwsServiceOperationsSupportInLatest | None,
 ) -> AwsServiceAvailabilityException:
     match status:
-        case AwsServicesSupportInLatest.SUPPORTED | AwsServiceOperationsSupportInLatest.SUPPORTED:
+        case AwsServicesSupportInLatest.SUPPORTED:
+            return LatestVersionRequiredException(service_name)
+        case AwsServiceOperationsSupportInLatest.SUPPORTED:
             return LatestVersionRequiredException(service_name, operation_name)
         case (
             AwsServicesSupportInLatest.SUPPORTED_WITH_LICENSE_UPGRADE
-            | AwsServiceOperationsSupportInLatest.SUPPORTED_WITH_LICENSE_UPGRADE
             | AwsServiceSupportAtRuntime.AVAILABLE_WITH_LICENSE_UPGRADE
         ):
+            return LicenseUpgradeRequiredException(service_name)
+        case AwsServiceOperationsSupportInLatest.SUPPORTED_WITH_LICENSE_UPGRADE:
             return LicenseUpgradeRequiredException(service_name, operation_name)
         case AwsServicesSupportInLatest.NOT_SUPPORTED | AwsServiceSupportAtRuntime.NOT_IMPLEMENTED:
-            return ServiceOrOperationNotSupportedException(service_name, operation_name)
+            return ServiceOrOperationNotSupportedException(service_name)
         case _:
             return AwsServiceAvailabilityException(
                 message=f"The API for service {service_name} is either not included in your current license plan or has not yet been emulated by LocalStack.",

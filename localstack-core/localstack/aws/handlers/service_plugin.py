@@ -3,6 +3,8 @@
 import logging
 import threading
 
+from plux import PluginDisabled
+
 from localstack.http import Response
 from localstack.services.plugins import Service, ServiceManager
 from localstack.utils.sync import SynchronizedDefaultDict
@@ -51,23 +53,25 @@ class ServiceLoader(Handler):
             )
 
         request_router = self.service_request_router
+        try:
+            # Ensure the Service is loaded and set to ServiceState.RUNNING if not in an erroneous state.
+            service_plugin: Service = self.service_manager.require(service_name)
 
-        # Ensure the Service is loaded and set to ServiceState.RUNNING if not in an erroneous state.
-        service_plugin: Service = self.service_manager.require(service_name)
-
-        with self.service_locks[context.service.service_name]:
-            # try again to avoid race conditions
-            if service_name in self.loaded_services:
-                return
-            self.loaded_services.add(service_name)
-            if isinstance(service_plugin, Service):
-                request_router.add_skeleton(service_plugin.skeleton)
-            else:
-                LOG.warning(
-                    "found plugin for '%s', but cannot attach service plugin of type '%s'",
-                    service_name,
-                    type(service_plugin),
-                )
+            with self.service_locks[context.service.service_name]:
+                # try again to avoid race conditions
+                if service_name in self.loaded_services:
+                    return
+                self.loaded_services.add(service_name)
+                if isinstance(service_plugin, Service):
+                    request_router.add_skeleton(service_plugin.skeleton)
+                else:
+                    LOG.warning(
+                        "found plugin for '%s', but cannot attach service plugin of type '%s'",
+                        service_name,
+                        type(service_plugin),
+                    )
+        except PluginDisabled:
+            raise NotImplementedError()
 
 
 class ServiceLoaderForDataPlane(Handler):
