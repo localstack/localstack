@@ -190,14 +190,14 @@ def test_create_multiple_weighted_alias_target_record_sets(
 
 
 @markers.aws.validated
-# @markers.snapshot.skip_snapshot_verify(
-#     paths=[
-#         # Moto returns a different value (300 instead of 100) when not provided
-#         "$..MaxItems",
-#         # Different hardcoded value in the SOA record compared to Amazon
-#         "$..ResourceRecordSets.[3].ResourceRecords.[0].Value",
-#     ]
-# )
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # Moto returns a different value (300 instead of 100) when not provided
+        "$..MaxItems",
+        # Different hardcoded value in the SOA record compared to Amazon
+        "$..ResourceRecordSets.[3].ResourceRecords.[0].Value",
+    ]
+)
 def test_update_multiple_weighted_alias_target_record_sets(
     route53_hosted_zone,
     aws_client,

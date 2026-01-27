@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from mypy_boto3_route53 import Route53Client
+    from mypy_boto3_route53.type_defs import ResourceRecordSetTypeDef
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -91,33 +92,7 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
             hosted_zone_id = self.get_hosted_zone_id_from_name(hosted_zone_name, route53)
             model["HostedZoneId"] = hosted_zone_id
 
-        attr_names = [
-            "Name",
-            "Type",
-            "SetIdentifier",
-            "Weight",
-            "Region",
-            "GeoLocation",
-            "Failover",
-            "MultiValueAnswer",
-            "TTL",
-            "ResourceRecords",
-            "AliasTarget",
-            "HealthCheckId",
-        ]
-        attrs = util.select_attributes(model, attr_names)
-
-        if "AliasTarget" in attrs:
-            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset-aliastarget.html
-            if "EvaluateTargetHealth" not in attrs["AliasTarget"]:
-                attrs["AliasTarget"]["EvaluateTargetHealth"] = False
-        else:
-            # TODO: CNAME & SOA only allow 1 record type. should we check that here?
-            attrs["ResourceRecords"] = [{"Value": record} for record in attrs["ResourceRecords"]]
-
-        if "TTL" in attrs:
-            if isinstance(attrs["TTL"], str):
-                attrs["TTL"] = int(attrs["TTL"])
+        attrs = self._get_resource_record_set_from_model(model)
 
         route53.change_resource_record_sets(
             HostedZoneId=model["HostedZoneId"],
@@ -171,29 +146,15 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
         """
         model = request.previous_state
         route53 = request.aws_client_factory.route53
-        rrset_kwargs = {
-            "Name": model["Name"],
-            "Type": model["Type"],
-        }
 
-        if "AliasTarget" in model:
-            rrset_kwargs["AliasTarget"] = model["AliasTarget"]
-        if "ResourceRecords" in model:
-            rrset_kwargs["ResourceRecords"] = [
-                {"Value": record} for record in model["ResourceRecords"]
-            ]
-        if "TTL" in model:
-            rrset_kwargs["TTL"] = int(model["TTL"])
-        if "SetIdentifier" in model:
-            rrset_kwargs["SetIdentifier"] = model["SetIdentifier"]
-
+        resource_record_set = self._get_resource_record_set_from_model(model)
         route53.change_resource_record_sets(
             HostedZoneId=model["HostedZoneId"],
             ChangeBatch={
                 "Changes": [
                     {
                         "Action": "DELETE",
-                        "ResourceRecordSet": rrset_kwargs,
+                        "ResourceRecordSet": resource_record_set,
                     },
                 ]
             },
@@ -212,4 +173,72 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
 
 
         """
-        raise NotImplementedError
+        model = request.desired_state
+        prev_model = request.previous_state
+
+        assert request.previous_state is not None
+
+        route53 = request.aws_client_factory.route53
+        changes = []
+
+        if model.get("SetIdentifier") != prev_model.get("SetIdentifier"):
+            prev_rrset = self._get_resource_record_set_from_model(prev_model)
+            changes.append(
+                {
+                    "Action": "DELETE",
+                    "ResourceRecordSet": prev_rrset,
+                }
+            )
+
+        updated_rrset = self._get_resource_record_set_from_model(model)
+        changes.append(
+            {
+                "Action": "UPSERT",
+                "ResourceRecordSet": updated_rrset,
+            }
+        )
+
+        route53.change_resource_record_sets(
+            HostedZoneId=model["HostedZoneId"],
+            ChangeBatch={"Changes": changes},
+        )
+        model["Id"] = model["Name"]
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+        )
+
+    @staticmethod
+    def _get_resource_record_set_from_model(
+        model: Route53RecordSetProperties,
+    ) -> ResourceRecordSetTypeDef:
+        attr_names = [
+            "Name",
+            "Type",
+            "SetIdentifier",
+            "Weight",
+            "Region",
+            "GeoLocation",
+            "Failover",
+            "MultiValueAnswer",
+            "TTL",
+            "ResourceRecords",
+            "AliasTarget",
+            "HealthCheckId",
+        ]
+        attrs = util.select_attributes(model, attr_names)
+
+        if "AliasTarget" in attrs:
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset-aliastarget.html
+            if "EvaluateTargetHealth" not in attrs["AliasTarget"]:
+                attrs["AliasTarget"]["EvaluateTargetHealth"] = False
+        else:
+            # TODO: CNAME & SOA only allow 1 record type. should we check that here?
+            attrs["ResourceRecords"] = [{"Value": record} for record in attrs["ResourceRecords"]]
+
+        if "TTL" in attrs:
+            if isinstance(attrs["TTL"], str):
+                attrs["TTL"] = int(attrs["TTL"])
+
+        return attrs
