@@ -1,2 +1,2 @@
-class PluginNotIncludedInUserLicense(NotImplementedError):
+class PluginNotIncludedInUserLicenseError(NotImplementedError):
     pass

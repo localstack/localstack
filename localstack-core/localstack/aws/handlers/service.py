@@ -21,7 +21,7 @@ from ..protocol.parser import RequestParser, create_parser
 from ..protocol.serializer import create_serializer
 from ..protocol.service_router import determine_aws_protocol, determine_aws_service_model
 from ..skeleton import Skeleton, create_skeleton
-from .exceptions import PluginNotIncludedInUserLicense
+from .exceptions import PluginNotIncludedInUserLicenseError
 
 LOG = logging.getLogger(__name__)
 
@@ -198,7 +198,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
                 error = CommonServiceException("InternalFailure", message, status_code=501)
             else:
                 catalog = get_aws_catalog()
-                if isinstance(exception, PluginNotIncludedInUserLicense):
+                if isinstance(exception, PluginNotIncludedInUserLicenseError):
                     # Operation name is provided when a plugin fails to load, although it is not relevant.
                     # In such cases, we should return an error without the operation name
                     service_status = catalog.get_aws_service_status(
