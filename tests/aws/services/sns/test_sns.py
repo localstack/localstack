@@ -190,6 +190,37 @@ class TestSNSTopicCrud:
         snapshot.match("list-after-update-tags", tags)
 
     @markers.aws.validated
+    def test_tags_removed_after_deletion(self, aws_client, sns_create_topic, snapshot):
+        topic_name = f"topic-{short_uid()}"
+        topic = sns_create_topic(Name=topic_name)
+        topic_arn = topic["TopicArn"]
+        aws_client.sns.tag_resource(
+            ResourceArn=topic_arn,
+            Tags=[
+                {"Key": "k1", "Value": "v1"},
+                {"Key": "k2", "Value": "v2"},
+            ],
+        )
+        tags = aws_client.sns.list_tags_for_resource(ResourceArn=topic_arn)
+        tags["Tags"].sort(key=itemgetter("Key"))
+        snapshot.match("list-created-tags", tags)
+
+        # delete the topic and recreate the same topic to ensure the tags no longer exist
+        aws_client.sns.delete_topic(TopicArn=topic_arn)
+        sns_create_topic(Name=topic_name)
+
+        tags_response = aws_client.sns.list_tags_for_resource(ResourceArn=topic_arn)
+        assert len(tags_response["Tags"]) == 0
+        snapshot.match("list-empty-tags", tags_response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.get-topic-attrs.Attributes.DeliveryPolicy",  # TODO: remove this with the v2 provider switch
+            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
+        ],
+        condition=is_sns_v1_provider,
+    )
     def test_create_topic_test_arn(self, sns_create_topic, snapshot, aws_client, account_id):
         topic_name = "topic-test-create"
         response = sns_create_topic(Name=topic_name)
