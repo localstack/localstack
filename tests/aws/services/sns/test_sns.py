@@ -2476,6 +2476,7 @@ class TestSNSSubscriptionSQS:
             )
         snapshot.match("publish-batch-no-topic", e.value.response)
 
+    @pytest.mark.skipif(is_sns_v1_provider(), reason="broken in moto")
     @markers.aws.validated
     def test_publish_batch_exceptions(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
@@ -3191,6 +3192,7 @@ class TestSNSSubscriptionSQSFifo:
         )
         snapshot.match("dedup-messages", response)
 
+    @pytest.mark.skipif(is_sns_v1_provider(), reason="broken in moto")
     @markers.aws.validated
     def test_validations_for_fifo(
         self,
