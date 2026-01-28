@@ -10,6 +10,9 @@ _LOAD_CACHE: Final[dict[str, dict]] = {}
 
 
 class MockedServiceIntegrationsLoader(abc.ABC):
+    MOCKED_RESPONSE_LAMBDA_200_STRING_BODY_TWO_INVOCATIONS: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/lambda/200_string_body_two_invocations.json5"
+    )
     MOCKED_RESPONSE_LAMBDA_200_STRING_BODY: Final[str] = os.path.join(
         _THIS_FOLDER, "mocked_responses/lambda/200_string_body.json5"
     )

@@ -605,7 +605,7 @@ class TestBaseScenarios:
             state_machine_name = f"mocked_state_machine_{short_uid()}"
             test_name = "TestCaseName"
             lambda_200_string_body = MockedServiceIntegrationsLoader.load(
-                MockedServiceIntegrationsLoader.MOCKED_RESPONSE_LAMBDA_200_STRING_BODY
+                MockedServiceIntegrationsLoader.MOCKED_RESPONSE_LAMBDA_200_STRING_BODY_TWO_INVOCATIONS
             )
             mock_config = {
                 "StateMachines": {
