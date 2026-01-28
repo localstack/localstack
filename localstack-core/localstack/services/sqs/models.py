@@ -727,6 +727,8 @@ class SqsQueue:
                 raise InvalidAttributeName(f"Unknown Attribute {attr}.")
 
             if attr in APPROXIMATE_DYNAMIC_ATTRIBUTES:
+                # The approximate_* attributes are calculated on the spot when accessed.
+                # We have a @property for each of those which calculates the value.
                 value = str(getattr(self, camel_to_snake_case(attr)))
             else:
                 value = self.attributes.get(attr)
