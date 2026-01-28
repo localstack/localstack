@@ -321,21 +321,21 @@ class CloudwatchPublishWorker:
                         SqsMetricBatchData(
                             QueueName=queue.name,
                             MetricName="ApproximateNumberOfMessagesVisible",
-                            Value=queue.approx_number_of_messages,
+                            Value=queue.approximate_number_of_messages,
                         )
                     )
                     batch_data.append(
                         SqsMetricBatchData(
                             QueueName=queue.name,
                             MetricName="ApproximateNumberOfMessagesNotVisible",
-                            Value=queue.approx_number_of_messages_not_visible,
+                            Value=queue.approximate_number_of_messages_not_visible,
                         )
                     )
                     batch_data.append(
                         SqsMetricBatchData(
                             QueueName=queue.name,
                             MetricName="ApproximateNumberOfMessagesDelayed",
-                            Value=queue.approx_number_of_messages_delayed,
+                            Value=queue.approximate_number_of_messages_delayed,
                         )
                     )
 
@@ -465,7 +465,7 @@ class MessageMoveTaskManager:
             try:
                 source_queue = self._get_queue_by_arn(move_task.source_arn)
                 move_task.approximate_number_of_messages_to_move = (
-                    source_queue.approx_number_of_messages
+                    source_queue.approximate_number_of_messages
                 )
                 move_task.approximate_number_of_messages_moved = 0
                 move_task.mark_started()
@@ -1130,7 +1130,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             num = override
         elif num == -1:
             # backdoor to get all messages
-            num = queue.approx_number_of_messages
+            num = queue.approximate_number_of_messages
         elif (
             num < 1 or num > MAX_NUMBER_OF_MESSAGES
         ) and not SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT:
