@@ -384,6 +384,7 @@ class ExecutionEnvironment:
             "invoked-function-arn": invocation.invoked_arn,
             "payload": to_str(invocation.payload),
             "trace-id": aws_trace_header.to_header_str(),
+            "client-context": invocation.client_context,
         }
         return self.runtime_executor.invoke(payload=invoke_payload)
 
