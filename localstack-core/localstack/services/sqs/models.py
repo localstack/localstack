@@ -730,11 +730,11 @@ class SqsQueue:
             # We have a @property for each of those which calculates the value.
             match attr:
                 case QueueAttributeName.ApproximateNumberOfMessages:
-                    value = self.approximate_number_of_messages
+                    value = str(self.approximate_number_of_messages)
                 case QueueAttributeName.ApproximateNumberOfMessagesDelayed:
-                    value = self.approximate_number_of_messages_delayed
+                    value = str(self.approximate_number_of_messages_delayed)
                 case QueueAttributeName.ApproximateNumberOfMessagesNotVisible:
-                    value = self.approximate_number_of_messages_not_visible
+                    value = str(self.approximate_number_of_messages_not_visible)
                 case _:
                     value = self.attributes.get(attr)
             if value == "False" or value == "True":
