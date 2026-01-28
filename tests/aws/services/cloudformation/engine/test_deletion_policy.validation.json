@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/cloudformation/engine/test_deletion_policy.py::test_deletion_policy_with_deletion": {
+    "last_validated_date": "2026-01-23T12:03:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.38,
+      "teardown": 0.08,
+      "total": 12.46
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_deletion_policy.py::test_deletion_policy_with_retain": {
+    "last_validated_date": "2026-01-23T12:03:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.35,
+      "teardown": 0.18,
+      "total": 12.53
+    }
+  }
+}
