@@ -18370,5 +18370,134 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_unicode_metadata": {
+    "recorded-date": "28-01-2026, 19:19:15",
+    "recorded-content": {
+      "post-object": {
+        "LocationHeader": "<bucket-url>/test_unicode%E2%80%94_file.pdf",
+        "PostResponse": {
+          "Bucket": "<bucket:1>",
+          "ETag": "\"a7d8531d918474360de3e2eaeb110cda\"",
+          "Key": "test_unicode\u2014_file.pdf",
+          "Location": "<bucket-url>/test_unicode%E2%80%94_file.pdf"
+        }
+      },
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "CacheControl": "non-ascii-%E2%80%94_ _\u00e9_",
+        "ContentDisposition": "filename=\"test_ _file%E2%80%94_\u00e9_2.pdf\"",
+        "ContentLength": 17,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"a7d8531d918474360de3e2eaeb110cda\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "nonascii": "=?UTF-8?Q?=C3=84M=C3=84Z=C3=95=C3=91_S3?=",
+          "nonascii-2": "=?UTF-8?Q?test=5F=E2=80=94=5Ffile%E2%80%94=5F=C3=A9=5F2.pdf?="
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_system_metadata_with_unicode": {
+    "recorded-date": "28-01-2026, 18:54:10",
+    "recorded-content": {
+      "put-object": {
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "",
+        "CacheControl": "\u00c3\u0084M\u00c3\u0084Z\u00c3\u0095\u00c3\u0091 S3",
+        "ChecksumCRC32": "AAAAAA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentDisposition": "attachment; filename=\"test_\u00e2\u0080\u0094_file%E2%80%94_\u00c3\u00a9_2.pdf\"",
+        "ContentLanguage": "de",
+        "ContentLength": 0,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_get_response_overrides_unicode_metadata_with_sig_s3": {
+    "recorded-date": "28-01-2026, 18:18:20",
+    "recorded-content": {
+      "unicode-error": {
+        "Error": {
+          "ArgumentName": "response-cache-control",
+          "ArgumentValue": "non-ascii-%E2%80%94_\u2014_\u00e9_",
+          "Code": "InvalidArgument",
+          "HostId": "host-id",
+          "Message": "Header value cannot be represented using ISO-8859-1.",
+          "RequestId": "<request-id:1>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_unicode_metadata_with_sig_s3": {
+    "recorded-date": "28-01-2026, 18:46:18",
+    "recorded-content": {
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "foo": "=?UTF-8?Q?non-ascii-%E2%80%94=5F=E2=80=94=5F=C3=A9=5F?="
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_with_unicode_character_location": {
+    "recorded-date": "28-01-2026, 19:11:53",
+    "recorded-content": {
+      "create-multipart": {
+        "Bucket": "bucket",
+        "Key": "test-unicode_\u2014_file",
+        "ServerSideEncryption": "AES256",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-multipart": {
+        "Bucket": "bucket",
+        "ChecksumCRC64NVME": "LPvyvt6AWlQ=",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"209b3f7345bfc0220995968302e3e9a8-1\"",
+        "Key": "test-unicode_\u2014_file",
+        "Location": "<bucket-url>/test-unicode_%E2%80%94_file",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

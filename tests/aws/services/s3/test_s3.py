@@ -440,6 +440,21 @@ class TestS3:
         assert response["Body"].read() == b"abc123"
 
     @markers.aws.validated
+    def test_system_metadata_with_unicode(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        response = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test",
+            ContentLanguage="de",
+            ContentDisposition='attachment; filename="test_—_file%E2%80%94_é_2.pdf"',
+            CacheControl="ÄMÄZÕÑ S3",
+        )
+        snapshot.match("put-object", response)
+
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="test")
+        snapshot.match("get-object", response)
+
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "use_virtual_address",
         [True, False],
@@ -551,6 +566,44 @@ class TestS3:
 
         resp = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
         snapshot.match("list-objects-single-char", resp)
+
+    @markers.aws.validated
+    def test_multipart_with_unicode_character_location(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value(
+                    "ID", value_replacement="owner-id", reference_replacement=False
+                ),
+            ]
+        )
+
+        key_name = "test-unicode_—_file"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("create-multipart", response)
+        upload_id = response["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body="upload-part-1",
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+
+        multipart_upload_parts = [{"ETag": upload_part["ETag"], "PartNumber": 1}]
+
+        response = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart", response)
+        location_prefix = response["Location"].split("/test-unicode")[0]
+        snapshot.add_transformer(snapshot.transform.regex(location_prefix, "<bucket-url>"))
 
     @markers.aws.validated
     def test_copy_object_special_character(self, s3_bucket, s3_create_bucket, aws_client, snapshot):
@@ -6617,6 +6670,74 @@ class TestS3PresignedUrl:
             assert "wrong" not in head_object["Metadata"]
 
     @markers.aws.validated
+    def test_get_response_overrides_unicode_metadata_with_sig_s3(
+        self,
+        s3_bucket,
+        snapshot,
+        aws_client,
+        presigned_snapshot_transformers,
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        presigned_client = _s3_client_pre_signed_client(
+            Config(signature_version="s3"),
+            endpoint_url=_endpoint_url(),
+        )
+        object_key = "key-non-ascii"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key)
+
+        url = presigned_client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": s3_bucket,
+                "Key": object_key,
+                "ResponseCacheControl": "non-ascii-%E2%80%94_—_é_",
+                "ResponseContentDisposition": 'filename="test_—_file%E2%80%94_é_2.pdf"',
+            },
+        )
+        response = requests.get(url, verify=False)
+        assert response.status_code == 400
+
+        response_content = xmltodict.parse(response.content)
+        snapshot.match("unicode-error", response_content)
+
+    @markers.aws.validated
+    def test_put_unicode_metadata_with_sig_s3(
+        self,
+        s3_bucket,
+        snapshot,
+        aws_client,
+        presigned_snapshot_transformers,
+    ):
+        from botocore.handlers import validate_ascii_metadata
+
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        presigned_client = _s3_client_pre_signed_client(
+            Config(signature_version="s3"),
+            endpoint_url=_endpoint_url(),
+        )
+        # we need to remove the builtin handler that validate ascii in metadata, because AWS actually accepts it
+        presigned_client.meta.events.unregister(
+            "before-parameter-build.s3.PutObject",
+            validate_ascii_metadata,
+        )
+
+        object_key = "key-non-ascii"
+
+        metadata = {"foo": "non-ascii-%E2%80%94_—_é_"}
+
+        # put object via presigned URL with metadata
+        url = presigned_client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": s3_bucket, "Key": object_key, "Metadata": metadata},
+        )
+
+        response = requests.put(url, verify=False)
+        assert response.ok
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head_object", response)
+
+    @markers.aws.validated
     def test_get_object_ignores_request_body(self, s3_bucket, aws_client):
         key = "foo-key"
         body = "foobar"
@@ -11042,6 +11163,63 @@ class TestS3PresignedPost:
             verify=False,
         )
         assert response.status_code == 204
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object", head_object)
+
+    @markers.aws.validated
+    def test_post_object_with_unicode_metadata(self, s3_bucket, aws_client, snapshot):
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingMetadata.html
+        # To avoid issues related to the presentation of these metadata values, you should conform to using US-ASCII
+        # characters when using REST and UTF-8 when using SOAP or browser-based uploads through POST.
+        # When using non-US-ASCII characters in your metadata values, the provided Unicode string is examined for
+        # non-US-ASCII characters. Values of such headers are character decoded as per RFC 2047 before storing and
+        # encoded as per RFC 2047 to make them mail-safe before returning. If the string contains only US-ASCII
+        # characters, it is presented as is.
+
+        snapshot.add_transformer(snapshot.transform.key_value("Bucket"), priority=10)
+        object_key = "test_unicode—_file.pdf"
+        content_disposition = 'filename="test_—_file%E2%80%94_é_2.pdf"'
+        cache_control = "non-ascii-%E2%80%94_—_é_"
+        user_metadata = "ÄMÄZÕÑ S3"
+        user_metadata_2 = "test_—_file%E2%80%94_é_2.pdf"
+
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Fields={
+                "Content-Disposition": content_disposition,
+                "Cache-Control": cache_control,
+                "x-amz-meta-nonascii": user_metadata,
+                "x-amz-meta-nonascii-2": user_metadata_2,
+                # we require the 201 status code to get more information from the response
+                "success_action_status": "201",
+            },
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["eq", "$Content-Disposition", content_disposition],
+                ["eq", "$Cache-Control", cache_control],
+                ["eq", "$x-amz-meta-nonascii", user_metadata],
+                ["eq", "$x-amz-meta-nonascii-2", user_metadata_2],
+                ["eq", "$success_action_status", "201"],
+            ],
+        )
+        # PostObject
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "test-body-tagging"},
+            verify=False,
+        )
+        assert response.status_code == 201
+        response_content = xmltodict.parse(response.content)
+        location_header = response.headers.get("Location")
+        response_content["LocationHeader"] = location_header
+        snapshot.match("post-object", response_content)
+
+        location_prefix = location_header.split("/test_unicode")[0]
+        snapshot.add_transformer(snapshot.transform.regex(location_prefix, "<bucket-url>"))
+
         head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("head-object", head_object)
 
