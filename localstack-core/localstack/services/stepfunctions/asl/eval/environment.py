@@ -56,7 +56,9 @@ class Environment:
     map_run_record_pool_manager: MapRunRecordPoolManager
     activity_store: Final[dict[Arn, Activity]]
     local_mock_test_case: LocalMockTestCase | None = None
-    state_invocation_counter: dict[str, int]  # Tracks invocation count per state for mock cycling
+    next_local_mock_invocation_number: dict[
+        str, int
+    ]  # Tracks invocation count per state for mock cycling
 
     _frames: Final[list[Environment]]
     _is_frame: bool = False
@@ -94,7 +96,7 @@ class Environment:
         self.activity_store = activity_store
 
         self.local_mock_test_case = local_mock_test_case
-        self.state_invocation_counter = {}
+        self.next_local_mock_invocation_number = {}
 
         self._frames = []
         self._is_frame = False
@@ -145,7 +147,9 @@ class Environment:
             variable_store=variable_store,
         )
         frame.local_mock_test_case = env.local_mock_test_case
-        frame.state_invocation_counter = env.state_invocation_counter  # Share counter with parent
+        frame.next_local_mock_invocation_number = (
+            env.next_local_mock_invocation_number
+        )  # Share counter with parent
         frame._is_frame = True
         frame.event_manager = env.event_manager
         if "State" in env.states.context_object.context_object_data:
@@ -302,12 +306,12 @@ class Environment:
             raise RuntimeError(f"No Local mocked response definition for state '{state_name}'")
 
         # Get and increment the invocation counter for this state
-        invocation_count = self.state_invocation_counter.get(state_name, 0)
-        self.state_invocation_counter[state_name] = invocation_count + 1
+        invocation_number = self.next_local_mock_invocation_number.get(state_name, 0)
+        self.next_local_mock_invocation_number[state_name] = invocation_number + 1
 
-        if len(state_mocked_responses.mocked_responses) <= invocation_count:
+        if len(state_mocked_responses.mocked_responses) <= invocation_number:
             raise RuntimeError(
                 f"No Local mocked response definition for state '{state_name}' "
-                f"and invocation number '{invocation_count}'"
+                f"and invocation number '{invocation_number}'"
             )
-        return state_mocked_responses.mocked_responses[invocation_count]
+        return state_mocked_responses.mocked_responses[invocation_number]
