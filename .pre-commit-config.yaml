@@ -20,6 +20,7 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      - id: no-commit-to-branch
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-json
