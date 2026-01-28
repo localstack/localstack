@@ -1,0 +1,2 @@
+class PluginNotIncludedInUserLicenseError(NotImplementedError):
+    pass

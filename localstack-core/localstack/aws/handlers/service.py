@@ -7,7 +7,6 @@ from collections import defaultdict
 from typing import Any
 
 from botocore.model import OperationModel, ServiceModel
-from plux.core.plugin import PluginDisabled
 
 from localstack import config
 from localstack.http import Response
@@ -22,6 +21,7 @@ from ..protocol.parser import RequestParser, create_parser
 from ..protocol.serializer import create_serializer
 from ..protocol.service_router import determine_aws_protocol, determine_aws_service_model
 from ..skeleton import Skeleton, create_skeleton
+from .exceptions import PluginNotIncludedInUserLicenseError
 
 LOG = logging.getLogger(__name__)
 
@@ -197,9 +197,15 @@ class ServiceExceptionSerializer(ExceptionHandler):
                 message = exception_message
                 error = CommonServiceException("InternalFailure", message, status_code=501)
             else:
-                service_status = get_aws_catalog().get_aws_service_status(
-                    service_name, operation_name
-                )
+                catalog = get_aws_catalog()
+                if isinstance(exception, PluginNotIncludedInUserLicenseError):
+                    # Operation name is provided when a plugin fails to load, although it is not relevant.
+                    # In such cases, we should return an error without the operation name
+                    service_status = catalog.get_aws_service_status(
+                        service_name, operation_name=None
+                    )
+                else:
+                    service_status = catalog.get_aws_service_status(service_name, operation_name)
                 error = get_service_availability_exception(
                     service_name, operation_name, service_status
                 )
@@ -242,16 +248,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
                 operation = context.service.operation_model(context.service.operation_names[0])
                 msg = f"exception while calling {service_name} with unknown operation: {message}"
 
-            # Check for license restricted plugin message and set status code to 501
-            if (
-                isinstance(exception, PluginDisabled)
-                and "not part of the active license agreement"
-                in str(getattr(exception, "reason", "")).lower()
-            ):
-                status_code = 501
-                msg = f"exception while calling {service_name}.{operation.name}: {str(getattr(exception, 'reason', ''))}"
-            else:
-                status_code = 501 if config.FAIL_FAST else 500
+            status_code = 501 if config.FAIL_FAST else 500
 
             error = CommonServiceException(
                 "InternalError", msg, status_code=status_code

@@ -3,6 +3,8 @@
 import logging
 import threading
 
+from plux import PluginDisabled
+
 from localstack.http import Response
 from localstack.services.plugins import Service, ServiceManager
 from localstack.utils.sync import SynchronizedDefaultDict
@@ -11,7 +13,7 @@ from ...utils.bootstrap import is_api_enabled
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
 from ..protocol.service_router import determine_aws_service_model_for_data_plane
-from .service import ServiceRequestRouter
+from .service import PluginNotIncludedInUserLicenseError, ServiceRequestRouter
 
 LOG = logging.getLogger(__name__)
 
@@ -51,9 +53,13 @@ class ServiceLoader(Handler):
             )
 
         request_router = self.service_request_router
-
-        # Ensure the Service is loaded and set to ServiceState.RUNNING if not in an erroneous state.
-        service_plugin: Service = self.service_manager.require(service_name)
+        try:
+            # Ensure the Service is loaded and set to ServiceState.RUNNING if not in an erroneous state.
+            service_plugin: Service = self.service_manager.require(service_name)
+        except PluginDisabled as e:
+            if e.reason == "This feature is not part of the active license agreement":
+                raise PluginNotIncludedInUserLicenseError()
+            raise
 
         with self.service_locks[context.service.service_name]:
             # try again to avoid race conditions

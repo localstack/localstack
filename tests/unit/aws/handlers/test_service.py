@@ -155,7 +155,7 @@ class TestServiceExceptionSerializer:
         [
             (
                 AwsServiceSupportAtRuntime.AVAILABLE_WITH_LICENSE_UPGRADE,
-                "is not supported with your LocalStack license",
+                "is not included within your LocalStack license",
             ),
             (
                 None,
