@@ -24,7 +24,7 @@ from localstack.aws.api.sqs import (
     TagMap,
 )
 from localstack.services.sqs import constants as sqs_constants
-from localstack.services.sqs.constants import APPROXIMATE_DYNAMIC_ATTRIBUTES
+from localstack.services.sqs.constants import DYNAMIC_ATTRIBUTES
 from localstack.services.sqs.exceptions import (
     InvalidAttributeValue,
     InvalidParameterValueException,
@@ -44,7 +44,7 @@ from localstack.services.sqs.utils import (
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.arns import get_partition
-from localstack.utils.strings import camel_to_snake_case, long_uid
+from localstack.utils.strings import long_uid
 from localstack.utils.time import now
 from localstack.utils.urls import localstack_host
 
@@ -716,7 +716,7 @@ class SqsQueue:
             return {}
 
         if QueueAttributeName.All in attribute_names:
-            attribute_names = list(self.attributes.keys()) + APPROXIMATE_DYNAMIC_ATTRIBUTES
+            attribute_names = list(self.attributes.keys()) + DYNAMIC_ATTRIBUTES
 
         result: dict[QueueAttributeName, str] = {}
 
@@ -726,12 +726,17 @@ class SqsQueue:
             except AttributeError:
                 raise InvalidAttributeName(f"Unknown Attribute {attr}.")
 
-            if attr in APPROXIMATE_DYNAMIC_ATTRIBUTES:
-                # The approximate_* attributes are calculated on the spot when accessed.
-                # We have a @property for each of those which calculates the value.
-                value = str(getattr(self, camel_to_snake_case(attr)))
-            else:
-                value = self.attributes.get(attr)
+            # The approximate_* attributes are calculated on the spot when accessed.
+            # We have a @property for each of those which calculates the value.
+            match attr:
+                case QueueAttributeName.ApproximateNumberOfMessages:
+                    value = self.approximate_number_of_messages
+                case QueueAttributeName.ApproximateNumberOfMessagesDelayed:
+                    value = self.approximate_number_of_messages_delayed
+                case QueueAttributeName.ApproximateNumberOfMessagesNotVisible:
+                    value = self.approximate_number_of_messages_not_visible
+                case _:
+                    value = self.attributes.get(attr)
             if value == "False" or value == "True":
                 result[attr] = value.lower()
             elif value is not None:

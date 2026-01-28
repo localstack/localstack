@@ -19,7 +19,7 @@ RECENTLY_DELETED_TIMEOUT = 60
 
 # the default maximum message size in SQS
 DEFAULT_MAXIMUM_MESSAGE_SIZE = 1048576
-APPROXIMATE_DYNAMIC_ATTRIBUTES = [
+DYNAMIC_ATTRIBUTES = [
     # these attributes are not set once, but calculated dynamically, therefore we do not to store them
     # internally with the other attributes, and only include them in the necessary responses.
     QueueAttributeName.ApproximateNumberOfMessages,
