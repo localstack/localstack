@@ -15,9 +15,7 @@ from localstack.testing.pytest.stepfunctions.utils import (
 from localstack.utils.strings import short_uid
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=["$..SdkHttpMetadata", "$..SdkResponseMetadata"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..SdkHttpMetadata", "$..SdkResponseMetadata"])
 @markers.requires_in_process
 class TestNumberedMockCycling:
     @markers.aws.only_localstack
@@ -33,16 +31,16 @@ class TestNumberedMockCycling:
         """
         Test that numbered mock responses ("0", "1", "2", etc.) cycle correctly
         through multiple invocations of the same state, not based on retry count.
-        
+
         This test verifies the fix for issue #13107 where mock responses were incorrectly
         using RetryCount instead of an invocation counter, causing all calls to return
         the same response ("0") instead of cycling through the sequence.
         """
         state_machine_name = f"mock_cycling_test_{short_uid()}"
         test_name = "NumberedResponseCyclingTest"
-        
+
         sfn_snapshot.add_transformer(RegexTransformer(state_machine_name, "state_machine_name"))
-        
+
         # Define a state machine with a Choice state that loops until the instance is running
         definition = {
             "Comment": "Test numbered mock response cycling",
@@ -51,11 +49,9 @@ class TestNumberedMockCycling:
                 "DescribeInstance": {
                     "Type": "Task",
                     "Resource": "arn:aws:states:::aws-sdk:ec2:describeInstances",
-                    "Parameters": {
-                        "InstanceIds": ["i-1234567890abcdef0"]
-                    },
+                    "Parameters": {"InstanceIds": ["i-1234567890abcdef0"]},
                     "ResultPath": "$.DescribeResult",
-                    "Next": "CheckInstanceState"
+                    "Next": "CheckInstanceState",
                 },
                 "CheckInstanceState": {
                     "Type": "Choice",
@@ -63,17 +59,15 @@ class TestNumberedMockCycling:
                         {
                             "Variable": "$.DescribeResult.Reservations[0].Instances[0].State.Code",
                             "NumericEquals": 16,
-                            "Next": "InstanceRunning"
+                            "Next": "InstanceRunning",
                         }
                     ],
-                    "Default": "DescribeInstance"
+                    "Default": "DescribeInstance",
                 },
-                "InstanceRunning": {
-                    "Type": "Succeed"
-                }
-            }
+                "InstanceRunning": {"Type": "Succeed"},
+            },
         }
-        
+
         # Mock configuration with numbered responses
         # Response "0": Instance in pending state (Code: 0)
         # Response "1": Instance in running state (Code: 16)
@@ -81,9 +75,7 @@ class TestNumberedMockCycling:
             "StateMachines": {
                 state_machine_name: {
                     "TestCases": {
-                        test_name: {
-                            "DescribeInstance": "MockDescribeInstancesProgression"
-                        }
+                        test_name: {"DescribeInstance": "MockDescribeInstancesProgression"}
                     }
                 }
             },
@@ -98,10 +90,7 @@ class TestNumberedMockCycling:
                                             "InstanceId": "i-1234567890abcdef0",
                                             "InstanceType": "t2.micro",
                                             "LaunchTime": "2023-01-01T00:00:00.000Z",
-                                            "State": {
-                                                "Code": 0,
-                                                "Name": "pending"
-                                            }
+                                            "State": {"Code": 0, "Name": "pending"},
                                         }
                                     ]
                                 }
@@ -117,26 +106,23 @@ class TestNumberedMockCycling:
                                             "InstanceId": "i-1234567890abcdef0",
                                             "InstanceType": "t2.micro",
                                             "LaunchTime": "2023-01-01T00:00:00.000Z",
-                                            "State": {
-                                                "Code": 16,
-                                                "Name": "running"
-                                            }
+                                            "State": {"Code": 16, "Name": "running"},
                                         }
                                     ]
                                 }
                             ]
                         }
-                    }
+                    },
                 }
-            }
+            },
         }
-        
+
         mock_config_file_path = mock_config_file(mock_config)
         monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
-        
+
         exec_input = json.dumps({})
         definition_str = json.dumps(definition)
-        
+
         create_and_record_mocked_execution(
             aws_client,
             create_state_machine_iam_role,
@@ -163,9 +149,9 @@ class TestNumberedMockCycling:
         """
         state_machine_name = f"multi_mock_cycling_test_{short_uid()}"
         test_name = "MultipleNumberedResponsesTest"
-        
+
         sfn_snapshot.add_transformer(RegexTransformer(state_machine_name, "state_machine_name"))
-        
+
         # State machine that will call GetQueueUrl multiple times
         definition = {
             "Comment": "Test multiple numbered mock responses",
@@ -174,36 +160,28 @@ class TestNumberedMockCycling:
                 "GetQueueUrl1": {
                     "Type": "Task",
                     "Resource": "arn:aws:states:::aws-sdk:sqs:getQueueUrl",
-                    "Parameters": {
-                        "QueueName": "test-queue"
-                    },
+                    "Parameters": {"QueueName": "test-queue"},
                     "ResultPath": "$.QueueUrl1",
-                    "Next": "GetQueueUrl2"
+                    "Next": "GetQueueUrl2",
                 },
                 "GetQueueUrl2": {
                     "Type": "Task",
                     "Resource": "arn:aws:states:::aws-sdk:sqs:getQueueUrl",
-                    "Parameters": {
-                        "QueueName": "test-queue"
-                    },
+                    "Parameters": {"QueueName": "test-queue"},
                     "ResultPath": "$.QueueUrl2",
-                    "Next": "GetQueueUrl3"
+                    "Next": "GetQueueUrl3",
                 },
                 "GetQueueUrl3": {
                     "Type": "Task",
                     "Resource": "arn:aws:states:::aws-sdk:sqs:getQueueUrl",
-                    "Parameters": {
-                        "QueueName": "test-queue"
-                    },
+                    "Parameters": {"QueueName": "test-queue"},
                     "ResultPath": "$.QueueUrl3",
-                    "Next": "Success"
+                    "Next": "Success",
                 },
-                "Success": {
-                    "Type": "Succeed"
-                }
-            }
+                "Success": {"Type": "Succeed"},
+            },
         }
-        
+
         # Mock config with 3 different responses
         mock_config = {
             "StateMachines": {
@@ -212,7 +190,7 @@ class TestNumberedMockCycling:
                         test_name: {
                             "GetQueueUrl1": "MockQueueUrlResponses",
                             "GetQueueUrl2": "MockQueueUrlResponses",
-                            "GetQueueUrl3": "MockQueueUrlResponses"
+                            "GetQueueUrl3": "MockQueueUrlResponses",
                         }
                     }
                 }
@@ -233,17 +211,17 @@ class TestNumberedMockCycling:
                         "Return": {
                             "QueueUrl": "https://sqs.us-east-1.amazonaws.com/123456789012/queue-2"
                         }
-                    }
+                    },
                 }
-            }
+            },
         }
-        
+
         mock_config_file_path = mock_config_file(mock_config)
         monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
-        
+
         exec_input = json.dumps({})
         definition_str = json.dumps(definition)
-        
+
         create_and_record_mocked_execution(
             aws_client,
             create_state_machine_iam_role,
