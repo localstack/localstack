@@ -1100,15 +1100,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
             if request_param_value := request.get(request_param):
-                try:
-                    request_param_value.encode("latin-1")
-                except UnicodeEncodeError:
-                    raise InvalidArgument(
-                        "Header value cannot be represented using ISO-8859-1.",
-                        ArgumentName=header_name_from_capitalized_param(request_param),
-                        ArgumentValue=request_param_value,
-                        HostId=S3_HOST_ID,
-                    )
+                if isinstance(request_param_value, str):
+                    try:
+                        request_param_value.encode("latin-1")
+                    except UnicodeEncodeError:
+                        raise InvalidArgument(
+                            "Header value cannot be represented using ISO-8859-1.",
+                            ArgumentName=header_name_from_capitalized_param(request_param),
+                            ArgumentValue=request_param_value,
+                            HostId=S3_HOST_ID,
+                        )
 
                 response[response_param] = request_param_value
 
