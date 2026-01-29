@@ -3280,7 +3280,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         **kwargs,
     ) -> GetBucketTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
-        tag_set = self._list_bucket_tags(s3_bucket.bucket_arn, context.account_id, context.region)
+        tag_set = self._list_bucket_tags(s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region)
         if not tag_set:
             raise NoSuchTagSet(
                 "The TagSet does not exist",
