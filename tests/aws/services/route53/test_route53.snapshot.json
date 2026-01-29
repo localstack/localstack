@@ -142,5 +142,32 @@
         }
       }
     }
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_delete_hosted_zone": {
+    "recorded-date": "12-01-2026, 00:07:24",
+    "recorded-content": {
+      "no-such-hosted-zone-error": {
+        "Error": {
+          "Code": "NoSuchHostedZone",
+          "Message": "No hosted zone found with ID: <hosted-zone-id>asdf1234",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-hosted-zone-response": {
+        "ChangeInfo": {
+          "Id": "/change/<change-id>",
+          "Status": "<status:1>",
+          "SubmittedAt": "datetime"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

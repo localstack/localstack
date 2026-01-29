@@ -222,3 +222,17 @@ class TestRoute53:
         with pytest.raises(Exception) as ctx:
             client.get_reusable_delegation_set(Id=set_id_1)
         assert "NoSuchDelegationSet" in str(ctx.value)
+
+    @markers.aws.validated
+    def test_delete_hosted_zone(self, aws_client, hosted_zone, snapshot):
+        hosted_zone_response = hosted_zone(Name=f"zone-{short_uid()}.com")
+        hosted_zone_id = hosted_zone_response["HostedZone"]["Id"].split("/")[-1]
+
+        snapshot.add_transformer(snapshot.transform.regex(hosted_zone_id, "<hosted-zone-id>"))
+
+        with pytest.raises(ClientError) as e:
+            aws_client.route53.delete_hosted_zone(Id=hosted_zone_id + "asdf1234")
+        snapshot.match("no-such-hosted-zone-error", e.value.response)
+
+        delete_hosted_zone_response = aws_client.route53.delete_hosted_zone(Id=hosted_zone_id)
+        snapshot.match("delete-hosted-zone-response", delete_hosted_zone_response)
