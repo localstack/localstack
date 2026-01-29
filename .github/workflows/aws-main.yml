@@ -120,6 +120,12 @@ jobs:
             path: target/coverage/
             merge-multiple: true
 
+        - name: Caller identity
+          run: |
+            source .venv/bin/activate
+            python -m pip install awscli
+            aws sts get-caller-identity
+
         - name: Combine coverage results from acceptance tests
           run: |
             source .venv/bin/activate

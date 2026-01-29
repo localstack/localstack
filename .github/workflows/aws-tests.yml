@@ -168,7 +168,6 @@ jobs:
           path: localstack
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
-
       - name: Build Image
         uses: localstack/localstack/.github/actions/build-image@main
         with:
@@ -227,6 +226,15 @@ jobs:
 
       - name: Check AWS compatibility markers
         run: make check-aws-markers
+
+      - name: Caller identity
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          source .venv/bin/activate
+          python -m pip install awscli
+          aws sts get-caller-identity
 
       - name: Determine Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
