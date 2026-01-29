@@ -18372,7 +18372,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_unicode_metadata": {
-    "recorded-date": "29-01-2026, 18:26:19",
+    "recorded-date": "29-01-2026, 22:10:48",
     "recorded-content": {
       "post-object": {
         "LocationHeader": "<bucket-url>/test_unicode%E2%80%94_file.pdf",
@@ -18386,7 +18386,7 @@
       "head-object": {
         "AcceptRanges": "bytes",
         "CacheControl": "non-ascii-%E2%80%94_ _\u00e9_",
-        "ContentDisposition": "filename=\"test_ _file%E2%80%94_\u00e9_2=Q.pdf\"",
+        "ContentDisposition": "filename=\"test_ _file%E2%80%94_\u00e9_2-.pdf\"",
         "ContentLength": 17,
         "ContentType": "binary/octet-stream",
         "ETag": "\"a7d8531d918474360de3e2eaeb110cda\"",

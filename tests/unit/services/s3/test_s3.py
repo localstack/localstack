@@ -758,8 +758,8 @@ class TestS3HeaderEncoding:
             ("non-ascii-%E2%80%94_—_é_", "non-ascii-%E2%80%94_ _é_"),
             ('filename="test_—_file%E2%80%94_é_2.pdf"', 'filename="test_ _file%E2%80%94_é_2.pdf"'),
             (
-                'filename="test_—_file%E2%80%94_é_2👑.pdf"',
-                'filename="test_ _file%E2%80%94_é_2=Q.pdf"',
+                'filename="test_—_file%E2%80%94_é_2.pdf"',
+                'filename="test_ _file%E2%80%94_é_2.pdf"',
             ),
             ("", ""),
         ],

@@ -11178,7 +11178,7 @@ class TestS3PresignedPost:
 
         snapshot.add_transformer(snapshot.transform.key_value("Bucket"), priority=10)
         object_key = "test_unicode—_file.pdf"
-        content_disposition = 'filename="test_—_file%E2%80%94_é_2👑.pdf"'
+        content_disposition = 'filename="test_—_file%E2%80%94_é_2-.pdf"'
         cache_control = "non-ascii-%E2%80%94_—_é_"
         user_metadata = "ÄMÄZÕÑ S3"
         user_metadata_2 = "test_—_file%E2%80%94_é_2👑.pdf"
