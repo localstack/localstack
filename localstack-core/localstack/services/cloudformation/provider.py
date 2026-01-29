@@ -135,13 +135,13 @@ from localstack.utils.strings import long_uid, short_uid
 LOG = logging.getLogger(__name__)
 
 ARN_CHANGESET_REGEX = re.compile(
-    rf"{ARN_PARTITION_REGEX}:cloudformation:[-a-zA-Z0-9]+:\d{12}:changeSet/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+    rf"{ARN_PARTITION_REGEX}:cloudformation:[-a-zA-Z0-9]+:\d{{12}}:changeSet/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
 )
 ARN_STACK_REGEX = re.compile(
-    rf"{ARN_PARTITION_REGEX}:cloudformation:[-a-zA-Z0-9]+:\d{12}:stack/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+    rf"{ARN_PARTITION_REGEX}:cloudformation:[-a-zA-Z0-9]+:\d{{12}}:stack/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
 )
 ARN_STACK_SET_REGEX = re.compile(
-    rf"{ARN_PARTITION_REGEX}:cloudformation:[-a-zA-Z0-9]+:\d{12}:stack-set/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+    rf"{ARN_PARTITION_REGEX}:cloudformation:[-a-zA-Z0-9]+:\d{{12}}:stack-set/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
 )
 
 
