@@ -2612,6 +2612,32 @@ class TestSecretsManager:
 
         self._wait_force_deletion_completed(aws_client.secretsmanager, secret_id)
 
+    @markers.aws.validated
+    def test_put_secret_value(self, sm_snapshot, create_secret, aws_client):
+        secret_name = "test-secret"
+        secret_binary = b"footest"
+        secret_binary2 = b"footest2"
+        secret_binary3 = b"footest3"
+        response = create_secret(
+            Name=secret_name,
+            SecretBinary=secret_binary,
+        )
+
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
+        )
+
+        secret_value_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
+        sm_snapshot.match("put_secret_value_secret_response", secret_value_response)
+
+        aws_client.secretsmanager.put_secret_value(SecretId=secret_name, SecretBinary=secret_binary2)
+        secret_value_response2 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
+        sm_snapshot.match("put_secret_value_secret_response2", secret_value_response2)
+
+        aws_client.secretsmanager.put_secret_value(SecretId=secret_name, SecretBinary=secret_binary3)
+        secret_value_response3 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
+        sm_snapshot.match("put_secret_value_secret_response3", secret_value_response3)
+
 
 class TestSecretsManagerMultiAccounts:
     @markers.aws.validated
