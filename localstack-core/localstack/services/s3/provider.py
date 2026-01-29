@@ -611,7 +611,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._preconditions_locks.pop(bucket, None)
         # clean up the storage backend
         self._storage_backend.delete_bucket(bucket)
-        self._remove_all_bucket_tags(s3_bucket.bucket_arn, context.account_id, context.region)
+        self._remove_all_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region
+        )
 
     def list_buckets(
         self,
@@ -3280,7 +3282,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         **kwargs,
     ) -> GetBucketTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
-        tag_set = self._list_bucket_tags(s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region)
+        tag_set = self._list_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region
+        )
         if not tag_set:
             raise NoSuchTagSet(
                 "The TagSet does not exist",
@@ -3298,7 +3302,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        store.TAGS.tags.pop(s3_bucket.bucket_arn, None)
+        # This operation doesn't remove the tags from the store like deleting a resource does, it just sets them as empty.
+        self._remove_all_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region
+        )
+        self._update_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region, []
+        )
 
     def put_object_tagging(
         self,
