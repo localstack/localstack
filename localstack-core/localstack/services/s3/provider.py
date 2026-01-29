@@ -275,6 +275,7 @@ from localstack.services.s3.utils import (
     base_64_content_md5_to_etag,
     create_redirect_for_post_request,
     create_s3_kms_managed_key_for_region,
+    encode_header_rfc2047_quote_printable,
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
     generate_safe_version_id,
@@ -299,6 +300,7 @@ from localstack.services.s3.utils import (
     parse_post_object_tagging_xml,
     parse_range_header,
     parse_tagging_header,
+    replace_non_iso_8859_1_characters,
     s3_response_handler,
     serialize_expiration_header,
     str_to_rfc_1123_datetime,
@@ -2807,7 +2809,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             Bucket=bucket,
             Key=key,
             ETag=s3_object.quoted_etag,
-            Location=f"{get_full_default_bucket_location(bucket)}{key}",
+            Location=f"{get_full_default_bucket_location(bucket)}{urlparse.quote(key)}",
         )
 
         if s3_object.version_id:
@@ -4471,13 +4473,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         system_metadata = {}
         for system_metadata_field in post_system_settable_headers:
             if field_value := form.get(system_metadata_field):
-                system_metadata[system_metadata_field.replace("-", "")] = field_value
+                system_key = system_metadata_field.replace("-", "")
+                system_metadata[system_key] = replace_non_iso_8859_1_characters(field_value)
 
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
 
         user_metadata = {
-            field.removeprefix("x-amz-meta-").lower(): form.get(field)
+            field.removeprefix("x-amz-meta-").lower(): encode_header_rfc2047_quote_printable(
+                form.get(field)
+            )
             for field in form
             if field.startswith("x-amz-meta-")
         }
@@ -4577,7 +4582,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["StatusCode"] = 204
 
         response["LocationHeader"] = response.get(
-            "LocationHeader", f"{get_full_default_bucket_location(bucket)}{object_key}"
+            "LocationHeader",
+            f"{get_full_default_bucket_location(bucket)}{urlparse.quote(object_key)}",
         )
 
         if s3_bucket.versioning_status == "Enabled":

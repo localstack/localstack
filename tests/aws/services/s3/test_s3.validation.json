@@ -1188,12 +1188,12 @@
     "last_validated_date": "2025-03-17T20:16:38+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_unicode_metadata": {
-    "last_validated_date": "2026-01-28T19:19:16+00:00",
+    "last_validated_date": "2026-01-29T18:26:21+00:00",
     "durations_in_seconds": {
-      "setup": 1.1,
-      "call": 0.48,
-      "teardown": 0.99,
-      "total": 2.57
+      "setup": 1.0,
+      "call": 0.69,
+      "teardown": 2.21,
+      "total": 3.9
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_wrong_content_type": {

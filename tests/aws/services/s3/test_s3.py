@@ -11178,10 +11178,12 @@ class TestS3PresignedPost:
 
         snapshot.add_transformer(snapshot.transform.key_value("Bucket"), priority=10)
         object_key = "test_unicode—_file.pdf"
-        content_disposition = 'filename="test_—_file%E2%80%94_é_2.pdf"'
+        content_disposition = 'filename="test_—_file%E2%80%94_é_2👑.pdf"'
         cache_control = "non-ascii-%E2%80%94_—_é_"
         user_metadata = "ÄMÄZÕÑ S3"
-        user_metadata_2 = "test_—_file%E2%80%94_é_2.pdf"
+        user_metadata_2 = "test_—_file%E2%80%94_é_2👑.pdf"
+        test_safe_chars = "! \"#$%&'()*+,-./0123456789:;<>'?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\t"
+        utf_8_byte_string = "\x00\x01\x02\x03\x04"
 
         presigned_request = aws_client.s3.generate_presigned_post(
             Bucket=s3_bucket,
@@ -11192,6 +11194,8 @@ class TestS3PresignedPost:
                 "Cache-Control": cache_control,
                 "x-amz-meta-nonascii": user_metadata,
                 "x-amz-meta-nonascii-2": user_metadata_2,
+                "x-amz-meta-safe-chars": test_safe_chars,
+                "x-amz-meta-utf-8": utf_8_byte_string,
                 # we require the 201 status code to get more information from the response
                 "success_action_status": "201",
             },
@@ -11201,6 +11205,8 @@ class TestS3PresignedPost:
                 ["eq", "$Cache-Control", cache_control],
                 ["eq", "$x-amz-meta-nonascii", user_metadata],
                 ["eq", "$x-amz-meta-nonascii-2", user_metadata_2],
+                ["eq", "$x-amz-meta-safe-chars", test_safe_chars],
+                ["eq", "$x-amz-meta-utf-8", utf_8_byte_string],
                 ["eq", "$success_action_status", "201"],
             ],
         )
@@ -11215,6 +11221,7 @@ class TestS3PresignedPost:
         response_content = xmltodict.parse(response.content)
         location_header = response.headers.get("Location")
         response_content["LocationHeader"] = location_header
+        response_content["PostResponse"].pop("@xmlns", None)
         snapshot.match("post-object", response_content)
 
         location_prefix = location_header.split("/test_unicode")[0]
