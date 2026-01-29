@@ -370,6 +370,31 @@ class TestS3Utils:
     def test_get_bucket_and_key_from_s3_uri(self, s3_uri, bucket, object_key):
         assert s3_utils.get_bucket_and_key_from_s3_uri(s3_uri) == (bucket, object_key)
 
+    @pytest.mark.parametrize(
+        "lower_case, header_name",
+        [
+            ("test-header", "Test-Header"),
+            ("test-response-header", "Test-Response-Header"),
+            ("testHeader", "Testheader"),
+        ],
+    )
+    def test_capitalized_snake_case(self, lower_case, header_name):
+        assert s3_utils.capitalize_header_name_from_snake_case(lower_case) == header_name
+
+    @pytest.mark.parametrize(
+        "param_name, header_name",
+        [
+            ("ResponseContentType", "response-content-type"),
+            ("ResponseContentLanguage", "response-content-language"),
+            ("ResponseExpires", "response-expires"),
+            ("ResponseCacheControl", "response-cache-control"),
+            ("ResponseContentDisposition", "response-content-disposition"),
+            ("ResponseContentEncoding", "response-content-encoding"),
+        ],
+    )
+    def test_header_name_from_pascal_case(self, param_name, header_name):
+        assert s3_utils.header_name_from_capitalized_param(param_name) == header_name
+
 
 class TestS3PresignedUrl:
     """

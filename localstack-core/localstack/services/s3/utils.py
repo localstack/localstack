@@ -77,6 +77,7 @@ from localstack.services.s3.exceptions import (
     InvalidRequest,
     MalformedXML,
 )
+from localstack.services.s3.headers import encode_header_rfc2047, replace_non_iso_8859_1_characters
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.objects import singleton_factory
@@ -555,9 +556,16 @@ def get_system_metadata_from_request(request: dict) -> Metadata:
 
     for system_metadata_field in SYSTEM_METADATA_SETTABLE_HEADERS:
         if field_value := request.get(system_metadata_field):
-            metadata[system_metadata_field] = field_value
+            metadata[system_metadata_field] = replace_non_iso_8859_1_characters(field_value)
 
     return metadata
+
+
+def encode_user_metadata(metadata: Metadata | None) -> Metadata:
+    if not metadata:
+        return {}
+
+    return {k.lower(): encode_header_rfc2047(v) for k, v in metadata.items()}
 
 
 def extract_bucket_name_and_key_from_headers_and_path(
@@ -616,6 +624,10 @@ def get_bucket_and_key_from_presign_url(presign_url: str) -> tuple[str, str]:
 
 def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
+
+
+def header_name_from_capitalized_param(param_name: str) -> str:
+    return "-".join(re.findall("[A-Z][^A-Z]*", param_name)).lower()
 
 
 def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str) -> str | None:

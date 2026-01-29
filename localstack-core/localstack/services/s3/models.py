@@ -318,9 +318,7 @@ class S3Object:
         owner: Owner | None = None,
     ):
         self.key = key
-        self.user_metadata = (
-            {k.lower(): v for k, v in user_metadata.items()} if user_metadata else {}
-        )
+        self.user_metadata = user_metadata or {}
         self.system_metadata = system_metadata or {}
         self.version_id = version_id
         self.storage_class = storage_class or StorageClass.STANDARD

@@ -252,6 +252,7 @@ from localstack.services.s3.exceptions import (
     TooManyConfigurations,
     UnexpectedContent,
 )
+from localstack.services.s3.headers import encode_header_rfc2047, replace_non_iso_8859_1_characters
 from localstack.services.s3.models import (
     BucketCorsIndex,
     EncryptionParameters,
@@ -275,7 +276,7 @@ from localstack.services.s3.utils import (
     base_64_content_md5_to_etag,
     create_redirect_for_post_request,
     create_s3_kms_managed_key_for_region,
-    encode_header_rfc2047_quote_printable,
+    encode_user_metadata,
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
     generate_safe_version_id,
@@ -294,13 +295,13 @@ from localstack.services.s3.utils import (
     get_s3_checksum_algorithm_from_trailing_headers,
     get_system_metadata_from_request,
     get_unique_key_id,
+    header_name_from_capitalized_param,
     is_bucket_name_valid,
     is_version_older_than_other,
     parse_copy_source_range_header,
     parse_post_object_tagging_xml,
     parse_range_header,
     parse_tagging_header,
-    replace_non_iso_8859_1_characters,
     s3_response_handler,
     serialize_expiration_header,
     str_to_rfc_1123_datetime,
@@ -812,7 +813,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             version_id=version_id,
             storage_class=storage_class,
             expires=request.get("Expires"),
-            user_metadata=request.get("Metadata"),
+            user_metadata=encode_user_metadata(request.get("Metadata")),
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
             checksum_value=checksum_value,
@@ -1099,6 +1100,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
             if request_param_value := request.get(request_param):
+                try:
+                    request_param_value.encode("latin-1")
+                except UnicodeEncodeError:
+                    raise InvalidArgument(
+                        "Header value cannot be represented using ISO-8859-1.",
+                        ArgumentName=header_name_from_capitalized_param(request_param),
+                        ArgumentValue=request_param_value,
+                        HostId=S3_HOST_ID,
+                    )
+
                 response[response_param] = request_param_value
 
         return response
@@ -1583,7 +1594,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             tagging = parse_tagging_header(tagging)
 
         if metadata_directive == "REPLACE":
-            user_metadata = request.get("Metadata")
+            user_metadata = encode_user_metadata(request.get("Metadata"))
             system_metadata = get_system_metadata_from_request(request)
             if not system_metadata.get("ContentType"):
                 system_metadata["ContentType"] = "binary/octet-stream"
@@ -2339,7 +2350,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             key=key,
             storage_class=storage_class,
             expires=request.get("Expires"),
-            user_metadata=request.get("Metadata"),
+            user_metadata=encode_user_metadata(request.get("Metadata")),
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
             checksum_type=checksum_type,
@@ -4480,9 +4491,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             system_metadata["ContentType"] = "binary/octet-stream"
 
         user_metadata = {
-            field.removeprefix("x-amz-meta-").lower(): encode_header_rfc2047_quote_printable(
-                form.get(field)
-            )
+            field.removeprefix("x-amz-meta-").lower(): encode_header_rfc2047(form.get(field))
             for field in form
             if field.startswith("x-amz-meta-")
         }
