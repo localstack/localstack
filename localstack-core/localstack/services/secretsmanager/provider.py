@@ -614,6 +614,32 @@ def backend_update_secret(
     return json.dumps(resp)
 
 
+@patch(SecretsManagerBackend.tag_resource)
+def backend_tag_resource(fn, self, secret_id, tags):
+    if secret_id not in self.secrets:
+        raise SecretNotFoundException()
+
+    if self.secrets[secret_id].is_deleted():
+        raise InvalidRequestException(
+            "You can't perform this operation on the secret because it was marked for deletion."
+        )
+
+    return fn(self, secret_id, tags)
+
+
+@patch(SecretsManagerBackend.untag_resource)
+def backend_untag_resource(fn, self, secret_id, tag_keys):
+    if secret_id not in self.secrets:
+        raise SecretNotFoundException()
+
+    if self.secrets[secret_id].is_deleted():
+        raise InvalidRequestException(
+            "You can't perform this operation on the secret because it was marked for deletion."
+        )
+
+    return fn(self, secret_id, tag_keys)
+
+
 @patch(SecretsManagerResponse.update_secret, pass_target=False)
 def response_update_secret(self):
     secret_id = self._get_param("SecretId")

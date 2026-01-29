@@ -2459,6 +2459,39 @@ class TestSecretsManager:
         sm_snapshot.match("describe_secret_6", describe_secret_6)
 
     @markers.aws.validated
+    def test_tag_untag_resource_on_deleted_secret(self, aws_client, create_secret, sm_snapshot):
+        """Test that tagging/untagging a secret marked for deletion raises InvalidRequestException."""
+        secret_name = short_uid()
+        response = create_secret(
+            Name=secret_name,
+            SecretString="test-secret-value",
+            Tags=[{"Key": "initial-tag", "Value": "initial-value"}],
+        )
+
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
+        )
+        sm_snapshot.match("create_secret", response)
+
+        secret_arn = response["ARN"]
+
+        # Delete the secret (marks for deletion with recovery window)
+        delete_response = aws_client.secretsmanager.delete_secret(SecretId=secret_arn)
+        sm_snapshot.match("delete_secret", delete_response)
+
+        # Attempting to tag a deleted secret should raise InvalidRequestException
+        with pytest.raises(ClientError) as exc_tag:
+            aws_client.secretsmanager.tag_resource(
+                SecretId=secret_arn, Tags=[{"Key": "new-tag", "Value": "new-value"}]
+            )
+        sm_snapshot.match("tag_deleted_secret_error", exc_tag.value.response)
+
+        # Attempting to untag a deleted secret should raise InvalidRequestException
+        with pytest.raises(ClientError) as exc_untag:
+            aws_client.secretsmanager.untag_resource(SecretId=secret_arn, TagKeys=["initial-tag"])
+        sm_snapshot.match("untag_deleted_secret_error", exc_untag.value.response)
+
+    @markers.aws.validated
     def test_get_secret_value_errors(self, aws_client, create_secret, sm_snapshot):
         secret_name = short_uid()
         response = create_secret(
