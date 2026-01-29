@@ -1,11 +1,13 @@
 # Code inspired by the standard library ``email.quoprimime.header_encode``, but the safe characters set is different
 # in AWS, so we need to override it
+import unicodedata
+from base64 import b64encode
 
 # Build a mapping of octets to the expansion of that octet.  Since we're only
 # going to have 256 of these things, this isn't terribly inefficient
 # space-wise. Initialize the map with the full expansion, and then override
 # the safe bytes with the more compact form.
-# In "=?charset?q?hello_world?=", the =?, ?q?, and ?= add up to 7
+# In "=?charset?Q?hello_world?=", the =?, ?Q?, and ?= add up to 7
 _RFC2047_CHROME_LEN = 7
 _EMPTYSTRING = ""
 
@@ -32,9 +34,13 @@ def encode_header_rfc2047(header: str | None) -> str | None:
     if all(c in _NO_ENCODING_CHARS for c in header_bytes):
         return header
 
-    # if b"\x" in header_bytes:
-    #     pass
-    encoder = encode_header_rfc2047_quote_printable
+    if any(unicodedata.category(c).startswith("C") for c in header):
+        # if there are any character which cannot be printed (not a symbol, but will be escaped with \xNN), we need to
+        # base64 encode the header
+        # See https://www.unicode.org/reports/tr44/tr44-34.html#General_Category_Values
+        encoder = encoder_header_rfc2057_base64
+    else:
+        encoder = encode_header_rfc2047_quote_printable
 
     return encoder(header_bytes)
 
@@ -56,6 +62,11 @@ def encode_header_rfc2047_quote_printable(header_bytes: bytes) -> str:
     # we use our own safe character map here
     encoded = header_bytes.decode("latin1").translate(_QUOPRI_HEADER_MAP)
     return f"=?UTF-8?Q?{encoded}?="
+
+
+def encoder_header_rfc2057_base64(header_bytes: bytes) -> str:
+    encoded = b64encode(header_bytes).decode("ascii")
+    return f"=?UTF-8?B?{encoded}?="
 
 
 def replace_non_iso_8859_1_characters(header: str, repl: str = " ") -> str:
