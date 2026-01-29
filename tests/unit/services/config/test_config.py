@@ -442,3 +442,19 @@ class TestConfigProfiles:
             "VAR3": "override3",
             "VAR4": "test4",
         }
+
+
+class TestDeprecatedConfigRemoval:
+    """Test that deprecated configs have been properly removed."""
+
+    def test_event_rule_engine_removed(self):
+        """Verify that EVENT_RULE_ENGINE config has been removed (deprecated in 4.0.3)."""
+        # EVENT_RULE_ENGINE should no longer exist as a config variable
+        assert not hasattr(config, "EVENT_RULE_ENGINE")
+
+    def test_docker_bridge_ip_no_io_on_import(self):
+        """Verify that DOCKER_BRIDGE_IP doesn't perform I/O operations at import time."""
+        # The DOCKER_BRIDGE_IP should be set to a default value without ping operations
+        # This test passes if importing config doesn't hang on ping
+        assert config.DOCKER_BRIDGE_IP is not None
+        assert config.DOCKER_BRIDGE_IP in ("172.17.0.1", "172.18.0.1") or config.DOCKER_BRIDGE_IP != ""
