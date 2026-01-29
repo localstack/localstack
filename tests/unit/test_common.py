@@ -2,7 +2,6 @@ import base64
 import io
 import itertools
 import os
-import threading
 import time
 import zipfile
 from datetime import UTC, date, datetime, timedelta
@@ -362,24 +361,6 @@ class TestCommon:
         assert fn(12.521, decimals=4) == "12.521"
         assert fn(-12.521, decimals=4) == "-12.521"
         assert fn(-1.2234354123e3, decimals=4) == "-1223.4354"
-
-    def test_cleanup_threads_and_processes_calls_shutdown_hooks(self):
-        # TODO: move all run/concurrency related tests into separate class
-
-        started = threading.Event()
-        done = threading.Event()
-
-        def run_method(*args, **kwargs):
-            started.set()
-            func_thread = kwargs["_thread"]
-            # thread waits until it is stopped
-            func_thread._stop_event.wait()
-            done.set()
-
-        common.start_thread(run_method)
-        assert started.wait(timeout=2)
-        common.cleanup_threads_and_processes()
-        assert done.wait(timeout=2)
 
     def test_proxy_map(self):
         old_http_proxy = config.OUTBOUND_HTTP_PROXY

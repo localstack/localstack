@@ -170,7 +170,7 @@ def is_command_available(cmd: str) -> bool:
         return False
 
 
-def kill_process_tree(parent_pid):
+def kill_process_tree(parent_pid: int) -> None:
     # Note: Do NOT import "psutil" at the root scope
     import psutil
 
