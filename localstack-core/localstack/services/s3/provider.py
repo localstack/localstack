@@ -212,6 +212,7 @@ from localstack.aws.api.s3 import (
     StartAfter,
     StorageClass,
     Tagging,
+    TagSet,
     Token,
     TransitionDefaultMinimumObjectSize,
     UploadIdMarker,
@@ -221,7 +222,7 @@ from localstack.aws.api.s3 import (
     UploadPartRequest,
     VersionIdMarker,
     VersioningConfiguration,
-    WebsiteConfiguration, TagSet,
+    WebsiteConfiguration,
 )
 from localstack.aws.api.s3 import NotImplemented as NotImplementedException
 from localstack.aws.handlers import (
@@ -569,7 +570,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.buckets[bucket_name] = s3_bucket
         store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
         if bucket_tags:
-            self._update_bucket_tags(s3_bucket.bucket_arn, context.account_id, bucket_region, bucket_tags)
+            self._update_bucket_tags(
+                s3_bucket.bucket_arn, context.account_id, bucket_region, bucket_tags
+            )
         self._cors_handler.invalidate_cache()
         self._storage_backend.create_bucket(bucket_name)
 
@@ -3262,8 +3265,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         validate_tag_set(tag_set, type_set="bucket")
 
         # remove the previous tags before setting the new ones, it overwrites the whole TagSet
-        self._remove_all_bucket_tags(s3_bucket.bucket_arn, context.account_id, context.region)
-        self._update_bucket_tags(s3_bucket.bucket_arn, context.account_id, context.region, tag_set)
+        self._remove_all_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region
+        )
+        self._update_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region, tag_set
+        )
 
     def get_bucket_tagging(
         self,
