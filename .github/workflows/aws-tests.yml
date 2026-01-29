@@ -225,6 +225,9 @@ jobs:
       - name: Linting
         run: make lint
 
+      - name: Verify Plux Entrypoints
+        run: make entrypoints && git diff --exit-code plux.ini
+
       - name: Check AWS compatibility markers
         run: make check-aws-markers
 
