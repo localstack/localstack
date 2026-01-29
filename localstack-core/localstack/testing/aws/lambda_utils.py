@@ -220,6 +220,8 @@ class ParametrizedLambda:
         self.function_names.append(result["FunctionArn"])
 
         def _is_not_pending():
+            # Using custom wait condition instead of the 'function_active_v2' waiter which expects 'Active' state,
+            # which is not true for lambda managed instances, whose state becomes in ActiveNonInvokable
             try:
                 result = (
                     self.lambda_client.get_function(FunctionName=kwargs.get("FunctionName"))[
