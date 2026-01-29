@@ -399,7 +399,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def _set_key_tags(self, key: KmsKey, account_id: str, region: str, tags: TagList) -> None:
         return
 
-    def _remove_key_tags(self, key: KmsKey, account_id: str, region: str, tag_keys: TagKeyList):
+    def _remove_key_tags(
+        self, key: KmsKey, account_id: str, region: str, tag_keys: TagKeyList
+    ) -> None:
         # AWS doesn't seem to mind removal of a non-existent tag, so we do not raise any exception.
         for tag_key in tag_keys:
             key.tags.pop(tag_key, None)
