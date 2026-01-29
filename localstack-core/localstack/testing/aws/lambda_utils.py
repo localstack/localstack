@@ -14,13 +14,14 @@ from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.utils.files import load_file
 from localstack.utils.platform import Arch, get_arch
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import ShortCircuitWaitException, retry
+from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from localstack.utils.testutil import get_lambda_log_events
 
 if TYPE_CHECKING:
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_lambda.literals import ArchitectureType, PackageTypeType, RuntimeType
     from mypy_boto3_lambda.type_defs import (
+        CapacityProviderConfigTypeDef,
         DeadLetterConfigTypeDef,
         EnvironmentTypeDef,
         EphemeralStorageTypeDef,
@@ -200,6 +201,7 @@ class ParametrizedLambda:
         CodeSigningConfigArn: str | None = None,
         Architectures: Sequence["ArchitectureType"] | None = None,
         EphemeralStorage: Optional["EphemeralStorageTypeDef"] = None,
+        CapacityProviderConfig: Optional["CapacityProviderConfigTypeDef"] = None,
     ) -> "FunctionConfigurationResponseMetadataTypeDef": ...
 
     def create_function(self, **kwargs):
@@ -216,9 +218,24 @@ class ParametrizedLambda:
         # localstack should normally not require the retries and will just continue here
         result = retry(_create_function, retries=3, sleep=4)
         self.function_names.append(result["FunctionArn"])
-        self.lambda_client.get_waiter("function_active_v2").wait(
-            FunctionName=kwargs.get("FunctionName")
-        )
+
+        def _is_not_pending():
+            # Using custom wait condition instead of the 'function_active_v2' waiter which expects 'Active' state,
+            # which is not true for lambda managed instances, whose state becomes in ActiveNonInvokable
+            try:
+                result = (
+                    self.lambda_client.get_function(FunctionName=kwargs.get("FunctionName"))[
+                        "Configuration"
+                    ]["State"]
+                    != "Pending"
+                )
+                LOG.debug("lambda state result: result=%s", result)
+                return result
+            except Exception as e:
+                LOG.error(e)
+                raise
+
+        wait_until(_is_not_pending)
 
         return result
 
