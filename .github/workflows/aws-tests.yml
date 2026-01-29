@@ -918,6 +918,59 @@ jobs:
             .coverage.sns_v2
           retention-days: 30
 
+  test-logs-v2:
+    name: Test Logs v2 Provider
+    if: ${{ !inputs.onlyAcceptanceTests && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || inputs.disableTestSelection || needs.test-preflight.outputs.logs-v2 == 'true' )}}
+    runs-on: ubuntu-latest
+    needs:
+      - test-preflight
+      - build
+    timeout-minutes: 60
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}
+      CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Prepare Local Test Environment
+        uses: ./.github/actions/setup-tests-env
+
+      - name: Download Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        uses: actions/download-artifact@v7
+        with:
+          name: test-selection
+          path: dist/testselection/
+
+      - name: Run Logs tests
+        timeout-minutes: 60
+        env:
+          # add the GitHub API token to avoid rate limit issues
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_PATH: "tests/aws/services/logs"
+          COVERAGE_FILE: ".coverage.logs_v2"
+          JUNIT_REPORTS_FILE: "pytest-junit-logs-v2.xml"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name='logs_v2'"
+          PROVIDER_OVERRIDE_LOGS: "v2"
+        run: make test-coverage
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v6
+        if: success() || failure()
+        with:
+          name: test-results-logs-v2
+          include-hidden-files: true
+          path: |
+            ${{ env.COVERAGE_FILE }}
+            ${{ env.JUNIT_REPORTS_FILE }}
+          retention-days: 30
+
+
   publish-alternative-provider-test-results:
     name: Publish Alternative Provider Test Results
     # execute on success or failure, but not if the workflow is cancelled or all of the dependencies has been skipped
@@ -928,6 +981,7 @@ jobs:
       - test-ddb-v2
       - test-cloudwatch-v1
       - test-sns-v2
+      - test-logs-v2
     runs-on: ubuntu-latest
     permissions:
       checks: write
@@ -959,6 +1013,11 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           pattern: test-results-sns-v2
+
+      - name: Download Logs v2 Artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: test-results-logs-v2
 
       - name: Publish Bootstrap and Integration Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
