@@ -1,17 +1,25 @@
 import concurrent.futures
-import inspect
 import logging
+import subprocess
 import threading
 import traceback
 from collections.abc import Callable
 from concurrent.futures import Future
 from multiprocessing.dummy import Pool
+from typing import TYPE_CHECKING, Any, TypeVar
+
+if TYPE_CHECKING:
+    from typing_extensions import ParamSpec
+
+    P = ParamSpec("P")
+
+T = TypeVar("T")
 
 LOG = logging.getLogger(__name__)
 
 # arrays for temporary threads and resources
-TMP_THREADS = []
-TMP_PROCESSES = []
+TMP_THREADS: list["FuncThread"] = []
+TMP_PROCESSES: list[subprocess.Popen[Any]] = []
 
 counter_lock = threading.Lock()
 counter = 0
@@ -22,12 +30,12 @@ class FuncThread(threading.Thread):
 
     def __init__(
         self,
-        func,
-        params=None,
-        quiet=False,
-        on_stop: Callable[["FuncThread"], None] = None,
+        func: "Callable[P, T]",
+        params: Any = None,
+        quiet: bool = False,
+        on_stop: Callable[["FuncThread"], None] | None = None,
         name: str | None = None,
-        daemon=True,
+        daemon: bool = True,
     ):
         global counter
         global counter_lock
@@ -46,17 +54,14 @@ class FuncThread(threading.Thread):
         self.params = params
         self.func = func
         self.quiet = quiet
-        self.result_future = Future()
+        self.result_future: Future[T | Exception | None] = Future()
         self._stop_event = threading.Event()
         self.on_stop = on_stop
 
-    def run(self):
-        result = None
+    def run(self) -> None:
+        result: Any = None
         try:
-            kwargs = {}
-            argspec = inspect.getfullargspec(self.func)
-            if argspec.varkw or "_thread" in (argspec.args or []) + (argspec.kwonlyargs or []):
-                kwargs["_thread"] = self
+            kwargs = {}  # type: ignore[var-annotated]
             result = self.func(self.params, **kwargs)
         except Exception as e:
             self.result_future.set_exception(e)
@@ -78,7 +83,7 @@ class FuncThread(threading.Thread):
                 LOG.debug(e)
 
     @property
-    def running(self):
+    def running(self) -> bool:
         return not self._stop_event.is_set()
 
     def stop(self, quiet: bool = False) -> None:
@@ -91,27 +96,33 @@ class FuncThread(threading.Thread):
                 LOG.warning("error while calling on_stop callback: %s", e)
 
 
-def start_thread(method, *args, **kwargs) -> FuncThread:  # TODO: find all usages and add names...
+def start_thread(
+    method: "Callable[P, T]",
+    params: Any = None,
+    quiet: bool = False,
+    on_stop: Callable[["FuncThread"], None] | None = None,
+    _shutdown_hook: bool = True,
+    name: str | None = None,
+) -> FuncThread:
     """Start the given method in a background thread, and add the thread to the TMP_THREADS shutdown hook"""
-    _shutdown_hook = kwargs.pop("_shutdown_hook", True)
-    if not kwargs.get("name"):
-        LOG.debug(
-            "start_thread called without providing a custom name"
-        )  # technically we should add a new level here for *internal* warnings
-    kwargs.setdefault("name", method.__name__)
-    thread = FuncThread(method, *args, **kwargs)
+    if not name:
+        # technically we should add a new level here for *internal* warnings
+        LOG.debug("start_thread called without providing a custom name")
+    name = name or method.__name__
+    thread = FuncThread(method, params=params, quiet=quiet, name=name, on_stop=on_stop)
     thread.start()
     if _shutdown_hook:
         TMP_THREADS.append(thread)
     return thread
 
 
-def start_worker_thread(method, *args, **kwargs):
-    kwargs.setdefault("name", "start_worker_thread")
-    return start_thread(method, *args, _shutdown_hook=False, **kwargs)
+def start_worker_thread(
+    method: "Callable[P, T]", params: Any = None, name: str | None = None
+) -> FuncThread:
+    return start_thread(method, params, _shutdown_hook=False, name=name or "start_worker_thread")
 
 
-def cleanup_threads_and_processes(quiet=True):
+def cleanup_threads_and_processes(quiet: bool = True) -> None:
     from localstack.utils.run import kill_process_tree
 
     for thread in TMP_THREADS:
@@ -153,7 +164,7 @@ def cleanup_threads_and_processes(quiet=True):
     TMP_PROCESSES.clear()
 
 
-def parallelize(func: Callable, arr: list, size: int = None):
+def parallelize(func: Callable, arr: list, size: int = None):  # type: ignore
     if not size:
         size = len(arr)
     if size <= 0:
