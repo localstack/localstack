@@ -546,9 +546,9 @@ class TestAPIGateway:
     # It then leaves some resources behind, apigateway and policies
     @markers.aws.needs_fixing
     @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
-    def test_api_gateway_lambda_proxy_integration_any_method(self, integration_lambda):
+    def test_api_gateway_lambda_proxy_integration_any_method(self, aws_client, integration_lambda):
         self._test_api_gateway_lambda_proxy_integration_any_method(
-            integration_lambda, API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD
+            integration_lambda, API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD, aws_client.apigateway
         )
 
     # This test fails as it tries to create a lambda locally?
@@ -556,11 +556,12 @@ class TestAPIGateway:
     @markers.aws.needs_fixing
     @pytest.mark.skipif(condition=is_next_gen_api(), reason="Failing and not validated")
     def test_api_gateway_lambda_proxy_integration_any_method_with_path_param(
-        self, integration_lambda
+        self, integration_lambda, aws_client
     ):
         self._test_api_gateway_lambda_proxy_integration_any_method(
             integration_lambda,
             API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
+            aws_client.apigateway,
         )
 
     @markers.aws.validated
@@ -676,7 +677,9 @@ class TestAPIGateway:
         assert domain_name == rs["domainName"]
         apigw_client.delete_domain_name(domainName=domain_name)
 
-    def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
+    def _test_api_gateway_lambda_proxy_integration_any_method(
+        self, fn_name, path, apigateway_client
+    ):
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = arns.lambda_function_arn(fn_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         target_uri = arns.apigateway_invocations_arn(lambda_uri, TEST_AWS_REGION_NAME)
@@ -687,6 +690,7 @@ class TestAPIGateway:
             methods=["ANY"],
             path=path,
             stage_name=TEST_STAGE_NAME,
+            client=apigateway_client,
         )
 
         # make test request to gateway and check response
@@ -1756,7 +1760,11 @@ class TestIntegrations:
 
         # create API Gateway and connect it to the HTTP_PROXY/HTTP backend
         result = self.connect_api_gateway_to_http(
-            int_type, "test_gateway2", backend_url, path=api_path_backend
+            int_type,
+            "test_gateway2",
+            backend_url,
+            apigateway_client=aws_client.apigateway,
+            path=api_path_backend,
         )
 
         url = path_based_url(
@@ -1800,7 +1808,7 @@ class TestIntegrations:
         assert ctype == headers["content-type"]
 
     def connect_api_gateway_to_http(
-        self, int_type, gateway_name, target_url, methods=None, path=None
+        self, int_type, gateway_name, target_url, apigateway_client, methods=None, path=None
     ):
         if methods is None:
             methods = []
@@ -1828,5 +1836,8 @@ class TestIntegrations:
             for method in methods
         ]
         return resource_util.create_api_gateway(
-            name=gateway_name, resources=resources, stage_name=TEST_STAGE_NAME
+            name=gateway_name,
+            resources=resources,
+            stage_name=TEST_STAGE_NAME,
+            client=apigateway_client,
         )

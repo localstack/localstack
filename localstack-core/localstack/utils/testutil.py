@@ -283,13 +283,13 @@ def create_lambda_function(
 def connect_api_gateway_to_http_with_lambda_proxy(
     gateway_name,
     target_uri,
+    client,
     stage_name=None,
     methods=None,
     path=None,
     auth_type=None,
     auth_creator_func=None,
     http_method=None,
-    client=None,
     role_arn: str = None,
 ):
     if methods is None:
