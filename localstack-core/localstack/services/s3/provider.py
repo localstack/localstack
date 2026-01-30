@@ -295,6 +295,7 @@ from localstack.services.s3.utils import (
     get_s3_checksum_algorithm_from_trailing_headers,
     get_system_metadata_from_request,
     get_unique_key_id,
+    get_url_encoded_object_location,
     header_name_from_capitalized_param,
     is_bucket_name_valid,
     is_version_older_than_other,
@@ -2821,7 +2822,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             Bucket=bucket,
             Key=key,
             ETag=s3_object.quoted_etag,
-            Location=f"{get_full_default_bucket_location(bucket)}{urlparse.quote(key)}",
+            Location=get_url_encoded_object_location(bucket, key),
         )
 
         if s3_object.version_id:
@@ -4593,7 +4594,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         response["LocationHeader"] = response.get(
             "LocationHeader",
-            f"{get_full_default_bucket_location(bucket)}{urlparse.quote(object_key)}",
+            get_url_encoded_object_location(bucket, object_key),
         )
 
         if s3_bucket.versioning_status == "Enabled":

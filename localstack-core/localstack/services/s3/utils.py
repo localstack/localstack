@@ -463,6 +463,10 @@ def get_full_default_bucket_location(bucket_name: BucketName) -> str:
         return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 
+def get_url_encoded_object_location(bucket_name: BucketName, object_key: str) -> str:
+    return f"{get_full_default_bucket_location(bucket_name)}{urlparser.quote(object_key)}"
+
+
 def etag_to_base_64_content_md5(etag: ETag) -> str:
     """
     Convert an ETag, representing a MD5 hexdigest (might be quoted), to its base64 encoded representation
