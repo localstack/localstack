@@ -849,6 +849,21 @@ class TestSNSPublishCrud:
         snapshot.match("error-batch", e.value.response)
 
     @markers.aws.validated
+    def test_publish_no_confirm_subscription(
+        self, sns_create_topic, snapshot, sns_subscription, aws_client, e_mail_address
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        sns_subscription(TopicArn=topic_arn, Protocol="email", Endpoint=e_mail_address)
+
+        # We are not confirming the subscription
+        def _assert_subscription():
+            subscriptions = aws_client.sns.list_subscriptions()["Subscriptions"]
+            sub = [s for s in subscriptions if s["TopicArn"] == topic_arn][0]
+            assert sub["SubscriptionArn"] == "PendingConfirmation"
+
+        retry(_assert_subscription, retries=15, sleep=2)
+
+    @markers.aws.validated
     def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client, region_name):
         topic_arn = sns_create_topic()["TopicArn"]
         account_id = parse_arn(topic_arn)["account"]
@@ -3898,7 +3913,8 @@ def platform_credentials() -> tuple[str, str]:
 @pytest.fixture(scope="class")
 def e_mail_address() -> str:
     # this address must be real and accessible if you want to test email subscriptions
-    e_mail = "test@example.com"
+    # e_mail = "test@example.com"
+    e_mail = "bernhard.matyas@localstack.cloud"
     return e_mail
 
 
