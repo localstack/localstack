@@ -1,9 +1,14 @@
+from typing import TYPE_CHECKING
+
 from localstack.aws.api.dynamodb import CreateTableOutput, DescribeTableOutput
 from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.utils.aws.aws_stack import LOG
 from localstack.utils.functions import run_safe
 from localstack.utils.sync import poll_condition
+
+if TYPE_CHECKING:
+    from mypy_boto3_apigateway import APIGatewayClient
 
 
 # TODO: make s3_client mandatory
@@ -68,24 +73,16 @@ def create_dynamodb_table(
     return table
 
 
-# TODO make client mandatory
 def create_api_gateway(
     name,
+    client: "APIGatewayClient",
     description=None,
     resources=None,
     stage_name=None,
-    enabled_api_keys=None,
-    usage_plan_name=None,
     auth_creator_func=None,  # function that receives an api_id and returns an authorizer_id
-    client=None,
 ):
-    if enabled_api_keys is None:
-        enabled_api_keys = []
-    if not client:
-        client = connect_to().apigateway
     resources = resources or []
     stage_name = stage_name or "testing"
-    usage_plan_name = usage_plan_name or "Basic Usage"
     description = description or f'Test description for API "{name}"'
 
     LOG.info('Creating API resources under API Gateway "%s".', name)
