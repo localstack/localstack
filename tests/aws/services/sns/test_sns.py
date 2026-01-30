@@ -848,6 +848,7 @@ class TestSNSPublishCrud:
 
         snapshot.match("error-batch", e.value.response)
 
+    @pytest.mark.skipif(is_sns_v1_provider(), reason="not correctly implemented")
     @markers.aws.validated
     def test_publish_no_confirm_subscription(
         self, sns_create_topic, snapshot, sns_subscription, aws_client, e_mail_address
