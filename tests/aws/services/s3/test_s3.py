@@ -6708,6 +6708,8 @@ class TestS3PresignedUrl:
         aws_client,
         presigned_snapshot_transformers,
     ):
+        # we need to import the internal handlers of botocore and remove it, because it interferes with testing, and
+        # other SDKs do not have that validation and will accept non-ascii metadata
         from botocore.handlers import validate_ascii_metadata
 
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -6715,7 +6717,8 @@ class TestS3PresignedUrl:
             Config(signature_version="s3"),
             endpoint_url=_endpoint_url(),
         )
-        # we need to remove the builtin handler that validate ascii in metadata, because AWS actually accepts it
+        # remove the builtin handler that validate ascii in the metadata, because AWS actually accepts it if it is in
+        # pre-signed URLs.
         presigned_client.meta.events.unregister(
             "before-parameter-build.s3.PutObject",
             validate_ascii_metadata,
