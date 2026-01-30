@@ -731,15 +731,6 @@
       "total": 2.48
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_user_metadata_with_unicode": {
-    "last_validated_date": "2026-01-30T18:32:27+00:00",
-    "durations_in_seconds": {
-      "setup": 1.03,
-      "call": 0.33,
-      "teardown": 0.96,
-      "total": 2.32
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_date": {
     "last_validated_date": "2025-01-21T18:18:26+00:00"
   },

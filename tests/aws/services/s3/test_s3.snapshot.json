@@ -18502,40 +18502,6 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_user_metadata_with_unicode": {
-    "recorded-date": "30-01-2026, 18:32:26",
-    "recorded-content": {
-      "put-object": {
-        "ChecksumCRC32": "AAAAAA==",
-        "ChecksumType": "FULL_OBJECT",
-        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get-object": {
-        "AcceptRanges": "bytes",
-        "Body": "",
-        "ChecksumCRC32": "AAAAAA==",
-        "ChecksumType": "FULL_OBJECT",
-        "ContentLength": 0,
-        "ContentType": "binary/octet-stream",
-        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
-        "LastModified": "datetime",
-        "Metadata": {
-          "non-ascii": "=?UTF-8?Q?test=5F=C3=A2=C2=80=C2=94=5Ffile%E?= =?UTF-8?Q?2%80%94=5F=C3=83=C2=A9=5F2.pdf?=",
-          "non-ascii-2": "=?UTF-8?B?w4PChE3Dg8KEWsODwpXDg8KRIFMz?="
-        },
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_user_metadata_rfc2047_encoded": {
     "recorded-date": "30-01-2026, 19:37:24",
     "recorded-content": {

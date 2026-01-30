@@ -571,6 +571,8 @@ def encode_user_metadata(metadata: Metadata) -> Metadata:
 
 
 def decode_user_metadata(metadata: Metadata | None) -> Metadata:
+    """Decode the user metadata if provided in the RFC2047 format, or leave as is if not. AWS also lowercase the
+    metadata key"""
     if not metadata:
         return {}
 
