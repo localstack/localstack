@@ -7,10 +7,6 @@ from base64 import b64encode
 # going to have 256 of these things, this isn't terribly inefficient
 # space-wise. Initialize the map with the full expansion, and then override
 # the safe bytes with the more compact form.
-# In "=?charset?Q?hello_world?=", the =?, ?Q?, and ?= add up to 7
-_RFC2047_CHROME_LEN = 7
-_EMPTYSTRING = ""
-
 _QUOPRI_HEADER_MAP = [f"={c:02X}" for c in range(256)]
 
 _SAFE_HEADERS_CHARS = b"!\"#$%&'()*+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^`abcdefghijklmnopqrstuvwxyz{|}~\t"
@@ -28,12 +24,11 @@ def encode_header_rfc2047(header: str | None) -> str | None:
     if header is None:
         return None
 
-    header_bytes = header.encode("utf-8")
-    # When all chars are "safe chars" plus " " and "_", AWS returns it as is.
-    # But if " " and "_" are presented in an encoded header, it will encode them as well
-    if all(c in _NO_ENCODING_CHARS for c in header_bytes):
+    # When all chars are ascii, AWS returns it as is.
+    if header.isascii():
         return header
 
+    header_bytes = header.encode("utf-8")
     if any(unicodedata.category(c).startswith("C") for c in header):
         # if there are any character which cannot be printed (not a symbol, but will be escaped with \xNN), we need to
         # base64 encode the header
