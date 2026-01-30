@@ -2,6 +2,10 @@
 # in AWS, so we need to override it
 import unicodedata
 from base64 import b64encode
+from email.errors import HeaderParseError
+from email.header import decode_header as _decode_header
+
+from localstack.utils.strings import to_str
 
 # Build a mapping of octets to the expansion of that octet.  Since we're only
 # going to have 256 of these things, this isn't terribly inefficient
@@ -24,16 +28,18 @@ def encode_header_rfc2047(header: str | None) -> str | None:
     if header is None:
         return None
 
-    # When all chars are ascii, AWS returns it as is.
-    if header.isascii():
+    header_bytes = header.encode("utf-8")
+    # When all chars are "safe chars" plus " " and "_", AWS returns it as is.
+    # But if " " and "_" are presented in an encoded header, it will encode them as well
+    if all(c in _NO_ENCODING_CHARS for c in header_bytes):
         return header
 
     header_bytes = header.encode("utf-8")
-    if any(unicodedata.category(c).startswith("C") for c in header):
+    if "�" in header or any(unicodedata.category(c).startswith("C") for c in header):
         # if there are any character which cannot be printed (not a symbol, but will be escaped with \xNN), we need to
         # base64 encode the header
         # See https://www.unicode.org/reports/tr44/tr44-34.html#General_Category_Values
-        encoder = encoder_header_rfc2057_base64
+        encoder = encoder_header_rfc2047_base64
     else:
         encoder = encode_header_rfc2047_quote_printable
 
@@ -59,9 +65,23 @@ def encode_header_rfc2047_quote_printable(header_bytes: bytes) -> str:
     return f"=?UTF-8?Q?{encoded}?="
 
 
-def encoder_header_rfc2057_base64(header_bytes: bytes) -> str:
+def encoder_header_rfc2047_base64(header_bytes: bytes) -> str:
     encoded = b64encode(header_bytes).decode("ascii")
     return f"=?UTF-8?B?{encoded}?="
+
+
+def decode_header_rfc2047(header: str) -> str:
+    try:
+        header_parts = _decode_header(header)
+        return "".join(to_str(part, charset) for part, charset in header_parts)
+    except HeaderParseError:
+        if header.lower().startswith("=?utf-8?b?"):
+            # if the header is badly B64 encoded, AWS will return random data, which we cannot make sense of.
+            # we can use the Unicode replacement character instead to indicate an error
+            # we return as many replacement chars as there are b64 chars
+            replacement_header = "\ufffd" * (len(header) - 13)
+            return replacement_header
+        return header
 
 
 def replace_non_iso_8859_1_characters(header: str, repl: str = " ") -> str:

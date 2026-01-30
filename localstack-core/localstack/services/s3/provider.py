@@ -252,7 +252,6 @@ from localstack.services.s3.exceptions import (
     TooManyConfigurations,
     UnexpectedContent,
 )
-from localstack.services.s3.headers import encode_header_rfc2047, replace_non_iso_8859_1_characters
 from localstack.services.s3.models import (
     BucketCorsIndex,
     EncryptionParameters,
@@ -276,6 +275,7 @@ from localstack.services.s3.utils import (
     base_64_content_md5_to_etag,
     create_redirect_for_post_request,
     create_s3_kms_managed_key_for_region,
+    decode_user_metadata,
     encode_user_metadata,
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
@@ -764,6 +764,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
 
+        user_metadata = decode_user_metadata(request.get("Metadata"))
+
         version_id = generate_version_id(s3_bucket.versioning_status)
         if version_id != "null":
             # if we are in a versioned bucket, we need to lock around the full key (all the versions)
@@ -814,7 +816,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             version_id=version_id,
             storage_class=storage_class,
             expires=request.get("Expires"),
-            user_metadata=encode_user_metadata(request.get("Metadata")),
+            user_metadata=user_metadata,
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
             checksum_value=checksum_value,
@@ -1019,7 +1021,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             **s3_object.get_system_metadata_fields(),
         )
         if s3_object.user_metadata:
-            response["Metadata"] = s3_object.user_metadata
+            response["Metadata"] = encode_user_metadata(s3_object.user_metadata)
 
         if s3_object.parts and request.get("PartNumber"):
             response["PartsCount"] = len(s3_object.parts)
@@ -1158,7 +1160,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             **s3_object.get_system_metadata_fields(),
         )
         if s3_object.user_metadata:
-            response["Metadata"] = s3_object.user_metadata
+            response["Metadata"] = encode_user_metadata(s3_object.user_metadata)
 
         checksum_value = None
         checksum_type = None
@@ -1596,7 +1598,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             tagging = parse_tagging_header(tagging)
 
         if metadata_directive == "REPLACE":
-            user_metadata = encode_user_metadata(request.get("Metadata"))
+            user_metadata = decode_user_metadata(request.get("Metadata"))
             system_metadata = get_system_metadata_from_request(request)
             if not system_metadata.get("ContentType"):
                 system_metadata["ContentType"] = "binary/octet-stream"
@@ -2299,6 +2301,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
 
+        user_metadata = decode_user_metadata(request.get("Metadata"))
+
         checksum_algorithm = request.get("ChecksumAlgorithm")
         if checksum_algorithm and checksum_algorithm not in CHECKSUM_ALGORITHMS:
             raise InvalidRequest(
@@ -2352,7 +2356,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             key=key,
             storage_class=storage_class,
             expires=request.get("Expires"),
-            user_metadata=encode_user_metadata(request.get("Metadata")),
+            user_metadata=user_metadata,
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
             checksum_type=checksum_type,
@@ -4487,13 +4491,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         for system_metadata_field in post_system_settable_headers:
             if field_value := form.get(system_metadata_field):
                 system_key = system_metadata_field.replace("-", "")
-                system_metadata[system_key] = replace_non_iso_8859_1_characters(field_value)
+                system_metadata[system_key] = field_value
 
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
 
         user_metadata = {
-            field.removeprefix("x-amz-meta-").lower(): encode_header_rfc2047(form.get(field))
+            # TODO: add unicode decode here!
+            field.removeprefix("x-amz-meta-").lower(): form.get(field)
             for field in form
             if field.startswith("x-amz-meta-")
         }

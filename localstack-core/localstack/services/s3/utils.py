@@ -77,7 +77,7 @@ from localstack.services.s3.exceptions import (
     InvalidRequest,
     MalformedXML,
 )
-from localstack.services.s3.headers import encode_header_rfc2047, replace_non_iso_8859_1_characters
+from localstack.services.s3.headers import decode_header_rfc2047, encode_header_rfc2047
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.objects import singleton_factory
@@ -560,16 +560,21 @@ def get_system_metadata_from_request(request: dict) -> Metadata:
 
     for system_metadata_field in SYSTEM_METADATA_SETTABLE_HEADERS:
         if field_value := request.get(system_metadata_field):
-            metadata[system_metadata_field] = replace_non_iso_8859_1_characters(field_value)
+            metadata[system_metadata_field] = field_value
 
     return metadata
 
 
-def encode_user_metadata(metadata: Metadata | None) -> Metadata:
+def encode_user_metadata(metadata: Metadata) -> Metadata:
+    """Encode the user metadata in the RFC 2047 format if necessary so that it can be returned in HTTP headers"""
+    return {k: encode_header_rfc2047(v) for k, v in metadata.items()}
+
+
+def decode_user_metadata(metadata: Metadata | None) -> Metadata:
     if not metadata:
         return {}
 
-    return {k.lower(): encode_header_rfc2047(v) for k, v in metadata.items()}
+    return {k.lower(): decode_header_rfc2047(v) for k, v in metadata.items()}
 
 
 def extract_bucket_name_and_key_from_headers_and_path(

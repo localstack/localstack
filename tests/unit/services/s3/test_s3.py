@@ -18,7 +18,11 @@ from localstack.services.s3 import utils as s3_utils
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import S3_CHUNK_SIZE
 from localstack.services.s3.exceptions import MalformedXML
-from localstack.services.s3.headers import encode_header_rfc2047, replace_non_iso_8859_1_characters
+from localstack.services.s3.headers import (
+    decode_header_rfc2047,
+    encode_header_rfc2047,
+    replace_non_iso_8859_1_characters,
+)
 from localstack.services.s3.models import S3Multipart, S3Object, S3Part
 from localstack.services.s3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.services.s3.validation import validate_canned_acl
@@ -776,6 +780,39 @@ class TestS3HeaderEncoding:
     )
     def test_encode_header_rfc_2047(self, header, expected):
         assert encode_header_rfc2047(header) == expected
+
+    @pytest.mark.parametrize(
+        "header, expected",
+        [
+            (
+                "=?UTF-8?Q?=C3=84M=C3=84Z=C3=95=C3=91_S3?=",
+                "ÄMÄZÕÑ S3",
+            ),
+            (
+                "=?UTF-8?Q?test=5F=E2=80=94=5Ffile%E2%80%94=5F=C3=A9=5F2.pdf?=",
+                "test_—_file%E2%80%94_é_2.pdf",
+            ),
+            (
+                "=?UTF-8?Q?test=5F=E2=80=94=5Ffile%E2%80%94=5F=C3=A9=5F2=F0=9F=91=91.pdf?=",
+                "test_—_file%E2%80%94_é_2👑.pdf",
+            ),
+            (
+                "! \"#$%&'()*+,-./0123456789:;<>'?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\t",
+                "! \"#$%&'()*+,-./0123456789:;<>'?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\t",
+            ),
+            (
+                "=?UTF-8?B?AAECAwQ=?=",
+                "\x00\x01\x02\x03\x04",
+            ),
+            # broken B64
+            (
+                "=?UTF-8?B?=GGG?=",
+                "���",
+            ),
+        ],
+    )
+    def test_decode_header_rfc2047(self, header, expected):
+        assert decode_header_rfc2047(header) == expected
 
     @pytest.mark.parametrize(
         "header, expected",

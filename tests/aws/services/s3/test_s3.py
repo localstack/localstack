@@ -43,6 +43,7 @@ from localstack.constants import (
     LOCALHOST_HOSTNAME,
 )
 from localstack.services.s3 import constants as s3_constants
+from localstack.services.s3.headers import encode_header_rfc2047
 from localstack.services.s3.utils import (
     RFC1123,
     etag_to_base_64_content_md5,
@@ -451,6 +452,53 @@ class TestS3:
         )
         snapshot.match("put-object", response)
 
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="test")
+        snapshot.match("get-object", response)
+
+    @markers.aws.validated
+    def test_user_metadata_rfc2047_encoded(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        non_ascii = "test_—_file%E2%80%94_é_2.pdf"
+        non_ascii_2 = "ÄMÄZÕÑ S3"
+        utf_metadata = "\x00\x01\x02\x03"
+        replacement_chars = "�������"
+        response = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test",
+            Metadata={
+                "non-ascii": encode_header_rfc2047(non_ascii),
+                "non-ascii-2": encode_header_rfc2047(non_ascii_2),
+                "non-ascii-binary": encode_header_rfc2047(utf_metadata),
+                "replacement-chars": encode_header_rfc2047(replacement_chars),
+                # test if it will decode RFC 2047 looking data and return it decoded
+                "fake-encoded": "=?UTF-8?Q?actually-ascii?=",
+                "asciib64-encoded": "=?UTF-8?B?YWJj?=",
+            },
+        )
+        snapshot.match("put-object", response)
+
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="test")
+        snapshot.match("get-object", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        # AWS returns broken encoded data, so we use replacement chars instead to indicate encoding error, if the
+        # padding is wrong
+        paths=["$..Metadata.bad-b64-encoded"],
+    )
+    def test_user_metadata_rfc2047_bad_b64_encoded(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        response = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test",
+            Metadata={
+                # this b64 value has a wrong padding
+                "bad-b64-encoded": "=?UTF-8?B?=GGG?="
+            },
+        )
+        # AWS does not fail on invalid b64, but it returns gibberish, which we can't really have parity with (not
+        # worth it, so we return what we received)
+        snapshot.match("put-object", response)
         response = aws_client.s3.get_object(Bucket=s3_bucket, Key="test")
         snapshot.match("get-object", response)
 

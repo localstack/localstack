@@ -77,6 +77,7 @@ from localstack.services.s3.constants import (
     S3_UPLOAD_PART_MIN_SIZE,
 )
 from localstack.services.s3.exceptions import InvalidRequest
+from localstack.services.s3.headers import replace_non_iso_8859_1_characters
 from localstack.services.s3.utils import (
     CombinedCrcHash,
     get_s3_checksum,
@@ -346,6 +347,7 @@ class S3Object:
         self.internal_last_modified = 0
 
     def get_system_metadata_fields(self) -> dict:
+        # TODO: change when updating the schema -> make it a property
         headers = {
             "LastModified": self.last_modified_rfc1123,
             "ContentLength": str(self.size),
@@ -355,7 +357,7 @@ class S3Object:
             headers["Expires"] = self.expires_rfc1123
 
         for metadata_key, metadata_value in self.system_metadata.items():
-            headers[metadata_key] = metadata_value
+            headers[metadata_key] = replace_non_iso_8859_1_characters(metadata_value)
 
         if self.storage_class != StorageClass.STANDARD:
             headers["StorageClass"] = self.storage_class
