@@ -8,10 +8,12 @@ import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,
-    ResourceProvider,
     ResourceRequest,
 )
 from localstack.services.lambda_.lambda_utils import get_handler_file_from_name
+from localstack.services.lambda_.resource_providers.generated.aws_lambda_function_base import (
+    LambdaFunctionProviderBase,
+)
 from localstack.utils.archives import is_zip_file
 from localstack.utils.files import mkdir, new_tmp_dir, rm_rf, save_file
 from localstack.utils.strings import is_base64, to_bytes
@@ -316,7 +318,7 @@ def _transform_function_to_model(function):
     return response_model
 
 
-class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
+class LambdaFunctionProvider(LambdaFunctionProviderBase):
     def create(
         self,
         request: ResourceRequest[LambdaFunctionProperties],
