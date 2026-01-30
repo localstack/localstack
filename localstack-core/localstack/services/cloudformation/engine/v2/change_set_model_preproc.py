@@ -1263,13 +1263,30 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             depends_on_after = depends_on_delta.after
 
         type_delta = self.visit(node_resource.type_)
-        properties_delta: PreprocEntityDelta[PreprocProperties, PreprocProperties] = self.visit(
-            node_resource.properties
+
+        # Determine if this resource should be processed for before/after states.
+        # A resource is "active" if it has no condition or its condition evaluates to true.
+        # We must check this BEFORE visiting properties to avoid resolving references
+        # (like GetAtt) to other conditional resources that may not exist.
+        should_process_before = change_type != ChangeType.CREATED and (
+            is_nothing(condition_before) or condition_before
         )
+        should_process_after = change_type != ChangeType.REMOVED and (
+            is_nothing(condition_after) or condition_after
+        )
+
+        # Only visit properties if at least one state needs to be processed.
+        # This prevents evaluating GetAtt/Ref inside conditional resources whose
+        # conditions are false (and thus were never created).
+        properties_delta: PreprocEntityDelta[PreprocProperties, PreprocProperties]
+        if should_process_before or should_process_after:
+            properties_delta = self.visit(node_resource.properties)
+        else:
+            properties_delta = PreprocEntityDelta(before=Nothing, after=Nothing)
 
         before = Nothing
         after = Nothing
-        if change_type != ChangeType.CREATED and is_nothing(condition_before) or condition_before:
+        if should_process_before:
             logical_resource_id = node_resource.name
             before_physical_resource_id = self._before_resource_physical_id(
                 resource_logical_id=logical_resource_id
@@ -1283,7 +1300,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 depends_on=depends_on_before,
                 requires_replacement=False,
             )
-        if change_type != ChangeType.REMOVED and is_nothing(condition_after) or condition_after:
+        if should_process_after:
             logical_resource_id = node_resource.name
             try:
                 after_physical_resource_id = self._after_resource_physical_id(

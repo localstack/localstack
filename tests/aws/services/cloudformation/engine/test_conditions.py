@@ -553,6 +553,83 @@ class TestCloudFormationConditions:
         )
         snapshot.match("resources-description", describe_resources)
 
+    @markers.aws.validated
+    @skip_if_legacy_engine()
+    def test_delete_stack_with_conditional_getatt(self, deploy_cfn_template, aws_client):
+        """
+        Test that stack deletion works when a resource references a conditional resource
+        via Fn::If that was never created (condition was false).
+
+        Reproduces: https://github.com/localstack/localstack/issues/13609
+        """
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../../templates/conditions/conditional-getatt-delete.yaml",
+            ),
+            parameters={"DeployQueue": "false"},
+        )
+
+        # Verify the stack was created successfully with only the always-created resource
+        resources = aws_client.cloudformation.describe_stack_resources(
+            StackName=stack.stack_id
+        )
+        resource_types = [r["ResourceType"] for r in resources["StackResources"]]
+        # Only one SQS queue should be created (AlwaysCreatedResource)
+        assert resource_types.count("AWS::SQS::Queue") == 1
+
+        # The conditional output should not exist
+        assert "ConditionalQueueArn" not in stack.outputs
+
+        # Now delete the stack - this is where the bug manifests
+        # The v2 engine incorrectly tries to resolve !GetAtt MyQueue.Arn during deletion
+        # even though MyQueue was never created (condition was false)
+        aws_client.cloudformation.delete_stack(StackName=stack.stack_id)
+        aws_client.cloudformation.get_waiter("stack_delete_complete").wait(
+            StackName=stack.stack_id
+        )
+
+    @markers.aws.validated
+    @skip_if_legacy_engine()
+    def test_delete_stack_with_conditional_resource_referencing_conditional(
+        self, deploy_cfn_template, aws_client
+    ):
+        """
+        Test that stack deletion works when a conditional resource references
+        another conditional resource via !GetAtt, and both conditions were false.
+
+        This is different from test_delete_stack_with_conditional_getatt which
+        uses Fn::If to wrap the GetAtt. Here the GetAtt is directly inside
+        a conditional resource's properties.
+
+        Reproduces: https://github.com/localstack/localstack/issues/13609
+        """
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../../templates/conditions/conditional-resource-getatt-delete.yaml",
+            ),
+            parameters={"EnableQueue": "false"},
+        )
+
+        # Verify only the DynamoDB table was created (conditional resources skipped)
+        resources = aws_client.cloudformation.describe_stack_resources(
+            StackName=stack.stack_id
+        )
+        resource_types = [r["ResourceType"] for r in resources["StackResources"]]
+        assert "AWS::DynamoDB::Table" in resource_types
+        assert "AWS::SQS::Queue" not in resource_types
+        assert "AWS::CloudWatch::Alarm" not in resource_types
+
+        # Delete the stack - this is where the bug manifests
+        # The v2 engine incorrectly tries to resolve !GetAtt MyQueue.QueueName
+        # inside MyAlarm's properties during deletion, even though MyAlarm
+        # was never created (its condition was false)
+        aws_client.cloudformation.delete_stack(StackName=stack.stack_id)
+        aws_client.cloudformation.get_waiter("stack_delete_complete").wait(
+            StackName=stack.stack_id
+        )
+
 
 class TestValidateConditions:
     @markers.aws.validated

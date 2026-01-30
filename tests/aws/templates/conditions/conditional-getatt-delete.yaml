@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Reproduction of CloudFormation v2 deletion bug with conditional resource references
+
+Parameters:
+  DeployQueue:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+Conditions:
+  ShouldDeployQueue: !Equals [!Ref DeployQueue, 'true']
+
+Resources:
+  # This resource is conditionally created
+  MyQueue:
+    Type: AWS::SQS::Queue
+    Condition: ShouldDeployQueue
+    Properties:
+      QueueName: !Sub "conditional-queue-${AWS::StackName}"
+
+  # This resource always exists but references the conditional resource via Fn::If
+  AlwaysCreatedResource:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "always-created-queue-${AWS::StackName}"
+      Tags:
+        - Key: ConditionalQueueArn
+          Value: !If
+            - ShouldDeployQueue
+            - !GetAtt MyQueue.Arn
+            - "not-deployed"
+
+Outputs:
+  AlwaysCreatedQueueUrl:
+    Value: !Ref AlwaysCreatedResource
+  ConditionalQueueArn:
+    Condition: ShouldDeployQueue
+    Value: !GetAtt MyQueue.Arn
