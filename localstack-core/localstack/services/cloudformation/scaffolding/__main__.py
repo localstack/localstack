@@ -922,7 +922,7 @@ def generate(
         )
     console.print("\nWondering where to get started?")
     console.print(
-        "First run `make entrypoints` to make sure your resource provider plugin is actually registered."
+        "First run `make entrypoints` to update the plux.ini file with your new resource provider plugin."
     )
     console.print(
         'Then start off by finalizing the generated minimal ("basic") template and get it to deploy against AWS.'
