@@ -292,6 +292,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         visitor.visit(lambda_stores)
 
     def on_before_state_reset(self):
+        for esm_worker in self.esm_workers.values():
+            esm_worker.stop_for_shutdown()
+        self.esm_workers = {}
         self.lambda_service.stop()
 
     def on_after_state_reset(self):
