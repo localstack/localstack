@@ -112,6 +112,38 @@ class TestDynamoDBStreams:
         # assert stream has been deleted
         retry(_assert_stream_disabled, sleep=1, retries=20)
 
+    @markers.aws.only_localstack
+    def test_describe_stream_with_shard_filter(self, aws_client):
+        """DescribeStream accepts ShardFilter and returns only matching shards (e.g. CHILD_SHARDS)."""
+        ddbstreams = aws_client.dynamodbstreams
+        table_name = f"ddb-{short_uid()}"
+        resources.create_dynamodb_table(
+            table_name,
+            partition_key=PARTITION_KEY,
+            stream_view_type="NEW_AND_OLD_IMAGES",
+            client=aws_client.dynamodb,
+        )
+        table = aws_client.dynamodb.describe_table(TableName=table_name)["Table"]
+        stream_arn = table["LatestStreamArn"]
+
+        desc = ddbstreams.describe_stream(StreamArn=stream_arn)["StreamDescription"]
+        assert "Shards" in desc
+        shards = desc["Shards"]
+        assert len(shards) >= 1
+        parent_shard_id = shards[0]["ShardId"]
+
+
+        result = ddbstreams.describe_stream(
+            StreamArn=stream_arn,
+            ShardFilter={"Type": "CHILD_SHARDS", "ShardId": parent_shard_id},
+        )
+        stream_desc = result["StreamDescription"]
+        assert "Shards" in stream_desc
+        for shard in stream_desc["Shards"]:
+            assert shard.get("ParentShardId") == parent_shard_id
+
+        aws_client.dynamodb.delete_table(TableName=table_name)
+
     @pytest.mark.skipif(
         condition=not is_aws_cloud() or config.DDB_STREAMS_PROVIDER_V2,
         reason="Flaky, and not implemented yet on v2 implementation",
