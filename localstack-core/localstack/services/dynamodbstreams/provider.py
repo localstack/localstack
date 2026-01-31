@@ -100,9 +100,6 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
                 start_index = 0
                 for index, shard in enumerate(stream_shards):
                     shard["ShardId"] = get_shard_id(stream, shard["ShardId"])
-                    # Normalize ParentShardId to DynamoDB format so ShardFilter and response are consistent.
-                    if shard.get("ParentShardId"):
-                        shard["ParentShardId"] = get_shard_id(stream, shard["ParentShardId"])
                     shard.pop("HashKeyRange", None)
                     # we want to ignore the shards before exclusive_start_shard_id parameters
                     # we store the index where we encounter then slice the shards
