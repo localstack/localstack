@@ -1,4 +1,5 @@
 import abc
+import datetime
 import logging
 import time
 from concurrent.futures import CancelledError, Future
@@ -12,6 +13,7 @@ from localstack.http import Response, route
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import ldm
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
+from localstack.services.lambda_.invocation_log import log_invocation
 from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_str
@@ -184,6 +186,7 @@ class ExecutorEndpoint(Endpoint):
             self.invocation_future.cancel()
 
     def invoke(self, payload: dict[str, str]) -> InvocationResult:
+        timestamp = datetime.datetime.now(tz=datetime.UTC)
         self.invocation_future = Future()
         self.logs = None
         if not self.container_address:
@@ -214,7 +217,17 @@ class ExecutorEndpoint(Endpoint):
             lambda_max_timeout_seconds = 900
             invoke_timeout_buffer_seconds = 5
             timeout_seconds = lambda_max_timeout_seconds + invoke_timeout_buffer_seconds
-        return self.invocation_future.result(timeout=timeout_seconds)
+        result = self.invocation_future.result(timeout=timeout_seconds)
+
+        log_invocation(
+            timestamp,
+            payload["invoke-id"],
+            payload["invoked-function-arn"],
+            payload["payload"],
+            result,
+        )
+
+        return result
 
     @staticmethod
     def _perform_invoke(
