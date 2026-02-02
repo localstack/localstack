@@ -325,6 +325,7 @@ class SqsQueue:
     # Simulating an ordered set in python. Only the keys are used and of interest.
     inflight: dict[SqsMessage, None]
     receipts: dict[str, SqsMessage]
+    mutex: threading.RLock
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         self.name = name
