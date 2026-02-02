@@ -15,6 +15,7 @@ from typing import (
     cast,
     get_args,
     get_origin,
+    overload,
 )
 
 import cachetools
@@ -314,7 +315,15 @@ def is_list_or_tuple(obj) -> bool:
     return isinstance(obj, (list, tuple))
 
 
-def ensure_list(obj: Any, wrap_none=False) -> list | None:
+@overload
+def ensure_list(obj: None) -> None: ...
+
+
+@overload
+def ensure_list(obj: Any) -> list[Any]: ...
+
+
+def ensure_list(obj: Any, wrap_none: bool = False) -> list[Any] | None:
     """Wrap the given object in a list, or return the object itself if it already is a list."""
     if obj is None and not wrap_none:
         return obj
