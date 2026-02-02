@@ -34,7 +34,6 @@ def encode_header_rfc2047(header: str | None) -> str | None:
     if all(c in _NO_ENCODING_CHARS for c in header_bytes):
         return header
 
-    header_bytes = header.encode("utf-8")
     if "�" in header or any(unicodedata.category(c).startswith("C") for c in header):
         # if there are any character which cannot be printed (not a symbol, but will be escaped with \xNN), we need to
         # base64 encode the header
