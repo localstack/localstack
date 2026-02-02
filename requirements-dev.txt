@@ -330,7 +330,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-protobuf==6.33.4
+protobuf==6.33.5
     # via opensearch-protobufs
 psutil==7.2.1
     # via
