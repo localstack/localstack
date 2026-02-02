@@ -395,8 +395,8 @@ class NodeResource(ChangeSetNode):
     condition_reference: Final[Maybe[TerminalValue]]
     depends_on: Final[Maybe[NodeDependsOn]]
     requires_replacement: Final[bool]
-    deletion_policy: Final[Maybe[ChangeSetTerminal]]
-    update_replace_policy: Final[Maybe[ChangeSetTerminal]]
+    deletion_policy: Final[Maybe[ChangeSetEntity]]
+    update_replace_policy: Final[Maybe[ChangeSetEntity]]
     fn_transform: Final[Maybe[NodeIntrinsicFunctionFnTransform]]
 
     def __init__(
@@ -409,8 +409,8 @@ class NodeResource(ChangeSetNode):
         condition_reference: Maybe[TerminalValue],
         depends_on: Maybe[NodeDependsOn],
         requires_replacement: bool,
-        deletion_policy: Maybe[ChangeSetTerminal],
-        update_replace_policy: Maybe[ChangeSetTerminal],
+        deletion_policy: Maybe[ChangeSetEntity],
+        update_replace_policy: Maybe[ChangeSetEntity],
         fn_transform: Maybe[NodeIntrinsicFunctionFnTransform],
     ):
         super().__init__(scope=scope, change_type=change_type)
@@ -1043,26 +1043,20 @@ class ChangeSetModel:
 
     def _visit_deletion_policy(
         self, scope: Scope, before_deletion_policy: Any, after_deletion_policy: Any
-    ) -> TerminalValue:
+    ) -> ChangeSetEntity:
         value = self._visit_value(
             scope=scope, before_value=before_deletion_policy, after_value=after_deletion_policy
         )
-        if not isinstance(value, TerminalValue):
-            # TODO: decide where template schema validation should occur.
-            raise RuntimeError()
         return value
 
     def _visit_update_replace_policy(
         self, scope: Scope, before_update_replace_policy: Any, after_deletion_policy: Any
-    ) -> TerminalValue:
+    ) -> ChangeSetEntity:
         value = self._visit_value(
             scope=scope,
             before_value=before_update_replace_policy,
             after_value=after_deletion_policy,
         )
-        if not isinstance(value, TerminalValue):
-            # TODO: decide where template schema validation should occur.
-            raise RuntimeError()
         return value
 
     def _visit_resource(

@@ -1,4 +1,40 @@
 {
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_deletion_policy_with_conditional[dev-Delete]": {
+    "last_validated_date": "2026-02-02T13:27:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.6,
+      "call": 9.96,
+      "teardown": 50.15,
+      "total": 60.71
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_deletion_policy_with_conditional[prod-Retain]": {
+    "last_validated_date": "2026-02-02T13:27:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.71,
+      "teardown": 4.94,
+      "total": 16.65
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_deletion_policy_with_fn_find_in_map": {
+    "last_validated_date": "2026-02-02T13:45:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.61,
+      "call": 12.1,
+      "teardown": 4.89,
+      "total": 17.6
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_deletion_policy_with_ref_parameter": {
+    "last_validated_date": "2026-02-02T13:46:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.58,
+      "call": 12.2,
+      "teardown": 4.84,
+      "total": 17.62
+    }
+  },
   "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_dependent_get_att": {
     "last_validated_date": "2025-09-30T19:25:10+00:00",
     "durations_in_seconds": {

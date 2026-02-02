@@ -553,6 +553,172 @@ class TestCloudFormationConditions:
         )
         snapshot.match("resources-description", describe_resources)
 
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "environment,expected_policy",
+        [
+            ("dev", "Delete"),
+            ("prod", "Retain"),
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LastOperations"])
+    def test_deletion_policy_with_conditional(
+        self, deploy_cfn_template, aws_client, snapshot, environment, expected_policy
+    ):
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(snapshot.transform.key_value("TopicArn"))
+
+        topic_name = f"test-topic-{environment}-{short_uid()}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(topic_name, f"<topic-name-{environment}>")
+        )
+
+        template = {
+            "AWSTemplateFormatVersion": "2010-09-09",
+            "Parameters": {
+                "Environment": {
+                    "Type": "String",
+                    "Default": "dev",
+                    "AllowedValues": ["dev", "prod"],
+                },
+                "TopicName": {
+                    "Type": "String",
+                },
+            },
+            "Conditions": {
+                "IsProduction": {"Fn::Equals": [{"Ref": "Environment"}, "prod"]},
+            },
+            "Resources": {
+                "MyTopic": {
+                    "Type": "AWS::SNS::Topic",
+                    "DeletionPolicy": {"Fn::If": ["IsProduction", "Retain", "Delete"]},
+                    "UpdateReplacePolicy": {"Fn::If": ["IsProduction", "Retain", "Delete"]},
+                    "Properties": {
+                        "TopicName": {"Ref": "TopicName"},
+                    },
+                }
+            },
+            "Outputs": {
+                "TopicArn": {"Value": {"Ref": "MyTopic"}},
+            },
+        }
+
+        stack = deploy_cfn_template(
+            template=json.dumps(template),
+            parameters={"Environment": environment, "TopicName": topic_name},
+        )
+
+        stack_description = aws_client.cloudformation.describe_stacks(StackName=stack.stack_id)
+        snapshot.match("stack-description", stack_description)
+
+        stack_resources = aws_client.cloudformation.describe_stack_resources(
+            StackName=stack.stack_id
+        )
+        snapshot.match("stack-resources", stack_resources)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LastOperations"])
+    def test_deletion_policy_with_fn_find_in_map(self, deploy_cfn_template, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(snapshot.transform.key_value("TopicArn"))
+
+        topic_name = f"test-topic-findmap-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic-name>"))
+
+        template = {
+            "AWSTemplateFormatVersion": "2010-09-09",
+            "Parameters": {
+                "Environment": {
+                    "Type": "String",
+                    "AllowedValues": ["dev", "staging", "prod"],
+                },
+                "TopicName": {"Type": "String"},
+            },
+            "Mappings": {
+                "EnvironmentPolicies": {
+                    "dev": {"DeletionPolicy": "Delete"},
+                    "staging": {"DeletionPolicy": "Retain"},
+                    "prod": {"DeletionPolicy": "Retain"},
+                }
+            },
+            "Resources": {
+                "MyTopic": {
+                    "Type": "AWS::SNS::Topic",
+                    "DeletionPolicy": {
+                        "Fn::FindInMap": [
+                            "EnvironmentPolicies",
+                            {"Ref": "Environment"},
+                            "DeletionPolicy",
+                        ]
+                    },
+                    "UpdateReplacePolicy": {
+                        "Fn::FindInMap": [
+                            "EnvironmentPolicies",
+                            {"Ref": "Environment"},
+                            "DeletionPolicy",
+                        ]
+                    },
+                    "Properties": {"TopicName": {"Ref": "TopicName"}},
+                }
+            },
+            "Outputs": {"TopicArn": {"Value": {"Ref": "MyTopic"}}},
+        }
+
+        stack = deploy_cfn_template(
+            template=json.dumps(template),
+            parameters={"Environment": "staging", "TopicName": topic_name},
+        )
+
+        stack_description = aws_client.cloudformation.describe_stacks(StackName=stack.stack_id)
+        snapshot.match("stack-description", stack_description)
+
+        stack_resources = aws_client.cloudformation.describe_stack_resources(
+            StackName=stack.stack_id
+        )
+        snapshot.match("stack-resources", stack_resources)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LastOperations"])
+    def test_deletion_policy_with_ref_parameter(self, deploy_cfn_template, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(snapshot.transform.key_value("TopicArn"))
+
+        topic_name = f"test-topic-ref-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic-name>"))
+
+        template = {
+            "AWSTemplateFormatVersion": "2010-09-09",
+            "Parameters": {
+                "DeletionPolicyParam": {
+                    "Type": "String",
+                    "AllowedValues": ["Delete", "Retain", "Snapshot"],
+                },
+                "TopicName": {"Type": "String"},
+            },
+            "Resources": {
+                "MyTopic": {
+                    "Type": "AWS::SNS::Topic",
+                    "DeletionPolicy": {"Ref": "DeletionPolicyParam"},
+                    "UpdateReplacePolicy": {"Ref": "DeletionPolicyParam"},
+                    "Properties": {"TopicName": {"Ref": "TopicName"}},
+                }
+            },
+            "Outputs": {"TopicArn": {"Value": {"Ref": "MyTopic"}}},
+        }
+
+        stack = deploy_cfn_template(
+            template=json.dumps(template),
+            parameters={"DeletionPolicyParam": "Retain", "TopicName": topic_name},
+        )
+
+        stack_description = aws_client.cloudformation.describe_stacks(StackName=stack.stack_id)
+        snapshot.match("stack-description", stack_description)
+
+        stack_resources = aws_client.cloudformation.describe_stack_resources(
+            StackName=stack.stack_id
+        )
+        snapshot.match("stack-resources", stack_resources)
+
 
 class TestValidateConditions:
     @markers.aws.validated
