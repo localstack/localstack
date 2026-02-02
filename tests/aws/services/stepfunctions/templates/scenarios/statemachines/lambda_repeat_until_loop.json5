@@ -1,0 +1,31 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "LambdaState",
+  "States": {
+    "LambdaState": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "__tbd__",
+        "Payload": "__tbd__"
+      },
+      "Assign": {
+        "status": "{% $states.result.Payload.status %}",
+      },
+      "Next": "CheckCompleted"
+    },
+    "CheckCompleted": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $status = 'completed' %}",
+          "Next": "Finish"
+        }
+      ],
+      "Default": "LambdaState"
+    },
+    "Finish": {
+      "Type": "Succeed"
+    }
+  }
+}

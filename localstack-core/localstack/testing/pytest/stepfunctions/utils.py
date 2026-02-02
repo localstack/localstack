@@ -568,6 +568,7 @@ def launch_and_record_logs(
     sfn_snapshot.match("logged_execution_events", logged_execution_events)
 
 
+# TODO refactor to have fewer positional arguments. Consider converting to a fixture.
 def create_and_record_execution(
     target_aws_client,
     create_state_machine_iam_role,

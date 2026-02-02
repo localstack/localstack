@@ -1,138 +1,113 @@
-"""
-Test for cycling through numbered mock responses in Step Functions Local.
-Fixes GitHub issue #13107: Step Functions Mock Responses Not Cycling Through Numbered Responses
-"""
-
 import json
 
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
+    create_and_record_execution,
     create_and_record_mocked_execution,
 )
+from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
+from tests.aws.services.stepfunctions.local_mocked_service_integrations.mocked_service_integrations import (
+    MockedServiceIntegrationsLoader,
+)
+from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
+    ScenariosTemplate,
+)
+from tests.aws.services.stepfunctions.templates.services.services_templates import ServicesTemplates
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..SdkHttpMetadata", "$..SdkResponseMetadata"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..SdkHttpMetadata", "$..SdkResponseMetadata", "$..events..ExecutedVersion"]
+)
 @markers.requires_in_process
 class TestNumberedMockCycling:
-    @markers.aws.only_localstack
-    def test_numbered_mock_responses_cycle_correctly(
+    @markers.aws.validated
+    def test_numbered_mock_responses_multiple_invocations(
         self,
         aws_client,
         create_state_machine_iam_role,
         create_state_machine,
+        create_lambda_function,
+        account_id,
+        region_name,
         sfn_snapshot,
         monkeypatch,
         mock_config_file,
     ):
         """
-        Test that numbered mock responses ("0", "1", "2", etc.) cycle correctly
-        through multiple invocations of the same state, not based on retry count.
-
-        This test verifies the fix for issue #13107 where mock responses were incorrectly
-        using RetryCount instead of an invocation counter, causing all calls to return
-        the same response ("0") instead of cycling through the sequence.
+        Test that numbered mock responses ("0", "1", etc.) cycle correctly
+        through multiple successful invocations of the same state,
+        e.g. in a repeat-until loop implemented using a choice state.
         """
-        state_machine_name = f"mock_cycling_test_{short_uid()}"
-        test_name = "NumberedResponseCyclingTest"
-
-        sfn_snapshot.add_transformer(RegexTransformer(state_machine_name, "state_machine_name"))
-
-        # Define a state machine with a Choice state that loops until the instance is running
-        definition = {
-            "Comment": "Test numbered mock response cycling",
-            "StartAt": "DescribeInstance",
-            "States": {
-                "DescribeInstance": {
-                    "Type": "Task",
-                    "Resource": "arn:aws:states:::aws-sdk:ec2:describeInstances",
-                    "Parameters": {"InstanceIds": ["i-1234567890abcdef0"]},
-                    "ResultPath": "$.DescribeResult",
-                    "Next": "CheckInstanceState",
-                },
-                "CheckInstanceState": {
-                    "Type": "Choice",
-                    "Choices": [
-                        {
-                            "Variable": "$.DescribeResult.Reservations[0].Instances[0].State.Code",
-                            "NumericEquals": 16,
-                            "Next": "InstanceRunning",
-                        }
-                    ],
-                    "Default": "DescribeInstance",
-                },
-                "InstanceRunning": {"Type": "Succeed"},
-            },
+        template = ScenariosTemplate.load_sfn_template(ScenariosTemplate.LAMBDA_REPEAT_UNTIL_LOOP)
+        template["States"]["LambdaState"]["Arguments"]["Payload"] = {
+            "status": "{% $exists($status) ? 'completed' : 'running' %}"
         }
-
-        # Mock configuration with numbered responses
-        # Response "0": Instance in pending state (Code: 0)
-        # Response "1": Instance in running state (Code: 16)
-        mock_config = {
-            "StateMachines": {
-                state_machine_name: {
-                    "TestCases": {
-                        test_name: {"DescribeInstance": "MockDescribeInstancesProgression"}
-                    }
-                }
-            },
-            "MockedResponses": {
-                "MockDescribeInstancesProgression": {
-                    "0": {
-                        "Return": {
-                            "Reservations": [
-                                {
-                                    "Instances": [
-                                        {
-                                            "InstanceId": "i-1234567890abcdef0",
-                                            "InstanceType": "t2.micro",
-                                            "LaunchTime": "2023-01-01T00:00:00.000Z",
-                                            "State": {"Code": 0, "Name": "pending"},
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                    "1": {
-                        "Return": {
-                            "Reservations": [
-                                {
-                                    "Instances": [
-                                        {
-                                            "InstanceId": "i-1234567890abcdef0",
-                                            "InstanceType": "t2.micro",
-                                            "LaunchTime": "2023-01-01T00:00:00.000Z",
-                                            "State": {"Code": 16, "Name": "running"},
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                }
-            },
-        }
-
-        mock_config_file_path = mock_config_file(mock_config)
-        monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
 
         exec_input = json.dumps({})
-        definition_str = json.dumps(definition)
+        function_name = f"lambda_{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
 
-        create_and_record_mocked_execution(
-            aws_client,
-            create_state_machine_iam_role,
-            create_state_machine,
-            sfn_snapshot,
-            definition_str,
-            exec_input,
-            state_machine_name,
-            test_name,
-        )
+        if is_aws_cloud():
+            lambda_creation_response = create_lambda_function(
+                func_name=function_name,
+                handler_file=ServicesTemplates.LAMBDA_ID_FUNCTION,
+                runtime=Runtime.python3_12,
+            )
+            lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
+            template["States"]["LambdaState"]["Arguments"]["FunctionName"] = lambda_arn
+            definition = json.dumps(template)
+            create_and_record_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+            )
+        else:
+            state_machine_name = f"mock_cycling_test_{short_uid()}"
+            test_name = "NumberedResponseCyclingTest"
+
+            sfn_snapshot.add_transformer(RegexTransformer(state_machine_name, "state_machine_name"))
+
+            lambda_200_loop_status = MockedServiceIntegrationsLoader.load(
+                MockedServiceIntegrationsLoader.MOCKED_RESPONSE_LAMBDA_200_STATUS_CHANGE_BETWEEN_INVOCATIONS
+            )
+            mock_config = {
+                "StateMachines": {
+                    state_machine_name: {
+                        "TestCases": {test_name: {"LambdaState": "lambda_200_loop_status"}}
+                    }
+                },
+                "MockedResponses": {"lambda_200_loop_status": lambda_200_loop_status},
+            }
+
+            mock_config_file_path = mock_config_file(mock_config)
+            monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
+
+            template["States"]["LambdaState"]["Arguments"]["FunctionName"] = (
+                arns.lambda_function_arn(
+                    function_name=function_name, account_id=account_id, region_name=region_name
+                )
+            )
+            definition = json.dumps(template)
+
+            create_and_record_mocked_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+                state_machine_name,
+                test_name,
+            )
 
     @markers.aws.only_localstack
     def test_multiple_numbered_responses_in_sequence(

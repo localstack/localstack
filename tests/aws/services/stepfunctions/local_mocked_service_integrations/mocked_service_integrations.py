@@ -16,6 +16,9 @@ class MockedServiceIntegrationsLoader(abc.ABC):
     MOCKED_RESPONSE_LAMBDA_200_STRING_BODY: Final[str] = os.path.join(
         _THIS_FOLDER, "mocked_responses/lambda/200_string_body.json5"
     )
+    MOCKED_RESPONSE_LAMBDA_200_STATUS_CHANGE_BETWEEN_INVOCATIONS: Final[str] = os.path.join(
+        _THIS_FOLDER, "mocked_responses/lambda/200_status_change_between_invocations.json5"
+    )
     MOCKED_RESPONSE_LAMBDA_NOT_READY_TIMEOUT_200_STRING_BODY: Final[str] = os.path.join(
         _THIS_FOLDER, "mocked_responses/lambda/not_ready_timeout_200_string_body.json5"
     )
