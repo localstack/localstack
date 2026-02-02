@@ -6,6 +6,7 @@ from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api import ServiceException as ServiceException
 
 AccountID = str
+AdditionalFlexibleNetworkInterfaces = int
 AddressMaxResults = int
 AllocationId = str
 AllowedInstanceType = str
@@ -2661,6 +2662,80 @@ class InstanceType(StrEnum):
     c8a_48xlarge = "c8a.48xlarge"
     c8a_metal_24xl = "c8a.metal-24xl"
     c8a_metal_48xl = "c8a.metal-48xl"
+    c8gb_12xlarge = "c8gb.12xlarge"
+    c8gb_16xlarge = "c8gb.16xlarge"
+    c8gb_24xlarge = "c8gb.24xlarge"
+    c8gb_2xlarge = "c8gb.2xlarge"
+    c8gb_4xlarge = "c8gb.4xlarge"
+    c8gb_8xlarge = "c8gb.8xlarge"
+    c8gb_large = "c8gb.large"
+    c8gb_medium = "c8gb.medium"
+    c8gb_metal_24xl = "c8gb.metal-24xl"
+    c8gb_xlarge = "c8gb.xlarge"
+    c8gb_48xlarge = "c8gb.48xlarge"
+    c8gb_metal_48xl = "c8gb.metal-48xl"
+    m8gb_12xlarge = "m8gb.12xlarge"
+    m8gb_16xlarge = "m8gb.16xlarge"
+    m8gb_24xlarge = "m8gb.24xlarge"
+    m8gb_2xlarge = "m8gb.2xlarge"
+    m8gb_4xlarge = "m8gb.4xlarge"
+    m8gb_8xlarge = "m8gb.8xlarge"
+    m8gb_large = "m8gb.large"
+    m8gb_medium = "m8gb.medium"
+    m8gb_xlarge = "m8gb.xlarge"
+    m8gb_48xlarge = "m8gb.48xlarge"
+    m8gb_metal_24xl = "m8gb.metal-24xl"
+    m8gb_metal_48xl = "m8gb.metal-48xl"
+    m8gn_12xlarge = "m8gn.12xlarge"
+    m8gn_16xlarge = "m8gn.16xlarge"
+    m8gn_24xlarge = "m8gn.24xlarge"
+    m8gn_2xlarge = "m8gn.2xlarge"
+    m8gn_48xlarge = "m8gn.48xlarge"
+    m8gn_4xlarge = "m8gn.4xlarge"
+    m8gn_8xlarge = "m8gn.8xlarge"
+    m8gn_large = "m8gn.large"
+    m8gn_medium = "m8gn.medium"
+    m8gn_xlarge = "m8gn.xlarge"
+    m8gn_metal_24xl = "m8gn.metal-24xl"
+    m8gn_metal_48xl = "m8gn.metal-48xl"
+    x8aedz_12xlarge = "x8aedz.12xlarge"
+    x8aedz_24xlarge = "x8aedz.24xlarge"
+    x8aedz_3xlarge = "x8aedz.3xlarge"
+    x8aedz_6xlarge = "x8aedz.6xlarge"
+    x8aedz_large = "x8aedz.large"
+    x8aedz_metal_12xl = "x8aedz.metal-12xl"
+    x8aedz_metal_24xl = "x8aedz.metal-24xl"
+    x8aedz_xlarge = "x8aedz.xlarge"
+    m8azn_medium = "m8azn.medium"
+    m8azn_large = "m8azn.large"
+    m8azn_xlarge = "m8azn.xlarge"
+    m8azn_3xlarge = "m8azn.3xlarge"
+    m8azn_6xlarge = "m8azn.6xlarge"
+    m8azn_12xlarge = "m8azn.12xlarge"
+    m8azn_24xlarge = "m8azn.24xlarge"
+    m8azn_metal_12xl = "m8azn.metal-12xl"
+    m8azn_metal_24xl = "m8azn.metal-24xl"
+    x8i_large = "x8i.large"
+    x8i_xlarge = "x8i.xlarge"
+    x8i_2xlarge = "x8i.2xlarge"
+    x8i_4xlarge = "x8i.4xlarge"
+    x8i_8xlarge = "x8i.8xlarge"
+    x8i_12xlarge = "x8i.12xlarge"
+    x8i_16xlarge = "x8i.16xlarge"
+    x8i_24xlarge = "x8i.24xlarge"
+    x8i_32xlarge = "x8i.32xlarge"
+    x8i_48xlarge = "x8i.48xlarge"
+    x8i_64xlarge = "x8i.64xlarge"
+    x8i_96xlarge = "x8i.96xlarge"
+    x8i_metal_48xl = "x8i.metal-48xl"
+    x8i_metal_96xl = "x8i.metal-96xl"
+    mac_m4max_metal = "mac-m4max.metal"
+    g7e_2xlarge = "g7e.2xlarge"
+    g7e_4xlarge = "g7e.4xlarge"
+    g7e_8xlarge = "g7e.8xlarge"
+    g7e_12xlarge = "g7e.12xlarge"
+    g7e_24xlarge = "g7e.24xlarge"
+    g7e_48xlarge = "g7e.48xlarge"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -14464,6 +14539,7 @@ class NetworkCardInfo(TypedDict, total=False):
     NetworkCardIndex: NetworkCardIndex | None
     NetworkPerformance: NetworkPerformance | None
     MaximumNetworkInterfaces: MaxNetworkInterfaces | None
+    AdditionalFlexibleNetworkInterfaces: AdditionalFlexibleNetworkInterfaces | None
     BaselineBandwidthInGbps: BaselineBandwidthInGbps | None
     PeakBandwidthInGbps: PeakBandwidthInGbps | None
     DefaultEnaQueueCountPerInterface: DefaultEnaQueueCountPerInterface | None
@@ -22515,6 +22591,7 @@ class SearchTransitGatewayRoutesRequest(ServiceRequest):
     Filters: FilterList
     MaxResults: TransitGatewayMaxResults | None
     DryRun: Boolean | None
+    NextToken: String | None
 
 
 TransitGatewayRouteList = list[TransitGatewayRoute]
@@ -22523,6 +22600,7 @@ TransitGatewayRouteList = list[TransitGatewayRoute]
 class SearchTransitGatewayRoutesResult(TypedDict, total=False):
     Routes: TransitGatewayRouteList | None
     AdditionalRoutesAvailable: Boolean | None
+    NextToken: String | None
 
 
 class SecurityGroupRuleDescription(TypedDict, total=False):
@@ -31743,6 +31821,7 @@ class Ec2Api:
         filters: FilterList,
         max_results: TransitGatewayMaxResults | None = None,
         dry_run: Boolean | None = None,
+        next_token: String | None = None,
         **kwargs,
     ) -> SearchTransitGatewayRoutesResult:
         raise NotImplementedError
