@@ -13,8 +13,8 @@ from localstack.utils.strings import to_str
 # the safe bytes with the more compact form.
 _QUOPRI_HEADER_MAP = [f"={c:02X}" for c in range(256)]
 
-_SAFE_HEADERS_CHARS = b"!\"#$%&'()*+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^`abcdefghijklmnopqrstuvwxyz{|}~\t"
-_NO_ENCODING_CHARS = _SAFE_HEADERS_CHARS + b" _"
+_SAFE_HEADERS_CHARS = b"!\"#$%&'()*+,-./0123456789:;<>@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^`abcdefghijklmnopqrstuvwxyz{|}~\t"
+_NO_ENCODING_CHARS = _SAFE_HEADERS_CHARS + b" _=?"
 
 # For AWS, it seems it uses the std lib "safe body" bytes list which need no encoding.
 for c in _SAFE_HEADERS_CHARS:

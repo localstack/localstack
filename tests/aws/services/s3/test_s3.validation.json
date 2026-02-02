@@ -723,12 +723,12 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_user_metadata_rfc2047_encoded": {
-    "last_validated_date": "2026-01-30T19:37:25+00:00",
+    "last_validated_date": "2026-02-02T16:50:28+00:00",
     "durations_in_seconds": {
-      "setup": 1.02,
-      "call": 0.42,
-      "teardown": 1.04,
-      "total": 2.48
+      "setup": 1.01,
+      "call": 0.37,
+      "teardown": 1.0,
+      "total": 2.38
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_date": {
@@ -1206,12 +1206,12 @@
     "last_validated_date": "2025-03-17T20:16:38+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_unicode_metadata": {
-    "last_validated_date": "2026-01-29T22:10:49+00:00",
+    "last_validated_date": "2026-02-02T11:43:13+00:00",
     "durations_in_seconds": {
-      "setup": 1.02,
-      "call": 0.47,
-      "teardown": 0.98,
-      "total": 2.47
+      "setup": 1.08,
+      "call": 0.5,
+      "teardown": 1.0,
+      "total": 2.58
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_wrong_content_type": {

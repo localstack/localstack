@@ -18372,7 +18372,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_unicode_metadata": {
-    "recorded-date": "29-01-2026, 22:10:48",
+    "recorded-date": "02-02-2026, 11:43:12",
     "recorded-content": {
       "post-object": {
         "LocationHeader": "<bucket-url>/test_unicode%E2%80%94_file.pdf",
@@ -18392,8 +18392,10 @@
         "ETag": "\"a7d8531d918474360de3e2eaeb110cda\"",
         "LastModified": "datetime",
         "Metadata": {
+          "b-encoded": "=?UTF-8?B?YWJj?=",
           "nonascii": "=?UTF-8?Q?=C3=84M=C3=84Z=C3=95=C3=91_S3?=",
           "nonascii-2": "=?UTF-8?Q?test=5F=E2=80=94=5Ffile%E2%80%94=5F=C3=A9=5F2=F0=9F=91=91.pdf?=",
+          "q-encoded": "=?UTF-8?Q?actually-ascii?=",
           "safe-chars": "! \"#$%&'()*+,-./0123456789:;<>'?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\t",
           "utf-8": "=?UTF-8?B?AAECAwQ=?="
         },
@@ -18503,7 +18505,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_user_metadata_rfc2047_encoded": {
-    "recorded-date": "30-01-2026, 19:37:24",
+    "recorded-date": "02-02-2026, 16:50:27",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "AAAAAA==",
@@ -18527,10 +18529,11 @@
         "Metadata": {
           "asciib64-encoded": "abc",
           "fake-encoded": "actually-ascii",
-          "non-ascii": "=?UTF-8?Q?test=5F=E2=80=94=5Ffile%E2%80%94=5F=C3=A9=5F2.pdf?=",
+          "non-ascii": "=?UTF-8?Q?test=5F=E2=80=94=5Ffile%E2%80%94=5F=C3=A9=5F2=3F.pdf?=",
           "non-ascii-2": "=?UTF-8?Q?=C3=84M=C3=84Z=C3=95=C3=91_S3?=",
           "non-ascii-binary": "=?UTF-8?B?AAECAw==?=",
-          "replacement-chars": "=?UTF-8?B?77+977+977+977+977+977+977+9?="
+          "replacement-chars": "=?UTF-8?B?77+977+977+977+977+977+977+9?=",
+          "safe-chars": "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
         },
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {

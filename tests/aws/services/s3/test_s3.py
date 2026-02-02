@@ -15,6 +15,7 @@ import time
 from importlib.util import find_spec
 from io import BytesIO
 from operator import itemgetter
+from string import punctuation as ascii_punctuation
 from typing import TYPE_CHECKING
 from urllib.parse import SplitResult, parse_qs, quote, urlencode, urlparse, urlunsplit
 from zoneinfo import ZoneInfo
@@ -458,10 +459,11 @@ class TestS3:
     @markers.aws.validated
     def test_user_metadata_rfc2047_encoded(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        non_ascii = "test_—_file%E2%80%94_é_2.pdf"
+        non_ascii = "test_—_file%E2%80%94_é_2?.pdf"
         non_ascii_2 = "ÄMÄZÕÑ S3"
         utf_metadata = "\x00\x01\x02\x03"
         replacement_chars = "�������"
+        safe_chars = ascii_punctuation + " \t"
         response = aws_client.s3.put_object(
             Bucket=s3_bucket,
             Key="test",
@@ -473,6 +475,7 @@ class TestS3:
                 # test if it will decode RFC 2047 looking data and return it decoded
                 "fake-encoded": "=?UTF-8?Q?actually-ascii?=",
                 "asciib64-encoded": "=?UTF-8?B?YWJj?=",
+                "safe-chars": safe_chars,
             },
         )
         snapshot.match("put-object", response)
@@ -11235,6 +11238,8 @@ class TestS3PresignedPost:
         user_metadata_2 = "test_—_file%E2%80%94_é_2👑.pdf"
         test_safe_chars = "! \"#$%&'()*+,-./0123456789:;<>'?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\t"
         utf_8_byte_string = "\x00\x01\x02\x03\x04"
+        rfc_2047_q_encoded = "=?UTF-8?Q?actually-ascii?="
+        rfc_2047_b_encoded = "=?UTF-8?B?YWJj?="
 
         presigned_request = aws_client.s3.generate_presigned_post(
             Bucket=s3_bucket,
@@ -11247,6 +11252,8 @@ class TestS3PresignedPost:
                 "x-amz-meta-nonascii-2": user_metadata_2,
                 "x-amz-meta-safe-chars": test_safe_chars,
                 "x-amz-meta-utf-8": utf_8_byte_string,
+                "x-amz-meta-q-encoded": rfc_2047_q_encoded,
+                "x-amz-meta-b-encoded": rfc_2047_b_encoded,
                 # we require the 201 status code to get more information from the response
                 "success_action_status": "201",
             },
@@ -11258,6 +11265,8 @@ class TestS3PresignedPost:
                 ["eq", "$x-amz-meta-nonascii-2", user_metadata_2],
                 ["eq", "$x-amz-meta-safe-chars", test_safe_chars],
                 ["eq", "$x-amz-meta-utf-8", utf_8_byte_string],
+                ["eq", "$x-amz-meta-q-encoded", rfc_2047_q_encoded],
+                ["eq", "$x-amz-meta-b-encoded", rfc_2047_b_encoded],
                 ["eq", "$success_action_status", "201"],
             ],
         )
