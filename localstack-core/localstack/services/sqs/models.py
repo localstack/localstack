@@ -269,28 +269,36 @@ class MessageMoveTask:
     # configurable fields
     source_arn: str
     """The arn of the DLQ the messages are currently in."""
-    destination_arn: str | None = None
+    destination_arn: str
     """If the DestinationArn is not specified, the original source arn will be used as target."""
-    max_number_of_messages_per_second: int | None = None
+    max_number_of_messages_per_second: int | None
 
     # dynamic fields
     task_id: str
-    status: str = MessageMoveTaskStatus.CREATED
-    started_timestamp: datetime | None = None
-    approximate_number_of_messages_moved: int | None = None
-    approximate_number_of_messages_to_move: int | None = None
-    failure_reason: str | None = None
+    status: str
+    started_timestamp: datetime | None
+    approximate_number_of_messages_moved: int | None
+    approximate_number_of_messages_to_move: int | None
+    failure_reason: str | None
 
     cancel_event: threading.Event
 
     def __init__(
-        self, source_arn: str, destination_arn: str, max_number_of_messages_per_second: int = None
+        self,
+        source_arn: str,
+        destination_arn: str,
+        max_number_of_messages_per_second: int | None = None,
     ):
         self.task_id = long_uid()
         self.source_arn = source_arn
         self.destination_arn = destination_arn
         self.max_number_of_messages_per_second = max_number_of_messages_per_second
         self.cancel_event = threading.Event()
+        self.status = MessageMoveTaskStatus.CREATED
+        self.started_timestamp = None
+        self.approximate_number_of_messages_moved = None
+        self.approximate_number_of_messages_to_move = None
+        self.failure_reason = None
 
     def mark_started(self):
         self.started_timestamp = datetime.utcnow()
@@ -1373,7 +1381,7 @@ class FifoQueue(SqsQueue):
 
 
 class SqsStore(BaseStore):
-    queues: dict[str, SqsQueue] = LocalAttribute(default=dict)
+    queues: dict[str, FifoQueue | StandardQueue] = LocalAttribute(default=dict)
 
     deleted: dict[str, float] = LocalAttribute(default=dict)
 
