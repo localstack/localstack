@@ -4497,7 +4497,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             system_metadata["ContentType"] = "binary/octet-stream"
 
         user_metadata = {
-            # TODO: add unicode decode here!
             field.removeprefix("x-amz-meta-").lower(): form.get(field)
             for field in form
             if field.startswith("x-amz-meta-")
