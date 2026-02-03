@@ -3914,8 +3914,7 @@ def platform_credentials() -> tuple[str, str]:
 @pytest.fixture(scope="class")
 def e_mail_address() -> str:
     # this address must be real and accessible if you want to test email subscriptions
-    # e_mail = "test@example.com"
-    e_mail = "bernhard.matyas@localstack.cloud"
+    e_mail = "test@example.com"
     return e_mail
 
 
