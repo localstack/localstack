@@ -1,0 +1,278 @@
+{
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_create_log_group_with_kms_key": {
+    "recorded-date": "03-02-2026, 21:00:51",
+    "recorded-content": {
+      "describe-log-groups-with-kms": {
+        "logGroups": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "creationTime": "timestamp",
+            "deletionProtectionEnabled": false,
+            "kmsKeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id>",
+            "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>",
+            "logGroupClass": "STANDARD",
+            "logGroupName": "<log-group-name:1>",
+            "metricFilterCount": 0,
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_create_log_group_duplicate_error": {
+    "recorded-date": "03-02-2026, 20:57:35",
+    "recorded-content": {
+      "error-duplicate-log-group": {
+        "Error": {
+          "Code": "ResourceAlreadyExistsException",
+          "Message": "The specified log group already exists"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_create_log_group_invalid_name_length": {
+    "recorded-date": "03-02-2026, 20:57:35",
+    "recorded-content": {
+      "error-invalid-name-length": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "Invalid LogGroup or LogStream, both must have length less than or equal to 512."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_describe_log_groups_with_prefix": {
+    "recorded-date": "03-02-2026, 20:57:36",
+    "recorded-content": {
+      "describe-log-groups-prefix": {
+        "logGroups": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "creationTime": "timestamp",
+            "deletionProtectionEnabled": false,
+            "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>",
+            "logGroupClass": "STANDARD",
+            "logGroupName": "<log-group-name:1>",
+            "metricFilterCount": 0,
+            "storedBytes": 0
+          },
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:2>:*",
+            "creationTime": "timestamp",
+            "deletionProtectionEnabled": false,
+            "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:2>",
+            "logGroupClass": "STANDARD",
+            "logGroupName": "<log-group-name:2>",
+            "metricFilterCount": 0,
+            "storedBytes": 0
+          },
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:3>:*",
+            "creationTime": "timestamp",
+            "deletionProtectionEnabled": false,
+            "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:3>",
+            "logGroupClass": "STANDARD",
+            "logGroupName": "<log-group-name:3>",
+            "metricFilterCount": 0,
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_describe_log_groups_with_pattern": {
+    "recorded-date": "03-02-2026, 20:57:37",
+    "recorded-content": {
+      "describe-log-groups-pattern": {
+        "logGroups": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "creationTime": "timestamp",
+            "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>",
+            "logGroupClass": "STANDARD",
+            "logGroupName": "<log-group-name:1>",
+            "metricFilterCount": 0
+          }
+        ],
+        "nextToken": "<next_token>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_describe_log_groups_prefix_and_pattern_error": {
+    "recorded-date": "03-02-2026, 20:57:38",
+    "recorded-content": {
+      "error-prefix-and-pattern": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "LogGroup name prefix and LogGroup name pattern are mutually exclusive parameters."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_list_log_groups_with_pattern": {
+    "recorded-date": "03-02-2026, 20:57:39",
+    "recorded-content": {
+      "list-log-groups-no-match": {
+        "logGroups": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-log-groups-match": [
+        {
+          "logGroupName": "<log-group-name:1>",
+          "creationTime": "timestamp",
+          "metricFilterCount": 0,
+          "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+          "logGroupClass": "STANDARD",
+          "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroupsTags::test_create_log_group_with_tags": {
+    "recorded-date": "03-02-2026, 21:03:36",
+    "recorded-content": {
+      "list-tags-after-create": {
+        "tags": {
+          "env": "testing"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroupsTags::test_tag_log_group": {
+    "recorded-date": "03-02-2026, 21:03:37",
+    "recorded-content": {
+      "list-tags-after-tag": {
+        "tags": {
+          "tag_key_1": "tag_value_1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroupsTags::test_untag_log_group": {
+    "recorded-date": "03-02-2026, 21:03:38",
+    "recorded-content": {
+      "list-tags-after-untag": {
+        "tags": {
+          "tag_key_2": "tag_value_2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroupsTags::test_tag_resource_api": {
+    "recorded-date": "03-02-2026, 21:03:39",
+    "recorded-content": {
+      "list-tags-after-create": {
+        "tags": {
+          "env": "testing1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-log-group-after-tag-resource": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-for-resource-after-tag-resource": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-log-group-after-tag-log-group": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2",
+          "test3": "val3"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-for-resource-after-tag-log-group": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2",
+          "test3": "val3"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-log-group-after-untag": {
+        "tags": {
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-for-resource-after-untag": {
+        "tags": {
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
