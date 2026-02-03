@@ -599,6 +599,15 @@
       "total": 2.69
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_no_confirm_subscription": {
+    "last_validated_date": "2026-01-30T08:41:34+00:00",
+    "durations_in_seconds": {
+      "setup": 1.18,
+      "call": 1.63,
+      "teardown": 0.61,
+      "total": 3.42
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_non_existent_target": {
     "last_validated_date": "2025-11-19T12:40:59+00:00",
     "durations_in_seconds": {

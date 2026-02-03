@@ -593,9 +593,13 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self, context: RequestContext, next_token: nextToken = None, **kwargs
     ) -> ListSubscriptionsResponse:
         store = self.get_store(context.account_id, context.region)
-        subscriptions = [
-            select_from_typed_dict(Subscription, sub) for sub in list(store.subscriptions.values())
-        ]
+        subscriptions = []
+        for s in list(store.subscriptions.values()):
+            sub = select_from_typed_dict(Subscription, s)
+            if s["PendingConfirmation"] == "true":
+                sub["SubscriptionArn"] = "PendingConfirmation"
+            subscriptions.append(sub)
+
         paginated_subscriptions = PaginatedList(subscriptions)
         page, next_token = paginated_subscriptions.get_page(
             token_generator=lambda x: get_next_page_token_from_arn(x["SubscriptionArn"]),
