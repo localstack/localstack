@@ -60,9 +60,9 @@ class ArchiveService:
         region: str,
         account_id: str,
         event_source_arn: Arn,
-        description: ArchiveDescription,
-        event_pattern: EventPattern,
-        retention_days: RetentionDays,
+        description: ArchiveDescription | None,
+        event_pattern: EventPattern | None,
+        retention_days: RetentionDays | None,
     ) -> Self:
         return cls(
             Archive(

@@ -2,7 +2,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.events import (
@@ -90,7 +90,7 @@ FormattedEvent = TypedDict(  # functional syntax required due to name-name keys
         "time": EventTime,
         "region": str,
         "resources": EventResourceList | None,
-        "detail": dict[str, str | dict],
+        "detail": dict[str, Any],
         "replay-name": ReplayName | None,
         "event-bus-name": EventBusName,
     },
@@ -191,13 +191,14 @@ class Archive:
     region: str
     account_id: str
     event_source_arn: Arn
-    description: ArchiveDescription = None
-    event_pattern: EventPattern = None
-    retention_days: RetentionDays = None
-    state: ArchiveState = ArchiveState.DISABLED
-    creation_time: Timestamp = None
-    size_bytes: int = 0  # TODO how to deal with updating this value?
-    events: FormattedEventDict = field(default_factory=dict)
+    description: ArchiveDescription | None = None
+    event_pattern: EventPattern | None = None
+    retention_days: RetentionDays | None = None
+    state: ArchiveState = field(init=False, default=ArchiveState.DISABLED)
+    creation_time: Timestamp = field(init=False, default_factory=lambda: datetime.now(UTC))
+    events: FormattedEventDict = field(init=False, default_factory=dict)
+    # TODO how to deal with updating this value?
+    size_bytes: int = field(init=False, default=0)
 
     @property
     def arn(self) -> Arn:
@@ -221,12 +222,10 @@ class EventBus:
     tags: TagList = field(default_factory=list)
     policy: ResourcePolicy | None = None
     rules: RuleDict = field(default_factory=dict)
-    creation_time: Timestamp = field(init=False)
-    last_modified_time: Timestamp = field(init=False)
+    creation_time: Timestamp = field(init=False, default_factory=lambda: datetime.now(UTC))
+    last_modified_time: Timestamp = field(init=False, default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self):
-        self.creation_time = datetime.now(UTC)
-        self.last_modified_time = datetime.now(UTC)
         if self.rules is None:
             self.rules = {}
         if self.tags is None:
@@ -251,17 +250,13 @@ class Connection:
     secret_arn: Arn
     description: ConnectionDescription | None = None
     invocation_connectivity_parameters: ConnectivityResourceParameters | None = None
-    creation_time: Timestamp = field(init=False)
-    last_modified_time: Timestamp = field(init=False)
-    last_authorized_time: Timestamp = field(init=False)
+    creation_time: Timestamp = field(init=False, default_factory=lambda: datetime.now(UTC))
+    last_modified_time: Timestamp = field(init=False, default_factory=lambda: datetime.now(UTC))
+    last_authorized_time: Timestamp = field(init=False, default_factory=lambda: datetime.now(UTC))
     tags: TagList = field(default_factory=list)
     id: str = str(uuid.uuid4())
 
     def __post_init__(self):
-        timestamp_now = datetime.now(UTC)
-        self.creation_time = timestamp_now
-        self.last_modified_time = timestamp_now
-        self.last_authorized_time = timestamp_now
         if self.tags is None:
             self.tags = []
 
@@ -284,17 +279,13 @@ class ApiDestination:
     state: ApiDestinationState
     _invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond | None = None
     description: ApiDestinationDescription | None = None
-    creation_time: Timestamp = field(init=False)
-    last_modified_time: Timestamp = field(init=False)
-    last_authorized_time: Timestamp = field(init=False)
+    creation_time: Timestamp = field(init=False, default_factory=lambda: datetime.now(UTC))
+    last_modified_time: Timestamp = field(init=False, default_factory=lambda: datetime.now(UTC))
+    last_authorized_time: Timestamp = field(init=False, default_factory=lambda: datetime.now(UTC))
     tags: TagList = field(default_factory=list)
     id: str = str(short_uid())
 
     def __post_init__(self):
-        timestamp_now = datetime.now(UTC)
-        self.creation_time = timestamp_now
-        self.last_modified_time = timestamp_now
-        self.last_authorized_time = timestamp_now
         if self.tags is None:
             self.tags = []
 
