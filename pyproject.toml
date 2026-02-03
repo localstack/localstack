@@ -187,7 +187,7 @@ exclude = ["tests*"]
 
 [tool.ruff]
 # Generate code compatible with version defined in .python-version
-target-version = "py311"
+target-version = "py313"
 line-length = 100
 src = ["localstack-core", "tests"]
 exclude = [
