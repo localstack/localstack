@@ -420,7 +420,7 @@ class TemplateRenderer:
             self.environment, template_mapping[file_type], **kwargs
         )
 
-    def get_getatt_targets(self) -> Generator[str, None, None]:
+    def get_getatt_targets(self) -> Generator[str]:
         for name, defn in self.schema["properties"].items():
             if "type" in defn and defn["type"] in ["string"]:
                 yield name

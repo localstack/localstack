@@ -46,14 +46,14 @@ def chosen_localstack_host() -> str:
 
 # these fixtures have been copied from the pre-existing fixtures
 @pytest.fixture(scope="class")
-def class_container_factory() -> Generator[ContainerFactory, None, None]:
+def class_container_factory() -> Generator[ContainerFactory]:
     factory = ContainerFactory()
     yield factory
     factory.remove_all_containers()
 
 
 @pytest.fixture(scope="class")
-def class_stream_container_logs() -> Generator[LogStreamFactory, None, None]:
+def class_stream_container_logs() -> Generator[LogStreamFactory]:
     factory = LogStreamFactory()
     yield factory
     factory.close()

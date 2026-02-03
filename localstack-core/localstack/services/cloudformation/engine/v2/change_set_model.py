@@ -4,9 +4,7 @@ import abc
 import enum
 from collections.abc import Generator
 from itertools import zip_longest
-from typing import Any, Final, TypedDict, cast
-
-from typing_extensions import TypeVar
+from typing import Any, Final, TypedDict, TypeVar, cast
 
 from localstack.aws.api.cloudformation import ChangeAction
 from localstack.services.cloudformation.resource_provider import ResourceProviderExecutor
