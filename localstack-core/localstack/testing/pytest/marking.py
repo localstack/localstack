@@ -73,7 +73,9 @@ class Markers:
     requires_in_process = pytest.mark.requires_in_process
     """The test and the LS instance have to be run in the same process"""
     requires_docker = pytest.mark.requires_docker
-    """The test requires docker or a compatible container engine - will not work on kubernetes"""
+    """The test requires the LocalStack instance having access to docker or a compatible container engine - will not work on kubernetes"""
+    test_requires_docker = pytest.mark.requires_docker
+    """The test itself requires docker or a compatible container engine - will not work without the test having access to a docker instance"""
     lambda_runtime_update = pytest.mark.lambda_runtime_update
     """Tests to execute when updating snapshots for a new Lambda runtime"""
     k8s_always_run = pytest.mark.k8s_always_run
@@ -225,7 +227,11 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "requires_docker: mark the test as requiring docker (or a compatible container engine) - will not work on kubernetes.",
+        "requires_docker: mark the test requiring a LocalStack instance with access to docker (or a compatible container engine) - will not work on kubernetes.",
+    )
+    config.addinivalue_line(
+        "markers",
+        "test_requires_docker: mark the test itself as requiring docker (or a compatible container engine) - LS itself might not need access to docker",
     )
     config.addinivalue_line(
         "markers",
