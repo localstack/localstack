@@ -65,7 +65,7 @@ class OperationStatus(Enum):
 
 
 @dataclass
-class ProgressEvent(Generic[Properties]):
+class ProgressEvent[Properties]:
     status: OperationStatus
     resource_model: Properties | None = None
     resource_models: list[Properties] | None = None
@@ -165,7 +165,7 @@ def convert_payload(
 
 
 @dataclass
-class ResourceRequest(Generic[Properties]):
+class ResourceRequest[Properties]:
     _original_payload: Properties
 
     aws_client_factory: ServiceLevelClientFactory

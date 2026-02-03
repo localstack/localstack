@@ -30,14 +30,12 @@ https://dill.readthedocs.io/en/latest/index.html?highlight=register#dill.Pickler
 
 import inspect
 from collections.abc import Callable
-from typing import Any, BinaryIO, Generic, TypeVar
+from typing import Any, BinaryIO
 
 import dill
 from dill._dill import MetaCatchingDict
 
 from .core import Decoder, Encoder
-
-_T = TypeVar("_T")
 
 PythonPickler = Any
 """Type placeholder for pickle._Pickler (which has for instance the save_reduce method)"""
@@ -268,7 +266,7 @@ def get_default_decoder() -> Decoder:
     return get_default_decoder()
 
 
-class ObjectStateReducer(Generic[_T]):
+class ObjectStateReducer[T]:
     """
     A generalization of the following pattern::
 
@@ -301,7 +299,7 @@ class ObjectStateReducer(Generic[_T]):
                 state["this_one_doesnt_serialize"] = restore(state["this_one_serialized"])
     """
 
-    cls: _T
+    cls: T
 
     @classmethod
     def create(cls):
@@ -313,7 +311,7 @@ class ObjectStateReducer(Generic[_T]):
         """
         add_dispatch_entry(self.cls, self._pickle, subclasses=subclasses)
 
-    def _pickle(self, pickler, obj: _T):
+    def _pickle(self, pickler, obj: T):
         state = self.get_state(obj)
         self.prepare(obj, state)
         return pickler.save_reduce(self._unpickle, (state,), obj=obj)
@@ -324,7 +322,7 @@ class ObjectStateReducer(Generic[_T]):
         self.set_state(obj, state)
         return obj
 
-    def get_state(self, obj: _T) -> Any:
+    def get_state(self, obj: T) -> Any:
         """
         Return the objects state. Can be overwritten by subclasses to return custom state.
 
@@ -333,7 +331,7 @@ class ObjectStateReducer(Generic[_T]):
         """
         return obj.__dict__.copy()
 
-    def set_state(self, obj: _T, state: Any):
+    def set_state(self, obj: T, state: Any):
         """
         Set the state of the object. Can be overwritten by subclasses to set custom state.
 
@@ -342,7 +340,7 @@ class ObjectStateReducer(Generic[_T]):
         """
         obj.__dict__.update(state)
 
-    def prepare(self, obj: _T, state: Any):
+    def prepare(self, obj: T, state: Any):
         """
         Can be overwritten by subclasses to prepare the object state for pickling.
 
@@ -351,7 +349,7 @@ class ObjectStateReducer(Generic[_T]):
         """
         pass
 
-    def restore(self, obj: _T, state: Any):
+    def restore(self, obj: T, state: Any):
         """
         Can be overwritten by subclasses to modify the object state to restore any previously removed attributes.
 

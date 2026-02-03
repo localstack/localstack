@@ -1,6 +1,5 @@
 import abc
 import copy
-from typing import Generic, TypeVar
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
@@ -15,10 +14,8 @@ from localstack.services.stepfunctions.backend.test_state.test_state_mock import
     eval_mocked_response_throw,
 )
 
-T = TypeVar("T", bound=CommonStateField)
 
-
-class MockedBaseState(Generic[T], abc.ABC):
+class MockedBaseState[T: CommonStateField](abc.ABC):
     is_single_state: bool
     _wrapped: T
 
