@@ -1,0 +1,47 @@
+{
+  "tests/aws/services/logs/test_logs_streams.py::TestLogsStreams::test_create_and_delete_log_stream": {
+    "last_validated_date": "2026-02-03T21:22:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.76,
+      "call": 0.38,
+      "teardown": 0.11,
+      "total": 1.25
+    }
+  },
+  "tests/aws/services/logs/test_logs_streams.py::TestLogsStreams::test_create_log_stream_duplicate_error": {
+    "last_validated_date": "2026-02-03T21:22:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.1,
+      "call": 0.16,
+      "teardown": 0.25,
+      "total": 0.51
+    }
+  },
+  "tests/aws/services/logs/test_logs_streams.py::TestLogsStreams::test_describe_log_streams_with_log_group_identifier": {
+    "last_validated_date": "2026-02-03T21:22:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.1,
+      "call": 0.41,
+      "teardown": 0.11,
+      "total": 0.62
+    }
+  },
+  "tests/aws/services/logs/test_logs_streams.py::TestLogsStreams::test_describe_log_streams_with_prefix": {
+    "last_validated_date": "2026-02-03T21:23:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.12,
+      "call": 0.34,
+      "teardown": 0.42,
+      "total": 0.88
+    }
+  },
+  "tests/aws/services/logs/test_logs_streams.py::TestLogsStreams::test_log_stream_arn_format": {
+    "last_validated_date": "2026-02-03T21:23:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.1,
+      "call": 0.25,
+      "teardown": 0.11,
+      "total": 0.46
+    }
+  }
+}

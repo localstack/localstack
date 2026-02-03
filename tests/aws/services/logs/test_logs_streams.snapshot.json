@@ -1,0 +1,129 @@
+{
+  "tests/aws/services/logs/test_logs_streams.py::TestLogsStreams::test_create_and_delete_log_stream": {
+    "recorded-date": "03-02-2026, 21:22:58",
+    "recorded-content": {
+      "describe-log-streams-after-create": {
+        "logStreams": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group>:log-stream:<log-stream-name:1>",
+            "creationTime": "timestamp",
+            "logStreamName": "<log-stream-name:1>",
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_streams.py::TestLogsStreams::test_create_log_stream_duplicate_error": {
+    "recorded-date": "03-02-2026, 21:22:58",
+    "recorded-content": {
+      "error-duplicate-log-stream": {
+        "Error": {
+          "Code": "ResourceAlreadyExistsException",
+          "Message": "The specified log stream already exists"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_streams.py::TestLogsStreams::test_describe_log_streams_with_log_group_identifier": {
+    "recorded-date": "03-02-2026, 21:22:59",
+    "recorded-content": {
+      "describe-streams-identifier-name": {
+        "logStreams": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group>:log-stream:<log-stream-name:1>",
+            "creationTime": "timestamp",
+            "logStreamName": "<log-stream-name:1>",
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-streams-identifier-arn": {
+        "logStreams": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group>:log-stream:<log-stream-name:1>",
+            "creationTime": "timestamp",
+            "logStreamName": "<log-stream-name:1>",
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error-both-name-and-identifier": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "LogGroup name and LogGroup ARN are mutually exclusive parameters."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_streams.py::TestLogsStreams::test_describe_log_streams_with_prefix": {
+    "recorded-date": "03-02-2026, 21:23:00",
+    "recorded-content": {
+      "describe-streams-with-prefix": {
+        "logStreams": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group>:log-stream:<log-stream-name:1>",
+            "creationTime": "timestamp",
+            "logStreamName": "<log-stream-name:1>",
+            "storedBytes": 0
+          },
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group>:log-stream:<log-stream-name:2>",
+            "creationTime": "timestamp",
+            "logStreamName": "<log-stream-name:2>",
+            "storedBytes": 0
+          },
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group>:log-stream:<log-stream-name:3>",
+            "creationTime": "timestamp",
+            "logStreamName": "<log-stream-name:3>",
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_streams.py::TestLogsStreams::test_log_stream_arn_format": {
+    "recorded-date": "03-02-2026, 21:23:00",
+    "recorded-content": {
+      "describe-log-streams-with-arn": {
+        "logStreams": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group>:log-stream:<log-stream-name:1>",
+            "creationTime": "timestamp",
+            "logStreamName": "<log-stream-name:1>",
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
