@@ -792,7 +792,7 @@ class SqsQueue:
 
 
 class StandardQueue(SqsQueue):
-    visible: InterruptiblePriorityQueue
+    visible: InterruptiblePriorityQueue[SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         super().__init__(name, region, account_id, attributes, tags)
