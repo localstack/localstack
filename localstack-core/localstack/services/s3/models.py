@@ -632,6 +632,8 @@ class KeyStore:
     retrieve the object from that key.
     """
 
+    _store: dict[ObjectKey, S3Object | S3DeleteMarker]
+
     def __init__(self):
         self._store = {}
 
@@ -663,6 +665,8 @@ class VersionedKeyStore:
     This object allows easy retrieval and saving of new object versions.
     See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/versioning-workflows.html
     """
+
+    _store: dict[ObjectKey, dict[ObjectVersionId, S3Object | S3DeleteMarker]]
 
     def __init__(self):
         self._store = defaultdict(dict)
