@@ -6,6 +6,7 @@ from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 # Credentials used in the test suite
 # These can be overridden if the tests are being run against AWS
 TEST_AWS_ACCOUNT_ID = os.getenv("TEST_AWS_ACCOUNT_ID") or DEFAULT_AWS_ACCOUNT_ID
+TEST_AWS_USER = os.getenv("TEST_AWS_USER") or "user/localstack-testing"
 # If a structured access key ID is used, it must correspond to the account ID
 TEST_AWS_ACCESS_KEY_ID = os.getenv("TEST_AWS_ACCESS_KEY_ID") or "test"
 TEST_AWS_SECRET_ACCESS_KEY = os.getenv("TEST_AWS_SECRET_ACCESS_KEY") or "test"
