@@ -6,13 +6,9 @@ import traceback
 from collections.abc import Callable
 from concurrent.futures import Future
 from multiprocessing.dummy import Pool
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
-if TYPE_CHECKING:
-    from typing_extensions import ParamSpec
-
-    P = ParamSpec("P")
-
+P = ParamSpec("P")
 T = TypeVar("T")
 
 LOG = logging.getLogger(__name__)
