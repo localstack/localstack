@@ -26,6 +26,7 @@ from localstack import config
 from localstack.aws.api.cloudformation import CreateChangeSetInput, Parameter
 from localstack.aws.api.ec2 import CreateSecurityGroupRequest, CreateVpcEndpointRequest, VpcEndpoint
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -54,6 +55,7 @@ from localstack.utils.json import CustomEncoder, json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -2858,3 +2860,40 @@ def logs_log_stream(logs_log_group, aws_client):
 
     for stream_name in log_stream_names:
         aws_client.logs.delete_log_stream(logStreamName=stream_name, logGroupName=logs_log_group)
+
+
+@pytest.fixture()
+def disable_requests_ssl_verification():
+    # modified into a fixture from https://stackoverflow.com/a/15445989
+    # Only disable SSL verification if we use a non default hostname
+    if localstack_host().host == LOCALHOST_HOSTNAME:
+        yield
+        return
+
+    old_merge_environment_settings = requests.Session.merge_environment_settings
+
+    opened_adapters = set()
+
+    def merge_environment_settings(self, url, proxies, stream, verify, cert):
+        # Verification happens only once per connection so we need to close
+        # all the opened adapters once we're done. Otherwise, the effects of
+        # verify=False persist beyond the end of this context manager.
+        opened_adapters.add(self.get_adapter(url))
+
+        settings = old_merge_environment_settings(self, url, proxies, stream, verify, cert)
+        settings["verify"] = False
+
+        return settings
+
+    requests.Session.merge_environment_settings = merge_environment_settings
+
+    try:
+        yield
+    finally:
+        requests.Session.merge_environment_settings = old_merge_environment_settings
+
+        for adapter in opened_adapters:
+            try:
+                adapter.close()
+            except Exception:
+                pass
