@@ -196,6 +196,14 @@ class EndPointType(StrEnum):
 
 class EventSourceMappingMetric(StrEnum):
     EventCount = "EventCount"
+    ErrorCount = "ErrorCount"
+    KafkaMetrics = "KafkaMetrics"
+
+
+class EventSourceMappingSystemLogLevel(StrEnum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARN = "WARN"
 
 
 class EventSourcePosition(StrEnum):
@@ -1292,6 +1300,10 @@ class ProvisionedPollerConfig(TypedDict, total=False):
     PollerGroupName: ProvisionedPollerGroupName | None
 
 
+class EventSourceMappingLoggingConfig(TypedDict, total=False):
+    SystemLogLevel: EventSourceMappingSystemLogLevel | None
+
+
 EventSourceMappingMetricList = list[EventSourceMappingMetric]
 
 
@@ -1387,6 +1399,7 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     DocumentDBEventSourceConfig: DocumentDBEventSourceConfig | None
     KMSKeyArn: KMSKeyArn | None
     MetricsConfig: EventSourceMappingMetricsConfig | None
+    LoggingConfig: EventSourceMappingLoggingConfig | None
     ProvisionedPollerConfig: ProvisionedPollerConfig | None
 
 
@@ -1729,6 +1742,7 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     FilterCriteriaError: FilterCriteriaError | None
     EventSourceMappingArn: EventSourceMappingArn | None
     MetricsConfig: EventSourceMappingMetricsConfig | None
+    LoggingConfig: EventSourceMappingLoggingConfig | None
     ProvisionedPollerConfig: ProvisionedPollerConfig | None
 
 
@@ -2595,6 +2609,7 @@ class UpdateEventSourceMappingRequest(ServiceRequest):
     DocumentDBEventSourceConfig: DocumentDBEventSourceConfig | None
     KMSKeyArn: KMSKeyArn | None
     MetricsConfig: EventSourceMappingMetricsConfig | None
+    LoggingConfig: EventSourceMappingLoggingConfig | None
     ProvisionedPollerConfig: ProvisionedPollerConfig | None
 
 
@@ -2784,6 +2799,7 @@ class LambdaApi:
         document_db_event_source_config: DocumentDBEventSourceConfig | None = None,
         kms_key_arn: KMSKeyArn | None = None,
         metrics_config: EventSourceMappingMetricsConfig | None = None,
+        logging_config: EventSourceMappingLoggingConfig | None = None,
         provisioned_poller_config: ProvisionedPollerConfig | None = None,
         **kwargs,
     ) -> EventSourceMappingConfiguration:
@@ -3547,6 +3563,7 @@ class LambdaApi:
         document_db_event_source_config: DocumentDBEventSourceConfig | None = None,
         kms_key_arn: KMSKeyArn | None = None,
         metrics_config: EventSourceMappingMetricsConfig | None = None,
+        logging_config: EventSourceMappingLoggingConfig | None = None,
         provisioned_poller_config: ProvisionedPollerConfig | None = None,
         **kwargs,
     ) -> EventSourceMappingConfiguration:

@@ -288,6 +288,7 @@ class OperationName(StrEnum):
     S3PutObjectRetention = "S3PutObjectRetention"
     S3ReplicateObject = "S3ReplicateObject"
     S3ComputeObjectChecksum = "S3ComputeObjectChecksum"
+    S3UpdateObjectEncryption = "S3UpdateObjectEncryption"
 
 
 class OutputSchemaVersion(StrEnum):
@@ -1036,6 +1037,19 @@ class JobReport(TypedDict, total=False):
     ExpectedBucketOwner: AccountId | None
 
 
+class S3UpdateObjectEncryptionSSEKMS(TypedDict, total=False):
+    KMSKeyArn: NonEmptyKmsKeyArnString
+    BucketKeyEnabled: Boolean | None
+
+
+class ObjectEncryption(TypedDict, total=False):
+    SSEKMS: S3UpdateObjectEncryptionSSEKMS | None
+
+
+class S3UpdateObjectEncryptionOperation(TypedDict, total=False):
+    ObjectEncryption: ObjectEncryption | None
+
+
 class S3ComputeObjectChecksumOperation(TypedDict, total=False):
     ChecksumAlgorithm: ComputeObjectChecksumAlgorithm | None
     ChecksumType: ComputeObjectChecksumType | None
@@ -1171,6 +1185,7 @@ class JobOperation(TypedDict, total=False):
     S3PutObjectRetention: S3SetObjectRetentionOperation | None
     S3ReplicateObject: S3ReplicateObjectOperation | None
     S3ComputeObjectChecksum: S3ComputeObjectChecksumOperation | None
+    S3UpdateObjectEncryption: S3UpdateObjectEncryptionOperation | None
 
 
 class CreateJobRequest(ServiceRequest):
