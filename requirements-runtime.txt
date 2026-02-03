@@ -179,7 +179,7 @@ kclpy-ext==3.0.5
     # via localstack-core (pyproject.toml)
 lazy-object-proxy==1.12.0
     # via openapi-spec-validator
-localstack-twisted==25.5.0
+localstack-twisted==24.3.0
     # via localstack-core
 markdown-it-py==4.0.0
     # via rich
@@ -312,7 +312,7 @@ rich==14.3.2
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.8.0
+rolo==0.7.6
     # via localstack-core
 rpds-py==0.30.0
     # via

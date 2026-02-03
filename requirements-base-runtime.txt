@@ -99,7 +99,7 @@ jsonschema-specifications==2025.9.1
     #   openapi-schema-validator
 lazy-object-proxy==1.12.0
     # via openapi-spec-validator
-localstack-twisted==25.5.0
+localstack-twisted==24.3.0
     # via localstack-core (pyproject.toml)
 markdown-it-py==4.0.0
     # via rich
@@ -171,7 +171,7 @@ rfc3339-validator==0.1.4
     # via openapi-schema-validator
 rich==14.3.2
     # via localstack-core (pyproject.toml)
-rolo==0.8.0
+rolo==0.7.6
     # via localstack-core (pyproject.toml)
 rpds-py==0.30.0
     # via
