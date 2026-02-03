@@ -401,7 +401,7 @@ class NoResourceProvider(Exception):
     pass
 
 
-def resolve_json_pointer(resource_props: Properties, primary_id_path: str) -> str:  # noqa: UP047
+def resolve_json_pointer[Properties](resource_props: Properties, primary_id_path: str) -> str:
     primary_id_path = primary_id_path.replace("/properties", "")
     parts = [p for p in primary_id_path.split("/") if p]
 
