@@ -131,7 +131,7 @@ class S3Bucket:
     inventory_configurations: dict[InventoryId, InventoryConfiguration]
     metric_configurations: dict[MetricsId, MetricsConfiguration]
     object_lock_default_retention: DefaultRetention | None
-    replication: ReplicationConfiguration
+    replication: ReplicationConfiguration | None
     owner: Owner
 
     # set all buckets parameters here
@@ -266,7 +266,6 @@ class S3Bucket:
 class S3Object:
     key: ObjectKey
     version_id: ObjectVersionId | None
-    bucket: BucketName
     owner: Owner | None
     size: Size | None
     etag: ETag | None
