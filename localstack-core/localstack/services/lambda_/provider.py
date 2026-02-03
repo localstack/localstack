@@ -829,11 +829,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     raise InvalidParameterValueException(
                         f"Layer version {layer_version_arn} does not exist.", Type="User"
                     )
-            else:  # External layer from other account
+            else:  # External/public layer from another AWS account
+                # TODO: detect user or role from IAM context.
+                #  We could use extract_resource_from_arn(sts.get_caller_identity()["Arn"]), but that might
+                #  affect IAM parity if AWS does not do the same
+                user = "user/localstack-testing"
                 # TODO: validate IAM layer policy here, allowing access by default for now and only checking region
                 if region and layer_region != region:
-                    # TODO: detect user or role from context when IAM users are implemented
-                    user = "user/localstack-testing"
                     raise AccessDeniedException(
                         f"User: arn:{get_partition(region)}:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
                     )
@@ -847,8 +849,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
                     layer = self.layer_fetcher.fetch_layer(layer_version_arn)
                     if layer is None:
-                        # TODO: detect user or role from context when IAM users are implemented
-                        user = "user/localstack-testing"
                         raise AccessDeniedException(
                             f"User: arn:{get_partition(region)}:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
                         )
