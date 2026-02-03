@@ -1,16 +1,19 @@
 import time
 from queue import Empty, PriorityQueue, Queue
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
 
 
-class InterruptibleQueue(Queue):
+class InterruptibleQueue(Queue, Generic[T]):
     # is_shutdown is used to check whether we have triggered a shutdown of the Queue
     is_shutdown: bool
 
-    def __init__(self, maxsize=0):
+    def __init__(self, maxsize: int = 0):
         super().__init__(maxsize)
         self.is_shutdown = False
 
-    def get(self, block=True, timeout=None):
+    def get(self, block: bool = True, timeout: float | None = None) -> T:
         with self.not_empty:
             if self.is_shutdown:
                 raise Empty
@@ -35,7 +38,7 @@ class InterruptibleQueue(Queue):
             self.not_full.notify()
             return item
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """
         `shutdown` signals to stop all current and future `Queue.get` calls from executing.
 
@@ -46,5 +49,5 @@ class InterruptibleQueue(Queue):
             self.not_empty.notify_all()
 
 
-class InterruptiblePriorityQueue(PriorityQueue, InterruptibleQueue):
+class InterruptiblePriorityQueue(PriorityQueue, InterruptibleQueue[T], Generic[T]):
     pass
