@@ -275,6 +275,8 @@ from localstack.services.s3.utils import (
     base_64_content_md5_to_etag,
     create_redirect_for_post_request,
     create_s3_kms_managed_key_for_region,
+    decode_user_metadata,
+    encode_user_metadata,
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
     generate_safe_version_id,
@@ -293,6 +295,8 @@ from localstack.services.s3.utils import (
     get_s3_checksum_algorithm_from_trailing_headers,
     get_system_metadata_from_request,
     get_unique_key_id,
+    get_url_encoded_object_location,
+    header_name_from_capitalized_param,
     is_bucket_name_valid,
     is_version_older_than_other,
     parse_copy_source_range_header,
@@ -760,6 +764,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
 
+        user_metadata = decode_user_metadata(request.get("Metadata"))
+
         version_id = generate_version_id(s3_bucket.versioning_status)
         if version_id != "null":
             # if we are in a versioned bucket, we need to lock around the full key (all the versions)
@@ -810,7 +816,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             version_id=version_id,
             storage_class=storage_class,
             expires=request.get("Expires"),
-            user_metadata=request.get("Metadata"),
+            user_metadata=user_metadata,
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
             checksum_value=checksum_value,
@@ -1015,7 +1021,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             **s3_object.get_system_metadata_fields(),
         )
         if s3_object.user_metadata:
-            response["Metadata"] = s3_object.user_metadata
+            response["Metadata"] = encode_user_metadata(s3_object.user_metadata)
 
         if s3_object.parts and request.get("PartNumber"):
             response["PartsCount"] = len(s3_object.parts)
@@ -1097,6 +1103,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
             if request_param_value := request.get(request_param):
+                if isinstance(request_param_value, str):
+                    try:
+                        request_param_value.encode("latin-1")
+                    except UnicodeEncodeError:
+                        raise InvalidArgument(
+                            "Header value cannot be represented using ISO-8859-1.",
+                            ArgumentName=header_name_from_capitalized_param(request_param),
+                            ArgumentValue=request_param_value,
+                            HostId=S3_HOST_ID,
+                        )
+
                 response[response_param] = request_param_value
 
         return response
@@ -1143,7 +1160,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             **s3_object.get_system_metadata_fields(),
         )
         if s3_object.user_metadata:
-            response["Metadata"] = s3_object.user_metadata
+            response["Metadata"] = encode_user_metadata(s3_object.user_metadata)
 
         checksum_value = None
         checksum_type = None
@@ -1581,7 +1598,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             tagging = parse_tagging_header(tagging)
 
         if metadata_directive == "REPLACE":
-            user_metadata = request.get("Metadata")
+            user_metadata = decode_user_metadata(request.get("Metadata"))
             system_metadata = get_system_metadata_from_request(request)
             if not system_metadata.get("ContentType"):
                 system_metadata["ContentType"] = "binary/octet-stream"
@@ -2284,6 +2301,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
 
+        user_metadata = decode_user_metadata(request.get("Metadata"))
+
         checksum_algorithm = request.get("ChecksumAlgorithm")
         if checksum_algorithm and checksum_algorithm not in CHECKSUM_ALGORITHMS:
             raise InvalidRequest(
@@ -2337,7 +2356,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             key=key,
             storage_class=storage_class,
             expires=request.get("Expires"),
-            user_metadata=request.get("Metadata"),
+            user_metadata=user_metadata,
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
             checksum_type=checksum_type,
@@ -2807,7 +2826,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             Bucket=bucket,
             Key=key,
             ETag=s3_object.quoted_etag,
-            Location=f"{get_full_default_bucket_location(bucket)}{key}",
+            Location=get_url_encoded_object_location(bucket, key),
         )
 
         if s3_object.version_id:
@@ -4471,7 +4490,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         system_metadata = {}
         for system_metadata_field in post_system_settable_headers:
             if field_value := form.get(system_metadata_field):
-                system_metadata[system_metadata_field.replace("-", "")] = field_value
+                system_key = system_metadata_field.replace("-", "")
+                system_metadata[system_key] = field_value
 
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
@@ -4577,7 +4597,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["StatusCode"] = 204
 
         response["LocationHeader"] = response.get(
-            "LocationHeader", f"{get_full_default_bucket_location(bucket)}{object_key}"
+            "LocationHeader",
+            get_url_encoded_object_location(bucket, object_key),
         )
 
         if s3_bucket.versioning_status == "Enabled":

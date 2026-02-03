@@ -77,6 +77,7 @@ from localstack.services.s3.exceptions import (
     InvalidRequest,
     MalformedXML,
 )
+from localstack.services.s3.headers import decode_header_rfc2047, encode_header_rfc2047
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.objects import singleton_factory
@@ -462,6 +463,10 @@ def get_full_default_bucket_location(bucket_name: BucketName) -> str:
         return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 
+def get_url_encoded_object_location(bucket_name: BucketName, object_key: str) -> str:
+    return f"{get_full_default_bucket_location(bucket_name)}{urlparser.quote(object_key)}"
+
+
 def etag_to_base_64_content_md5(etag: ETag) -> str:
     """
     Convert an ETag, representing a MD5 hexdigest (might be quoted), to its base64 encoded representation
@@ -560,6 +565,20 @@ def get_system_metadata_from_request(request: dict) -> Metadata:
     return metadata
 
 
+def encode_user_metadata(metadata: Metadata) -> Metadata:
+    """Encode the user metadata in the RFC 2047 format if necessary so that it can be returned in HTTP headers"""
+    return {k: encode_header_rfc2047(v) for k, v in metadata.items()}
+
+
+def decode_user_metadata(metadata: Metadata | None) -> Metadata:
+    """Decode the user metadata if provided in the RFC2047 format, or leave as is if not. AWS also lowercase the
+    metadata key"""
+    if not metadata:
+        return {}
+
+    return {k.lower(): decode_header_rfc2047(v) for k, v in metadata.items()}
+
+
 def extract_bucket_name_and_key_from_headers_and_path(
     headers: dict[str, str], path: str
 ) -> tuple[str | None, str | None]:
@@ -616,6 +635,10 @@ def get_bucket_and_key_from_presign_url(presign_url: str) -> tuple[str, str]:
 
 def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
+
+
+def header_name_from_capitalized_param(param_name: str) -> str:
+    return "-".join(re.findall("[A-Z][^A-Z]*", param_name)).lower()
 
 
 def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str) -> str | None:

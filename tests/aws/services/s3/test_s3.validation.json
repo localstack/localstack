@@ -257,6 +257,15 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_metadata_header_character_decoding": {
     "last_validated_date": "2025-01-21T18:26:37+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_metadata_header_character_unicode_encoding": {
+    "last_validated_date": "2026-01-28T17:21:11+00:00",
+    "durations_in_seconds": {
+      "setup": 1.08,
+      "call": 0.32,
+      "teardown": 0.96,
+      "total": 2.36
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_and_list_parts": {
     "last_validated_date": "2025-03-17T21:28:50+00:00"
   },
@@ -274,6 +283,15 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_overwrite_key": {
     "last_validated_date": "2025-03-17T21:29:05+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_with_unicode_character_location": {
+    "last_validated_date": "2026-01-28T19:11:54+00:00",
+    "durations_in_seconds": {
+      "setup": 1.05,
+      "call": 0.62,
+      "teardown": 0.99,
+      "total": 2.66
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_object_with_slashes_in_key[False]": {
     "last_validated_date": "2025-01-21T18:26:36+00:00"
@@ -671,6 +689,15 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_set_external_hostname": {
     "last_validated_date": "2025-03-17T21:30:10+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_system_metadata_with_unicode": {
+    "last_validated_date": "2026-01-28T18:54:11+00:00",
+    "durations_in_seconds": {
+      "setup": 1.06,
+      "call": 0.35,
+      "teardown": 1.07,
+      "total": 2.48
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_upload_big_file": {
     "last_validated_date": "2025-01-21T18:39:01+00:00"
   },
@@ -685,6 +712,24 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_url_encoded_key[True]": {
     "last_validated_date": "2025-01-21T18:27:06+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_user_metadata_rfc2047_bad_b64_encoded": {
+    "last_validated_date": "2026-01-30T19:03:31+00:00",
+    "durations_in_seconds": {
+      "setup": 1.07,
+      "call": 0.35,
+      "teardown": 1.06,
+      "total": 2.48
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_user_metadata_rfc2047_encoded": {
+    "last_validated_date": "2026-02-02T16:50:28+00:00",
+    "durations_in_seconds": {
+      "setup": 1.01,
+      "call": 0.37,
+      "teardown": 1.0,
+      "total": 2.38
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_date": {
     "last_validated_date": "2025-01-21T18:18:26+00:00"
@@ -1160,6 +1205,15 @@
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_tags[single]": {
     "last_validated_date": "2025-03-17T20:16:38+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_unicode_metadata": {
+    "last_validated_date": "2026-02-02T11:43:13+00:00",
+    "durations_in_seconds": {
+      "setup": 1.08,
+      "call": 0.5,
+      "teardown": 1.0,
+      "total": 2.58
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_wrong_content_type": {
     "last_validated_date": "2025-03-17T20:16:49+00:00"
   },
@@ -1195,6 +1249,15 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_get_object_ignores_request_body": {
     "last_validated_date": "2025-01-21T18:23:01+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_get_response_overrides_unicode_metadata_with_sig_s3": {
+    "last_validated_date": "2026-01-28T18:18:22+00:00",
+    "durations_in_seconds": {
+      "setup": 1.13,
+      "call": 0.65,
+      "teardown": 1.22,
+      "total": 3.0
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_head_has_correct_content_length_header": {
     "last_validated_date": "2025-01-21T18:22:49+00:00"
@@ -1276,6 +1339,15 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3v4-True]": {
     "last_validated_date": "2025-01-21T18:23:09+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_unicode_metadata_with_sig_s3": {
+    "last_validated_date": "2026-01-28T18:46:19+00:00",
+    "durations_in_seconds": {
+      "setup": 1.05,
+      "call": 0.64,
+      "teardown": 1.0,
+      "total": 2.69
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_url_metadata_with_sig_s3[False]": {
     "last_validated_date": "2025-01-21T18:22:59+00:00"
