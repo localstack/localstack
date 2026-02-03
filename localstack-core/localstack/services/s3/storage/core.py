@@ -3,7 +3,7 @@ from collections.abc import Iterable, Iterator
 from io import RawIOBase
 from typing import IO, Literal
 
-from localstack.aws.api.s3 import BucketName, PartNumber
+from localstack.aws.api.s3 import BucketName, PartNumber, Parts
 from localstack.services.s3.models import S3Multipart, S3Object, S3Part
 from localstack.services.s3.utils import ObjectRange
 
@@ -158,7 +158,7 @@ class S3StoredMultipart(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def complete_multipart(self, parts: list[PartNumber]) -> None:
+    def complete_multipart(self, parts: list[Parts]) -> None:
         pass
 
     @abc.abstractmethod

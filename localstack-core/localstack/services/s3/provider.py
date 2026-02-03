@@ -1052,7 +1052,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["StatusCode"] = 206
             if checksum_value:
                 if s3_object.parts and part_number and checksum_type == ChecksumType.COMPOSITE:
-                    part_data = s3_object.parts[part_number]
+                    part_data = s3_object.parts[str(part_number)]
                     checksum_key = f"Checksum{checksum_algorithm.upper()}"
                     response[checksum_key] = part_data.get(checksum_key)
                     response["ChecksumType"] = ChecksumType.COMPOSITE
@@ -1197,7 +1197,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["StatusCode"] = 206
             if checksum_value:
                 if s3_object.parts and part_number and checksum_type == ChecksumType.COMPOSITE:
-                    part_data = s3_object.parts[part_number]
+                    part_data = s3_object.parts[str(part_number)]
                     checksum_key = f"Checksum{checksum_algorithm.upper()}"
                     response[checksum_key] = part_data.get(checksum_key)
                     response["ChecksumType"] = ChecksumType.COMPOSITE
@@ -2176,17 +2176,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 max_parts = request.get("MaxParts") or 1000
 
                 parts = []
-                all_parts = sorted(s3_object.parts.items())
+                all_parts = sorted(
+                    (int(part_number), part) for part_number, part in s3_object.parts.items()
+                )
                 last_part_number, last_part = all_parts[-1]
-
-                # TODO: remove this backward compatibility hack needed for state created with <= 4.5
-                #  the parts would only be a tuple and would not store the proper state for 4.5 and earlier, so we need
-                #  to return early
-                if isinstance(last_part, tuple):
-                    response["ObjectParts"] = GetObjectAttributesParts(
-                        TotalPartsCount=len(s3_object.parts)
-                    )
-                    return response
 
                 for part_number, part in all_parts:
                     if part_number <= part_number_marker:
@@ -2535,7 +2528,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                         CalculatedDigest=calculated_md5,
                     )
 
-            s3_multipart.parts[part_number] = s3_part
+            s3_multipart.parts[str(part_number)] = s3_part
 
         response = UploadPartOutput(
             ETag=s3_part.quoted_etag,
@@ -2636,7 +2629,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         stored_multipart = self._storage_backend.get_multipart(dest_bucket, s3_multipart)
         stored_multipart.copy_from_object(s3_part, src_bucket, src_s3_object, range_data)
 
-        s3_multipart.parts[part_number] = s3_part
+        s3_multipart.parts[str(part_number)] = s3_part
 
         # TODO: return those fields
         #     RequestCharged: Optional[RequestCharged]
@@ -2798,7 +2791,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         stored_multipart = self._storage_backend.get_multipart(bucket, s3_multipart)
         stored_multipart.complete_multipart(
-            [s3_multipart.parts.get(part_number) for part_number in parts_numbers]
+            [s3_multipart.parts.get(str(part_number)) for part_number in parts_numbers]
         )
         if not s3_multipart.checksum_algorithm and s3_multipart.object.checksum_algorithm:
             with self._storage_backend.open(
@@ -2909,7 +2902,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         max_parts = max_parts or 1000
 
         parts = []
-        all_parts = sorted(s3_multipart.parts.items())
+        all_parts = sorted(
+            (int(part_number), part) for part_number, part in s3_multipart.parts.items()
+        )
         last_part_number = all_parts[-1][0] if all_parts else None
         for part_number, part in all_parts:
             if part_number <= part_number_marker:
@@ -4883,7 +4878,7 @@ def get_part_range(s3_object: S3Object, part_number: PartNumber) -> ObjectRange:
             content_length=s3_object.size,
             content_range=f"bytes 0-{s3_object.size - 1}/{s3_object.size}",
         )
-    elif not (part_data := s3_object.parts.get(part_number)):
+    elif not (part_data := s3_object.parts.get(str(part_number))):
         raise InvalidPartNumber(
             "The requested partnumber is not satisfiable",
             PartNumberRequested=part_number,

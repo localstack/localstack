@@ -289,7 +289,7 @@ class S3Object:
     website_redirect_location: WebsiteRedirectLocation | None
     acl: AccessControlPolicy | None
     is_current: bool
-    parts: dict[int, InternalObjectPart] | None
+    parts: dict[str, InternalObjectPart] | None
     restore: Restore | None
     internal_last_modified: int
 
@@ -441,7 +441,7 @@ class S3Part:
 
 
 class S3Multipart:
-    parts: dict[PartNumber, S3Part]
+    parts: dict[str, S3Part]
     object: S3Object
     upload_id: MultipartUploadId
     checksum_value: str | None
@@ -520,9 +520,9 @@ class S3Multipart:
                 checksum_hash = CombinedCrcHash(self.checksum_algorithm)
 
         pos = 0
-        parts_map: dict[int, InternalObjectPart] = {}
+        parts_map: dict[str, InternalObjectPart] = {}
         for index, part in enumerate(parts):
-            part_number = part["PartNumber"]
+            part_number = str(part["PartNumber"])
             part_etag = part["ETag"].strip('"')
 
             s3_part = self.parts.get(part_number)
