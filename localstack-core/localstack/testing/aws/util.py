@@ -1,7 +1,6 @@
 import functools
 import os
 from collections.abc import Callable
-from typing import TypeVar
 
 import boto3
 import botocore
@@ -174,10 +173,7 @@ class _RequestContextClient:
         return wrapper_method
 
 
-T = TypeVar("T", bound=BaseClient)
-
-
-def RequestContextClient(client: T) -> T:
+def RequestContextClient[T: BaseClient](client: T) -> T:
     return _RequestContextClient(client)  # noqa
 
 

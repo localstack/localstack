@@ -1,5 +1,4 @@
 import re
-from typing import AnyStr
 
 from werkzeug.routing import Rule
 
@@ -30,7 +29,7 @@ class StrictMethodRule(Rule):
         self.methods = {method.upper()}
 
 
-def transform_path_params_to_rule_vars(match: re.Match[AnyStr]) -> str:
+def transform_path_params_to_rule_vars(match: re.Match[str]) -> str:
     """
     Transforms a request URI path param to a valid Werkzeug Rule string variable placeholder.
     This transformation function should be used in combination with _path_param_regex on the request URIs (without any

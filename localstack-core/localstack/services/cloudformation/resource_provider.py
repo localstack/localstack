@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from logging import Logger
 from math import ceil
-from typing import TYPE_CHECKING, Any, Generic, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
 
 import botocore
 from botocore.client import BaseClient
@@ -198,7 +198,7 @@ class CloudFormationResourceProviderPlugin(Plugin):
     namespace = "localstack.cloudformation.resource_providers"
 
 
-class ResourceProvider(Generic[Properties]):
+class ResourceProvider[Properties]:
     """
     This provides a base class onto which service-specific resource providers are built.
     """
@@ -401,7 +401,7 @@ class NoResourceProvider(Exception):
     pass
 
 
-def resolve_json_pointer(resource_props: Properties, primary_id_path: str) -> str:
+def resolve_json_pointer(resource_props: Properties, primary_id_path: str) -> str:  # noqa: UP047
     primary_id_path = primary_id_path.replace("/properties", "")
     parts = [p for p in primary_id_path.split("/") if p]
 
