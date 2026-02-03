@@ -2612,12 +2612,20 @@ class TestSecretsManager:
 
         self._wait_force_deletion_completed(aws_client.secretsmanager, secret_id)
 
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            "put_secret_value",
+            "update_secret",
+        ],
+    )
     @markers.aws.validated
-    def test_put_secret_value(self, sm_snapshot, create_secret, aws_client):
+    def test_change_secret_value_after_creation(
+        self, sm_snapshot, create_secret, aws_client, operation
+    ):
         secret_name = "test-secret"
         secret_binary = b"footest"
         secret_binary2 = b"footest2"
-        secret_binary3 = b"footest3"
         response = create_secret(
             Name=secret_name,
             SecretBinary=secret_binary,
@@ -2632,29 +2640,20 @@ class TestSecretsManager:
         )
         sm_snapshot.match("put_secret_value_secret_response", secret_value_response)
 
-        aws_client.secretsmanager.put_secret_value(
-            SecretId=secret_name, SecretBinary=secret_binary2
-        )
-        secret_value_response2 = aws_client.secretsmanager.get_secret_value(
+        if operation == "put_secret_value":
+            aws_client.secretsmanager.put_secret_value(
+                SecretId=secret_name, SecretBinary=secret_binary2
+            )
+        elif operation == "update_secret":
+            aws_client.secretsmanager.update_secret(
+                SecretId=secret_name, SecretBinary=secret_binary2
+            )
+        secret_value_response_updated = aws_client.secretsmanager.get_secret_value(
             SecretId=secret_name
         )
-        sm_snapshot.match("put_secret_value_secret_response2", secret_value_response2)
-
-        aws_client.secretsmanager.put_secret_value(
-            SecretId=secret_name, SecretBinary=secret_binary3
+        sm_snapshot.match(
+            "put_secret_value_secret_response_updated", secret_value_response_updated
         )
-        secret_value_response3 = aws_client.secretsmanager.get_secret_value(
-            SecretId=secret_name
-        )
-        sm_snapshot.match("put_secret_value_secret_response3", secret_value_response3)
-
-        aws_client.secretsmanager.update_secret(
-            SecretId=secret_name, SecretBinary=secret_binary
-        )
-        secret_value_response4 = aws_client.secretsmanager.get_secret_value(
-            SecretId=secret_name
-        )
-        sm_snapshot.match("put_secret_value_secret_response4", secret_value_response4)
 
 
 class TestSecretsManagerMultiAccounts:
