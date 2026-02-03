@@ -706,17 +706,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         """
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        # TODO: Remove usage of getattr once persistence mechanism is updated.
-        # If the stored constraint is None the bucket was made before the storage of location_constraint.
-        # The EU location constraint wasn't supported before this point so we can safely default to the region.
-        location_constraint = getattr(s3_bucket, "location_constraint", None)
-        if location_constraint is None:
-            location_constraint = (
-                s3_bucket.bucket_region if s3_bucket.bucket_region != "us-east-1" else ""
-            )
-
         return GetBucketLocationOutput(
-            LocationConstraint=get_bucket_location_xml(location_constraint)
+            LocationConstraint=get_bucket_location_xml(s3_bucket.location_constraint)
         )
 
     @handler("PutObject", expand=False)
@@ -916,7 +907,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if s3_object.checksum_algorithm:
             response[f"Checksum{s3_object.checksum_algorithm}"] = s3_object.checksum_value
-            response["ChecksumType"] = getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT)
+            response["ChecksumType"] = s3_object.checksum_type
 
         if s3_bucket.lifecycle_rules:
             if expiration_header := self._get_expiration_header(
@@ -969,15 +960,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_kms_key_id(kms_key=s3_object.kms_key_id, bucket=s3_bucket)
 
         sse_c_key_md5 = request.get("SSECustomerKeyMD5")
-        # we're using getattr access because when restoring, the field might not exist
-        # TODO: cleanup at next major release
-        if sse_key_hash := getattr(s3_object, "sse_key_hash", None):
-            if sse_key_hash and not sse_c_key_md5:
+        if s3_object.sse_key_hash:
+            if s3_object.sse_key_hash and not sse_c_key_md5:
                 raise InvalidRequest(
                     "The object was stored using a form of Server Side Encryption. "
                     "The correct parameters must be provided to retrieve the object."
                 )
-            elif sse_key_hash != sse_c_key_md5:
+            elif s3_object.sse_key_hash != sse_c_key_md5:
                 raise AccessDenied(
                     "Requests specifying Server Side Encryption with Customer provided keys must provide the correct secret key."
                 )
@@ -1040,7 +1029,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 checksum_value = s3_object.checksum_value
-                checksum_type = getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT)
+                checksum_type = s3_object.checksum_type
 
         if range_data:
             s3_stored_object.seek(range_data.begin)
@@ -1167,7 +1156,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 checksum_value = s3_object.checksum_value
-                checksum_type = getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT)
+                checksum_type = s3_object.checksum_type
 
         if s3_object.parts and request.get("PartNumber"):
             response["PartsCount"] = len(s3_object.parts)
@@ -1772,9 +1761,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 if s3_object.checksum_algorithm:
                     object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
-                    object_data["ChecksumType"] = getattr(
-                        s3_object, "checksum_type", ChecksumType.FULL_OBJECT
-                    )
+                    object_data["ChecksumType"] = s3_object.checksum_type
 
                 s3_objects.append(object_data)
 
@@ -1909,9 +1896,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 if s3_object.checksum_algorithm:
                     object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
-                    object_data["ChecksumType"] = getattr(
-                        s3_object, "checksum_type", ChecksumType.FULL_OBJECT
-                    )
+                    object_data["ChecksumType"] = s3_object.checksum_type
 
                 s3_objects.append(object_data)
 
@@ -2061,9 +2046,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 if version.checksum_algorithm:
                     object_version["ChecksumAlgorithm"] = [version.checksum_algorithm]
-                    object_version["ChecksumType"] = getattr(
-                        version, "checksum_type", ChecksumType.FULL_OBJECT
-                    )
+                    object_version["ChecksumType"] = version.checksum_type
 
                 object_versions.append(object_version)
 
@@ -2140,7 +2123,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         object_attrs = request.get("ObjectAttributes", [])
         response = GetObjectAttributesOutput()
-        object_checksum_type = getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT)
+        object_checksum_type = s3_object.checksum_type
         if "ETag" in object_attrs:
             response["ETag"] = s3_object.etag
         if "StorageClass" in object_attrs:
@@ -2740,7 +2723,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         mpu_checksum_algorithm = s3_multipart.checksum_algorithm
-        mpu_checksum_type = getattr(s3_multipart, "checksum_type", None)
+        mpu_checksum_type = s3_multipart.checksum_type
 
         if checksum_type and checksum_type != mpu_checksum_type:
             raise InvalidRequest(
@@ -2946,7 +2929,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["PartNumberMarker"] = part_number_marker
         if s3_multipart.checksum_algorithm:
             response["ChecksumAlgorithm"] = s3_multipart.object.checksum_algorithm
-            response["ChecksumType"] = getattr(s3_multipart, "checksum_type", None)
+            response["ChecksumType"] = s3_multipart.checksum_type
 
         #     AbortDate: Optional[AbortDate] TODO: lifecycle
         #     AbortRuleId: Optional[AbortRuleId] TODO: lifecycle
@@ -3050,7 +3033,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 )
                 if multipart.checksum_algorithm:
                     multipart_upload["ChecksumAlgorithm"] = multipart.checksum_algorithm
-                    multipart_upload["ChecksumType"] = getattr(multipart, "checksum_type", None)
+                    multipart_upload["ChecksumType"] = multipart.checksum_type
 
                 uploads.append(multipart_upload)
 
@@ -3439,12 +3422,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         return GetBucketLifecycleConfigurationOutput(
             Rules=s3_bucket.lifecycle_rules,
-            # TODO: remove for next major version, safe access to new attribute
-            TransitionDefaultMinimumObjectSize=getattr(
-                s3_bucket,
-                "transition_default_minimum_object_size",
-                TransitionDefaultMinimumObjectSize.all_storage_classes_128K,
-            ),
+            TransitionDefaultMinimumObjectSize=s3_bucket.transition_default_minimum_object_size,
         )
 
     def put_bucket_lifecycle_configuration(
