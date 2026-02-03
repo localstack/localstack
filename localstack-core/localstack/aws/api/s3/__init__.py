@@ -118,6 +118,7 @@ NextPartNumberMarker = int
 NextToken = str
 NextUploadIdMarker = str
 NextVersionIdMarker = str
+NonEmptyKmsKeyArnString = str
 NotificationId = str
 ObjectKey = str
 ObjectLockEnabledForBucket = bool
@@ -677,6 +678,21 @@ class Type(StrEnum):
     Group = "Group"
 
 
+ServerTime = datetime
+Expires = datetime
+
+
+class AccessDenied(ServiceException):
+    code: str = "AccessDenied"
+    sender_fault: bool = False
+    status_code: int = 403
+    Expires: Expires | None
+    ServerTime: ServerTime | None
+    X_Amz_Expires: X_Amz_Expires | None
+    HostId: HostId | None
+    HeadersNotSigned: HeadersNotSigned | None
+
+
 class BucketAlreadyExists(ServiceException):
     code: str = "BucketAlreadyExists"
     sender_fault: bool = False
@@ -823,21 +839,6 @@ class SignatureDoesNotMatch(ServiceException):
     SignatureProvided: SignatureProvided | None
     StringToSign: StringToSign | None
     StringToSignBytes: StringToSignBytes | None
-
-
-ServerTime = datetime
-Expires = datetime
-
-
-class AccessDenied(ServiceException):
-    code: str = "AccessDenied"
-    sender_fault: bool = False
-    status_code: int = 403
-    Expires: Expires | None
-    ServerTime: ServerTime | None
-    X_Amz_Expires: X_Amz_Expires | None
-    HostId: HostId | None
-    HeadersNotSigned: HeadersNotSigned | None
 
 
 class AuthorizationQueryParametersError(ServiceException):
@@ -3166,6 +3167,15 @@ class NotificationConfigurationDeprecated(TypedDict, total=False):
     CloudFunctionConfiguration: CloudFunctionConfiguration | None
 
 
+class SSEKMSEncryption(TypedDict, total=False):
+    KMSKeyArn: NonEmptyKmsKeyArnString
+    BucketKeyEnabled: BucketKeyEnabled | None
+
+
+class ObjectEncryption(TypedDict, total=False):
+    SSEKMS: SSEKMSEncryption | None
+
+
 UserMetadata = list[MetadataEntry]
 
 
@@ -3673,6 +3683,21 @@ class UpdateBucketMetadataJournalTableConfigurationRequest(ServiceRequest):
     ChecksumAlgorithm: ChecksumAlgorithm | None
     JournalTableConfiguration: JournalTableConfigurationUpdates
     ExpectedBucketOwner: AccountId | None
+
+
+class UpdateObjectEncryptionRequest(ServiceRequest):
+    Bucket: BucketName
+    Key: ObjectKey
+    VersionId: ObjectVersionId | None
+    ObjectEncryption: ObjectEncryption
+    RequestPayer: RequestPayer | None
+    ExpectedBucketOwner: AccountId | None
+    ContentMD5: ContentMD5 | None
+    ChecksumAlgorithm: ChecksumAlgorithm | None
+
+
+class UpdateObjectEncryptionResponse(TypedDict, total=False):
+    RequestCharged: RequestCharged | None
 
 
 class UploadPartCopyOutput(TypedDict, total=False):
@@ -5303,6 +5328,22 @@ class S3Api:
         expected_bucket_owner: AccountId | None = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateObjectEncryption")
+    def update_object_encryption(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        object_encryption: ObjectEncryption,
+        version_id: ObjectVersionId | None = None,
+        request_payer: RequestPayer | None = None,
+        expected_bucket_owner: AccountId | None = None,
+        content_md5: ContentMD5 | None = None,
+        checksum_algorithm: ChecksumAlgorithm | None = None,
+        **kwargs,
+    ) -> UpdateObjectEncryptionResponse:
         raise NotImplementedError
 
     @handler("UploadPart")
