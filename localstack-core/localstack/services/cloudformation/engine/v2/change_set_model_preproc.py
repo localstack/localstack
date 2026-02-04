@@ -1264,10 +1264,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         type_delta = self.visit(node_resource.type_)
 
-        # Determine if this resource should be processed for before/after states.
-        # A resource is "active" if it has no condition or its condition evaluates to true.
-        # We must check this BEFORE visiting properties to avoid resolving references
-        # (like GetAtt) to other conditional resources that may not exist.
+        # Check conditions before visiting properties to avoid resolving references
+        # (e.g. GetAtt) to conditional resources that were never created.
         should_process_before = change_type != ChangeType.CREATED and (
             is_nothing(condition_before) or condition_before
         )
@@ -1275,9 +1273,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             is_nothing(condition_after) or condition_after
         )
 
-        # Only visit properties if at least one state needs to be processed.
-        # This prevents evaluating GetAtt/Ref inside conditional resources whose
-        # conditions are false (and thus were never created).
         properties_delta: PreprocEntityDelta[PreprocProperties, PreprocProperties]
         if should_process_before or should_process_after:
             properties_delta = self.visit(node_resource.properties)

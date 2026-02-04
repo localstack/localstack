@@ -1,4 +1,13 @@
 {
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_conditional_resource_referencing_conditional": {
+    "last_validated_date": "2026-02-04T01:53:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.7,
+      "call": 23.45,
+      "teardown": 14.46,
+      "total": 38.61
+    }
+  },
   "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_dependent_get_att": {
     "last_validated_date": "2025-09-30T19:25:10+00:00",
     "durations_in_seconds": {
