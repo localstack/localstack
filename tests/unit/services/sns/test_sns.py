@@ -13,11 +13,11 @@ from localstack.services.sns.models import SnsMessage
 from localstack.services.sns.provider import (
     encode_subscription_token_with_region,
     get_region_from_subscription_token,
-    is_raw_message_delivery,
 )
 from localstack.services.sns.publisher import (
     compute_canonical_string,
     create_sns_message_body,
+    is_raw_message_delivery,
 )
 from localstack.utils.time import timestamp_millis
 
