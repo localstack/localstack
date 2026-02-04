@@ -1,6 +1,5 @@
 import base64
 import contextlib
-import importlib
 import json
 import logging
 import queue
@@ -35,6 +34,7 @@ from localstack.services.sns.constants import (
     SMS_PHONE_NUMBER_OPT_OUT_ENDPOINT,
     SUBSCRIPTION_TOKENS_ENDPOINT,
 )
+from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.testing.pytest import markers
@@ -47,7 +47,6 @@ from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
-from tests.aws.services.sns.conftest import is_sns_v1_provider
 
 LOG = logging.getLogger(__name__)
 
@@ -125,30 +124,8 @@ def sns_create_platform_endpoint(aws_client):
             )
 
 
-@pytest.fixture
-def sns_provider():
-    def factory(**kwargs):
-        if is_sns_v1_provider():
-            provider = "localstack.services.sns.provider"
-        else:
-            provider = "localstack.services.sns.v2.provider"
-        # TODO: remove once legacy provider is retired completely and import normally
-        module = importlib.import_module(provider)
-        SnsProvider = module.SnsProvider
-        return SnsProvider
-
-    return factory
-
-
 class TestSNSTopicCrud:
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$.get-topic-attrs.Attributes.DeliveryPolicy",  # TODO: remove this with the v2 provider switch
-            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
-        ],
-        condition=is_sns_v1_provider,
-    )
     def test_create_topic_with_attributes(self, sns_create_topic, snapshot, aws_client):
         create_topic = sns_create_topic(
             Name="topictest.fifo",
@@ -213,13 +190,6 @@ class TestSNSTopicCrud:
         snapshot.match("list-after-update-tags", tags)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$.get-topic-attrs.Attributes.DeliveryPolicy",  # TODO: remove this with the v2 provider switch
-            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
-        ],
-        condition=is_sns_v1_provider,
-    )
     def test_create_topic_test_arn(self, sns_create_topic, snapshot, aws_client, account_id):
         topic_name = "topic-test-create"
         response = sns_create_topic(Name=topic_name)
@@ -382,14 +352,6 @@ class TestSNSTopicCrudV2:
         snapshot.match("delete-non-existent-topic", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        # skipped only for v1
-        condition=is_sns_v1_provider,
-        paths=[
-            "$..Attributes.DeliveryPolicy",
-            "$..Attributes.EffectiveDeliveryPolicy",
-        ],
-    )
     def test_create_topic_should_be_idempotent(self, snapshot, sns_create_topic, aws_client):
         topic_name = f"test-idempotent-{short_uid()}"
 
@@ -404,11 +366,6 @@ class TestSNSTopicCrudV2:
         attrs = aws_client.sns.get_topic_attributes(TopicArn=resp2["TopicArn"])
         snapshot.match("topic-attrs-idempotent-2", attrs)
 
-    @markers.snapshot.skip_snapshot_verify(
-        # skipped only for v1
-        condition=is_sns_v1_provider,
-        paths=["$..Error.Message"],
-    )
     @markers.aws.validated
     def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
         # Valid names within length constraints
@@ -434,14 +391,6 @@ class TestSNSTopicCrudV2:
             snapshot.match(f"name-invalid-char-{index}", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        # skipped only for v1
-        condition=is_sns_v1_provider,
-        paths=[
-            "$..Attributes.DeliveryPolicy",
-            "$..Attributes.EffectiveDeliveryPolicy",
-        ],
-    )
     def test_create_topic_in_multiple_regions(
         self, aws_client, aws_client_factory, snapshot, region_name, secondary_region_name
     ):
@@ -490,7 +439,6 @@ class TestSNSTopicCrudV2:
         ]
         assert set(topic_arns).issubset(set(all_returned_arns))
 
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="not covered in v1")
     @markers.aws.validated
     def test_topic_get_attributes_with_fifo_false(self, sns_create_topic, aws_client, snapshot):
         resp = sns_create_topic(
@@ -552,7 +500,6 @@ class TestSNSTopicCrudV2:
         policy_json = json.loads(policy_str)
         snapshot.match("topic-policy", policy_json)
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"], condition=is_sns_v1_provider)
     @markers.aws.validated
     def test_add_permission_errors(self, snapshot, aws_client, account_id):
         topic_name = f"topic-{short_uid()}"
@@ -609,7 +556,6 @@ class TestSNSTopicCrudV2:
         snapshot.match("topic-not-found", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Not implemented in moto")
     def test_data_protection_policy_crud(self, snapshot, aws_client, region_name):
         topic_name = f"topic-{short_uid()}"
         topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
@@ -848,7 +794,6 @@ class TestSNSPublishCrud:
 
         snapshot.match("error-batch", e.value.response)
 
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="not correctly implemented")
     @markers.aws.validated
     def test_publish_no_confirm_subscription(
         self, sns_create_topic, snapshot, sns_subscription, aws_client, e_mail_address
@@ -2493,7 +2438,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("publish-batch-no-topic", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="not covered in v1")
     def test_publish_batch_exceptions(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -3209,7 +3153,6 @@ class TestSNSSubscriptionSQSFifo:
         snapshot.match("dedup-messages", response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="not covered in v1")
     def test_validations_for_fifo(
         self,
         sns_create_topic,
@@ -3293,14 +3236,6 @@ class TestSNSSubscriptionSQSFifo:
         snapshot.match("no-msg-dedup-regular-topic", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$.topic-attrs.Attributes.DeliveryPolicy",
-            "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
-            "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
-        ],
-        condition=is_sns_v1_provider,
-    )
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_publish_fifo_messages_to_dlq(
         self,
@@ -3461,14 +3396,6 @@ class TestSNSSubscriptionSQSFifo:
             "$.republish-batch-response-fifo.Successful..MessageId",  # TODO: SNS doesnt keep track of duplicate
             "$.republish-batch-response-fifo.Successful..SequenceNumber",  # TODO: SNS doesnt keep track of duplicate
         ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$.topic-attrs.Attributes.DeliveryPolicy",
-            "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
-            "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
-        ],
-        condition=is_sns_v1_provider,
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
@@ -3828,7 +3755,7 @@ class TestSNSSubscriptionSES:
     @markers.requires_in_process
     @markers.aws.only_localstack
     def test_topic_email_subscription_confirmation(
-        self, sns_create_topic, sns_subscription, aws_client, sns_provider
+        self, sns_create_topic, sns_subscription, aws_client
     ):
         # FIXME: we do not send the token to the email endpoint, so they cannot validate it
         # create AWS validated test for format
@@ -3841,7 +3768,6 @@ class TestSNSSubscriptionSES:
         )
         subscription_arn = subscription["SubscriptionArn"]
         parsed_arn = parse_arn(subscription_arn)
-        SnsProvider = sns_provider()
         store = SnsProvider.get_store(parsed_arn["account"], parsed_arn["region"])
 
         sub_attr = aws_client.sns.get_subscription_attributes(SubscriptionArn=subscription_arn)
@@ -3941,7 +3867,6 @@ class TestSNSPlatformApplicationCrud:
         response = sns_create_platform_application(Platform=platform, Attributes=attributes)
         snapshot.match("create-platform-application", response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_list_platform_applications(
         self, aws_client, snapshot, sns_create_platform_application, platform_credentials
@@ -3965,7 +3890,6 @@ class TestSNSPlatformApplicationCrud:
         ],
         ids=["no-args", "missing-credential", "missing-principal"],
     )
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.validated
     def test_create_platform_application_invalid_attributes(self, aws_client, snapshot, attributes):
         # We cannot actually verify the validity of the passed credentials, which is why it is not part of this test
@@ -3977,7 +3901,6 @@ class TestSNSPlatformApplicationCrud:
             )
         snapshot.match("platform-application-no-attributes", e.value.response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @pytest.mark.parametrize(
         "name", [f"{'a' * 257}", "", "@name"], ids=["too-long", "empty", "invalid-char"]
     )
@@ -3991,7 +3914,6 @@ class TestSNSPlatformApplicationCrud:
             )
         snapshot.match("invalid-application-name", e.value.response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.validated
     def test_create_platform_application_invalid_platform(self, aws_client, snapshot):
         attributes = {"PlatformPrincipal": "dummy", "PlatformCredential": "dummy"}
@@ -4004,7 +3926,6 @@ class TestSNSPlatformApplicationCrud:
             )
         snapshot.match("invalid-platform", e.value.response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_get_platform_application_attributes(
         self, aws_client, snapshot, sns_create_platform_application, platform_credentials
@@ -4022,7 +3943,6 @@ class TestSNSPlatformApplicationCrud:
         )
         snapshot.match("get-application-attributes", response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.validated
     def test_get_platform_application_attributes_invalid_arn(self, aws_client, snapshot):
         with pytest.raises(ClientError) as e:
@@ -4039,7 +3959,6 @@ class TestSNSPlatformApplicationCrud:
             )
         snapshot.match("non_existing-application-arn", e.value.response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_set_platform_application_attributes(
         self, aws_client, snapshot, sns_create_platform_application, platform_credentials
@@ -4065,7 +3984,6 @@ class TestSNSPlatformApplicationCrud:
         )
         snapshot.match("set-get-application-attributes", response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.validated
     def test_set_platform_application_attributes_invalid_arn(self, aws_client, snapshot):
         with pytest.raises(ClientError) as e:
@@ -4074,7 +3992,6 @@ class TestSNSPlatformApplicationCrud:
             )
         snapshot.match("invalid-application-arn", e.value.response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @pytest.mark.parametrize(
         "attributes",
         [
@@ -4408,7 +4325,6 @@ class TestSNSPlatformEndpointCrud:
             aws_client.sns.set_endpoint_attributes(EndpointArn=endpoint_arn, Attributes=attributes)
         snapshot.match("set-platform-endpoint-attributes-non-existent-app", e.value.response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @pytest.mark.parametrize(
         "attributes",
         [
@@ -4452,7 +4368,6 @@ class TestSNSPlatformEndpointCrud:
             aws_client.sns.set_endpoint_attributes(EndpointArn=endpoint_arn, Attributes=attributes)
         snapshot.match("set-platform-endpoint-invalid-attributes", e.value.response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @pytest.mark.parametrize(
         "attributes",
         [
@@ -4492,7 +4407,6 @@ class TestSNSPlatformEndpointCrud:
             )
         snapshot.match("create-platform-endpoint-invalid-attr", e.value.response)
 
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_create_platform_endpoint_custom_data(
         self,
@@ -4563,10 +4477,8 @@ class TestSNSPlatformEndpoint:
         aws_client,
         account_id,
         region_name,
-        sns_provider,
         platform_credentials,
     ):
-        SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(account_id, region_name)
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -4737,7 +4649,6 @@ class TestSNSPlatformEndpoint:
         aws_client,
         account_id,
         region_name,
-        sns_provider,
         platform_credentials,
     ):
         client_id, client_secret = platform_credentials
@@ -4779,7 +4690,6 @@ class TestSNSPlatformEndpoint:
             Message=json.dumps(message),
             MessageStructure="json",
         )
-        SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(account_id, region_name)
         platform_endpoint_msgs = sns_backend.platform_endpoint_messages
 
@@ -4797,13 +4707,12 @@ class TestSNSPlatformEndpoint:
 class TestSNSSMS:
     @markers.requires_in_process
     @markers.aws.only_localstack
-    def test_publish_sms(self, aws_client, account_id, region_name, sns_provider):
+    def test_publish_sms(self, aws_client, account_id, region_name):
         phone_number = "+33000000000"
         response = aws_client.sns.publish(PhoneNumber=phone_number, Message="This is a SMS")
         assert "MessageId" in response
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(
             account_id,
             region_name,
@@ -4849,7 +4758,6 @@ class TestSNSSMS:
 
         aws_client.sns.publish(Message=message, TopicArn=topic_arn)
 
-        SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(account_id, region_name)
 
         def check_messages():
@@ -4886,7 +4794,6 @@ class TestSNSSMS:
         snapshot.match("wrong-endpoint", e.value.response)
 
     @markers.aws.manual_setup_required
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Not implemented in v1")
     def test_set_get_sms_attributes(self, aws_client, account_id, snapshot):
         if is_aws_cloud():
             LOG.warning(
@@ -4911,7 +4818,6 @@ class TestSNSSMS:
         snapshot.match("get-sms-some-attributes", response)
 
     @markers.aws.manual_setup_required
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Not implemented in v1")
     def test_get_sms_attributes_from_unmodified_region(
         self, aws_client_factory, secondary_region_name, snapshot
     ):
@@ -4936,7 +4842,6 @@ class TestSNSSMS:
         ids=["InvalidAttributeName", "TooLongID", "NoLetterID", "InvalidSMSType"],
     )
     @markers.aws.validated
-    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Not implemented in v1")
     def test_set_invalid_sms_attributes(self, aws_client, snapshot, attribute_key_value):
         with pytest.raises(ClientError) as e:
             aws_client.sns.set_sms_attributes(
@@ -4947,14 +4852,13 @@ class TestSNSSMS:
         snapshot.match("invalid-attribute", e.value.response)
 
     @markers.aws.manual_setup_required
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
     def test_is_phone_number_opted_out(
-        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name, cleanups
+        self, phone_number, aws_client, snapshot, account_id, region_name, cleanups
     ):
         # this test expects the fixture-provided phone number to be opted out
         # if you want to test against AWS, you need to manually opt out a number
         # https://us-east-1.console.aws.amazon.com/sms-voice/home?region=us-east-1#/opt-out-lists?name=Default&tab=opt-out-list-opted-out-numbers
-        sns_store = sns_provider().get_store(account_id, region_name)
+        sns_store = SnsProvider.get_store(account_id, region_name)
 
         def cleanup_store():
             sns_store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
@@ -4967,14 +4871,13 @@ class TestSNSSMS:
         snapshot.match("phone-number-opted-out", response)
 
     @markers.aws.manual_setup_required
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
     def test_list_phone_numbers_opted_out(
-        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name, cleanups
+        self, phone_number, aws_client, snapshot, account_id, region_name, cleanups
     ):
         # this test expects exactly one phone number opted out
         # if you want to test against AWS, you need to manually opt out a number
         # https://us-east-1.console.aws.amazon.com/sms-voice/home?region=us-east-1#/opt-out-lists?name=Default&tab=opt-out-list-opted-out-numbers
-        sns_store = sns_provider().get_store(account_id, region_name)
+        sns_store = SnsProvider.get_store(account_id, region_name)
 
         def cleanup_store():
             sns_store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
@@ -4993,16 +4896,15 @@ class TestSNSSMS:
         snapshot.match("list-phone-numbers-opted-out", response)
 
     @markers.aws.manual_setup_required
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
     def test_opt_in_phone_number(
-        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name, cleanups
+        self, phone_number, aws_client, snapshot, account_id, region_name, cleanups
     ):
         # this test expects exactly one phone number opted out
         # if you want to test against AWS, you need to manually opt out a number
         # https://us-east-1.console.aws.amazon.com/sms-voice/home?region=us-east-1#/opt-out-lists?name=Default&tab=opt-out-list-opted-out-numbers
         # IMPORTANT: a phone number can only be opted in once every 30 days on AWS.
         # Make sure everything else is set up and taken care of properly before trying to validate this.
-        sns_store = sns_provider().get_store(account_id, region_name)
+        sns_store = SnsProvider.get_store(account_id, region_name)
 
         def cleanup_store():
             sns_store.PHONE_NUMBERS_OPTED_OUT.remove(phone_number)
@@ -5018,9 +4920,8 @@ class TestSNSSMS:
 
     @markers.aws.only_localstack
     @markers.requires_in_process
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="Not implemented in v1")
     def test_opt_out_phone_number_via_endpoint(
-        self, phone_number, aws_client, snapshot, sns_provider, account_id, cleanups
+        self, phone_number, aws_client, snapshot, account_id, cleanups
     ):
         response = aws_client.sns.check_if_phone_number_is_opted_out(phoneNumber=phone_number)
         assert not response["isOptedOut"]
@@ -5033,14 +4934,13 @@ class TestSNSSMS:
 
     @markers.aws.validated
     def test_opt_in_non_existing_phone_number(
-        self, phone_number, aws_client, snapshot, sns_provider, account_id, region_name
+        self, phone_number, aws_client, snapshot, account_id, region_name
     ):
         non_existing_number = "+4411111111"
         response = aws_client.sns.opt_in_phone_number(phoneNumber=non_existing_number)
 
         snapshot.match("opt-in-non-existing-number", response)
 
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="Not correctly implemented in v1")
     @markers.aws.validated
     def test_opt_in_invalid_number(self, phone_number, aws_client, snapshot):
         invalid_number = "invalid"
@@ -6177,14 +6077,6 @@ class TestSNSMultiRegions:
 
 class TestSNSPublishDelivery:
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.DeliveryPolicy",
-            "$..Attributes.EffectiveDeliveryPolicy",
-            "$..Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
-        ],
-        condition=is_sns_v1_provider,
-    )
     def test_delivery_lambda(
         self,
         sns_create_topic,
@@ -6409,13 +6301,11 @@ class TestSNSRetrospectionEndpoints:
         account_id,
         region_name,
         secondary_region_name,
-        sns_provider,
         platform_credentials,
     ):
         platform = "APNS"
         client_id, client_secret = platform_credentials
         attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
-        SnsProvider = sns_provider()
         sns_backend = SnsProvider.get_store(account_id, region_name)
         # clean up the saved messages
         sns_backend_endpoint_arns = list(sns_backend.platform_endpoint_messages.keys())
@@ -6571,9 +6461,7 @@ class TestSNSRetrospectionEndpoints:
         account_id,
         region_name,
         secondary_region_name,
-        sns_provider,
     ):
-        SnsProvider = sns_provider()
         sns_store = SnsProvider.get_store(account_id, region_name)
 
         list_of_contacts = [
@@ -6677,9 +6565,7 @@ class TestSNSRetrospectionEndpoints:
         aws_client,
         account_id,
         region_name,
-        sns_provider,
     ):
-        SnsProvider = sns_provider()
         sns_store = SnsProvider.get_store(account_id, region_name)
         # clean up the saved tokens
         sns_store.subscription_tokens.clear()
