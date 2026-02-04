@@ -7,6 +7,7 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack import config as localstack_config
 from localstack import constants
+from localstack.testing import config as test_config
 from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER,
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
@@ -26,6 +27,26 @@ def pytest_configure(config: Config):
 
 
 def pytest_runtestloop(session):
+    """
+    This pytest plugin allows us to pre-install external dependencies that are usually lazy-loaded by the services.
+    This helps us surface download issues earlier.
+    This is not needed if we are running the test against an external instance, as it installs the dependencies on the
+    runner running the tests.
+    """
+    if not session.items:
+        return
+
+    if session.config.option.collectonly:
+        return
+
+    if test_config.TEST_SKIP_LOCALSTACK_START:
+        return
+
+    from localstack.testing.aws.util import is_aws_cloud
+
+    if is_aws_cloud() and not test_config.TEST_FORCE_LOCALSTACK_START:
+        return
+
     # second pytest lifecycle hook (before test runner starts)
     test_init_functions = set()
 
@@ -55,12 +76,6 @@ def pytest_runtestloop(session):
             )
 
             test_init_functions.add(transcribe_install_async)
-
-    if not session.items:
-        return
-
-    if session.config.option.collectonly:
-        return
 
     for fn in test_init_functions:
         fn()
