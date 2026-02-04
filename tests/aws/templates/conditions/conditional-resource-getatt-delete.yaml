@@ -1,5 +1,4 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Reproduction of CloudFormation v2 deletion bug - conditional resource with GetAtt
 
 Parameters:
   EnableQueue:
