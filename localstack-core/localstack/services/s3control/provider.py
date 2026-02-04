@@ -1,4 +1,4 @@
-from localstack.aws.api import CommonServiceException, RequestContext
+from localstack.aws.api import RequestContext
 from localstack.aws.api.s3control import (
     AccountId,
     ListTagsForResourceResult,
@@ -9,16 +9,9 @@ from localstack.aws.api.s3control import (
     TagResourceResult,
     UntagResourceResult,
 )
-from localstack.aws.forwarder import NotImplementedAvoidFallbackError
-from localstack.services.s3.models import s3_stores
-from localstack.services.s3control.validation import validate_tags
+from localstack.services.s3.models import S3Store, s3_stores
+from localstack.services.s3control.validation import validate_arn_for_tagging, validate_tags
 from localstack.state import StateVisitor
-from localstack.utils.tagging import TaggingService
-
-
-class NoSuchResource(CommonServiceException):
-    def __init__(self, message=None):
-        super().__init__("NoSuchResource", status_code=404, message=message)
 
 
 class S3ControlProvider(S3ControlApi):
@@ -33,26 +26,26 @@ class S3ControlProvider(S3ControlApi):
     """
 
     @staticmethod
-    def _get_tagging_service_for_bucket(
-        resource_arn: S3ResourceArn,
-        partition: str,
-        region: str,
-        account_id: str,
-    ) -> TaggingService:
-        s3_prefix = f"arn:{partition}:s3:::"
-        if not resource_arn.startswith(s3_prefix):
-            # Moto does not support Tagging operations for S3 Control, so we should not forward those operations back
-            # to it
-            raise NotImplementedAvoidFallbackError(
-                "LocalStack only support Bucket tagging operations for S3Control"
-            )
+    def get_s3_store(account_id: str, region: str) -> S3Store:
+        return s3_stores[account_id][region]
 
-        store = s3_stores[account_id][region]
-        bucket_name = resource_arn.removeprefix(s3_prefix)
-        if bucket_name not in store.global_bucket_map:
-            raise NoSuchResource("The specified resource doesn't exist.")
+    def _tag_bucket_resource(
+        self, resource_arn: str, partition: str, region: str, account_id: str, tags: TagList
+    ) -> None:
+        tagging_service = self.get_s3_store(account_id, region).TAGS
+        tagging_service.tag_resource(resource_arn, tags)
 
-        return store.TAGS
+    def _untag_bucket_resource(
+        self, resource_arn: str, partition: str, region: str, account_id: str, tag_keys: TagKeyList
+    ) -> None:
+        tagging_service = self.get_s3_store(account_id, region).TAGS
+        tagging_service.untag_resource(resource_arn, tag_keys)
+
+    def _list_bucket_tags(
+        self, resource_arn: str, partition: str, region: str, account_id: str
+    ) -> TagList:
+        tagging_service = self.get_s3_store(account_id, region).TAGS
+        return tagging_service.list_tags_for_resource(resource_arn)["Tags"]
 
     def tag_resource(
         self,
@@ -62,17 +55,11 @@ class S3ControlProvider(S3ControlApi):
         tags: TagList,
         **kwargs,
     ) -> TagResourceResult:
-        # currently S3Control only supports tagging buckets
-        tagging_service = self._get_tagging_service_for_bucket(
-            resource_arn=resource_arn,
-            partition=context.partition,
-            region=context.region,
-            account_id=account_id,
-        )
+        # Currently S3Control only supports tagging buckets
+        validate_arn_for_tagging(resource_arn, context.partition, account_id, context.region)
+        validate_tags(tags)
 
-        validate_tags(tags=tags)
-        tagging_service.tag_resource(resource_arn, tags)
-
+        self._tag_bucket_resource(resource_arn, context.partition, context.region, account_id, tags)
         return TagResourceResult()
 
     def untag_resource(
@@ -83,28 +70,19 @@ class S3ControlProvider(S3ControlApi):
         tag_keys: TagKeyList,
         **kwargs,
     ) -> UntagResourceResult:
-        # currently S3Control only supports tagging buckets
-        tagging_service = self._get_tagging_service_for_bucket(
-            resource_arn=resource_arn,
-            partition=context.partition,
-            region=context.region,
-            account_id=account_id,
+        # Currently S3Control only supports tagging buckets
+        validate_arn_for_tagging(resource_arn, context.partition, account_id, context.region)
+
+        self._untag_bucket_resource(
+            resource_arn, context.partition, context.region, account_id, tag_keys
         )
-
-        tagging_service.untag_resource(resource_arn, tag_keys)
-
         return TagResourceResult()
 
     def list_tags_for_resource(
         self, context: RequestContext, account_id: AccountId, resource_arn: S3ResourceArn, **kwargs
     ) -> ListTagsForResourceResult:
-        # currently S3Control only supports tagging buckets
-        tagging_service = self._get_tagging_service_for_bucket(
-            resource_arn=resource_arn,
-            partition=context.partition,
-            region=context.region,
-            account_id=account_id,
-        )
+        # Currently S3Control only supports tagging buckets
+        validate_arn_for_tagging(resource_arn, context.partition, account_id, context.region)
 
-        tags = tagging_service.list_tags_for_resource(resource_arn)
-        return ListTagsForResourceResult(Tags=tags["Tags"])
+        tags = self._list_bucket_tags(resource_arn, context.partition, context.region, account_id)
+        return ListTagsForResourceResult(Tags=tags)

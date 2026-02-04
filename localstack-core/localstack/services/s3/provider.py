@@ -212,6 +212,7 @@ from localstack.aws.api.s3 import (
     StartAfter,
     StorageClass,
     Tagging,
+    TagSet,
     Token,
     TransitionDefaultMinimumObjectSize,
     UploadIdMarker,
@@ -472,6 +473,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         return store, s3_bucket
 
+    def _create_bucket_tags(self, resource_arn: str, account_id: str, region: str, tags: TagSet):
+        store = self.get_store(account_id, region)
+        store.TAGS.tag_resource(arn=resource_arn, tags=tags)
+
+    def _remove_all_bucket_tags(self, resource_arn: str, account_id: str, region: str):
+        store = self.get_store(account_id, region)
+        store.TAGS.tags.pop(resource_arn, None)
+
+    def _list_bucket_tags(self, resource_arn: str, account_id: str, region: str) -> TagSet:
+        store = self.get_store(account_id, region)
+        tags = store.TAGS.list_tags_for_resource(resource_arn)["Tags"]
+        return tags
+
     @staticmethod
     def get_store(account_id: str, region_name: str) -> S3Store:
         # Use default account id for external access? would need an anonymous one
@@ -500,7 +514,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         create_bucket_configuration = request.get("CreateBucketConfiguration") or {}
 
-        bucket_tags = create_bucket_configuration.get("Tags")
+        bucket_tags = create_bucket_configuration.get("Tags", [])
         if bucket_tags:
             validate_tag_set(bucket_tags, type_set="create-bucket")
 
@@ -556,9 +570,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.buckets[bucket_name] = s3_bucket
         store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
         if bucket_tags:
-            store.TAGS.tag_resource(
-                arn=s3_bucket.bucket_arn,
-                tags=bucket_tags,
+            self._create_bucket_tags(
+                s3_bucket.bucket_arn, context.account_id, bucket_region, bucket_tags
             )
         self._cors_handler.invalidate_cache()
         self._storage_backend.create_bucket(bucket_name)
@@ -598,6 +611,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._preconditions_locks.pop(bucket, None)
         # clean up the storage backend
         self._storage_backend.delete_bucket(bucket)
+        self._remove_all_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region
+        )
 
     def list_buckets(
         self,
@@ -3251,8 +3267,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         validate_tag_set(tag_set, type_set="bucket")
 
         # remove the previous tags before setting the new ones, it overwrites the whole TagSet
-        store.TAGS.tags.pop(s3_bucket.bucket_arn, None)
-        store.TAGS.tag_resource(s3_bucket.bucket_arn, tags=tag_set)
+        self._remove_all_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region
+        )
+        self._create_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region, tag_set
+        )
 
     def get_bucket_tagging(
         self,
@@ -3262,7 +3282,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         **kwargs,
     ) -> GetBucketTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
-        tag_set = store.TAGS.list_tags_for_resource(s3_bucket.bucket_arn, root_name="Tags")["Tags"]
+        tag_set = self._list_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region
+        )
         if not tag_set:
             raise NoSuchTagSet(
                 "The TagSet does not exist",
@@ -3280,7 +3302,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        store.TAGS.tags.pop(s3_bucket.bucket_arn, None)
+        # This operation doesn't remove the tags from the store like deleting a resource does, it just sets them as empty.
+        self._remove_all_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region
+        )
+        self._create_bucket_tags(
+            s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region, []
+        )
 
     def put_object_tagging(
         self,
