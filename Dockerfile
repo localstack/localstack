@@ -140,7 +140,12 @@ ADD localstack-core/ /opt/code/localstack/localstack-core
 RUN --mount=type=cache,target=/root/.cache \
     . .venv/bin/activate && \
     SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
-    pip install -e .[runtime]
+    pip install -e .[runtime] \
+
+# Install standalone CLI package # TODO change to `pip install localstack` once migrated
+RUN --mount=type=cache,target=/root/.cache \
+    . .venv/bin/activate && \
+    pip install --upgrade --pre localstack-cli-standalone \
 
 # Generate service catalog cache in static libs dir
 RUN . .venv/bin/activate && python3 -m localstack.aws.spec

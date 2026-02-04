@@ -151,13 +151,6 @@ typehint = [
 
 [tool.setuptools]
 include-package-data = false
-# TODO using this is discouraged by setuptools, `project.scripts` should be used instead
-# However, `project.scripts` does not support non-python scripts.
-script-files = [
-    "bin/localstack",
-    "bin/localstack.bat",
-    "bin/localstack-supervisor",
-]
 package-dir = { "" = "localstack-core" }
 
 [tool.setuptools.dynamic]
