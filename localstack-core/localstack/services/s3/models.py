@@ -102,11 +102,11 @@ class InternalObjectPart(Part):
     _position: int
 
 
-# note: not really a need to use a dataclass here, as it has a lot of fields, but only a few are set at creation
 class S3Bucket:
     name: BucketName
     bucket_account_id: AccountId
     bucket_region: BucketRegion
+    bucket_arn: str
     location_constraint: BucketLocationConstraint | Literal[""]
     creation_date: datetime
     multiparts: dict[MultipartUploadId, "S3Multipart"]
@@ -131,7 +131,7 @@ class S3Bucket:
     inventory_configurations: dict[InventoryId, InventoryConfiguration]
     metric_configurations: dict[MetricsId, MetricsConfiguration]
     object_lock_default_retention: DefaultRetention | None
-    replication: ReplicationConfiguration
+    replication: ReplicationConfiguration | None
     owner: Owner
 
     # set all buckets parameters here
@@ -149,6 +149,7 @@ class S3Bucket:
         self.name = name
         self.bucket_account_id = account_id
         self.bucket_region = bucket_region
+        self.bucket_arn = arns.s3_bucket_arn(self.name, region=bucket_region)
         self.location_constraint = location_constraint
         # If ObjectLock is enabled, it forces the bucket to be versioned as well
         self.versioning_status = None if not object_lock_enabled_for_bucket else "Enabled"
@@ -177,7 +178,6 @@ class S3Bucket:
         self.acl = acl
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
         self.owner = owner
-        self.bucket_arn = arns.s3_bucket_arn(self.name, region=bucket_region)
 
     def get_object(
         self,
@@ -266,7 +266,6 @@ class S3Bucket:
 class S3Object:
     key: ObjectKey
     version_id: ObjectVersionId | None
-    bucket: BucketName
     owner: Owner | None
     size: Size | None
     etag: ETag | None
@@ -281,15 +280,15 @@ class S3Object:
     bucket_key_enabled: bool | None  # inherit bucket
     sse_key_hash: SSECustomerKeyMD5 | None
     checksum_algorithm: ChecksumAlgorithm
-    checksum_value: str
-    checksum_type: ChecksumType
+    checksum_value: str | None
+    checksum_type: ChecksumType | None
     lock_mode: ObjectLockMode | ObjectLockRetentionMode | None
     lock_legal_status: ObjectLockLegalHoldStatus | None
     lock_until: datetime | None
     website_redirect_location: WebsiteRedirectLocation | None
     acl: AccessControlPolicy | None
     is_current: bool
-    parts: dict[int, InternalObjectPart] | None
+    parts: dict[str, InternalObjectPart]
     restore: Restore | None
     internal_last_modified: int
 
@@ -392,7 +391,6 @@ class S3Object:
         return False
 
 
-# TODO: could use dataclass, validate after models are set
 class S3DeleteMarker:
     key: ObjectKey
     version_id: str
@@ -411,7 +409,6 @@ class S3DeleteMarker:
         return False
 
 
-# TODO: could use dataclass, validate after models are set
 class S3Part:
     part_number: PartNumber
     etag: ETag | None
@@ -441,14 +438,16 @@ class S3Part:
 
 
 class S3Multipart:
-    parts: dict[PartNumber, S3Part]
+    id: MultipartUploadId
+    parts: dict[str, S3Part]
     object: S3Object
-    upload_id: MultipartUploadId
     checksum_value: str | None
     checksum_type: ChecksumType | None
-    checksum_algorithm: ChecksumAlgorithm
+    checksum_algorithm: ChecksumAlgorithm | None
     initiated: datetime
-    precondition: bool
+    precondition: bool | None
+    initiator: Owner | None
+    tagging: dict[str, str] | None
 
     def __init__(
         self,
@@ -520,9 +519,9 @@ class S3Multipart:
                 checksum_hash = CombinedCrcHash(self.checksum_algorithm)
 
         pos = 0
-        parts_map: dict[int, InternalObjectPart] = {}
+        parts_map: dict[str, InternalObjectPart] = {}
         for index, part in enumerate(parts):
-            part_number = part["PartNumber"]
+            part_number = str(part["PartNumber"])
             part_etag = part["ETag"].strip('"')
 
             s3_part = self.parts.get(part_number)
@@ -632,6 +631,8 @@ class KeyStore:
     retrieve the object from that key.
     """
 
+    _store: dict[ObjectKey, S3Object | S3DeleteMarker]
+
     def __init__(self):
         self._store = {}
 
@@ -663,6 +664,8 @@ class VersionedKeyStore:
     This object allows easy retrieval and saving of new object versions.
     See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/versioning-workflows.html
     """
+
+    _store: dict[ObjectKey, dict[ObjectVersionId, S3Object | S3DeleteMarker]]
 
     def __init__(self):
         self._store = defaultdict(dict)
