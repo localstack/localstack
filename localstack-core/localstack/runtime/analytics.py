@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 
 from localstack import config
 from localstack.runtime import hooks
@@ -132,10 +133,21 @@ class LocalstackContainerInfo:
     def has_docker_socket(self) -> bool:
         return os.path.exists("/run/docker.sock")
 
+    def uname(self) -> dict:
+        result = platform.uname()
+        return {
+            "uname_system": result.system,
+            "uname_release": result.release,
+            "uname_version": result.version,
+            "uname_machine": result.machine,
+        }
+
     def to_dict(self):
         return {
             "variant": self.get_image_variant(),
             "has_docker_socket": self.has_docker_socket(),
+            "container_runtime": config.CONTAINER_RUNTIME,
+            **self.uname(),
         }
 
 

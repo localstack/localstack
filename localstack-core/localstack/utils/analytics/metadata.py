@@ -56,7 +56,7 @@ def read_client_metadata() -> ClientMetadata:
         session_id=get_session_id(),
         machine_id=get_machine_id(),
         api_key=get_api_key_or_auth_token() or "",  # api key should not be None
-        system=get_system(),
+        system=get_system_information_summary(),
         version=get_version_string(),
         is_ci=os.getenv("CI") is not None,
         is_docker=config.is_in_docker,
@@ -215,6 +215,7 @@ def get_api_key_or_auth_token() -> str | None:
 
 @singleton_factory
 def get_system() -> str:
+    # TODO: candidate for removal
     try:
         # try to get the system from the docker socket
         from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -229,6 +230,69 @@ def get_system() -> str:
         return "docker"
 
     return platform.system().lower()
+
+
+@singleton_factory
+def get_system_information_summary() -> str:
+    """
+    Returns a string that contains three comma-separated values: The operating system, kernel version,
+    and architecture. We either use the docker socket to resolve the information, if that is not available
+    we fall back ``platform.uname()``. If we're in docker and we don't have the docker socket available,
+    we add ``(Container)`` to the operating system type to indicate that we don't have any additional
+    information.
+
+    Some examples:
+
+    If the Docker socket is available:
+     - Docker Desktop,5.15.90.1-microsoft-standard-WSL2,x86_64
+     - Linux Mint 21.1,5.19.0-32-generic,x86_64
+
+    If the Docker socket is not available, and we're on the host:
+     - Windows,10,AMD64
+     - Linux,5.19.0-32-generic,x86_64
+
+    If the Docker socket is not available, and we're in the container:
+     - Linux(Container),5.19.0-32-generic,x86_64
+
+    :return: A string representing the system's information
+    """
+    try:
+        # try to get the system from the docker socket
+        from localstack.utils.docker_utils import DOCKER_CLIENT
+
+        system = DOCKER_CLIENT.get_system_info()
+
+        return ",".join(
+            [
+                system["OperatingSystem"],
+                system["KernelVersion"],
+                system["Architecture"],
+            ]
+        )
+    except Exception:
+        if config.DEBUG_ANALYTICS:
+            LOG.exception(
+                "Unable to get system information from docker socket, falling back to platform.uname()"
+            )
+
+    uname = platform.uname()
+
+    if config.is_in_docker:
+        return ",".join(
+            [
+                f"{uname.system}(Container)",
+                uname.release,
+                uname.machine,
+            ]
+        )
+
+    return ",".join(
+        [
+            uname.system,
+            uname.release,
+            uname.machine,
+        ]
+    )
 
 
 @hooks.prepare_host()
