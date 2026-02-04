@@ -2,7 +2,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Literal, TypeAlias, TypedDict
+from typing import Literal, TypedDict
 
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.events import (
@@ -100,7 +100,7 @@ FormattedEvent = TypedDict(  # functional syntax required due to name-name keys
 FormattedEventDict = dict[str, FormattedEvent]
 FormattedEventList = list[FormattedEvent]
 
-TransformedEvent: TypeAlias = FormattedEvent | dict | str
+type TransformedEvent = FormattedEvent | dict | str
 
 
 class ResourceType(Enum):

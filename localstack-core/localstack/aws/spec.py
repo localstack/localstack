@@ -142,7 +142,7 @@ def load_service(
     return ServiceModel(service_description, service)
 
 
-def iterate_service_operations() -> Generator[tuple[ServiceModel, OperationModel], None, None]:
+def iterate_service_operations() -> Generator[tuple[ServiceModel, OperationModel]]:
     """
     Returns one record per operation in the AWS service spec, where the first item is the service model the operation
     belongs to, and the second is the operation model.

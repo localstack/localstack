@@ -1,11 +1,8 @@
 import time
 from queue import Empty, PriorityQueue, Queue
-from typing import Generic, TypeVar
-
-T = TypeVar("T")
 
 
-class InterruptibleQueue(Queue, Generic[T]):
+class InterruptibleQueue[T](Queue):
     # is_shutdown is used to check whether we have triggered a shutdown of the Queue
     is_shutdown: bool
 
@@ -49,5 +46,5 @@ class InterruptibleQueue(Queue, Generic[T]):
             self.not_empty.notify_all()
 
 
-class InterruptiblePriorityQueue(PriorityQueue, InterruptibleQueue[T], Generic[T]):
+class InterruptiblePriorityQueue[T](PriorityQueue[T], InterruptibleQueue[T]):
     pass

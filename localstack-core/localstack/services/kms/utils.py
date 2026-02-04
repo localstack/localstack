@@ -1,12 +1,9 @@
 import re
 from collections.abc import Callable
-from typing import TypeVar
 
 from localstack.aws.api.kms import DryRunOperationException, Tag, TagException
 from localstack.services.kms.exceptions import ValidationException
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX
-
-T = TypeVar("T")
 
 KMS_KEY_ARN_PATTERN = re.compile(
     rf"{ARN_PARTITION_REGEX}:kms:(?P<region_name>[^:]+):(?P<account_id>\d{{12}}):((?=key/)key/|(?=alias/))(?P<key_id>[^:]+)$"
@@ -63,7 +60,7 @@ def validate_tag(tag_position: int, tag: Tag) -> None:
         raise TagException("Tags beginning with aws: are reserved")
 
 
-def execute_dry_run_capable(func: Callable[..., T], dry_run: bool, *args, **kwargs) -> T:
+def execute_dry_run_capable[T](func: Callable[..., T], dry_run: bool, *args, **kwargs) -> T:
     """
     Executes a function unless dry run mode is enabled.
 
