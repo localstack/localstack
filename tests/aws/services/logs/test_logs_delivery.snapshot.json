@@ -1,0 +1,482 @@
+{
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_put_delivery_destination": {
+    "recorded-date": "04-02-2026, 18:41:17",
+    "recorded-content": {
+      "put-delivery-destination": {
+        "deliveryDestination": {
+          "arn": "arn:<partition>:logs:<region>:111111111111:delivery-destination:<destination-name>",
+          "deliveryDestinationConfiguration": {
+            "destinationResourceArn": "arn:<partition>:s3:::<bucket>"
+          },
+          "deliveryDestinationType": "S3",
+          "name": "<destination-name>",
+          "outputFormat": "json"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_put_delivery_destination_invalid_format": {
+    "recorded-date": "04-02-2026, 18:42:27",
+    "recorded-content": {
+      "error-invalid-format": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'foobar' at 'outputFormat' failed to satisfy constraint: Member must satisfy enum value set: [w3c, raw, json, plain, parquet]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_put_delivery_destination_update": {
+    "recorded-date": "04-02-2026, 18:45:52",
+    "recorded-content": {
+      "put-delivery-destination-update": {
+        "deliveryDestination": {
+          "arn": "arn:<partition>:logs:<region>:111111111111:delivery-destination:<destination-name>",
+          "deliveryDestinationConfiguration": {
+            "destinationResourceArn": "arn:<partition>:s3:::<second-bucket>"
+          },
+          "deliveryDestinationType": "S3",
+          "name": "<destination-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_get_delivery_destination": {
+    "recorded-date": "04-02-2026, 18:47:50",
+    "recorded-content": {
+      "get-delivery-destination": {
+        "deliveryDestination": {
+          "arn": "arn:<partition>:logs:<region>:111111111111:delivery-destination:<destination-name>",
+          "deliveryDestinationConfiguration": {
+            "destinationResourceArn": "arn:<partition>:s3:::<bucket>"
+          },
+          "deliveryDestinationType": "S3",
+          "name": "<destination-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_get_delivery_destination_not_found": {
+    "recorded-date": "04-02-2026, 18:48:32",
+    "recorded-content": {
+      "error-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Requested Delivery Destination does not exist in this account."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_describe_delivery_destinations": {
+    "recorded-date": "04-02-2026, 18:54:13",
+    "recorded-content": {
+      "describe-delivery-destinations": [
+        {
+          "name": "<destination-0>",
+          "arn": "arn:<partition>:logs:<region>:111111111111:delivery-destination:<destination-0>",
+          "deliveryDestinationType": "S3",
+          "deliveryDestinationConfiguration": {
+            "destinationResourceArn": "arn:<partition>:s3:::<bucket>"
+          }
+        },
+        {
+          "name": "<destination-1>",
+          "arn": "arn:<partition>:logs:<region>:111111111111:delivery-destination:<destination-1>",
+          "deliveryDestinationType": "S3",
+          "deliveryDestinationConfiguration": {
+            "destinationResourceArn": "arn:<partition>:s3:::<bucket>"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_delete_delivery_destination": {
+    "recorded-date": "04-02-2026, 18:57:39",
+    "recorded-content": {
+      "error-after-delete": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Requested Delivery Destination does not exist in this account."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_delete_delivery_destination_not_found": {
+    "recorded-date": "04-02-2026, 18:58:37",
+    "recorded-content": {
+      "error-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Requested Delivery Destination does not exist in this account."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinationPolicies::test_put_delivery_destination_policy": {
+    "recorded-date": "04-02-2026, 19:02:04",
+    "recorded-content": {
+      "put-delivery-destination-policy": {
+        "policy": {
+          "deliveryDestinationPolicy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowLogDeliveryActions",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:<partition>:iam::111111111111:root"
+                },
+                "Action": "logs:CreateDelivery",
+                "Resource": [
+                  "arn:<partition>:logs:<region>:111111111111:delivery-source:*",
+                  "arn:<partition>:logs:<region>:111111111111:delivery:*",
+                  "arn:<partition>:logs:<region>:111111111111:delivery-destination:*"
+                ]
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinationPolicies::test_get_delivery_destination_policy": {
+    "recorded-date": "04-02-2026, 19:03:14",
+    "recorded-content": {
+      "get-delivery-destination-policy": {
+        "policy": {
+          "deliveryDestinationPolicy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowLogDeliveryActions",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:<partition>:iam::111111111111:root"
+                },
+                "Action": "logs:CreateDelivery",
+                "Resource": [
+                  "arn:<partition>:logs:<region>:111111111111:delivery-source:*",
+                  "arn:<partition>:logs:<region>:111111111111:delivery:*",
+                  "arn:<partition>:logs:<region>:111111111111:delivery-destination:*"
+                ]
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinationPolicies::test_delete_delivery_destination_policy": {
+    "recorded-date": "04-02-2026, 19:09:00",
+    "recorded-content": {}
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliverySources::test_put_delivery_source": {
+    "recorded-date": "04-02-2026, 19:21:24",
+    "recorded-content": {
+      "put-delivery-source": {
+        "deliverySource": {
+          "arn": "arn:<partition>:logs:<region>:111111111111:delivery-source:<source-name>",
+          "logType": "ACCESS_LOGS",
+          "name": "<source-name>",
+          "resourceArns": [
+            "arn:<partition>:cloudfront::111111111111:distribution/E1Q5F5862X9VJ5"
+          ],
+          "service": "cloudfront",
+          "tags": {
+            "key1": "value1"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliverySources::test_put_delivery_source_invalid_resource": {
+    "recorded-date": "04-02-2026, 19:22:17",
+    "recorded-content": {
+      "error-invalid-resource": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot access provided service."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliverySources::test_get_delivery_source": {
+    "recorded-date": "04-02-2026, 19:28:05",
+    "recorded-content": {
+      "get-delivery-source": {
+        "deliverySource": {
+          "arn": "arn:<partition>:logs:<region>:111111111111:delivery-source:<source-name>",
+          "logType": "ACCESS_LOGS",
+          "name": "<source-name>",
+          "resourceArns": [
+            "arn:<partition>:cloudfront::111111111111:distribution/E1Q5F5862X9VJ5"
+          ],
+          "service": "cloudfront"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliverySources::test_get_delivery_source_not_found": {
+    "recorded-date": "04-02-2026, 19:28:39",
+    "recorded-content": {
+      "error-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Requested Delivery Source does not exist in this account."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliverySources::test_describe_delivery_sources": {
+    "recorded-date": "04-02-2026, 19:32:38",
+    "recorded-content": {
+      "describe-delivery-sources": {
+        "deliverySources": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:delivery-source:<source-0>",
+            "logType": "ACCESS_LOGS",
+            "name": "<source-0>",
+            "resourceArns": [
+              "arn:<partition>:cloudfront::123456789012:distribution/E19DL18TOXN9JU"
+            ],
+            "service": "cloudfront"
+          },
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:delivery-source:<source-1>",
+            "logType": "ACCESS_LOGS",
+            "name": "<source-1>",
+            "resourceArns": [
+              "arn:<partition>:cloudfront::123456789012:distribution/E19DL18TOXN9JU"
+            ],
+            "service": "cloudfront"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliverySources::test_delete_delivery_source": {
+    "recorded-date": "04-02-2026, 19:33:56",
+    "recorded-content": {
+      "error-after-delete": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Requested Delivery Source does not exist in this account.."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveries::test_create_delivery": {
+    "recorded-date": "04-02-2026, 19:50:15",
+    "recorded-content": {
+      "create-delivery": {
+        "delivery": {
+          "arn": "arn:<partition>:logs:<region>:111111111111:delivery:<id:1>",
+          "deliveryDestinationArn": "arn:<partition>:logs:<region>:111111111111:delivery-destination:<destination>",
+          "deliveryDestinationType": "S3",
+          "deliverySourceName": "<source>",
+          "fieldDelimiter": ",",
+          "id": "<id:1>",
+          "recordFields": [
+            "date"
+          ],
+          "s3DeliveryConfiguration": {
+            "enableHiveCompatiblePath": true,
+            "suffixPath": "AWSLogs/111111111111/CloudFront/"
+          },
+          "tags": {
+            "key1": "value1"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveries::test_get_delivery": {
+    "recorded-date": "04-02-2026, 19:51:24",
+    "recorded-content": {
+      "get-delivery": {
+        "delivery": {
+          "arn": "arn:<partition>:logs:<region>:111111111111:delivery:<id:1>",
+          "deliveryDestinationArn": "arn:<partition>:logs:<region>:111111111111:delivery-destination:<destination>",
+          "deliveryDestinationType": "S3",
+          "deliverySourceName": "<source>",
+          "id": "<id:1>",
+          "recordFields": [
+            "date",
+            "time",
+            "x-edge-location",
+            "sc-bytes",
+            "c-ip",
+            "cs-method",
+            "cs(Host)",
+            "cs-uri-stem",
+            "sc-status",
+            "cs(Referer)",
+            "cs(User-Agent)",
+            "cs-uri-query",
+            "cs(Cookie)",
+            "x-edge-result-type",
+            "x-edge-request-id",
+            "x-host-header",
+            "cs-protocol",
+            "cs-bytes",
+            "time-taken",
+            "x-forwarded-for",
+            "ssl-protocol",
+            "ssl-cipher",
+            "x-edge-response-result-type",
+            "cs-protocol-version",
+            "fle-status",
+            "fle-encrypted-fields",
+            "c-port",
+            "time-to-first-byte",
+            "x-edge-detailed-result-type",
+            "sc-content-type",
+            "sc-content-len",
+            "sc-range-start",
+            "sc-range-end"
+          ],
+          "s3DeliveryConfiguration": {
+            "enableHiveCompatiblePath": false,
+            "suffixPath": "AWSLogs/{account-id}/CloudFront/"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveries::test_describe_deliveries": {
+    "recorded-date": "04-02-2026, 20:05:35",
+    "recorded-content": {
+      "describe-deliveries": [
+        {
+          "id": "<id:1>",
+          "arn": "arn:<partition>:logs:<region>:111111111111:delivery:<id:1>",
+          "deliverySourceName": "<source>",
+          "deliveryDestinationArn": "arn:<partition>:logs:<region>:111111111111:delivery-destination:<destination>",
+          "deliveryDestinationType": "S3",
+          "recordFields": [
+            "date",
+            "time",
+            "x-edge-location",
+            "sc-bytes",
+            "c-ip",
+            "cs-method",
+            "cs(Host)",
+            "cs-uri-stem",
+            "sc-status",
+            "cs(Referer)",
+            "cs(User-Agent)",
+            "cs-uri-query",
+            "cs(Cookie)",
+            "x-edge-result-type",
+            "x-edge-request-id",
+            "x-host-header",
+            "cs-protocol",
+            "cs-bytes",
+            "time-taken",
+            "x-forwarded-for",
+            "ssl-protocol",
+            "ssl-cipher",
+            "x-edge-response-result-type",
+            "cs-protocol-version",
+            "fle-status",
+            "fle-encrypted-fields",
+            "c-port",
+            "time-to-first-byte",
+            "x-edge-detailed-result-type",
+            "sc-content-type",
+            "sc-content-len",
+            "sc-range-start",
+            "sc-range-end"
+          ],
+          "s3DeliveryConfiguration": {
+            "suffixPath": "AWSLogs/{account-id}/CloudFront/",
+            "enableHiveCompatiblePath": false
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveries::test_delete_delivery": {
+    "recorded-date": "04-02-2026, 20:06:50",
+    "recorded-content": {
+      "error-after-delete": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Requested Delivery does not exist in this account."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

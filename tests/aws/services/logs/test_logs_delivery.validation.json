@@ -1,0 +1,119 @@
+{
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinationPolicies::test_delete_delivery_destination_policy": {
+    "last_validated_date": "2026-02-04T19:09:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.82,
+      "call": 0.9,
+      "teardown": 0.57,
+      "total": 2.29
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinationPolicies::test_get_delivery_destination_policy": {
+    "last_validated_date": "2026-02-04T19:03:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.95,
+      "call": 0.73,
+      "teardown": 0.68,
+      "total": 2.36
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinationPolicies::test_put_delivery_destination_policy": {
+    "last_validated_date": "2026-02-04T19:02:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.88,
+      "call": 0.62,
+      "teardown": 0.74,
+      "total": 2.24
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_delete_delivery_destination": {
+    "last_validated_date": "2026-02-04T18:57:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.89,
+      "call": 0.78,
+      "teardown": 0.49,
+      "total": 2.16
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_delete_delivery_destination_not_found": {
+    "last_validated_date": "2026-02-04T18:58:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.44,
+      "teardown": 0.0,
+      "total": 0.81
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_describe_delivery_destinations": {
+    "last_validated_date": "2026-02-04T18:54:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.85,
+      "call": 0.82,
+      "teardown": 0.82,
+      "total": 2.49
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_get_delivery_destination": {
+    "last_validated_date": "2026-02-04T18:47:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.87,
+      "call": 0.64,
+      "teardown": 0.67,
+      "total": 2.18
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_get_delivery_destination_not_found": {
+    "last_validated_date": "2026-02-04T18:48:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.36,
+      "call": 0.42,
+      "teardown": 0.0,
+      "total": 0.78
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_put_delivery_destination": {
+    "last_validated_date": "2026-02-04T18:41:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.88,
+      "call": 0.49,
+      "teardown": 0.69,
+      "total": 2.06
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_put_delivery_destination_invalid_format": {
+    "last_validated_date": "2026-02-04T18:42:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.94,
+      "call": 0.39,
+      "teardown": 0.52,
+      "total": 1.85
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliveryDestinations::test_put_delivery_destination_update": {
+    "last_validated_date": "2026-02-04T18:45:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.87,
+      "call": 1.09,
+      "teardown": 1.18,
+      "total": 3.14
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliverySources::test_get_delivery_source_not_found": {
+    "last_validated_date": "2026-02-04T19:28:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.43,
+      "teardown": 0.0,
+      "total": 0.8
+    }
+  },
+  "tests/aws/services/logs/test_logs_delivery.py::TestDeliverySources::test_put_delivery_source_invalid_resource": {
+    "last_validated_date": "2026-02-04T19:22:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.39,
+      "call": 0.43,
+      "teardown": 0.0,
+      "total": 0.82
+    }
+  }
+}
