@@ -794,7 +794,6 @@ class TestSNSPublishCrud:
 
         snapshot.match("error-batch", e.value.response)
 
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="not correctly implemented")
     @markers.aws.validated
     def test_publish_no_confirm_subscription(
         self, sns_create_topic, snapshot, sns_subscription, aws_client, e_mail_address
@@ -2439,7 +2438,6 @@ class TestSNSSubscriptionSQS:
         snapshot.match("publish-batch-no-topic", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="not covered in v1")
     def test_publish_batch_exceptions(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -3155,7 +3153,6 @@ class TestSNSSubscriptionSQSFifo:
         snapshot.match("dedup-messages", response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="not covered in v1")
     def test_validations_for_fifo(
         self,
         sns_create_topic,
