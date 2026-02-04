@@ -561,12 +561,6 @@ class TestCloudFormationConditions:
         """
         Test that a template with a conditional resource referencing another conditional
         resource via !GetAtt is accepted and deploys correctly when conditions are false.
-
-        Without the fix, the v2 engine incorrectly visits properties of conditional
-        resources even when their condition is false, causing failures when those
-        properties contain !GetAtt references to other undeployed conditional resources.
-
-        Reproduces: https://github.com/localstack/localstack/issues/13609
         """
         snapshot.add_transformer(
             SortingTransformer("StackResources", lambda e: e["LogicalResourceId"])
