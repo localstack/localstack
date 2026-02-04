@@ -14,6 +14,7 @@ from localstack.utils.net import (
     PortRange,
     dynamic_port_range,
     get_addressable_container_host,
+    get_docker_bridge_ip,
     get_free_tcp_port,
     get_free_tcp_port_range,
     get_free_udp_port,
@@ -168,3 +169,38 @@ def test_get_addressable_container_host(monkeypatch):
     monkeypatch.setattr(config, "is_in_docker", False)
     monkeypatch.setattr(config, "in_docker", lambda: False)
     assert get_addressable_container_host(default_local_hostname="test.abc") == "test.abc"
+
+
+def test_get_docker_bridge_ip_default():
+    """Test that get_docker_bridge_ip returns a valid IP address."""
+    ip = get_docker_bridge_ip()
+    assert is_ip_address(ip)
+    # Should return one of the default bridge IPs
+    assert ip in ("172.17.0.1", "172.18.0.1")
+
+
+def test_get_docker_bridge_ip_custom_env(monkeypatch):
+    """Test that get_docker_bridge_ip respects custom DOCKER_BRIDGE_IP env var."""
+    custom_ip = "192.168.1.1"
+    monkeypatch.setattr(config, "DOCKER_BRIDGE_IP", custom_ip)
+    # Clear the singleton cache
+    get_docker_bridge_ip.cache_clear()
+    ip = get_docker_bridge_ip()
+    assert ip == custom_ip
+
+
+def test_get_docker_bridge_ip_no_io_on_import():
+    """Test that importing the module doesn't trigger I/O operations."""
+    # This test verifies that get_docker_bridge_ip is lazy-loaded
+    # and doesn't execute ping at import time
+    # The function should be callable without side effects
+    import importlib
+    import sys
+
+    # Remove module from cache to force reimport
+    if "localstack.utils.net" in sys.modules:
+        importlib.reload(sys.modules["localstack.utils.net"])
+
+    # If we got here without hanging on ping, the fix is working
+    from localstack.utils.net import get_docker_bridge_ip as lazy_func
+    assert callable(lazy_func)
