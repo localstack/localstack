@@ -15,7 +15,7 @@ from collections.abc import Callable
 from functools import lru_cache, partial
 from random import choice
 from socket import socket
-from typing import Any, Generic, TypedDict, TypeVar
+from typing import Any, TypedDict
 
 import dns.message
 import dns.query
@@ -165,10 +165,7 @@ def load_dto(data: str) -> InternalRequestParameters:
     return json.loads(data)
 
 
-T = TypeVar("T")
-
-
-class MetadataRequestInjector(Generic[T]):
+class MetadataRequestInjector[T]:
     def __init__(self, client: T, params: dict[str, str] | None = None):
         self._client = client
         self._params = params
