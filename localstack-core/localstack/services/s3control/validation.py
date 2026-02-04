@@ -4,7 +4,7 @@ from localstack.aws.forwarder import NotImplementedAvoidFallbackError
 from localstack.services.s3.exceptions import MalformedXML
 from localstack.services.s3.models import s3_stores
 from localstack.services.s3.utils import TAG_REGEX
-from localstack.services.s3control.provider import NoSuchResource
+from localstack.services.s3control.exceptions import NoSuchResource
 
 
 def validate_arn_for_tagging(

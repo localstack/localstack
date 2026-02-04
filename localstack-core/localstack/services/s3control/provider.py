@@ -1,4 +1,4 @@
-from localstack.aws.api import CommonServiceException, RequestContext
+from localstack.aws.api import RequestContext
 from localstack.aws.api.s3control import (
     AccountId,
     ListTagsForResourceResult,
@@ -12,11 +12,6 @@ from localstack.aws.api.s3control import (
 from localstack.services.s3.models import S3Store, s3_stores
 from localstack.services.s3control.validation import validate_arn_for_tagging, validate_tags
 from localstack.state import StateVisitor
-
-
-class NoSuchResource(CommonServiceException):
-    def __init__(self, message=None):
-        super().__init__("NoSuchResource", status_code=404, message=message)
 
 
 class S3ControlProvider(S3ControlApi):
