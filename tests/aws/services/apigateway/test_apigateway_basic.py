@@ -162,9 +162,7 @@ class TestAPIGateway:
 
     @markers.aws.only_localstack
     # This is not a possible feature on aws.
-    def test_create_rest_api_with_invalid_custom_id(
-        self, create_rest_apigw, url_function, aws_client
-    ):
+    def test_create_rest_api_with_invalid_custom_id(self, create_rest_apigw, aws_client):
         apigw_name = f"gw-{short_uid()}"
         test_id = "testId123"
         with pytest.raises(ClientError) as exc:
