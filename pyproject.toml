@@ -211,6 +211,7 @@ exclude = [
 "localstack-core/localstack/constants.py" = "py310"
 "localstack-core/localstack/utils/**" = "py310"  # imported by CLI tests
 "localstack-core/localstack/testing/pytest/**" = "py310" # imported by CLI tests
+"localstack-core/localstack/aws/connect.py" = "py310" # imported by CLI tests
 
 [tool.deptry]
 known_first_party = [
