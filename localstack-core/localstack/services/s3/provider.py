@@ -473,7 +473,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         return store, s3_bucket
 
-    def _update_bucket_tags(self, resource_arn: str, account_id: str, region: str, tags: TagSet):
+    def _create_bucket_tags(self, resource_arn: str, account_id: str, region: str, tags: TagSet):
         store = self.get_store(account_id, region)
         store.TAGS.tag_resource(arn=resource_arn, tags=tags)
 
@@ -570,7 +570,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.buckets[bucket_name] = s3_bucket
         store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
         if bucket_tags:
-            self._update_bucket_tags(
+            self._create_bucket_tags(
                 s3_bucket.bucket_arn, context.account_id, bucket_region, bucket_tags
             )
         self._cors_handler.invalidate_cache()
@@ -3270,7 +3270,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._remove_all_bucket_tags(
             s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region
         )
-        self._update_bucket_tags(
+        self._create_bucket_tags(
             s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region, tag_set
         )
 
@@ -3306,7 +3306,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._remove_all_bucket_tags(
             s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region
         )
-        self._update_bucket_tags(
+        self._create_bucket_tags(
             s3_bucket.bucket_arn, context.account_id, s3_bucket.bucket_region, []
         )
 
