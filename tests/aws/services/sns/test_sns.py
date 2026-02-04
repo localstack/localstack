@@ -4744,7 +4744,7 @@ class TestSNSSMS:
     @markers.requires_in_process
     @markers.aws.only_localstack
     def test_publish_sms_endpoint(
-        self, sns_create_topic, sns_subscription, aws_client, account_id, region_name, sns_provider
+        self, sns_create_topic, sns_subscription, aws_client, account_id, region_name
     ):
         list_of_contacts = [
             f"+{random.randint(100000000, 9999999999)}",

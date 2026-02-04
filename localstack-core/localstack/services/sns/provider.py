@@ -1304,7 +1304,7 @@ def _default_attributes(topic: Topic, context: RequestContext) -> TopicAttribute
     default_attributes = {
         "DisplayName": "",
         "Owner": context.account_id,
-        "Policy": _create_default_topic_policy(topic),
+        "Policy": _create_default_topic_policy(topic["arn"]),
         "SubscriptionsConfirmed": "0",
         "SubscriptionsDeleted": "0",
         "SubscriptionsPending": "0",
@@ -1340,7 +1340,7 @@ def _create_default_effective_delivery_policy():
     )
 
 
-def _create_default_topic_policy(topic: Topic) -> str:
+def _create_default_topic_policy(topic_arn: str) -> str:
     return json.dumps(
         {
             "Version": "2008-10-17",
@@ -1360,9 +1360,9 @@ def _create_default_topic_policy(topic: Topic) -> str:
                         "SNS:ListSubscriptionsByTopic",
                         "SNS:Publish",
                     ],
-                    "Resource": topic["arn"],
+                    "Resource": topic_arn,
                     "Condition": {
-                        "StringEquals": {"AWS:SourceOwner": parse_arn(topic["arn"])["account"]}
+                        "StringEquals": {"AWS:SourceOwner": parse_arn(topic_arn)["account"]}
                     },
                 }
             ],

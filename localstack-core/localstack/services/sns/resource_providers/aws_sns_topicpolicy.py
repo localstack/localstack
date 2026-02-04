@@ -99,7 +99,7 @@ class SNSTopicPolicyProvider(ResourceProvider[SNSTopicPolicyProperties]):
                 sns.set_topic_attributes(
                     TopicArn=topic_arn,
                     AttributeName="Policy",
-                    AttributeValue=json.dumps(_create_default_topic_policy(topic_arn)),
+                    AttributeValue=_create_default_topic_policy(topic_arn),
                 )
 
             except ClientError as err:
