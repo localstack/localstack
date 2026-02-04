@@ -2834,7 +2834,7 @@
     }
   },
   "tests/aws/services/cloudformation/test_change_set_mappings.py::TestChangeSetMappings::test_fn_find_in_map_with_nested_ref_change_mapping": {
-    "recorded-date": "02-02-2026, 11:43:11",
+    "recorded-date": "04-02-2026, 11:54:54",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -2858,7 +2858,7 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "east-value-1",
+                  "DisplayName": "value-1",
                   "TopicName": "topic-name-1"
                 }
               },
@@ -2971,13 +2971,13 @@
               "Action": "Modify",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "east-value-2",
+                  "DisplayName": "value-3",
                   "TopicName": "topic-name-1"
                 }
               },
               "BeforeContext": {
                 "Properties": {
-                  "DisplayName": "east-value-1",
+                  "DisplayName": "value-1",
                   "TopicName": "topic-name-1"
                 }
               },
@@ -2986,10 +2986,10 @@
                   "ChangeSource": "DirectModification",
                   "Evaluation": "Static",
                   "Target": {
-                    "AfterValue": "east-value-2",
+                    "AfterValue": "value-3",
                     "Attribute": "Properties",
                     "AttributeChangeType": "Modify",
-                    "BeforeValue": "east-value-1",
+                    "BeforeValue": "value-1",
                     "Name": "DisplayName",
                     "Path": "/Properties/DisplayName",
                     "RequiresRecreation": "Never"

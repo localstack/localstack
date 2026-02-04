@@ -370,6 +370,8 @@ class TestChangeSetMappings:
         self,
         snapshot,
         capture_update_process,
+        region_name,
+        secondary_region_name,
     ):
         name1 = f"topic-name-1-{long_uid()}"
         snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
@@ -377,8 +379,8 @@ class TestChangeSetMappings:
         template_1 = {
             "Mappings": {
                 "RegionMap": {
-                    "us-east-1": {"value": "east-value-1"},
-                    "us-west-2": {"value": "west-value-1"},
+                    region_name: {"value": "value-1"},
+                    secondary_region_name: {"value": "value-2"},
                 }
             },
             "Resources": {
@@ -402,8 +404,8 @@ class TestChangeSetMappings:
         template_2 = {
             "Mappings": {
                 "RegionMap": {
-                    "us-east-1": {"value": "east-value-2"},  # Changed
-                    "us-west-2": {"value": "west-value-2"},  # Changed
+                    region_name: {"value": "value-3"},  # changed
+                    secondary_region_name: {"value": "value-4"},  # changed
                 }
             },
             "Resources": {
