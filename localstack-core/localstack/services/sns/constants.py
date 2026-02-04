@@ -2,7 +2,7 @@ import re
 from string import ascii_letters, digits
 from typing import get_args
 
-from localstack.services.sns.v2.models import SnsApplicationPlatforms
+from localstack.services.sns.models import SnsApplicationPlatforms
 
 SNS_PROTOCOLS = [
     "http",
