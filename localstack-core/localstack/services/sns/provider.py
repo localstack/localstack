@@ -6,6 +6,32 @@ import logging
 import re
 
 from botocore.utils import InvalidArnException
+from localstack.services.sns.v2.models import (
+    SMS_ATTRIBUTE_NAMES,
+    SMS_DEFAULT_SENDER_REGEX,
+    SMS_TYPES,
+    EndpointAttributeNames,
+    PlatformApplicationDetails,
+    PlatformEndpoint,
+    SnsMessage,
+    SnsMessageType,
+    SnsStore,
+    SnsSubscription,
+    Topic,
+    sns_stores,
+)
+from localstack.services.sns.v2.utils import (
+    create_platform_endpoint_arn,
+    create_subscription_arn,
+    encode_subscription_token_with_region,
+    get_next_page_token_from_arn,
+    get_region_from_subscription_token,
+    get_topic_subscriptions,
+    is_valid_e164_number,
+    parse_and_validate_platform_application_arn,
+    parse_and_validate_topic_arn,
+    validate_subscription_attribute,
+)
 from rolo import Request, Router, route
 
 from localstack.aws.api import CommonServiceException, RequestContext
@@ -104,32 +130,6 @@ from localstack.services.sns.publisher import (
     PublishDispatcher,
     SnsBatchPublishContext,
     SnsPublishContext,
-)
-from localstack.services.sns.v2.models import (
-    SMS_ATTRIBUTE_NAMES,
-    SMS_DEFAULT_SENDER_REGEX,
-    SMS_TYPES,
-    EndpointAttributeNames,
-    PlatformApplicationDetails,
-    PlatformEndpoint,
-    SnsMessage,
-    SnsMessageType,
-    SnsStore,
-    SnsSubscription,
-    Topic,
-    sns_stores,
-)
-from localstack.services.sns.v2.utils import (
-    create_platform_endpoint_arn,
-    create_subscription_arn,
-    encode_subscription_token_with_region,
-    get_next_page_token_from_arn,
-    get_region_from_subscription_token,
-    get_topic_subscriptions,
-    is_valid_e164_number,
-    parse_and_validate_platform_application_arn,
-    parse_and_validate_topic_arn,
-    validate_subscription_attribute,
 )
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
