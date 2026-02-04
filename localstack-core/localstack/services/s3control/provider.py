@@ -9,11 +9,9 @@ from localstack.aws.api.s3control import (
     TagResourceResult,
     UntagResourceResult,
 )
-from localstack.aws.forwarder import NotImplementedAvoidFallbackError
-from localstack.services.s3.models import s3_stores, S3Store
-from localstack.services.s3control.validation import validate_tags, validate_arn_for_tagging
+from localstack.services.s3.models import S3Store, s3_stores
+from localstack.services.s3control.validation import validate_arn_for_tagging, validate_tags
 from localstack.state import StateVisitor
-from localstack.utils.tagging import TaggingService
 
 
 class NoSuchResource(CommonServiceException):

@@ -7,7 +7,9 @@ from localstack.services.s3.utils import TAG_REGEX
 from localstack.services.s3control.provider import NoSuchResource
 
 
-def validate_arn_for_tagging(resource_arn: str, partition: str, account_id: str, region: str) -> None:
+def validate_arn_for_tagging(
+    resource_arn: str, partition: str, account_id: str, region: str
+) -> None:
     """
     Validates the resource ARN for the resource being tagged.
 
