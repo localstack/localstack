@@ -11,7 +11,6 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.files import load_file
 from localstack.utils.sync import poll_condition, retry
-from tests.aws.services.sns.conftest import skip_if_sns_v2
 
 THIS_FOLDER: str = os.path.dirname(os.path.realpath(__file__))
 TEST_PAYLOAD_DIR = os.path.join(THIS_FOLDER, "test_payloads")
@@ -52,7 +51,6 @@ def sns_create_sqs_subscription_with_filter_policy(sns_create_sqs_subscription, 
 
 class TestSNSFilterPolicyCrud:
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_set_subscription_filter_policy_scope(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -104,7 +102,6 @@ class TestSNSFilterPolicyCrud:
         snapshot.match("sub-attrs-after-setting-policy", subscription_attrs)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_sub_filter_policy_nested_property(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -147,7 +144,6 @@ class TestSNSFilterPolicyCrud:
             "$.sub-filter-policy-rule-no-list.Error.Message",  # message contains java trace in AWS, assert instead
         ]
     )
-    @skip_if_sns_v2
     def test_sub_filter_policy_nested_property_constraints(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -214,7 +210,6 @@ class TestSNSFilterPolicyCrud:
 
 class TestSNSFilterPolicyAttributes:
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -340,7 +335,6 @@ class TestSNSFilterPolicyAttributes:
         snapshot.match("messages-4", response_4)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_exists_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -458,7 +452,6 @@ class TestSNSFilterPolicyAttributes:
         assert num_msgs_4 == num_msgs_3
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_exists_filter_policy_attributes_array(
         self,
         sqs_create_queue,
@@ -561,7 +554,6 @@ class TestSNSFilterPolicyBody:
 
     @markers.aws.validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
-    @skip_if_sns_v2
     def test_filter_policy_on_message_body(
         self,
         sqs_create_queue,
@@ -668,7 +660,6 @@ class TestSNSFilterPolicyBody:
         assert "Messages" not in response or response["Messages"] == []
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_filter_policy_for_batch(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -772,7 +763,6 @@ class TestSNSFilterPolicyBody:
         snapshot.match("messages-with-filter-after-publish-filtered", response_after_publish_filter)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_filter_policy_on_message_body_dot_attribute(
         self,
         sqs_create_queue,
@@ -898,7 +888,6 @@ class TestSNSFilterPolicyBody:
         assert "Messages" not in response or response["Messages"] == []
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_filter_policy_on_message_body_array_attributes(
         self,
         sqs_create_queue,
@@ -958,7 +947,6 @@ class TestSNSFilterPolicyBody:
             snapshot.match(f"messages-queue-{i}", {"Messages": recv_messages})
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_filter_policy_on_message_body_array_of_object_attributes(
         self,
         sqs_create_queue,
@@ -1074,7 +1062,6 @@ class TestSNSFilterPolicyBody:
         snapshot.match("messages", {"Messages": received_messages})
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_filter_policy_on_message_body_or_attribute(
         self,
         sqs_create_queue,
@@ -1172,7 +1159,6 @@ class TestSNSFilterPolicyBody:
         snapshot.match("messages-queue", {"Messages": recv_messages})
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_filter_policy_empty_array_payload(
         self,
         sqs_create_queue,
@@ -1226,7 +1212,6 @@ class TestSNSFilterPolicyBody:
         snapshot.match("messages-queue", {"Messages": recv_messages})
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_filter_policy_large_complex_payload(
         self,
         sqs_create_queue,
@@ -1265,7 +1250,6 @@ class TestSNSFilterPolicyBody:
         assert len(recv_messages) == 1
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_filter_policy_ip_address_condition(
         self,
         sqs_create_queue,
@@ -1359,7 +1343,6 @@ class TestSNSFilterPolicyConditions:
         # AWS adds JSON position error: `\n at [Source: (String)"{"key":[["value"]]}"; line: 1, column: 10]`
         paths=["$..Error.Message"]
     )
-    @skip_if_sns_v2
     def test_validate_policy(
         self,
         sns_create_topic,
@@ -1398,7 +1381,6 @@ class TestSNSFilterPolicyConditions:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
-    @skip_if_sns_v2
     def test_validate_policy_string_operators(
         self,
         sns_create_topic,
@@ -1503,7 +1485,6 @@ class TestSNSFilterPolicyConditions:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
-    @skip_if_sns_v2
     def test_validate_policy_numeric_operator(
         self,
         sns_create_topic,
@@ -1609,7 +1590,6 @@ class TestSNSFilterPolicyConditions:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
-    @skip_if_sns_v2
     def test_validate_policy_exists_operator(
         self,
         sns_create_topic,
@@ -1642,7 +1622,6 @@ class TestSNSFilterPolicyConditions:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
-    @skip_if_sns_v2
     def test_validate_policy_nested_anything_but_operator(
         self,
         sns_create_topic,
@@ -1708,7 +1687,6 @@ class TestSNSFilterPolicyConditions:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_policy_complexity(
         self,
         sns_create_topic,
@@ -1753,7 +1731,6 @@ class TestSNSFilterPolicyConditions:
         snapshot.match("error-complexity-too-many-fields", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_policy_complexity_with_or(
         self,
         sns_create_topic,
