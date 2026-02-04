@@ -1,7 +1,5 @@
 from typing import Any
 
-from requests.structures import CaseInsensitiveDict
-
 from localstack.aws.api.apigateway import (
     Account,
     Authorizer,
@@ -109,8 +107,7 @@ class RestApiDeployment:
 
 class ApiGatewayStore(BaseStore):
     # maps (API id) -> RestApiContainer
-    # TODO: remove CaseInsensitiveDict, and lower the value of the ID when getting it from the tags
-    rest_apis: dict[str, RestApiContainer] = LocalAttribute(default=CaseInsensitiveDict)
+    rest_apis: dict[str, RestApiContainer] = LocalAttribute(default=dict)
 
     # account details
     _account: Account = LocalAttribute(default=dict)

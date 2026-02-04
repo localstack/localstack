@@ -1,3 +1,5 @@
+import pytest
+from botocore.exceptions import ClientError
 from moto.apigateway.utils import (
     ApigwApiKeyIdentifier,
     ApigwResourceIdentifier,
@@ -7,7 +9,7 @@ from moto.apigateway.utils import (
 from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid, short_uid
 
-API_ID = "ApiId"
+API_ID = "api-id"
 ROOT_RESOURCE_ID = "RootId"
 PET_1_RESOURCE_ID = "Pet1Id"
 PET_2_RESOURCE_ID = "Pet2Id"
@@ -60,3 +62,23 @@ def test_apigateway_custom_ids(
     assert pet_resource_1["id"] == PET_1_RESOURCE_ID
     assert pet_resource_2["id"] == PET_2_RESOURCE_ID
     assert api_key["id"] == API_KEY_ID
+
+
+@markers.aws.only_localstack
+@markers.requires_in_process
+def test_apigateway_invalid_rest_api_custom_id(
+    aws_client, set_resource_custom_id, create_rest_apigw, account_id, region_name, cleanups
+):
+    rest_api_name = f"apigw-{short_uid()}"
+    bad_api_id = "UpperCaseApi"
+
+    set_resource_custom_id(
+        ApigwRestApiIdentifier(account_id, region_name, rest_api_name), bad_api_id
+    )
+    with pytest.raises(ClientError) as exc:
+        create_rest_apigw(name=rest_api_name)
+    assert exc.value.response["Error"]["Code"] == "BadRequestException"
+    assert (
+        exc.value.response["Error"]["Message"]
+        == f"The RestApiId '{bad_api_id}' cannot contain uppercase characters"
+    )
