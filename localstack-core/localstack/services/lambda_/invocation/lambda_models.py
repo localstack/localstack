@@ -340,9 +340,9 @@ class FileSystemConfig:
 
 @dataclasses.dataclass(frozen=True)
 class ImageConfig:
-    working_directory: str
-    command: list[str] = dataclasses.field(default_factory=list)
-    entrypoint: list[str] = dataclasses.field(default_factory=list)
+    working_directory: str | None
+    command: list[str] | None = dataclasses.field(default_factory=list)
+    entrypoint: list[str] | None = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass
@@ -509,8 +509,8 @@ class CodeSigningConfig:
     arn: str
 
     allowed_publishers: AllowedPublishers
-    policies: CodeSigningPolicies
     last_modified: str
+    policies: CodeSigningPolicies | None = None
     description: str | None = None
 
 
@@ -539,10 +539,10 @@ class LayerVersion:
 
     version: int
     # we need to use Union types as inheritance is not supported by serialization framework
-    code: S3Code | HotReloadingCode
-    license_info: str
-    compatible_runtimes: list[Runtime]
-    compatible_architectures: list[Architecture]
+    code: S3Code | HotReloadingCode | None
+    license_info: str | None
+    compatible_runtimes: list[Runtime] | None
+    compatible_architectures: list[Architecture] | None
     created: str  # date
     description: str = ""
 
@@ -563,20 +563,20 @@ class VersionFunctionConfiguration:
     description: str
     role: str
     timeout: int
-    runtime: Runtime
+    runtime: Runtime | None
     memory_size: int
-    handler: str
+    handler: str | None
     package_type: PackageType
     environment: dict[str, str] | None
     architectures: list[Architecture]
     # internal revision is updated when runtime restart is necessary
     internal_revision: str
     ephemeral_storage: LambdaEphemeralStorage
-    snap_start: SnapStartResponse
+    snap_start: SnapStartResponse | None
 
     tracing_config_mode: TracingMode
     # we need to use Union types as inheritance is not supported by serialization framework
-    code: S3Code | HotReloadingCode
+    code: S3Code | HotReloadingCode | None
     last_modified: str  # ISO string
     state: VersionState
 
