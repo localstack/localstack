@@ -553,6 +553,32 @@ class TestCloudFormationConditions:
         )
         snapshot.match("resources-description", describe_resources)
 
+    @markers.aws.validated
+    @skip_if_legacy_engine()
+    def test_conditional_resource_referencing_conditional(
+        self, deploy_cfn_template, aws_client, snapshot
+    ):
+        """
+        Test that a template with a conditional resource referencing another conditional
+        resource via !GetAtt is accepted and deploys correctly when conditions are false.
+        """
+        snapshot.add_transformer(
+            SortingTransformer("StackResources", lambda e: e["LogicalResourceId"])
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../../templates/conditions/conditional-resource-getatt-delete.yaml",
+            ),
+            parameters={"EnableQueue": "false"},
+        )
+
+        resources = aws_client.cloudformation.describe_stack_resources(StackName=stack.stack_id)
+        snapshot.match("resources-description", resources)
+
 
 class TestValidateConditions:
     @markers.aws.validated
