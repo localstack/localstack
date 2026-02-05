@@ -374,11 +374,11 @@ class FunctionUrlConfig:
 
     function_arn: str  # fully qualified ARN
     function_name: str  # resolved name
-    cors: Cors
     url_id: str  # Custom URL (via tag), or generated unique subdomain id  e.g. pfn5bdb2dl5mzkbn6eb2oi3xfe0nthdn
     url: str  # full URL (e.g. "https://pfn5bdb2dl5mzkbn6eb2oi3xfe0nthdn.lambda-url.eu-west-3.on.aws/")
     auth_type: FunctionUrlAuthType
     creation_time: str  # time
+    cors: Cors | None
     last_modified_time: str | None = (
         None  # TODO: check if this is the creation time when initially creating
     )
@@ -567,7 +567,7 @@ class VersionFunctionConfiguration:
     memory_size: int
     handler: str
     package_type: PackageType
-    environment: dict[str, str]
+    environment: dict[str, str] | None
     architectures: list[Architecture]
     # internal revision is updated when runtime restart is necessary
     internal_revision: str
@@ -645,34 +645,10 @@ class Function:
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     next_version: int = 1
+    instance_id: str = dataclasses.field(default_factory=short_uid, init=False)
 
     def latest(self) -> FunctionVersion:
         return self.versions["$LATEST"]
-
-    # HACK to model a volatile variable that should be ignored for persistence
-    def __post_init__(self):
-        # Identifier unique to this function and LocalStack instance.
-        # A LocalStack restart or persistence load should create a new instance id.
-        # Used for retaining invoke queues across version updates for $LATEST, but separate unrelated instances.
-        self.instance_id = short_uid()
-
-    def __getstate__(self):
-        """Ignore certain volatile fields for pickling.
-        # https://docs.python.org/3/library/pickle.html#handling-stateful-objects
-        """
-        # Copy the object's state from self.__dict__ which contains
-        # all our instance attributes. Always use the dict.copy()
-        # method to avoid modifying the original state.
-        state = self.__dict__.copy()
-        # Remove the volatile entries.
-        del state["instance_id"]
-        return state
-
-    def __setstate__(self, state):
-        # Inject persistent state
-        self.__dict__.update(state)
-        # Create new instance id
-        self.__post_init__()
 
 
 class ValidationException(CommonServiceException):
