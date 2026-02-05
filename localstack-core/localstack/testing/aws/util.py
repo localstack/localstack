@@ -10,7 +10,6 @@ from botocore.compat import HTTPHeaders
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.connect import (
     ClientFactory,
@@ -102,7 +101,7 @@ def create_client_with_keys(
         aws_secret_access_key=keys["SecretAccessKey"],
         aws_session_token=keys.get("SessionToken"),
         config=client_config,
-        endpoint_url=config.internal_service_url() if not is_aws_cloud() else None,
+        endpoint_url=TEST_AWS_ENDPOINT_URL if not is_aws_cloud() else None,
     )
 
 
