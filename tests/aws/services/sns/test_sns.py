@@ -214,13 +214,6 @@ class TestSNSTopicCrud:
         snapshot.match("list-empty-tags", tags_response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$.get-topic-attrs.Attributes.DeliveryPolicy",  # TODO: remove this with the v2 provider switch
-            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
-        ],
-        condition=is_sns_v1_provider,
-    )
     def test_create_topic_test_arn(self, sns_create_topic, snapshot, aws_client, account_id):
         topic_name = "topic-test-create"
         response = sns_create_topic(Name=topic_name)
