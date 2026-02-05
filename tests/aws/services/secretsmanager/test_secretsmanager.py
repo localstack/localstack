@@ -2629,7 +2629,7 @@ class TestSecretsManager:
         put_secret_binary,
         update_secret_binary,
     ):
-        secret_name = "test-secret"
+        secret_name = f"test-secret-{short_uid()}"
         response = create_secret(Name=secret_name, SecretBinary=b"initial")
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
