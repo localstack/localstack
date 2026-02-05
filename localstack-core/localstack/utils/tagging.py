@@ -1,3 +1,7 @@
+from warnings import deprecated
+
+
+@deprecated("`TaggingService` is deprecated. Please use the `RGTAPlugin`/`Tagger` system.")
 class TaggingService:
     key_field: str
     value_field: str
