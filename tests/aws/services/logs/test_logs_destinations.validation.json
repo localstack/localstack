@@ -1,0 +1,65 @@
+{
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_delete_destination": {
+    "last_validated_date": "2026-02-05T15:41:43+00:00",
+    "durations_in_seconds": {
+      "setup": 7.86,
+      "call": 10.18,
+      "teardown": 0.68,
+      "total": 18.72
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_describe_destinations_empty": {
+    "last_validated_date": "2026-02-04T21:49:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.38,
+      "call": 0.38,
+      "teardown": 0.0,
+      "total": 0.76
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_describe_destinations_with_prefix": {
+    "last_validated_date": "2026-02-05T15:15:49+00:00",
+    "durations_in_seconds": {
+      "setup": 6.65,
+      "call": 10.14,
+      "teardown": 0.81,
+      "total": 17.6
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_put_destination": {
+    "last_validated_date": "2026-02-05T15:14:39+00:00",
+    "durations_in_seconds": {
+      "setup": 7.3,
+      "call": 6.85,
+      "teardown": 0.83,
+      "total": 14.98
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_put_destination_policy": {
+    "last_validated_date": "2026-02-05T15:23:25+00:00",
+    "durations_in_seconds": {
+      "setup": 6.18,
+      "call": 10.12,
+      "teardown": 0.81,
+      "total": 17.11
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_update_destination": {
+    "last_validated_date": "2026-02-05T15:16:48+00:00",
+    "durations_in_seconds": {
+      "setup": 6.66,
+      "call": 7.16,
+      "teardown": 0.95,
+      "total": 14.77
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinationsTags::test_destination_tags": {
+    "last_validated_date": "2026-02-05T15:45:33+00:00",
+    "durations_in_seconds": {
+      "setup": 6.12,
+      "call": 7.15,
+      "teardown": 0.94,
+      "total": 14.21
+    }
+  }
+}
