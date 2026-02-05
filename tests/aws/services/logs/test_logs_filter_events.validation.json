@@ -1,0 +1,101 @@
+{
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEvents::test_filter_log_events_basic": {
+    "last_validated_date": "2026-02-05T18:50:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 3.25,
+      "teardown": 0.22,
+      "total": 3.95
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEvents::test_filter_log_events_interleaved": {
+    "last_validated_date": "2026-02-05T18:50:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.19,
+      "call": 3.2,
+      "teardown": 0.22,
+      "total": 3.61
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEvents::test_filter_log_events_limit_validation": {
+    "last_validated_date": "2026-02-05T18:50:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.1,
+      "call": 0.07,
+      "teardown": 0.11,
+      "total": 0.28
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEvents::test_filter_log_events_pagination": {
+    "last_validated_date": "2026-02-05T18:50:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.24,
+      "call": 3.3,
+      "teardown": 0.24,
+      "total": 3.78
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEvents::test_filter_log_events_response_header": {
+    "last_validated_date": "2026-02-05T18:50:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.18,
+      "call": 0.25,
+      "teardown": 0.2,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEvents::test_filter_log_events_unknown_token": {
+    "last_validated_date": "2026-02-05T18:50:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.59,
+      "call": 0.08,
+      "teardown": 0.22,
+      "total": 0.89
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEvents::test_filter_log_events_with_log_stream_names": {
+    "last_validated_date": "2026-02-05T18:50:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.24,
+      "call": 3.2,
+      "teardown": 0.2,
+      "total": 3.64
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEventsPatterns::test_filter_json_pattern": {
+    "last_validated_date": "2026-02-05T18:52:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.27,
+      "call": 3.11,
+      "teardown": 0.24,
+      "total": 3.62
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEventsPatterns::test_filter_multiple_words_pattern": {
+    "last_validated_date": "2026-02-05T18:52:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.28,
+      "call": 3.11,
+      "teardown": 0.2,
+      "total": 3.59
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEventsPatterns::test_filter_quoted_pattern": {
+    "last_validated_date": "2026-02-05T18:52:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.28,
+      "call": 3.12,
+      "teardown": 0.22,
+      "total": 3.62
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEventsPatterns::test_filter_simple_word_pattern": {
+    "last_validated_date": "2026-02-05T18:51:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.61,
+      "call": 3.1,
+      "teardown": 0.21,
+      "total": 3.92
+    }
+  }
+}
