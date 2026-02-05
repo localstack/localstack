@@ -310,6 +310,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         for account_id, account_bundle in lambda_stores.items():
             for region_name, state in account_bundle.items():
                 for fn in state.functions.values():
+                    # HACK to model a volatile variable that should be ignored for persistence
+                    # Identifier unique to this function and LocalStack instance.
+                    # A LocalStack restart or persistence load should create a new instance id.
+                    # Used for retaining invoke queues across version updates for $LATEST, but
+                    # separate unrelated instances.
+                    fn.instance_id = short_uid()
+
                     for fn_version in fn.versions.values():
                         try:
                             # $LATEST is not invokable for Lambda functions with a capacity provider
