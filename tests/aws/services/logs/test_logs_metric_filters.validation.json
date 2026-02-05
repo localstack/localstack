@@ -1,0 +1,119 @@
+{
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_describe_metric_filters_by_log_group": {
+    "last_validated_date": "2026-02-05T21:26:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.79,
+      "teardown": 0.28,
+      "total": 1.44
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_describe_metric_filters_by_metric_name": {
+    "last_validated_date": "2026-02-05T21:28:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.76,
+      "call": 0.23,
+      "teardown": 0.13,
+      "total": 1.12
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_describe_metric_filters_by_prefix": {
+    "last_validated_date": "2026-02-05T21:17:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.36,
+      "call": 0.8,
+      "teardown": 0.44,
+      "total": 1.6
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_put_metric_filter_basic": {
+    "last_validated_date": "2026-02-05T21:13:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 0.21,
+      "teardown": 0.24,
+      "total": 1.19
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_put_metric_filter_json_pattern": {
+    "last_validated_date": "2026-02-05T21:15:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 0.21,
+      "teardown": 0.24,
+      "total": 1.19
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_put_metric_filter_with_special_namespace": {
+    "last_validated_date": "2026-02-05T21:29:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.43,
+      "call": 0.29,
+      "teardown": 0.23,
+      "total": 0.95
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersCloudWatchIntegration::test_metric_filters_publish_to_cloudwatch": {
+    "last_validated_date": "2026-02-05T21:37:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 55.38,
+      "teardown": 0.23,
+      "total": 56.09
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_delete_metric_filter_invalid_filter_name": {
+    "last_validated_date": "2026-02-05T21:33:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 0.08,
+      "teardown": 0.14,
+      "total": 0.96
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_delete_metric_filter_invalid_log_group_name": {
+    "last_validated_date": "2026-02-05T21:34:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.32,
+      "teardown": 0.0,
+      "total": 0.69
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_describe_metric_filters_invalid_parameters": {
+    "last_validated_date": "2026-02-05T21:34:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.35,
+      "call": 0.43,
+      "teardown": 0.0,
+      "total": 0.78
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_put_metric_filter_invalid_filter_name": {
+    "last_validated_date": "2026-02-05T21:30:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 0.08,
+      "teardown": 0.12,
+      "total": 0.94
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_put_metric_filter_invalid_filter_pattern": {
+    "last_validated_date": "2026-02-05T21:31:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.75,
+      "call": 0.08,
+      "teardown": 0.14,
+      "total": 0.97
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_put_metric_filter_too_many_transformations": {
+    "last_validated_date": "2026-02-05T21:32:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.75,
+      "call": 0.08,
+      "teardown": 0.27,
+      "total": 1.1
+    }
+  }
+}

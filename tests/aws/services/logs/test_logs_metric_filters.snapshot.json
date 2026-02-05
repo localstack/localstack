@@ -1,0 +1,253 @@
+{
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_put_metric_filter_basic": {
+    "recorded-date": "05-02-2026, 21:13:19",
+    "recorded-content": {
+      "describe-metric-filters": {
+        "metricFilters": [
+          {
+            "applyOnTransformedLogs": false,
+            "creationTime": "timestamp",
+            "filterName": "<filter-name:1>",
+            "filterPattern": " ",
+            "logGroupName": "<log-group-name:1>",
+            "metricTransformations": [
+              {
+                "defaultValue": 0.0,
+                "metricName": "<metric-name:1>",
+                "metricNamespace": "<metric-namespace:1>",
+                "metricValue": "1"
+              }
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_put_metric_filter_json_pattern": {
+    "recorded-date": "05-02-2026, 21:15:47",
+    "recorded-content": {
+      "describe-metric-filters-json": {
+        "metricFilters": [
+          {
+            "applyOnTransformedLogs": false,
+            "creationTime": "timestamp",
+            "filterName": "<filter-name:1>",
+            "filterPattern": "{$.message = \"test\"}",
+            "logGroupName": "<log-group-name:1>",
+            "metricTransformations": [
+              {
+                "defaultValue": 0.0,
+                "metricName": "<metric-name:1>",
+                "metricNamespace": "<metric-namespace:1>",
+                "metricValue": "1"
+              }
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_describe_metric_filters_by_prefix": {
+    "recorded-date": "05-02-2026, 21:17:23",
+    "recorded-content": {
+      "describe-by-prefix": {
+        "metricFilters": [
+          {
+            "applyOnTransformedLogs": false,
+            "creationTime": "timestamp",
+            "filterName": "<filter-name:1>",
+            "filterPattern": "filterPattern0",
+            "logGroupName": "<log-group-name:1>",
+            "metricTransformations": [
+              {
+                "metricName": "<metric-name:1>",
+                "metricNamespace": "<metric-namespace:1>",
+                "metricValue": "0"
+              }
+            ]
+          },
+          {
+            "applyOnTransformedLogs": false,
+            "creationTime": "timestamp",
+            "filterName": "<filter-name:2>",
+            "filterPattern": "filterPattern1",
+            "logGroupName": "<log-group-name:2>",
+            "metricTransformations": [
+              {
+                "metricName": "<metric-name:2>",
+                "metricNamespace": "<metric-namespace:2>",
+                "metricValue": "1"
+              }
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_describe_metric_filters_by_log_group": {
+    "recorded-date": "05-02-2026, 21:26:37",
+    "recorded-content": {
+      "describe-by-log-group": {
+        "metricFilters": [
+          {
+            "applyOnTransformedLogs": false,
+            "creationTime": "timestamp",
+            "filterName": "<filter-name:1>",
+            "filterPattern": "pattern",
+            "logGroupName": "<log-group-name:1>",
+            "metricTransformations": [
+              {
+                "metricName": "metric",
+                "metricNamespace": "namespace",
+                "metricValue": "1"
+              }
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFilters::test_describe_metric_filters_by_metric_name": {
+    "recorded-date": "05-02-2026, 21:28:35",
+    "recorded-content": {
+      "describe-by-metric-name": {
+        "metricFilters": [
+          {
+            "applyOnTransformedLogs": false,
+            "creationTime": "timestamp",
+            "filterName": "<filter-name:1>",
+            "filterPattern": "pattern",
+            "logGroupName": "<log-group-name:1>",
+            "metricTransformations": [
+              {
+                "metricName": "<metric-name:1>",
+                "metricNamespace": "<metric-namespace:1>",
+                "metricValue": "1"
+              }
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_put_metric_filter_invalid_filter_name": {
+    "recorded-date": "05-02-2026, 21:30:38",
+    "recorded-content": {
+      "error-invalid-filter-name": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "1 validation error detected: Value 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' at 'filterName' failed to satisfy constraint: Member must have length less than or equal to 512"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_put_metric_filter_invalid_filter_pattern": {
+    "recorded-date": "05-02-2026, 21:31:40",
+    "recorded-content": {
+      "error-invalid-filter-pattern": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "1 validation error detected: Value 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' at 'filterPattern' failed to satisfy constraint: Member must have length less than or equal to 1024"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_put_metric_filter_too_many_transformations": {
+    "recorded-date": "05-02-2026, 21:32:47",
+    "recorded-content": {
+      "error-too-many-transformations": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "1 validation error detected: Value '[MetricTransformation(metricName=metric1, metricNamespace=namespace1, metricValue=1, defaultValue=null, unit=null, dimensions=null), MetricTransformation(metricName=metric2, metricNamespace=namespace2, metricValue=1, defaultValue=null, unit=null, dimensions=null)]' at 'metricTransformations' failed to satisfy constraint: Member must have length less than or equal to 1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_delete_metric_filter_invalid_filter_name": {
+    "recorded-date": "05-02-2026, 21:33:33",
+    "recorded-content": {
+      "error-invalid-filter-name": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "1 validation error detected: Value 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' at 'filterName' failed to satisfy constraint: Member must have length less than or equal to 512"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_delete_metric_filter_invalid_log_group_name": {
+    "recorded-date": "05-02-2026, 21:34:19",
+    "recorded-content": {
+      "error-invalid-log-group-name": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "Invalid LogGroup or LogStream, both must have length less than or equal to 512."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_describe_metric_filters_invalid_parameters": {
+    "recorded-date": "05-02-2026, 21:34:54",
+    "recorded-content": {
+      "error-invalid-filter-prefix": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "1 validation error detected: Value 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' at 'filterNamePrefix' failed to satisfy constraint: Member must have length less than or equal to 512"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-invalid-metric-name": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "1 validation error detected: Value 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' at 'metricName' failed to satisfy constraint: Member must have length less than or equal to 255"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}
