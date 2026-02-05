@@ -28,10 +28,12 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
     _AWS_URL_SUFFIX,
     MOCKED_REFERENCE,
     ChangeSetModelPreproc,
+    DeletionPolicy,
     PreprocEntityDelta,
     PreprocOutput,
     PreprocProperties,
     PreprocResource,
+    UpdateReplacePolicy,
 )
 from localstack.services.cloudformation.engine.v2.unsupported_resource import (
     should_ignore_unsupported_resource_type,
@@ -165,19 +167,25 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         resource_type: str,
         special_action: str = None,
         reason: str = None,
+        custom_status: ResourceStatus | str | None = None,
     ):
         status_from_action = special_action or EventOperationFromAction[action.value]
+
+        status: ResourceStatus
         if event_status == OperationStatus.SUCCESS:
-            status = f"{status_from_action}_COMPLETE"
+            status = ResourceStatus(f"{status_from_action}_COMPLETE")
         else:
-            status = f"{status_from_action}_{event_status.name}"
+            status = ResourceStatus(f"{status_from_action}_{event_status.name}")
+
+        if custom_status:
+            status = ResourceStatus(custom_status)
 
         physical_resource_id = self._get_physical_id(logical_resource_id, False)
         self._change_set.stack.set_resource_status(
             logical_resource_id=logical_resource_id,
             physical_resource_id=physical_resource_id,
             resource_type=resource_type,
-            status=ResourceStatus(status),
+            status=status,
             resource_status_reason=reason,
         )
 
@@ -335,27 +343,37 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     )
 
                     def cleanup():
-                        self._process_event(
-                            action=ChangeAction.Remove,
-                            logical_resource_id=name,
-                            event_status=OperationStatus.IN_PROGRESS,
-                            resource_type=before.resource_type,
-                        )
-                        event = self._execute_resource_action(
-                            action=ChangeAction.Remove,
-                            logical_resource_id=name,
-                            resource_type=before.resource_type,
-                            before_properties=before_properties,
-                            after_properties=None,
-                            part_of_replacement=True,
-                        )
-                        self._process_event(
-                            action=ChangeAction.Remove,
-                            logical_resource_id=name,
-                            event_status=event.status,
-                            resource_type=before.resource_type,
-                            reason=event.message,
-                        )
+                        # TODO: handle other update replace policy values
+                        if after.update_replace_policy != UpdateReplacePolicy.Retain:
+                            self._process_event(
+                                action=ChangeAction.Remove,
+                                logical_resource_id=name,
+                                event_status=OperationStatus.IN_PROGRESS,
+                                resource_type=before.resource_type,
+                            )
+                            event = self._execute_resource_action(
+                                action=ChangeAction.Remove,
+                                logical_resource_id=name,
+                                resource_type=before.resource_type,
+                                before_properties=before_properties,
+                                after_properties=None,
+                                part_of_replacement=True,
+                            )
+                            self._process_event(
+                                action=ChangeAction.Remove,
+                                logical_resource_id=name,
+                                event_status=event.status,
+                                resource_type=before.resource_type,
+                                reason=event.message,
+                            )
+                        else:
+                            self._process_event(
+                                action=ChangeAction.Remove,
+                                logical_resource_id=name,
+                                event_status=OperationStatus.SUCCESS,
+                                resource_type=before.resource_type,
+                                custom_status=ResourceStatus.DELETE_SKIPPED,
+                            )
 
                     self._defer_action(f"cleanup-from-replacement-{name}", cleanup)
                 else:
@@ -419,26 +437,37 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             before_properties = self._merge_before_properties(name, before)
 
             def perform_deletion():
-                self._process_event(
-                    action=ChangeAction.Remove,
-                    logical_resource_id=name,
-                    resource_type=before.resource_type,
-                    event_status=OperationStatus.IN_PROGRESS,
-                )
-                event = self._execute_resource_action(
-                    action=ChangeAction.Remove,
-                    logical_resource_id=name,
-                    resource_type=before.resource_type,
-                    before_properties=before_properties,
-                    after_properties=None,
-                )
-                self._process_event(
-                    action=ChangeAction.Remove,
-                    logical_resource_id=name,
-                    event_status=event.status,
-                    resource_type=before.resource_type,
-                    reason=event.message,
-                )
+                # TODO: other deletion policies
+                if before.deletion_policy != DeletionPolicy.Retain:
+                    self._process_event(
+                        action=ChangeAction.Remove,
+                        logical_resource_id=name,
+                        resource_type=before.resource_type,
+                        event_status=OperationStatus.IN_PROGRESS,
+                    )
+                    event = self._execute_resource_action(
+                        action=ChangeAction.Remove,
+                        logical_resource_id=name,
+                        resource_type=before.resource_type,
+                        before_properties=before_properties,
+                        after_properties=None,
+                    )
+
+                    self._process_event(
+                        action=ChangeAction.Remove,
+                        logical_resource_id=name,
+                        event_status=event.status,
+                        resource_type=before.resource_type,
+                        reason=event.message,
+                    )
+                else:
+                    self._process_event(
+                        action=ChangeAction.Remove,
+                        logical_resource_id=name,
+                        event_status=OperationStatus.SUCCESS,
+                        resource_type=before.resource_type,
+                        custom_status=ResourceStatus.DELETE_SKIPPED,
+                    )
 
             self._defer_action(f"remove-{name}", perform_deletion)
         elif not is_nothing(after):

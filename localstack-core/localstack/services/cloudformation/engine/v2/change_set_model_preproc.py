@@ -4,6 +4,7 @@ import base64
 import copy
 import re
 from collections.abc import Callable
+from enum import StrEnum
 from typing import Any, Final
 
 from botocore.exceptions import ClientError
@@ -114,6 +115,19 @@ class PreprocProperties:
         return self.properties == other.properties
 
 
+class DeletionPolicy(StrEnum):
+    Retain = "Retain"
+    Delete = "Delete"
+    RetainExceptOnCreate = "RetainExceptOnCreate"
+    Snapshot = "Snapshot"
+
+
+class UpdateReplacePolicy(StrEnum):
+    Delete = "Delete"
+    Retain = "Retain"
+    Snapshot = "Snapshot"
+
+
 class PreprocResource:
     logical_id: str
     physical_resource_id: str | None
@@ -123,6 +137,9 @@ class PreprocResource:
     depends_on: list[str] | None
     requires_replacement: bool
     status: ResourceStatus | None
+    # TODO: typing
+    deletion_policy: DeletionPolicy | None
+    update_replace_policy: UpdateReplacePolicy | None
 
     def __init__(
         self,
@@ -134,6 +151,8 @@ class PreprocResource:
         depends_on: list[str] | None,
         requires_replacement: bool,
         status: ResourceStatus | None = None,
+        deletion_policy: str | None = None,
+        update_replace_policy: str | None = None,
     ):
         self.logical_id = logical_id
         self.physical_resource_id = physical_resource_id
@@ -143,6 +162,8 @@ class PreprocResource:
         self.depends_on = depends_on
         self.requires_replacement = requires_replacement
         self.status = status
+        self.deletion_policy = deletion_policy
+        self.update_replace_policy = update_replace_policy
 
     @staticmethod
     def _compare_conditions(c1: bool, c2: bool):
@@ -1276,6 +1297,20 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         else:
             properties_delta = PreprocEntityDelta(before=Nothing, after=Nothing)
 
+        deletion_policy_before = Nothing
+        deletion_policy_after = Nothing
+        if not is_nothing(node_resource.deletion_policy):
+            deletion_policy_delta = self.visit(node_resource.deletion_policy)
+            deletion_policy_before = deletion_policy_delta.before
+            deletion_policy_after = deletion_policy_delta.after
+
+        update_replace_policy_before = Nothing
+        update_replace_policy_after = Nothing
+        if not is_nothing(node_resource.update_replace_policy):
+            update_replace_policy_delta = self.visit(node_resource.update_replace_policy)
+            update_replace_policy_before = update_replace_policy_delta.before
+            update_replace_policy_after = update_replace_policy_delta.after
+
         before = Nothing
         after = Nothing
         if should_process_before:
@@ -1291,6 +1326,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 properties=properties_delta.before,
                 depends_on=depends_on_before,
                 requires_replacement=False,
+                deletion_policy=deletion_policy_before,
+                update_replace_policy=update_replace_policy_before,
             )
         if should_process_after:
             logical_resource_id = node_resource.name
@@ -1308,6 +1345,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 properties=properties_delta.after,
                 depends_on=depends_on_after,
                 requires_replacement=node_resource.requires_replacement,
+                deletion_policy=deletion_policy_after,
+                update_replace_policy=update_replace_policy_after,
             )
         return PreprocEntityDelta(before=before, after=after)
 
