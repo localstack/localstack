@@ -106,6 +106,9 @@ from localstack.aws.api.kms import (
     ScheduleKeyDeletionResponse,
     SignRequest,
     SignResponse,
+    Tag,
+    TagKeyList,
+    TagList,
     TagResourceRequest,
     UnsupportedOperationException,
     UntagResourceRequest,
@@ -389,6 +392,20 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def _is_rsa_spec(key_spec: str) -> bool:
         return key_spec in [KeySpec.RSA_2048, KeySpec.RSA_3072, KeySpec.RSA_4096]
 
+    # These tagging methods are overwritten in the Pro implementation.
+    def _get_key_tags(self, key: KmsKey, account_id: str, region: str) -> TagList:
+        return [Tag(TagKey=key, TagValue=value) for key, value in key.tags.items()]
+
+    def _set_key_tags(self, key: KmsKey, account_id: str, region: str, tags: TagList) -> None:
+        return
+
+    def _remove_key_tags(
+        self, key: KmsKey, account_id: str, region: str, tag_keys: TagKeyList
+    ) -> None:
+        # AWS doesn't seem to mind removal of a non-existent tag, so we do not raise any exception.
+        for tag_key in tag_keys:
+            key.tags.pop(tag_key, None)
+
     #
     # Operation Handlers
     #
@@ -400,6 +417,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         request: CreateKeyRequest = None,
     ) -> CreateKeyResponse:
         key = self._create_kms_key(context.account_id, context.region, request)
+        self._set_key_tags(key, context.account_id, context.region, request.get("Tags", []))
         return CreateKeyResponse(KeyMetadata=key.metadata)
 
     @handler("ScheduleKeyDeletion", expand=False)
@@ -1466,15 +1484,15 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key = self._get_kms_key(
             context.account_id, context.region, request.get("KeyId"), any_key_state_allowed=True
         )
-        keys_list = PaginatedList(
-            [{"TagKey": tag_key, "TagValue": tag_value} for tag_key, tag_value in key.tags.items()]
-        )
+        keys_list = PaginatedList(self._get_key_tags(key, context.account_id, context.region))
         page, next_token = keys_list.get_page(
             lambda tag: tag.get("TagKey"),
             next_token=request.get("Marker"),
             page_size=request.get("Limit", 50),
         )
-        kwargs = {"NextMarker": next_token, "Truncated": True} if next_token else {}
+        kwargs = (
+            {"NextMarker": next_token, "Truncated": True} if next_token else {"Truncated": False}
+        )
         return ListResourceTagsResponse(Tags=page, **kwargs)
 
     @handler("RotateKeyOnDemand", expand=False)
@@ -1498,6 +1516,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     @handler("TagResource", expand=False)
     def tag_resource(self, context: RequestContext, request: TagResourceRequest) -> None:
+        tags = request["Tags"]
         key = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1505,10 +1524,14 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             enabled_key_allowed=True,
             disabled_key_allowed=True,
         )
-        key.add_tags(request.get("Tags"))
+        key.add_tags(tags)
+        self._set_key_tags(key, context.account_id, context.region, tags)
 
     @handler("UntagResource", expand=False)
     def untag_resource(self, context: RequestContext, request: UntagResourceRequest) -> None:
+        if not (tag_keys := request.get("TagKeys", [])):
+            return
+
         key = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1516,11 +1539,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             enabled_key_allowed=True,
             disabled_key_allowed=True,
         )
-        if not request.get("TagKeys"):
-            return
-        for tag_key in request.get("TagKeys"):
-            # AWS doesn't seem to mind removal of a non-existent tag, so we do not raise any exception.
-            key.tags.pop(tag_key, None)
+        self._remove_key_tags(key, context.account_id, context.region, tag_keys)
 
     def derive_shared_secret(
         self,
