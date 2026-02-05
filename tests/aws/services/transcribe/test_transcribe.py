@@ -14,6 +14,7 @@ from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.packages.ffmpeg import ffmpeg_package
 from localstack.services.transcribe.packages import vosk_package
 from localstack.services.transcribe.provider import LANGUAGE_MODELS, TranscribeProvider
+from localstack.testing import config as test_config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import new_tmp_file
@@ -97,6 +98,10 @@ def transcribe_snapshot_transformer(snapshot):
 class TestTranscribe:
     @pytest.fixture(scope="class", autouse=True)
     def pre_install_dependencies(self):
+        if is_aws_cloud() or test_config.TEST_SKIP_LOCALSTACK_START:
+            # we don't install the dependencies if LocalStack is not running in process
+            return
+
         if not ffmpeg_installed.is_set() or not vosk_installed.is_set():
             install_async()
 

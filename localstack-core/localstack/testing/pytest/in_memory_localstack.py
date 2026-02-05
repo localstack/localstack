@@ -21,8 +21,8 @@ from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
 from _pytest.main import Session
 
+import localstack.testing.config as test_config
 from localstack import config as localstack_config
-from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 
 LOG = logging.getLogger(__name__)
@@ -53,12 +53,12 @@ def pytest_runtestloop(session: Session):
 
     from localstack.testing.aws.util import is_aws_cloud
 
-    if is_env_true("TEST_SKIP_LOCALSTACK_START"):
+    if test_config.TEST_SKIP_LOCALSTACK_START:
         LOG.info("TEST_SKIP_LOCALSTACK_START is set, not starting localstack")
         return
 
     if is_aws_cloud():
-        if not is_env_true("TEST_FORCE_LOCALSTACK_START"):
+        if not test_config.TEST_FORCE_LOCALSTACK_START:
             LOG.info("Test running against aws, not starting localstack")
             return
         LOG.info("TEST_FORCE_LOCALSTACK_START is set, a Localstack instance will be created.")

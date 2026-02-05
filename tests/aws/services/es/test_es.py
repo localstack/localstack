@@ -11,6 +11,8 @@ from localstack.services.opensearch.packages import (
     elasticsearch_package,
     opensearch_package,
 )
+from localstack.testing import config as test_config
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread
@@ -50,6 +52,10 @@ def install_async():
 
 @pytest.fixture(autouse=True)
 def elasticsearch():
+    if is_aws_cloud() or test_config.TEST_SKIP_LOCALSTACK_START:
+        # we don't install the dependencies if LocalStack is not running in process
+        return
+
     if not installed.is_set():
         install_async()
 
