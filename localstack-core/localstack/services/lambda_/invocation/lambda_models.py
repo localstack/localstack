@@ -13,7 +13,7 @@ from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import IO, Optional, TypedDict
+from typing import IO, Any, TypedDict
 
 import boto3
 from botocore.exceptions import ClientError
@@ -445,7 +445,7 @@ class VersionAlias:
 class ResourcePolicy:
     Version: str
     Id: str
-    Statement: list[dict]
+    Statement: list[dict[str, Any]]
 
 
 @dataclasses.dataclass
@@ -538,14 +538,15 @@ class LayerVersion:
     layer_arn: str
 
     version: int
-    code: ArchiveCode
+    # we need to use Union types as inheritance is not supported by serialization framework
+    code: S3Code | HotReloadingCode
     license_info: str
     compatible_runtimes: list[Runtime]
     compatible_architectures: list[Architecture]
     created: str  # date
     description: str = ""
 
-    policy: LayerPolicy = None
+    policy: LayerPolicy | None = None
 
 
 @dataclasses.dataclass
@@ -574,7 +575,8 @@ class VersionFunctionConfiguration:
     snap_start: SnapStartResponse
 
     tracing_config_mode: TracingMode
-    code: ArchiveCode
+    # we need to use Union types as inheritance is not supported by serialization framework
+    code: S3Code | HotReloadingCode
     last_modified: str  # ISO string
     state: VersionState
 
@@ -592,9 +594,7 @@ class VersionFunctionConfiguration:
     vpc_config: VpcConfig | None = None
 
     logging_config: LoggingConfig = dataclasses.field(default_factory=dict)
-    # TODO: why does `CapacityProviderConfig | None = None` fail with on Python 3.13.9:
-    #  TypeError: unsupported operand type(s) for |: 'NoneType' and 'NoneType'
-    CapacityProviderConfig: Optional[CapacityProviderConfig] = None  # noqa
+    capacity_provider_config: CapacityProviderConfig | None = None
 
 
 @dataclasses.dataclass(frozen=True)

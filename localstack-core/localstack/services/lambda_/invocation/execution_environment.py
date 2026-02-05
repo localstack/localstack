@@ -158,7 +158,7 @@ class ExecutionEnvironment:
             # TODO: test this (currently not implemented in LocalStack)
             env_vars["AWS_LAMBDA_LOG_LEVEL"] = logging_config["ApplicationLogLevel"].capitalize()
         # Lambda Managed Instances
-        if capacity_provider_config := self.function_version.config.CapacityProviderConfig:
+        if capacity_provider_config := self.function_version.config.capacity_provider_config:
             # Disable dropping privileges for parity
             # TODO: implement mixed permissions (maybe in RIE)
             # env_vars["LOCALSTACK_USER"] = "root"

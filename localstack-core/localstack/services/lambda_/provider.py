@@ -315,7 +315,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                             # $LATEST is not invokable for Lambda functions with a capacity provider
                             # and has a different State (i.e., ActiveNonInvokable)
                             is_capacity_provider_latest = (
-                                fn_version.config.CapacityProviderConfig
+                                fn_version.config.capacity_provider_config
                                 and fn_version.id.qualifier == "$LATEST"
                             )
                             if not is_capacity_provider_latest:
@@ -628,7 +628,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 account=account_id,
             )
 
-            if current_latest_version.config.CapacityProviderConfig:
+            if current_latest_version.config.capacity_provider_config:
                 # for lambda managed functions, snap start is not supported
                 snap_start = None
             else:
@@ -704,7 +704,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if not changed:
             return new_version
 
-        if new_version.config.CapacityProviderConfig:
+        if new_version.config.capacity_provider_config:
             self.lambda_service.publish_version_async(new_version)
         else:
             self.lambda_service.publish_version(new_version)
@@ -717,7 +717,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function.versions["$LATEST"] = dataclasses.replace(
             latest_version, config=dataclasses.replace(latest_version.config)
         )
-        if new_version.config.CapacityProviderConfig:
+        if new_version.config.capacity_provider_config:
             # publish_version happens async for functions with a capacity provider.
             # Therefore, we return the new_version with State=Pending or LastUpdateStatus=InProgress ($LATEST.PUBLISHED)
             return new_version
@@ -1175,7 +1175,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     logging_config=logging_config,
                     # TODO: might need something like **optional_kwargs if None
                     #   -> Test with regular GetFunction (i.e., without a capacity provider)
-                    CapacityProviderConfig=capacity_provider_config,
+                    capacity_provider_config=capacity_provider_config,
                 ),
             )
             version_post_response = None
@@ -1427,13 +1427,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             capacity_provider_config = request["CapacityProviderConfig"]
             self._validate_capacity_provider_config(capacity_provider_config, context)
 
-            if latest_version.config.CapacityProviderConfig and not request[
+            if latest_version.config.capacity_provider_config and not request[
                 "CapacityProviderConfig"
             ].get("LambdaManagedInstancesCapacityProviderConfig"):
                 raise ValidationException(
                     "1 validation error detected: Value null at 'capacityProviderConfig.lambdaManagedInstancesCapacityProviderConfig' failed to satisfy constraint: Member must not be null"
                 )
-            if not latest_version.config.CapacityProviderConfig:
+            if not latest_version.config.capacity_provider_config:
                 raise InvalidParameterValueException(
                     "CapacityProviderConfig isn't supported for Lambda Default functions.",
                     Type="User",
@@ -1626,7 +1626,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             # delete a version of the function
             version = function.versions.pop(qualifier, None)
             if version:
-                if version.config.CapacityProviderConfig:
+                if version.config.capacity_provider_config:
                     function_has_capacity_provider = True
                 self.lambda_service.stop_version(version.id.qualified_arn())
                 destroy_code_if_not_used(code=version.config.code, function=function)
@@ -1638,7 +1638,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             for version in function.versions.values():
                 # Functions with a capacity provider do NOT have a version manager for $LATEST because only
                 # published versions are invokable.
-                if version.config.CapacityProviderConfig:
+                if version.config.capacity_provider_config:
                     function_has_capacity_provider = True
                     if version.id.qualifier == "$LATEST":
                         pass

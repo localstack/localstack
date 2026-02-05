@@ -582,9 +582,9 @@ def map_config_out(
         optional_kwargs["CodeSize"] = 0
         optional_kwargs["CodeSha256"] = version.config.image.code_sha256
 
-    if version.config.CapacityProviderConfig:
-        optional_kwargs["CapacityProviderConfig"] = version.config.CapacityProviderConfig
-        data = json.dumps(version.config.CapacityProviderConfig, sort_keys=True).encode("utf-8")
+    if version.config.capacity_provider_config:
+        optional_kwargs["CapacityProviderConfig"] = version.config.capacity_provider_config
+        data = json.dumps(version.config.capacity_provider_config, sort_keys=True).encode("utf-8")
         config_sha_256 = hashlib.sha256(data).hexdigest()
         optional_kwargs["ConfigSha256"] = config_sha_256
 
