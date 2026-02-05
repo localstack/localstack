@@ -152,3 +152,33 @@ def get_topic_subscriptions(store: SnsStore, topic_arn: str) -> list[SnsSubscrip
 
     subscriptions = [store.subscriptions[k] for k in sub_arns if k in store.subscriptions]
     return subscriptions
+
+
+def create_default_topic_policy(topic_arn: str) -> str:
+    return json.dumps(
+        {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Sid": "__default_statement_ID",
+                    "Principal": {"AWS": "*"},
+                    "Action": [
+                        "SNS:GetTopicAttributes",
+                        "SNS:SetTopicAttributes",
+                        "SNS:AddPermission",
+                        "SNS:RemovePermission",
+                        "SNS:DeleteTopic",
+                        "SNS:Subscribe",
+                        "SNS:ListSubscriptionsByTopic",
+                        "SNS:Publish",
+                    ],
+                    "Resource": topic_arn,
+                    "Condition": {
+                        "StringEquals": {"AWS:SourceOwner": parse_arn(topic_arn)["account"]}
+                    },
+                }
+            ],
+        }
+    )

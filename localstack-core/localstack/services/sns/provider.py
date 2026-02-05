@@ -120,6 +120,7 @@ from localstack.services.sns.publisher import (
     SnsPublishContext,
 )
 from localstack.services.sns.utils import (
+    create_default_topic_policy,
     create_platform_endpoint_arn,
     create_subscription_arn,
     encode_subscription_token_with_region,
@@ -1304,7 +1305,7 @@ def _default_attributes(topic: Topic, context: RequestContext) -> TopicAttribute
     default_attributes = {
         "DisplayName": "",
         "Owner": context.account_id,
-        "Policy": _create_default_topic_policy(topic["arn"]),
+        "Policy": create_default_topic_policy(topic["arn"]),
         "SubscriptionsConfirmed": "0",
         "SubscriptionsDeleted": "0",
         "SubscriptionsPending": "0",
@@ -1336,36 +1337,6 @@ def _create_default_effective_delivery_policy():
                 "disableSubscriptionOverrides": False,
                 "defaultRequestPolicy": {"headerContentType": "text/plain; charset=UTF-8"},
             }
-        }
-    )
-
-
-def _create_default_topic_policy(topic_arn: str) -> str:
-    return json.dumps(
-        {
-            "Version": "2008-10-17",
-            "Id": "__default_policy_ID",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Sid": "__default_statement_ID",
-                    "Principal": {"AWS": "*"},
-                    "Action": [
-                        "SNS:GetTopicAttributes",
-                        "SNS:SetTopicAttributes",
-                        "SNS:AddPermission",
-                        "SNS:RemovePermission",
-                        "SNS:DeleteTopic",
-                        "SNS:Subscribe",
-                        "SNS:ListSubscriptionsByTopic",
-                        "SNS:Publish",
-                    ],
-                    "Resource": topic_arn,
-                    "Condition": {
-                        "StringEquals": {"AWS:SourceOwner": parse_arn(topic_arn)["account"]}
-                    },
-                }
-            ],
         }
     )
 
