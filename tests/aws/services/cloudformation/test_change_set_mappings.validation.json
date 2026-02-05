@@ -18,12 +18,12 @@
     }
   },
   "tests/aws/services/cloudformation/test_change_set_mappings.py::TestChangeSetMappings::test_fn_find_in_map_with_nested_ref_change_mapping": {
-    "last_validated_date": "2026-02-02T11:43:11+00:00",
+    "last_validated_date": "2026-02-04T11:54:54+00:00",
     "durations_in_seconds": {
       "setup": 0.61,
-      "call": 90.09,
+      "call": 91.81,
       "teardown": 0.32,
-      "total": 91.02
+      "total": 92.74
     }
   },
   "tests/aws/services/cloudformation/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_addition_with_resource": {
