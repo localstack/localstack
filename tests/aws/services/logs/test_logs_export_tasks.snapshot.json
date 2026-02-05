@@ -1,0 +1,105 @@
+{
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasks::test_create_export_task": {
+    "recorded-date": "05-02-2026, 16:27:17",
+    "recorded-content": {
+      "create-export-task": {
+        "taskId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasks::test_create_export_task_bucket_not_found": {
+    "recorded-date": "05-02-2026, 17:16:29",
+    "recorded-content": {
+      "error-bucket-not-found": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "The given bucket does not exist. Please make sure the bucket is valid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasks::test_create_export_task_log_group_not_found": {
+    "recorded-date": "05-02-2026, 17:17:07",
+    "recorded-content": {
+      "error-log-group-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified log group does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasks::test_describe_export_tasks_not_found": {
+    "recorded-date": "05-02-2026, 17:28:02",
+    "recorded-content": {
+      "task-not-found": {
+        "exportTasks": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasks::test_cancel_export_task_not_found": {
+    "recorded-date": "05-02-2026, 17:30:40",
+    "recorded-content": {
+      "error-cancel-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified export task does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasksWithLogs::test_create_export_task_with_logs": {
+    "recorded-date": "05-02-2026, 17:32:58",
+    "recorded-content": {
+      "create-export-with-logs": {
+        "taskId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-export-with-logs": {
+        "exportTasks": [
+          {
+            "destination": "test-bucket-d5301391",
+            "destinationPrefix": "exportedlogs",
+            "executionInfo": {
+              "creationTime": "timestamp"
+            },
+            "from": 1770226377833,
+            "logGroupName": "<log-group-name:1>",
+            "status": {
+              "code": "PENDING"
+            },
+            "taskId": "<uuid:1>",
+            "to": 1770399177833
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

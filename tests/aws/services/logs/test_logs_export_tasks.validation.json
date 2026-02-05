@@ -1,0 +1,56 @@
+{
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasks::test_cancel_export_task_not_found": {
+    "last_validated_date": "2026-02-05T17:30:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.36,
+      "call": 0.34,
+      "teardown": 0.0,
+      "total": 0.7
+    }
+  },
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasks::test_create_export_task": {
+    "last_validated_date": "2026-02-05T16:27:18+00:00",
+    "durations_in_seconds": {
+      "setup": 1.37,
+      "call": 0.42,
+      "teardown": 0.89,
+      "total": 2.68
+    }
+  },
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasks::test_create_export_task_bucket_not_found": {
+    "last_validated_date": "2026-02-05T17:16:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 0.74,
+      "teardown": 0.14,
+      "total": 1.62
+    }
+  },
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasks::test_create_export_task_log_group_not_found": {
+    "last_validated_date": "2026-02-05T17:17:08+00:00",
+    "durations_in_seconds": {
+      "setup": 1.08,
+      "call": 0.38,
+      "teardown": 0.49,
+      "total": 1.95
+    }
+  },
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasks::test_describe_export_tasks_not_found": {
+    "last_validated_date": "2026-02-05T17:28:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.65,
+      "call": 0.39,
+      "teardown": 0.0,
+      "total": 1.04
+    }
+  },
+  "tests/aws/services/logs/test_logs_export_tasks.py::TestExportTasksWithLogs::test_create_export_task_with_logs": {
+    "last_validated_date": "2026-02-05T17:32:59+00:00",
+    "durations_in_seconds": {
+      "setup": 1.4,
+      "call": 0.7,
+      "teardown": 0.93,
+      "total": 3.03
+    }
+  }
+}
