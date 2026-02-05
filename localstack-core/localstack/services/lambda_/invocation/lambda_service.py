@@ -212,7 +212,7 @@ class LambdaService:
         # Without this hack, test_latest_published_update_config fails at get_function_response_postpublish
         # and test_lifecycle_invoke is flaky, sometimes not triggering the ResourceConflictException
         # Increasing this sleep too much (e.g., 10s) shouldn't cause any side effects apart from slow responsiveness
-        if function_version.config.CapacityProviderConfig:
+        if function_version.config.capacity_provider_config:
             time.sleep(0.1)
         with self.lambda_version_manager_lock:
             qualified_arn = function_version.id.qualified_arn()
@@ -317,10 +317,10 @@ class LambdaService:
         # Not considering provisioned concurrency for such early errors
         initialization_type = (
             FunctionInitializationType.lambda_managed_instances
-            if version.config.CapacityProviderConfig
+            if version.config.capacity_provider_config
             else FunctionInitializationType.on_demand
         )
-        if version.config.CapacityProviderConfig and qualifier == "$LATEST":
+        if version.config.capacity_provider_config and qualifier == "$LATEST":
             if function.versions.get("$LATEST.PUBLISHED"):
                 raise InvalidParameterValueException(
                     "Functions configured with capacity provider configuration can't be invoked with $LATEST qualifier. To invoke this function, specify a published version qualifier or $LATEST.PUBLISHED.",
@@ -446,7 +446,7 @@ class LambdaService:
         """
         if (
             new_version.qualified_arn not in self.lambda_running_versions
-            and not new_version.config.CapacityProviderConfig
+            and not new_version.config.capacity_provider_config
         ):
             raise ValueError(
                 f"Version {new_version.qualified_arn} cannot be updated if an old one is not running"
@@ -493,7 +493,7 @@ class LambdaService:
                     self.task_executor.submit(new_version_manager.stop)
                 elif (
                     new_state.state == State.ActiveNonInvocable
-                    and function_version.config.CapacityProviderConfig
+                    and function_version.config.capacity_provider_config
                 ):
                     update_status = UpdateStatus(status=LastUpdateStatus.Successful)
                 else:

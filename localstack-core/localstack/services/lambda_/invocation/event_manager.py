@@ -206,7 +206,7 @@ class Poller:
         # TODO: handle initialization_type provisioned-concurrency, which requires enriching invocation_result
         initialization_type = (
             FunctionInitializationType.lambda_managed_instances
-            if function_config.CapacityProviderConfig
+            if function_config.capacity_provider_config
             else FunctionInitializationType.on_demand
         )
         try:
