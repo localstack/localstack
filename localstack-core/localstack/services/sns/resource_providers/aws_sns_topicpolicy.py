@@ -14,7 +14,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProvider,
     ResourceRequest,
 )
-from localstack.services.sns.models import create_default_sns_topic_policy
+from localstack.services.sns.provider import create_default_topic_policy
 
 
 class SNSTopicPolicyProperties(TypedDict):
@@ -99,7 +99,7 @@ class SNSTopicPolicyProvider(ResourceProvider[SNSTopicPolicyProperties]):
                 sns.set_topic_attributes(
                     TopicArn=topic_arn,
                     AttributeName="Policy",
-                    AttributeValue=json.dumps(create_default_sns_topic_policy(topic_arn)),
+                    AttributeValue=create_default_topic_policy(topic_arn),
                 )
 
             except ClientError as err:

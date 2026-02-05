@@ -5,15 +5,33 @@ from enum import StrEnum
 from typing import Literal, TypedDict
 
 from localstack.aws.api.sns import (
+    Endpoint,
     MessageAttributeMap,
+    PhoneNumber,
+    PlatformApplication,
     PublishBatchRequestEntry,
+    TopicAttributesMap,
     subscriptionARN,
     topicARN,
 )
-from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.aws.arns import parse_arn
+from localstack.services.stores import (
+    AccountRegionBundle,
+    BaseStore,
+    CrossRegionAttribute,
+    LocalAttribute,
+)
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
+from localstack.utils.tagging import TaggingService
+
+
+class Topic(TypedDict, total=True):
+    arn: str
+    name: str
+    attributes: TopicAttributesMap
+    data_protection_policy: str
+    subscriptions: list[str]
+
 
 SnsProtocols = Literal[
     "http", "https", "email", "email-json", "sms", "sqs", "application", "lambda", "firehose"
@@ -23,39 +41,47 @@ SnsApplicationPlatforms = Literal[
     "APNS", "APNS_SANDBOX", "ADM", "FCM", "Baidu", "GCM", "MPNS", "WNS"
 ]
 
+
+class EndpointAttributeNames(StrEnum):
+    CUSTOM_USER_DATA = "CustomUserData"
+    Token = "Token"
+    ENABLED = "Enabled"
+
+
+SMS_ATTRIBUTE_NAMES = [
+    "DeliveryStatusIAMRole",
+    "DeliveryStatusSuccessSamplingRate",
+    "DefaultSenderID",
+    "DefaultSMSType",
+    "UsageReportS3Bucket",
+]
+SMS_TYPES = ["Promotional", "Transactional"]
+SMS_DEFAULT_SENDER_REGEX = r"^(?=[A-Za-z0-9]{1,11}$)(?=.*[A-Za-z])[A-Za-z0-9]+$"
 SnsMessageProtocols = Literal[SnsProtocols, SnsApplicationPlatforms]
 
 
-def create_default_sns_topic_policy(topic_arn: str) -> dict:
+class SnsSubscription(TypedDict, total=False):
     """
-    Creates the default SNS topic policy for the given topic ARN.
+    In SNS, Subscription can be represented with only TopicArn, Endpoint, Protocol, SubscriptionArn and Owner, for
+    example in ListSubscriptions. However, when getting a subscription with GetSubscriptionAttributes, it will return
+    the Subscription object merged with its own attributes.
+    This represents this merged object, for internal use and in GetSubscriptionAttributes
+    https://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
+    """
 
-    :param topic_arn: The topic arn
-    :return: A policy document
-    """
-    return {
-        "Version": "2008-10-17",
-        "Id": "__default_policy_ID",
-        "Statement": [
-            {
-                "Sid": "__default_statement_ID",
-                "Effect": "Allow",
-                "Principal": {"AWS": "*"},
-                "Action": [
-                    "SNS:GetTopicAttributes",
-                    "SNS:SetTopicAttributes",
-                    "SNS:AddPermission",
-                    "SNS:RemovePermission",
-                    "SNS:DeleteTopic",
-                    "SNS:Subscribe",
-                    "SNS:ListSubscriptionsByTopic",
-                    "SNS:Publish",
-                ],
-                "Resource": topic_arn,
-                "Condition": {"StringEquals": {"AWS:SourceOwner": parse_arn(topic_arn)["account"]}},
-            }
-        ],
-    }
+    TopicArn: topicARN
+    Endpoint: str
+    Protocol: SnsProtocols
+    SubscriptionArn: subscriptionARN
+    PendingConfirmation: Literal["true", "false"]
+    Owner: str | None
+    SubscriptionPrincipal: str | None
+    FilterPolicy: str | None
+    FilterPolicyScope: Literal["MessageAttributes", "MessageBody"]
+    RawMessageDelivery: Literal["true", "false"]
+    ConfirmationWasAuthenticated: Literal["true", "false"]
+    SubscriptionRoleArn: str | None
+    DeliveryPolicy: str | None
 
 
 @singleton_factory
@@ -126,60 +152,50 @@ class SnsMessage:
         )
 
 
-class SnsSubscription(TypedDict, total=False):
-    """
-    In SNS, Subscription can be represented with only TopicArn, Endpoint, Protocol, SubscriptionArn and Owner, for
-    example in ListSubscriptions. However, when getting a subscription with GetSubscriptionAttributes, it will return
-    the Subscription object merged with its own attributes.
-    This represents this merged object, for internal use and in GetSubscriptionAttributes
-    https://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
-    """
+@dataclass
+class PlatformEndpoint:
+    platform_application_arn: str
+    platform_endpoint: Endpoint
 
-    TopicArn: topicARN
-    Endpoint: str
-    Protocol: SnsProtocols
-    SubscriptionArn: subscriptionARN
-    PendingConfirmation: Literal["true", "false"]
-    Owner: str | None
-    SubscriptionPrincipal: str | None
-    FilterPolicy: str | None
-    FilterPolicyScope: Literal["MessageAttributes", "MessageBody"]
-    RawMessageDelivery: Literal["true", "false"]
-    ConfirmationWasAuthenticated: Literal["true", "false"]
-    SubscriptionRoleArn: str | None
-    DeliveryPolicy: str | None
+
+@dataclass
+class PlatformApplicationDetails:
+    platform_application: PlatformApplication
+    # maps all Endpoints of the PlatformApplication, from their Token to their ARN
+    platform_endpoints: dict[str, str]
 
 
 class SnsStore(BaseStore):
-    # maps topic ARN to subscriptions ARN
-    topic_subscriptions: dict[str, list[str]] = LocalAttribute(default=dict)
+    # maps topic ARN to Topic
+    topics: dict[str, Topic] = LocalAttribute(default=dict)
 
     # maps subscription ARN to SnsSubscription
     subscriptions: dict[str, SnsSubscription] = LocalAttribute(default=dict)
 
+    # filter policy are stored as JSON string in subscriptions, store the decoded result Dict
+    subscription_filter_policy: dict[subscriptionARN, dict] = LocalAttribute(default=dict)
+
     # maps confirmation token to subscription ARN
     subscription_tokens: dict[str, str] = LocalAttribute(default=dict)
 
-    # maps topic ARN to list of tags
-    sns_tags: dict[str, list[dict]] = LocalAttribute(default=dict)
+    # maps platform application arns to platform applications
+    platform_applications: dict[str, PlatformApplicationDetails] = LocalAttribute(default=dict)
+
+    # maps endpoint arns to platform endpoints
+    platform_endpoints: dict[str, PlatformEndpoint] = LocalAttribute(default=dict)
 
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
     platform_endpoint_messages: dict[str, list[dict]] = LocalAttribute(default=dict)
 
+    # topic/subscription independent default values for sending sms messages
+    sms_attributes: dict[str, str] = LocalAttribute(default=dict)
+
     # list of sent SMS messages
     sms_messages: list[dict] = LocalAttribute(default=list)
 
-    # filter policy are stored as JSON string in subscriptions, store the decoded result Dict
-    subscription_filter_policy: dict[subscriptionARN, dict] = LocalAttribute(default=dict)
+    TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
-    def get_topic_subscriptions(self, topic_arn: str) -> list[SnsSubscription]:
-        topic_subscriptions = self.topic_subscriptions.get(topic_arn, [])
-        subscriptions = [
-            subscription
-            for subscription_arn in topic_subscriptions
-            if (subscription := self.subscriptions.get(subscription_arn))
-        ]
-        return subscriptions
+    PHONE_NUMBERS_OPTED_OUT: set[PhoneNumber] = CrossRegionAttribute(default=set)
 
 
 sns_stores = AccountRegionBundle("sns", SnsStore)

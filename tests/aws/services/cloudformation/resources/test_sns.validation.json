@@ -24,12 +24,12 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_policy_resets_to_default": {
-    "last_validated_date": "2025-07-04T00:04:32+00:00",
+    "last_validated_date": "2026-02-04T13:55:33+00:00",
     "durations_in_seconds": {
-      "setup": 1.08,
-      "call": 22.27,
-      "teardown": 0.09,
-      "total": 23.44
+      "setup": 2.07,
+      "call": 33.8,
+      "teardown": 0.31,
+      "total": 36.18
     }
   },
   "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_update_attributes": {

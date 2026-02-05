@@ -30,7 +30,7 @@ from localstack.services.sns.models import (
     SnsStore,
     SnsSubscription,
 )
-from localstack.services.sns.v2.utils import get_topic_subscriptions, snake_to_pascal_case
+from localstack.services.sns.utils import get_topic_subscriptions, snake_to_pascal_case
 from localstack.utils.aws.arns import (
     PARTITION_NAMES,
     extract_account_id_from_arn,
