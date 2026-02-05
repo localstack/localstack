@@ -250,7 +250,7 @@ librt==0.7.8
     # via mypy
 localstack-snapshot==0.3.3
     # via localstack-core
-localstack-twisted==24.3.0
+localstack-twisted==25.5.0
     # via localstack-core
 markdown-it-py==4.0.0
     # via rich
@@ -640,7 +640,7 @@ rich==14.3.2
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.7.6
+rolo==0.8.1
     # via localstack-core
 rpds-py==0.30.0
     # via
