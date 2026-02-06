@@ -190,35 +190,35 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         topic_arn = sns_topic_arn(
             topic_name=name, region_name=context.region, account_id=context.account_id
         )
-        topic: Topic = store.topics.get(topic_arn)
-        attributes = attributes or {}
-        if topic:
-            attrs = topic["attributes"]
-            for k, v in attributes.values():
-                if not attrs.get(k) or not attrs.get(k) == v:
-                    # TODO:
-                    raise InvalidParameterException("Fix this Exception message and type")
+        attributes = dict(attributes) if attributes else {}
+        if attributes.get("FifoTopic") and attributes["FifoTopic"].lower() == "true":
+            pattern = SNS_TOPIC_NAME_PATTERN_FIFO
+        else:
+            # AWS does not seem to save explicit settings of fifo = false
+            attributes.pop("FifoTopic", None)
+            pattern = SNS_TOPIC_NAME_PATTERN
+
+        if not re.match(pattern, name):
+            raise InvalidParameterException("Invalid parameter: Topic Name")
+
+        if existing_topic := store.topics.get(topic_arn):
+            existing_attrs = existing_topic["attributes"]
+            # TODO: validate attribute names
+            for k, v in attributes.items():
+                # special case for FifoTopic
+                if k == "FifoTopic" and v == "false" and "FifoTopic" not in existing_attrs:
+                    continue
+
+                if not existing_attrs.get(k) or not existing_attrs.get(k) == v:
+                    raise InvalidParameterException(
+                        "Invalid parameter: Attributes Reason: Topic already exists with different attributes"
+                    )
             tag_resource_success = _check_matching_tags(topic_arn, tags, store)
             if not tag_resource_success:
                 raise InvalidParameterException(
                     "Invalid parameter: Tags Reason: Topic already exists with different tags"
                 )
             return CreateTopicResponse(TopicArn=topic_arn)
-
-        if attributes.get("FifoTopic") and attributes["FifoTopic"].lower() == "true":
-            fifo_match = re.match(SNS_TOPIC_NAME_PATTERN_FIFO, name)
-            if not fifo_match:
-                # TODO: check this with a separate test
-                raise InvalidParameterException(
-                    "Fifo Topic names must end with .fifo and must be made up of only uppercase and lowercase ASCII letters, numbers, underscores, and hyphens, and must be between 1 and 256 characters long."
-                )
-        else:
-            # AWS does not seem to save explicit settings of fifo = false
-
-            attributes.pop("FifoTopic", None)
-            name_match = re.match(SNS_TOPIC_NAME_PATTERN, name)
-            if not name_match:
-                raise InvalidParameterException("Invalid parameter: Topic Name")
 
         attributes["EffectiveDeliveryPolicy"] = _create_default_effective_delivery_policy()
 

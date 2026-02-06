@@ -367,6 +367,42 @@ class TestSNSTopicCrudV2:
         snapshot.match("topic-attrs-idempotent-2", attrs)
 
     @markers.aws.validated
+    def test_create_topic_different_attrs(self, snapshot, sns_create_topic, aws_client):
+        topic_name = f"test-idempotent-{short_uid()}"
+
+        create_topic_1 = sns_create_topic(Name=topic_name, Attributes={"DisplayName": "Value1"})
+        snapshot.match("create-topic", create_topic_1)
+
+        create_topic_no_attr = sns_create_topic(Name=topic_name)
+        snapshot.match("create-topic-no-attrs", create_topic_no_attr)
+
+        attrs = aws_client.sns.get_topic_attributes(TopicArn=create_topic_1["TopicArn"])
+        snapshot.match("topic-attrs", attrs)
+
+        sns_create_topic(Name=topic_name, Attributes={"DisplayName": "Value1"})
+
+        # FifoTopic = False is a special case, seems to be stored internally
+        sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "false"})
+
+        with pytest.raises(ClientError) as exc:
+            sns_create_topic(Name=topic_name, Attributes={"DisplayName": "Value2"})
+        snapshot.match("create-topic-diff-attrs", exc.value.response)
+
+        with pytest.raises(ClientError) as exc:
+            sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})
+        snapshot.match("create-topic-new-attrs-fifo", exc.value.response)
+
+        with pytest.raises(ClientError) as exc:
+            sns_create_topic(Name=topic_name, Attributes={"SignatureVersion": "2"})
+        snapshot.match("create-topic-new-attrs", exc.value.response)
+
+        with pytest.raises(ClientError) as exc:
+            sns_create_topic(
+                Name=topic_name, Attributes={"SignatureVersion": "2", "DisplayName": "Value1"}
+            )
+        snapshot.match("create-topic-new-and-same-attrs", exc.value.response)
+
+    @markers.aws.validated
     def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
         # Valid names within length constraints
         valid_name = "a" * 256
@@ -381,6 +417,14 @@ class TestSNSTopicCrudV2:
         with pytest.raises(ClientError) as e:
             sns_create_topic(Name="a" * 257)
         snapshot.match("name-too-long", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_create_topic(Name="test.fifo")
+        snapshot.match("name-contains-fifo", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_create_topic(Name="test", Attributes={"FifoTopic": "true"})
+        snapshot.match("fifo-name-not-contains-fifo", e.value.response)
 
         # Invalid chars
         # TODO: the index is used because using special characters in the matched name doesn't work for all chars

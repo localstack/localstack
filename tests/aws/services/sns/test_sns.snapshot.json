@@ -5296,7 +5296,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_name_constraints": {
-    "recorded-date": "07-10-2025, 09:49:48",
+    "recorded-date": "06-02-2026, 19:15:23",
     "recorded-content": {
       "valid-name-max-length": {
         "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
@@ -5317,6 +5317,28 @@
         }
       },
       "name-too-long": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Topic Name",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "name-contains-fifo": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Topic Name",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "fifo-name-not-contains-fifo": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -7336,6 +7358,129 @@
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: PhoneNumber Reason: input incorrectly formatted",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_different_attrs": {
+    "recorded-date": "06-02-2026, 19:09:15",
+    "recorded-content": {
+      "create-topic": {
+        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-topic-no-attrs": {
+        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "topic-attrs": {
+        "Attributes": {
+          "DisplayName": "Value1",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-topic-diff-attrs": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Topic already exists with different attributes",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-topic-new-attrs-fifo": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Topic Name",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-topic-new-attrs": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Topic already exists with different attributes",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-topic-new-and-same-attrs": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Topic already exists with different attributes",
           "Type": "Sender"
         },
         "ResponseMetadata": {
