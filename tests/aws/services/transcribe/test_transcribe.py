@@ -116,7 +116,6 @@ class TestTranscribe:
         LOG.info("Spent %s seconds downloading transcribe dependencies", int(time.time() - start))
 
         assert not installation_errored.is_set(), "installation of transcribe dependencies failed"
-        yield
 
     @staticmethod
     def _wait_transcription_job(
