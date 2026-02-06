@@ -2,7 +2,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Literal, TypedDict
+from typing import Any, TypedDict
 
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.events import (
@@ -108,19 +108,13 @@ class ResourceType(Enum):
     RULE = "rule"
 
 
-class Condition(TypedDict):
-    Type: Literal["StringEquals"]
-    Key: Literal["aws:PrincipalOrgID"]
-    Value: str
-
-
 class Statement(TypedDict):
-    Sid: str
+    Sid: str | None
     Effect: str
-    Principal: str | dict[str, str]
-    Action: str
-    Resource: str
-    Condition: Condition
+    Principal: str | dict[str, str] | None
+    Action: str | list[str]
+    Resource: str | list[str]
+    Condition: dict[str, Any] | None
 
 
 class ResourcePolicy(TypedDict):
