@@ -367,6 +367,25 @@ class TestSNSTopicCrudV2:
         snapshot.match("topic-attrs-idempotent-2", attrs)
 
     @markers.aws.validated
+    def test_create_topic_different_attrs(self, snapshot, sns_create_topic, aws_client):
+        topic_name = f"test-idempotent-{short_uid()}"
+
+        create_topic_1 = sns_create_topic(Name=topic_name, Attributes={"DisplayName": "Value1"})
+        snapshot.match("create-topic", create_topic_1)
+
+        create_topic_no_attr = sns_create_topic(Name=topic_name)
+        snapshot.match("create-topic-no-attrs", create_topic_no_attr)
+
+        attrs = aws_client.sns.get_topic_attributes(TopicArn=create_topic_1["TopicArn"])
+        snapshot.match("topic-attrs", attrs)
+
+        sns_create_topic(Name=topic_name, Attributes={"DisplayName": "Value1"})
+
+        with pytest.raises(ClientError) as exc:
+            sns_create_topic(Name=topic_name, Attributes={"DisplayName": "Value2"})
+        snapshot.match("create-topic-diff-attrs", exc.value.response)
+
+    @markers.aws.validated
     def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
         # Valid names within length constraints
         valid_name = "a" * 256

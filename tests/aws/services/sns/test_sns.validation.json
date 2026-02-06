@@ -1388,6 +1388,15 @@
       "total": 3.31
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_different_attrs": {
+    "last_validated_date": "2026-02-06T18:59:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.46,
+      "call": 0.94,
+      "teardown": 0.38,
+      "total": 1.78
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_in_multiple_regions": {
     "last_validated_date": "2025-10-08T08:54:10+00:00",
     "durations_in_seconds": {

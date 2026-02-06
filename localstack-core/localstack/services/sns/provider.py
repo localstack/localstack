@@ -193,11 +193,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         topic: Topic = store.topics.get(topic_arn)
         attributes = attributes or {}
         if topic:
-            attrs = topic["attributes"]
-            for k, v in attributes.values():
-                if not attrs.get(k) or not attrs.get(k) == v:
-                    # TODO:
-                    raise InvalidParameterException("Fix this Exception message and type")
+            existing_attrs = topic["attributes"]
+            for k, v in attributes.items():
+                if not existing_attrs.get(k) or not existing_attrs.get(k) == v:
+                    raise InvalidParameterException(
+                        "Invalid parameter: Attributes Reason: Topic already exists with different attributes"
+                    )
             tag_resource_success = _check_matching_tags(topic_arn, tags, store)
             if not tag_resource_success:
                 raise InvalidParameterException(
