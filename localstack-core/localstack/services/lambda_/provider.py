@@ -1453,7 +1453,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
             )
             capacity_provider_config = merge_recursive(default_config, capacity_provider_config)
-            replace_kwargs["CapacityProviderConfig"] = capacity_provider_config
+            replace_kwargs["capacity_provider_config"] = capacity_provider_config
         new_latest_version = dataclasses.replace(
             latest_version,
             config=dataclasses.replace(
