@@ -102,7 +102,7 @@ class LambdaVersionManager:
             # https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionConfiguration.html#SSS-GetFunctionConfiguration-response-LastUpdateStatusReasonCode
             new_state = State.Active
             if (
-                self.function_version.config.CapacityProviderConfig
+                self.function_version.config.capacity_provider_config
                 and self.function_version.id.qualifier == "$LATEST"
             ):
                 new_state = State.ActiveNonInvocable
