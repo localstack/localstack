@@ -52,14 +52,13 @@ def install_async():
 
 @pytest.fixture(autouse=True)
 def elasticsearch():
-    if is_aws_cloud() or test_config.TEST_SKIP_LOCALSTACK_START:
-        # we don't install the dependencies if LocalStack is not running in process
-        return
+    # we only install the dependencies if LocalStack is running in the same process
+    if not is_aws_cloud() and not test_config.TEST_SKIP_LOCALSTACK_START:
+        if not installed.is_set():
+            install_async()
 
-    if not installed.is_set():
-        install_async()
+        assert installed.wait(timeout=5 * 60), "gave up waiting for elasticsearch to install"
 
-    assert installed.wait(timeout=5 * 60), "gave up waiting for elasticsearch to install"
     yield
 
 

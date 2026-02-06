@@ -98,24 +98,27 @@ def transcribe_snapshot_transformer(snapshot):
 class TestTranscribe:
     @pytest.fixture(scope="class", autouse=True)
     def pre_install_dependencies(self):
-        if is_aws_cloud() or test_config.TEST_SKIP_LOCALSTACK_START:
-            # we don't install the dependencies if LocalStack is not running in process
-            return
+        # we only install the dependencies if LocalStack is running in the same process
+        if not is_aws_cloud() and not test_config.TEST_SKIP_LOCALSTACK_START:
+            if not ffmpeg_installed.is_set() or not vosk_installed.is_set():
+                install_async()
 
-        if not ffmpeg_installed.is_set() or not vosk_installed.is_set():
-            install_async()
+            start = int(time.time())
+            assert vosk_installed.wait(timeout=INSTALLATION_TIMEOUT), (
+                "gave up waiting for Vosk to install"
+            )
+            elapsed = int(time.time() - start)
+            assert ffmpeg_installed.wait(timeout=INSTALLATION_TIMEOUT - elapsed), (
+                "gave up waiting for ffmpeg to install"
+            )
+            LOG.info(
+                "Spent %s seconds downloading transcribe dependencies", int(time.time() - start)
+            )
 
-        start = int(time.time())
-        assert vosk_installed.wait(timeout=INSTALLATION_TIMEOUT), (
-            "gave up waiting for Vosk to install"
-        )
-        elapsed = int(time.time() - start)
-        assert ffmpeg_installed.wait(timeout=INSTALLATION_TIMEOUT - elapsed), (
-            "gave up waiting for ffmpeg to install"
-        )
-        LOG.info("Spent %s seconds downloading transcribe dependencies", int(time.time() - start))
+            assert not installation_errored.is_set(), (
+                "installation of transcribe dependencies failed"
+            )
 
-        assert not installation_errored.is_set(), "installation of transcribe dependencies failed"
         yield
 
     @staticmethod
