@@ -1,0 +1,189 @@
+{
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilters::test_describe_subscription_filters_empty": {
+    "recorded-date": "06-02-2026, 20:03:19",
+    "recorded-content": {
+      "describe-subscription-filters-empty": {
+        "subscriptionFilters": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilters::test_describe_subscription_filters_log_group_not_found": {
+    "recorded-date": "06-02-2026, 20:07:39",
+    "recorded-content": {
+      "error-log-group-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified log group does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilters::test_put_subscription_filter_lambda": {
+    "recorded-date": "06-02-2026, 20:12:46",
+    "recorded-content": {
+      "add_permission": {
+        "Statement": {
+          "Sid": "<resource:1>",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "logs.<region>.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "AWS:SourceAccount": "111111111111"
+            },
+            "ArnLike": {
+              "AWS:SourceArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:<resource:2>"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put_subscription_filter": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_subscription_filter": {
+        "subscriptionFilters": [
+          {
+            "applyOnTransformedLogs": false,
+            "creationTime": "timestamp",
+            "destinationArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
+            "distribution": "ByLogStream",
+            "filterName": "test",
+            "filterPattern": "",
+            "logGroupName": "<log-group-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_all_log_events": [
+        {
+          "id": "id",
+          "timestamp": "timestamp",
+          "message": "test"
+        },
+        {
+          "id": "id",
+          "timestamp": "timestamp",
+          "message": "test 2"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilterUpdates::test_put_subscription_filter_update": {
+    "recorded-date": "06-02-2026, 20:46:56",
+    "recorded-content": {
+      "updated-filter": {
+        "subscriptionFilters": [
+          {
+            "applyOnTransformedLogs": false,
+            "creationTime": "timestamp",
+            "destinationArn": "<function-arn>",
+            "distribution": "ByLogStream",
+            "filterName": "test",
+            "filterPattern": "[]",
+            "logGroupName": "<log-group-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilterUpdates::test_put_subscription_filter_limit_exceeded": {
+    "recorded-date": "06-02-2026, 20:49:45",
+    "recorded-content": {
+      "error-limit-exceeded": {
+        "Error": {
+          "Code": "LimitExceededException",
+          "Message": "Resource limit exceeded."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilterUpdates::test_delete_subscription_filter_errors": {
+    "recorded-date": "06-02-2026, 20:51:38",
+    "recorded-content": {
+      "error-log-group-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified log group does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-filter-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified subscription filter does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilterUpdates::test_put_subscription_filter_errors": {
+    "recorded-date": "06-02-2026, 20:52:39",
+    "recorded-content": {
+      "error-log-group-not-found": {
+        "Error": {
+          "Code": "AccessDeniedException",
+          "Message": "Cross-account lambda invocation passing is not allowed. You must use DestinationPolicies to create cross account lambda triggers."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-lambda-not-found": {
+        "Error": {
+          "Code": "AccessDeniedException",
+          "Message": "Cross-account lambda invocation passing is not allowed. You must use DestinationPolicies to create cross account lambda triggers."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-kinesis-not-found": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "destinationArn for vendor kinesis cannot be used without roleArn"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}
