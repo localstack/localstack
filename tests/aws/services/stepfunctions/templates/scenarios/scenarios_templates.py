@@ -227,6 +227,10 @@ class ScenariosTemplate(TemplateLoader):
     LAMBDA_EMPTY_RETRY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_empty_retry.json5"
     )
+    LAMBDA_REPEAT_UNTIL_LOOP: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/lambda_repeat_until_loop.json5"
+    )
+
     LAMBDA_INVOKE_WITH_RETRY_BASE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_invoke_with_retry_base.json5"
     )

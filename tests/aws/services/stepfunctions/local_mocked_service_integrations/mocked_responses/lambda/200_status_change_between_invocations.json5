@@ -1,0 +1,18 @@
+{
+  "0": {
+    "Return": {
+      "StatusCode": 200,
+      "Payload": {
+        "status": "running",
+      }
+    }
+  },
+  "1": {
+    "Return": {
+      "StatusCode": 200,
+      "Payload": {
+        "status": "completed"
+      }
+    }
+  }
+}
