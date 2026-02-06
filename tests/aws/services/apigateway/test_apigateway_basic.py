@@ -142,7 +142,7 @@ class TestAPIGateway:
         if not is_next_gen_api() and url_function == localstack_path_based_url:
             pytest.skip("This URL type is not supported in the legacy implementation")
         apigw_name = f"gw-{short_uid()}"
-        test_id = "testId123"
+        test_id = "test-id123"
         api_id, name, _ = create_rest_apigw(name=apigw_name, tags={TAG_KEY_CUSTOM_ID: test_id})
         assert test_id == api_id
         assert apigw_name == name
@@ -159,6 +159,20 @@ class TestAPIGateway:
 
         assert response.ok
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
+
+    @markers.aws.only_localstack
+    # This is not a possible feature on aws.
+    def test_create_rest_api_with_invalid_custom_id(self, create_rest_apigw, aws_client):
+        apigw_name = f"gw-{short_uid()}"
+        test_id = "testId123"
+        with pytest.raises(ClientError) as exc:
+            create_rest_apigw(name=apigw_name, tags={TAG_KEY_CUSTOM_ID: test_id})
+
+        assert exc.value.response["Error"]["Code"] == "BadRequestException"
+        assert (
+            exc.value.response["Error"]["Message"]
+            == f"The RestApiId '{test_id}' cannot contain uppercase characters"
+        )
 
     @markers.aws.validated
     def test_update_rest_api_deployment(self, create_rest_apigw, aws_client, snapshot):
@@ -1505,10 +1519,11 @@ class TestTagging:
     def test_tag_api(self, create_rest_apigw, aws_client, account_id, region_name):
         api_name = f"api-{short_uid()}"
         tags = {"foo": "bar"}
+        custom_id = "c0stiom1d"
 
         # add resource tags
-        api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: "c0stIOm1d"})
-        assert api_id == "c0stIOm1d"
+        api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: custom_id})
+        assert api_id == custom_id
 
         api_arn = arns.apigateway_restapi_arn(api_id, account_id, region_name)
         aws_client.apigateway.tag_resource(resourceArn=api_arn, tags=tags)

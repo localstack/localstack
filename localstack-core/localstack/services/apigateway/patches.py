@@ -4,8 +4,8 @@ import logging
 
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.exceptions import (
+    BadRequestException,
     DeploymentNotFoundException,
-    RestAPINotFound,
     StageStillActive,
 )
 from moto.apigateway.responses import APIGatewayResponse
@@ -169,19 +169,19 @@ def apply_patches():
         """
         tags = tags or {}
         result = fn(self, *args, tags=tags, **kwargs)
-        # TODO: lower the custom_id when getting it from the tags, as AWS is case insensitive
+
         if custom_id := tags.get(TAG_KEY_CUSTOM_ID):
             self.apis.pop(result.id)
             result.id = custom_id
             self.apis[custom_id] = result
-        return result
 
-    @patch(apigateway_models.APIGatewayBackend.get_rest_api, pass_target=False)
-    def get_rest_api(self, function_id):
-        for key in self.apis.keys():
-            if key.lower() == function_id.lower():
-                return self.apis[key]
-        raise RestAPINotFound()
+        if not (result.id.islower() or result.id.isnumeric()):
+            self.apis.pop(result.id)
+            raise BadRequestException(
+                f"The RestApiId '{result.id}' cannot contain uppercase characters"
+            )
+
+        return result
 
     @patch(apigateway_models.RestAPI.delete_deployment, pass_target=False)
     def patch_delete_deployment(self, deployment_id: str) -> apigateway_models.Deployment:
