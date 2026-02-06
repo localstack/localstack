@@ -1439,6 +1439,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     Type="User",
                 )
 
+            default_config = CapacityProviderConfig(
+                LambdaManagedInstancesCapacityProviderConfig=LambdaManagedInstancesCapacityProviderConfig(
+                    ExecutionEnvironmentMemoryGiBPerVCpu=2.0,
+                    PerExecutionEnvironmentMaxConcurrency=16,
+                )
+            )
+            capacity_provider_config = merge_recursive(default_config, capacity_provider_config)
+            replace_kwargs["CapacityProviderConfig"] = capacity_provider_config
         new_latest_version = dataclasses.replace(
             latest_version,
             config=dataclasses.replace(
