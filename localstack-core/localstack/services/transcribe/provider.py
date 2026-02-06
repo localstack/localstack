@@ -319,21 +319,7 @@ class TranscribeProvider(TranscribeApi):
             job["MediaFormat"] = SUPPORTED_FORMAT_NAMES[format]
             duration = ffprobe_output["format"]["duration"]
 
-            try:
-                duration_val = float(duration)
-            except (ValueError, TypeError):
-                # If duration cannot be parsed, we assume it's invalid or fallback to letting it run
-                # But for strictness let's fail or default?
-                # Best practice: if we can't determine it, we can't validate it.
-                # Use a safe fallback or log/raise.
-                # Given user report of "N/A", let's fail to be safe as per AWS strictness?
-                # Or maybe default to fail if we assume it's a stream?
-                # Let's log and re-raise or handle.
-                # Simplest fix: treat N/A as failure?
-                LOG.warning("Could not parse audio duration: %s. Assuming valid.", duration)
-                duration_val = 0.0
-
-            if duration_val > MAX_AUDIO_DURATION_SECONDS:
+            if float(duration) > MAX_AUDIO_DURATION_SECONDS:
                 failure_reason = "Invalid file size: file size too large. Maximum audio duration is 4.000000 hours.Check the length of the file and try your request again."
                 raise RuntimeError()
 
