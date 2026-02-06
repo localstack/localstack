@@ -255,6 +255,14 @@ class ChangeSet:
 
 
 class StackInstance:
+    account_id: str
+    region_name: str
+    stack_set_id: str
+    operation_id: str
+    stack_id: str
+    status: StackInstanceStatus
+    stack_instance_status: StackInstanceComprehensiveStatus
+
     def __init__(
         self, account_id: str, region_name: str, stack_set_id: str, operation_id: str, stack_id: str
     ):
@@ -264,7 +272,7 @@ class StackInstance:
         self.operation_id = operation_id
         self.stack_id = stack_id
 
-        self.status: StackInstanceStatus = StackInstanceStatus.CURRENT
+        self.status = StackInstanceStatus.CURRENT
         self.stack_instance_status = StackInstanceComprehensiveStatus(
             DetailedStatus=StackInstanceDetailedStatus.SUCCEEDED
         )
