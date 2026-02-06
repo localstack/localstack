@@ -90,7 +90,6 @@ def opensearch():
         install_async()
 
     assert installed.wait(timeout=5 * 60), "gave up waiting for opensearch to install"
-    yield
 
 
 def try_cluster_health(cluster_url: str):

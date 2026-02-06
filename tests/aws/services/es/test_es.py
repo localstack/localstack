@@ -60,7 +60,6 @@ def elasticsearch():
         install_async()
 
     assert installed.wait(timeout=5 * 60), "gave up waiting for elasticsearch to install"
-    yield
 
 
 def try_cluster_health(cluster_url: str):
