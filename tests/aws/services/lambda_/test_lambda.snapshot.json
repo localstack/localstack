@@ -841,7 +841,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_lambda_with_context": {
-    "recorded-date": "09-09-2022, 20:19:33",
+    "recorded-date": "27-01-2026, 11:01:42",
     "recorded-content": {
       "creation": {
         "CreateEventSourceMappingResponse": null,
@@ -862,11 +862,22 @@
           "FunctionName": "<function-name:1>",
           "Handler": "lambda_integration.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
-          "Runtime": "nodejs16.x",
+          "Runtime": "nodejs20.x",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Pending",
           "StateReason": "The function is being created.",
           "StateReasonCode": "Creating",
