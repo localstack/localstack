@@ -40,10 +40,9 @@ from localstack.testing.config import (
     SECONDARY_TEST_AWS_REGION_NAME,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
-    TEST_AWS_USER,
 )
 from localstack.utils import testutil
-from localstack.utils.aws.arns import extract_resource_from_arn, get_partition
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.bootstrap import is_api_enabled
@@ -2167,15 +2166,6 @@ def account_id(aws_client):
         return aws_client.sts.get_caller_identity()["Account"]
     else:
         return TEST_AWS_ACCOUNT_ID
-
-
-@pytest.fixture(scope="session")
-def user(aws_client):
-    if is_aws_cloud() or is_api_enabled("sts"):
-        arn = aws_client.sts.get_caller_identity()["Arn"]
-        return extract_resource_from_arn(arn)
-    else:
-        return TEST_AWS_USER
 
 
 @pytest.fixture(scope="session")
