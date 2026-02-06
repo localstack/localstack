@@ -1,0 +1,216 @@
+{
+  "tests/aws/services/logs/test_logs_resource_policies.py::TestResourcePolicies::test_put_resource_policy": {
+    "recorded-date": "06-02-2026, 19:30:22",
+    "recorded-content": {
+      "put-resource-policy": {
+        "resourcePolicy": {
+          "lastUpdatedTime": "last-updated-time",
+          "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "Route53LogsToCloudWatchLogs",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "route53.amazonaws.com"
+                  ]
+                },
+                "Action": "logs:PutLogEvents",
+                "Resource": "<log-group-arn>*"
+              }
+            ]
+          },
+          "policyName": "<policy-name:1>",
+          "policyScope": "ACCOUNT"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_resource_policies.py::TestResourcePolicies::test_put_resource_policy_update": {
+    "recorded-date": "06-02-2026, 19:29:16",
+    "recorded-content": {
+      "updated-policy": {
+        "lastUpdatedTime": "last-updated-time",
+        "policyDocument": {
+          "Version": "2008-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "route53.amazonaws.com"
+              },
+              "Action": "logs:*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "policyName": "<policy-name:1>",
+        "policyScope": "ACCOUNT"
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_resource_policies.py::TestResourcePolicies::test_describe_resource_policies": {
+    "recorded-date": "06-02-2026, 19:33:10",
+    "recorded-content": {
+      "describe-resource-policies": {
+        "resourcePolicies": [
+          {
+            "lastUpdatedTime": "last-updated-time",
+            "policyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "Route53LogsToCloudWatchLogs",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "route53.amazonaws.com"
+                  },
+                  "Action": "logs:PutLogEvents",
+                  "Resource": "log_arn"
+                }
+              ]
+            },
+            "policyName": "<policy-name:1>",
+            "policyScope": "ACCOUNT"
+          },
+          {
+            "lastUpdatedTime": "last-updated-time",
+            "policyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "Route53LogsToCloudWatchLogs",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "route53.amazonaws.com"
+                  },
+                  "Action": "logs:PutLogEvents",
+                  "Resource": "log_arn"
+                }
+              ]
+            },
+            "policyName": "<policy-name:2>",
+            "policyScope": "ACCOUNT"
+          },
+          {
+            "lastUpdatedTime": "last-updated-time",
+            "policyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "Route53LogsToCloudWatchLogs",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "route53.amazonaws.com"
+                  },
+                  "Action": "logs:PutLogEvents",
+                  "Resource": "log_arn"
+                }
+              ]
+            },
+            "policyName": "<policy-name:3>",
+            "policyScope": "ACCOUNT"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policies": [
+        {
+          "policyName": "<policy-name:1>",
+          "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "Route53LogsToCloudWatchLogs",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "route53.amazonaws.com"
+                },
+                "Action": "logs:PutLogEvents",
+                "Resource": "log_arn"
+              }
+            ]
+          },
+          "lastUpdatedTime": "last-updated-time",
+          "policyScope": "ACCOUNT"
+        },
+        {
+          "policyName": "<policy-name:2>",
+          "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "Route53LogsToCloudWatchLogs",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "route53.amazonaws.com"
+                },
+                "Action": "logs:PutLogEvents",
+                "Resource": "log_arn"
+              }
+            ]
+          },
+          "lastUpdatedTime": "last-updated-time",
+          "policyScope": "ACCOUNT"
+        },
+        {
+          "policyName": "<policy-name:3>",
+          "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "Route53LogsToCloudWatchLogs",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "route53.amazonaws.com"
+                },
+                "Action": "logs:PutLogEvents",
+                "Resource": "log_arn"
+              }
+            ]
+          },
+          "lastUpdatedTime": "last-updated-time",
+          "policyScope": "ACCOUNT"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/logs/test_logs_resource_policies.py::TestResourcePolicies::test_delete_resource_policy_not_found": {
+    "recorded-date": "06-02-2026, 19:36:10",
+    "recorded-content": {
+      "error-policy-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Policy with name [non-existent] does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_resource_policies.py::TestResourcePoliciesLimits::test_put_resource_policy_limit_exceeded": {
+    "recorded-date": "06-02-2026, 19:37:18",
+    "recorded-content": {
+      "error-limit-exceeded": {
+        "Error": {
+          "Code": "LimitExceededException",
+          "Message": "Resource limit exceeded."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}
