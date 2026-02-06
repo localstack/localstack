@@ -9,6 +9,7 @@ from localstack.aws.api.cloudformation import (
     CreateStackSetInput,
     ExecutionStatus,
     Output,
+    Parameter,
     ResourceStatus,
     StackEvent,
     StackInstanceComprehensiveStatus,
@@ -19,9 +20,6 @@ from localstack.aws.api.cloudformation import (
     StackStatus,
     StackStatusReason,
     Tag,
-)
-from localstack.aws.api.cloudformation import (
-    Parameter as ApiParameter,
 )
 from localstack.services.cloudformation.engine.entities import (
     StackIdentifierV2,
@@ -36,30 +34,37 @@ from localstack.utils.strings import long_uid, short_uid
 
 
 class Stack:
-    stack_name: str
-    description: str | None
-    parameters: list[ApiParameter]
-    change_set_id: str | None
-    change_set_ids: set[str]
+    account_id: str
+    region_name: str
     status: StackStatus
     status_reason: StackStatusReason | None
-    stack_id: str
+    change_set_ids: set[str]
     creation_time: datetime
     deletion_time: datetime | None
-    events: list[StackEvent]
-    capabilities: list[Capability]
+    change_set_id: str | None
     enable_termination_protection: bool
-    template: dict | None
-    processed_template: dict | None
+    template: dict | None  # TODO
+    processed_template: dict | None  # TODO
     template_body: str | None
     tags: list[Tag]
+
+    stack_name: str
+    parameters: list[Parameter]
+    stack_id: str
+
+    capabilities: list[Capability]
+
+    # V1 compatibility
+    request_payload: CreateChangeSetInput | CreateStackInput
 
     # state after deploy
     resolved_parameters: dict[str, EngineParameter]
     resolved_resources: dict[str, ResolvedResource]
     resolved_outputs: list[Output]
     resource_states: dict[str, StackResource]
+    events: list[StackEvent]
     resolved_exports: dict[str, str]
+    description: str | None
 
     def __init__(
         self,
@@ -257,12 +262,13 @@ class StackInstance:
     stack_set_id: str
     operation_id: str
     stack_id: str
+
     status: StackInstanceStatus
     stack_instance_status: StackInstanceComprehensiveStatus
 
     def __init__(
         self, account_id: str, region_name: str, stack_set_id: str, operation_id: str, stack_id: str
-    ):
+    ) -> None:
         self.account_id = account_id
         self.region_name = region_name
         self.stack_set_id = stack_set_id
@@ -276,15 +282,20 @@ class StackInstance:
 
 
 class StackSet:
-    stack_instances: list[StackInstance]
-    operations: dict[str, StackSetOperation]
     account_id: str
     region_name: str
-    stack_set_name: str
-    template_body: str | None
-    template_url = str | None
 
-    def __init__(self, account_id: str, region_name: str, request_payload: CreateStackSetInput):
+    stack_set_name: str
+    stack_set_id: str
+    template_body: str | None
+    template_url: str | None
+
+    stack_instances: list[StackInstance]
+    operations: dict[str, StackSetOperation]
+
+    def __init__(
+        self, account_id: str, region_name: str, request_payload: CreateStackSetInput
+    ) -> None:
         self.account_id = account_id
         self.region_name = region_name
 

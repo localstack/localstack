@@ -1,7 +1,15 @@
+import dataclasses
 import logging
 from typing import TypedDict
 
-from localstack.aws.api.cloudformation import Capability, ChangeSetType, Parameter
+from localstack.aws.api.cloudformation import (
+    Capability,
+    ChangeSetType,
+    CreateStackSetInput,
+    Parameter,
+    StackInstanceComprehensiveStatus,
+    StackInstanceStatus,
+)
 from localstack.services.cloudformation.engine.parameters import (
     StackParameter,
     convert_stack_parameters_to_list,
@@ -29,30 +37,70 @@ from localstack.utils.time import timestamp_millis
 LOG = logging.getLogger(__name__)
 
 
-class StackSet:
-    """A stack set contains multiple stack instances."""
+class StackInstanceDetails(TypedDict):
+    """Metadata for a StackInstance object. Loosely resembles the request input shape"""
 
-    # FIXME: confusing name. metadata is the complete incoming request object
-    def __init__(self, metadata: dict):
-        self.metadata = metadata
-        # list of stack instances
-        self.stack_instances = []
-        # maps operation ID to stack set operation details
-        self.operations = {}
-
-    @property
-    def stack_set_name(self):
-        return self.metadata.get("StackSetName")
+    StackSetId: str | None
+    OperationId: str | None
+    Account: str | None
+    Region: str | None
+    StackId: str
+    Status: StackInstanceStatus
+    StackInstanceStatus: StackInstanceComprehensiveStatus | None
 
 
 class StackInstance:
     """A stack instance belongs to a stack set and is specific to a region / account ID."""
 
-    # FIXME: confusing name. metadata is the complete incoming request object
-    def __init__(self, metadata: dict):
-        self.metadata = metadata
+    details: StackInstanceDetails
+    # TODO
+
+    def __init__(self, details: StackInstanceDetails) -> None:
+        self.details = details
         # reference to the deployed stack belonging to this stack instance
         self.stack = None
+
+
+class OperationDetail(TypedDict):
+    OperationId: str
+    StackSetId: str
+    Action: str | None
+    Status: str | None
+
+
+@dataclasses.dataclass
+class StackSetMetadata:
+    """Metadata for a StackSet"""
+
+    stack_set_request: CreateStackSetInput
+    """The original input request"""
+    stack_set_id: str
+    """The stack set id"""
+
+
+class StackSet:
+    """A stack set contains multiple stack instances."""
+
+    metadata: StackSetMetadata
+    stack_instances: list[StackInstance]
+    operations: dict  # TODO fix it
+
+    def __init__(self, stack_set_request: CreateStackSetInput) -> None:
+        self.metadata = StackSetMetadata(
+            stack_set_request=stack_set_request,
+            stack_set_id=f"{stack_set_request['StackSetName']}:{long_uid()}",
+        )
+        self.stack_instances = []
+        # maps operation ID to stack set operation details
+        self.operations = {}
+
+    @property
+    def stack_set_name(self) -> str:
+        return self.metadata.stack_set_request.get("StackSetName")
+
+    @property
+    def stack_set_id(self) -> str:
+        return self.metadata.stack_set_id
 
 
 class CreateChangeSetInput(TypedDict):

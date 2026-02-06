@@ -67,6 +67,8 @@ from localstack.aws.api.cloudformation import (
     RetainExceptOnCreate,
     RetainResources,
     RoleARN,
+    StackInstanceComprehensiveStatus,
+    StackInstanceStatus,
     StackName,
     StackNameOrId,
     StackSetName,
@@ -88,9 +90,11 @@ from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import parameters as param_resolver
 from localstack.services.cloudformation.engine import template_deployer, template_preparer
 from localstack.services.cloudformation.engine.entities import (
+    OperationDetail,
     Stack,
     StackChangeSet,
     StackInstance,
+    StackInstanceDetails,
     StackSet,
 )
 from localstack.services.cloudformation.engine.parameters import mask_no_echo, strip_parameter_type
@@ -129,7 +133,7 @@ from localstack.utils.collections import (
     select_from_typed_dict,
 )
 from localstack.utils.json import clone
-from localstack.utils.strings import long_uid, short_uid
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -1092,11 +1096,8 @@ class CloudformationProvider(CloudformationApi, ServiceLifecycleHook):
     ) -> CreateStackSetOutput:
         state = get_cloudformation_store(context.account_id, context.region)
         stack_set = StackSet(request)
-        stack_set_id = f"{stack_set.stack_set_name}:{long_uid()}"
-        stack_set.metadata["StackSetId"] = stack_set_id
-        state.stack_sets[stack_set_id] = stack_set
-
-        return CreateStackSetOutput(StackSetId=stack_set_id)
+        state.stack_sets[stack_set.stack_set_id] = stack_set
+        return CreateStackSetOutput(StackSetId=stack_set.stack_set_id)
 
     @handler("DescribeStackSetOperation")
     def describe_stack_set_operation(
@@ -1166,8 +1167,11 @@ class CloudformationProvider(CloudformationApi, ServiceLifecycleHook):
         if not stack_set:
             return not_found_error(f'Stack set named "{set_name}" does not exist')
         stack_set = stack_set[0]
-        stack_set.metadata.update(request)
+        stack_set.stack_set_request.update(request)
         op_id = request.get("OperationId") or short_uid()
+        operation = OperationDetail(
+            OperationId=op_id, StackSetId=stack_set.stack_set_request["StackS"]
+        )
         operation = {
             "OperationId": op_id,
             "StackSetId": stack_set.metadata["StackSetId"],
@@ -1245,16 +1249,18 @@ class CloudformationProvider(CloudformationApi, ServiceLifecycleHook):
                 result = cf_client.create_stack(StackName=stack_name, **kwargs)
                 stacks_to_await.append((stack_name, account, region))
                 # store stack instance
-                instance = {
-                    "StackSetId": sset_meta["StackSetId"],
-                    "OperationId": op_id,
-                    "Account": account,
-                    "Region": region,
-                    "StackId": result["StackId"],
-                    "Status": "CURRENT",
-                    "StackInstanceStatus": {"DetailedStatus": "SUCCEEDED"},
-                }
-                instance = StackInstance(instance)
+                instance = StackInstanceDetails(
+                    StackSetId=sset_meta["StackSetId"],
+                    OperationId=op_id,
+                    Account=account,
+                    Region=region,
+                    StackId=result["StackId"],
+                    Status=StackInstanceStatus.CURRENT,
+                    StackInstanceStatus=StackInstanceComprehensiveStatus(
+                        DetailedStatus="SUCCEEDED"
+                    ),
+                )
+                instance = StackInstance(details=instance)
                 stack_set.stack_instances.append(instance)
 
         # wait for completion of stack
