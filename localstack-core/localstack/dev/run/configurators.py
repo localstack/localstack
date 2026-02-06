@@ -196,7 +196,8 @@ class EntryPointMountConfigurator:
     For other dependencies, we mount the ``entry_points.txt`` build artifacts.
 
     For example, when starting the pro container, the entrypoints of localstack-pro on the host would be in
-    ``~/workspace/localstack-pro/localstack-pro-core/plux.ini`` which needs to be mounted into the distribution info of the installed dependency within the container:
+    ``~/workspace/localstack-pro/localstack-pro-core/plux.ini`` which needs to be mounted into the distribution info
+    of the installed dependency within the container:
     ``/opt/code/localstack/.venv/.../site-packages/localstack_ext-4.13.0.dev0.dist-info/entry_points.txt``.
 
     For a dependency using plugins, the entrypoints would be in the build artifact at
