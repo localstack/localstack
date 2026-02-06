@@ -5296,7 +5296,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_name_constraints": {
-    "recorded-date": "07-10-2025, 09:49:48",
+    "recorded-date": "06-02-2026, 19:15:23",
     "recorded-content": {
       "valid-name-max-length": {
         "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
@@ -5317,6 +5317,28 @@
         }
       },
       "name-too-long": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Topic Name",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "name-contains-fifo": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Topic Name",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "fifo-name-not-contains-fifo": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -7346,7 +7368,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_different_attrs": {
-    "recorded-date": "06-02-2026, 18:59:44",
+    "recorded-date": "06-02-2026, 19:09:15",
     "recorded-content": {
       "create-topic": {
         "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
@@ -7423,6 +7445,39 @@
         }
       },
       "create-topic-diff-attrs": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Topic already exists with different attributes",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-topic-new-attrs-fifo": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Topic Name",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-topic-new-attrs": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Topic already exists with different attributes",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-topic-new-and-same-attrs": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Attributes Reason: Topic already exists with different attributes",

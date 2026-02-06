@@ -1389,12 +1389,12 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_different_attrs": {
-    "last_validated_date": "2026-02-06T18:59:44+00:00",
+    "last_validated_date": "2026-02-06T19:09:15+00:00",
     "durations_in_seconds": {
-      "setup": 0.46,
-      "call": 0.94,
-      "teardown": 0.38,
-      "total": 1.78
+      "setup": 0.45,
+      "call": 1.36,
+      "teardown": 0.5,
+      "total": 2.31
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_in_multiple_regions": {
@@ -1407,12 +1407,12 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_name_constraints": {
-    "last_validated_date": "2025-10-07T09:49:48+00:00",
+    "last_validated_date": "2026-02-06T19:15:23+00:00",
     "durations_in_seconds": {
-      "setup": 1.02,
-      "call": 2.27,
-      "teardown": 0.26,
-      "total": 3.55
+      "setup": 0.46,
+      "call": 1.71,
+      "teardown": 0.21,
+      "total": 2.38
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_should_be_idempotent": {
