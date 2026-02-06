@@ -1,0 +1,92 @@
+{
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilterUpdates::test_delete_subscription_filter": {
+    "last_validated_date": "2026-02-06T20:51:25+00:00",
+    "durations_in_seconds": {
+      "setup": 11.08,
+      "call": 2.96,
+      "teardown": 0.9,
+      "total": 14.94
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilterUpdates::test_delete_subscription_filter_errors": {
+    "last_validated_date": "2026-02-06T20:51:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.73,
+      "call": 0.19,
+      "teardown": 0.13,
+      "total": 1.05
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilterUpdates::test_put_subscription_filter_errors": {
+    "last_validated_date": "2026-02-06T20:52:40+00:00",
+    "durations_in_seconds": {
+      "setup": 11.39,
+      "call": 0.22,
+      "teardown": 0.54,
+      "total": 12.15
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilterUpdates::test_put_subscription_filter_limit_exceeded": {
+    "last_validated_date": "2026-02-06T20:49:46+00:00",
+    "durations_in_seconds": {
+      "setup": 11.38,
+      "call": 2.59,
+      "teardown": 0.91,
+      "total": 14.88
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilterUpdates::test_put_subscription_filter_update": {
+    "last_validated_date": "2026-02-06T20:46:57+00:00",
+    "durations_in_seconds": {
+      "setup": 11.41,
+      "call": 2.81,
+      "teardown": 0.92,
+      "total": 15.14
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilters::test_describe_subscription_filters_empty": {
+    "last_validated_date": "2026-02-06T20:03:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 0.1,
+      "teardown": 0.13,
+      "total": 0.97
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilters::test_describe_subscription_filters_log_group_not_found": {
+    "last_validated_date": "2026-02-06T20:07:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.34,
+      "teardown": 0.0,
+      "total": 0.71
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilters::test_put_subscription_filter_firehose": {
+    "last_validated_date": "2026-02-06T20:11:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.97,
+      "call": 134.54,
+      "teardown": 2.17,
+      "total": 137.68
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilters::test_put_subscription_filter_kinesis": {
+    "last_validated_date": "2026-02-06T20:08:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 12.6,
+      "teardown": 0.5,
+      "total": 13.61
+    }
+  },
+  "tests/aws/services/logs/test_logs_subscription_filters.py::TestSubscriptionFilters::test_put_subscription_filter_lambda": {
+    "last_validated_date": "2026-02-06T20:12:47+00:00",
+    "durations_in_seconds": {
+      "setup": 11.6,
+      "call": 9.74,
+      "teardown": 1.04,
+      "total": 22.38
+    }
+  }
+}

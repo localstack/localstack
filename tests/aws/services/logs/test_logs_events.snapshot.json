@@ -1,0 +1,117 @@
+{
+  "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_put_log_events_to_invalid_stream": {
+    "recorded-date": "03-02-2026, 21:36:32",
+    "recorded-content": {
+      "error-invalid-stream": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified log stream does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_put_log_events_wrong_order": {
+    "recorded-date": "03-02-2026, 21:36:33",
+    "recorded-content": {
+      "error-wrong-order": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "Log events in a single PutLogEvents request must be in chronological order."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_put_log_events_too_old": {
+    "recorded-date": "03-02-2026, 21:36:33",
+    "recorded-content": {
+      "response-too-old": {
+        "nextSequenceToken": "49039859660647486319327806095826324455682045694890347621",
+        "rejectedLogEventsInfo": {
+          "tooOldLogEventEndIndex": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_put_log_events_too_new": {
+    "recorded-date": "03-02-2026, 21:36:34",
+    "recorded-content": {
+      "response-too-new": {
+        "nextSequenceToken": "49039859660647486961344928059975454333496344744262644016",
+        "rejectedLogEventsInfo": {
+          "tooNewLogEventStartIndex": 0
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_get_log_events_invalid_token": {
+    "recorded-date": "03-02-2026, 21:36:41",
+    "recorded-content": {
+      "error-invalid-token": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "The specified nextToken is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_get_log_events_limit_validation": {
+    "recorded-date": "03-02-2026, 21:36:42",
+    "recorded-content": {
+      "error-limit-exceeded": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "1 validation error detected: Value '10001' at 'limit' failed to satisfy constraint: Member must have value less than or equal to 10000"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_events.py::TestLogsEventsErrors::test_resource_does_not_exist": {
+    "recorded-date": "03-02-2026, 21:37:12",
+    "recorded-content": {
+      "error-log-group-does-not-exist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified log group does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-log-stream-does-not-exist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The specified log stream does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}
