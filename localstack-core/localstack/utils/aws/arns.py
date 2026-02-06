@@ -22,6 +22,7 @@ REGION_PREFIX_TO_PARTITION = {
     "us-gov-": "aws-us-gov",
     "us-iso-": "aws-iso",
     "us-isob-": "aws-iso-b",
+    "eusc-": "aws-eusc",
 }
 PARTITION_NAMES = list(REGION_PREFIX_TO_PARTITION.values()) + [DEFAULT_PARTITION]
 ARN_PARTITION_REGEX = r"^arn:(" + "|".join(sorted(PARTITION_NAMES)) + ")"
