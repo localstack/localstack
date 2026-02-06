@@ -187,22 +187,22 @@ class SourceVolumeMountConfigurator:
 
 class EntryPointMountConfigurator:
     """
-    Mounts ``entry_points.txt`` files of localstack and dependencies into the venv in the container.
+     Mounts ``entry_points.txt`` files of localstack and dependencies into the venv in the container.
+
+     For example, when starting the pro container, the entrypoints of localstack-pro on the host would be in
+     ``~/workspace/localstack-pro/localstack-pro-core/localstack_ext.egg-info/entry_points.txt``
+     which needs to be mounted into the distribution info of the installed dependency within the container:
+    Mounts ``plux.ini`` files of localstack and localstack-pro into the venv in the container.
+    For other dependencies, we mount the ``entry_points.txt`` build artifacts.
 
     For example, when starting the pro container, the entrypoints of localstack-pro on the host would be in
-    ``~/workspace/localstack-pro/localstack-pro-core/localstack_ext.egg-info/entry_points.txt``
-    which needs to be mounted into the distribution info of the installed dependency within the container:
-   Mounts ``plux.ini`` files of localstack and localstack-pro into the venv in the container.
-   For other dependencies, we mount the ``entry_points.txt`` build artifacts.
+    ``~/workspace/localstack-pro/localstack-pro-core/plux.ini`` which needs to be mounted into the distribution info of the installed dependency within the container:
+    ``/opt/code/localstack/.venv/.../site-packages/localstack_ext-4.13.0.dev0.dist-info/entry_points.txt``.
 
-   For example, when starting the pro container, the entrypoints of localstack-pro on the host would be in
-   ``~/workspace/localstack-pro/localstack-pro-core/plux.ini`` which needs to be mounted into the distribution info of the installed dependency within the container:
-   ``/opt/code/localstack/.venv/.../site-packages/localstack_ext-4.13.0.dev0.dist-info/entry_points.txt``.
-
-   For a dependency using plugins, the entrypoints would be in the build artifact at 
-   ``~/workspace/<dependency>/<package-name>.egg-info/entry_points.txt``
-   which also needs to be mounted into the distribution info of the installed dependency within the container:
-   ``/opt/code/localstack/.venv/.../site-packages/<package-name>.dist-info/entry_points.txt``.
+    For a dependency using plugins, the entrypoints would be in the build artifact at
+    ``~/workspace/<dependency>/<package-name>.egg-info/entry_points.txt``
+    which also needs to be mounted into the distribution info of the installed dependency within the container:
+    ``/opt/code/localstack/.venv/.../site-packages/<package-name>.dist-info/entry_points.txt``.
     """
 
     entry_point_glob = (
