@@ -1,0 +1,65 @@
+{
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueries::test_describe_queries": {
+    "last_validated_date": "2026-02-06T15:47:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 0.25,
+      "teardown": 0.13,
+      "total": 1.12
+    }
+  },
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueries::test_describe_queries_empty": {
+    "last_validated_date": "2026-02-06T18:09:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 0.5,
+      "teardown": 0.12,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueries::test_describe_queries_with_status_filter": {
+    "last_validated_date": "2026-02-06T18:09:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 3.37,
+      "teardown": 0.13,
+      "total": 4.24
+    }
+  },
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueries::test_start_query_basic": {
+    "last_validated_date": "2026-02-06T14:49:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.75,
+      "call": 0.12,
+      "teardown": 0.12,
+      "total": 0.99
+    }
+  },
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueries::test_start_query_log_group_not_found": {
+    "last_validated_date": "2026-02-06T14:51:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.63,
+      "call": 0.43,
+      "teardown": 0.0,
+      "total": 1.06
+    }
+  },
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueryStrings::test_query_fields_message": {
+    "last_validated_date": "2026-02-06T18:15:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 122.55,
+      "teardown": 0.27,
+      "total": 123.32
+    }
+  },
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueryStrings::test_query_with_sort": {
+    "last_validated_date": "2026-02-06T18:43:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 130.93,
+      "teardown": 0.25,
+      "total": 131.67
+    }
+  }
+}

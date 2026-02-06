@@ -1,0 +1,78 @@
+{
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueries::test_start_query_basic": {
+    "recorded-date": "06-02-2026, 14:49:07",
+    "recorded-content": {
+      "start-query": {
+        "queryId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueries::test_start_query_log_group_not_found": {
+    "recorded-date": "06-02-2026, 14:51:58",
+    "recorded-content": {
+      "error-log-group-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Log group '<log-group>' does not exist for account ID '111111111111' (Service: AWSLogs; Status Code: 400; Error Code: ResourceNotFoundException; Request ID: b04848e1-f91e-4ed5-8a00-413d7c60de9e; Proxy: null)"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueries::test_describe_queries": {
+    "recorded-date": "06-02-2026, 15:47:17",
+    "recorded-content": {
+      "describe-queries": {
+        "queries": [
+          {
+            "createTime": "create-time",
+            "logGroupName": "<log-group-name:1>",
+            "queryId": "<uuid:1>",
+            "queryLanguage": "CWLI",
+            "queryString": "SOURCE \"<log-group-name:1>\" START=<start-time>000 END=<end-time>999 | fields @message",
+            "status": "<status:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_queries.py::TestCloudWatchLogsInsightsQueries::test_describe_queries_with_status_filter": {
+    "recorded-date": "06-02-2026, 18:09:24",
+    "recorded-content": {
+      "describe-queries-complete": {
+        "queries": [
+          {
+            "createTime": "create-time",
+            "logGroupName": "<log-group-name:1>",
+            "queryId": "<uuid:1>",
+            "queryLanguage": "CWLI",
+            "queryString": "SOURCE \"<log-group-name:1>\" START=<start-time>000 END=<end-time>999 | fields @message",
+            "status": "<status:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-queries-scheduled": {
+        "queries": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
