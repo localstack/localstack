@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-from typing import NotRequired, TypedDict
 
 from localstack.aws.api.cloudformation import (
     Capability,
@@ -185,29 +184,27 @@ class Stack:
         return self.status != StackStatus.DELETE_COMPLETE
 
 
-class ChangeSetRequestPayload(TypedDict, total=False):
-    ChangeSetName: str
-    ChangeSetType: NotRequired[ChangeSetType]
-
-
 class ChangeSet:
-    change_set_name: str
-    change_set_id: str
-    change_set_type: ChangeSetType
-    update_model: UpdateModel | None
+    stack: Stack
+    template_body: str
+    template: dict | None
     status: ChangeSetStatus
     status_reason: str | None
     execution_status: ExecutionStatus
+    update_model: UpdateModel | None
     creation_time: datetime
-    processed_template: dict | None
     resolved_parameters: dict[str, EngineParameter]
-    description: str | None
     tags: list[Tag]
+    change_set_name: str
+    change_set_type: ChangeSetType
+    change_set_id: str
+    processed_template: dict | None
+    description: str | None
 
     def __init__(
         self,
         stack: Stack,
-        request_payload: ChangeSetRequestPayload,
+        request_payload: CreateChangeSetInput,
         template_body: str,
         template: dict | None = None,
     ):
