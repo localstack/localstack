@@ -222,7 +222,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         attributes["EffectiveDeliveryPolicy"] = _create_default_effective_delivery_policy()
 
-        topic = _create_topic(name=name, attributes=attributes, context=context)
+        topic = _create_topic(
+            name=name,
+            attributes=attributes,
+            data_protection_policy=data_protection_policy,
+            context=context,
+        )
         if tags:
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
 
@@ -1284,7 +1289,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise NotFoundException("PlatformApplication does not exist")
 
 
-def _create_topic(name: str, attributes: dict, context: RequestContext) -> Topic:
+def _create_topic(
+    name: str, attributes: dict, data_protection_policy: str, context: RequestContext
+) -> Topic:
     topic_arn = sns_topic_arn(
         topic_name=name, region_name=context.region, account_id=context.account_id
     )
@@ -1293,6 +1300,7 @@ def _create_topic(name: str, attributes: dict, context: RequestContext) -> Topic
         "arn": topic_arn,
         "attributes": {},
         "subscriptions": [],
+        "data_protection_policy": data_protection_policy,
     }
     attrs = _default_attributes(topic, context)
     attrs.update(attributes or {})
