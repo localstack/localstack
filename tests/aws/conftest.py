@@ -121,6 +121,9 @@ def snapshot(request, _snapshot_session: SnapshotSession, account_id, region_nam
     _snapshot_session.add_transformer(
         RegexTransformer(f"arn:{get_partition(region_name)}:", "arn:<partition>:"), priority=2
     )
+    _snapshot_session.add_transformer(
+        RegexTransformer(r":(root|((assumed-role|user)/[^\"\s]+))", ":<user>"), priority=2
+    )
 
     # Removes the 'x-localstack' header from all responses
     _snapshot_session.add_transformer(_snapshot_session.transform.remove_key("x-localstack"))
