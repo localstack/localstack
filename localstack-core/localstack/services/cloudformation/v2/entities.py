@@ -273,6 +273,11 @@ class StackInstance:
 class StackSet:
     stack_instances: list[StackInstance]
     operations: dict[str, StackSetOperation]
+    account_id: str
+    region_name: str
+    stack_set_name: str
+    template_body: str | None
+    template_url = str | None
 
     def __init__(self, account_id: str, region_name: str, request_payload: CreateStackSetInput):
         self.account_id = account_id
