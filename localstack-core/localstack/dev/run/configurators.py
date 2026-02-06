@@ -192,7 +192,17 @@ class EntryPointMountConfigurator:
     For example, when starting the pro container, the entrypoints of localstack-pro on the host would be in
     ``~/workspace/localstack-pro/localstack-pro-core/localstack_ext.egg-info/entry_points.txt``
     which needs to be mounted into the distribution info of the installed dependency within the container:
-    ``/opt/code/localstack/.venv/.../site-packages/localstack_ext-2.1.0.dev0.dist-info/entry_points.txt``.
+   Mounts ``plux.ini`` files of localstack and localstack-pro into the venv in the container.
+   For other dependencies, we mount the ``entry_points.txt`` build artifacts.
+
+   For example, when starting the pro container, the entrypoints of localstack-pro on the host would be in
+   ``~/workspace/localstack-pro/localstack-pro-core/plux.ini`` which needs to be mounted into the distribution info of the installed dependency within the container:
+   ``/opt/code/localstack/.venv/.../site-packages/localstack_ext-4.13.0.dev0.dist-info/entry_points.txt``.
+
+   For a dependency using plugins, the entrypoints would be in the build artifact at 
+   ``~/workspace/<dependency>/<package-name>.egg-info/entry_points.txt``
+   which also needs to be mounted into the distribution info of the installed dependency within the container:
+   ``/opt/code/localstack/.venv/.../site-packages/<package-name>.dist-info/entry_points.txt``.
     """
 
     entry_point_glob = (
@@ -236,12 +246,7 @@ class EntryPointMountConfigurator:
             dep, ver = dep_path.split("-")
 
             if dep == "localstack_core":
-                host_path = (
-                    self.host_paths.localstack_project_dir
-                    / "localstack-core"
-                    / "localstack_core.egg-info"
-                    / "entry_points.txt"
-                )
+                host_path = self.host_paths.localstack_project_dir / "plux.ini"
                 if host_path.is_file():
                     cfg.volumes.add(
                         BindMount(
@@ -250,13 +255,9 @@ class EntryPointMountConfigurator:
                             read_only=True,
                         )
                     )
-                    continue
             elif dep == "localstack_ext":
                 host_path = (
-                    self.host_paths.localstack_pro_project_dir
-                    / "localstack-pro-core"
-                    / "localstack_ext.egg-info"
-                    / "entry_points.txt"
+                    self.host_paths.localstack_pro_project_dir / "localstack-pro-core" / "plux.ini"
                 )
                 if host_path.is_file():
                     cfg.volumes.add(
@@ -266,12 +267,12 @@ class EntryPointMountConfigurator:
                             read_only=True,
                         )
                     )
-                    continue
-            for host_path in self.host_paths.workspace_dir.glob(
-                f"*/{dep}.egg-info/entry_points.txt"
-            ):
-                cfg.volumes.add(BindMount(str(host_path), str(container_path), read_only=True))
-                break
+            else:
+                for host_path in self.host_paths.workspace_dir.glob(
+                    f"*/{dep}.egg-info/entry_points.txt"
+                ):
+                    cfg.volumes.add(BindMount(str(host_path), str(container_path), read_only=True))
+                    break
 
 
 class DependencyMountConfigurator:
