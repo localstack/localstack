@@ -441,9 +441,7 @@ class Stack:
         )
 
 
-# FIXME: remove inheritance
-# TODO: what functionality of the Stack object do we rely on here?
-class StackChangeSet(Stack):
+class StackChangeSet:
     update_graph: NodeTemplate | None
     change_set_type: ChangeSetType | None
 
@@ -452,28 +450,41 @@ class StackChangeSet(Stack):
         account_id: str,
         region_name: str,
         stack: Stack,
-        params=None,
-        template=None,
+        params: dict | None = None,
+        template: StackTemplate | None = None,
         change_set_type: ChangeSetType | None = None,
     ):
-        if template is None:
-            template = {}
-        if params is None:
-            params = {}
-        super().__init__(account_id, region_name, params, template)
-
-        name = self.metadata["ChangeSetName"]
-        if not self.metadata.get("ChangeSetId"):
-            self.metadata["ChangeSetId"] = arns.cloudformation_change_set_arn(
-                name, change_set_id=short_uid(), account_id=account_id, region_name=region_name
-            )
+        params = params or {}
+        template = template or {}
 
         self.account_id = account_id
         self.region_name = region_name
         self.stack = stack
-        self.metadata["StackId"] = stack.stack_id
-        self.metadata["Status"] = "CREATE_PENDING"
         self.change_set_type = change_set_type
+        self.update_graph = None
+
+        self.metadata = dict(params)
+        self.metadata["StackId"] = stack.stack_id
+        self.metadata["StackName"] = stack.stack_name
+        self.metadata["Status"] = "CREATE_PENDING"
+
+        name = self.metadata.get("ChangeSetName", "")
+        if not self.metadata.get("ChangeSetId"):
+            self.metadata["ChangeSetId"] = arns.cloudformation_change_set_arn(
+                name,
+                change_set_id=short_uid(),
+                account_id=account_id,
+                region_name=region_name,
+            )
+
+        # The proposed new template
+        self.template = template
+        self.template_body: str | None = None
+        self._template_raw = clone_safe(template)
+
+        # Resolved parameters and conditions for the proposed change
+        self.resolved_parameters: dict[str, StackParameter] = {}
+        self.resolved_conditions: dict[str, bool] = {}
 
     @property
     def change_set_id(self):
@@ -484,13 +495,41 @@ class StackChangeSet(Stack):
         return self.metadata["ChangeSetName"]
 
     @property
+    def stack_name(self):
+        return self.metadata["StackName"]
+
+    @property
+    def stack_id(self):
+        return self.metadata["StackId"]
+
+    @property
     def resources(self):
         return dict(self.stack.resources)
+
+    @property
+    def template_resources(self):
+        return self.template.setdefault("Resources", {})
+
+    @property
+    def outputs(self):
+        return self.template.setdefault("Outputs", {})
+
+    @property
+    def conditions(self):
+        return self.template.setdefault("Conditions", {})
 
     @property
     def changes(self):
         result = self.metadata["Changes"] = self.metadata.get("Changes", [])
         return result
+
+    def set_resolved_parameters(self, resolved_parameters: dict[str, StackParameter]):
+        self.resolved_parameters = resolved_parameters
+        if resolved_parameters:
+            self.metadata["Parameters"] = list(resolved_parameters.values())
+
+    def set_resolved_stack_conditions(self, resolved_conditions: dict[str, bool]):
+        self.resolved_conditions = resolved_conditions
 
     # V2 only
     def populate_update_graph(

@@ -1138,7 +1138,7 @@ class TemplateDeployer:
     def apply_changes(
         self,
         existing_stack: Stack,
-        new_stack: StackChangeSet,
+        new_stack: Stack | StackChangeSet,
         change_set_id: str | None = None,
         initialize: bool | None = False,
         action: str | None = None,
