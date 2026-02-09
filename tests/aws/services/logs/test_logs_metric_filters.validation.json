@@ -54,12 +54,12 @@
     }
   },
   "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersCloudWatchIntegration::test_metric_filters_publish_to_cloudwatch": {
-    "last_validated_date": "2026-02-05T21:37:49+00:00",
+    "last_validated_date": "2026-02-09T19:26:41+00:00",
     "durations_in_seconds": {
-      "setup": 0.48,
-      "call": 55.38,
+      "setup": 0.49,
+      "call": 4.09,
       "teardown": 0.23,
-      "total": 56.09
+      "total": 4.81
     }
   },
   "tests/aws/services/logs/test_logs_metric_filters.py::TestMetricFiltersValidation::test_delete_metric_filter_invalid_filter_name": {

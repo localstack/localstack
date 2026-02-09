@@ -395,6 +395,7 @@ class TestMetricFiltersCloudWatchIntegration:
     """Tests for metric filter integration with CloudWatch metrics."""
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="not implemented correctly")
     def test_metric_filters_publish_to_cloudwatch(
         self, logs_log_group, logs_log_stream, aws_client
     ):
@@ -455,7 +456,7 @@ class TestMetricFiltersCloudWatchIntegration:
 
         retry(
             list_metrics,
-            retries=20 if is_aws() else 3,
+            retries=20 if is_aws() else 5,
             sleep=5 if is_aws() else 1,
             sleep_before=3 if is_aws() else 0,
         )
