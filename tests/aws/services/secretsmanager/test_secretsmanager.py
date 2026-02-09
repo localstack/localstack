@@ -2635,9 +2635,7 @@ class TestSecretsManager:
             sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
         )
 
-        secret_value_response = aws_client.secretsmanager.get_secret_value(
-            SecretId=secret_name
-        )
+        secret_value_response = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("put_secret_value_secret_response", secret_value_response)
 
         aws_client.secretsmanager.put_secret_value(
@@ -2647,9 +2645,7 @@ class TestSecretsManager:
         secret_value_response_updated = aws_client.secretsmanager.get_secret_value(
             SecretId=secret_name
         )
-        sm_snapshot.match(
-            "put_secret_binary_response_updated", secret_value_response_updated
-        )
+        sm_snapshot.match("put_secret_binary_response_updated", secret_value_response_updated)
 
         aws_client.secretsmanager.update_secret(
             SecretId=secret_name, SecretBinary=update_secret_binary
@@ -2657,9 +2653,7 @@ class TestSecretsManager:
         secret_value_response_updated2 = aws_client.secretsmanager.get_secret_value(
             SecretId=secret_name
         )
-        sm_snapshot.match(
-            "update_secret_binary_response_updated", secret_value_response_updated2
-        )
+        sm_snapshot.match("update_secret_binary_response_updated", secret_value_response_updated2)
 
 
 class TestSecretsManagerMultiAccounts:
