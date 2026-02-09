@@ -7,6 +7,7 @@ from typing import Any, Literal, TypedDict
 from localstack.aws.api.sns import (
     Endpoint,
     MessageAttributeMap,
+    MessageAttributeValue,
     PhoneNumber,
     PlatformApplication,
     PublishBatchRequestEntry,
@@ -185,13 +186,17 @@ class SnsStore(BaseStore):
     platform_endpoints: dict[str, PlatformEndpoint] = LocalAttribute(default=dict)
 
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
-    platform_endpoint_messages: dict[str, list[dict[str, Any]]] = LocalAttribute(default=dict)
+    platform_endpoint_messages: dict[
+        str, list[dict[str, str | dict[str, MessageAttributeValue]]]
+    ] = LocalAttribute(default=dict)
 
     # topic/subscription independent default values for sending sms messages
     sms_attributes: dict[str, str] = LocalAttribute(default=dict)
 
     # list of sent SMS messages
-    sms_messages: list[dict[str, Any]] = LocalAttribute(default=list)
+    sms_messages: list[dict[str, str | dict[str, MessageAttributeValue]]] = LocalAttribute(
+        default=list
+    )
 
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
