@@ -72,6 +72,7 @@ from localstack.aws.api.cloudformation import (
     StackName,
     StackNameOrId,
     StackSetName,
+    StackSetOperation,
     StackStatus,
     StackStatusFilter,
     TemplateParameter,
@@ -90,7 +91,6 @@ from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import parameters as param_resolver
 from localstack.services.cloudformation.engine import template_deployer, template_preparer
 from localstack.services.cloudformation.engine.entities import (
-    OperationDetail,
     Stack,
     StackChangeSet,
     StackInstance,
@@ -1169,15 +1169,12 @@ class CloudformationProvider(CloudformationApi, ServiceLifecycleHook):
         stack_set = stack_set[0]
         stack_set.stack_set_request.update(request)
         op_id = request.get("OperationId") or short_uid()
-        operation = OperationDetail(
-            OperationId=op_id, StackSetId=stack_set.stack_set_request["StackS"]
+        operation = StackSetOperation(
+            OperationId=op_id,
+            StackSetId=stack_set.stack_set_id,
+            Action="UPDATE",
+            Status="SUCCEEDED",
         )
-        operation = {
-            "OperationId": op_id,
-            "StackSetId": stack_set.metadata["StackSetId"],
-            "Action": "UPDATE",
-            "Status": "SUCCEEDED",
-        }
         stack_set.operations[op_id] = operation
         return UpdateStackSetOutput(OperationId=op_id)
 
@@ -1271,12 +1268,12 @@ class CloudformationProvider(CloudformationApi, ServiceLifecycleHook):
             client.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
         # record operation
-        operation = {
-            "OperationId": op_id,
-            "StackSetId": stack_set.metadata["StackSetId"],
-            "Action": "CREATE",
-            "Status": "SUCCEEDED",
-        }
+        operation = StackSetOperation(
+            OperationId=op_id,
+            StackSetId=stack_set.stack_set_id,
+            Action="CREATE",
+            Status="SUCCEEDED",
+        )
         stack_set.operations[op_id] = operation
 
         return CreateStackInstancesOutput(OperationId=op_id)
@@ -1324,12 +1321,12 @@ class CloudformationProvider(CloudformationApi, ServiceLifecycleHook):
                     stack_set.stack_instances.remove(instance)
 
         # record operation
-        operation = {
-            "OperationId": op_id,
-            "StackSetId": stack_set.metadata["StackSetId"],
-            "Action": "DELETE",
-            "Status": "SUCCEEDED",
-        }
+        operation = StackSetOperation(
+            OperationId=op_id,
+            StackSetId=stack_set.metadata["StackSetId"],
+            Action="DELETE",
+            Status="SUCCEEDED",
+        )
         stack_set.operations[op_id] = operation
 
         return DeleteStackInstancesOutput(OperationId=op_id)

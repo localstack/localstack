@@ -889,7 +889,7 @@ def evaluate_resource_condition(conditions: dict[str, bool], resource: dict) -> 
 
 
 class TemplateDeployer:
-    def __init__(self, account_id: str, region_name: str, stack):
+    def __init__(self, account_id: str, region_name: str, stack: Stack):
         self.stack = stack
         self.account_id = account_id
         self.region_name = region_name

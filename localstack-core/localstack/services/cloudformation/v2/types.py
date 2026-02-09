@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 from localstack.aws.api.cloudformation import ResourceStatus
 
@@ -31,7 +31,7 @@ def engine_parameter_value(parameter: EngineParameter) -> str:
 class ResolvedResource(TypedDict):
     LogicalResourceId: str
     Type: str
-    Properties: dict
+    Properties: dict[str, Any]
     LastUpdatedTimestamp: datetime
     ResourceStatus: NotRequired[ResourceStatus]
     PhysicalResourceId: NotRequired[str]

@@ -193,7 +193,7 @@ class Stack:
 class ChangeSet:
     stack: Stack
     template_body: str
-    template: dict | None
+    template: StackTemplate | None
     status: ChangeSetStatus
     status_reason: str | None
     execution_status: ExecutionStatus
@@ -204,7 +204,7 @@ class ChangeSet:
     change_set_name: str
     change_set_type: ChangeSetType
     change_set_id: str
-    processed_template: dict | None
+    processed_template: StackTemplate | None
     description: str | None
 
     def __init__(
@@ -212,7 +212,7 @@ class ChangeSet:
         stack: Stack,
         request_payload: CreateChangeSetInput,
         template_body: str,
-        template: dict | None = None,
+        template: StackTemplate | None = None,
     ):
         self.stack = stack
         self.template_body = template_body

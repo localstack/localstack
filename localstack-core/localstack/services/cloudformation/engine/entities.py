@@ -9,6 +9,7 @@ from localstack.aws.api.cloudformation import (
     Parameter,
     StackInstanceComprehensiveStatus,
     StackInstanceStatus,
+    StackSetOperation,
 )
 from localstack.services.cloudformation.engine.parameters import (
     StackParameter,
@@ -53,19 +54,12 @@ class StackInstance:
     """A stack instance belongs to a stack set and is specific to a region / account ID."""
 
     details: StackInstanceDetails
-    # TODO
+    stack: "Stack"  # TODO: fix
 
     def __init__(self, details: StackInstanceDetails) -> None:
         self.details = details
         # reference to the deployed stack belonging to this stack instance
         self.stack = None
-
-
-class OperationDetail(TypedDict):
-    OperationId: str
-    StackSetId: str
-    Action: str | None
-    Status: str | None
 
 
 @dataclasses.dataclass
@@ -83,7 +77,7 @@ class StackSet:
 
     metadata: StackSetMetadata
     stack_instances: list[StackInstance]
-    operations: dict  # TODO fix it
+    operations: dict[str, StackSetOperation]
 
     def __init__(self, stack_set_request: CreateStackSetInput) -> None:
         self.metadata = StackSetMetadata(
