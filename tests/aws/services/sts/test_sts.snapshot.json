@@ -382,5 +382,38 @@
         }
       }
     }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_get_session_token": {
+    "recorded-date": "09-02-2026, 21:40:18",
+    "recorded-content": {
+      "get-session-token": {
+        "Credentials": {
+          "AccessKeyId": "<access-key-id:1>",
+          "Expiration": "<datetime>",
+          "SecretAccessKey": "<secret-access-key:1>",
+          "SessionToken": "<session-token:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_federation_token_policy_too_long": {
+    "recorded-date": "09-02-2026, 21:40:52",
+    "recorded-content": {
+      "policy-too-long-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value '{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-0/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-1/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-2/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-3/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-4/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-5/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-6/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-7/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-8/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-9/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-10/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-11/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-12/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-13/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-14/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-15/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-16/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-17/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-18/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-19/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-20/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-21/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-22/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-23/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-24/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-25/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-26/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-27/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-28/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:<partition>:s3:::my-example-bucket-with-long-name/folder-name-29/*\"}]}' at 'policy' failed to satisfy constraint: Member must have length less than or equal to 2048",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

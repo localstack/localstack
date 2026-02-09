@@ -322,6 +322,48 @@ class TestSTSIntegrations:
         federated_user_info = response["FederatedUser"]["FederatedUserId"].split(":")
         assert federated_user_info[1] == token_name
 
+    @markers.aws.validated
+    def test_get_session_token(self, aws_client, snapshot):
+        """Test GetSessionToken returns valid temporary credentials."""
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("AccessKeyId"),
+                snapshot.transform.key_value("SecretAccessKey"),
+                snapshot.transform.key_value("SessionToken"),
+            ]
+        )
+
+        response = aws_client.sts.get_session_token(DurationSeconds=900)
+        snapshot.match("get-session-token", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
+    def test_federation_token_policy_too_long(self, aws_client, snapshot):
+        """Test that federation token with policy > 2048 characters is rejected."""
+        # Create a policy that exceeds 2048 characters
+        resource_template = "arn:aws:s3:::my-example-bucket-with-long-name/folder-name-{num}/*"
+        statements = []
+        for num in range(30):
+            statements.append(
+                {
+                    "Effect": "Allow",
+                    "Action": ["s3:GetObject", "s3:PutObject"],
+                    "Resource": resource_template.format(num=num),
+                }
+            )
+        policy = json.dumps({"Version": "2012-10-17", "Statement": statements})
+
+        # Verify policy exceeds the limit
+        assert len(policy) > 2048
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.sts.get_federation_token(
+                Name="TestUser",
+                DurationSeconds=900,
+                Policy=policy,
+            )
+        snapshot.match("policy-too-long-error", exc.value.response)
+
     @markers.aws.only_localstack
     def test_expiration_date_format(self, region_name):
         url = config.internal_service_url()
