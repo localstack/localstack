@@ -38,8 +38,26 @@
   "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_assume_role_invalid_tags": {
     "last_validated_date": "2025-04-09T14:30:56+00:00"
   },
+  "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_assume_role_session_name_too_long": {
+    "last_validated_date": "2026-02-09T20:34:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.38,
+      "call": 0.46,
+      "teardown": 0.35,
+      "total": 1.19
+    }
+  },
   "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_assume_role_tag_validation": {
     "last_validated_date": "2025-04-10T08:31:58+00:00"
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_assume_role_with_policy": {
+    "last_validated_date": "2026-02-09T20:32:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.36,
+      "call": 10.96,
+      "teardown": 0.35,
+      "total": 11.67
+    }
   },
   "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_get_federation_token": {
     "last_validated_date": "2024-06-05T13:39:17+00:00"

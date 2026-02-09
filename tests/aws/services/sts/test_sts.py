@@ -143,6 +143,105 @@ class TestSTSIntegrations:
         response = retry(assume_role, sleep=5, retries=4)
         snapshot.match("assume-role", response)
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..PackedPolicySize",
+            "$..Role.Tags",
+        ],
+    )
+    def test_assume_role_with_policy(
+        self, aws_client, aws_client_factory, create_role, account_id, snapshot
+    ):
+        """Test AssumeRole with an inline policy to further restrict permissions."""
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.resource_name(),
+                snapshot.transform.key_value("RoleId"),
+                snapshot.transform.key_value("AccessKeyId"),
+                snapshot.transform.key_value("SecretAccessKey"),
+                snapshot.transform.key_value("SessionToken"),
+            ]
+        )
+
+        role_name = f"role-{short_uid()}"
+        session_name = f"session-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(role_name, "<role-name>"))
+        snapshot.add_transformer(snapshot.transform.regex(session_name, "<session-name>"))
+
+        assume_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {"AWS": account_id},
+                    "Effect": "Allow",
+                }
+            ],
+        }
+        created_role = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(assume_policy_doc)
+        )
+        snapshot.match("create-role", created_role)
+
+        # Inline policy to restrict the session permissions
+        inline_policy = json.dumps(
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "RestrictedAccess",
+                        "Effect": "Allow",
+                        "Action": ["s3:GetObject"],
+                        "Resource": ["arn:aws:s3:::example-bucket/*"],
+                    }
+                ],
+            }
+        )
+
+        def assume_role_with_policy():
+            return aws_client.sts.assume_role(
+                RoleArn=created_role["Role"]["Arn"],
+                RoleSessionName=session_name,
+                Policy=inline_policy,
+            )
+
+        response = retry(assume_role_with_policy, sleep=5, retries=4)
+        snapshot.match("assume-role-with-policy", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
+    def test_assume_role_session_name_too_long(self, aws_client, create_role, account_id, snapshot):
+        """Test that session names longer than 64 characters are rejected."""
+        role_name = f"role-{short_uid()}"
+        assume_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {"AWS": account_id},
+                    "Effect": "Allow",
+                }
+            ],
+        }
+        created_role = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(assume_policy_doc)
+        )
+
+        # Session name with 65 characters (max is 64)
+        long_session_name = "s" * 65
+
+        def try_assume_role():
+            with pytest.raises(ClientError) as exc:
+                aws_client.sts.assume_role(
+                    RoleArn=created_role["Role"]["Arn"],
+                    RoleSessionName=long_session_name,
+                )
+            return exc.value.response
+
+        response = retry(try_assume_role, sleep=5, retries=4)
+        snapshot.match("session-name-too-long-error", response)
+
     @markers.aws.only_localstack
     def test_assume_non_existent_role(self, aws_client):
         test_role_session_name = "s3-access-example"
