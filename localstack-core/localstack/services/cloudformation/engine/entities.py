@@ -1,6 +1,6 @@
 import dataclasses
 import logging
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from localstack.aws.api.cloudformation import (
     Capability,
@@ -111,11 +111,20 @@ class CreateChangeSetInput(TypedDict):
     Parameters: list[Parameter]
 
 
-class StackTemplate(TypedDict):
-    StackName: str
-    ChangeSetName: str | None
-    Outputs: dict
-    Resources: dict
+class StackTemplate(TypedDict, total=False):
+    # Standard CloudFormation template fields
+    AWSTemplateFormatVersion: str
+    Description: str
+    Metadata: dict[str, Any]
+    Parameters: dict[str, dict[str, Any]]
+    Rules: dict[str, Any]
+    Mappings: dict[str, dict[str, dict[str, str]]]
+    Conditions: dict[str, Any]
+    Transform: str | list[str]
+    Resources: dict[str, dict[str, Any]]
+    Outputs: dict[str, dict[str, Any]]
+    # LocalStack runtime additions
+    StackId: str
 
 
 class StackIdentifier(ResourceIdentifier):

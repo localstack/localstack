@@ -23,6 +23,7 @@ from localstack.aws.api.cloudformation import (
 )
 from localstack.services.cloudformation.engine.entities import (
     StackIdentifierV2,
+    StackTemplate,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
@@ -43,8 +44,8 @@ class Stack:
     deletion_time: datetime | None
     change_set_id: str | None
     enable_termination_protection: bool
-    template: dict | None  # TODO
-    processed_template: dict | None  # TODO
+    template: StackTemplate | None
+    processed_template: StackTemplate | None
     template_body: str | None
     tags: list[Tag]
 
