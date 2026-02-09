@@ -125,7 +125,7 @@ class S3Bucket:
     public_access_block: PublicAccessBlockConfiguration | None
     accelerate_status: BucketAccelerateStatus | None
     object_lock_enabled: bool
-    object_ownership: ObjectOwnership
+    object_ownership: ObjectOwnership | None  # can be set to None manually in S3
     intelligent_tiering_configurations: dict[IntelligentTieringId, IntelligentTieringConfiguration]
     analytics_configurations: dict[AnalyticsId, AnalyticsConfiguration]
     inventory_configurations: dict[InventoryId, InventoryConfiguration]
