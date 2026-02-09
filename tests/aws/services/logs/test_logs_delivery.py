@@ -317,6 +317,7 @@ class TestDeliverySources:
         snapshot.match("get-delivery-source", response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
     def test_get_delivery_source_not_found(self, aws_client, snapshot):
         """Test getting a non-existent delivery source."""
         with pytest.raises(Exception) as ctx:
