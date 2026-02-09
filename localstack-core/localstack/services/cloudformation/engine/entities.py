@@ -107,7 +107,7 @@ class CreateChangeSetInput(TypedDict):
     StackName: str
     Capabilities: list[Capability]
     ChangeSetName: str | None
-    ChangSetType: ChangeSetType | None
+    ChangeSetType: ChangeSetType | None
     Parameters: list[Parameter]
 
 
@@ -145,6 +145,20 @@ class StackIdentifierV2(StackIdentifier):
 
 # TODO: remove metadata (flatten into individual fields)
 class Stack:
+    account_id: str
+    region_name: str
+    resolved_outputs: list[dict[str, Any]]
+    resolved_parameters: dict[str, StackParameter]
+    resolved_conditions: dict[str, bool]
+
+    template: StackTemplate | None
+    _template: StackTemplate | None
+    template_original: StackTemplate | None
+    template_body: str
+    metadata: dict[str, Any]
+
+    _resource_states: dict[str, Any]
+    events: list[dict[str, Any]]
     change_sets: list["StackChangeSet"]
 
     def __init__(
@@ -161,9 +175,9 @@ class Stack:
         if template is None:
             template = {}
 
-        self.resolved_outputs = []  # TODO
-        self.resolved_parameters: dict[str, StackParameter] = {}
-        self.resolved_conditions: dict[str, bool] = {}
+        self.resolved_outputs = []
+        self.resolved_parameters = {}
+        self.resolved_conditions = {}
 
         self.metadata = metadata or {}
         self.template = template or {}
