@@ -9,7 +9,13 @@
     "last_validated_date": "2024-04-15T20:52:34+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_import_documentation_parts": {
-    "last_validated_date": "2024-04-15T20:56:45+00:00"
+    "last_validated_date": "2026-02-09T18:59:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.92,
+      "call": 2.22,
+      "teardown": 0.3,
+      "total": 3.44
+    }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_import_documentation_parts_bad_file": {
     "last_validated_date": "2025-11-18T17:21:35+00:00",

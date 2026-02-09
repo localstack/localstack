@@ -455,6 +455,9 @@ def add_documentation_parts(rest_api_container, documentation):
     for doc_part in documentation.get("documentationParts", []):
         entity_id = short_uid()[:6]
         location = doc_part["location"]
+        properties = doc_part["properties"]
+        if not isinstance(properties, str):
+            properties = json.dumps(properties)
         rest_api_container.documentation_parts[entity_id] = DocumentationPart(
             id=entity_id,
             location=DocumentationPartLocation(
@@ -466,7 +469,7 @@ def add_documentation_parts(rest_api_container, documentation):
                 statusCode=location.get("statusCode"),
                 name=location.get("name"),
             ),
-            properties=doc_part["properties"],
+            properties=properties,
         )
 
 
