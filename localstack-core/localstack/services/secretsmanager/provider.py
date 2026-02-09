@@ -319,7 +319,8 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         secret_binary = request.get("SecretBinary")
         if not secret_binary and not secret_string:
             raise InvalidRequestException("You must provide either SecretString or SecretBinary.")
-
+        if secret_binary:
+            secret_binary = base64.b64encode(secret_binary)
         version_stages = request.get("VersionStages", ["AWSCURRENT"])
         if not isinstance(version_stages, list):
             version_stages = [version_stages]
@@ -402,6 +403,8 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         secret_id = request["SecretId"]
         secret_string = request.get("SecretString")
         secret_binary = request.get("SecretBinary")
+        if secret_binary:
+            secret_binary = base64.b64encode(secret_binary)
         description = request.get("Description")
         kms_key_id = request.get("KmsKeyId")
         client_req_token = request.get("ClientRequestToken")
