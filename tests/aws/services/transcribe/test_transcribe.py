@@ -459,7 +459,7 @@ class TestTranscribe:
         media_file = os.path.join(tempfile.gettempdir(), "audio_4h.mp3")
 
         run(
-            f"{ffmpeg_bin} -f lavfi -i anullsrc=r=44100:cl=mono -t 14400 -q:a 9 -acodec libmp3lame {media_file}"
+            f"{ffmpeg_bin} -f lavfi -i anullsrc=r=44100:cl=mono -t 14401 -q:a 9 -acodec libmp3lame {media_file}"
         )
         job_name = transcribe_create_job(audio_file=media_file)
 

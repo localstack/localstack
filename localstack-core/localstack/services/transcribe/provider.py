@@ -319,7 +319,7 @@ class TranscribeProvider(TranscribeApi):
             job["MediaFormat"] = SUPPORTED_FORMAT_NAMES[format]
             duration = ffprobe_output["format"]["duration"]
 
-            if float(duration) >= MAX_AUDIO_DURATION_SECONDS:
+            if float(duration) > MAX_AUDIO_DURATION_SECONDS:
                 failure_reason = "Invalid file size: file size too large. Maximum audio duration is 4.000000 hours.Check the length of the file and try your request again."
                 raise RuntimeError()
 
