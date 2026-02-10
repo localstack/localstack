@@ -53,6 +53,15 @@
       "total": 23.5
     }
   },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_numbered_mock_responses_multiple_success_invocations": {
+    "last_validated_date": "2026-02-04T08:37:53+00:00",
+    "durations_in_seconds": {
+      "setup": 11.76,
+      "call": 17.42,
+      "teardown": 3.35,
+      "total": 32.53
+    }
+  },
   "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_lambda": {
     "last_validated_date": "2025-10-28T10:20:00+00:00",
     "durations_in_seconds": {

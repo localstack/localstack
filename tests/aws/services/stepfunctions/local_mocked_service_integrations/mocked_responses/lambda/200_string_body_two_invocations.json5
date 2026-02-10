@@ -1,0 +1,10 @@
+{
+  "0-1": {
+    "Return": {
+      "StatusCode": 200,
+      "Payload": {
+        "body": "string body"
+      }
+    }
+  }
+}
