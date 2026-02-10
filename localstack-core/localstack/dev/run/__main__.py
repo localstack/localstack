@@ -186,6 +186,11 @@ def run(
 
         python -m localstack.dev.run --entrypoint /bin/bash -- echo "hello"
 
+    Use the --live-reload flag to restart LocalStack on code changes. Beware: this will remove any state
+    that you had in your LocalStack instance. Consider using PERSISTENCE to keep resources:
+
+        python -m localstack.dev.run --live-reload
+
     You can import and expose debugpy:
 
         python -m localstack.dev.run --develop
