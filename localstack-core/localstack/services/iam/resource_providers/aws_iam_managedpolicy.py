@@ -61,7 +61,13 @@ class IAMManagedPolicyProvider(ResourceProvider[IAMManagedPolicyProperties]):
             group_name = util.generate_default_name(request.stack_name, request.logical_resource_id)
             model["ManagedPolicyName"] = group_name
 
-        policy_doc = json.dumps(util.remove_none_values(model["PolicyDocument"]))
+        # PolicyDocument can be either a dict or a JSON string (e.g., from Fn::Sub)
+        policy_document = model["PolicyDocument"]
+        if isinstance(policy_document, str):
+            policy_doc = policy_document
+        else:
+            policy_doc = json.dumps(util.remove_none_values(policy_document))
+
         policy = iam_client.create_policy(
             PolicyName=model["ManagedPolicyName"], PolicyDocument=policy_doc
         )

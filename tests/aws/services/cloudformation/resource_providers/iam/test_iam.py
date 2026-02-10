@@ -333,3 +333,213 @@ def test_updating_stack_with_iam_role(deploy_cfn_template, aws_client):
         "Role"
     )
     assert stack.outputs["TestStackRoleName"] == lambda_role_name_new
+
+
+@markers.aws.validated
+def test_managedpolicy_with_fn_sub_json_string(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.iam_api())
+
+    policy_name = f"test-policy-{short_uid()}"
+
+    template_json = {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Parameters": {"ClusterName": {"Type": "String", "Default": "test-cluster"}},
+        "Resources": {
+            "TestPolicy": {
+                "Type": "AWS::IAM::ManagedPolicy",
+                "Properties": {
+                    "ManagedPolicyName": policy_name,
+                    "PolicyDocument": {
+                        "Fn::Sub": json.dumps(
+                            {
+                                "Version": "2012-10-17",
+                                "Statement": [
+                                    {
+                                        "Effect": "Allow",
+                                        "Action": "s3:GetObject",
+                                        "Resource": "arn:${AWS::Partition}:s3:::bucket-${ClusterName}-${AWS::Region}/*",
+                                    }
+                                ],
+                            }
+                        )
+                    },
+                },
+            }
+        },
+        "Outputs": {"PolicyArn": {"Value": {"Ref": "TestPolicy"}}},
+    }
+
+    stack = deploy_cfn_template(
+        template=json.dumps(template_json), parameters={"ClusterName": "my-cluster"}
+    )
+
+    policy_arn = stack.outputs["PolicyArn"]
+    policy_version = aws_client.iam.get_policy_version(
+        PolicyArn=policy_arn,
+        VersionId=aws_client.iam.get_policy(PolicyArn=policy_arn)["Policy"]["DefaultVersionId"],
+    )["PolicyVersion"]
+
+    snapshot.match("policy_document", policy_version["Document"])
+
+
+@markers.aws.validated
+def test_managedpolicy_with_fn_sub_multiline_yaml(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.iam_api())
+
+    policy_name = f"test-policy-{short_uid()}"
+
+    template_yaml = f"""
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  ClusterName:
+    Type: String
+    Default: "test-cluster"
+Resources:
+  TestPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: {policy_name}
+      PolicyDocument: !Sub |
+        {{
+          "Version": "2012-10-17",
+          "Statement": [
+            {{
+              "Effect": "Allow",
+              "Action": "eks:DescribeCluster",
+              "Resource": "arn:${{AWS::Partition}}:eks:${{AWS::Region}}:${{AWS::AccountId}}:cluster/${{ClusterName}}"
+            }}
+          ]
+        }}
+Outputs:
+  PolicyArn:
+    Value: !Ref TestPolicy
+"""
+
+    stack = deploy_cfn_template(template=template_yaml, parameters={"ClusterName": "my-cluster"})
+
+    policy_arn = stack.outputs["PolicyArn"]
+    policy_version = aws_client.iam.get_policy_version(
+        PolicyArn=policy_arn,
+        VersionId=aws_client.iam.get_policy(PolicyArn=policy_arn)["Policy"]["DefaultVersionId"],
+    )["PolicyVersion"]
+
+    snapshot.match("policy_document_multiline", policy_version["Document"])
+
+
+@markers.aws.validated
+def test_managedpolicy_with_fn_sub_and_arrays(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.iam_api())
+
+    policy_name = f"test-policy-{short_uid()}"
+
+    template = {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Parameters": {"BucketName": {"Type": "String", "Default": "my-bucket"}},
+        "Resources": {
+            "TestPolicy": {
+                "Type": "AWS::IAM::ManagedPolicy",
+                "Properties": {
+                    "ManagedPolicyName": policy_name,
+                    "PolicyDocument": {
+                        "Fn::Sub": json.dumps(
+                            {
+                                "Version": "2012-10-17",
+                                "Statement": [
+                                    {
+                                        "Effect": "Allow",
+                                        "Action": ["s3:GetObject", "s3:PutObject"],
+                                        "Resource": [
+                                            "arn:${AWS::Partition}:s3:::${BucketName}/*",
+                                            "arn:${AWS::Partition}:s3:::${BucketName}-${AWS::Region}/*",
+                                        ],
+                                    }
+                                ],
+                            }
+                        )
+                    },
+                },
+            }
+        },
+        "Outputs": {"PolicyArn": {"Value": {"Ref": "TestPolicy"}}},
+    }
+
+    stack = deploy_cfn_template(
+        template=json.dumps(template), parameters={"BucketName": "test-bucket"}
+    )
+
+    policy_arn = stack.outputs["PolicyArn"]
+    policy_version = aws_client.iam.get_policy_version(
+        PolicyArn=policy_arn,
+        VersionId=aws_client.iam.get_policy(PolicyArn=policy_arn)["Policy"]["DefaultVersionId"],
+    )["PolicyVersion"]
+
+    snapshot.match("policy_with_arrays", policy_version["Document"])
+
+
+@markers.aws.validated
+def test_inline_policy_with_fn_sub_json_string(deploy_cfn_template, snapshot, aws_client):
+    """
+    Test inline IAM Policy (AWS::IAM::Policy) with Fn::Sub returning a JSON string.
+
+    Verifies that inline policies also handle JSON strings from Fn::Sub correctly.
+    """
+    snapshot.add_transformer(snapshot.transform.iam_api())
+
+    role_name = f"test-role-{short_uid()}"
+    policy_name = f"test-policy-{short_uid()}"
+
+    template = {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Resources": {
+            "TestRole": {
+                "Type": "AWS::IAM::Role",
+                "Properties": {
+                    "RoleName": role_name,
+                    "AssumeRolePolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Principal": {"Service": "lambda.amazonaws.com"},
+                                "Action": "sts:AssumeRole",
+                            }
+                        ],
+                    },
+                },
+            },
+            "TestPolicy": {
+                "Type": "AWS::IAM::Policy",
+                "Properties": {
+                    "PolicyName": policy_name,
+                    "Roles": [{"Ref": "TestRole"}],
+                    "PolicyDocument": {
+                        "Fn::Sub": json.dumps(
+                            {
+                                "Version": "2012-10-17",
+                                "Statement": [
+                                    {
+                                        "Effect": "Allow",
+                                        "Action": "s3:GetObject",
+                                        "Resource": "arn:${AWS::Partition}:s3:::my-bucket-${AWS::Region}/*",
+                                    }
+                                ],
+                            }
+                        )
+                    },
+                },
+            },
+        },
+    }
+
+    deploy_cfn_template(template=json.dumps(template))
+
+    # Verify the inline policy was attached to the role
+    policies = aws_client.iam.list_role_policies(RoleName=role_name)
+    assert policy_name in policies["PolicyNames"]
+
+    # Get the policy document
+    policy_doc = aws_client.iam.get_role_policy(RoleName=role_name, PolicyName=policy_name)[
+        "PolicyDocument"
+    ]
+
+    snapshot.match("inline_policy_document", policy_doc)

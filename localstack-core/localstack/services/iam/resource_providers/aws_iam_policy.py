@@ -53,7 +53,13 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
         model = request.desired_state
         iam_client = request.aws_client_factory.iam
 
-        policy_doc = json.dumps(util.remove_none_values(model["PolicyDocument"]))
+        # PolicyDocument can be either a dict or a JSON string (e.g., from Fn::Sub)
+        policy_document = model["PolicyDocument"]
+        if isinstance(policy_document, str):
+            policy_doc = policy_document
+        else:
+            policy_doc = json.dumps(util.remove_none_values(policy_document))
+
         policy_name = model["PolicyName"]
 
         if not any([model.get("Roles"), model.get("Users"), model.get("Groups")]):
@@ -122,7 +128,14 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
         iam_client = request.aws_client_factory.iam
         model = request.desired_state
         # FIXME: this wasn't properly implemented before as well, still needs to be rewritten
-        policy_doc = json.dumps(util.remove_none_values(model["PolicyDocument"]))
+
+        # PolicyDocument can be either a dict or a JSON string (e.g., from Fn::Sub)
+        policy_document = model["PolicyDocument"]
+        if isinstance(policy_document, str):
+            policy_doc = policy_document
+        else:
+            policy_doc = json.dumps(util.remove_none_values(policy_document))
+
         policy_name = model["PolicyName"]
 
         for role in model.get("Roles", []):
