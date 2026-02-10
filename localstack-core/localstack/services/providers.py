@@ -176,6 +176,14 @@ def sts():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
+@aws_provider(api="sts", name="v2")
+def sts_v2():
+    from localstack.services.sts.provider_v2 import StsProviderV2
+
+    provider = StsProviderV2()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def kinesis():
     from localstack.services.kinesis.provider import KinesisProvider
