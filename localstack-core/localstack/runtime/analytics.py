@@ -35,6 +35,7 @@ TRACKED_ENV_VAR = [
     "EC2_VM_MANAGER",
     "ECS_TASK_EXECUTOR",
     "EDGE_PORT",
+    "EKS_PERSIST_CLUSTER_CONTENTS",
     "ENABLE_REPLICATOR",
     "ENFORCE_IAM",
     "ES_CUSTOM_BACKEND",  # deprecated in 0.14.0, removed in 3.0.0
