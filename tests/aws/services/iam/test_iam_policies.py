@@ -32,6 +32,1503 @@ SAMPLE_POLICY_3 = {
     ],
 }
 
+# Invalid policy document test cases - each should raise MalformedPolicyDocument
+INVALID_POLICY_DOCUMENTS = [
+    # 0: Not valid JSON
+    "This is not a json document",
+    # 1: Missing Version field
+    {
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        }
+    },
+    # 2: Version too old (2008-10-17)
+    {
+        "Version": "2008-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 3: Invalid version string
+    {
+        "Version": "2013-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 4: Missing Statement field
+    {"Version": "2012-10-17"},
+    # 5: Statement array contains non-dict
+    {"Version": "2012-10-17", "Statement": ["afd"]},
+    # 6: Extra field at top level
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+        "Extra field": "value",
+    },
+    # 7: Extra field in Statement
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Extra field": "value",
+        },
+    },
+    # 8: Id is an array (should be string)
+    {
+        "Version": "2012-10-17",
+        "Id": ["cd3a324d2343d942772346-34234234423404-4c2242343242349d1642ee"],
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 9: Id is an object (should be string)
+    {
+        "Version": "2012-10-17",
+        "Id": {},
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 10: Invalid Effect value
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "invalid",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 11: Action missing vendor prefix
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "invalid",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 12: NotAction is empty string
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 13: Vendor contains space
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "a a:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 14: Action contains multiple colons
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:List:Bucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 15: Multiple statements, one with multiple colons in Action
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "s3s:ListBucket",
+                "Resource": "arn:aws:s3:::example_bucket",
+            },
+            {
+                "Effect": "Allow",
+                "Action": "s:3s:ListBucket",
+                "Resource": "arn:aws:s3:::example_bucket",
+            },
+        ],
+    },
+    # 16: Resource not in ARN format
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "invalid resource",
+        },
+    },
+    # 17: Empty string Resource in array
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "EnableDisableHongKong",
+                "Effect": "Allow",
+                "Action": ["account:EnableRegion", "account:DisableRegion"],
+                "Resource": "",
+                "Condition": {"StringEquals": {"account:TargetRegion": "ap-east-1"}},
+            },
+            {
+                "Sid": "ViewConsole",
+                "Effect": "Allow",
+                "Action": ["aws-portal:ViewAccount", "account:ListRegions"],
+                "Resource": "",
+            },
+        ],
+    },
+    # 18: Resource not in ARN format (with bad action)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s:3:ListBucket",
+            "Resource": "sdfsadf",
+        },
+    },
+    # 19: Resource array with invalid item
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": ["adf"],
+        },
+    },
+    # 20: Empty string Resource
+    {
+        "Version": "2012-10-17",
+        "Statement": {"Effect": "Allow", "Action": "s3:ListBucket", "Resource": ""},
+    },
+    # 21: Invalid partition in Resource
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "s3s:ListBucket",
+            "Resource": "a:bsdfdsafsad",
+        },
+    },
+    # 22: Invalid partition in Resource (different format)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "s3s:ListBucket",
+            "Resource": "a:b:cadfsdf",
+        },
+    },
+    # 23: Invalid partition in Resource (long format)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "s3s:ListBucket",
+            "Resource": "a:b:c:d:e:f:g:h",
+        },
+    },
+    # 24: Resource missing arn: prefix
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "aws:s3:::example_bucket",
+        },
+    },
+    # 25: Resource array with invalid partition
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": [
+                "arn:error:s3:::example_bucket",
+                "arn:error:s3::example_bucket",
+            ],
+        },
+    },
+    # 26: Empty Statement array
+    {"Version": "2012-10-17", "Statement": []},
+    # 27: Missing Resource field
+    {
+        "Version": "2012-10-17",
+        "Statement": {"Effect": "Allow", "Action": "s3:ListBucket"},
+    },
+    # 28: Empty Resource array
+    {
+        "Version": "2012-10-17",
+        "Statement": {"Effect": "Allow", "Action": "s3:ListBucket", "Resource": []},
+    },
+    # 29: Action missing vendor prefix (no Resource)
+    {
+        "Version": "2012-10-17",
+        "Statement": {"Effect": "Allow", "Action": "invalid"},
+    },
+    # 30: Missing Action field
+    {
+        "Version": "2012-10-17",
+        "Statement": {"Effect": "Allow", "Resource": "arn:aws:s3:::example_bucket"},
+    },
+    # 31: Missing Effect field
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 32: Missing Action field (Effect Allow only)
+    {"Version": "2012-10-17", "Statement": {"Effect": "Allow"}},
+    # 33: Empty Action array
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": [],
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 34: Multiple statements, first missing actions
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {"Effect": "Deny"},
+            {
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::example_bucket",
+            },
+        ],
+    },
+    # 35: Invalid IAM resource path
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:iam:::example_bucket",
+        },
+    },
+    # 36: S3 ARN missing region separator
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3::example_bucket",
+        },
+    },
+    # 37: Missing Resource and Action
+    {
+        "Version": "2012-10-17",
+        "Statement": {"Effect": "Allow", "Resource": "arn:aws:s3::example_bucket"},
+    },
+    # 38: Resource vendor not fully qualified
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws",
+        },
+    },
+    # 39: Resource is a dict
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": {"a": "arn:aws:s3:::example_bucket"},
+        },
+    },
+    # 40: Resource array contains dict
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Deny",
+            "Action": "s3:ListBucket",
+            "Resource": ["adfdf", {}],
+        },
+    },
+    # 41: Both Resource and NotResource present
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "NotResource": [],
+        },
+    },
+    # 42: Action array contains array
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Deny",
+            "Action": [[]],
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 43: Both Action and NotAction present (Action empty)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "s3s:ListBucket",
+            "Action": [],
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 44: Action is a dict
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": {},
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 45: Condition is an array
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": [],
+        },
+    },
+    # 46: Condition is a string
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": "a",
+        },
+    },
+    # 47: Condition with invalid structure
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"a": "b"},
+        },
+    },
+    # 48: Condition operator value is string (not dict)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateGreaterThan": "b"},
+        },
+    },
+    # 49: Condition operator value is array
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateGreaterThan": []},
+        },
+    },
+    # 50: Condition key value is dict
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateGreaterThan": {"a": {}}},
+        },
+    },
+    # 51: Condition without Action
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateGreaterThan": {"a": {}}},
+        },
+    },
+    # 52: Invalid condition operator
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"x": {"a": "1"}},
+        },
+    },
+    # 53: Invalid condition operator format (double colon)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"ForAnyValue::StringEqualsIfExists": {"a": "asf"}},
+        },
+    },
+    # 54: Condition is an array of dicts
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": [{"ForAllValues:StringEquals": {"aws:TagKeys": "Department"}}],
+        },
+    },
+    # 55: IAM resource cannot contain region
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:iam:us-east-1::example_bucket",
+        },
+    },
+    # 56: S3 resource cannot contain region
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:us-east-1::example_bucket",
+        },
+    },
+    # 57: Sid is a dict
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Sid": {},
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 58: Sid is an array
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Sid": [],
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 59: Duplicate SIDs
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "sdf",
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::example_bucket",
+            },
+            {"Sid": "sdf", "Effect": "Allow"},
+        ],
+    },
+    # 60: Missing Version with duplicate SIDs
+    {
+        "Statement": [
+            {
+                "Sid": "sdf",
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::example_bucket",
+            },
+            {"Sid": "sdf", "Effect": "Allow"},
+        ]
+    },
+    # 61: Both Action and NotAction present
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "s3:ListBucket",
+            "Action": "iam:dsf",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 62: Both Resource and NotResource present (NotResource has value)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "NotResource": "*",
+        },
+    },
+    # 63: Effect case sensitivity (denY)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "denY",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 64: Invalid date condition value
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateGreaterThan": {"a": "sdfdsf"}},
+        },
+    },
+    # 65: Missing Version with invalid date condition
+    {
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateGreaterThan": {"a": "sdfdsf"}},
+        }
+    },
+    # 66: Missing Version with wrong Effect case
+    {
+        "Statement": {
+            "Effect": "denY",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        }
+    },
+    # 67: Missing Action with invalid date condition
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Condition": {"DateGreaterThan": {"a": "sdfdsf"}},
+        },
+    },
+    # 68: Invalid ARN (missing separator)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "s3:ListBucket",
+            "Resource": "arn:aws::::example_bucket",
+        },
+    },
+    # 69: Effect case sensitivity (allow)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "allow",
+            "Resource": "arn:aws:s3:us-east-1::example_bucket",
+        },
+    },
+    # 70: Duplicate SIDs with wrong Effect case
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "sdf",
+                "Effect": "aLLow",
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::example_bucket",
+            },
+            {"Sid": "sdf", "Effect": "Allow"},
+        ],
+    },
+    # 71: NotResource with missing region separator
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "NotResource": "arn:aws:s3::example_bucket",
+        },
+    },
+    # 72: Invalid month in date condition
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateLessThanEquals": {"a": "234-13"}},
+        },
+    },
+    # 73: Invalid timezone offset in date condition
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateLessThanEquals": {"a": "2016-12-13t2:00:00.593194+1"}},
+        },
+    },
+    # 74: Too many decimal places in date condition
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateLessThanEquals": {"a": "2016-12-13t2:00:00.1999999999+10:59"}},
+        },
+    },
+    # 75: Date epoch overflow
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateLessThan": {"a": "9223372036854775808"}},
+        },
+    },
+    # 76: Invalid partition with invalid date condition
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:error:s3:::example_bucket",
+            "Condition": {"DateGreaterThan": {"a": "sdfdsf"}},
+        },
+    },
+    # 77: Invalid ARN (missing service)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws::fdsasf",
+        },
+    },
+]
+
+# Valid policy documents - each should succeed
+VALID_POLICY_DOCUMENTS = [
+    # 0: Basic policy with Resource as array
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": ["arn:aws:s3:::example_bucket"],
+        },
+    },
+    # 1: Action with spaces (unusual but valid)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "iam: asdf safdsf af ",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 2: Mixed resources including wildcard
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": ["arn:aws:s3:::example_bucket", "*"],
+        },
+    },
+    # 3: Wildcard action
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "*",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 4: Statement as array
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::example_bucket",
+            }
+        ],
+    },
+    # 5: Date conditions
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "service-prefix:action-name",
+            "Resource": "*",
+            "Condition": {
+                "DateGreaterThan": {"aws:CurrentTime": "2017-07-01T00:00:00Z"},
+                "DateLessThan": {"aws:CurrentTime": "2017-12-31T23:59:59Z"},
+            },
+        },
+    },
+    # 6: FSx service
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "fsx:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 7: IAM user resource
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:iam:::user/example_bucket",
+        },
+    },
+    # 8: Unknown service in resource (valid)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s33:::example_bucket",
+        },
+    },
+    # 9: Short ARN format
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:fdsasf",
+        },
+    },
+    # 10: Empty Condition
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {},
+        },
+    },
+    # 11: ForAllValues condition
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"ForAllValues:StringEquals": {"aws:TagKeys": "Department"}},
+        },
+    },
+    # 12: CloudWatch resource with region
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:cloudwatch:us-east-1::example_bucket",
+        },
+    },
+    # 13: EC2 resource with region
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:ec2:us-east-1::example_bucket",
+        },
+    },
+    # 14: Invalid service in resource (still valid policy)
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:invalid-service:::example_bucket",
+        },
+    },
+    # 15: Invalid service with region
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:invalid-service:us-east-1::example_bucket",
+        },
+    },
+    # 16: Multiple date conditions
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {
+                "DateGreaterThan": {"aws:CurrentTime": "2017-07-01T00:00:00Z"},
+                "DateLessThan": {"aws:CurrentTime": "2017-12-31T23:59:59Z"},
+            },
+        },
+    },
+    # 17: Empty DateGreaterThan condition
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateGreaterThan": {}},
+        },
+    },
+    # 18: DateGreaterThan with empty array
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateGreaterThan": {"a": []}},
+        },
+    },
+    # 19: Empty condition operator
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"a": {}},
+        },
+    },
+    # 20: Statement with Sid
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Sid": "dsfsdfsdfsdfsdfsadfsd",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 21: Complex policy with tags
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "ConsoleDisplay",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:GetRole",
+                    "iam:GetUser",
+                    "iam:ListRoles",
+                    "iam:ListRoleTags",
+                    "iam:ListUsers",
+                    "iam:ListUserTags",
+                ],
+                "Resource": "*",
+            },
+            {
+                "Sid": "AddTag",
+                "Effect": "Allow",
+                "Action": ["iam:TagUser", "iam:TagRole"],
+                "Resource": "*",
+                "Condition": {
+                    "StringEquals": {"aws:RequestTag/CostCenter": ["A-123", "B-456"]},
+                    "ForAllValues:StringEquals": {"aws:TagKeys": "CostCenter"},
+                },
+            },
+        ],
+    },
+    # 22: NotAction
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 23: NotResource with Deny
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Deny",
+            "Action": "s3:*",
+            "NotResource": [
+                "arn:aws:s3:::HRBucket/Payroll",
+                "arn:aws:s3:::HRBucket/Payroll/*",
+            ],
+        },
+    },
+    # 24: Policy with Id
+    {
+        "Version": "2012-10-17",
+        "Id": "sdfsdfsdf",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 25: Long vendor name
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "aaaaaadsfdsafsadfsadfaaaaa:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 26: Vendor with hyphen
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3-s:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 27: Vendor with dot
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3.s:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+        },
+    },
+    # 28: NotAction and NotResource
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "NotAction": "s3:ListBucket",
+            "NotResource": "*",
+        },
+    },
+    # 29: Multiple statements, one without Sid
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "sdf",
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::example_bucket",
+            },
+            {
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::example_bucket",
+            },
+        ],
+    },
+    # 30: Short date format in condition
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateGreaterThan": {"a": "01T"}},
+        },
+    },
+    # 31: Multiple empty condition operators
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"x": {}, "y": {}},
+        },
+    },
+    # 32: StringEqualsIfExists
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"StringEqualsIfExists": {"a": "asf"}},
+        },
+    },
+    # 33: ForAnyValue:StringEqualsIfExists
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"ForAnyValue:StringEqualsIfExists": {"a": "asf"}},
+        },
+    },
+    # 34: DateLessThanEquals with ISO timestamp
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateLessThanEquals": {"a": "2019-07-01T13:20:15Z"}},
+        },
+    },
+    # 35: DateLessThanEquals with timezone
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateLessThanEquals": {"a": "2016-12-13T21:20:37.593194+00:00"}},
+        },
+    },
+    # 36: DateLessThanEquals with numeric timezone
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateLessThanEquals": {"a": "2016-12-13t2:00:00.593194+23"}},
+        },
+    },
+    # 37: DateLessThan with negative epoch
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket",
+            "Condition": {"DateLessThan": {"a": "-292275054"}},
+        },
+    },
+    # 38: Self-managed credentials policy
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "AllowViewAccountInfo",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:GetAccountPasswordPolicy",
+                    "iam:GetAccountSummary",
+                    "iam:ListVirtualMFADevices",
+                ],
+                "Resource": "*",
+            },
+            {
+                "Sid": "AllowManageOwnPasswords",
+                "Effect": "Allow",
+                "Action": ["iam:ChangePassword", "iam:GetUser"],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+            {
+                "Sid": "AllowManageOwnAccessKeys",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreateAccessKey",
+                    "iam:DeleteAccessKey",
+                    "iam:ListAccessKeys",
+                    "iam:UpdateAccessKey",
+                ],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+            {
+                "Sid": "AllowManageOwnSigningCertificates",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:DeleteSigningCertificate",
+                    "iam:ListSigningCertificates",
+                    "iam:UpdateSigningCertificate",
+                    "iam:UploadSigningCertificate",
+                ],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+            {
+                "Sid": "AllowManageOwnSSHPublicKeys",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:DeleteSSHPublicKey",
+                    "iam:GetSSHPublicKey",
+                    "iam:ListSSHPublicKeys",
+                    "iam:UpdateSSHPublicKey",
+                    "iam:UploadSSHPublicKey",
+                ],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+            {
+                "Sid": "AllowManageOwnGitCredentials",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreateServiceSpecificCredential",
+                    "iam:DeleteServiceSpecificCredential",
+                    "iam:ListServiceSpecificCredentials",
+                    "iam:ResetServiceSpecificCredential",
+                    "iam:UpdateServiceSpecificCredential",
+                ],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+            {
+                "Sid": "AllowManageOwnVirtualMFADevice",
+                "Effect": "Allow",
+                "Action": ["iam:CreateVirtualMFADevice", "iam:DeleteVirtualMFADevice"],
+                "Resource": "arn:aws:iam::*:mfa/${aws:username}",
+            },
+            {
+                "Sid": "AllowManageOwnUserMFA",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:DeactivateMFADevice",
+                    "iam:EnableMFADevice",
+                    "iam:ListMFADevices",
+                    "iam:ResyncMFADevice",
+                ],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+            {
+                "Sid": "DenyAllExceptListedIfNoMFA",
+                "Effect": "Deny",
+                "NotAction": [
+                    "iam:CreateVirtualMFADevice",
+                    "iam:EnableMFADevice",
+                    "iam:GetUser",
+                    "iam:ListMFADevices",
+                    "iam:ListVirtualMFADevices",
+                    "iam:ResyncMFADevice",
+                    "sts:GetSessionToken",
+                ],
+                "Resource": "*",
+                "Condition": {"BoolIfExists": {"aws:MultiFactorAuthPresent": "false"}},
+            },
+        ],
+    },
+    # 39: DynamoDB table access
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "ListAndDescribe",
+                "Effect": "Allow",
+                "Action": [
+                    "dynamodb:List*",
+                    "dynamodb:DescribeReservedCapacity*",
+                    "dynamodb:DescribeLimits",
+                    "dynamodb:DescribeTimeToLive",
+                ],
+                "Resource": "*",
+            },
+            {
+                "Sid": "SpecificTable",
+                "Effect": "Allow",
+                "Action": [
+                    "dynamodb:BatchGet*",
+                    "dynamodb:DescribeStream",
+                    "dynamodb:DescribeTable",
+                    "dynamodb:Get*",
+                    "dynamodb:Query",
+                    "dynamodb:Scan",
+                    "dynamodb:BatchWrite*",
+                    "dynamodb:CreateTable",
+                    "dynamodb:Delete*",
+                    "dynamodb:Update*",
+                    "dynamodb:PutItem",
+                ],
+                "Resource": "arn:aws:dynamodb:*:*:table/MyTable",
+            },
+        ],
+    },
+    # 40: EC2 volume attach/detach with ArnEquals
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": ["ec2:AttachVolume", "ec2:DetachVolume"],
+                "Resource": ["arn:aws:ec2:*:*:volume/*", "arn:aws:ec2:*:*:instance/*"],
+                "Condition": {
+                    "ArnEquals": {"ec2:SourceInstanceARN": "arn:aws:ec2:*:*:instance/instance-id"}
+                },
+            }
+        ],
+    },
+    # 41: EC2 resource tags
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": ["ec2:AttachVolume", "ec2:DetachVolume"],
+                "Resource": "arn:aws:ec2:*:*:instance/*",
+                "Condition": {"StringEquals": {"ec2:ResourceTag/Department": "Development"}},
+            },
+            {
+                "Effect": "Allow",
+                "Action": ["ec2:AttachVolume", "ec2:DetachVolume"],
+                "Resource": "arn:aws:ec2:*:*:volume/*",
+                "Condition": {"StringEquals": {"ec2:ResourceTag/VolumeUser": "${aws:username}"}},
+            },
+        ],
+    },
+    # 42: EC2 with principal tags
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "StartStopIfTags",
+                "Effect": "Allow",
+                "Action": [
+                    "ec2:StartInstances",
+                    "ec2:StopInstances",
+                    "ec2:DescribeTags",
+                ],
+                "Resource": "arn:aws:ec2:region:account-id:instance/*",
+                "Condition": {
+                    "StringEquals": {
+                        "ec2:ResourceTag/Project": "DataAnalytics",
+                        "aws:PrincipalTag/Department": "Data",
+                    }
+                },
+            }
+        ],
+    },
+    # 43: S3 with Cognito identity
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "ListYourObjects",
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": ["arn:aws:s3:::bucket-name"],
+                "Condition": {
+                    "StringLike": {
+                        "s3:prefix": [
+                            "cognito/application-name/${cognito-identity.amazonaws.com:sub}"
+                        ]
+                    }
+                },
+            },
+            {
+                "Sid": "ReadWriteDeleteYourObjects",
+                "Effect": "Allow",
+                "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+                "Resource": [
+                    "arn:aws:s3:::bucket-name/cognito/application-name/${cognito-identity.amazonaws.com:sub}",
+                    "arn:aws:s3:::bucket-name/cognito/application-name/${cognito-identity.amazonaws.com:sub}/*",
+                ],
+            },
+        ],
+    },
+    # 44: S3 home folder pattern
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": ["s3:ListAllMyBuckets", "s3:GetBucketLocation"],
+                "Resource": "*",
+            },
+            {
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::bucket-name",
+                "Condition": {"StringLike": {"s3:prefix": ["", "home/", "home/${aws:userid}/*"]}},
+            },
+            {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": [
+                    "arn:aws:s3:::bucket-name/home/${aws:userid}",
+                    "arn:aws:s3:::bucket-name/home/${aws:userid}/*",
+                ],
+            },
+        ],
+    },
+    # 45: S3 console access
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "ConsoleAccess",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetAccountPublicAccessBlock",
+                    "s3:GetBucketAcl",
+                    "s3:GetBucketLocation",
+                    "s3:GetBucketPolicyStatus",
+                    "s3:GetBucketPublicAccessBlock",
+                    "s3:ListAllMyBuckets",
+                ],
+                "Resource": "*",
+            },
+            {
+                "Sid": "ListObjectsInBucket",
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": ["arn:aws:s3:::bucket-name"],
+            },
+            {
+                "Sid": "AllObjectActions",
+                "Effect": "Allow",
+                "Action": "s3:*Object",
+                "Resource": ["arn:aws:s3:::bucket-name/*"],
+            },
+        ],
+    },
+    # 46: Simpler self-managed credentials
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "AllowViewAccountInfo",
+                "Effect": "Allow",
+                "Action": ["iam:GetAccountPasswordPolicy", "iam:GetAccountSummary"],
+                "Resource": "*",
+            },
+            {
+                "Sid": "AllowManageOwnPasswords",
+                "Effect": "Allow",
+                "Action": ["iam:ChangePassword", "iam:GetUser"],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+            {
+                "Sid": "AllowManageOwnAccessKeys",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreateAccessKey",
+                    "iam:DeleteAccessKey",
+                    "iam:ListAccessKeys",
+                    "iam:UpdateAccessKey",
+                ],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+            {
+                "Sid": "AllowManageOwnSigningCertificates",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:DeleteSigningCertificate",
+                    "iam:ListSigningCertificates",
+                    "iam:UpdateSigningCertificate",
+                    "iam:UploadSigningCertificate",
+                ],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+            {
+                "Sid": "AllowManageOwnSSHPublicKeys",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:DeleteSSHPublicKey",
+                    "iam:GetSSHPublicKey",
+                    "iam:ListSSHPublicKeys",
+                    "iam:UpdateSSHPublicKey",
+                    "iam:UploadSSHPublicKey",
+                ],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+            {
+                "Sid": "AllowManageOwnGitCredentials",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreateServiceSpecificCredential",
+                    "iam:DeleteServiceSpecificCredential",
+                    "iam:ListServiceSpecificCredentials",
+                    "iam:ResetServiceSpecificCredential",
+                    "iam:UpdateServiceSpecificCredential",
+                ],
+                "Resource": "arn:aws:iam::*:user/${aws:username}",
+            },
+        ],
+    },
+    # 47: EC2 regional restriction
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": "ec2:*",
+                "Resource": "*",
+                "Effect": "Allow",
+                "Condition": {"StringEquals": {"ec2:Region": "region"}},
+            }
+        ],
+    },
+    # 48: RDS regional access
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "rds:*",
+                "Resource": ["arn:aws:rds:region:*:*"],
+            },
+            {"Effect": "Allow", "Action": ["rds:Describe*"], "Resource": ["*"]},
+        ],
+    },
+    # 49: RDS with empty Sids
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "",
+                "Effect": "Allow",
+                "Action": "rds:*",
+                "Resource": ["arn:aws:rds:region:*:*"],
+            },
+            {
+                "Sid": "",
+                "Effect": "Allow",
+                "Action": ["rds:Describe*"],
+                "Resource": ["*"],
+            },
+        ],
+    },
+    # 50: S3 access point
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "",
+                "Effect": "Allow",
+                "Action": ["s3:*"],
+                "Resource": [
+                    "arn:aws:s3:us-west-2:123456789012:accesspoint/my-access-point",
+                    "arn:aws:s3:us-west-2:123456789012:accesspoint/my-access-point/object/*",
+                ],
+            },
+        ],
+    },
+]
+
 
 @pytest.fixture(autouse=True)
 def snapshot_transformers(snapshot):
@@ -515,3 +2012,35 @@ class TestPolicyTags:
                 TagKeys=["somevalue"],
             )
         snapshot.match("err-untag-nonexistent-policy", e.value.response)
+
+
+class TestPolicyDocumentValidity:
+    """Tests for policy document validation - migrated from moto test_iam_policies.py."""
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "policy_doc",
+        INVALID_POLICY_DOCUMENTS,
+        ids=[f"invalid-{i}" for i in range(len(INVALID_POLICY_DOCUMENTS))],
+    )
+    def test_create_policy_invalid_document(self, create_policy, snapshot, policy_doc):
+        """Test that invalid policy documents are rejected with MalformedPolicyDocument."""
+        with pytest.raises(ClientError) as e:
+            create_policy(
+                PolicyName=f"test-policy-{short_uid()}",
+                PolicyDocument=json.dumps(policy_doc)
+                if isinstance(policy_doc, dict)
+                else policy_doc,
+            )
+        snapshot.match("error", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "policy_doc",
+        VALID_POLICY_DOCUMENTS,
+        ids=[f"valid-{i}" for i in range(len(VALID_POLICY_DOCUMENTS))],
+    )
+    def test_create_policy_valid_document(self, create_policy, snapshot, policy_doc):
+        """Test that valid policy documents are accepted."""
+        response = create_policy(PolicyDocument=json.dumps(policy_doc))
+        snapshot.match("response", response)
