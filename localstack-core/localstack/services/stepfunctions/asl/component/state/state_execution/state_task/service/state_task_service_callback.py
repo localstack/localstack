@@ -217,7 +217,8 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             # finished, ensure all waiting # threads on this endpoint (or task) will stop. This is in an effort to
             # release resources sooner than when these would eventually synchronise with the updated environment
             # state of this task.
-            callback_endpoint.interrupt_all()
+            if callback_endpoint:
+                callback_endpoint.interrupt_all()
 
         # Handle Callback outcome types.
         if isinstance(outcome, CallbackOutcomeTimedOut):
