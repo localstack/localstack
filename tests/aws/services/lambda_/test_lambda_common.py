@@ -145,6 +145,8 @@ class TestLambdaRuntimesCommon:
             "$..environment.DOTNET_VERSION",
             # Changed from 127.0.0.1:9001 to 169.254.100.1:9001 around 2024-11, which would require network changes
             "$..environment.AWS_LAMBDA_RUNTIME_API",
+            # Only Ruby runtimes, changed
+            "$..environment.GEM_PATH",
         ]
     )
     @markers.aws.validated
