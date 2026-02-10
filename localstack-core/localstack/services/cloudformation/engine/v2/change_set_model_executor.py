@@ -16,7 +16,10 @@ from localstack.aws.api.cloudformation import (
     StackStatus,
 )
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
-from localstack.services.cloudformation.analytics import track_resource_operation
+from localstack.services.cloudformation.analytics import (
+    emit_stack_failure,
+    track_resource_operation,
+)
 from localstack.services.cloudformation.deployment_utils import log_not_available_message
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
@@ -543,6 +546,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     OperationStatus.FAILED,
                     resource_model={},
                     message=f"Resource provider operation failed: {reason}",
+                    custom_context={"exception": e},
                 )
         elif should_ignore_unsupported_resource_type(
             resource_type=resource_type, change_set_type=self._change_set.change_set_type
@@ -618,6 +622,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 )
                 resolved_resource["ResourceStatus"] = ResourceStatus(f"{status_from_action}_FAILED")
                 resolved_resource["ResourceStatusReason"] = reason
+
+                exception = event.custom_context.get("exception")
+                emit_stack_failure(reason, exception=exception)
+
             case other:
                 raise NotImplementedError(f"Event status '{other}' not handled")
 
