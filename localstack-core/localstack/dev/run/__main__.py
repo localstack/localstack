@@ -346,16 +346,18 @@ def run(
 
     rule = Rule(f"Interactive session with {container_id[:12]} 💻")
     console.print(rule)
-    live_reload_event = None
+    stop_live_reload_watcher = None
     try:
         if live_reload and mount_source:
             if watch_dirs := collect_watch_directories(host_paths, pro, local_packages):
-                live_reload_event = start_file_watcher(watch_dirs, docker, container_id)
+                stop_live_reload_watcher = start_file_watcher(watch_dirs, docker, container_id)
+
         cmd = [*docker._docker_cmd(), "start", "--interactive", "--attach", container_id]
         run_interactive(cmd)
     finally:
-        if live_reload_event is not None:
-            live_reload_event.set()
+        if stop_live_reload_watcher is not None:
+            stop_live_reload_watcher.set()
+
         if container_config.remove:
             try:
                 if docker.is_container_running(container_id):
