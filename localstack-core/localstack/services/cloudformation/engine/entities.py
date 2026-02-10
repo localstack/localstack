@@ -50,53 +50,6 @@ class StackInstanceDetails(TypedDict):
     StackInstanceStatus: StackInstanceComprehensiveStatus | None
 
 
-class StackInstance:
-    """A stack instance belongs to a stack set and is specific to a region / account ID."""
-
-    details: StackInstanceDetails
-    stack: "Stack"  # TODO: fix
-
-    def __init__(self, details: StackInstanceDetails) -> None:
-        self.details = details
-        # reference to the deployed stack belonging to this stack instance
-        self.stack = None
-
-
-@dataclasses.dataclass
-class StackSetMetadata:
-    """Metadata for a StackSet"""
-
-    stack_set_request: CreateStackSetInput
-    """The original input request"""
-    stack_set_id: str
-    """The stack set id"""
-
-
-class StackSet:
-    """A stack set contains multiple stack instances."""
-
-    metadata: StackSetMetadata
-    stack_instances: list[StackInstance]
-    operations: dict[str, StackSetOperation]
-
-    def __init__(self, stack_set_request: CreateStackSetInput) -> None:
-        self.metadata = StackSetMetadata(
-            stack_set_request=stack_set_request,
-            stack_set_id=f"{stack_set_request['StackSetName']}:{long_uid()}",
-        )
-        self.stack_instances = []
-        # maps operation ID to stack set operation details
-        self.operations = {}
-
-    @property
-    def stack_set_name(self) -> str:
-        return self.metadata.stack_set_request.get("StackSetName")
-
-    @property
-    def stack_set_id(self) -> str:
-        return self.metadata.stack_set_id
-
-
 class CreateChangeSetInput(TypedDict):
     StackName: str
     Capabilities: list[Capability]
@@ -119,22 +72,6 @@ class StackTemplate(TypedDict, total=False):
     Outputs: dict[str, dict[str, Any]]
     # LocalStack runtime additions
     StackId: str
-
-
-class StackIdentifier(ResourceIdentifier):
-    service = "cloudformation"
-    resource = "stack"
-
-    def __init__(self, account_id: str, region: str, stack_name: str):
-        super().__init__(account_id, region, stack_name)
-
-    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
-        return generate_short_uid(resource_identifier=self, existing_ids=existing_ids, tags=tags)
-
-
-class StackIdentifierV2(StackIdentifier):
-    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
-        return generate_uid(resource_identifier=self, existing_ids=existing_ids, tags=tags)
 
 
 # TODO: remove metadata (flatten into individual fields)
@@ -447,6 +384,69 @@ class Stack:
             metadata=dict(self.metadata),
             template=dict(self.template),
         )
+
+
+class StackInstance:
+    """A stack instance belongs to a stack set and is specific to a region / account ID."""
+
+    details: StackInstanceDetails
+    stack: Stack
+
+    def __init__(self, details: StackInstanceDetails) -> None:
+        self.details = details
+        # reference to the deployed stack belonging to this stack instance
+        self.stack = None
+
+
+@dataclasses.dataclass
+class StackSetMetadata:
+    """Metadata for a StackSet"""
+
+    stack_set_request: CreateStackSetInput
+    """The original input request"""
+    stack_set_id: str
+    """The stack set id"""
+
+
+class StackSet:
+    """A stack set contains multiple stack instances."""
+
+    metadata: StackSetMetadata
+    stack_instances: list[StackInstance]
+    operations: dict[str, StackSetOperation]
+
+    def __init__(self, stack_set_request: CreateStackSetInput) -> None:
+        self.metadata = StackSetMetadata(
+            stack_set_request=stack_set_request,
+            stack_set_id=f"{stack_set_request['StackSetName']}:{long_uid()}",
+        )
+        self.stack_instances = []
+        # maps operation ID to stack set operation details
+        self.operations = {}
+
+    @property
+    def stack_set_name(self) -> str:
+        return self.metadata.stack_set_request.get("StackSetName")
+
+    @property
+    def stack_set_id(self) -> str:
+        return self.metadata.stack_set_id
+
+
+class StackIdentifier(ResourceIdentifier):
+    service = "cloudformation"
+    resource = "stack"
+
+    def __init__(self, account_id: str, region: str, stack_name: str):
+        super().__init__(account_id, region, stack_name)
+
+    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
+        return generate_short_uid(resource_identifier=self, existing_ids=existing_ids, tags=tags)
+
+
+class StackIdentifierV2(StackIdentifier):
+    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
+        return generate_uid(resource_identifier=self, existing_ids=existing_ids, tags=tags)
 
 
 class StackChangeSet:
