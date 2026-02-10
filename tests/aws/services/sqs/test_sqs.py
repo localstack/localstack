@@ -4036,8 +4036,10 @@ class TestSqsProvider:
         else:
             timeout = 15.0
         assert poll_condition(
-            lambda: "Messages"
-            in aws_sqs_client.receive_message(QueueUrl=dl_queue_url, VisibilityTimeout=0),
+            lambda: (
+                "Messages"
+                in aws_sqs_client.receive_message(QueueUrl=dl_queue_url, VisibilityTimeout=0)
+            ),
             timeout,
             1.0,
         )

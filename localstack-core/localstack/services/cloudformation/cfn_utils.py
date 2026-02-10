@@ -19,10 +19,8 @@ def rename_params(func, rename_map):
 
 
 def lambda_convert_types(func, types):
-    return (
-        lambda account_id, region_name, params, logical_resource_id, *args, **kwargs: convert_types(
-            func(account_id, region_name, params, *args, **kwargs), types
-        )
+    return lambda account_id, region_name, params, logical_resource_id, *args, **kwargs: (
+        convert_types(func(account_id, region_name, params, *args, **kwargs), types)
     )
 
 
@@ -42,13 +40,8 @@ def lambda_rename_attributes(attrs, func=None):
         return o
 
     func = func or (lambda account_id, region_name, x, logical_resource_id, *args, **kwargs: x)
-    return (
-        lambda account_id,
-        region_name,
-        params,
-        logical_resource_id,
-        *args,
-        **kwargs: recurse_object(
+    return lambda account_id, region_name, params, logical_resource_id, *args, **kwargs: (
+        recurse_object(
             func(account_id, region_name, params, logical_resource_id, *args, **kwargs), recurse
         )
     )

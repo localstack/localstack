@@ -2745,8 +2745,9 @@ class TestSecretsManagerMultiAccounts:
         # Note: when removing tags, the response will be empty list in case of AWS,
         # but it will be None in Localstack. To avoid failing the test, we will use the default value as list
         assert poll_condition(
-            lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get("Tags", [])
-            == [],
+            lambda: (
+                aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get("Tags", []) == []
+            ),
             timeout=5.0,
             interval=0.5,
         )
@@ -2852,10 +2853,10 @@ class TestSecretsManagerMultiAccounts:
         )
 
         assert poll_condition(
-            lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
-                "DeletedDate"
-            )
-            is not None,
+            lambda: (
+                aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get("DeletedDate")
+                is not None
+            ),
             timeout=5.0,
             interval=0.5,
         )
@@ -2863,10 +2864,10 @@ class TestSecretsManagerMultiAccounts:
         secondary_aws_client.secretsmanager.restore_secret(SecretId=secret_arn)
 
         assert poll_condition(
-            lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
-                "DeletedDate"
-            )
-            is None,
+            lambda: (
+                aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get("DeletedDate")
+                is None
+            ),
             timeout=5.0,
             interval=0.5,
         )

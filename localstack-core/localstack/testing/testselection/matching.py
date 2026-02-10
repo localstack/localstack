@@ -84,10 +84,8 @@ class Matcher:
         return lambda t: [SENTINEL_NO_TEST] if self.matching_func(t) else []
 
     def service_tests(self, services: list[str]):
-        return (
-            lambda t: [get_test_dir_for_service(svc) for svc in services]
-            if self.matching_func(t)
-            else []
+        return lambda t: (
+            [get_test_dir_for_service(svc) for svc in services] if self.matching_func(t) else []
         )
 
     def passthrough(self):

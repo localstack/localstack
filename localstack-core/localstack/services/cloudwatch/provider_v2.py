@@ -659,7 +659,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         ]
         aliases_list = PaginatedList(metrics)
         page, nxt = aliases_list.get_page(
-            lambda metric: f"{metric.get('Namespace')}-{metric.get('MetricName')}-{metric.get('Dimensions')}",
+            lambda metric: (
+                f"{metric.get('Namespace')}-{metric.get('MetricName')}-{metric.get('Dimensions')}"
+            ),
             next_token=next_token,
             page_size=LIST_METRICS_MAX_RESULTS,
         )

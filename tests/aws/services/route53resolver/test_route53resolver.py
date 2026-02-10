@@ -808,10 +808,10 @@ class TestRoute53Resolver:
             Name=firewall_rule_group_name
         )
         cleanups.append(
-            lambda rule_group_id=rule_group_response["FirewallRuleGroup"][
-                "Id"
-            ]: aws_client.route53resolver.delete_firewall_rule_group(
-                FirewallRuleGroupId=rule_group_id
+            lambda rule_group_id=rule_group_response["FirewallRuleGroup"]["Id"]: (
+                aws_client.route53resolver.delete_firewall_rule_group(
+                    FirewallRuleGroupId=rule_group_id
+                )
             )
         )
         # Parameters for creating resources
@@ -823,10 +823,10 @@ class TestRoute53Resolver:
                 Name=f"fw-domain-list-{short_uid()}"
             )
             cleanups.append(
-                lambda domain_list_id=domain_list_response["FirewallDomainList"][
-                    "Id"
-                ]: aws_client.route53resolver.delete_firewall_domain_list(
-                    FirewallDomainListId=domain_list_id
+                lambda domain_list_id=domain_list_response["FirewallDomainList"]["Id"]: (
+                    aws_client.route53resolver.delete_firewall_domain_list(
+                        FirewallDomainListId=domain_list_id
+                    )
                 )
             )
             create_firewall_rule(

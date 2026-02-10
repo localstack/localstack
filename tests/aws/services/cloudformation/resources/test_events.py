@@ -141,8 +141,9 @@ def test_event_rule_to_logs(deploy_cfn_template, aws_client):
     assert len(resp["Entries"]) == 1
 
     wait_until(
-        lambda: len(aws_client.logs.describe_log_streams(logGroupName=log_group_name)["logStreams"])
-        > 0,
+        lambda: (
+            len(aws_client.logs.describe_log_streams(logGroupName=log_group_name)["logStreams"]) > 0
+        ),
         1.0,
         5,
         "linear",
