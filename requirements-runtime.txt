@@ -25,7 +25,7 @@ attrs==25.4.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-sam-translator==1.106.0
+aws-sam-translator==1.107.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
@@ -63,7 +63,7 @@ certifi==2026.1.4
     #   requests
 cffi==2.0.0
     # via cryptography
-cfn-lint==1.41.0
+cfn-lint==1.43.4
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
@@ -107,7 +107,7 @@ events==0.5
     # via opensearch-py
 graphql-core==3.2.7
     # via moto-ext
-grpcio==1.78.0
+grpcio==1.76.0
     # via opensearch-protobufs
 h11==0.16.0
     # via
@@ -245,11 +245,10 @@ pyasn1==0.6.2
     # via rsa
 pycparser==3.0
     # via cffi
-pydantic==2.12.4
+pydantic==2.12.5
     # via
     #   aws-sam-translator
     #   localstack-core
-    #   moto-ext
 pydantic-core==2.41.5
     # via pydantic
 pygments==2.19.2
