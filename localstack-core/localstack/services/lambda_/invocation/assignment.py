@@ -90,7 +90,7 @@ class AssignmentService(OtherServiceEndpoint):
     ) -> ExecutionEnvironment:
         LOG.debug("Starting new environment")
         initialization_type = InitializationType.on_demand
-        if function_version.config.CapacityProviderConfig:
+        if function_version.config.capacity_provider_config:
             initialization_type = InitializationType.lambda_managed_instances
         execution_environment = ExecutionEnvironment(
             function_version=function_version,
