@@ -7,6 +7,16 @@ from rich.rule import Rule
 
 from localstack import config
 from localstack.cli import console
+from localstack.dev.run.configurators import (
+    ConfigEnvironmentConfigurator,
+    DependencyMountConfigurator,
+    EntryPointMountConfigurator,
+    ImageConfigurator,
+    PortConfigurator,
+    SourceVolumeMountConfigurator,
+)
+from localstack.dev.run.paths import HOST_PATH_MAPPINGS, HostPaths
+from localstack.dev.run.watcher import collect_watch_directories, start_file_watcher
 from localstack.runtime import hooks
 from localstack.utils.bootstrap import Container, ContainerConfigurators
 from localstack.utils.container_utils.container_client import (
@@ -18,16 +28,6 @@ from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.files import cache_dir
 from localstack.utils.run import run_interactive
 from localstack.utils.strings import short_uid
-
-from .configurators import (
-    ConfigEnvironmentConfigurator,
-    DependencyMountConfigurator,
-    EntryPointMountConfigurator,
-    ImageConfigurator,
-    PortConfigurator,
-    SourceVolumeMountConfigurator,
-)
-from .paths import HOST_PATH_MAPPINGS, HostPaths
 
 
 @click.command("run")
@@ -67,6 +67,12 @@ from .paths import HOST_PATH_MAPPINGS, HostPaths
     is_flag=True,
     default=True,
     help="Mount source files from localstack and localstack-pro. Use --local-packages for optional dependencies such as moto.",
+)
+@click.option(
+    "--live-reload/--no-live-reload",
+    is_flag=True,
+    default=False,
+    help="Watch mounted source directories for .py file changes and automatically restart the container runtime.",
 )
 @click.option(
     "--mount-dependencies/--no-mount-dependencies",
@@ -130,6 +136,7 @@ def run(
     develop: bool = False,
     randomize: bool = False,
     mount_source: bool = True,
+    live_reload: bool = False,
     mount_dependencies: bool = False,
     mount_entrypoints: bool = False,
     mount_docker_socket: bool = True,
@@ -178,6 +185,11 @@ def run(
     Or use custom entrypoints:
 
         python -m localstack.dev.run --entrypoint /bin/bash -- echo "hello"
+
+    Use the --live-reload flag to restart LocalStack on code changes. Beware: this will remove any state
+    that you had in your LocalStack instance. Consider using PERSISTENCE to keep resources:
+
+        python -m localstack.dev.run --live-reload
 
     You can import and expose debugpy:
 
@@ -339,10 +351,18 @@ def run(
 
     rule = Rule(f"Interactive session with {container_id[:12]} 💻")
     console.print(rule)
+    stop_live_reload_watcher = None
     try:
+        if live_reload and mount_source:
+            if watch_dirs := collect_watch_directories(host_paths, pro, local_packages):
+                stop_live_reload_watcher = start_file_watcher(watch_dirs, docker, container_id)
+
         cmd = [*docker._docker_cmd(), "start", "--interactive", "--attach", container_id]
         run_interactive(cmd)
     finally:
+        if stop_live_reload_watcher is not None:
+            stop_live_reload_watcher.set()
+
         if container_config.remove:
             try:
                 if docker.is_container_running(container_id):
