@@ -70,5 +70,41 @@
       "teardown": 0.89,
       "total": 2.11
     }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_create_errors": {
+    "last_validated_date": "2026-02-10T13:42:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.42,
+      "teardown": 0.0,
+      "total": 2.42
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_lifecycle": {
+    "last_validated_date": "2026-02-10T13:42:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 2.21,
+      "teardown": 1.61,
+      "total": 4.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_operations": {
+    "last_validated_date": "2026-02-10T13:42:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.27,
+      "teardown": 0.4,
+      "total": 3.67
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_update_errors": {
+    "last_validated_date": "2026-02-10T13:42:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 5.65,
+      "teardown": 0.47,
+      "total": 6.12
+    }
   }
 }

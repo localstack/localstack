@@ -237,3 +237,281 @@ class TestPolicies:
         # List — only v1 should remain
         response = aws_client.iam.list_policy_versions(PolicyArn=policy_arn)
         snapshot.match("list-after-delete", response)
+
+
+class TestPolicyTags:
+    @markers.aws.validated
+    def test_policy_tag_lifecycle(self, aws_client, create_policy, snapshot):
+        """Test creating policies with tags and verifying they appear in responses."""
+        # Create policy with two tags and a description
+        response = create_policy(
+            PolicyDocument=json.dumps(SAMPLE_POLICY),
+            Tags=[
+                {"Key": "somekey", "Value": "somevalue"},
+                {"Key": "someotherkey", "Value": "someothervalue"},
+            ],
+            Description="testing",
+        )
+        snapshot.match("create-with-tags", response)
+        policy_arn = response["Policy"]["Arn"]
+
+        response = aws_client.iam.get_policy(PolicyArn=policy_arn)
+        snapshot.match("get-with-tags", response)
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        snapshot.match("list-created-tags", response)
+
+        # Create policy with empty tag value
+        response = create_policy(
+            PolicyDocument=json.dumps(SAMPLE_POLICY),
+            Tags=[{"Key": "somekey", "Value": ""}],
+        )
+        snapshot.match("create-with-empty-tag-value", response)
+        empty_tag_arn = response["Policy"]["Arn"]
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=empty_tag_arn)
+        snapshot.match("list-empty-tag-value", response)
+
+        # Create policy without tags
+        response = create_policy(PolicyDocument=json.dumps(SAMPLE_POLICY))
+        no_tags_arn = response["Policy"]["Arn"]
+
+        response = aws_client.iam.get_policy(PolicyArn=no_tags_arn)
+        snapshot.match("get-without-tags", response)
+
+        # Create policy with case-sensitive tag keys (a and A are distinct)
+        response = create_policy(
+            PolicyDocument=json.dumps(SAMPLE_POLICY),
+            Tags=[
+                {"Key": "a", "Value": "lowercase"},
+                {"Key": "A", "Value": "uppercase"},
+            ],
+        )
+        snapshot.match("create-with-case-sensitive-tags", response)
+        case_sensitive_arn = response["Policy"]["Arn"]
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=case_sensitive_arn)
+        snapshot.match("list-case-sensitive-tags", response)
+
+    @markers.aws.validated
+    def test_policy_tag_operations(self, aws_client, create_policy, snapshot):
+        """Test tag_policy, list_policy_tags (with pagination), updating tags, and untag_policy."""
+        response = create_policy(PolicyDocument=json.dumps(SAMPLE_POLICY))
+        snapshot.match("create-policy", response)
+        policy_arn = response["Policy"]["Arn"]
+
+        # Tag the policy
+        aws_client.iam.tag_policy(
+            PolicyArn=policy_arn,
+            Tags=[
+                {"Key": "somekey", "Value": "somevalue"},
+                {"Key": "someotherkey", "Value": "someothervalue"},
+            ],
+        )
+
+        response = aws_client.iam.get_policy(PolicyArn=policy_arn)
+        snapshot.match("get-after-tag", response)
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        snapshot.match("list-tags", response)
+
+        # Pagination
+        response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn, MaxItems=1)
+        snapshot.match("list-tags-page1", response)
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn, Marker=response["Marker"])
+        snapshot.match("list-tags-page2", response)
+
+        # Update existing tag value
+        aws_client.iam.tag_policy(
+            PolicyArn=policy_arn,
+            Tags=[{"Key": "somekey", "Value": "somenewvalue"}],
+        )
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        snapshot.match("list-after-update", response)
+
+        # Update existing tag to empty value
+        aws_client.iam.tag_policy(
+            PolicyArn=policy_arn,
+            Tags=[{"Key": "somekey", "Value": ""}],
+        )
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        snapshot.match("list-after-update-empty", response)
+
+        # Untag one key
+        aws_client.iam.untag_policy(PolicyArn=policy_arn, TagKeys=["somekey"])
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        snapshot.match("list-after-untag-one", response)
+
+        # Untag remaining key
+        aws_client.iam.untag_policy(PolicyArn=policy_arn, TagKeys=["someotherkey"])
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        snapshot.match("list-after-untag-all", response)
+
+        # Test case-sensitive tag operations (a and A are distinct keys)
+        aws_client.iam.tag_policy(
+            PolicyArn=policy_arn,
+            Tags=[
+                {"Key": "a", "Value": "lowercase"},
+                {"Key": "A", "Value": "uppercase"},
+            ],
+        )
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        snapshot.match("list-case-sensitive-tags", response)
+
+        # Untag only lowercase 'a', uppercase 'A' should remain
+        aws_client.iam.untag_policy(PolicyArn=policy_arn, TagKeys=["a"])
+
+        response = aws_client.iam.list_policy_tags(PolicyArn=policy_arn)
+        snapshot.match("list-after-untag-lowercase", response)
+
+    @markers.aws.validated
+    def test_policy_tag_create_errors(self, aws_client, snapshot):
+        """Test tag validation errors on create_policy."""
+        policy_doc = json.dumps(SAMPLE_POLICY)
+
+        # Too many tags (51)
+        with pytest.raises(ClientError) as e:
+            too_many_tags = [{"Key": str(x), "Value": str(x)} for x in range(51)]
+            aws_client.iam.create_policy(
+                PolicyName=f"test-policy-{short_uid()}",
+                PolicyDocument=policy_doc,
+                Tags=too_many_tags,
+            )
+        snapshot.match("err-too-many-tags", e.value.response)
+
+        # Duplicate tag keys
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_policy(
+                PolicyName=f"test-policy-{short_uid()}",
+                PolicyDocument=policy_doc,
+                Tags=[{"Key": "0", "Value": ""}, {"Key": "0", "Value": ""}],
+            )
+        snapshot.match("err-duplicate-keys", e.value.response)
+
+        # Key too long (129 chars)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_policy(
+                PolicyName=f"test-policy-{short_uid()}",
+                PolicyDocument=policy_doc,
+                Tags=[{"Key": "0" * 129, "Value": ""}],
+            )
+        snapshot.match("err-large-key", e.value.response)
+
+        # Value too long (257 chars)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_policy(
+                PolicyName=f"test-policy-{short_uid()}",
+                PolicyDocument=policy_doc,
+                Tags=[{"Key": "0", "Value": "0" * 257}],
+            )
+        snapshot.match("err-large-value", e.value.response)
+
+        # Invalid character in key
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_policy(
+                PolicyName=f"test-policy-{short_uid()}",
+                PolicyDocument=policy_doc,
+                Tags=[{"Key": "NOWAY!", "Value": ""}],
+            )
+        snapshot.match("err-invalid-character", e.value.response)
+
+    @markers.aws.validated
+    def test_policy_tag_update_errors(
+        self, aws_client, create_policy, snapshot, account_id, partition
+    ):
+        """Test tag validation errors on tag_policy and untag_policy, plus non-existent policy."""
+        response = create_policy(PolicyDocument=json.dumps(SAMPLE_POLICY))
+        policy_arn = response["Policy"]["Arn"]
+
+        aws_client.iam.tag_policy(
+            PolicyArn=policy_arn,
+            Tags=[
+                {"Key": "somekey", "Value": "somevalue"},
+                {"Key": "someotherkey", "Value": "someothervalue"},
+            ],
+        )
+
+        # tag_policy: too many tags (51)
+        with pytest.raises(ClientError) as e:
+            too_many_tags = [{"Key": str(x), "Value": str(x)} for x in range(51)]
+            aws_client.iam.tag_policy(PolicyArn=policy_arn, Tags=too_many_tags)
+        snapshot.match("err-tag-too-many", e.value.response)
+
+        # tag_policy: duplicate keys
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_policy(
+                PolicyArn=policy_arn,
+                Tags=[{"Key": "0", "Value": ""}, {"Key": "0", "Value": ""}],
+            )
+        snapshot.match("err-tag-duplicate-keys", e.value.response)
+
+        # tag_policy: key too long
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_policy(
+                PolicyArn=policy_arn,
+                Tags=[{"Key": "0" * 129, "Value": ""}],
+            )
+        snapshot.match("err-tag-large-key", e.value.response)
+
+        # tag_policy: value too long
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_policy(
+                PolicyArn=policy_arn,
+                Tags=[{"Key": "0", "Value": "0" * 257}],
+            )
+        snapshot.match("err-tag-large-value", e.value.response)
+
+        # tag_policy: invalid character
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_policy(
+                PolicyArn=policy_arn,
+                Tags=[{"Key": "NOWAY!", "Value": ""}],
+            )
+        snapshot.match("err-tag-invalid-character", e.value.response)
+
+        # tag_policy: non-existent policy
+        non_existent_arn = f"arn:{partition}:iam::{account_id}:policy/NotAPolicy"
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_policy(
+                PolicyArn=non_existent_arn,
+                Tags=[{"Key": "some", "Value": "value"}],
+            )
+        snapshot.match("err-tag-nonexistent-policy", e.value.response)
+
+        # untag_policy: too many keys (51)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.untag_policy(
+                PolicyArn=policy_arn,
+                TagKeys=[str(x) for x in range(51)],
+            )
+        snapshot.match("err-untag-too-many-keys", e.value.response)
+
+        # untag_policy: key too long
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.untag_policy(
+                PolicyArn=policy_arn,
+                TagKeys=["0" * 129],
+            )
+        snapshot.match("err-untag-large-key", e.value.response)
+
+        # untag_policy: invalid character
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.untag_policy(
+                PolicyArn=policy_arn,
+                TagKeys=["NOWAY!"],
+            )
+        snapshot.match("err-untag-invalid-character", e.value.response)
+
+        # untag_policy: non-existent policy
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.untag_policy(
+                PolicyArn=non_existent_arn,
+                TagKeys=["somevalue"],
+            )
+        snapshot.match("err-untag-nonexistent-policy", e.value.response)
