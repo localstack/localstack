@@ -1,0 +1,74 @@
+{
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_errors": {
+    "last_validated_date": "2026-02-10T12:42:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.41,
+      "teardown": 0.49,
+      "total": 0.9
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[/]": {
+    "last_validated_date": "2026-02-10T12:42:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.93,
+      "teardown": 0.0,
+      "total": 0.93
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[/test/path/]": {
+    "last_validated_date": "2026-02-10T12:42:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.75,
+      "call": 1.5,
+      "teardown": 0.0,
+      "total": 2.25
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[None]": {
+    "last_validated_date": "2026-02-10T12:42:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.93,
+      "teardown": 0.0,
+      "total": 0.93
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_errors": {
+    "last_validated_date": "2026-02-10T12:43:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.27,
+      "teardown": 0.41,
+      "total": 2.68
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_lifecycle": {
+    "last_validated_date": "2026-02-10T12:42:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.36,
+      "teardown": 0.67,
+      "total": 2.03
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_limit": {
+    "last_validated_date": "2026-02-10T12:43:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.62,
+      "teardown": 1.1,
+      "total": 2.72
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_set_default": {
+    "last_validated_date": "2026-02-10T12:43:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.22,
+      "teardown": 0.89,
+      "total": 2.11
+    }
+  }
+}

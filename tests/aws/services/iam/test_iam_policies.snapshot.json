@@ -1,0 +1,568 @@
+{
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[/test/path/]": {
+    "recorded-date": "10-02-2026, 12:42:29",
+    "recorded-content": {
+      "create-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/test/path/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/test/path/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/test/path/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/test/path/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "filtered-policy-list": [
+        {
+          "PolicyName": "<policy-name:1>",
+          "PolicyId": "<policy-id:1>",
+          "Arn": "arn:<partition>:iam::111111111111:policy/test/path/<policy-name:1>",
+          "Path": "/test/path/",
+          "DefaultVersionId": "v1",
+          "AttachmentCount": 0,
+          "PermissionsBoundaryUsageCount": 0,
+          "IsAttachable": true,
+          "CreateDate": "<datetime>",
+          "UpdateDate": "<datetime>"
+        }
+      ],
+      "delete-policy-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[/]": {
+    "recorded-date": "10-02-2026, 12:42:30",
+    "recorded-content": {
+      "create-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "filtered-policy-list": [
+        {
+          "PolicyName": "<policy-name:1>",
+          "PolicyId": "<policy-id:1>",
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "Path": "/",
+          "DefaultVersionId": "v1",
+          "AttachmentCount": 0,
+          "PermissionsBoundaryUsageCount": 0,
+          "IsAttachable": true,
+          "CreateDate": "<datetime>",
+          "UpdateDate": "<datetime>"
+        }
+      ],
+      "delete-policy-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[None]": {
+    "recorded-date": "10-02-2026, 12:42:31",
+    "recorded-content": {
+      "create-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "filtered-policy-list": [
+        {
+          "PolicyName": "<policy-name:1>",
+          "PolicyId": "<policy-id:1>",
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "Path": "/",
+          "DefaultVersionId": "v1",
+          "AttachmentCount": 0,
+          "PermissionsBoundaryUsageCount": 0,
+          "IsAttachable": true,
+          "CreateDate": "<datetime>",
+          "UpdateDate": "<datetime>"
+        }
+      ],
+      "delete-policy-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_errors": {
+    "recorded-date": "10-02-2026, 12:42:31",
+    "recorded-content": {
+      "create-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy-already-exists": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "A policy called <policy-name:1> already exists. Duplicate names are not allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_lifecycle": {
+    "recorded-date": "10-02-2026, 12:42:33",
+    "recorded-content": {
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-version-v2": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "IsDefaultVersion": true,
+          "VersionId": "v2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-version-v2": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "Document": {
+            "Statement": [
+              {
+                "Action": [
+                  "s3:ListBucket"
+                ],
+                "Effect": "Allow",
+                "Resource": "*",
+                "Sid": "Statement1"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "IsDefaultVersion": true,
+          "VersionId": "v2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-version-v3": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "IsDefaultVersion": false,
+          "VersionId": "v3"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-version-v3": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "Document": {
+            "Statement": [
+              {
+                "Action": [
+                  "ec2:DescribeInstances"
+                ],
+                "Effect": "Allow",
+                "Resource": "*",
+                "Sid": "Statement1"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "IsDefaultVersion": false,
+          "VersionId": "v3"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-versions": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v3"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_set_default": {
+    "recorded-date": "10-02-2026, 12:42:35",
+    "recorded-content": {
+      "list-after-create": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v3"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v2"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-default-v1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-set-default": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v3"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v2"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_limit": {
+    "recorded-date": "10-02-2026, 12:42:38",
+    "recorded-content": {
+      "err-version-limit-exceeded": {
+        "Error": {
+          "Code": "LimitExceeded",
+          "Message": "A managed policy can have up to 5 versions. Before you create a new version, you must delete an existing version.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "list-versions-at-limit": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v5"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v4"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v3"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v2"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-version-after-delete": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "IsDefaultVersion": false,
+          "VersionId": "v6"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_errors": {
+    "recorded-date": "10-02-2026, 12:42:41",
+    "recorded-content": {
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "err-get-version-nonexistent-policy": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/TestNonExistingPolicy version v1 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "err-get-nonexistent-version": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1> version v9 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "err-delete-default-version": {
+        "Error": {
+          "Code": "DeleteConflict",
+          "Message": "Cannot delete the default version of a policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "err-delete-nonexistent-version": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1> version v9 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "err-set-default-nonexistent-policy": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/TestNonExistingPolicy version v1 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "err-set-default-invalid-version-format": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'versionId' failed to satisfy constraint: Member must satisfy regular expression pattern: v[1-9][0-9]*(\\.[A-Za-z0-9-]*)?",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-set-default-nonexistent-version": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1> version v4 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list-after-delete": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
