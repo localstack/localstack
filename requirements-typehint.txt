@@ -707,6 +707,8 @@ urllib3==2.6.3
     #   responses
 virtualenv==20.36.1
     # via pre-commit
+watchdog==6.0.0
+    # via localstack-core
 websocket-client==1.9.0
     # via localstack-core
 werkzeug==3.1.5
