@@ -215,6 +215,12 @@ class ExportViewType(StrEnum):
     NEW_AND_OLD_IMAGES = "NEW_AND_OLD_IMAGES"
 
 
+class GlobalTableSettingsReplicationMode(StrEnum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+    ENABLED_WITH_OVERRIDES = "ENABLED_WITH_OVERRIDES"
+
+
 class GlobalTableStatus(StrEnum):
     CREATING = "CREATING"
     ACTIVE = "ACTIVE"
@@ -1094,6 +1100,7 @@ class ReplicaDescription(TypedDict, total=False):
     GlobalSecondaryIndexes: ReplicaGlobalSecondaryIndexDescriptionList | None
     ReplicaInaccessibleDateTime: Date | None
     ReplicaTableClassSummary: TableClassSummary | None
+    GlobalTableSettingsReplicationMode: GlobalTableSettingsReplicationMode | None
 
 
 ReplicaDescriptionList = list[ReplicaDescription]
@@ -1173,9 +1180,9 @@ LocalSecondaryIndexList = list[LocalSecondaryIndex]
 
 
 class CreateTableInput(ServiceRequest):
-    AttributeDefinitions: AttributeDefinitions
+    AttributeDefinitions: AttributeDefinitions | None
     TableName: TableArn
-    KeySchema: KeySchema
+    KeySchema: KeySchema | None
     LocalSecondaryIndexes: LocalSecondaryIndexList | None
     GlobalSecondaryIndexes: GlobalSecondaryIndexList | None
     BillingMode: BillingMode | None
@@ -1188,6 +1195,8 @@ class CreateTableInput(ServiceRequest):
     WarmThroughput: WarmThroughput | None
     ResourcePolicy: ResourcePolicy | None
     OnDemandThroughput: OnDemandThroughput | None
+    GlobalTableSourceArn: TableArn | None
+    GlobalTableSettingsReplicationMode: GlobalTableSettingsReplicationMode | None
 
 
 class RestoreSummary(TypedDict, total=False):
@@ -1263,6 +1272,7 @@ class TableDescription(TypedDict, total=False):
     GlobalTableVersion: String | None
     Replicas: ReplicaDescriptionList | None
     GlobalTableWitnesses: GlobalTableWitnessDescriptionList | None
+    GlobalTableSettingsReplicationMode: GlobalTableSettingsReplicationMode | None
     RestoreSummary: RestoreSummary | None
     SSEDescription: SSEDescription | None
     ArchivalSummary: ArchivalSummary | None
@@ -2393,9 +2403,9 @@ class DynamodbApi:
     def create_table(
         self,
         context: RequestContext,
-        attribute_definitions: AttributeDefinitions,
         table_name: TableArn,
-        key_schema: KeySchema,
+        attribute_definitions: AttributeDefinitions | None = None,
+        key_schema: KeySchema | None = None,
         local_secondary_indexes: LocalSecondaryIndexList | None = None,
         global_secondary_indexes: GlobalSecondaryIndexList | None = None,
         billing_mode: BillingMode | None = None,
@@ -2408,6 +2418,8 @@ class DynamodbApi:
         warm_throughput: WarmThroughput | None = None,
         resource_policy: ResourcePolicy | None = None,
         on_demand_throughput: OnDemandThroughput | None = None,
+        global_table_source_arn: TableArn | None = None,
+        global_table_settings_replication_mode: GlobalTableSettingsReplicationMode | None = None,
         **kwargs,
     ) -> CreateTableOutput:
         raise NotImplementedError
