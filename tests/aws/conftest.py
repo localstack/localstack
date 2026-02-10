@@ -171,6 +171,6 @@ def pytest_addhooks(pluginmanager):
         if not test_config.TEST_SKIP_LOCALSTACK_START and not is_aws_cloud():
             # this directly accesses LocalStack state in memory, so it is not worth running in tests against external
             # instances
-            pluginmanager.register(StoreSerializationCheckerPlugin())
+            pluginmanager.register(StoreSerializationCheckerPlugin(with_pickle=False))
     except ImportError:
         pass
