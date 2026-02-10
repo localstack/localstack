@@ -259,7 +259,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     raise InvalidParameterException(
                         "Invalid parameter: Attributes Reason: Topic already exists with different attributes"
                     )
-            tag_resource_success = _check_matching_tags(topic_arn, tags, store)
+            tag_resource_success = self._check_matching_tags(topic_arn, tags, store)
             if not tag_resource_success:
                 raise InvalidParameterException(
                     "Invalid parameter: Tags Reason: Topic already exists with different tags"
