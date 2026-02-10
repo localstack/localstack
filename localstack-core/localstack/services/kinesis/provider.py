@@ -26,6 +26,7 @@ from localstack.aws.api.kinesis import (
     ShardId,
     StartingPosition,
     StreamARN,
+    StreamId,
     StreamName,
     SubscribeToShardEvent,
     SubscribeToShardEventStream,
@@ -105,6 +106,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         context: RequestContext,
         resource_arn: ResourceARN,
         policy: Policy,
+        stream_id: StreamId | None = None,
         **kwargs,
     ) -> None:
         if not is_valid_kinesis_arn(resource_arn):
@@ -125,6 +127,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         resource_arn: ResourceARN,
+        stream_id: StreamId | None = None,
         **kwargs,
     ) -> GetResourcePolicyOutput:
         if not is_valid_kinesis_arn(resource_arn):
@@ -146,6 +149,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         resource_arn: ResourceARN,
+        stream_id: StreamId | None = None,
         **kwargs,
     ) -> None:
         if not is_valid_kinesis_arn(resource_arn):
@@ -164,6 +168,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         consumer_arn: ConsumerARN,
         shard_id: ShardId,
         starting_position: StartingPosition,
+        stream_id: StreamId | None = None,
         **kwargs,
     ) -> SubscribeToShardOutput:
         kinesis = connect_to(
@@ -234,6 +239,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         explicit_hash_key: HashKey = None,
         sequence_number_for_ordering: SequenceNumber = None,
         stream_arn: StreamARN = None,
+        stream_id: StreamId | None = None,
         **kwargs,
     ) -> PutRecordOutput:
         # TODO: Ensure use of `stream_arn` works. Currently kinesis-mock only works with ctx request account ID and region
@@ -251,6 +257,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         records: PutRecordsRequestEntryList,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        stream_id: StreamId | None = None,
         **kwargs,
     ) -> PutRecordsOutput:
         # TODO: Ensure use of `stream_arn` works. Currently kinesis-mock only works with ctx request account ID and region
