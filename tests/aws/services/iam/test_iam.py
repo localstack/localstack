@@ -31,8 +31,6 @@ GET_USER_POLICY_DOC = """{
 }"""
 
 
-class TestUsers:
-    pass
 
 
 class TestIAMExtensions:

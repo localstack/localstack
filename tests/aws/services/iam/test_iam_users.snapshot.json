@@ -1,0 +1,1131 @@
+{
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_user_lifecycle[None]": {
+    "recorded-date": "10-02-2026, 17:06:00",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-users": {
+        "IsTruncated": false,
+        "Users": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+            "CreateDate": "<datetime>",
+            "Path": "/",
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-user": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deleted-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name <user-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_user_lifecycle[/]": {
+    "recorded-date": "10-02-2026, 17:06:01",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-users": {
+        "IsTruncated": false,
+        "Users": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+            "CreateDate": "<datetime>",
+            "Path": "/",
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-user": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deleted-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name <user-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_user_lifecycle[/test-lifecycle-path/]": {
+    "recorded-date": "10-02-2026, 17:06:02",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/test-lifecycle-path/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/test-lifecycle-path/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/test-lifecycle-path/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/test-lifecycle-path/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-users": {
+        "IsTruncated": false,
+        "Users": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/test-lifecycle-path/<user-name:1>",
+            "CreateDate": "<datetime>",
+            "Path": "/test-lifecycle-path/",
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-filtered-users": {
+        "IsTruncated": false,
+        "Users": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/test-lifecycle-path/<user-name:1>",
+            "CreateDate": "<datetime>",
+            "Path": "/test-lifecycle-path/",
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-filtered-users-partial-path": {
+        "IsTruncated": false,
+        "Users": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/test-lifecycle-path/<user-name:1>",
+            "CreateDate": "<datetime>",
+            "Path": "/test-lifecycle-path/",
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-user": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deleted-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name <user-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_user_update": {
+    "recorded-date": "10-02-2026, 17:06:03",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-user": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-updated-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<new-path>/<user-name:2>",
+          "CreateDate": "<datetime>",
+          "Path": "/<new-path>/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-old-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name <user-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_user_errors": {
+    "recorded-date": "10-02-2026, 17:06:05",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-duplicate-user-error": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "User with name <user-name:1> already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "get-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_delete_user_with_attached_policy": {
+    "recorded-date": "10-02-2026, 17:06:06",
+    "recorded-content": {
+      "delete-user-with-attached-policy-error": {
+        "Error": {
+          "Code": "DeleteConflict",
+          "Message": "Cannot delete entity, must detach all policies first.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete-user-after-detach": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deleted-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name user-ede2a6d3 cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_delete_user_with_inline_policy": {
+    "recorded-date": "10-02-2026, 17:06:07",
+    "recorded-content": {
+      "delete-user-with-inline-policy-error": {
+        "Error": {
+          "Code": "DeleteConflict",
+          "Message": "Cannot delete entity, must delete policies first.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete-user-after-policy-delete": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deleted-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name user-99f23a85 cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLoginProfile::test_login_profile_lifecycle": {
+    "recorded-date": "10-02-2026, 17:06:10",
+    "recorded-content": {
+      "create-login-profile": {
+        "LoginProfile": {
+          "CreateDate": "<datetime>",
+          "PasswordResetRequired": false,
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-login-profile": {
+        "LoginProfile": {
+          "CreateDate": "<datetime>",
+          "PasswordResetRequired": false,
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-updated-login-profile": {
+        "LoginProfile": {
+          "CreateDate": "<datetime>",
+          "PasswordResetRequired": true,
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-login-profile": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deleted-login-profile-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Login Profile for User <user-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLoginProfile::test_login_profile_errors": {
+    "recorded-date": "10-02-2026, 17:06:11",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-login-profile-unknown-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create-duplicate-login-profile-error": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "Login Profile for user <user-name:1> already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete-nonexistent-login-profile-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Login Profile for User <user-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-login-profile-unknown-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_lifecycle": {
+    "recorded-date": "10-02-2026, 17:06:13",
+    "recorded-content": {
+      "list-access-keys-empty": {
+        "AccessKeyMetadata": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-access-key": {
+        "AccessKey": {
+          "AccessKeyId": "<access-key-id:1>",
+          "CreateDate": "<datetime>",
+          "SecretAccessKey": "<secret-access-key:1>",
+          "Status": "Active",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-access-keys": {
+        "AccessKeyMetadata": [
+          {
+            "AccessKeyId": "<access-key-id:1>",
+            "CreateDate": "<datetime>",
+            "Status": "Active",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-access-key": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_update_status": {
+    "recorded-date": "10-02-2026, 17:06:15",
+    "recorded-content": {
+      "list-access-keys-inactive": {
+        "AccessKeyMetadata": [
+          {
+            "AccessKeyId": "<access-key-id:1>",
+            "CreateDate": "<datetime>",
+            "Status": "Inactive",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-access-keys-active": {
+        "AccessKeyMetadata": [
+          {
+            "AccessKeyId": "<access-key-id:1>",
+            "CreateDate": "<datetime>",
+            "Status": "Active",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_limit": {
+    "recorded-date": "10-02-2026, 17:06:17",
+    "recorded-content": {
+      "create-third-access-key-error": {
+        "Error": {
+          "Code": "LimitExceeded",
+          "Message": "Cannot exceed quota for AccessKeysPerUser: 2",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_last_used": {
+    "recorded-date": "10-02-2026, 17:06:18",
+    "recorded-content": {
+      "get-access-key-last-used-unused": {
+        "AccessKeyLastUsed": {
+          "Region": "N/A",
+          "ServiceName": "N/A"
+        },
+        "UserName": "<user-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_errors": {
+    "recorded-date": "10-02-2026, 17:06:20",
+    "recorded-content": {
+      "create-access-key-unknown-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-nonexistent-access-key-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Access Key with id AKIAIOSFODNN7EXAMPLE cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-last-used-nonexistent-key-error": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "User: arn:<partition>:sts::111111111111:assumed-role/AWSReservedSSO_AWSAdministratorAccess_2af0fc60fb59da5a/daniel.fangl@localstack.cloud is not authorized to perform iam:GetAccessKeyLastUsed on resource: access key AKIAIOSFODNN7EXAMPLE",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserPolicies::test_user_inline_policy_lifecycle": {
+    "recorded-date": "10-02-2026, 17:06:22",
+    "recorded-content": {
+      "list-user-policies-empty": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-user-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user-policy": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:ListBucket",
+              "Effect": "Allow",
+              "Resource": "arn:<partition>:s3:::example_bucket"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "<policy-name:1>",
+        "UserName": "<user-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-user-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [
+          "<policy-name:1>"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-user-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserPolicies::test_user_inline_policy_encoding": {
+    "recorded-date": "10-02-2026, 15:29:18",
+    "recorded-content": {}
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserPolicies::test_user_managed_policy_lifecycle": {
+    "recorded-date": "10-02-2026, 17:06:24",
+    "recorded-content": {
+      "list-attached-user-policies-empty": {
+        "AttachedPolicies": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attach-user-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-attached-user-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+            "PolicyName": "<policy-name:1>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "detach-user-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserPolicies::test_user_managed_policy_errors": {
+    "recorded-date": "10-02-2026, 17:06:26",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attach-nonexistent-policy-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/nonexistent does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "detach-unattached-policy-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1> was not found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserTags::test_user_tag_lifecycle": {
+    "recorded-date": "10-02-2026, 17:06:27",
+    "recorded-content": {
+      "create-user-with-tags": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "Tags": [
+            {
+              "Key": "Environment",
+              "Value": "Test"
+            },
+            {
+              "Key": "Team",
+              "Value": "Platform"
+            }
+          ],
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-user-tags": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Test"
+          },
+          {
+            "Key": "Team",
+            "Value": "Platform"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user-with-tags": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "Tags": [
+            {
+              "Key": "Environment",
+              "Value": "Test"
+            },
+            {
+              "Key": "Team",
+              "Value": "Platform"
+            }
+          ],
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserTags::test_user_tag_operations": {
+    "recorded-date": "10-02-2026, 17:06:28",
+    "recorded-content": {
+      "tag-user": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-user-tags-after-tag": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "key-1",
+            "Value": "value-1"
+          },
+          {
+            "Key": "key-2",
+            "Value": "value-2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag-user": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-user-tags-after-untag": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "key-1",
+            "Value": "value-1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserTags::test_user_tag_errors": {
+    "recorded-date": "10-02-2026, 17:06:29",
+    "recorded-content": {
+      "tag-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "untag-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list-tags-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserGroups::test_user_group_membership": {
+    "recorded-date": "10-02-2026, 17:06:33",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-group-1": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-group-2": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:2>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:2>",
+          "GroupName": "<group-name:2>",
+          "Path": "/"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-groups-for-user-empty": {
+        "Groups": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "add-user-to-group": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-groups-for-user": {
+        "Groups": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+            "CreateDate": "<datetime>",
+            "GroupId": "<group-id:1>",
+            "GroupName": "<group-name:1>",
+            "Path": "/"
+          },
+          {
+            "Arn": "arn:<partition>:iam::111111111111:group/<group-name:2>",
+            "CreateDate": "<datetime>",
+            "GroupId": "<group-id:2>",
+            "GroupName": "<group-name:2>",
+            "Path": "/"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-group-with-user": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "IsTruncated": false,
+        "Users": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+            "CreateDate": "<datetime>",
+            "Path": "/",
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-user-from-group": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-nonmember-user-from-group": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserGroups::test_user_group_errors": {
+    "recorded-date": "10-02-2026, 17:06:35",
+    "recorded-content": {
+      "add-nonexistent-user-to-group-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "add-user-to-nonexistent-group-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The group with name nonexistent-group cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "remove-user-from-nonexistent-group-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The group with name nonexistent-group cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  }
+}

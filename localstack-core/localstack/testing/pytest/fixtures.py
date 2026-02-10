@@ -1737,6 +1737,69 @@ def create_role(aws_client):
 
 
 @pytest.fixture
+def create_group(aws_client):
+    group_names = []
+
+    def _create_group(**kwargs):
+        if "GroupName" not in kwargs:
+            kwargs["GroupName"] = f"group-{short_uid()}"
+        response = aws_client.iam.create_group(**kwargs)
+        group_names.append(response["Group"]["GroupName"])
+        return response
+
+    yield _create_group
+
+    for group_name in group_names:
+        # remove attached users
+        group_users = [
+            group_user["UserName"]
+            for group_user in aws_client.iam.get_group(GroupName=group_name)["Users"]
+        ]
+        for group_user in group_users:
+            try:
+                aws_client.iam.remove_user_from_group(GroupName=group_name, UserName=group_user)
+            except Exception:
+                LOG.debug(
+                    "Could not remove group user '%s' from '%s' during cleanup",
+                    group_user,
+                    group_name,
+                )
+
+        # remove inline policies
+        inline_policies = aws_client.iam.list_group_policies(GroupName=group_name)["PolicyNames"]
+        for inline_policy in inline_policies:
+            try:
+                aws_client.iam.delete_group_policy(GroupName=group_name, PolicyName=inline_policy)
+            except Exception:
+                LOG.debug(
+                    "Could not delete group policy '%s' from '%s' during cleanup",
+                    inline_policy,
+                    group_name,
+                )
+
+        # remove attached policies
+        attached_policies = aws_client.iam.list_attached_group_policies(GroupName=group_name)[
+            "AttachedPolicies"
+        ]
+        for attached_policy in attached_policies:
+            try:
+                aws_client.iam.detach_group_policy(
+                    GroupName=group_name, PolicyArn=attached_policy["PolicyArn"]
+                )
+            except Exception:
+                LOG.debug(
+                    "Error detaching policy '%s' from group '%s'",
+                    attached_policy["PolicyArn"],
+                    group_name,
+                )
+        # remove group
+        try:
+            aws_client.iam.delete_group(GroupName=group_name)
+        except Exception:
+            LOG.debug("Error deleting group '%s' during test cleanup", group_name)
+
+
+@pytest.fixture
 def create_parameter(aws_client):
     params = []
 
