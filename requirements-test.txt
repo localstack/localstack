@@ -41,6 +41,7 @@ aws-sam-translator==1.107.0
     # via
     #   cfn-lint
     #   localstack-core
+    #   moto-ext
 aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.44.30
@@ -237,7 +238,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.20.post44
+moto-ext==5.1.22
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -430,7 +431,6 @@ typing-extensions==4.15.0
     #   cfn-lint
     #   grpcio
     #   jsii
-    #   localstack-core
     #   localstack-twisted
     #   openapi-core
     #   pydantic
