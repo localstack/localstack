@@ -1,7 +1,7 @@
 #
 # base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.13.11-slim-trixie@sha256:1a50c00beb4b39ac0a228faa62d3b121ad76494d5b43f74a794f6d101333855c AS base
+FROM python:3.13.12-slim-trixie@sha256:3de9a8d7aedbb7984dc18f2dff178a7850f16c1ae7c34ba9d7ecc23d0755e35f AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
