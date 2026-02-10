@@ -563,7 +563,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             owner=owner,
             acl=acl,
             object_ownership=request.get("ObjectOwnership"),
-            object_lock_enabled_for_bucket=request.get("ObjectLockEnabledForBucket"),
+            object_lock_enabled_for_bucket=request.get("ObjectLockEnabledForBucket") or False,
             location_constraint=location_constraint,
         )
 
