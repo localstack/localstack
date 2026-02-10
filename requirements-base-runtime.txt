@@ -187,7 +187,6 @@ six==1.17.0
     #   rfc3339-validator
 typing-extensions==4.15.0
     # via
-    #   localstack-core (pyproject.toml)
     #   localstack-twisted
     #   openapi-core
     #   pydantic

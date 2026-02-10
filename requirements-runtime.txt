@@ -63,7 +63,7 @@ certifi==2026.1.4
     #   requests
 cffi==2.0.0
     # via cryptography
-cfn-lint==1.43.4
+cfn-lint==1.44.0
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
@@ -107,7 +107,7 @@ events==0.5
     # via opensearch-py
 graphql-core==3.2.7
     # via moto-ext
-grpcio==1.76.0
+grpcio==1.78.0
     # via opensearch-protobufs
 h11==0.16.0
     # via
