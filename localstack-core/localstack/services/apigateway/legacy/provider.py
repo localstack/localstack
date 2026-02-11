@@ -1174,6 +1174,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             self._patch_stage_response(stage)
             if not stage.get("description"):
                 stage.pop("description", None)
+        if deployment_id:
+            response["item"] = [
+                s for s in response["item"] if s.get("deploymentId") == deployment_id
+            ]
         return Stages(**response)
 
     @handler("UpdateStage")

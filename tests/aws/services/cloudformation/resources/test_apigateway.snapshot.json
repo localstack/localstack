@@ -793,7 +793,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::TestServerlessApigwLambda::test_serverless_like_deployment_stage_survives_update": {
-    "recorded-date": "10-02-2026, 16:36:32",
+    "recorded-date": "11-02-2026, 20:08:58",
     "recorded-content": {
       "stages-after-create": {
         "item": [

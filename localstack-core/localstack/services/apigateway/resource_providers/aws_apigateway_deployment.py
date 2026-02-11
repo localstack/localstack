@@ -172,12 +172,7 @@ class ApiGatewayDeploymentProvider(ResourceProvider[ApiGatewayDeploymentProperti
             )
             if stages := get_stages["item"]:
                 for stage in stages:
-                    # Only delete stages that actually belong to this deployment.
-                    # get_stages does not filter by deploymentId, so we must check here
-                    # to avoid deleting stages that were already reassigned to a new deployment
-                    # (e.g. during serverless framework redeploys). See #13667.
-                    if stage.get("deploymentId") == model["DeploymentId"]:
-                        api.delete_stage(restApiId=model["RestApiId"], stageName=stage["stageName"])
+                    api.delete_stage(restApiId=model["RestApiId"], stageName=stage["stageName"])
 
             api.delete_deployment(restApiId=model["RestApiId"], deploymentId=model["DeploymentId"])
         except api.exceptions.NotFoundException:

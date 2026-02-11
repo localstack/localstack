@@ -1,11 +1,11 @@
 {
   "tests/aws/services/cloudformation/resources/test_apigateway.py::TestServerlessApigwLambda::test_serverless_like_deployment_stage_survives_update": {
-    "last_validated_date": "2026-02-10T16:36:33+00:00",
+    "last_validated_date": "2026-02-11T20:09:05+00:00",
     "durations_in_seconds": {
-      "setup": 0.88,
-      "call": 26.34,
-      "teardown": 0.56,
-      "total": 27.78
+      "setup": 0.46,
+      "call": 28.84,
+      "teardown": 7.06,
+      "total": 36.36
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::TestServerlessApigwLambda::test_serverless_like_deployment_with_update": {

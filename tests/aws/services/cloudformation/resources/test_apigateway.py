@@ -731,11 +731,8 @@ class TestServerlessApigwLambda:
         assert get_fn_2["Configuration"]["Handler"] == "index.handler2"
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..createdDate", "$..lastUpdatedDate", "$..cacheClusterStatus"]
-    )
     def test_serverless_like_deployment_stage_survives_update(
-        self, aws_client, cleanups, snapshot
+        self, deploy_cfn_template, aws_client, snapshot
     ):
         """
         Regression test for https://github.com/localstack/localstack/issues/13667
@@ -755,111 +752,16 @@ class TestServerlessApigwLambda:
             ]
         )
 
-        # Template with MOCK integrations: GET + OPTIONS (CORS) + Deployment
-        # The deployment logical ID changes between deploys, mimicking Serverless Framework behavior
-        def _make_template(deployment_logical_id: str, response_msg: str) -> str:
-            return json.dumps(
-                {
-                    "AWSTemplateFormatVersion": "2010-09-09",
-                    "Resources": {
-                        "Api": {
-                            "Type": "AWS::ApiGateway::RestApi",
-                            "Properties": {"Name": "cors-test-api"},
-                        },
-                        "MethodGet": {
-                            "Type": "AWS::ApiGateway::Method",
-                            "Properties": {
-                                "RestApiId": {"Ref": "Api"},
-                                "ResourceId": {"Fn::GetAtt": ["Api", "RootResourceId"]},
-                                "HttpMethod": "GET",
-                                "AuthorizationType": "NONE",
-                                "Integration": {
-                                    "Type": "MOCK",
-                                    "RequestTemplates": {
-                                        "application/json": '{"statusCode":200}'
-                                    },
-                                    "IntegrationResponses": [
-                                        {
-                                            "StatusCode": "200",
-                                            "ResponseTemplates": {
-                                                "application/json": json.dumps(
-                                                    {"msg": response_msg}
-                                                )
-                                            },
-                                        }
-                                    ],
-                                },
-                                "MethodResponses": [{"StatusCode": "200"}],
-                            },
-                        },
-                        "MethodOptions": {
-                            "Type": "AWS::ApiGateway::Method",
-                            "Properties": {
-                                "RestApiId": {"Ref": "Api"},
-                                "ResourceId": {"Fn::GetAtt": ["Api", "RootResourceId"]},
-                                "HttpMethod": "OPTIONS",
-                                "AuthorizationType": "NONE",
-                                "Integration": {
-                                    "Type": "MOCK",
-                                    "RequestTemplates": {
-                                        "application/json": '{"statusCode":200}'
-                                    },
-                                    "IntegrationResponses": [
-                                        {
-                                            "StatusCode": "200",
-                                            "ResponseParameters": {
-                                                "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
-                                                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
-                                                "method.response.header.Access-Control-Allow-Origin": "'*'",
-                                            },
-                                            "ResponseTemplates": {
-                                                "application/json": ""
-                                            },
-                                        }
-                                    ],
-                                },
-                                "MethodResponses": [
-                                    {
-                                        "StatusCode": "200",
-                                        "ResponseParameters": {
-                                            "method.response.header.Access-Control-Allow-Headers": False,
-                                            "method.response.header.Access-Control-Allow-Methods": False,
-                                            "method.response.header.Access-Control-Allow-Origin": False,
-                                        },
-                                    }
-                                ],
-                            },
-                        },
-                        deployment_logical_id: {
-                            "Type": "AWS::ApiGateway::Deployment",
-                            "DependsOn": ["MethodGet", "MethodOptions"],
-                            "Properties": {
-                                "RestApiId": {"Ref": "Api"},
-                                "StageName": "local",
-                            },
-                        },
-                    },
-                    "Outputs": {"ApiId": {"Value": {"Ref": "Api"}}},
-                }
-            )
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/apigateway-mock-cors-deployment.json"
+        )
 
         # 1. Create stack with first deployment logical ID
-        template1 = _make_template("Deploy1000000001", "v1")
-        stack_name = f"slsstack-{short_uid()}"
-        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
-        stack = aws_client.cloudformation.create_stack(
-            StackName=stack_name,
-            TemplateBody=template1,
+        stack = deploy_cfn_template(
+            template_path=template_path,
+            template_mapping={"deployment_logical_id": "Deploy1000000001", "response_msg": "v1"},
         )
-        aws_client.cloudformation.get_waiter("stack_create_complete").wait(
-            StackName=stack["StackId"]
-        )
-
-        # Get the REST API ID
-        outputs = aws_client.cloudformation.describe_stacks(StackName=stack["StackId"])[
-            "Stacks"
-        ][0]["Outputs"]
-        api_id = next(o["OutputValue"] for o in outputs if o["OutputKey"] == "ApiId")
+        api_id = stack.outputs["ApiId"]
 
         # Verify stage and deployment exist after initial creation
         stages_after_create = aws_client.apigateway.get_stages(restApiId=api_id)
@@ -869,13 +771,11 @@ class TestServerlessApigwLambda:
 
         # 2. Update stack with a NEW deployment logical ID (simulates Serverless Framework redeploy)
         # CF will Add Deploy2000000002, then Remove Deploy1000000001
-        template2 = _make_template("Deploy2000000002", "v2")
-        stack = aws_client.cloudformation.update_stack(
-            StackName=stack_name,
-            TemplateBody=template2,
-        )
-        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
-            StackName=stack["StackId"]
+        deploy_cfn_template(
+            is_update=True,
+            stack_name=stack.stack_name,
+            template_path=template_path,
+            template_mapping={"deployment_logical_id": "Deploy2000000002", "response_msg": "v2"},
         )
 
         # KEY ASSERTIONS: stage must survive the deployment replacement
