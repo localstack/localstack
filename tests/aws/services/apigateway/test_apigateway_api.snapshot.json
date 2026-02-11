@@ -5193,5 +5193,74 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayStage::test_get_stages_filters_by_deployment_id": {
+    "recorded-date": "11-02-2026, 21:15:28",
+    "recorded-content": {
+      "all-stages": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "stage1",
+            "tracingEnabled": false
+          },
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:2>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "stage2",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stages-deploy1": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "stage1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stages-deploy2": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:2>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "stage2",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
