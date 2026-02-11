@@ -165,6 +165,30 @@ class TestBaseEvaluateJsonata:
         )
 
     @markers.aws.validated
+    def test_merge_with_dynamic_args(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        """Regression test for #13579: $merge with dynamic variable references in array literals."""
+        template = EJT.load_sfn_template(EJT.BASE_PASS)
+        template["States"]["Start"]["Output"] = (
+            "{% $merge([$states.input.part1, $states.input.part2]) %}"
+        )
+        definition = json.dumps(template)
+        exec_input = json.dumps({"part1": {"hello": "world"}, "part2": {"foo": "bar"}})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
+            create_state_machine=create_state_machine,
+            sfn_snapshot=sfn_snapshot,
+            definition=definition,
+            execution_input=exec_input,
+        )
+
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "field,input_value",
         [

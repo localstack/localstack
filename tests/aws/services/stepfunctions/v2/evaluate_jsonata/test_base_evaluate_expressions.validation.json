@@ -142,5 +142,14 @@
       "teardown": 2.73,
       "total": 19.85
     }
+  },
+  "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_merge_with_dynamic_args": {
+    "last_validated_date": "2026-02-11T07:16:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.59,
+      "call": 35.92,
+      "teardown": 2.58,
+      "total": 39.09
+    }
   }
 }
