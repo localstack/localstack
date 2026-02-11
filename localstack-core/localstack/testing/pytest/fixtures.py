@@ -1800,6 +1800,22 @@ def create_group(aws_client):
 
 
 @pytest.fixture
+def client_factory_for_user(aws_client_factory, aws_client, region_name):
+    default_region = region_name
+
+    def _create_factory(user_name, region_name: str | None = None):
+        keys = aws_client.iam.create_access_key(UserName=user_name)["AccessKey"]
+        wait_for_user(keys, region_name or default_region)
+        return aws_client_factory(
+            aws_access_key_id=keys["AccessKeyId"],
+            aws_secret_access_key=keys["SecretAccessKey"],
+            region_name=region_name,
+        )
+
+    return _create_factory
+
+
+@pytest.fixture
 def create_parameter(aws_client):
     params = []
 

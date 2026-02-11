@@ -11,8 +11,10 @@ import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
+from localstack.testing.aws.util import is_aws_cloud, wait_for_user
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
+from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
@@ -22,8 +24,8 @@ SAMPLE_POLICY_DOCUMENT = json.dumps(
         "Statement": [
             {
                 "Effect": "Allow",
-                "Action": "s3:ListBucket",
-                "Resource": "arn:aws:s3:::example_bucket",
+                "Action": "iam:ListUsers",
+                "Resource": "*",
             }
         ],
     }
@@ -357,12 +359,19 @@ class TestUserAccessKeys:
         snapshot.match("create-third-access-key-error", exc.value.response)
 
     @markers.aws.validated
-    def test_access_key_last_used(self, create_user, aws_client, snapshot):
+    def test_access_key_last_used(
+        self, create_user, aws_client, snapshot, aws_client_factory, region_name
+    ):
         """Test get_access_key_last_used for unused key."""
         snapshot.add_transformer(snapshot.transform.key_value("AccessKeyId"))
         snapshot.add_transformer(snapshot.transform.key_value("SecretAccessKey"))
         user_name = f"user-{short_uid()}"
         create_user(UserName=user_name)
+        aws_client.iam.put_user_policy(
+            UserName=user_name,
+            PolicyName=f"test-policy-{short_uid()}",
+            PolicyDocument=SAMPLE_POLICY_DOCUMENT,
+        )
 
         # Create access key
         create_response = aws_client.iam.create_access_key(UserName=user_name)
@@ -371,6 +380,25 @@ class TestUserAccessKeys:
         # Get last used for unused key
         last_used_response = aws_client.iam.get_access_key_last_used(AccessKeyId=access_key_id)
         snapshot.match("get-access-key-last-used-unused", last_used_response)
+
+        # wait for user calls sts get caller identity
+        wait_for_user(create_response["AccessKey"], region_name)
+        user_clients = aws_client_factory(
+            aws_access_key_id=create_response["AccessKey"]["AccessKeyId"],
+            aws_secret_access_key=create_response["AccessKey"]["SecretAccessKey"],
+        )
+        user_clients.iam.list_users()
+
+        def _get_last_used():
+            last_used_response = aws_client.iam.get_access_key_last_used(AccessKeyId=access_key_id)
+            assert last_used_response["AccessKeyLastUsed"].get("LastUsedDate")
+            return last_used_response
+
+        # this can take a long time for AWS
+        last_used_response = retry(
+            _get_last_used, sleep=10 if is_aws_cloud() else 1, retries=60 if is_aws_cloud() else 3
+        )
+        snapshot.match("get-access-key-last-used-used", last_used_response)
 
     @markers.aws.validated
     def test_access_key_errors(self, create_user, aws_client, snapshot):
@@ -396,7 +424,44 @@ class TestUserAccessKeys:
             aws_client.iam.get_access_key_last_used(AccessKeyId="AKIAIOSFODNN7EXAMPLE")
         snapshot.match("get-last-used-nonexistent-key-error", exc.value.response)
 
-    # TODO test access key deletion with user credentials (without username specified)
+        # Try to delete access key without username - without being that user
+        access_key_id = aws_client.iam.create_access_key(UserName=user_name)["AccessKey"][
+            "AccessKeyId"
+        ]
+        with pytest.raises(ClientError) as exc:
+            aws_client.iam.delete_access_key(AccessKeyId=access_key_id)
+        snapshot.match("delete-access-key-without-username-error", exc.value.response)
+
+    @markers.aws.validated
+    def test_access_key_deletion_without_username(
+        self, create_user, aws_client, snapshot, client_factory_for_user
+    ):
+        """Test delete_access_key without username specification (as that user)"""
+        user_name = f"user-{short_uid()}"
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
+        aws_client.iam.put_user_policy(
+            UserName=user_name,
+            PolicyName=f"test-policy-{short_uid()}",
+            PolicyDocument=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": "iam:DeleteAccessKey",
+                            "Resource": "*",
+                        }
+                    ],
+                }
+            ),
+        )
+
+        create_response = aws_client.iam.create_access_key(UserName=user_name)
+        access_key_id = create_response["AccessKey"]["AccessKeyId"]
+        user_clients = client_factory_for_user(user_name=user_name)
+        delete_access_key_response = user_clients.iam.delete_access_key(AccessKeyId=access_key_id)
+        snapshot.match("delete-access-key", delete_access_key_response)
 
 
 class TestUserPolicies:
@@ -535,6 +600,9 @@ class TestUserTags:
         """Test tag_user and untag_user operations."""
         user_name = f"user-{short_uid()}"
         create_user(UserName=user_name)
+
+        list_response = aws_client.iam.list_user_tags(UserName=user_name)
+        snapshot.match("list-user-tags-before-tag", list_response)
 
         # Tag user
         tags = [
