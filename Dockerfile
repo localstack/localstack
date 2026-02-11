@@ -131,7 +131,7 @@ ARG LOCALSTACK_BUILD_VERSION
 # add project files necessary to install all dependencies
 ADD Makefile pyproject.toml plux.ini ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
-ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
+ADD bin/localstack-supervisor bin/
 
 # add the code as late as possible
 ADD localstack-core/ /opt/code/localstack/localstack-core
