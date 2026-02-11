@@ -1,12 +1,10 @@
 import json
 import logging
 import re
-from datetime import datetime
 from json import JSONDecodeError
 from re import Pattern
 
 from localstack_snapshot.snapshots.transformer import (
-    PATTERN_ISO8601,
     GenericTransformer,
     JsonpathTransformer,
     KeyValueBasedTransformer,
@@ -900,19 +898,6 @@ def _change_set_id_transformer(key: str, val: str) -> str:
 
 # TODO maybe move to a different place?
 # Basic Transformation - added automatically to each snapshot (in the fixture)
-SNAPSHOT_BASIC_TRANSFORMER_NEW = [
-    ResponseMetaDataTransformer(),
-    KeyValueBasedTransformer(
-        lambda k, v: (
-            v
-            if (isinstance(v, str) and k.lower().endswith("id") and re.match(PATTERN_UUID, v))
-            else None
-        ),
-        "uuid",
-    ),
-    TimestampTransformer(),
-]
-
 SNAPSHOT_BASIC_TRANSFORMER = [
     ResponseMetaDataTransformer(),
     KeyValueBasedTransformer(
@@ -923,21 +908,5 @@ SNAPSHOT_BASIC_TRANSFORMER = [
         ),
         "uuid",
     ),
-    RegexTransformer(PATTERN_ISO8601, "date"),
-    KeyValueBasedTransformer(
-        lambda k, v: v if isinstance(v, datetime) else None, "datetime", replace_reference=False
-    ),
-    KeyValueBasedTransformer(
-        lambda k, v: (
-            str(v)
-            if (
-                re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE).match(k)
-                or k in ("creationTime", "ingestionTime")
-            )
-            and not PATTERN_ISO8601.match(str(v))
-            else None
-        ),
-        "timestamp",
-        replace_reference=False,
-    ),
+    TimestampTransformer(),
 ]
