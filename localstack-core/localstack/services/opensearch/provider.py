@@ -517,6 +517,24 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
             for domain_name in store.opensearch_domains.keys():
                 cluster_manager().remove(DomainKey(domain_name, region, account_id).arn)
 
+    def _add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
+        self.get_store(context.account_id, context.region).TAGS.tag_resource(arn, tag_list)
+
+    def _remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
+        self.get_store(context.account_id, context.region).TAGS.untag_resource(arn, tag_keys)
+
+    def _remove_all_tags(self, context: RequestContext, arn: ARN) -> None:
+        self.get_store(context.account_id, context.region).TAGS.del_resource(arn)
+
+    def _list_tags(self, context: RequestContext, arn: ARN) -> TagList:
+        # The tagging service returns a dictionary with the given root name
+        store = self.get_store(context.account_id, context.region)
+        tags = store.TAGS.list_tags_for_resource(arn=arn, root_name="root")
+        # Extract the actual list of tags for the typed response
+        tag_list: TagList = tags["root"]
+
+        return tag_list
+
     @handler("CreateDomain", expand=False)
     def create_domain(
         self, context: RequestContext, request: CreateDomainRequest
@@ -558,7 +576,8 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
             )
 
             # set the tags
-            self.add_tags(context, domain_key.arn, request.get("TagList"))
+            if tags := request.get("TagList", []):
+                self._add_tags(context, domain_key.arn, tags)
 
             # get the (updated) status
             status = get_domain_status(domain_key)
@@ -580,6 +599,7 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
 
             status = get_domain_status(domain_key, deleted=True)
             _remove_cluster(domain_key)
+            self._remove_all_tags(context, domain_key.arn)
 
         return DeleteDomainResponse(DomainStatus=status)
 
@@ -724,20 +744,15 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
 
     def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList, **kwargs) -> None:
         _ensure_domain_exists(arn)
-        self.get_store(context.account_id, context.region).TAGS.tag_resource(arn, tag_list)
+        self._add_tags(context, arn, tag_list)
 
     def list_tags(self, context: RequestContext, arn: ARN, **kwargs) -> ListTagsResponse:
         _ensure_domain_exists(arn)
-
-        # The tagging service returns a dictionary with the given root name
-        store = self.get_store(context.account_id, context.region)
-        tags = store.TAGS.list_tags_for_resource(arn=arn, root_name="root")
-        # Extract the actual list of tags for the typed response
-        tag_list: TagList = tags["root"]
+        tag_list = self._list_tags(context, arn)
         return ListTagsResponse(TagList=tag_list)
 
     def remove_tags(
         self, context: RequestContext, arn: ARN, tag_keys: StringList, **kwargs
     ) -> None:
         _ensure_domain_exists(arn)
-        self.get_store(context.account_id, context.region).TAGS.untag_resource(arn, tag_keys)
+        self._remove_tags(context, arn, tag_keys)
