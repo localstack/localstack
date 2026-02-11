@@ -155,7 +155,7 @@ class TestFilterLogEvents:
         )
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="not supported")
+    @pytest.mark.skip(reason="TODO Raise error")
     def test_filter_log_events_unknown_token(
         self, logs_log_group, logs_log_stream, aws_client, snapshot
     ):

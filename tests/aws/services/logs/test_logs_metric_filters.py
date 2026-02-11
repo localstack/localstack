@@ -377,7 +377,7 @@ class TestMetricFiltersCloudWatchIntegration:
     """Tests for metric filter integration with CloudWatch metrics."""
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="not implemented correctly")
+    @pytest.mark.skip(reason="TODO - Fails against pro")
     def test_metric_filters_publish_to_cloudwatch(
         self, logs_log_group, logs_log_stream, aws_client
     ):

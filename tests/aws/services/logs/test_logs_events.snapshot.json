@@ -30,12 +30,12 @@
     }
   },
   "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_put_log_events_too_old": {
-    "recorded-date": "03-02-2026, 21:36:33",
+    "recorded-date": "11-02-2026, 21:19:57",
     "recorded-content": {
       "response-too-old": {
-        "nextSequenceToken": "49039859660647486319327806095826324455682045694890347621",
+        "nextSequenceToken": "<next-sequence-token:1>",
         "rejectedLogEventsInfo": {
-          "tooOldLogEventEndIndex": 1
+          "tooOldLogEventEndIndex": "too-old-log-event-end-index"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -45,12 +45,12 @@
     }
   },
   "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_put_log_events_too_new": {
-    "recorded-date": "03-02-2026, 21:36:34",
+    "recorded-date": "11-02-2026, 21:20:15",
     "recorded-content": {
       "response-too-new": {
-        "nextSequenceToken": "49039859660647486961344928059975454333496344744262644016",
+        "nextSequenceToken": "<next-sequence-token:1>",
         "rejectedLogEventsInfo": {
-          "tooNewLogEventStartIndex": 0
+          "tooNewLogEventStartIndex": "too-new-log-event-start-index"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

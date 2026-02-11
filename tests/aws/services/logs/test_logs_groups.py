@@ -234,7 +234,7 @@ class TestLogsGroupsTags:
         assert response["tags"] == {"env": "testing"}
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="not supported")
+    @pytest.mark.skip(reason="TODO list tags returns empty")
     def test_tag_log_group(self, aws_client, snapshot, cleanups):
         """Test adding tags to an existing log group using tag_log_group API."""
         snapshot.add_transformer(snapshot.transform.logs_api())
@@ -269,7 +269,7 @@ class TestLogsGroupsTags:
         assert response["tags"] == {"tag_key_1": "tag_value_XX", "tag_key_2": "tag_value_2"}
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="not supported")
+    @pytest.mark.skip(reason="TODO list tags returns empty")
     def test_untag_log_group(self, aws_client, snapshot, cleanups):
         """Test removing tags from a log group using untag_log_group API."""
         snapshot.add_transformer(snapshot.transform.logs_api())

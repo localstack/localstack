@@ -269,7 +269,7 @@ class TestDestinationsTags:
     """Tests for destination tagging operations."""
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="not supported")
+    @pytest.mark.skip(reason="TODO list tags returns empty")
     def test_destination_tags(
         self, aws_client, snapshot, cleanups, destination_role, kinesis_stream_arn
     ):

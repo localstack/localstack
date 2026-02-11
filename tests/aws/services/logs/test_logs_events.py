@@ -84,7 +84,6 @@ class TestLogsEvents:
         snapshot.match("error-wrong-order", ctx.value.response)
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="not supported")
     def test_put_log_events_too_old(self, logs_log_group, logs_log_stream, aws_client, snapshot):
         """Test that events with timestamps too far in the past are rejected."""
         # Event from 15 days ago
@@ -95,12 +94,13 @@ class TestLogsEvents:
         response = aws_client.logs.put_log_events(
             logGroupName=logs_log_group, logStreamName=logs_log_stream, logEvents=messages
         )
+        snapshot.add_transformer(snapshot.transform.key_value("nextSequenceToken"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("tooOldLogEventEndIndex", reference_replacement=False)
+        )
         snapshot.match("response-too-old", response)
-        assert "rejectedLogEventsInfo" in response
-        assert "tooOldLogEventEndIndex" in response["rejectedLogEventsInfo"]
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="not supported")
     def test_put_log_events_too_new(self, logs_log_group, logs_log_stream, aws_client, snapshot):
         """Test that events with timestamps too far in the future are rejected."""
         # Event 3 hours in the future (>180 minutes)
@@ -111,9 +111,11 @@ class TestLogsEvents:
         response = aws_client.logs.put_log_events(
             logGroupName=logs_log_group, logStreamName=logs_log_stream, logEvents=messages
         )
+        snapshot.add_transformer(snapshot.transform.key_value("nextSequenceToken"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("tooNewLogEventStartIndex", reference_replacement=False)
+        )
         snapshot.match("response-too-new", response)
-        assert "rejectedLogEventsInfo" in response
-        assert "tooNewLogEventStartIndex" in response["rejectedLogEventsInfo"]
 
     @markers.aws.validated
     def test_get_log_events_basic(self, logs_log_group, logs_log_stream, aws_client):

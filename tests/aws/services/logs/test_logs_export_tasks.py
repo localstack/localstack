@@ -45,12 +45,11 @@ def export_bucket(aws_client, s3_bucket, region_name):
     return bucket_name
 
 
-@pytest.mark.skip(reason="not supported")
+@pytest.mark.skip(reason="TODO: Moto logs searches in memory the bucket which is impossible")
 class TestExportTasks:
     """Tests for export task operations."""
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="not supported")
     def test_create_export_task(self, logs_log_group, export_bucket, aws_client, snapshot):
         """Test creating an export task."""
         snapshot.add_transformer(snapshot.transform.logs_api())
@@ -166,7 +165,7 @@ class TestExportTasks:
         snapshot.match("error-cancel-not-found", ctx.value.response)
 
 
-@pytest.mark.skip(reason="not supported")
+@pytest.mark.skip(reason="TODO: Moto logs searches in memory the bucket which is impossible")
 class TestExportTasksWithLogs:
     """Tests for export tasks with actual log data."""
 

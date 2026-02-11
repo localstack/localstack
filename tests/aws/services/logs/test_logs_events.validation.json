@@ -72,21 +72,21 @@
     }
   },
   "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_put_log_events_too_new": {
-    "last_validated_date": "2026-02-03T21:36:34+00:00",
+    "last_validated_date": "2026-02-11T21:20:16+00:00",
     "durations_in_seconds": {
-      "setup": 0.18,
-      "call": 0.08,
-      "teardown": 0.2,
-      "total": 0.46
+      "setup": 1.14,
+      "call": 0.16,
+      "teardown": 0.28,
+      "total": 1.58
     }
   },
   "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_put_log_events_too_old": {
-    "last_validated_date": "2026-02-03T21:36:33+00:00",
+    "last_validated_date": "2026-02-11T21:19:58+00:00",
     "durations_in_seconds": {
-      "setup": 0.19,
-      "call": 0.08,
-      "teardown": 0.22,
-      "total": 0.49
+      "setup": 1.07,
+      "call": 0.1,
+      "teardown": 0.3,
+      "total": 1.47
     }
   },
   "tests/aws/services/logs/test_logs_events.py::TestLogsEvents::test_put_log_events_wrong_order": {
