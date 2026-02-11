@@ -378,6 +378,7 @@ class TransformerUtility:
             TransformerUtility.key_value("PolicyName"),
             TransformerUtility.key_value("PolicyId"),
             TransformerUtility.key_value("GroupName"),
+            TransformerUtility.key_value("Marker"),
         ]
 
     @staticmethod

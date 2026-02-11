@@ -31,10 +31,6 @@ GET_USER_POLICY_DOC = """{
 }"""
 
 
-class TestPolicies:
-    pass
-
-
 class TestUsers:
     pass
 
