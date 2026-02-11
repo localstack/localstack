@@ -13,6 +13,8 @@ from collections.abc import Callable, Iterable
 from functools import wraps
 from typing import Any
 
+from rich.console import Console
+
 from localstack import config, constants
 from localstack.config import (
     HostAndPort,
@@ -48,6 +50,7 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
+console = Console()
 
 # Mandatory dependencies of services on other services
 # - maps from API names to list of other API names that they _explicitly_ depend on: <service>:<dependent-services>
@@ -364,8 +367,6 @@ def validate_localstack_config(name: str):
     # TODO: separate functionality from CLI output
     #  (use exceptions to communicate errors, and return list of warnings)
     from subprocess import CalledProcessError
-
-    from localstack.cli import console
 
     dirname = os.getcwd()
     compose_file_name = name if os.path.isabs(name) else os.path.join(dirname, name)

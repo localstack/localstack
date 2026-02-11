@@ -3,10 +3,10 @@ import os
 from collections.abc import Iterable
 
 import click
+from rich.console import Console
 from rich.rule import Rule
 
 from localstack import config
-from localstack.cli import console
 from localstack.dev.run.configurators import (
     ConfigEnvironmentConfigurator,
     DependencyMountConfigurator,
@@ -28,6 +28,8 @@ from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.files import cache_dir
 from localstack.utils.run import run_interactive
 from localstack.utils.strings import short_uid
+
+console = Console()
 
 
 @click.command("run")

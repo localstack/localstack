@@ -37,11 +37,6 @@
 # you can overwrite this for single services afterwards
 /localstack-core/localstack/aws/api/
 
-# CLI
-/localstack-core/localstack/cli/ @thrau @alexrashed
-/tests/unit/cli/ @thrau @alexrashed
-/tests/cli/ @thrau @alexrashed
-
 # Plugins
 /localstack-core/localstack/plugins.py @thrau
 /localstack-core/localstack/config.py @thrau
