@@ -58,6 +58,7 @@ from localstack.aws.api.dynamodb import (
     GetItemOutput,
     GlobalTableAlreadyExistsException,
     GlobalTableNotFoundException,
+    KinesisDataStreamDestination,
     KinesisStreamingDestinationOutput,
     ListGlobalTablesOutput,
     ListTablesInputLimit,
@@ -1196,34 +1197,32 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if not kinesis_stream_exists(stream_arn=stream_arn):
             raise ValidationException("User does not have a permission to use kinesis stream")
 
-        table_def = get_store(context.account_id, context.region).table_definitions.setdefault(
-            table_name, {}
-        )
+        store = get_store(context.account_id, context.region)
+        streaming_destinations = store.streaming_destinations.get(table_name) or []
 
-        dest_status = table_def.get("KinesisDataStreamDestinationStatus")
-        if dest_status not in ["DISABLED", "ENABLE_FAILED", None]:
-            raise ValidationException(
-                "Table is not in a valid state to enable Kinesis Streaming "
-                "Destination:EnableKinesisStreamingDestination must be DISABLED or ENABLE_FAILED "
-                "to perform ENABLE operation."
-            )
-
-        table_def.setdefault("KinesisDataStreamDestinations", [])
+        destinations = [d for d in streaming_destinations if d["StreamArn"] == stream_arn]
+        if destinations:
+            status = destinations[0].get("DestinationStatus", None)
+            if status not in ["DISABLED", "ENABLED_FAILED", None]:
+                raise ValidationException(
+                    "Table is not in a valid state to enable Kinesis Streaming "
+                    "Destination:EnableKinesisStreamingDestination must be DISABLED or ENABLE_FAILED "
+                    "to perform ENABLE operation."
+                )
 
         # remove the stream destination if already present
-        table_def["KinesisDataStreamDestinations"] = [
-            t for t in table_def["KinesisDataStreamDestinations"] if t["StreamArn"] != stream_arn
+        store.streaming_destinations[table_name] = [
+            _d for _d in streaming_destinations if _d["StreamArn"] != stream_arn
         ]
         # append the active stream destination at the end of the list
-        table_def["KinesisDataStreamDestinations"].append(
-            {
-                "DestinationStatus": DestinationStatus.ACTIVE,
-                "DestinationStatusDescription": "Stream is active",
-                "StreamArn": stream_arn,
-                "ApproximateCreationDateTimePrecision": ApproximateCreationDateTimePrecision.MILLISECOND,
-            }
+        store.streaming_destinations[table_name].append(
+            KinesisDataStreamDestination(
+                DestinationStatus=DestinationStatus.ACTIVE,
+                DestinationStatusDescription="Stream is active",
+                StreamArn=stream_arn,
+                ApproximateCreationDateTimePrecision=ApproximateCreationDateTimePrecision.MILLISECOND,
+            )
         )
-        table_def["KinesisDataStreamDestinationStatus"] = DestinationStatus.ACTIVE
         return KinesisStreamingDestinationOutput(
             DestinationStatus=DestinationStatus.ENABLING,
             StreamArn=stream_arn,
@@ -1251,26 +1250,19 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "User does not have a permission to use kinesis stream",
             )
 
-        table_def = get_store(context.account_id, context.region).table_definitions.setdefault(
-            table_name, {}
-        )
+        store = get_store(context.account_id, context.region)
+        streaming_destinations = store.streaming_destinations.get(table_name) or []
 
-        stream_destinations = table_def.get("KinesisDataStreamDestinations")
-        if stream_destinations:
-            if table_def["KinesisDataStreamDestinationStatus"] == DestinationStatus.ACTIVE:
-                for dest in stream_destinations:
-                    if (
-                        dest["StreamArn"] == stream_arn
-                        and dest["DestinationStatus"] == DestinationStatus.ACTIVE
-                    ):
-                        dest["DestinationStatus"] = DestinationStatus.DISABLED
-                        dest["DestinationStatusDescription"] = ("Stream is disabled",)
-                        table_def["KinesisDataStreamDestinationStatus"] = DestinationStatus.DISABLED
-                        return KinesisStreamingDestinationOutput(
-                            DestinationStatus=DestinationStatus.DISABLING,
-                            StreamArn=stream_arn,
-                            TableName=table_name,
-                        )
+        # Get the right destination based on the arn
+        destinations = [d for d in streaming_destinations if d["StreamArn"] == stream_arn]
+        if destinations:
+            destinations[0]["DestinationStatus"] = DestinationStatus.DISABLED
+            destinations[0]["DestinationStatusDescription"] = "Stream is disabled"
+            return KinesisStreamingDestinationOutput(
+                DestinationStatus=DestinationStatus.DISABLING,
+                StreamArn=stream_arn,
+                TableName=table_name,
+            )
         raise ValidationException(
             "Table is not in a valid state to disable Kinesis Streaming Destination:"
             "DisableKinesisStreamingDestination must be ACTIVE to perform DISABLE operation."
@@ -1281,12 +1273,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     ) -> DescribeKinesisStreamingDestinationOutput:
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
-        table_def = (
-            get_store(context.account_id, context.region).table_definitions.get(table_name) or {}
-        )
-
-        stream_destinations = table_def.get("KinesisDataStreamDestinations") or []
-        stream_destinations = copy.deepcopy(stream_destinations)
+        store = get_store(context.account_id, context.region)
+        table_destinations = store.streaming_destinations.get(table_name) or []
+        stream_destinations = copy.deepcopy(table_destinations)
 
         for destination in stream_destinations:
             destination.pop("ApproximateCreationDateTimePrecision", None)
@@ -1327,23 +1316,21 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
 
         store = get_store(context.account_id, context.region)
+        table_destinations = store.streaming_destinations.get(table_name) or []
 
-        table_def = store.table_definitions.get(table_name) or {}
-        table_def.setdefault("KinesisDataStreamDestinations", [])
-
-        table_id = table_def["TableId"]
-
-        destination = None
-        for stream in table_def["KinesisDataStreamDestinations"]:
-            if stream["StreamArn"] == stream_arn:
-                destination = stream
-
-        if destination is None:
+        # filter the right destination based on the stream ARN
+        destinations = [d for d in table_destinations if d["StreamArn"] == stream_arn]
+        if not destinations:
             raise ValidationException(
                 "Table is not in a valid state to enable Kinesis Streaming Destination: "
                 f"No streaming destination with streamArn: {stream_arn} found for table with tableName: {table_name}"
             )
 
+        destination = destinations[0]
+        table_def = store.table_definitions.get(table_name) or {}
+        table_def.setdefault("KinesisDataStreamDestinations", [])
+
+        table_id = store.table_definitions.get(table_name, {}).get("TableId")
         if (
             existing_precision := destination["ApproximateCreationDateTimePrecision"]
         ) == update_kinesis_streaming_configuration["ApproximateCreationDateTimePrecision"]:
@@ -1351,7 +1338,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 f"Invalid Request: Precision is already set to the desired value of {existing_precision} "
                 f"for tableId: {table_id}, kdsArn: {stream_arn}"
             )
-
         destination["ApproximateCreationDateTimePrecision"] = time_precision
 
         return UpdateKinesisStreamingDestinationOutput(

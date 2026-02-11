@@ -7,6 +7,7 @@ from localstack.aws.api.dynamodb import (
     ContinuousBackupsDescription,
     GlobalTableDescription,
     Key,
+    KinesisDataStreamDestination,
     RegionName,
     ReplicaDescription,
     StreamViewType,
@@ -123,6 +124,11 @@ class DynamoDBStore(BaseStore):
 
     # maps table names to cached table definitions
     table_definitions: dict[str, TableDescription] = LocalAttribute(default=dict)
+
+    # map table name to streaming destinations
+    streaming_destinations: dict[str, list[KinesisDataStreamDestination]] = LocalAttribute(
+        default=dict
+    )
 
     # maps table names to additional table properties that are not stored upstream (e.g., ReplicaUpdates)
     table_properties: dict[str, TableProperties] = LocalAttribute(default=dict)
