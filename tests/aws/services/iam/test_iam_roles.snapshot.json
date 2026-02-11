@@ -1,6 +1,6 @@
 {
   "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_role_errors": {
-    "recorded-date": "11-02-2026, 17:01:52",
+    "recorded-date": "11-02-2026, 17:51:54",
     "recorded-content": {
       "get-role-error": {
         "Error": {
@@ -33,6 +33,42 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "create-role-for-duplicate-test": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-role-already-exists-error": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "Role with name <role-name:1> already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
         }
       }
     }
@@ -199,7 +235,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_update_role": {
-    "recorded-date": "11-02-2026, 17:01:59",
+    "recorded-date": "11-02-2026, 17:42:18",
     "recorded-content": {
       "get-role-initial": {
         "Role": {
@@ -290,6 +326,40 @@
         }
       },
       "get-role-after-desc-update": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Description": "description via update_role_description",
+          "MaxSessionDuration": 7200,
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-role-defaults-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-role-after-defaults": {
         "Role": {
           "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
           "AssumeRolePolicyDocument": {
@@ -549,7 +619,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleTags::test_role_with_tags": {
-    "recorded-date": "11-02-2026, 17:02:19",
+    "recorded-date": "11-02-2026, 17:35:23",
     "recorded-content": {
       "create-role-response": {
         "Role": {
@@ -643,11 +713,55 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "create-role-empty-tag-value": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:2>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:2>",
+          "RoleName": "<role-name:2>",
+          "Tags": [
+            {
+              "Key": "emptykey",
+              "Value": ""
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-role-tags-empty-value": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "emptykey",
+            "Value": ""
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleTags::test_role_tag_operations": {
-    "recorded-date": "11-02-2026, 17:02:21",
+    "recorded-date": "11-02-2026, 17:35:28",
     "recorded-content": {
       "get-role-no-tags": {
         "Role": {
@@ -747,6 +861,23 @@
           "HTTPStatusCode": 200
         }
       },
+      "list-role-tags-empty-value": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "somekey",
+            "Value": ""
+          },
+          {
+            "Key": "someotherkey",
+            "Value": "someothervalue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "list-role-tags-after-untag": {
         "IsTruncated": false,
         "Tags": [
@@ -771,7 +902,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleTags::test_role_tag_errors": {
-    "recorded-date": "11-02-2026, 17:02:24",
+    "recorded-date": "11-02-2026, 17:37:48",
     "recorded-content": {
       "tag-nonexistent-role-error": {
         "Error": {
@@ -846,6 +977,149 @@
         "Error": {
           "Code": "ValidationError",
           "Message": "1 validation error detected: Value at 'tags' failed to satisfy constraint: Member must have length less than or equal to 50",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-role-duplicate-tags": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Duplicate tag keys found. Please note that Tag keys are case insensitive.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-role-duplicate-tags-different-case": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Duplicate tag keys found. Please note that Tag keys are case insensitive.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-role-tag-key-too-long": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.key' failed to satisfy constraint: Member must have length less than or equal to 128",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-role-tag-value-too-long": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.value' failed to satisfy constraint: Member must have length less than or equal to 256",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-role-tag-invalid-char": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.key' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag-role-duplicate-tags": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Duplicate tag keys found. Please note that Tag keys are case insensitive.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag-role-duplicate-tags-different-case": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Duplicate tag keys found. Please note that Tag keys are case insensitive.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag-role-tag-key-too-long": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.key' failed to satisfy constraint: Member must have length less than or equal to 128",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag-role-tag-value-too-long": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.value' failed to satisfy constraint: Member must have length less than or equal to 256",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag-role-tag-invalid-char": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.key' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "untag-role-too-many-keys": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tagKeys' failed to satisfy constraint: Member must have length less than or equal to 50",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "untag-role-key-too-long": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tagKeys' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 128, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+, Member must not be null]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "untag-role-invalid-char": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tagKeys' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 128, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+, Member must not be null]",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -1703,6 +1977,98 @@
             "RoleName": "<role-name:1>"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_list_roles_path_prefix": {
+    "recorded-date": "11-02-2026, 17:58:32",
+    "recorded-content": {
+      "create-role-without-path": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-role-with-path": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:2>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/<path-prefix>/",
+          "RoleId": "<role-id:2>",
+          "RoleName": "<role-name:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-roles-with-path-prefix": {
+        "IsTruncated": false,
+        "Roles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:2>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "CreateDate": "<datetime>",
+            "MaxSessionDuration": 3600,
+            "Path": "/<path-prefix>/",
+            "RoleId": "<role-id:2>",
+            "RoleName": "<role-name:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-roles-empty-path-prefix": {
+        "IsTruncated": false,
+        "Roles": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

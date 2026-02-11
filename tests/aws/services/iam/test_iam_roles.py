@@ -36,20 +36,35 @@ def snapshot_transformers(snapshot):
 class TestRoleLifecycle:
     @markers.aws.validated
     def test_role_errors(self, aws_client, create_role, snapshot):
-        """Test NoSuchEntity errors for get_role, update_role, delete_role on non-existent role."""
-        role_name = "test-nonexistent-role"
+        """Test role errors: NoSuchEntity and EntityAlreadyExists."""
+        nonexistent_role_name = "test-nonexistent-role"
 
         with pytest.raises(ClientError) as e:
-            aws_client.iam.get_role(RoleName=role_name)
+            aws_client.iam.get_role(RoleName=nonexistent_role_name)
         snapshot.match("get-role-error", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.iam.update_role(RoleName=role_name, Description="test")
+            aws_client.iam.update_role(RoleName=nonexistent_role_name, Description="test")
         snapshot.match("update-role-error", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.iam.delete_role(RoleName=role_name)
+            aws_client.iam.delete_role(RoleName=nonexistent_role_name)
         snapshot.match("delete-role-error", e.value.response)
+
+        # Test EntityAlreadyExists error when creating role with same name
+        role_name = f"role-{short_uid()}"
+        create_role_response = create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+        )
+        snapshot.match("create-role-for-duplicate-test", create_role_response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=role_name,
+                AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+            )
+        snapshot.match("create-role-already-exists-error", e.value.response)
 
     @markers.aws.validated
     def test_create_role_defaults(self, aws_client, create_role, snapshot):
@@ -182,6 +197,15 @@ class TestRoleLifecycle:
         get_role_after_desc_update = aws_client.iam.get_role(RoleName=role_name)
         snapshot.match("get-role-after-desc-update", get_role_after_desc_update)
 
+        # Test update_role with no parameters - values remain unchanged
+        # (Note: moto incorrectly expected this to clear Description and reset MaxSessionDuration)
+        update_defaults_response = aws_client.iam.update_role(RoleName=role_name)
+        snapshot.match("update-role-defaults-response", update_defaults_response)
+
+        # Get role after update with no params - Description and MaxSessionDuration unchanged
+        get_role_after_defaults = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-after-defaults", get_role_after_defaults)
+
     @markers.aws.validated
     def test_update_assume_role_policy_errors(self, aws_client, create_role, snapshot):
         """Test update_assume_role_policy with invalid policies."""
@@ -263,6 +287,37 @@ class TestRoleLifecycle:
             PolicyDocument=json.dumps(policy),
         )
         snapshot.match("updated_policy", result)
+
+    @markers.aws.validated
+    def test_list_roles_path_prefix(self, aws_client, create_role, snapshot):
+        """Test list_roles with PathPrefix filtering."""
+        path_prefix = f"/test-path-{short_uid()}/"
+        snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
+
+        # Create a role without a specific path (uses default "/")
+        role_without_path = f"role-no-path-{short_uid()}"
+        create_response_no_path = create_role(
+            RoleName=role_without_path,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+        )
+        snapshot.match("create-role-without-path", create_response_no_path)
+
+        # Create a role with a specific path
+        role_with_path = f"role-with-path-{short_uid()}"
+        create_response_with_path = create_role(
+            RoleName=role_with_path,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+            Path=path_prefix,
+        )
+        snapshot.match("create-role-with-path", create_response_with_path)
+
+        # List roles with PathPrefix - should only return the role with that path
+        list_with_prefix = aws_client.iam.list_roles(PathPrefix=path_prefix)
+        snapshot.match("list-roles-with-path-prefix", list_with_prefix)
+
+        # List roles with non-existent PathPrefix - should return empty list
+        list_empty = aws_client.iam.list_roles(PathPrefix="/nonexistent-path/")
+        snapshot.match("list-roles-empty-path-prefix", list_empty)
 
 
 class TestRolePermissionsBoundary:
@@ -594,6 +649,18 @@ class TestRoleTags:
         list_role_response = aws_client.iam.list_roles(PathPrefix=path)
         snapshot.match("list-role-response", list_role_response)
 
+        # Test creating a role with an empty tag value (valid)
+        role_name_empty_tag = f"role-empty-tag-{short_uid()}"
+        create_role_empty_tag = create_role(
+            RoleName=role_name_empty_tag,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+            Tags=[{"Key": "emptykey", "Value": ""}],
+        )
+        snapshot.match("create-role-empty-tag-value", create_role_empty_tag)
+
+        list_tags_empty_value = aws_client.iam.list_role_tags(RoleName=role_name_empty_tag)
+        snapshot.match("list-role-tags-empty-value", list_tags_empty_value)
+
     @markers.aws.validated
     def test_role_tag_operations(self, aws_client, create_role, snapshot):
         """Test tag_role, list_role_tags, untag_role operations."""
@@ -632,6 +699,14 @@ class TestRoleTags:
         )
         list_tags_after_update = aws_client.iam.list_role_tags(RoleName=role_name)
         snapshot.match("list-role-tags-after-update", list_tags_after_update)
+
+        # Update tag with empty value (valid)
+        aws_client.iam.tag_role(
+            RoleName=role_name,
+            Tags=[{"Key": "somekey", "Value": ""}],
+        )
+        list_tags_empty_value = aws_client.iam.list_role_tags(RoleName=role_name)
+        snapshot.match("list-role-tags-empty-value", list_tags_empty_value)
 
         # Remove one tag
         aws_client.iam.untag_role(RoleName=role_name, TagKeys=["somekey"])
@@ -684,6 +759,119 @@ class TestRoleTags:
                 Tags=tags,
             )
         snapshot.match("tag-role-too-many-tags", e.value.response)
+
+        # Duplicate tag keys
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=f"role-dup-{short_uid()}",
+                AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+                Tags=[{"Key": "dupkey", "Value": "val1"}, {"Key": "dupkey", "Value": "val2"}],
+            )
+        snapshot.match("create-role-duplicate-tags", e.value.response)
+
+        # Duplicate tag keys with different casing
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=f"role-dup-case-{short_uid()}",
+                AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+                Tags=[{"Key": "mykey", "Value": "val1"}, {"Key": "MyKey", "Value": "val2"}],
+            )
+        snapshot.match("create-role-duplicate-tags-different-case", e.value.response)
+
+        # Tag key too long (> 128 chars)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=f"role-long-key-{short_uid()}",
+                AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+                Tags=[{"Key": "k" * 129, "Value": "value"}],
+            )
+        snapshot.match("create-role-tag-key-too-long", e.value.response)
+
+        # Tag value too long (> 256 chars)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=f"role-long-val-{short_uid()}",
+                AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+                Tags=[{"Key": "key", "Value": "v" * 257}],
+            )
+        snapshot.match("create-role-tag-value-too-long", e.value.response)
+
+        # Invalid character in tag key
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=f"role-invalid-char-{short_uid()}",
+                AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+                Tags=[{"Key": "invalid!key", "Value": "value"}],
+            )
+        snapshot.match("create-role-tag-invalid-char", e.value.response)
+
+        # tag_role error cases (on existing role)
+
+        # Duplicate tag keys
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_role(
+                RoleName=role_name,
+                Tags=[{"Key": "dupkey", "Value": "val1"}, {"Key": "dupkey", "Value": "val2"}],
+            )
+        snapshot.match("tag-role-duplicate-tags", e.value.response)
+
+        # Duplicate tag keys with different casing
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_role(
+                RoleName=role_name,
+                Tags=[{"Key": "mykey", "Value": "val1"}, {"Key": "MyKey", "Value": "val2"}],
+            )
+        snapshot.match("tag-role-duplicate-tags-different-case", e.value.response)
+
+        # Tag key too long (> 128 chars)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_role(
+                RoleName=role_name,
+                Tags=[{"Key": "k" * 129, "Value": "value"}],
+            )
+        snapshot.match("tag-role-tag-key-too-long", e.value.response)
+
+        # Tag value too long (> 256 chars)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_role(
+                RoleName=role_name,
+                Tags=[{"Key": "key", "Value": "v" * 257}],
+            )
+        snapshot.match("tag-role-tag-value-too-long", e.value.response)
+
+        # Invalid character in tag key
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_role(
+                RoleName=role_name,
+                Tags=[{"Key": "invalid!key", "Value": "value"}],
+            )
+        snapshot.match("tag-role-tag-invalid-char", e.value.response)
+
+        # untag_role error cases (on existing role)
+
+        # Too many tag keys (> 50)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.untag_role(
+                RoleName=role_name,
+                TagKeys=[str(x) for x in range(51)],
+            )
+        snapshot.match("untag-role-too-many-keys", e.value.response)
+
+        # Tag key too long (> 128 chars)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.untag_role(
+                RoleName=role_name,
+                TagKeys=["k" * 129],
+            )
+        snapshot.match("untag-role-key-too-long", e.value.response)
+
+        # Invalid character in tag key
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.untag_role(
+                RoleName=role_name,
+                TagKeys=["invalid!key"],
+            )
+        snapshot.match("untag-role-invalid-char", e.value.response)
 
 
 class TestRolePagination:
