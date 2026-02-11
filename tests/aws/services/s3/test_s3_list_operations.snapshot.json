@@ -3386,7 +3386,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_token_safe_chars": {
-    "recorded-date": "11-02-2026, 15:55:26",
+    "recorded-date": "11-02-2026, 16:14:46",
     "recorded-content": {
       "list-objects-v2-max-5": {
         "Contents": [
@@ -3575,7 +3575,6 @@
             "StorageClass": "STANDARD"
           }
         ],
-        "EncodingType": "url",
         "IsTruncated": true,
         "KeyCount": 2,
         "MaxKeys": 2,
