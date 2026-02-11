@@ -210,6 +210,121 @@ class TestRoleLifecycle:
         snapshot.match("resource-field-error", e.value.response)
 
 
+class TestRolePermissionsBoundary:
+    @markers.aws.validated
+    def test_role_permissions_boundary_lifecycle(
+        self, aws_client, create_role, create_policy, snapshot
+    ):
+        """Test create role with PermissionsBoundary, put/delete permissions boundary."""
+        role_name = f"role-{short_uid()}"
+        policy_name = f"boundary-policy-{short_uid()}"
+
+        # Create the boundary policy first
+        policy_response = create_policy(
+            PolicyName=policy_name,
+            PolicyDocument=json.dumps(MOCK_POLICY),
+        )
+        snapshot.match("create-policy", policy_response)
+        boundary_arn = policy_response["Policy"]["Arn"]
+
+        # Create role with PermissionsBoundary
+        create_response = create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+            PermissionsBoundary=boundary_arn,
+            Description="Role with permissions boundary",
+        )
+        snapshot.match("create-role-with-boundary", create_response)
+
+        # Get role - should have PermissionsBoundary
+        get_role_with_boundary = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-with-boundary", get_role_with_boundary)
+
+        # Delete permissions boundary
+        aws_client.iam.delete_role_permissions_boundary(RoleName=role_name)
+
+        # Get role - should not have PermissionsBoundary
+        get_role_no_boundary = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-no-boundary", get_role_no_boundary)
+
+        # Put permissions boundary back
+        aws_client.iam.put_role_permissions_boundary(
+            RoleName=role_name, PermissionsBoundary=boundary_arn
+        )
+
+        # Get role - should have PermissionsBoundary again
+        get_role_boundary_restored = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-boundary-restored", get_role_boundary_restored)
+
+        # List roles should also show the boundary
+        list_roles_response = aws_client.iam.list_roles()
+        roles_with_name = [r for r in list_roles_response["Roles"] if r["RoleName"] == role_name]
+        snapshot.match("list-roles-with-boundary", {"Roles": roles_with_name})
+
+    @markers.aws.validated
+    def test_role_permissions_boundary_errors(
+        self, aws_client, create_role, create_policy, account_id, snapshot
+    ):
+        """Test permissions boundary error cases."""
+        role_name = f"role-{short_uid()}"
+        policy_name = f"boundary-policy-{short_uid()}"
+
+        create_role_response = create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+        )
+        snapshot.match("create-role", create_role_response)
+
+        # Create a valid policy for some tests
+        policy_response = create_policy(
+            PolicyName=policy_name,
+            PolicyDocument=json.dumps(MOCK_POLICY),
+        )
+        snapshot.match("create-policy", policy_response)
+        valid_policy_arn = policy_response["Policy"]["Arn"]
+
+        # Invalid boundary ARN format
+        invalid_boundary_arn = f"arn:aws:iam::{account_id}:not_a_policy/invalid"
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.put_role_permissions_boundary(
+                RoleName=role_name, PermissionsBoundary=invalid_boundary_arn
+            )
+        snapshot.match("put-invalid-boundary-error", e.value.response)
+
+        # Create role with invalid boundary ARN format
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=f"role-invalid-{short_uid()}",
+                AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+                PermissionsBoundary=invalid_boundary_arn,
+            )
+        snapshot.match("create-role-invalid-boundary-error", e.value.response)
+
+        # Non-existent policy (valid ARN format but policy doesn't exist)
+        nonexistent_policy_arn = f"arn:aws:iam::{account_id}:policy/nonexistent-policy"
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.put_role_permissions_boundary(
+                RoleName=role_name, PermissionsBoundary=nonexistent_policy_arn
+            )
+        snapshot.match("put-nonexistent-policy-error", e.value.response)
+
+        # Create role with non-existent policy
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=f"role-nonexistent-{short_uid()}",
+                AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+                PermissionsBoundary=nonexistent_policy_arn,
+            )
+        snapshot.match("create-role-nonexistent-policy-error", e.value.response)
+
+        # Existing policy but non-existent role
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.put_role_permissions_boundary(
+                RoleName="nonexistent-role", PermissionsBoundary=valid_policy_arn
+            )
+        snapshot.match("put-boundary-nonexistent-role-error", e.value.response)
+
+
 class TestRoleInlinePolicies:
     @markers.aws.validated
     def test_role_inline_policy_lifecycle(self, aws_client, create_role, snapshot):
