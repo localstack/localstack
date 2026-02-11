@@ -186,9 +186,9 @@ class SnsStore(BaseStore):
     platform_endpoints: dict[str, PlatformEndpoint] = LocalAttribute(default=dict)
 
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
-    platform_endpoint_messages: dict[
-        str, list[dict[str, str | dict[str, MessageAttributeValue]]]
-    ] = LocalAttribute(default=dict)
+    platform_endpoint_messages: dict[str, list[dict[str, str | MessageAttributeMap]]] = (
+        LocalAttribute(default=dict)
+    )
 
     # topic/subscription independent default values for sending sms messages
     sms_attributes: dict[str, str] = LocalAttribute(default=dict)

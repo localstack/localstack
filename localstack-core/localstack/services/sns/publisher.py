@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
-from localstack.aws.api.sns import MessageAttributeMap, MessageAttributeValue
+from localstack.aws.api.sns import MessageAttributeMap, TopicAttributesMap
 from localstack.aws.connect import connect_to
 from localstack.config import external_service_url
 from localstack.services.sns import constants as sns_constants
@@ -111,7 +111,7 @@ class TopicPublisher(abc.ABC):
         self,
         message_context: SnsMessage,
         subscriber: SnsSubscription,
-        topic_attributes: dict[str, str | dict[str, MessageAttributeValue]] = None,
+        topic_attributes: TopicAttributesMap = None,
     ) -> str:
         """
         Returns the message formatted in the base SNS message format. The base SNS message format is shared amongst
@@ -233,7 +233,7 @@ class LambdaTopicPublisher(TopicPublisher):
         self,
         message_context: SnsMessage,
         subscriber: SnsSubscription,
-        topic_attributes: dict[str, dict[str, MessageAttributeValue]] = None,
+        topic_attributes: TopicAttributesMap = None,
     ) -> str:
         """
         You can see Lambda SNS Event format here: https://docs.aws.amazon.com/lambda/latest/dg/with-sns.html
@@ -621,7 +621,7 @@ class EmailTopicPublisher(EmailJsonTopicPublisher):
         self,
         message_context: SnsMessage,
         subscriber: SnsSubscription,
-        topic_attributes: dict[str, dict[str, MessageAttributeValue]] = None,
+        topic_attributes: TopicAttributesMap = None,
     ) -> str:
         return message_context.message_content(subscriber["Protocol"])
 
@@ -664,8 +664,8 @@ class ApplicationTopicPublisher(TopicPublisher):
         self,
         message_context: SnsMessage,
         subscriber: SnsSubscription,
-        topic_attributes: dict[str, str] = None,
-    ) -> dict[str, str | dict[str, MessageAttributeValue]]:
+        topic_attributes: TopicAttributesMap = None,
+    ) -> dict[str, str | MessageAttributeMap]:
         endpoint_arn = subscriber["Endpoint"]
         platform_type = get_platform_type_from_endpoint_arn(endpoint_arn)
         return {
@@ -725,8 +725,8 @@ class SmsTopicPublisher(TopicPublisher):
         self,
         message_context: SnsMessage,
         subscriber: SnsSubscription,
-        topic_attributes: dict[str, str | dict[str, MessageAttributeValue]] = None,
-    ) -> dict:
+        topic_attributes: TopicAttributesMap = None,
+    ) -> dict[str, str | MessageAttributeMap]:
         return {
             "PhoneNumber": subscriber["Endpoint"],
             "TopicArn": subscriber["TopicArn"],
