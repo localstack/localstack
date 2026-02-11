@@ -31,8 +31,6 @@ GET_USER_POLICY_DOC = """{
 }"""
 
 
-
-
 class TestIAMExtensions:
     @markers.aws.validated
     def test_get_user_without_username_as_user(self, create_user, aws_client, region_name):
