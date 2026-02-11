@@ -1477,39 +1477,3 @@ class TestIAMServiceRoles:
         with pytest.raises(ClientError) as e:
             aws_client.iam.create_service_linked_role(AWSServiceName=service_name)
         snapshot.match("role-already-exists-error", e.value.response)
-
-
-class TestRoles:
-    @pytest.fixture(autouse=True)
-    def snapshot_transformers(self, snapshot):
-        snapshot.add_transformer(snapshot.transform.iam_api())
-
-    @markers.aws.validated
-    def test_role_with_tags(self, aws_client, account_id, create_role, snapshot):
-        role_name = f"role-{short_uid()}"
-        path = "/role-with-tags/"
-        trust_policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": "ec2.amazonaws.com"},
-                    "Action": "sts:AssumeRole",
-                }
-            ],
-        }
-        tags = [{"Key": "test", "Value": "value"}]
-
-        create_role_response = create_role(
-            RoleName=role_name,
-            AssumeRolePolicyDocument=json.dumps(trust_policy),
-            Tags=tags,
-            Path=path,
-        )
-        snapshot.match("create-role-response", create_role_response)
-
-        get_role_response = aws_client.iam.get_role(RoleName=role_name)
-        snapshot.match("get-role-response", get_role_response)
-
-        list_role_response = aws_client.iam.list_roles(PathPrefix=path)
-        snapshot.match("list-role-response", list_role_response)
