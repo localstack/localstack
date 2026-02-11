@@ -1,137 +1,164 @@
 {
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleInlinePolicies::test_role_inline_policy_errors": {
+    "last_validated_date": "2026-02-11T17:02:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.03,
+      "teardown": 0.52,
+      "total": 1.55
+    }
+  },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleInlinePolicies::test_role_inline_policy_lifecycle": {
-    "last_validated_date": "2026-02-11T14:21:02+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 2.02,
-      "teardown": 0.53,
-      "total": 2.55
-    }
-  },
-  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_create_role_defaults": {
-    "last_validated_date": "2026-02-11T14:20:47+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.35,
-      "teardown": 0.54,
-      "total": 0.89
-    }
-  },
-  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_delete_role_with_attached_policy": {
-    "last_validated_date": "2026-02-11T14:20:49+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 1.1,
-      "teardown": 0.82,
-      "total": 1.92
-    }
-  },
-  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_delete_role_with_inline_policy": {
-    "last_validated_date": "2026-02-11T14:20:50+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.8,
-      "teardown": 0.53,
-      "total": 1.33
-    }
-  },
-  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_role_errors": {
-    "last_validated_date": "2026-02-11T14:20:46+00:00",
-    "durations_in_seconds": {
-      "setup": 0.85,
-      "call": 0.91,
-      "teardown": 0.0,
-      "total": 1.76
-    }
-  },
-  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_update_assume_role_policy_errors": {
-    "last_validated_date": "2026-02-11T14:20:54+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 1.48,
-      "teardown": 0.93,
-      "total": 2.41
-    }
-  },
-  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_update_role": {
-    "last_validated_date": "2026-02-11T14:20:51+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 1.01,
-      "teardown": 0.51,
-      "total": 1.52
-    }
-  },
-  "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_role_managed_policy_errors": {
-    "last_validated_date": "2026-02-11T14:21:05+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.6,
-      "teardown": 0.79,
-      "total": 1.39
-    }
-  },
-  "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_role_managed_policy_lifecycle": {
-    "last_validated_date": "2026-02-11T14:21:04+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 1.36,
-      "teardown": 0.74,
-      "total": 2.1
-    }
-  },
-  "tests/aws/services/iam/test_iam_roles.py::TestRolePagination::test_list_roles_pagination": {
-    "last_validated_date": "2026-02-11T14:21:14+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 1.69,
-      "teardown": 2.77,
-      "total": 4.46
-    }
-  },
-  "tests/aws/services/iam/test_iam_roles.py::TestRolePermissionsBoundary::test_role_permissions_boundary_errors": {
-    "last_validated_date": "2026-02-11T14:20:59+00:00",
+    "last_validated_date": "2026-02-11T17:02:11+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 2.12,
-      "teardown": 0.87,
-      "total": 2.99
+      "teardown": 0.54,
+      "total": 2.66
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_create_describe_role": {
+    "last_validated_date": "2026-02-11T17:01:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.52,
+      "teardown": 0.52,
+      "total": 1.04
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_create_role_defaults": {
+    "last_validated_date": "2026-02-11T17:01:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.37,
+      "teardown": 0.53,
+      "total": 0.9
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_delete_role_with_attached_policy": {
+    "last_validated_date": "2026-02-11T17:01:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.45,
+      "teardown": 0.45,
+      "total": 1.9
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_delete_role_with_inline_policy": {
+    "last_validated_date": "2026-02-11T17:01:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.13,
+      "teardown": 0.14,
+      "total": 1.27
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_role_errors": {
+    "last_validated_date": "2026-02-11T17:01:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.84,
+      "call": 0.91,
+      "teardown": 0.0,
+      "total": 1.75
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_update_assume_role_policy": {
+    "last_validated_date": "2026-02-11T17:02:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.49,
+      "teardown": 0.53,
+      "total": 1.02
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_update_assume_role_policy_errors": {
+    "last_validated_date": "2026-02-11T17:02:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.47,
+      "teardown": 0.9,
+      "total": 2.37
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_update_role": {
+    "last_validated_date": "2026-02-11T17:01:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.13,
+      "teardown": 0.52,
+      "total": 1.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_role_managed_policy_errors": {
+    "last_validated_date": "2026-02-11T17:02:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.98,
+      "teardown": 0.92,
+      "total": 2.9
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_role_managed_policy_lifecycle": {
+    "last_validated_date": "2026-02-11T17:02:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.32,
+      "teardown": 0.8,
+      "total": 2.12
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRolePagination::test_list_roles_pagination": {
+    "last_validated_date": "2026-02-11T17:02:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.74,
+      "teardown": 3.02,
+      "total": 4.76
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRolePermissionsBoundary::test_role_permissions_boundary_errors": {
+    "last_validated_date": "2026-02-11T17:02:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.11,
+      "teardown": 0.85,
+      "total": 2.96
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRolePermissionsBoundary::test_role_permissions_boundary_lifecycle": {
-    "last_validated_date": "2026-02-11T14:20:56+00:00",
+    "last_validated_date": "2026-02-11T17:02:05+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 1.76,
-      "teardown": 0.77,
-      "total": 2.53
+      "call": 1.97,
+      "teardown": 0.76,
+      "total": 2.73
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleTags::test_role_tag_errors": {
-    "last_validated_date": "2026-02-11T14:21:10+00:00",
+    "last_validated_date": "2026-02-11T17:02:24+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.5,
-      "teardown": 0.0,
-      "total": 0.5
+      "call": 1.47,
+      "teardown": 0.99,
+      "total": 2.46
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleTags::test_role_tag_operations": {
-    "last_validated_date": "2026-02-11T14:21:09+00:00",
+    "last_validated_date": "2026-02-11T17:02:21+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 1.94,
+      "call": 2.02,
       "teardown": 0.58,
-      "total": 2.52
+      "total": 2.6
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleTags::test_role_with_tags": {
-    "last_validated_date": "2026-02-11T14:21:07+00:00",
+    "last_validated_date": "2026-02-11T17:02:19+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.6,
-      "teardown": 0.57,
-      "total": 1.17
+      "call": 0.58,
+      "teardown": 0.6,
+      "total": 1.18
     }
   }
 }

@@ -32,6 +32,7 @@ def snapshot_transformers(snapshot):
     snapshot.add_transformer(snapshot.transform.iam_api())
 
 
+# TODO properly test role last used
 class TestRoleLifecycle:
     @markers.aws.validated
     def test_role_errors(self, aws_client, create_role, snapshot):
@@ -65,6 +66,23 @@ class TestRoleLifecycle:
         snapshot.match("get-role-response", get_response)
 
     @markers.aws.validated
+    def test_create_describe_role(self, snapshot, aws_client, create_role, cleanups):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        path_prefix = f"/{short_uid()}/"
+        snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
+
+        role_name = f"role-{short_uid()}"
+        create_role_result = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(TRUST_POLICY), Path=path_prefix
+        )
+        snapshot.match("create-role-result", create_role_result)
+        get_role_result = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-result", get_role_result)
+
+        list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
+        snapshot.match("list-roles-result", list_roles_result)
+
+    @markers.aws.validated
     def test_delete_role_with_attached_policy(
         self, aws_client, create_role, create_policy, snapshot
     ):
@@ -72,10 +90,11 @@ class TestRoleLifecycle:
         role_name = f"role-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
 
-        create_role(
+        create_role_response = create_role(
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
         )
+        snapshot.match("create-role", create_role_response)
 
         policy_response = create_policy(
             PolicyName=policy_name,
@@ -89,8 +108,12 @@ class TestRoleLifecycle:
             aws_client.iam.delete_role(RoleName=role_name)
         snapshot.match("delete-role-with-policy-error", e.value.response)
 
-        # Cleanup: detach the policy so the fixture can delete the role
+        # detach the policy and delete the role
         aws_client.iam.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+        aws_client.iam.delete_role(RoleName=role_name)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-after-deletion-error", e.value.response)
 
     @markers.aws.validated
     def test_delete_role_with_inline_policy(self, aws_client, create_role, snapshot):
@@ -98,10 +121,11 @@ class TestRoleLifecycle:
         role_name = f"role-{short_uid()}"
         policy_name = f"inline-policy-{short_uid()}"
 
-        create_role(
+        create_role_response = create_role(
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
         )
+        snapshot.match("create-role", create_role_response)
 
         aws_client.iam.put_role_policy(
             RoleName=role_name,
@@ -113,8 +137,12 @@ class TestRoleLifecycle:
             aws_client.iam.delete_role(RoleName=role_name)
         snapshot.match("delete-role-with-inline-policy-error", e.value.response)
 
-        # Cleanup: delete the inline policy so the fixture can delete the role
+        # delete the inline policy and delete the role
         aws_client.iam.delete_role_policy(RoleName=role_name, PolicyName=policy_name)
+        aws_client.iam.delete_role(RoleName=role_name)
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-after-deletion-error", e.value.response)
 
     @markers.aws.validated
     def test_update_role(self, aws_client, create_role, snapshot):
@@ -209,6 +237,33 @@ class TestRoleLifecycle:
             )
         snapshot.match("resource-field-error", e.value.response)
 
+    @markers.aws.validated
+    def test_update_assume_role_policy(self, snapshot, aws_client, create_role):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": ["ec2.amazonaws.com"]},
+                    "Action": ["sts:AssumeRole"],
+                }
+            ],
+        }
+
+        role_name = f"role-{short_uid()}"
+        result = create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(policy),
+        )
+        snapshot.match("created_role", result)
+        result = aws_client.iam.update_assume_role_policy(
+            RoleName=role_name,
+            PolicyDocument=json.dumps(policy),
+        )
+        snapshot.match("updated_policy", result)
+
 
 class TestRolePermissionsBoundary:
     @markers.aws.validated
@@ -246,6 +301,11 @@ class TestRolePermissionsBoundary:
         # Get role - should not have PermissionsBoundary
         get_role_no_boundary = aws_client.iam.get_role(RoleName=role_name)
         snapshot.match("get-role-no-boundary", get_role_no_boundary)
+
+        # List roles should also not show the boundary anymore
+        list_roles_response = aws_client.iam.list_roles()
+        roles_with_name = [r for r in list_roles_response["Roles"] if r["RoleName"] == role_name]
+        snapshot.match("list-roles-without-boundary", {"Roles": roles_with_name})
 
         # Put permissions boundary back
         aws_client.iam.put_role_permissions_boundary(
@@ -392,6 +452,49 @@ class TestRoleInlinePolicies:
         # Cleanup
         aws_client.iam.delete_role_policy(RoleName=role_name, PolicyName=policy_name_2)
 
+    @markers.aws.validated
+    def test_role_inline_policy_errors(self, aws_client, create_role, create_policy, snapshot):
+        """Test policy attachement errors"""
+        role_name = f"role-{short_uid()}"
+        non_existent_role_name = "nonexistent-role"
+        policy_name = "non-existent-policy"
+
+        create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+        )
+
+        # Try to get non-existent policy
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.get_role_policy(RoleName=role_name, PolicyName=policy_name)
+        snapshot.match("get-nonexistent-policy-error", e.value.response)
+
+        # Try to delete non-existent policy
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_role_policy(RoleName=role_name, PolicyName=policy_name)
+        snapshot.match("delete-nonexistent-policy-error", e.value.response)
+
+        # Try to put on non-existent role
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.put_role_policy(
+                RoleName=non_existent_role_name,
+                PolicyName=policy_name,
+                PolicyDocument=json.dumps(MOCK_POLICY),
+            )
+        snapshot.match("put-policy-nonexistent-role-error", e.value.response)
+
+        # Try to put on non-existent role
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.get_role_policy(RoleName=non_existent_role_name, PolicyName=policy_name)
+        snapshot.match("get-policy-nonexistent-role-error", e.value.response)
+
+        # Try to get on non-existent role
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_role_policy(
+                RoleName=non_existent_role_name, PolicyName=policy_name
+            )
+        snapshot.match("delete-policy-nonexistent-role-error", e.value.response)
+
 
 class TestRoleManagedPolicies:
     @markers.aws.validated
@@ -415,12 +518,6 @@ class TestRoleManagedPolicies:
         list_response_empty = aws_client.iam.list_attached_role_policies(RoleName=role_name)
         snapshot.match("list-attached-policies-empty", list_response_empty)
 
-        # Try to attach non-existent policy
-        fake_policy_arn = policy_arn.replace(policy_name, "nonexistent-policy")
-        with pytest.raises(ClientError) as e:
-            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=fake_policy_arn)
-        snapshot.match("attach-nonexistent-policy-error", e.value.response)
-
         # Attach policy
         aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
 
@@ -439,7 +536,7 @@ class TestRoleManagedPolicies:
     def test_role_managed_policy_errors(self, aws_client, create_role, create_policy, snapshot):
         """Test detaching a policy that is not attached raises NoSuchEntity."""
         role_name = f"role-{short_uid()}"
-        policy_name = f"policy-{short_uid()}"
+        policy_name = f"test-policy-{short_uid()}"
 
         create_role(
             RoleName=role_name,
@@ -457,6 +554,22 @@ class TestRoleManagedPolicies:
         with pytest.raises(ClientError) as e:
             aws_client.iam.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
         snapshot.match("detach-not-attached-policy-error", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_role_policy(
+                RoleName=role_name, PolicyArn="longpolicynamebutnoarn"
+            )
+        snapshot.match("non-existent-malformed-policy-arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_name)
+        snapshot.match("existing-policy-name-provided", e.value.response)
+
+        # Try to attach non-existent policy
+        fake_policy_arn = policy_arn.replace(policy_name, "nonexistent-policy")
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=fake_policy_arn)
+        snapshot.match("attach-nonexistent-policy-error", e.value.response)
 
 
 class TestRoleTags:
@@ -531,24 +644,46 @@ class TestRoleTags:
         snapshot.match("list-role-tags-empty", list_tags_empty)
 
     @markers.aws.validated
-    def test_role_tag_errors(self, aws_client, snapshot):
+    def test_role_tag_errors(self, aws_client, snapshot, create_role):
         """Test tag_role and untag_role errors for non-existent role."""
-        role_name = "test-nonexistent-role"
+        non_existent_role_name = "test-nonexistent-role"
+        role_name = f"role-{short_uid()}"
 
         with pytest.raises(ClientError) as e:
             aws_client.iam.tag_role(
-                RoleName=role_name,
+                RoleName=non_existent_role_name,
                 Tags=[{"Key": "somekey", "Value": "somevalue"}],
             )
         snapshot.match("tag-nonexistent-role-error", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.iam.untag_role(RoleName=role_name, TagKeys=["somekey"])
+            aws_client.iam.untag_role(RoleName=non_existent_role_name, TagKeys=["somekey"])
         snapshot.match("untag-nonexistent-role-error", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.iam.list_role_tags(RoleName=role_name)
+            aws_client.iam.list_role_tags(RoleName=non_existent_role_name)
         snapshot.match("list-tags-nonexistent-role-error", e.value.response)
+
+        # test too many tags
+        tags = [{"Key": str(x), "Value": str(x)} for x in range(0, 51)]
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=role_name, AssumeRolePolicyDocument=json.dumps(TRUST_POLICY), Tags=tags
+            )
+        snapshot.match("create-role-too-many-tags", e.value.response)
+
+        create_role_response = create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+        )
+        snapshot.match("create-role", create_role_response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.tag_role(
+                RoleName=non_existent_role_name,
+                Tags=tags,
+            )
+        snapshot.match("tag-role-too-many-tags", e.value.response)
 
 
 class TestRolePagination:

@@ -1,6 +1,6 @@
 {
   "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_role_errors": {
-    "recorded-date": "11-02-2026, 14:19:29",
+    "recorded-date": "11-02-2026, 17:01:52",
     "recorded-content": {
       "get-role-error": {
         "Error": {
@@ -38,7 +38,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_create_role_defaults": {
-    "recorded-date": "11-02-2026, 14:19:30",
+    "recorded-date": "11-02-2026, 17:01:53",
     "recorded-content": {
       "create-role-response": {
         "Role": {
@@ -95,8 +95,33 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_delete_role_with_attached_policy": {
-    "recorded-date": "11-02-2026, 14:19:32",
+    "recorded-date": "11-02-2026, 17:01:56",
     "recorded-content": {
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "delete-role-with-policy-error": {
         "Error": {
           "Code": "DeleteConflict",
@@ -107,12 +132,48 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
         }
+      },
+      "get-role-after-deletion-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role with name <role-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
       }
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_delete_role_with_inline_policy": {
-    "recorded-date": "11-02-2026, 14:19:34",
+    "recorded-date": "11-02-2026, 17:01:58",
     "recorded-content": {
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "delete-role-with-inline-policy-error": {
         "Error": {
           "Code": "DeleteConflict",
@@ -123,11 +184,22 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
         }
+      },
+      "get-role-after-deletion-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role with name <role-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
       }
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_update_role": {
-    "recorded-date": "11-02-2026, 14:19:35",
+    "recorded-date": "11-02-2026, 17:01:59",
     "recorded-content": {
       "get-role-initial": {
         "Role": {
@@ -248,7 +320,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_update_assume_role_policy_errors": {
-    "recorded-date": "11-02-2026, 14:19:38",
+    "recorded-date": "11-02-2026, 17:02:02",
     "recorded-content": {
       "invalid-json-error": {
         "Error": {
@@ -286,7 +358,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleInlinePolicies::test_role_inline_policy_lifecycle": {
-    "recorded-date": "11-02-2026, 14:19:47",
+    "recorded-date": "11-02-2026, 17:02:11",
     "recorded-content": {
       "get-role-policy-1": {
         "PolicyDocument": {
@@ -376,7 +448,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_role_managed_policy_lifecycle": {
-    "recorded-date": "11-02-2026, 14:19:49",
+    "recorded-date": "11-02-2026, 17:02:15",
     "recorded-content": {
       "list-attached-policies-empty": {
         "AttachedPolicies": [],
@@ -384,17 +456,6 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
-        }
-      },
-      "attach-nonexistent-policy-error": {
-        "Error": {
-          "Code": "NoSuchEntity",
-          "Message": "Policy arn:<partition>:iam::111111111111:policy/nonexistent-policy does not exist or is not attachable.",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
         }
       },
       "list-attached-policies-1": {
@@ -421,7 +482,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_role_managed_policy_errors": {
-    "recorded-date": "11-02-2026, 14:19:50",
+    "recorded-date": "11-02-2026, 17:02:18",
     "recorded-content": {
       "create-policy": {
         "Policy": {
@@ -451,11 +512,44 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
         }
+      },
+      "non-existent-malformed-policy-arn": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "ARN longpolicynamebutnoarn is not valid.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "existing-policy-name-provided": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "ARN <policy-name:1> is not valid.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "attach-nonexistent-policy-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/nonexistent-policy does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
       }
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleTags::test_role_with_tags": {
-    "recorded-date": "11-02-2026, 14:19:51",
+    "recorded-date": "11-02-2026, 17:02:19",
     "recorded-content": {
       "create-role-response": {
         "Role": {
@@ -553,7 +647,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleTags::test_role_tag_operations": {
-    "recorded-date": "11-02-2026, 14:19:54",
+    "recorded-date": "11-02-2026, 17:02:21",
     "recorded-content": {
       "get-role-no-tags": {
         "Role": {
@@ -677,7 +771,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleTags::test_role_tag_errors": {
-    "recorded-date": "11-02-2026, 14:19:54",
+    "recorded-date": "11-02-2026, 17:02:24",
     "recorded-content": {
       "tag-nonexistent-role-error": {
         "Error": {
@@ -711,11 +805,58 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
         }
+      },
+      "create-role-too-many-tags": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags' failed to satisfy constraint: Member must have length less than or equal to 50",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag-role-too-many-tags": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags' failed to satisfy constraint: Member must have length less than or equal to 50",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
       }
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRolePagination::test_list_roles_pagination": {
-    "recorded-date": "11-02-2026, 14:19:59",
+    "recorded-date": "11-02-2026, 17:02:29",
     "recorded-content": {
       "create-role-0": {
         "Role": {
@@ -1087,7 +1228,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRolePermissionsBoundary::test_role_permissions_boundary_lifecycle": {
-    "recorded-date": "11-02-2026, 14:19:41",
+    "recorded-date": "11-02-2026, 17:02:05",
     "recorded-content": {
       "create-policy": {
         "Policy": {
@@ -1196,6 +1337,31 @@
           "HTTPStatusCode": 200
         }
       },
+      "list-roles-without-boundary": {
+        "Roles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "CreateDate": "<datetime>",
+            "Description": "Role with permissions boundary",
+            "MaxSessionDuration": 3600,
+            "Path": "/",
+            "RoleId": "<role-id:1>",
+            "RoleName": "<role-name:1>"
+          }
+        ]
+      },
       "get-role-boundary-restored": {
         "Role": {
           "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
@@ -1256,7 +1422,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRolePermissionsBoundary::test_role_permissions_boundary_errors": {
-    "recorded-date": "11-02-2026, 14:19:44",
+    "recorded-date": "11-02-2026, 17:02:08",
     "recorded-content": {
       "create-role": {
         "Role": {
@@ -1354,6 +1520,192 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_update_assume_role_policy": {
+    "recorded-date": "11-02-2026, 17:02:03",
+    "recorded-content": {
+      "created_role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "ec2.amazonaws.com"
+                  ]
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated_policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleInlinePolicies::test_role_inline_policy_errors": {
+    "recorded-date": "11-02-2026, 17:02:13",
+    "recorded-content": {
+      "get-nonexistent-policy-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role policy with name non-existent-policy cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-nonexistent-policy-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role policy with name non-existent-policy cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-policy-nonexistent-role-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role with name nonexistent-role cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-policy-nonexistent-role-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role with name nonexistent-role cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-policy-nonexistent-role-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role with name nonexistent-role cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_create_describe_role": {
+    "recorded-date": "11-02-2026, 17:01:54",
+    "recorded-content": {
+      "create-role-result": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/<path-prefix>/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-role-result": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/<path-prefix>/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-roles-result": {
+        "IsTruncated": false,
+        "Roles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role/<path-prefix>/<role-name:1>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "CreateDate": "<datetime>",
+            "MaxSessionDuration": 3600,
+            "Path": "/<path-prefix>/",
+            "RoleId": "<role-id:1>",
+            "RoleName": "<role-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
