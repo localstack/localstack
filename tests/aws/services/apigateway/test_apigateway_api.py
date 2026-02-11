@@ -2279,8 +2279,8 @@ class TestApiGatewayApiDocumentationPart:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # FIXME: AWS returns the `path` field for RESPONSE and METHOD
-            "$.import-documentations-parts.items[1].location.path",
-            "$.import-documentations-parts.items[3].location.path",
+            "$.get-documentations-parts-after-import.items[1].location.path",
+            "$.get-documentations-parts-after-import.items[3].location.path",
         ]
     )
     def test_import_documentation_parts(self, aws_client, import_apigw, snapshot):
