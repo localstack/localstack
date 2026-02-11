@@ -3344,62 +3344,122 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_import_documentation_parts": {
-    "recorded-date": "15-04-2024, 20:57:15",
+    "recorded-date": "09-02-2026, 18:59:24",
     "recorded-content": {
-      "create-import-documentations_parts": [
-        {
-          "id": "<id:1>",
-          "location": {
-            "type": "API"
+      "get-documentations-parts-after-api-imports": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "location": {
+              "type": "API"
+            },
+            "properties": {
+              "description": "API description",
+              "info": {
+                "description": "API info description 4",
+                "version": "API info version 3"
+              }
+            }
           },
-          "properties": {
-            "description": "API description",
-            "info": {
-              "description": "API info description 4",
-              "version": "API info version 3"
+          {
+            "id": "<id:2>",
+            "location": {
+              "method": "GET",
+              "path": "/",
+              "type": "METHOD"
+            },
+            "properties": {
+              "description": "Method description."
+            }
+          },
+          {
+            "id": "<id:3>",
+            "location": {
+              "name": "<name:1>",
+              "type": "MODEL"
+            },
+            "properties": {
+              "title": "<name:1> Schema"
+            }
+          },
+          {
+            "id": "<id:4>",
+            "location": {
+              "method": "GET",
+              "path": "/",
+              "statusCode": "200",
+              "type": "RESPONSE"
+            },
+            "properties": {
+              "description": "200 response"
             }
           }
-        },
-        {
-          "id": "<id:2>",
-          "location": {
-            "type": "METHOD",
-            "path": "/",
-            "method": "GET"
-          },
-          "properties": {
-            "description": "Method description."
-          }
-        },
-        {
-          "id": "<id:3>",
-          "location": {
-            "type": "MODEL",
-            "name": "<name:1>"
-          },
-          "properties": {
-            "title": "<name:1> Schema"
-          }
-        },
-        {
-          "id": "<id:4>",
-          "location": {
-            "type": "RESPONSE",
-            "path": "/",
-            "method": "GET",
-            "statusCode": "200"
-          },
-          "properties": {
-            "description": "200 response"
-          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
-      ],
+      },
       "import-documentation-parts": {
         "ids": [
           "<id:5>",
           "<id:6>",
           "<id:7>",
           "<id:8>"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-documentations-parts-after-import": {
+        "items": [
+          {
+            "id": "<id:5>",
+            "location": {
+              "type": "API"
+            },
+            "properties": {
+              "description": "API description",
+              "info": {
+                "description": "API info description 4",
+                "version": "API info version 3"
+              }
+            }
+          },
+          {
+            "id": "<id:6>",
+            "location": {
+              "method": "GET",
+              "path": "/",
+              "type": "METHOD"
+            },
+            "properties": {
+              "description": "Method description."
+            }
+          },
+          {
+            "id": "<id:7>",
+            "location": {
+              "name": "<name:1>",
+              "type": "MODEL"
+            },
+            "properties": {
+              "title": "<name:1> Schema"
+            }
+          },
+          {
+            "id": "<id:8>",
+            "location": {
+              "method": "GET",
+              "path": "/",
+              "statusCode": "200",
+              "type": "RESPONSE"
+            },
+            "properties": {
+              "description": "200 response"
+            }
+          }
         ],
         "ResponseMetadata": {
           "HTTPHeaders": {},

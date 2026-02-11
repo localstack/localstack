@@ -2206,9 +2206,18 @@
     "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_encryption_decryption": {
-    "recorded-date": "03-04-2025, 09:34:48",
+    "recorded-date": "09-02-2026, 19:06:42",
     "recorded-content": {
-      "bad-ciphertext": "An error occurred (InvalidCiphertextException) when calling the Decrypt operation: "
+      "bad-ciphertext": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_limits": {

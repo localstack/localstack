@@ -1415,7 +1415,7 @@ class TestKMS:
                 EncryptionAlgorithm="SYMMETRIC_DEFAULT",
             )
 
-        snapshot.match("bad-ciphertext", e.value)
+        snapshot.match("bad-ciphertext", e.value.response)
 
     @markers.aws.validated
     def test_key_rotations_limits(self, kms_create_key, aws_client, snapshot):

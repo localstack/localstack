@@ -2276,6 +2276,13 @@ class TestApiGatewayApiDocumentationPart:
         snapshot.match("delete_already_deleted_documentation_part", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # FIXME: AWS returns the `path` field for RESPONSE and METHOD
+            "$.get-documentations-parts-after-import.items[1].location.path",
+            "$.get-documentations-parts-after-import.items[3].location.path",
+        ]
+    )
     def test_import_documentation_parts(self, aws_client, import_apigw, snapshot):
         # snapshot array "ids"
         snapshot.add_transformer(snapshot.transform.jsonpath("$..ids[*]", "id"))
@@ -2286,7 +2293,9 @@ class TestApiGatewayApiDocumentationPart:
 
         # get documentation parts to make sure import worked
         response = aws_client.apigateway.get_documentation_parts(restApiId=rest_api_id)
-        snapshot.match("create-import-documentations_parts", response["items"])
+        snapshot.match("get-documentations-parts-after-api-imports", response)
+        # manually assert that the type is of string because snapshot auto-decodes JSON
+        assert isinstance(response["items"][0]["properties"], str)
 
         # delete documentation parts
         for doc_part_item in response["items"]:
@@ -2307,6 +2316,11 @@ class TestApiGatewayApiDocumentationPart:
             body=spec_file,
         )
         snapshot.match("import-documentation-parts", response)
+
+        # get documentation parts to make sure import worked
+        response = aws_client.apigateway.get_documentation_parts(restApiId=rest_api_id)
+        snapshot.match("get-documentations-parts-after-import", response)
+        assert isinstance(response["items"][0]["properties"], str)
 
     @markers.aws.validated
     def test_import_documentation_parts_bad_file(self, aws_client, apigw_create_rest_api, snapshot):

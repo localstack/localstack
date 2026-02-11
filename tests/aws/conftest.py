@@ -158,3 +158,19 @@ def snapshot(request, _snapshot_session: SnapshotSession, account_id, region_nam
         _snapshot_session.add_transformer(SNAPSHOT_BASIC_TRANSFORMER_NEW, priority=2)
 
     return _snapshot_session
+
+
+@pytest.hookimpl()
+def pytest_addhooks(pluginmanager):
+    try:
+        # This is only relevant when running Community Tests against Pro pipeline
+        from localstack.pro.core.testing.pytest.store import StoreSerializationCheckerPlugin
+
+        from localstack.testing.aws.util import is_aws_cloud
+
+        if not test_config.TEST_SKIP_LOCALSTACK_START and not is_aws_cloud():
+            # this directly accesses LocalStack state in memory, so it is not worth running in tests against external
+            # instances
+            pluginmanager.register(StoreSerializationCheckerPlugin(with_pickle=False))
+    except ImportError:
+        pass

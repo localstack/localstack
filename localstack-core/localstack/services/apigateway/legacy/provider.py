@@ -1551,6 +1551,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             rest_api_container.documentation_parts.clear()
             for doc_part in documentation["documentationParts"]:
                 entity_id = short_uid()[:6]
+                doc_part["properties"] = json.dumps(doc_part.get("properties", ""))
                 rest_api_container.documentation_parts[entity_id] = DocumentationPart(
                     id=entity_id, **doc_part
                 )

@@ -351,7 +351,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_encryption_decryption": {
-    "last_validated_date": "2025-04-03T09:34:47+00:00"
+    "last_validated_date": "2026-02-09T19:06:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 1.13,
+      "teardown": 0.12,
+      "total": 1.74
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_limits": {
     "last_validated_date": "2025-04-03T11:10:33+00:00"
