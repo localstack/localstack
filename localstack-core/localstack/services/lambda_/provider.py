@@ -383,8 +383,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     # TODO: How do we know the event source is up?
                     # A basic poll to see if the mapped Lambda function is active/failed
                     if not poll_condition(
-                        lambda: get_function_version_from_arn(function_arn).config.state.state
-                        in [State.Active, State.Failed],
+                        lambda: (
+                            get_function_version_from_arn(function_arn).config.state.state
+                            in [State.Active, State.Failed]
+                        ),
                         timeout=10,
                     ):
                         LOG.warning(
@@ -1230,10 +1232,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if config.LAMBDA_SYNCHRONOUS_CREATE:
             # block via retrying until "terminal" condition reached before returning
             if not poll_condition(
-                lambda: get_function_version(
-                    function_name, version.id.qualifier, version.id.account, version.id.region
-                ).config.state.state
-                in [State.Active, State.ActiveNonInvocable, State.Failed],
+                lambda: (
+                    get_function_version(
+                        function_name, version.id.qualifier, version.id.account, version.id.region
+                    ).config.state.state
+                    in [State.Active, State.ActiveNonInvocable, State.Failed]
+                ),
                 timeout=10,
             ):
                 LOG.warning(

@@ -183,12 +183,14 @@ class TestCloudWatchLogs:
         # pattern for the short-uid
         # for some reason, this does not work immediately on AWS
         assert poll_condition(
-            lambda: len(
-                aws_client.logs.describe_log_groups(
-                    logGroupNamePattern=logs_log_group.split("-")[-1]
-                ).get("logGroups")
-            )
-            == 1,
+            lambda: (
+                len(
+                    aws_client.logs.describe_log_groups(
+                        logGroupNamePattern=logs_log_group.split("-")[-1]
+                    ).get("logGroups")
+                )
+                == 1
+            ),
             timeout=5.0,
             interval=0.5,
         )

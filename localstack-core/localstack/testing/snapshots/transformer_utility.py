@@ -925,16 +925,18 @@ SNAPSHOT_BASIC_TRANSFORMER = [
     ),
     RegexTransformer(PATTERN_ISO8601, "date"),
     KeyValueBasedTransformer(
-        lambda k, v: (v if isinstance(v, datetime) else None), "datetime", replace_reference=False
+        lambda k, v: v if isinstance(v, datetime) else None, "datetime", replace_reference=False
     ),
     KeyValueBasedTransformer(
-        lambda k, v: str(v)
-        if (
-            re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE).match(k)
-            or k in ("creationTime", "ingestionTime")
-        )
-        and not PATTERN_ISO8601.match(str(v))
-        else None,
+        lambda k, v: (
+            str(v)
+            if (
+                re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE).match(k)
+                or k in ("creationTime", "ingestionTime")
+            )
+            and not PATTERN_ISO8601.match(str(v))
+            else None
+        ),
         "timestamp",
         replace_reference=False,
     ),

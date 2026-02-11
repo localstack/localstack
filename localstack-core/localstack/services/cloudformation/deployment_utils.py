@@ -89,26 +89,16 @@ def params_list_to_dict(param_name, key_attr_name="Key", value_attr_name="Value"
 
 
 def lambda_keys_to_lower(key=None, skip_children_of: list[str] = None):
-    return (
-        lambda account_id,
-        region_name,
-        params,
-        logical_resource_id,
-        *args,
-        **kwargs: common.keys_to_lower(
+    return lambda account_id, region_name, params, logical_resource_id, *args, **kwargs: (
+        common.keys_to_lower(
             obj=(params.get(key) if key else params), skip_children_of=skip_children_of
         )
     )
 
 
 def merge_parameters(func1, func2):
-    return (
-        lambda account_id,
-        region_name,
-        properties,
-        logical_resource_id,
-        *args,
-        **kwargs: common.merge_dicts(
+    return lambda account_id, region_name, properties, logical_resource_id, *args, **kwargs: (
+        common.merge_dicts(
             func1(account_id, region_name, properties, logical_resource_id, *args, **kwargs),
             func2(account_id, region_name, properties, logical_resource_id, *args, **kwargs),
         )
@@ -159,13 +149,8 @@ def lambda_select_params(*selected):
 
 
 def select_parameters(*param_names):
-    return (
-        lambda account_id,
-        region_name,
-        properties,
-        logical_resource_id,
-        *args,
-        **kwargs: select_attributes(properties, param_names)
+    return lambda account_id, region_name, properties, logical_resource_id, *args, **kwargs: (
+        select_attributes(properties, param_names)
     )
 
 

@@ -220,10 +220,12 @@ class TestBookstoreApplication:
         snapshot.add_transformer(GenericTransformer(_sort_hits))
         snapshot.add_transformer(
             KeyValueBasedTransformer(
-                lambda k, v: v
-                if k in ("took", "max_score", "_score")
-                and (isinstance(v, float) or isinstance(v, int))
-                else None,
+                lambda k, v: (
+                    v
+                    if k in ("took", "max_score", "_score")
+                    and (isinstance(v, float) or isinstance(v, int))
+                    else None
+                ),
                 replacement="<amount>",
                 replace_reference=False,
             )
