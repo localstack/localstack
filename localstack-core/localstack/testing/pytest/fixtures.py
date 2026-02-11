@@ -1589,6 +1589,12 @@ def create_policy(aws_client):
 
     for policy_arn, iam_client in policy_arns:
         try:
+            versions = iam_client.list_policy_versions(PolicyArn=policy_arn)
+            for version in versions.get("Versions", []):
+                if not version["IsDefaultVersion"]:
+                    iam_client.delete_policy_version(
+                        PolicyArn=policy_arn, VersionId=version["VersionId"]
+                    )
             iam_client.delete_policy(PolicyArn=policy_arn)
         except Exception:
             LOG.debug("Could not delete policy '%s' during test cleanup", policy_arn)

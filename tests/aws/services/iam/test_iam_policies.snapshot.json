@@ -1,0 +1,3524 @@
+{
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[/test/path/]": {
+    "recorded-date": "10-02-2026, 12:42:29",
+    "recorded-content": {
+      "create-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/test/path/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/test/path/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/test/path/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/test/path/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "filtered-policy-list": [
+        {
+          "PolicyName": "<policy-name:1>",
+          "PolicyId": "<policy-id:1>",
+          "Arn": "arn:<partition>:iam::111111111111:policy/test/path/<policy-name:1>",
+          "Path": "/test/path/",
+          "DefaultVersionId": "v1",
+          "AttachmentCount": 0,
+          "PermissionsBoundaryUsageCount": 0,
+          "IsAttachable": true,
+          "CreateDate": "<datetime>",
+          "UpdateDate": "<datetime>"
+        }
+      ],
+      "delete-policy-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[/]": {
+    "recorded-date": "10-02-2026, 12:42:30",
+    "recorded-content": {
+      "create-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "filtered-policy-list": [
+        {
+          "PolicyName": "<policy-name:1>",
+          "PolicyId": "<policy-id:1>",
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "Path": "/",
+          "DefaultVersionId": "v1",
+          "AttachmentCount": 0,
+          "PermissionsBoundaryUsageCount": 0,
+          "IsAttachable": true,
+          "CreateDate": "<datetime>",
+          "UpdateDate": "<datetime>"
+        }
+      ],
+      "delete-policy-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[None]": {
+    "recorded-date": "10-02-2026, 12:42:31",
+    "recorded-content": {
+      "create-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "filtered-policy-list": [
+        {
+          "PolicyName": "<policy-name:1>",
+          "PolicyId": "<policy-id:1>",
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "Path": "/",
+          "DefaultVersionId": "v1",
+          "AttachmentCount": 0,
+          "PermissionsBoundaryUsageCount": 0,
+          "IsAttachable": true,
+          "CreateDate": "<datetime>",
+          "UpdateDate": "<datetime>"
+        }
+      ],
+      "delete-policy-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_errors": {
+    "recorded-date": "10-02-2026, 12:42:31",
+    "recorded-content": {
+      "create-policy-response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy-already-exists": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "A policy called <policy-name:1> already exists. Duplicate names are not allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_lifecycle": {
+    "recorded-date": "10-02-2026, 12:42:33",
+    "recorded-content": {
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-version-v2": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "IsDefaultVersion": true,
+          "VersionId": "v2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-version-v2": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "Document": {
+            "Statement": [
+              {
+                "Action": [
+                  "s3:ListBucket"
+                ],
+                "Effect": "Allow",
+                "Resource": "*",
+                "Sid": "Statement1"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "IsDefaultVersion": true,
+          "VersionId": "v2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-version-v3": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "IsDefaultVersion": false,
+          "VersionId": "v3"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-version-v3": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "Document": {
+            "Statement": [
+              {
+                "Action": [
+                  "ec2:DescribeInstances"
+                ],
+                "Effect": "Allow",
+                "Resource": "*",
+                "Sid": "Statement1"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "IsDefaultVersion": false,
+          "VersionId": "v3"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-versions": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v3"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_set_default": {
+    "recorded-date": "10-02-2026, 12:42:35",
+    "recorded-content": {
+      "list-after-create": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v3"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v2"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-default-v1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-set-default": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v3"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v2"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_limit": {
+    "recorded-date": "10-02-2026, 12:42:38",
+    "recorded-content": {
+      "err-version-limit-exceeded": {
+        "Error": {
+          "Code": "LimitExceeded",
+          "Message": "A managed policy can have up to 5 versions. Before you create a new version, you must delete an existing version.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "list-versions-at-limit": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v5"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v4"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v3"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v2"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-version-after-delete": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "IsDefaultVersion": false,
+          "VersionId": "v6"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_errors": {
+    "recorded-date": "10-02-2026, 12:42:41",
+    "recorded-content": {
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "err-get-version-nonexistent-policy": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/TestNonExistingPolicy version v1 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "err-get-nonexistent-version": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1> version v9 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "err-delete-default-version": {
+        "Error": {
+          "Code": "DeleteConflict",
+          "Message": "Cannot delete the default version of a policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "err-delete-nonexistent-version": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1> version v9 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "err-set-default-nonexistent-policy": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/TestNonExistingPolicy version v1 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "err-set-default-invalid-version-format": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'versionId' failed to satisfy constraint: Member must satisfy regular expression pattern: v[1-9][0-9]*(\\.[A-Za-z0-9-]*)?",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-set-default-nonexistent-version": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name:1> version v4 does not exist or is not attachable.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list-after-delete": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_lifecycle": {
+    "recorded-date": "10-02-2026, 13:42:05",
+    "recorded-content": {
+      "create-with-tags": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [
+            {
+              "Key": "somekey",
+              "Value": "somevalue"
+            },
+            {
+              "Key": "someotherkey",
+              "Value": "someothervalue"
+            }
+          ],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-with-tags": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "Description": "testing",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [
+            {
+              "Key": "somekey",
+              "Value": "somevalue"
+            },
+            {
+              "Key": "someotherkey",
+              "Value": "someothervalue"
+            }
+          ],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-created-tags": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "somekey",
+            "Value": "somevalue"
+          },
+          {
+            "Key": "someotherkey",
+            "Value": "someothervalue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-with-empty-tag-value": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:2>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:2>",
+          "PolicyName": "<policy-name:2>",
+          "Tags": [
+            {
+              "Key": "somekey",
+              "Value": ""
+            }
+          ],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-empty-tag-value": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "somekey",
+            "Value": ""
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-without-tags": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:3>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:3>",
+          "PolicyName": "<policy-name:3>",
+          "Tags": [],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-with-case-sensitive-tags": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:4>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:4>",
+          "PolicyName": "<policy-name:4>",
+          "Tags": [
+            {
+              "Key": "a",
+              "Value": "lowercase"
+            },
+            {
+              "Key": "A",
+              "Value": "uppercase"
+            }
+          ],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-case-sensitive-tags": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "A",
+            "Value": "uppercase"
+          },
+          {
+            "Key": "a",
+            "Value": "lowercase"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_operations": {
+    "recorded-date": "10-02-2026, 13:42:09",
+    "recorded-content": {
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-after-tag": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [
+            {
+              "Key": "somekey",
+              "Value": "somevalue"
+            },
+            {
+              "Key": "someotherkey",
+              "Value": "someothervalue"
+            }
+          ],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "somekey",
+            "Value": "somevalue"
+          },
+          {
+            "Key": "someotherkey",
+            "Value": "someothervalue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-page1": {
+        "IsTruncated": true,
+        "Marker": "<marker:1>",
+        "Tags": [
+          {
+            "Key": "somekey",
+            "Value": "somevalue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-page2": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "someotherkey",
+            "Value": "someothervalue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-update": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "somekey",
+            "Value": "somenewvalue"
+          },
+          {
+            "Key": "someotherkey",
+            "Value": "someothervalue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-update-empty": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "somekey",
+            "Value": ""
+          },
+          {
+            "Key": "someotherkey",
+            "Value": "someothervalue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-untag-one": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "someotherkey",
+            "Value": "someothervalue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-untag-all": {
+        "IsTruncated": false,
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-case-sensitive-tags": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "A",
+            "Value": "uppercase"
+          },
+          {
+            "Key": "a",
+            "Value": "lowercase"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-untag-lowercase": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "A",
+            "Value": "uppercase"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_create_errors": {
+    "recorded-date": "10-02-2026, 13:42:11",
+    "recorded-content": {
+      "err-too-many-tags": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags' failed to satisfy constraint: Member must have length less than or equal to 50",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-duplicate-keys": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Duplicate tag keys found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-large-key": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.key' failed to satisfy constraint: Member must have length less than or equal to 128",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-large-value": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.value' failed to satisfy constraint: Member must have length less than or equal to 256",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-invalid-character": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.key' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_update_errors": {
+    "recorded-date": "10-02-2026, 13:42:17",
+    "recorded-content": {
+      "err-tag-too-many": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags' failed to satisfy constraint: Member must have length less than or equal to 50",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-tag-duplicate-keys": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Duplicate tag keys found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-tag-large-key": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.key' failed to satisfy constraint: Member must have length less than or equal to 128",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-tag-large-value": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.value' failed to satisfy constraint: Member must have length less than or equal to 256",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-tag-invalid-character": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tags.1.member.key' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-tag-nonexistent-policy": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/NotAPolicy was not found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "err-untag-too-many-keys": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tagKeys' failed to satisfy constraint: Member must have length less than or equal to 50",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-untag-large-key": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tagKeys' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 128, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+, Member must not be null]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-untag-invalid-character": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'tagKeys' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 128, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+, Member must not be null]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "err-untag-nonexistent-policy": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/NotAPolicy was not found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-0]": {
+    "recorded-date": "10-02-2026, 13:56:43",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-1]": {
+    "recorded-date": "10-02-2026, 13:56:44",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy document must be version 2012-10-17 or greater.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-2]": {
+    "recorded-date": "10-02-2026, 13:56:44",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy document must be version 2012-10-17 or greater.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-3]": {
+    "recorded-date": "10-02-2026, 13:56:45",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-4]": {
+    "recorded-date": "10-02-2026, 13:56:45",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-5]": {
+    "recorded-date": "10-02-2026, 13:56:46",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-6]": {
+    "recorded-date": "10-02-2026, 13:56:46",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-7]": {
+    "recorded-date": "10-02-2026, 13:56:47",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-8]": {
+    "recorded-date": "10-02-2026, 13:56:47",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-9]": {
+    "recorded-date": "10-02-2026, 13:56:48",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-10]": {
+    "recorded-date": "10-02-2026, 13:56:49",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-11]": {
+    "recorded-date": "10-02-2026, 13:56:49",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Actions/Conditions must be prefaced by a vendor, e.g., iam, sdb, ec2, etc.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-12]": {
+    "recorded-date": "10-02-2026, 13:56:50",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Actions/Conditions must be prefaced by a vendor, e.g., iam, sdb, ec2, etc.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-13]": {
+    "recorded-date": "10-02-2026, 13:56:50",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Vendor a a is not valid",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-14]": {
+    "recorded-date": "10-02-2026, 13:56:51",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Actions/Condition can contain only one colon.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-15]": {
+    "recorded-date": "10-02-2026, 13:56:51",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Actions/Condition can contain only one colon.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-16]": {
+    "recorded-date": "10-02-2026, 13:56:52",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Resource invalid resource must be in ARN format or \"*\".",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-17]": {
+    "recorded-date": "10-02-2026, 13:56:52",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Resource  must be in ARN format or \"*\".",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-18]": {
+    "recorded-date": "10-02-2026, 13:56:53",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Resource sdfsadf must be in ARN format or \"*\".",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-19]": {
+    "recorded-date": "10-02-2026, 13:56:54",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Resource adf must be in ARN format or \"*\".",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-20]": {
+    "recorded-date": "10-02-2026, 13:56:54",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Resource  must be in ARN format or \"*\".",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-21]": {
+    "recorded-date": "10-02-2026, 13:56:55",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Partition \"bsdfdsafsad\" is not valid for resource \"arn:bsdfdsafsad:*:*:*:*\".",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-22]": {
+    "recorded-date": "10-02-2026, 13:56:55",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Partition \"b\" is not valid for resource \"arn:b:cadfsdf:*:*:*\".",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-23]": {
+    "recorded-date": "10-02-2026, 13:56:56",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Partition \"b\" is not valid for resource \"arn:b:c:d:e:f:g:h\".",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-24]": {
+    "recorded-date": "10-02-2026, 13:56:56",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Partition \"s3\" is not valid for resource \"arn:s3:::example_bucket:*\".",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-25]": {
+    "recorded-date": "10-02-2026, 13:56:57",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Partition \"error\" is not valid for resource \"arn:error:s3:::example_bucket\".",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-26]": {
+    "recorded-date": "10-02-2026, 13:56:58",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-27]": {
+    "recorded-date": "10-02-2026, 13:56:58",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy statement must contain resources.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-28]": {
+    "recorded-date": "10-02-2026, 13:56:59",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy statement must contain resources.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-29]": {
+    "recorded-date": "10-02-2026, 13:56:59",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy statement must contain resources.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-30]": {
+    "recorded-date": "10-02-2026, 13:57:00",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy statement must contain actions.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-31]": {
+    "recorded-date": "10-02-2026, 13:57:00",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-32]": {
+    "recorded-date": "10-02-2026, 13:57:01",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy statement must contain actions.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-33]": {
+    "recorded-date": "10-02-2026, 13:57:02",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy statement must contain actions.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-34]": {
+    "recorded-date": "10-02-2026, 13:57:02",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy statement must contain actions.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-35]": {
+    "recorded-date": "10-02-2026, 13:57:03",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "IAM resource path must either be \"*\", root, or start with user/, federated-user/, role/, group/, instance-profile/, mfa/, server-certificate/, policy/, sms-mfa/, saml-provider/, oidc-provider/, report/, access-report/.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-36]": {
+    "recorded-date": "10-02-2026, 13:57:03",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-37]": {
+    "recorded-date": "10-02-2026, 13:57:04",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-38]": {
+    "recorded-date": "10-02-2026, 13:57:04",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Resource vendor must be fully qualified and cannot contain regexes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-39]": {
+    "recorded-date": "10-02-2026, 13:57:05",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-40]": {
+    "recorded-date": "10-02-2026, 13:57:06",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-41]": {
+    "recorded-date": "10-02-2026, 13:57:06",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-42]": {
+    "recorded-date": "10-02-2026, 13:57:07",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-43]": {
+    "recorded-date": "10-02-2026, 13:57:07",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-44]": {
+    "recorded-date": "10-02-2026, 13:57:08",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-45]": {
+    "recorded-date": "10-02-2026, 13:57:08",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-46]": {
+    "recorded-date": "10-02-2026, 13:57:09",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-47]": {
+    "recorded-date": "10-02-2026, 13:57:09",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-48]": {
+    "recorded-date": "10-02-2026, 13:57:10",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-49]": {
+    "recorded-date": "10-02-2026, 13:57:11",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-50]": {
+    "recorded-date": "10-02-2026, 13:57:11",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-51]": {
+    "recorded-date": "10-02-2026, 13:57:12",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-52]": {
+    "recorded-date": "10-02-2026, 13:57:12",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-53]": {
+    "recorded-date": "10-02-2026, 13:57:13",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-54]": {
+    "recorded-date": "10-02-2026, 13:57:13",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-55]": {
+    "recorded-date": "10-02-2026, 13:57:14",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "IAM resource arn:<partition>:iam:us-east-1::example_bucket cannot contain region information.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-56]": {
+    "recorded-date": "10-02-2026, 13:57:15",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Resource arn:<partition>:s3:us-east-1::example_bucket can not contain region information.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-57]": {
+    "recorded-date": "10-02-2026, 13:57:15",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-58]": {
+    "recorded-date": "10-02-2026, 13:57:16",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-59]": {
+    "recorded-date": "10-02-2026, 13:57:16",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Statement IDs (SID) in a single policy must be unique.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-60]": {
+    "recorded-date": "10-02-2026, 13:57:17",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy document must be version 2012-10-17 or greater.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-61]": {
+    "recorded-date": "10-02-2026, 13:57:17",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-62]": {
+    "recorded-date": "10-02-2026, 13:57:18",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Syntax errors in policy.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-63]": {
+    "recorded-date": "10-02-2026, 13:57:18",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-64]": {
+    "recorded-date": "10-02-2026, 13:57:19",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-65]": {
+    "recorded-date": "10-02-2026, 13:57:20",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy document must be version 2012-10-17 or greater.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-66]": {
+    "recorded-date": "10-02-2026, 13:57:20",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "Policy document must be version 2012-10-17 or greater.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-67]": {
+    "recorded-date": "10-02-2026, 13:57:21",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-68]": {
+    "recorded-date": "10-02-2026, 13:57:21",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-69]": {
+    "recorded-date": "10-02-2026, 13:57:22",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-70]": {
+    "recorded-date": "10-02-2026, 13:57:22",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-71]": {
+    "recorded-date": "10-02-2026, 13:57:23",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-72]": {
+    "recorded-date": "10-02-2026, 13:57:24",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-73]": {
+    "recorded-date": "10-02-2026, 13:57:24",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-74]": {
+    "recorded-date": "10-02-2026, 13:57:25",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-75]": {
+    "recorded-date": "10-02-2026, 13:57:25",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-76]": {
+    "recorded-date": "10-02-2026, 13:57:26",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-77]": {
+    "recorded-date": "10-02-2026, 13:57:26",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "MalformedPolicyDocument",
+          "Message": "The policy failed legacy parsing",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-0]": {
+    "recorded-date": "10-02-2026, 13:57:27",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-1]": {
+    "recorded-date": "10-02-2026, 13:57:28",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-2]": {
+    "recorded-date": "10-02-2026, 13:57:29",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-3]": {
+    "recorded-date": "10-02-2026, 13:57:29",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-4]": {
+    "recorded-date": "10-02-2026, 13:57:30",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-5]": {
+    "recorded-date": "10-02-2026, 13:57:31",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-6]": {
+    "recorded-date": "10-02-2026, 13:57:31",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-7]": {
+    "recorded-date": "10-02-2026, 13:57:32",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-8]": {
+    "recorded-date": "10-02-2026, 13:57:33",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-9]": {
+    "recorded-date": "10-02-2026, 13:57:33",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-10]": {
+    "recorded-date": "10-02-2026, 13:57:34",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-11]": {
+    "recorded-date": "10-02-2026, 13:57:35",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-12]": {
+    "recorded-date": "10-02-2026, 13:57:35",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-13]": {
+    "recorded-date": "10-02-2026, 13:57:36",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-14]": {
+    "recorded-date": "10-02-2026, 13:57:37",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-15]": {
+    "recorded-date": "10-02-2026, 13:57:37",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-16]": {
+    "recorded-date": "10-02-2026, 13:57:38",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-17]": {
+    "recorded-date": "10-02-2026, 13:57:39",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-18]": {
+    "recorded-date": "10-02-2026, 13:57:39",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-19]": {
+    "recorded-date": "10-02-2026, 13:57:40",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-20]": {
+    "recorded-date": "10-02-2026, 13:57:41",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-21]": {
+    "recorded-date": "10-02-2026, 13:57:41",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-22]": {
+    "recorded-date": "10-02-2026, 13:57:42",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-23]": {
+    "recorded-date": "10-02-2026, 13:57:43",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-24]": {
+    "recorded-date": "10-02-2026, 13:57:43",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-25]": {
+    "recorded-date": "10-02-2026, 13:57:44",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-26]": {
+    "recorded-date": "10-02-2026, 13:57:45",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-27]": {
+    "recorded-date": "10-02-2026, 13:57:45",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-28]": {
+    "recorded-date": "10-02-2026, 13:57:46",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-29]": {
+    "recorded-date": "10-02-2026, 13:57:47",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-30]": {
+    "recorded-date": "10-02-2026, 13:57:47",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-31]": {
+    "recorded-date": "10-02-2026, 13:57:48",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-32]": {
+    "recorded-date": "10-02-2026, 13:57:49",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-33]": {
+    "recorded-date": "10-02-2026, 13:57:50",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-34]": {
+    "recorded-date": "10-02-2026, 13:57:50",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-35]": {
+    "recorded-date": "10-02-2026, 13:57:51",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-36]": {
+    "recorded-date": "10-02-2026, 13:57:52",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-37]": {
+    "recorded-date": "10-02-2026, 13:57:52",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-38]": {
+    "recorded-date": "10-02-2026, 13:57:53",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-39]": {
+    "recorded-date": "10-02-2026, 13:57:54",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-40]": {
+    "recorded-date": "10-02-2026, 13:57:54",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-41]": {
+    "recorded-date": "10-02-2026, 13:57:55",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-42]": {
+    "recorded-date": "10-02-2026, 13:57:56",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-43]": {
+    "recorded-date": "10-02-2026, 13:57:56",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-44]": {
+    "recorded-date": "10-02-2026, 13:57:57",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-45]": {
+    "recorded-date": "10-02-2026, 13:57:58",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-46]": {
+    "recorded-date": "10-02-2026, 13:57:58",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-47]": {
+    "recorded-date": "10-02-2026, 13:57:59",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-48]": {
+    "recorded-date": "10-02-2026, 13:57:59",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-49]": {
+    "recorded-date": "10-02-2026, 13:58:00",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-50]": {
+    "recorded-date": "10-02-2026, 13:58:01",
+    "recorded-content": {
+      "response": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
