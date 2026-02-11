@@ -83,6 +83,15 @@
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_start_after": {
     "last_validated_date": "2025-01-21T18:14:48+00:00"
   },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_token_safe_chars": {
+    "last_validated_date": "2026-02-11T15:55:27+00:00",
+    "durations_in_seconds": {
+      "setup": 1.07,
+      "call": 2.49,
+      "teardown": 1.17,
+      "total": 4.73
+    }
+  },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_with_prefix": {
     "last_validated_date": "2025-01-21T18:14:40+00:00"
   },

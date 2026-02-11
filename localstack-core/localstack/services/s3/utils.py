@@ -1173,3 +1173,23 @@ def get_bucket_location_xml(location_constraint: str) -> str:
         '<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"'
         + ("/>" if not location_constraint else f">{location_constraint}</LocationConstraint>")
     )
+
+
+def encode_continuation_token(value: str) -> str:
+    """
+    :param value: a string value to be encoded
+    :return: a base64 encoded S3 ContinuationMarker
+    """
+    return base64.b64encode(value.encode(), altchars=b"._").decode("ascii")
+
+
+def decode_continuation_token(value: str | None) -> str:
+    """
+    Pendant to ``encode_continuation_token``, will decode the value back to its original form
+    :param value: a ContinuationMarker value
+    :return: a string from the base64 decoded value
+    """
+    if value is None:
+        return ""
+
+    return base64.b64decode(value, altchars=b"._").decode("ascii")

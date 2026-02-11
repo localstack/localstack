@@ -828,3 +828,26 @@ class TestS3HeaderEncoding:
     )
     def test_sanitize_for_latin_1_header(self, header, expected):
         assert replace_non_iso_8859_1_characters(header) == expected
+
+
+class TestS3ContinuationToken:
+    @pytest.mark.parametrize(
+        "key",
+        [
+            "file%2Fname",
+            "test@key/",
+            "test%123",
+            "test%percent",
+            "test key/",
+            "test key//",
+            "test%123/",
+            "a/%F0%9F%98%80/",
+            "date=2026-01-01/",
+            "date=2026-02-01/",
+            "date=2026-03-01/",
+            "date=2026-05-01/",
+        ],
+    )
+    def test_continuation_token_is_consistent(self, key):
+        encoded_key = s3_utils.encode_continuation_token(key)
+        assert s3_utils.decode_continuation_token(encoded_key) == key

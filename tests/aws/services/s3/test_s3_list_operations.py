@@ -5,6 +5,7 @@ each implementation. They all have subtle differences which make it difficult to
 
 import datetime
 from io import BytesIO
+from urllib.parse import quote
 
 import pytest
 import xmltodict
@@ -476,6 +477,80 @@ class TestS3ListObjectsV2:
         )
         snapshot.match("list-objects-v2-end", response)
         assert "NextContinuationToken" not in response
+
+    @markers.aws.validated
+    def test_list_objects_v2_continuation_token_safe_chars(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        # S3 does not have a consitent ContinuationToken, must be based on a paginator
+        snapshot.add_transformer(
+            snapshot.transform.key_value("NextContinuationToken", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ContinuationToken", reference_replacement=False)
+        )
+        keys = [
+            "file%2Fname",
+            "test@key/",
+            "test%123",
+            "test%percent",
+            "test key/",
+            "test key//",
+            "test%123/",
+            "a/%F0%9F%98%80/",
+            "date=2026-01-01/",
+            "date=2026-02-01/",
+            "date=2026-03-01/",
+            "date=2026-05-01/",
+        ]
+        for key in keys:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket, MaxKeys=5)
+        snapshot.match("list-objects-v2-max-5", response)
+
+        continuation_token = response["NextContinuationToken"]
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket, ContinuationToken=continuation_token
+        )
+        snapshot.match("list-objects-v2-rest", response)
+
+        start_after = keys[-3]
+        # the Key is not URL encoded, so it doesn't match, it returns the first keys, StartAfter doesn't work
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket, StartAfter=start_after, MaxKeys=2
+        )
+        snapshot.match("list-objects-start-after", response)
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket,
+            StartAfter=start_after,
+            MaxKeys=2,
+            EncodingType="url",
+        )
+        snapshot.match("list-objects-start-after-url-type", response)
+
+        url_safe_key = quote(start_after)
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket, StartAfter=url_safe_key, MaxKeys=2
+        )
+        snapshot.match("list-objects-start-after-encoded", response)
+        continuation_token_2 = response["NextContinuationToken"]
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket,
+            StartAfter=start_after,
+            ContinuationToken=continuation_token_2,
+            MaxKeys=2,
+        )
+        snapshot.match("list-objects-start-after-token", response)
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket,
+            ContinuationToken=continuation_token_2,
+            MaxKeys=2,
+        )
+        snapshot.match("list-objects-continuation-token-2", response)
 
 
 class TestS3ListObjectVersions:

@@ -3384,5 +3384,362 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_token_safe_chars": {
+    "recorded-date": "11-02-2026, 15:55:26",
+    "recorded-content": {
+      "list-objects-v2-max-5": {
+        "Contents": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "a/%F0%9F%98%80/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-01-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-02-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-03-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-05-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyCount": 5,
+        "MaxKeys": 5,
+        "Name": "<bucket-name:1>",
+        "NextContinuationToken": "next-continuation-token",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-v2-rest": {
+        "Contents": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "file%2Fname",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "test key/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "test key//",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "test%123",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "test%123/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "test%percent",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "test@key/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "ContinuationToken": "continuation-token",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 7,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-start-after": {
+        "Contents": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-03-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-05-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyCount": 2,
+        "MaxKeys": 2,
+        "Name": "<bucket-name:1>",
+        "NextContinuationToken": "next-continuation-token",
+        "Prefix": "",
+        "StartAfter": "date=2026-02-01/",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-start-after-url-type": {
+        "Contents": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date%3D2026-03-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date%3D2026-05-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyCount": 2,
+        "MaxKeys": 2,
+        "Name": "<bucket-name:1>",
+        "NextContinuationToken": "next-continuation-token",
+        "Prefix": "",
+        "StartAfter": "date%3D2026-02-01/",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-start-after-encoded": {
+        "Contents": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-01-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-02-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyCount": 2,
+        "MaxKeys": 2,
+        "Name": "<bucket-name:1>",
+        "NextContinuationToken": "next-continuation-token",
+        "Prefix": "",
+        "StartAfter": "date%3D2026-02-01/",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-start-after-token": {
+        "Contents": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-03-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-05-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "ContinuationToken": "continuation-token",
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyCount": 2,
+        "MaxKeys": 2,
+        "Name": "<bucket-name:1>",
+        "NextContinuationToken": "next-continuation-token",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-continuation-token-2": {
+        "Contents": [
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-03-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ChecksumAlgorithm": [
+              "CRC32"
+            ],
+            "ChecksumType": "FULL_OBJECT",
+            "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+            "Key": "date=2026-05-01/",
+            "LastModified": "datetime",
+            "Size": 0,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "ContinuationToken": "continuation-token",
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyCount": 2,
+        "MaxKeys": 2,
+        "Name": "<bucket-name:1>",
+        "NextContinuationToken": "next-continuation-token",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

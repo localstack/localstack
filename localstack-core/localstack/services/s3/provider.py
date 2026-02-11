@@ -276,7 +276,9 @@ from localstack.services.s3.utils import (
     base_64_content_md5_to_etag,
     create_redirect_for_post_request,
     create_s3_kms_managed_key_for_region,
+    decode_continuation_token,
     decode_user_metadata,
+    encode_continuation_token,
     encode_user_metadata,
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
@@ -1847,14 +1849,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         max_keys = max_keys or 1000
         prefix = prefix or ""
         delimiter = delimiter or ""
+        start_after = start_after or ""
+        decoded_continuation_token = decode_continuation_token(continuation_token)
+
         if encoding_type:
             prefix = urlparse.quote(prefix)
             delimiter = urlparse.quote(delimiter)
-        decoded_continuation_token = (
-            to_str(base64.urlsafe_b64decode(continuation_token.encode()))
-            if continuation_token
-            else None
-        )
+            start_after = urlparse.quote(start_after)
+            decoded_continuation_token = urlparse.quote(decoded_continuation_token)
 
         s3_objects: list[Object] = []
 
@@ -1890,7 +1892,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # After skipping all entries, verify we're not over the MaxKeys before adding a new entry
             if count >= max_keys:
                 is_truncated = True
-                next_continuation_token = to_str(base64.urlsafe_b64encode(s3_object.key.encode()))
+                next_continuation_token = encode_continuation_token(s3_object.key)
                 break
 
             # if we found a new CommonPrefix, add it to the CommonPrefixes
