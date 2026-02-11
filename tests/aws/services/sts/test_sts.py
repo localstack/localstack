@@ -8,7 +8,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
-from localstack.testing.aws.util import create_client_with_keys
+from localstack.testing.aws.util import create_client_with_keys, is_aws_cloud
 from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -224,12 +224,6 @@ class TestSTSIntegrations:
         assert federated_user_info[1] == token_name
 
     @markers.aws.only_localstack
-    def test_get_caller_identity_root(self, monkeypatch, aws_client):
-        response = aws_client.sts.get_caller_identity()
-        account_id = response["Account"]
-        assert f"arn:aws:iam::{account_id}:root" == response["Arn"]
-
-    @markers.aws.only_localstack
     def test_expiration_date_format(self, region_name):
         url = config.internal_service_url()
         data = {"Action": "GetSessionToken", "Version": "2011-06-15"}
@@ -246,12 +240,147 @@ class TestSTSIntegrations:
         result = content["GetSessionTokenResponse"]["GetSessionTokenResult"]
         assert is_number(result["Credentials"]["Expiration"])
 
+    @markers.aws.validated
+    def test_sts_invalid_parameters(
+        self,
+        aws_client_factory,
+        snapshot,
+    ):
+        aws_client = aws_client_factory(config=Config(parameter_validation=False))
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(RoleArn="nothing-valid-in-here", RoleSessionName="Session1")
+        snapshot.match("malformed-arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn="arn::b:::something/test-role", RoleSessionName="Session1"
+            )
+        snapshot.match("no-partition", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn="arn:a::::something/test-role", RoleSessionName="Session1"
+            )
+        snapshot.match("no-service", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn="arn:a:::something/test-role", RoleSessionName="Session1"
+            )
+        snapshot.match("not-enough-colons", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(RoleArn="arn:a:a::aaaaaaaaaa:", RoleSessionName="Session1")
+        snapshot.match("no-resource", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn="arn:a:b:::something/test-role", RoleSessionName="Session1:2"
+            )
+        snapshot.match("invalid-session-name", e.value.response)
+
+
+class TestSTSCallerIdentity:
+    """Tests for STS GetCallerIdentity API."""
+
+    @markers.aws.only_localstack
+    def test_get_caller_identity_root(self, aws_client):
+        """Test that root identity returns the correct ARN format."""
+        response = aws_client.sts.get_caller_identity()
+        account_id = response["Account"]
+        assert f"arn:aws:iam::{account_id}:root" == response["Arn"]
+
+    @markers.aws.validated
+    def test_get_caller_identity_with_iam_user_credentials(
+        self, aws_client, aws_client_factory, account_id, snapshot, cleanups
+    ):
+        """Test GetCallerIdentity when using IAM user credentials."""
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("UserName"),
+                snapshot.transform.key_value("UserId"),
+                snapshot.transform.key_value("AccessKeyId"),
+                snapshot.transform.key_value("SecretAccessKey"),
+            ]
+        )
+
+        # Create an IAM user
+        iam_user_name = f"test-user-{short_uid()}"
+        user_response = aws_client.iam.create_user(UserName=iam_user_name)
+        cleanups.append(lambda: aws_client.iam.delete_user(UserName=iam_user_name))
+        snapshot.match("create-user", user_response)
+
+        access_key_response = aws_client.iam.create_access_key(UserName=iam_user_name)
+        access_key = access_key_response["AccessKey"]
+
+        sts_user_client = aws_client_factory(
+            aws_access_key_id=access_key["AccessKeyId"],
+            aws_secret_access_key=access_key["SecretAccessKey"],
+        ).sts
+
+        def _get_identity():
+            return sts_user_client.get_caller_identity()
+
+        identity = retry(_get_identity, retries=10 if is_aws_cloud() else 3)
+        snapshot.match("caller-identity-user", identity)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]  # Moto returns an empty list for no tags
+    )
+    def test_get_caller_identity_with_assumed_role_credentials(
+        self,
+        aws_client,
+        aws_client_factory,
+        create_role,
+        account_id,
+        snapshot,
+        wait_and_assume_role,
+    ):
+        """Test GetCallerIdentity when using assumed role credentials."""
+        snapshot.add_transformer(snapshot.transform.key_value("UserId"))
+
+        # Create a role
+        role_name = f"test-role-{short_uid()}"
+        trust_policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"AWS": account_id},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+        role_response = create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(trust_policy_document),
+        )
+        role_arn = role_response["Role"]["Arn"]
+        snapshot.add_transformer(snapshot.transform.regex(role_name, "<role-name>"))
+
+        # Assume the role
+        session_name = f"test-session-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(session_name, "<session-name>"))
+        credentials = wait_and_assume_role(role_arn=role_arn, session_name=session_name)
+
+        # Create STS client with assumed role credentials
+        sts_role_client = aws_client_factory(
+            aws_access_key_id=credentials["AccessKeyId"],
+            aws_secret_access_key=credentials["SecretAccessKey"],
+            aws_session_token=credentials["SessionToken"],
+        ).sts
+
+        # Get caller identity with assumed role credentials
+        identity = sts_role_client.get_caller_identity()
+        snapshot.match("caller-identity-assumed-role", identity)
+
     @markers.aws.only_localstack
     @pytest.mark.parametrize("use_aws_creds", [True, False])
-    def test_get_caller_identity_user_access_key(
+    def test_get_caller_identity_user_access_key_cross_account(
         self, cleanups, use_aws_creds, monkeypatch, region_name
     ):
-        """Check whether the correct account id is returned for requests by other users access keys"""
+        """Check whether the correct account id is returned for requests by other users access keys."""
         monkeypatch.setattr(config, "PARITY_AWS_ACCESS_KEY_ID", use_aws_creds)
         account_id = "123123123123"
         account_creds = {"AccessKeyId": account_id, "SecretAccessKey": "test"}
@@ -276,10 +405,10 @@ class TestSTSIntegrations:
 
     @markers.aws.only_localstack
     @pytest.mark.parametrize("use_aws_creds", [True, False])
-    def test_get_caller_identity_role_access_key(
+    def test_get_caller_identity_role_access_key_cross_account(
         self, aws_client, account_id, cleanups, use_aws_creds, monkeypatch, region_name
     ):
-        """Check whether the correct account id is returned for roles for other accounts"""
+        """Check whether the correct account id is returned for roles for other accounts."""
         monkeypatch.setattr(config, "PARITY_AWS_ACCESS_KEY_ID", use_aws_creds)
         fake_account_id = "123123123123"
         account_creds = {"AccessKeyId": fake_account_id, "SecretAccessKey": "test"}
@@ -322,45 +451,6 @@ class TestSTSIntegrations:
         response = sts_role_client_2.get_caller_identity()
         assert fake_account_id == response["Account"]
         assert assume_role_response_other_account["AssumedRoleUser"]["Arn"] == response["Arn"]
-
-    @markers.aws.validated
-    def test_sts_invalid_parameters(
-        self,
-        aws_client_factory,
-        snapshot,
-    ):
-        aws_client = aws_client_factory(config=Config(parameter_validation=False))
-        with pytest.raises(ClientError) as e:
-            aws_client.sts.assume_role(RoleArn="nothing-valid-in-here", RoleSessionName="Session1")
-        snapshot.match("malformed-arn", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sts.assume_role(
-                RoleArn="arn::b:::something/test-role", RoleSessionName="Session1"
-            )
-        snapshot.match("no-partition", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sts.assume_role(
-                RoleArn="arn:a::::something/test-role", RoleSessionName="Session1"
-            )
-        snapshot.match("no-service", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sts.assume_role(
-                RoleArn="arn:a:::something/test-role", RoleSessionName="Session1"
-            )
-        snapshot.match("not-enough-colons", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sts.assume_role(RoleArn="arn:a:a::aaaaaaaaaa:", RoleSessionName="Session1")
-        snapshot.match("no-resource", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sts.assume_role(
-                RoleArn="arn:a:b:::something/test-role", RoleSessionName="Session1:2"
-            )
-        snapshot.match("invalid-session-name", e.value.response)
 
 
 class TestSTSAssumeRoleTagging:
