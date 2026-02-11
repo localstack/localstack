@@ -2278,7 +2278,7 @@ class TestApiGatewayApiDocumentationPart:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # FIXME: AWS does not return the `path` field for MODEL anymore
+            # FIXME: AWS returns the `path` field for RESPONSE and METHOD
             "$.import-documentations-parts.items[1].location.path",
             "$.import-documentations-parts.items[3].location.path",
         ]
@@ -2293,7 +2293,7 @@ class TestApiGatewayApiDocumentationPart:
 
         # get documentation parts to make sure import worked
         response = aws_client.apigateway.get_documentation_parts(restApiId=rest_api_id)
-        snapshot.match("create-import-documentations_parts", response)
+        snapshot.match("get-documentations-parts-after-api-imports", response)
         # manually assert that the type is of string because snapshot auto-decodes JSON
         assert isinstance(response["items"][0]["properties"], str)
 
@@ -2319,7 +2319,7 @@ class TestApiGatewayApiDocumentationPart:
 
         # get documentation parts to make sure import worked
         response = aws_client.apigateway.get_documentation_parts(restApiId=rest_api_id)
-        snapshot.match("import-documentations-parts", response)
+        snapshot.match("get-documentations-parts-after-import", response)
         assert isinstance(response["items"][0]["properties"], str)
 
     @markers.aws.validated

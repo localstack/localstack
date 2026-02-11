@@ -3346,7 +3346,7 @@
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_import_documentation_parts": {
     "recorded-date": "09-02-2026, 18:59:24",
     "recorded-content": {
-      "create-import-documentations_parts": {
+      "get-documentations-parts-after-api-imports": {
         "items": [
           {
             "id": "<id:1>",
@@ -3412,7 +3412,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "import-documentations-parts": {
+      "get-documentations-parts-after-import": {
         "items": [
           {
             "id": "<id:5>",
