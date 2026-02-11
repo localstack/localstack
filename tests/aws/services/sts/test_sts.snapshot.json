@@ -278,5 +278,46 @@
         }
       }
     }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSCallerIdentity::test_get_caller_identity_with_iam_user_credentials": {
+    "recorded-date": "09-02-2026, 18:56:35",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "caller-identity-user": {
+        "Account": "111111111111",
+        "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+        "UserId": "<user-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSCallerIdentity::test_get_caller_identity_with_assumed_role_credentials": {
+    "recorded-date": "09-02-2026, 19:00:19",
+    "recorded-content": {
+      "caller-identity-assumed-role": {
+        "Account": "111111111111",
+        "Arn": "arn:<partition>:sts::111111111111:assumed-role/<role-name>/<session-name>",
+        "UserId": "<user-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
