@@ -6,10 +6,19 @@ from bson.json_util import dumps
 
 from localstack import config
 from localstack.aws.api import RequestContext
-from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType, TableName
+from localstack.aws.api.dynamodbstreams import (
+    StreamDescription,
+    StreamStatus,
+    StreamViewType,
+    TableName,
+)
 from localstack.aws.connect import connect_to
 from localstack.services.dynamodb.v2.provider import DynamoDBProvider
-from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
+from localstack.services.dynamodbstreams.models import (
+    DynamoDbStreamsStore,
+    Stream,
+    dynamodbstreams_stores,
+)
 from localstack.utils.aws import arns, resources
 from localstack.utils.common import now_utc
 from localstack.utils.threads import FuncThread
@@ -65,28 +74,32 @@ def add_dynamodb_stream(
         stream_name=stream_name,
     )
     latest_stream_label = latest_stream_label or "latest"
-    stream = {
-        "StreamArn": arns.dynamodb_stream_arn(
-            table_name=table_name,
-            latest_stream_label=latest_stream_label,
-            account_id=account_id,
-            region_name=region_name,
-        ),
-        "TableName": table_name,
-        "StreamLabel": latest_stream_label,
-        "StreamStatus": StreamStatus.ENABLING,
-        "KeySchema": [],
-        "Shards": [],
-        "StreamViewType": view_type,
-        "shards_id_map": {},
-    }
-    store.ddb_streams[table_name] = stream
+    stream_arn = arns.dynamodb_stream_arn(
+        table_name=table_name,
+        latest_stream_label=latest_stream_label,
+        account_id=account_id,
+        region_name=region_name,
+    )
+    stream = StreamDescription(
+        TableName=table_name,
+        StreamArn=stream_arn,
+        StreamLabel=latest_stream_label,
+        StreamStatus=StreamStatus.ENABLING,
+        KeySchema=[],
+        Shards=[],
+        StreamViewType=view_type,
+    )
+    store.ddb_streams[table_name] = Stream(StreamDescription=stream)
 
 
-def get_stream_for_table(account_id: str, region_name: str, table_arn: str) -> dict:
+def get_stream_for_table(
+    account_id: str, region_name: str, table_arn: str
+) -> StreamDescription | None:
     store = get_dynamodbstreams_store(account_id, region_name)
     table_name = table_name_from_stream_arn(table_arn)
-    return store.ddb_streams.get(table_name)
+    if stream := store.ddb_streams.get(table_name):
+        return stream.StreamDescription
+    return None
 
 
 def _process_forwarded_records(
@@ -206,11 +219,11 @@ def kinesis_shard_id(dynamodbstream_shard_id: str) -> str:
     return f"{shard_params[0]}-{shard_params[-1]}"
 
 
-def get_shard_id(stream: dict, kinesis_shard_id: str) -> str:
-    ddb_stream_shard_id = stream.get("shards_id_map", {}).get(kinesis_shard_id)
+def get_shard_id(stream: Stream, kinesis_shard_id: str) -> str:
+    ddb_stream_shard_id = stream.shards_id_map.get(kinesis_shard_id)
     if not ddb_stream_shard_id:
         ddb_stream_shard_id = shard_id(kinesis_shard_id)
-        stream["shards_id_map"][kinesis_shard_id] = ddb_stream_shard_id
+        stream.shards_id_map[kinesis_shard_id] = ddb_stream_shard_id
 
     return ddb_stream_shard_id
 

@@ -1625,7 +1625,7 @@ def is_index_query_valid(account_id: str, region_name: str, query_data: dict) ->
     return True
 
 
-def kinesis_stream_exists(stream_arn):
+def kinesis_stream_exists(stream_arn: str) -> bool:
     account_id = extract_account_id_from_arn(stream_arn)
     region_name = extract_region_from_arn(stream_arn)
 
