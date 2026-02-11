@@ -1,24 +1,24 @@
 {
   "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_iam_username_defaultname": {
-    "recorded-date": "31-05-2022, 11:29:45",
+    "recorded-date": "10-02-2026, 15:51:18",
     "recorded-content": {
       "get_iam_user": {
         "User": {
-          "Path": "/",
-          "UserName": "<user-name:1>",
-          "UserId": "<user-id:1>",
           "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
-          "CreateDate": "datetime"
+          "CreateDate": "datetime",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
         },
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
   },
   "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_managed_policy_with_empty_resource": {
-    "recorded-date": "11-07-2023, 18:10:41",
+    "recorded-date": "10-02-2026, 15:56:19",
     "recorded-content": {
       "outputs": {
         "PolicyArn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
@@ -48,7 +48,7 @@
     }
   },
   "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_iam_user_access_key": {
-    "recorded-date": "11-07-2023, 08:23:54",
+    "recorded-date": "10-02-2026, 15:52:59",
     "recorded-content": {
       "key_outputs": {
         "AccessKeyId": "<key-id:1>",
@@ -69,7 +69,7 @@
     }
   },
   "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_update_inline_policy": {
-    "recorded-date": "05-04-2023, 11:55:22",
+    "recorded-date": "10-02-2026, 15:54:55",
     "recorded-content": {
       "user_inline_policy": {
         "PolicyDocument": {
@@ -156,7 +156,7 @@
     }
   },
   "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_server_certificate": {
-    "recorded-date": "13-03-2024, 20:20:07",
+    "recorded-date": "10-02-2026, 15:58:53",
     "recorded-content": {
       "outputs": {
         "Arn": "arn:<partition>:iam::111111111111:server-certificate/<server-certificate-name:1>",
@@ -190,6 +190,72 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
         }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_managedpolicy_with_fn_sub_json_string": {
+    "recorded-date": "10-02-2026, 16:02:06",
+    "recorded-content": {
+      "policy_document": {
+        "Statement": [
+          {
+            "Action": "s3:GetObject",
+            "Effect": "Allow",
+            "Resource": "arn:<partition>:s3:::bucket-my-cluster-<region>/*"
+          }
+        ],
+        "Version": "2012-10-17"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_managedpolicy_with_fn_sub_multiline_yaml": {
+    "recorded-date": "10-02-2026, 16:02:38",
+    "recorded-content": {
+      "policy_document_multiline": {
+        "Statement": [
+          {
+            "Action": "eks:DescribeCluster",
+            "Effect": "Allow",
+            "Resource": "arn:<partition>:eks:<region>:111111111111:cluster/my-cluster"
+          }
+        ],
+        "Version": "2012-10-17"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_managedpolicy_with_fn_sub_and_arrays": {
+    "recorded-date": "10-02-2026, 16:03:09",
+    "recorded-content": {
+      "policy_with_arrays": {
+        "Statement": [
+          {
+            "Action": [
+              "s3:GetObject",
+              "s3:PutObject"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+              "arn:<partition>:s3:::test-bucket/*",
+              "arn:<partition>:s3:::test-bucket-<region>/*"
+            ]
+          }
+        ],
+        "Version": "2012-10-17"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_inline_policy_with_fn_sub_json_string": {
+    "recorded-date": "10-02-2026, 16:03:58",
+    "recorded-content": {
+      "inline_policy_document": {
+        "Statement": [
+          {
+            "Action": "s3:GetObject",
+            "Effect": "Allow",
+            "Resource": "arn:<partition>:s3:::my-bucket-<region>/*"
+          }
+        ],
+        "Version": "2012-10-17"
       }
     }
   }
