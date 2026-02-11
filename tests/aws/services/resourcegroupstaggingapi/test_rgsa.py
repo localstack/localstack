@@ -1,7 +1,12 @@
+import pytest
+
 from localstack.testing.pytest import markers
+from localstack.utils.analytics.metadata import is_license_activated
 
 
 class TestRGSAIntegrations:
+    # TODO: figure out a better way, maybe via marker? e.g. @markers.localstack.ext
+    @pytest.mark.skipif(condition=not is_license_activated(), reason="integration test with pro")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..PaginationToken"])
     def test_get_resources(self, aws_client, cleanups, snapshot):
