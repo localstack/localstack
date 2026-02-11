@@ -446,6 +446,7 @@ class TestTranscribe:
             transcribe_create_job(audio_file=file_path, params=settings)
         snapshot.match("err_speaker_labels_diarization", e.value)
 
+    @markers.requires_in_process  # test relies on the installation of ffmpeg
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
