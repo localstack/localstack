@@ -56,7 +56,7 @@ from localstack.services.lambda_.invocation.lambda_models import (
     VersionAlias,
     VersionState,
 )
-from localstack.services.lambda_.invocation.models import lambda_stores
+from localstack.services.lambda_.invocation.models import LambdaStore, lambda_stores
 from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.utils.archives import get_unzipped_size, is_zip_file
@@ -195,6 +195,31 @@ class LambdaService:
 
     def publish_version_async(self, function_version: FunctionVersion):
         self.task_executor.submit(self.publish_version, function_version)
+
+    def delete_function_version_store(
+        self, function: Function, version: FunctionVersion, qualifier: str
+    ):
+        def _cleanup(function: Function, qualifier: str):
+            time.sleep(0.1)
+            function.versions.pop(qualifier, None)
+
+        new_state = VersionState(state=State.Deleting)
+        new_last_status = UpdateStatus(status=LastUpdateStatus.InProgress)
+        function.versions[version.id.qualifier] = dataclasses.replace(
+            version,
+            config=dataclasses.replace(
+                version.config, state=new_state, last_update=new_last_status
+            ),
+        )
+
+        self.task_executor.submit(_cleanup, function, qualifier)
+
+    def delete_function_store(self, store: LambdaStore, function_name: str):
+        def _cleanup(store, function_name):
+            time.sleep(0.1)
+            store.functions.pop(function_name)
+
+        self.task_executor.submit(_cleanup, store, function_name)
 
     def publish_version(self, function_version: FunctionVersion):
         """

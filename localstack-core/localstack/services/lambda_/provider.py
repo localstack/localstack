@@ -1635,17 +1635,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_has_capacity_provider = False
         if qualifier:
             # delete a version of the function
-            version = function.versions.pop(qualifier, None)
+            version = function.versions.get(qualifier, None)
             if version:
                 if version.config.capacity_provider_config:
                     function_has_capacity_provider = True
+                    # async delete from store
+                    self.lambda_service.delete_function_version_store(function, version, qualifier)
+                else:
+                    function.versions.pop(qualifier, None)
                 self.lambda_service.stop_version(version.id.qualified_arn())
                 destroy_code_if_not_used(code=version.config.code, function=function)
         else:
             # delete the whole function
             # TODO: introduce locking for safe deletion: We could create a new version at the API layer before
             #  the old version gets cleaned up in the internal lambda service.
-            function = store.functions.pop(function_name)
+            function = store.functions.get(function_name)
             for version in function.versions.values():
                 # Functions with a capacity provider do NOT have a version manager for $LATEST because only
                 # published versions are invokable.
@@ -1653,11 +1657,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     function_has_capacity_provider = True
                     if version.id.qualifier == "$LATEST":
                         pass
+                    # async delete version from store
+                    self.lambda_service.delete_function_version_store(function, version, qualifier)
                 else:
                     self.lambda_service.stop_version(qualified_arn=version.id.qualified_arn())
+                    store.functions.pop(function_name)
                 # we can safely destroy the code here
                 if version.config.code:
                     version.config.code.destroy()
+
+            if function_has_capacity_provider:
+                # async delete whole function from store
+                self.lambda_service.delete_function_store(store, function_name)
 
         return DeleteFunctionResponse(StatusCode=202 if function_has_capacity_provider else 204)
 
