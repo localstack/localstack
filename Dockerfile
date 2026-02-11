@@ -113,7 +113,7 @@ RUN --mount=type=cache,target=/root/.cache \
 # add files necessary to install runtime dependencies
 ADD Makefile pyproject.toml requirements-runtime.txt ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
-ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
+ADD bin/localstack-supervisor bin/
 
 # Install dependencies for running the LocalStack runtime
 RUN --mount=type=cache,target=/root/.cache\
@@ -142,10 +142,10 @@ RUN --mount=type=cache,target=/root/.cache \
     SETUPTOOLS_SCM_PRETEND_VERSION_FOR_LOCALSTACK_CORE=${LOCALSTACK_BUILD_VERSION} \
     pip install -e .[runtime]
 
-# Install standalone CLI package # TODO change to `pip install localstack` once migrated
+# Install standalone CLI package
 RUN --mount=type=cache,target=/root/.cache \
     . .venv/bin/activate && \
-    pip install --upgrade --pre localstack-cli-standalone
+    pip install --upgrade --pre localstack
 
 # Generate service catalog cache in static libs dir
 RUN . .venv/bin/activate && python3 -m localstack.aws.spec
