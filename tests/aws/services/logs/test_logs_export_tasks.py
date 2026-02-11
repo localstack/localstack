@@ -29,15 +29,6 @@ S3_POLICY = {
 
 
 @pytest.fixture
-def logs_log_group(aws_client):
-    """Create a log group for testing and clean up afterwards."""
-    name = f"test-log-group-{short_uid()}"
-    aws_client.logs.create_log_group(logGroupName=name)
-    yield name
-    aws_client.logs.delete_log_group(logGroupName=name)
-
-
-@pytest.fixture
 def export_bucket(aws_client, s3_bucket, region_name):
     """Create an S3 bucket configured for CloudWatch Logs export."""
     bucket_name = s3_bucket

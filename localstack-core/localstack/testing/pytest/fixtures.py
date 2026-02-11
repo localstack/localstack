@@ -2821,3 +2821,40 @@ def aws_catalog_mock(monkeypatch):
         return catalog
 
     return _mock_catalog
+
+
+@pytest.fixture
+def logs_log_group(aws_client):
+    """Create a log group for testing and clean up afterwards."""
+
+    log_group_names = []
+
+    def _create_log_group():
+        log_group_name = f"test-log-group-{short_uid()}"
+        aws_client.logs.create_log_group(logGroupName=log_group_name)
+        log_group_names.append(log_group_name)
+        return log_group_name
+
+    yield _create_log_group()
+
+    for group_name in log_group_names:
+        aws_client.logs.delete_log_group(logGroupName=group_name)
+
+
+@pytest.fixture
+def logs_log_stream(logs_log_group, aws_client):
+    """Create a log stream for testing and clean up afterwards."""
+    log_stream_names = []
+
+    def _create_log_stream():
+        log_stream_name = f"test-log-stream-{short_uid()}"
+        aws_client.logs.create_log_stream(
+            logGroupName=logs_log_group, logStreamName=log_stream_name
+        )
+        log_stream_names.append(log_stream_name)
+        return log_stream_name
+
+    yield _create_log_stream()
+
+    for stream_name in log_stream_names:
+        aws_client.logs.delete_log_stream(logStreamName=stream_name, logGroupName=logs_log_group)

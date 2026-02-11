@@ -12,15 +12,6 @@ def _log_stream_exists(log_streams: list, name: str) -> bool:
     return any(ls["logStreamName"] == name for ls in log_streams)
 
 
-@pytest.fixture
-def logs_log_group(aws_client):
-    """Create a log group for testing and clean up afterwards."""
-    name = f"test-log-group-{short_uid()}"
-    aws_client.logs.create_log_group(logGroupName=name)
-    yield name
-    aws_client.logs.delete_log_group(logGroupName=name)
-
-
 class TestLogsStreams:
     """Tests for log stream create, delete, describe operations."""
 

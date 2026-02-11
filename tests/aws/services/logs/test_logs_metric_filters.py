@@ -7,24 +7,6 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import now_utc, retry, short_uid
 
 
-@pytest.fixture
-def logs_log_group(aws_client):
-    """Create a log group for testing and clean up afterwards."""
-    name = f"test-log-group-{short_uid()}"
-    aws_client.logs.create_log_group(logGroupName=name)
-    yield name
-    aws_client.logs.delete_log_group(logGroupName=name)
-
-
-@pytest.fixture
-def logs_log_stream(logs_log_group, aws_client):
-    """Create a log stream for testing and clean up afterwards."""
-    name = f"test-log-stream-{short_uid()}"
-    aws_client.logs.create_log_stream(logGroupName=logs_log_group, logStreamName=name)
-    yield name
-    aws_client.logs.delete_log_stream(logStreamName=name, logGroupName=logs_log_group)
-
-
 class TestMetricFilters:
     """Tests for metric filter operations."""
 
