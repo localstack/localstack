@@ -35,4 +35,4 @@ class ResolvedResource(TypedDict):
     LastUpdatedTimestamp: datetime
     ResourceStatus: NotRequired[ResourceStatus]
     PhysicalResourceId: NotRequired[str]
-    ResourceStatusReason: NotRequired[str]
+    ResourceStatusReason: NotRequired[str | None]
