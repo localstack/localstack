@@ -16,7 +16,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.dynamodb.v2.provider import DynamoDBProvider
 from localstack.services.dynamodbstreams.models import (
     DynamoDbStreamsStore,
-    Stream,
+    StreamWrapper,
     dynamodbstreams_stores,
 )
 from localstack.utils.aws import arns, resources
@@ -89,7 +89,7 @@ def add_dynamodb_stream(
         Shards=[],
         StreamViewType=view_type,
     )
-    store.ddb_streams[table_name] = Stream(StreamDescription=stream)
+    store.ddb_streams[table_name] = StreamWrapper(StreamDescription=stream)
 
 
 def get_stream_for_table(
@@ -219,7 +219,7 @@ def kinesis_shard_id(dynamodbstream_shard_id: str) -> str:
     return f"{shard_params[0]}-{shard_params[-1]}"
 
 
-def get_shard_id(stream: Stream, kinesis_shard_id: str) -> str:
+def get_shard_id(stream: StreamWrapper, kinesis_shard_id: str) -> str:
     ddb_stream_shard_id = stream.shards_id_map.get(kinesis_shard_id)
     if not ddb_stream_shard_id:
         ddb_stream_shard_id = shard_id(kinesis_shard_id)

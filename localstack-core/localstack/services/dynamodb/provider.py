@@ -274,7 +274,11 @@ class EventForwarder:
             table_arn = arns.dynamodb_table_arn(table_name, account_id, region_name)
             records = table_records["records"]
             table_def = store.table_definitions.get(table_name) or {}
-            destinations = store.streaming_destinations.get(table_name) or []
+            destinations = store.streaming_destinations.get(table_name)
+            if not destinations:
+                LOG.debug("Table %s has no Kinesis streaming destinations enabled", table_name)
+                continue
+
             stream_arn = destinations[-1]["StreamArn"]
             for record in records:
                 kinesis_record = dict(

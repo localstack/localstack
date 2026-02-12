@@ -5,7 +5,7 @@ from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttr
 
 
 @dataclasses.dataclass
-class Stream:
+class StreamWrapper:
     """Wrapper for the API stub and additional information about a store"""
 
     StreamDescription: StreamDescription
@@ -13,7 +13,7 @@ class Stream:
 
 
 class DynamoDbStreamsStore(BaseStore):
-    ddb_streams: dict[str, Stream] = LocalAttribute(default=dict)
+    ddb_streams: dict[str, StreamWrapper] = LocalAttribute(default=dict)
 
 
 dynamodbstreams_stores = AccountRegionBundle("dynamodbstreams", DynamoDbStreamsStore)
