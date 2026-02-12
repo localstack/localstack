@@ -5,15 +5,18 @@ import threading
 import time
 from pathlib import Path
 
+from rich.console import Console
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
-from localstack.cli import console
 from localstack.dev.run.paths import HOST_PATH_MAPPINGS, HostPaths
 from localstack.utils.container_utils.container_client import ContainerClient
 from localstack.utils.threads import TMP_THREADS, FuncThread
 
 DEBOUNCE_WINDOW = 0.5
+
+
+console = Console()
 
 
 class ChangeHandler(FileSystemEventHandler):
