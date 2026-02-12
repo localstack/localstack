@@ -67,6 +67,8 @@ def html_to_rst(html: str):
 def is_sparse_shape(shape: ListShape | MapShape):
     # see https://smithy.io/2.0/spec/type-refinement-traits.html#sparse-trait
     # this is needed for generating Map that can have nullable values
+    # We need to access `_shape_model` directly, because `sparse` is not used by Botocore, so it is not picked in
+    # `metadata`: see ``botocore.model.Shape.METADATA_ATTRS`` and ``botocore.model.Shape.metadata``
     return getattr(shape, "_shape_model", {}).get("sparse")
 
 
