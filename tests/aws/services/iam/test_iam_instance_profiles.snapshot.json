@@ -1,0 +1,713 @@
+{
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_instance_profile_lifecycle": {
+    "recorded-date": "12-02-2026, 11:27:47",
+    "recorded-content": {
+      "create-instance-profile": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<path-prefix>/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/<path-prefix>/",
+          "Roles": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-instance-profile": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<path-prefix>/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/<path-prefix>/",
+          "Roles": [],
+          "Tags": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-instance-profile-default-path": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:2>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:2>",
+          "InstanceProfileName": "<instance-profile-name:2>",
+          "Path": "/",
+          "Roles": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deleted-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Instance Profile <instance-profile-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_instance_profile_errors": {
+    "recorded-date": "12-02-2026, 11:27:48",
+    "recorded-content": {
+      "get-nonexistent-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Instance Profile nonexistent-profile cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create-profile-for-duplicate-test": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-duplicate-error": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "Instance Profile <instance-profile-name:1> already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete-nonexistent-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Instance Profile nonexistent-profile cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_list_instance_profiles": {
+    "recorded-date": "12-02-2026, 11:27:51",
+    "recorded-content": {
+      "list-instance-profiles": {
+        "InstanceProfiles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<path-prefix>/<instance-profile-name:1>",
+            "CreateDate": "<datetime>",
+            "InstanceProfileId": "<instance-profile-id:1>",
+            "InstanceProfileName": "<instance-profile-name:1>",
+            "Path": "/<path-prefix>/",
+            "Roles": [
+              {
+                "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+                "AssumeRolePolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "sts:AssumeRole",
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": "ec2.amazonaws.com"
+                      }
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "CreateDate": "<datetime>",
+                "Path": "/",
+                "RoleId": "<role-id:1>",
+                "RoleName": "<role-name:1>"
+              }
+            ]
+          },
+          {
+            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<path-prefix>/<instance-profile-name:2>",
+            "CreateDate": "<datetime>",
+            "InstanceProfileId": "<instance-profile-id:2>",
+            "InstanceProfileName": "<instance-profile-name:2>",
+            "Path": "/<path-prefix>/",
+            "Roles": []
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_list_instance_profiles_for_role": {
+    "recorded-date": "12-02-2026, 11:27:55",
+    "recorded-content": {
+      "list-for-role": {
+        "InstanceProfiles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<path-prefix>/<instance-profile-name:1>",
+            "CreateDate": "<datetime>",
+            "InstanceProfileId": "<instance-profile-id:1>",
+            "InstanceProfileName": "<instance-profile-name:1>",
+            "Path": "/<path-prefix>/",
+            "Roles": [
+              {
+                "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+                "AssumeRolePolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "sts:AssumeRole",
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": "ec2.amazonaws.com"
+                      }
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "CreateDate": "<datetime>",
+                "Path": "/",
+                "RoleId": "<role-id:1>",
+                "RoleName": "<role-name:1>"
+              }
+            ]
+          },
+          {
+            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<path-prefix>/<instance-profile-name:2>",
+            "CreateDate": "<datetime>",
+            "InstanceProfileId": "<instance-profile-id:2>",
+            "InstanceProfileName": "<instance-profile-name:2>",
+            "Path": "/<path-prefix>/",
+            "Roles": [
+              {
+                "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+                "AssumeRolePolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "sts:AssumeRole",
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": "ec2.amazonaws.com"
+                      }
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "CreateDate": "<datetime>",
+                "Path": "/",
+                "RoleId": "<role-id:1>",
+                "RoleName": "<role-name:1>"
+              }
+            ]
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-for-role-empty": {
+        "InstanceProfiles": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_list_instance_profiles_path_prefix": {
+    "recorded-date": "12-02-2026, 11:27:56",
+    "recorded-content": {
+      "list-with-prefix": {
+        "InstanceProfiles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<path-prefix-1>/<instance-profile-name:1>",
+            "CreateDate": "<datetime>",
+            "InstanceProfileId": "<instance-profile-id:1>",
+            "InstanceProfileName": "<instance-profile-name:1>",
+            "Path": "/<path-prefix-1>/",
+            "Roles": []
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-empty-prefix": {
+        "InstanceProfiles": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileRoles::test_add_remove_role_from_instance_profile": {
+    "recorded-date": "12-02-2026, 11:27:59",
+    "recorded-content": {
+      "create-profile": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-with-role": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": [
+            {
+              "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+              "AssumeRolePolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "sts:AssumeRole",
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": "ec2.amazonaws.com"
+                    }
+                  }
+                ],
+                "Version": "2012-10-17"
+              },
+              "CreateDate": "<datetime>",
+              "Path": "/",
+              "RoleId": "<role-id:1>",
+              "RoleName": "<role-name:1>"
+            }
+          ],
+          "Tags": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-without-role": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": [],
+          "Tags": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileRoles::test_add_second_role_to_instance_profile_error": {
+    "recorded-date": "12-02-2026, 11:28:02",
+    "recorded-content": {
+      "add-second-role-error": {
+        "Error": {
+          "Code": "LimitExceeded",
+          "Message": "Cannot exceed quota for InstanceSessionsPerInstanceProfile: 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileRoles::test_delete_instance_profile_with_role_error": {
+    "recorded-date": "12-02-2026, 11:28:04",
+    "recorded-content": {
+      "create-profile": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-with-role-error": {
+        "Error": {
+          "Code": "DeleteConflict",
+          "Message": "Cannot delete entity, must remove roles from instance profile first.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "get-deleted-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Instance Profile <instance-profile-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileRoles::test_role_instance_profile_operations_errors": {
+    "recorded-date": "12-02-2026, 11:28:07",
+    "recorded-content": {
+      "create-profile": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "add-role-nonexistent-profile-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Instance Profile nonexistent-profile cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "add-nonexistent-role-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role with name nonexistent-role cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "remove-role-nonexistent-profile-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Instance Profile nonexistent-profile cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "remove-nonexistent-role-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role with name nonexistent-role cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "remove-unattached-role-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Role <role-name:1> in Instance Profile <instance-profile-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileTags::test_instance_profile_tag_lifecycle": {
+    "recorded-date": "12-02-2026, 11:28:09",
+    "recorded-content": {
+      "list-tags-empty": {
+        "IsTruncated": false,
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-after-tag": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "MyKey",
+            "Value": "myValue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-with-tags": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": [],
+          "Tags": [
+            {
+              "Key": "MyKey",
+              "Value": "myValue"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-two-tags": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "MyKey",
+            "Value": "myValue"
+          },
+          {
+            "Key": "MyKey2",
+            "Value": "myValue2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-untag": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "MyKey2",
+            "Value": "myValue2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-final-empty": {
+        "IsTruncated": false,
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileTags::test_instance_profile_create_with_tags": {
+    "recorded-date": "12-02-2026, 11:28:10",
+    "recorded-content": {
+      "create-with-tags": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": [],
+          "Tags": [
+            {
+              "Key": "InitialKey",
+              "Value": "InitialValue"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-with-initial-tags": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": [],
+          "Tags": [
+            {
+              "Key": "InitialKey",
+              "Value": "InitialValue"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileTags::test_instance_profile_tag_errors": {
+    "recorded-date": "12-02-2026, 11:28:11",
+    "recorded-content": {
+      "tag-nonexistent-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Instance Profile nonexistent-profile cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "untag-nonexistent-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Instance Profile nonexistent-profile cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list-tags-nonexistent-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Instance Profile nonexistent-profile cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  }
+}

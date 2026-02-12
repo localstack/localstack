@@ -1,0 +1,110 @@
+{
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_instance_profile_errors": {
+    "last_validated_date": "2026-02-12T11:28:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.71,
+      "teardown": 0.4,
+      "total": 1.11
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_instance_profile_lifecycle": {
+    "last_validated_date": "2026-02-12T11:28:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.68,
+      "call": 1.39,
+      "teardown": 0.57,
+      "total": 2.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_list_instance_profiles": {
+    "last_validated_date": "2026-02-12T11:28:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.96,
+      "teardown": 1.72,
+      "total": 2.68
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_list_instance_profiles_for_role": {
+    "last_validated_date": "2026-02-12T11:28:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.58,
+      "teardown": 2.65,
+      "total": 4.23
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_list_instance_profiles_path_prefix": {
+    "last_validated_date": "2026-02-12T11:28:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.65,
+      "teardown": 0.76,
+      "total": 1.41
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileRoles::test_add_remove_role_from_instance_profile": {
+    "last_validated_date": "2026-02-12T11:28:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.14,
+      "teardown": 1.12,
+      "total": 2.26
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileRoles::test_add_second_role_to_instance_profile_error": {
+    "last_validated_date": "2026-02-12T11:28:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.0,
+      "teardown": 2.12,
+      "total": 3.12
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileRoles::test_delete_instance_profile_with_role_error": {
+    "last_validated_date": "2026-02-12T11:28:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.38,
+      "teardown": 0.88,
+      "total": 2.26
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileRoles::test_role_instance_profile_operations_errors": {
+    "last_validated_date": "2026-02-12T11:28:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.68,
+      "teardown": 1.2,
+      "total": 2.88
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileTags::test_instance_profile_create_with_tags": {
+    "last_validated_date": "2026-02-12T11:28:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.38,
+      "teardown": 0.42,
+      "total": 0.8
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileTags::test_instance_profile_tag_errors": {
+    "last_validated_date": "2026-02-12T11:28:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.5,
+      "teardown": 0.0,
+      "total": 0.5
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileTags::test_instance_profile_tag_lifecycle": {
+    "last_validated_date": "2026-02-12T11:28:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.05,
+      "teardown": 0.4,
+      "total": 2.45
+    }
+  }
+}
