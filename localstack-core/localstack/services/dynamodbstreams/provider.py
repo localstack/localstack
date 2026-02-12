@@ -20,7 +20,6 @@ from localstack.aws.api.dynamodbstreams import (
     ShardIteratorType,
     Stream,
     StreamArn,
-    StreamDescription,
     StreamStatus,
     TableName,
 )
@@ -77,20 +76,21 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         store = get_dynamodbstreams_store(context.account_id, og_region)
         kinesis = get_kinesis_client(account_id=context.account_id, region_name=og_region)
         for stream in store.ddb_streams.values():
+            stream_description = stream.StreamDescription
             _stream_arn = stream_arn
             if context.region != og_region:
                 _stream_arn = change_region_in_ddb_stream_arn(_stream_arn, og_region)
-            if stream["StreamArn"] == _stream_arn:
+            if stream_description["StreamArn"] == _stream_arn:
                 # get stream details
                 dynamodb = connect_to(
                     aws_access_key_id=context.account_id, region_name=og_region
                 ).dynamodb
-                table_name = table_name_from_stream_arn(stream["StreamArn"])
+                table_name = table_name_from_stream_arn(stream_description["StreamArn"])
                 stream_name = get_kinesis_stream_name(table_name)
                 stream_details = kinesis.describe_stream(StreamName=stream_name)
                 table_details = dynamodb.describe_table(TableName=table_name)
-                stream["KeySchema"] = table_details["Table"]["KeySchema"]
-                stream["StreamStatus"] = STREAM_STATUS_MAP.get(
+                stream_description["KeySchema"] = table_details["Table"]["KeySchema"]
+                stream_description["StreamStatus"] = STREAM_STATUS_MAP.get(
                     stream_details["StreamDescription"]["StreamStatus"]
                 )
 
@@ -110,8 +110,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
                     # slicing the resulting shards after the exclusive_start_shard_id parameters
                     stream_shards = stream_shards[start_index + 1 :]
 
-                stream["Shards"] = stream_shards
-                stream_description = select_from_typed_dict(StreamDescription, stream)
+                stream_description["Shards"] = stream_shards
                 stream_description["StreamArn"] = _stream_arn
                 return DescribeStreamOutput(StreamDescription=stream_description)
 
@@ -190,7 +189,10 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     ) -> ListStreamsOutput:
         og_region = get_original_region(context=context, table_name=table_name)
         store = get_dynamodbstreams_store(context.account_id, og_region)
-        result = [select_from_typed_dict(Stream, res) for res in store.ddb_streams.values()]
+        result = [
+            select_from_typed_dict(Stream, _s.StreamDescription)
+            for _s in store.ddb_streams.values()
+        ]
         if table_name:
             result: list[Stream] = [res for res in result if res["TableName"] == table_name]
             # If this is a stream from a table replica, we need to change the region in the stream ARN, as LocalStack
