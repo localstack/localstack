@@ -1138,11 +1138,14 @@ class TlsConfig(TypedDict, total=False):
     insecureSkipVerification: Boolean | None
 
 
+MapOfStringToNullableStrings = dict[String, String]
+
+
 class IntegrationResponse(TypedDict, total=False):
     statusCode: StatusCode | None
     selectionPattern: String | None
     responseParameters: MapOfStringToString | None
-    responseTemplates: MapOfStringToString | None
+    responseTemplates: MapOfStringToNullableStrings | None
     contentHandling: ContentHandlingStrategy | None
 
 
