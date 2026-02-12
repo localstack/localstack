@@ -3274,6 +3274,63 @@ class TestApigatewayIntegration:
         snapshot.match("put-integration-response-wrong-resource", e.value.response)
 
     @markers.aws.validated
+    def test_put_integration_response_templates(
+        self, aws_client, apigw_create_rest_api, aws_client_factory, snapshot
+    ):
+        apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing PutIntegrationResponse method exc"
+        )
+        api_id = response["id"]
+        root_id = response["rootResourceId"]
+
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="POST",
+            authorizationType="NONE",
+        )
+
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="POST",
+            integrationHttpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        response = apigw_client.put_integration_response(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="POST",
+            statusCode="200",
+            selectionPattern="",
+            responseTemplates={"application/json": None},
+        )
+
+        snapshot.match("put-integration-response-template-none", response)
+
+        response = apigw_client.put_integration_response(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="POST",
+            statusCode="200",
+            selectionPattern="",
+            responseTemplates={"application/json": ""},
+        )
+        snapshot.match("put-integration-response-template-empty", response)
+
+        response = apigw_client.put_integration_response(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="POST",
+            statusCode="200",
+            selectionPattern="",
+        )
+        snapshot.match("put-integration-no-response-template", response)
+
+    @markers.aws.validated
     @pytest.mark.skipif(
         condition=not is_aws_cloud(), reason="Validation behavior not yet implemented"
     )

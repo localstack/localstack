@@ -5322,5 +5322,40 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_response_templates": {
+    "recorded-date": "12-02-2026, 16:25:03",
+    "recorded-content": {
+      "put-integration-response-template-none": {
+        "responseTemplates": {
+          "application/json": null
+        },
+        "selectionPattern": "",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-response-template-empty": {
+        "responseTemplates": {
+          "application/json": null
+        },
+        "selectionPattern": "",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-no-response-template": {
+        "selectionPattern": "",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
   }
 }

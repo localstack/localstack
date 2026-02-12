@@ -335,6 +335,15 @@
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_request_parameter_bool_type": {
     "last_validated_date": "2024-12-12T10:46:41+00:00"
   },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_response_templates": {
+    "last_validated_date": "2026-02-12T16:25:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.9,
+      "call": 1.65,
+      "teardown": 0.29,
+      "total": 2.84
+    }
+  },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_wrong_type": {
     "last_validated_date": "2024-04-15T20:48:47+00:00"
   },
