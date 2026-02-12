@@ -52,7 +52,7 @@
                 "method.response.header.Access-Control-Allow-Origin": "'*'"
               },
               "ResponseTemplates": {
-                "application/json": ""
+                "application/json": "{\"statusCode\":200}"
               }
             }
           ]
