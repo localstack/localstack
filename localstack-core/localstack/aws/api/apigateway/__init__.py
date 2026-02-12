@@ -1138,7 +1138,7 @@ class TlsConfig(TypedDict, total=False):
     insecureSkipVerification: Boolean | None
 
 
-MapOfStringToNullableStrings = dict[String, String]
+MapOfStringToNullableStrings = dict[String, String | None]
 
 
 class IntegrationResponse(TypedDict, total=False):
