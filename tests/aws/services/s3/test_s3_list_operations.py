@@ -5,6 +5,7 @@ each implementation. They all have subtle differences which make it difficult to
 
 import datetime
 from io import BytesIO
+from urllib.parse import quote
 
 import pytest
 import xmltodict
@@ -476,6 +477,114 @@ class TestS3ListObjectsV2:
         )
         snapshot.match("list-objects-v2-end", response)
         assert "NextContinuationToken" not in response
+
+    @markers.aws.validated
+    def test_list_objects_v2_continuation_token_safe_chars(
+        self, s3_bucket, snapshot, aws_client_factory
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        # S3 does not have a consistent ContinuationToken, must be based on a paginator
+        snapshot.add_transformer(
+            snapshot.transform.key_value("NextContinuationToken", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ContinuationToken", reference_replacement=False)
+        )
+        # we disable validation on the client to be able to set EncodingType to None (only valid value is `url`)
+        s3_client = aws_client_factory(config=Config(parameter_validation=False)).s3
+        keys = [
+            "file%2Fname",
+            "test@key/",
+            "test%123",
+            "test%percent",
+            "test key/",
+            "test key//",
+            "test%123/",
+            "a/%F0%9F%98%80/",
+            "date=2026-01-01/",
+            "date=2026-02-01/",
+            "date=2026-03-01/",
+            "date=2026-05-01/",
+        ]
+        for key in keys:
+            s3_client.put_object(Bucket=s3_bucket, Key=key)
+
+        response = s3_client.list_objects_v2(Bucket=s3_bucket, MaxKeys=5)
+        snapshot.match("list-objects-v2-max-5", response)
+
+        continuation_token = response["NextContinuationToken"]
+
+        response = s3_client.list_objects_v2(Bucket=s3_bucket, ContinuationToken=continuation_token)
+        snapshot.match("list-objects-v2-rest", response)
+
+        start_after = keys[-3]
+        # forcing the EncodingType to be `None` to verify behavior
+        response = s3_client.list_objects_v2(
+            Bucket=s3_bucket,
+            StartAfter=start_after,
+            MaxKeys=2,
+            EncodingType=None,
+        )
+        snapshot.match("list-objects-start-after", response)
+
+        response = s3_client.list_objects_v2(
+            Bucket=s3_bucket,
+            StartAfter=start_after,
+            MaxKeys=2,
+            EncodingType="url",
+        )
+        snapshot.match("list-objects-start-after-url-type", response)
+
+        url_safe_key = quote(start_after)
+        response = s3_client.list_objects_v2(Bucket=s3_bucket, StartAfter=url_safe_key, MaxKeys=2)
+        snapshot.match("list-objects-start-after-encoded", response)
+        continuation_token_2 = response["NextContinuationToken"]
+
+        response = s3_client.list_objects_v2(
+            Bucket=s3_bucket,
+            StartAfter=start_after,
+            ContinuationToken=continuation_token_2,
+            MaxKeys=2,
+        )
+        snapshot.match("list-objects-start-after-token", response)
+
+        response = s3_client.list_objects_v2(
+            Bucket=s3_bucket,
+            ContinuationToken=continuation_token_2,
+            MaxKeys=2,
+        )
+        snapshot.match("list-objects-continuation-token-2", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "s3_operation",
+        (
+            "list_objects_v2",
+            "list_objects",
+            "list_object_versions",
+            "list_multipart_uploads",
+        ),
+    )
+    def test_list_ops_encoding_type_validation(
+        self, s3_bucket, snapshot, aws_client_factory, s3_operation
+    ):
+        # we disable validation on the client to be able to set EncodingType to None (only valid value is `url`)
+        s3_client = aws_client_factory(config=Config(parameter_validation=False)).s3
+        if s3_operation == "list_object_versions":
+            # to test list_object_versions, we need the bucket to be versioned
+            s3_client.put_bucket_versioning(
+                Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+            )
+
+        client_method = getattr(s3_client, s3_operation)
+
+        with pytest.raises(ClientError) as e:
+            client_method(Bucket=s3_bucket, EncodingType="value")
+        snapshot.match(f"{s3_operation}-error-wrong-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            client_method(Bucket=s3_bucket, EncodingType="")
+        snapshot.match(f"{s3_operation}-error-empty-value", e.value.response)
 
 
 class TestS3ListObjectVersions:

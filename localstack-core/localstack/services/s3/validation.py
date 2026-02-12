@@ -15,6 +15,7 @@ from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
     CORSConfiguration,
+    EncodingType,
     Grant,
     Grantee,
     Grants,
@@ -520,3 +521,12 @@ def validate_checksum_value(checksum_value: str, checksum_algorithm: ChecksumAlg
             valid_length = 0
 
     return len(checksum) == valid_length
+
+
+def validate_encoding_type(encoding_type: EncodingType):
+    if encoding_type is not None and not encoding_type == EncodingType.url:
+        raise InvalidArgument(
+            "Invalid Encoding Method specified in Request",
+            ArgumentName="encoding-type",
+            ArgumentValue=encoding_type,
+        )
