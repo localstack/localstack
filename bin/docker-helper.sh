@@ -6,7 +6,7 @@ shopt -s nullglob
 
 # global defaults
 DOCKERFILE=${DOCKERFILE-"Dockerfile"}
-DEFAULT_TAG=${DEFAULT_TAG-"latest"}
+DEFAULT_TAG=${DEFAULT_TAG-"latest-amd64"}
 DOCKER_BUILD_CONTEXT=${DOCKER_BUILD_CONTEXT-"."}
 
 function usage() {
@@ -138,7 +138,11 @@ function cmd-build() {
     # --add-host: Fix for Centos host OS
     # --build-arg BUILDKIT_INLINE_CACHE=1: Instruct buildkit to inline the caching information into the image
     # --cache-from: Use the inlined caching information when building the image
-    DOCKER_BUILDKIT=1 docker buildx build --platform linux/$PLATFORM --pull --progress=plain \
+    # BUILDX_NO_DEFAULT_ATTESTATIONS=1 buildkit attestation will lead to the image being a single-platform image index if built with buildkit and containerd image store.
+    # The docker manifest command we use to create multi platform manifests does not support doing this from those image indexes, failing with `<input-image> is a manifest list`
+    # We might want to revert this to use attestation, but for now this locks the old behavior of the image manifest being a `application/vnd.docker.distribution.manifest.v2+json`
+    # Before switching back we also need to make sure other registries like ECR support these single platform image indexes
+    DOCKER_BUILDKIT=1 BUILDX_NO_DEFAULT_ATTESTATIONS=1 docker buildx build --platform linux/$PLATFORM --pull --progress=plain \
       --cache-from "$IMAGE_NAME" --build-arg BUILDKIT_INLINE_CACHE=1 \
       --build-arg LOCALSTACK_PRE_RELEASE=$(_is_release_commit && echo "0" || echo "1") \
       --build-arg LOCALSTACK_BUILD_GIT_HASH=$(git rev-parse --short HEAD) \
