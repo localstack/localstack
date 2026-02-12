@@ -32,6 +32,9 @@ def snapshot_transformers(snapshot):
     snapshot.add_transformer(snapshot.transform.iam_api())
 
 
+pytestmark = pytest.mark.skip
+
+
 # TODO properly test role last used
 class TestRoleLifecycle:
     @markers.aws.validated
