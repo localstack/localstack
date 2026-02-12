@@ -33,7 +33,7 @@ class TestIAMGroupsCRUD:
         """Test creating a group and duplicate detection."""
         group_name = f"group-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
 
         response = create_group(GroupName=group_name)
         snapshot.match("create-group", response)
@@ -48,7 +48,7 @@ class TestIAMGroupsCRUD:
         """Test getting group details and error handling for non-existent groups."""
         group_name = f"group-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
 
         created = create_group(GroupName=group_name)["Group"]
         snapshot.match("created-group", created)
@@ -68,8 +68,7 @@ class TestIAMGroupsCRUD:
         other_group_name = f"group-{short_uid()}"
         path = "/some/location/"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
-        snapshot.add_transformer(snapshot.transform.regex(other_group_name, "<other-group-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
 
         create_group(GroupName=group_name)
         result = aws_client.iam.get_group(GroupName=group_name)
@@ -84,8 +83,7 @@ class TestIAMGroupsCRUD:
         group_name_1 = f"group-{short_uid()}"
         group_name_2 = f"group-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name_1, "<group-name-1>"))
-        snapshot.add_transformer(snapshot.transform.regex(group_name_2, "<group-name-2>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
 
         create_group(GroupName=group_name_1)
         create_group(GroupName=group_name_2)
@@ -125,8 +123,7 @@ class TestIAMGroupsCRUD:
         group_name = f"group-{short_uid()}"
         new_group_name = f"group-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
-        snapshot.add_transformer(snapshot.transform.regex(new_group_name, "<new-group-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
 
         aws_client.iam.create_group(GroupName=group_name)
         initial_group = aws_client.iam.get_group(GroupName=group_name)["Group"]
@@ -150,8 +147,7 @@ class TestIAMGroupsCRUD:
         original_path = "/path/"
         new_path = "/new-path/"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
-        snapshot.add_transformer(snapshot.transform.regex(new_group_name, "<new-group-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
 
         aws_client.iam.create_group(GroupName=group_name, Path=original_path)
         aws_client.iam.update_group(
@@ -182,8 +178,7 @@ class TestIAMGroupsCRUD:
         group_name_1 = f"group-{short_uid()}"
         group_name_2 = f"group-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name_1, "<group-name-1>"))
-        snapshot.add_transformer(snapshot.transform.regex(group_name_2, "<group-name-2>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
 
         create_group(GroupName=group_name_1)
         create_group(GroupName=group_name_2)
@@ -203,8 +198,8 @@ class TestIAMGroupsMembership:
         group_name = f"group-{short_uid()}"
         user_name = f"user-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
-        snapshot.add_transformer(snapshot.transform.regex(user_name, "<user-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
 
         create_group(GroupName=group_name)
         create_user(UserName=user_name)
@@ -218,7 +213,7 @@ class TestIAMGroupsMembership:
         """Test error when adding non-existent user to group."""
         group_name = f"group-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
 
         create_group(GroupName=group_name)
 
@@ -247,8 +242,8 @@ class TestIAMGroupsMembership:
         group_name = f"group-{short_uid()}"
         user_name = f"user-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
-        snapshot.add_transformer(snapshot.transform.regex(user_name, "<user-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
 
         create_group(GroupName=group_name)
         create_user(UserName=user_name)
@@ -280,8 +275,8 @@ class TestIAMGroupsMembership:
         group_name = f"group-{short_uid()}"
         user_name = f"user-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
-        snapshot.add_transformer(snapshot.transform.regex(user_name, "<user-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
 
         create_group(GroupName=group_name)
         create_user(UserName=user_name)
@@ -307,10 +302,8 @@ class TestIAMGroupsMembership:
         group_name_3 = f"group-{short_uid()}"
         user_name = f"user-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name_1, "<group-name-1>"))
-        snapshot.add_transformer(snapshot.transform.regex(group_name_2, "<group-name-2>"))
-        snapshot.add_transformer(snapshot.transform.regex(group_name_3, "<group-name-3>"))
-        snapshot.add_transformer(snapshot.transform.regex(user_name, "<user-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
 
         create_group(GroupName=group_name_1)
         create_group(GroupName=group_name_2)
@@ -333,8 +326,8 @@ class TestIAMGroupsPolicies:
         group_name = f"group-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
-        snapshot.add_transformer(snapshot.transform.regex(policy_name, "<policy-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+        snapshot.add_transformer(snapshot.transform.key_value("PolicyName"))
 
         create_group(GroupName=group_name)
         response = aws_client.iam.put_group_policy(
@@ -349,8 +342,8 @@ class TestIAMGroupsPolicies:
         group_name = f"group-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
-        snapshot.add_transformer(snapshot.transform.regex(policy_name, "<policy-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+        snapshot.add_transformer(snapshot.transform.key_value("PolicyName"))
 
         create_group(GroupName=group_name)
 
@@ -373,7 +366,7 @@ class TestIAMGroupsPolicies:
         group_name = f"group-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
         snapshot.add_transformer(snapshot.transform.regex(policy_name, "<policy-name>"))
 
         create_group(GroupName=group_name)
@@ -394,7 +387,7 @@ class TestIAMGroupsPolicies:
         group_name = f"group-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
         snapshot.add_transformer(snapshot.transform.regex(policy_name, "<policy-name>"))
 
         create_group(GroupName=group_name)
@@ -427,7 +420,7 @@ class TestIAMGroupsPolicies:
         group_name = f"group-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.regex(group_name, "<group-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
         snapshot.add_transformer(snapshot.transform.regex(policy_name, "<policy-name>"))
 
         create_group(GroupName=group_name)

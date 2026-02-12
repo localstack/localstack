@@ -1,6 +1,6 @@
 {
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_create_group": {
-    "recorded-date": "12-02-2026, 18:20:27",
+    "recorded-date": "12-02-2026, 21:51:36",
     "recorded-content": {
       "create-group": {
         "Group": {
@@ -29,7 +29,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_get_group": {
-    "recorded-date": "12-02-2026, 18:23:41",
+    "recorded-date": "12-02-2026, 21:51:37",
     "recorded-content": {
       "created-group": {
         "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
@@ -59,7 +59,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_get_group_with_path": {
-    "recorded-date": "12-02-2026, 18:24:27",
+    "recorded-date": "12-02-2026, 21:51:38",
     "recorded-content": {
       "get-group-default-path": {
         "Group": {
@@ -92,7 +92,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_list_groups": {
-    "recorded-date": "12-02-2026, 18:25:47",
+    "recorded-date": "12-02-2026, 21:51:40",
     "recorded-content": {
       "list-groups": [
         {
@@ -113,7 +113,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_delete_group": {
-    "recorded-date": "12-02-2026, 18:26:33",
+    "recorded-date": "12-02-2026, 21:51:41",
     "recorded-content": {
       "delete-response": {
         "ResponseMetadata": {
@@ -124,7 +124,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_delete_unknown_group": {
-    "recorded-date": "12-02-2026, 18:28:15",
+    "recorded-date": "12-02-2026, 21:51:41",
     "recorded-content": {
       "delete-unknown-group": {
         "Error": {
@@ -140,7 +140,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_name": {
-    "recorded-date": "12-02-2026, 18:33:38",
+    "recorded-date": "12-02-2026, 21:51:42",
     "recorded-content": {
       "original_group": {
         "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
@@ -170,7 +170,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_path": {
-    "recorded-date": "12-02-2026, 18:42:07",
+    "recorded-date": "12-02-2026, 21:51:43",
     "recorded-content": {
       "updated-group-with-new-path": {
         "Arn": "arn:<partition>:iam::111111111111:group/new-path/<group-name:1>",
@@ -214,7 +214,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_user_to_group": {
-    "recorded-date": "12-02-2026, 18:48:49",
+    "recorded-date": "12-02-2026, 21:55:23",
     "recorded-content": {
       "group-with-user": {
         "Group": {
@@ -242,7 +242,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_unknown_user_to_group": {
-    "recorded-date": "12-02-2026, 18:50:03",
+    "recorded-date": "12-02-2026, 21:55:24",
     "recorded-content": {
       "add-unknown-user": {
         "Error": {
@@ -258,7 +258,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_user_to_unknown_group": {
-    "recorded-date": "12-02-2026, 18:50:29",
+    "recorded-date": "12-02-2026, 21:55:25",
     "recorded-content": {
       "add-user-unknown-group": {
         "Error": {
@@ -274,7 +274,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_remove_user_from_group": {
-    "recorded-date": "12-02-2026, 18:51:52",
+    "recorded-date": "12-02-2026, 21:55:26",
     "recorded-content": {
       "group-before-remove": {
         "Group": {
@@ -317,7 +317,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_remove_user_from_unknown_group": {
-    "recorded-date": "12-02-2026, 18:52:55",
+    "recorded-date": "12-02-2026, 21:55:27",
     "recorded-content": {
       "remove-from-unknown-group": {
         "Error": {
@@ -333,7 +333,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_user_to_group_idempotent": {
-    "recorded-date": "12-02-2026, 18:57:52",
+    "recorded-date": "12-02-2026, 21:55:28",
     "recorded-content": {
       "groups-before-remove": [
         {
@@ -348,7 +348,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_list_groups_for_user": {
-    "recorded-date": "12-02-2026, 18:58:40",
+    "recorded-date": "12-02-2026, 21:55:30",
     "recorded-content": {
       "list-groups-for-user": [
         {
@@ -369,7 +369,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_put_group_policy": {
-    "recorded-date": "12-02-2026, 19:15:29",
+    "recorded-date": "12-02-2026, 21:59:32",
     "recorded-content": {
       "put-group-policy": {
         "ResponseMetadata": {
@@ -380,7 +380,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_get_group_policy": {
-    "recorded-date": "12-02-2026, 19:16:47",
+    "recorded-date": "12-02-2026, 21:59:33",
     "recorded-content": {
       "get-nonexistent-policy": {
         "Error": {
@@ -414,7 +414,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_list_group_policies": {
-    "recorded-date": "12-02-2026, 19:18:02",
+    "recorded-date": "12-02-2026, 21:59:34",
     "recorded-content": {
       "list-empty-policies": {
         "IsTruncated": false,
@@ -437,7 +437,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_attach_detach_group_policy": {
-    "recorded-date": "12-02-2026, 19:19:18",
+    "recorded-date": "12-02-2026, 21:59:36",
     "recorded-content": {
       "no-attached-policies": {
         "AttachedPolicies": [],
@@ -471,7 +471,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_detach_unattached_group_policy": {
-    "recorded-date": "12-02-2026, 19:28:03",
+    "recorded-date": "12-02-2026, 21:59:37",
     "recorded-content": {
       "detach-unattached-error": {
         "Error": {
