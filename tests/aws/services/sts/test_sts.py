@@ -257,7 +257,7 @@ class TestSTSIntegrations:
             assert assume_role_id_parts[1] == test_role_session_name
 
     @markers.aws.only_localstack
-    def test_assume_role_with_web_identity(self, aws_client, create_role, account_id):
+    def test_assume_role_with_web_identity(self, aws_client, create_role, account_id, partition):
         """
         Test assume_role_with_web_identity returns valid temporary credentials.
         """
@@ -297,13 +297,13 @@ class TestSTSIntegrations:
         # Validate AssumedRoleUser
         assumed_role_user = response["AssumedRoleUser"]
         assert assumed_role_user["Arn"] == (
-            f"arn:aws:sts::{account_id}:assumed-role/{role['Role']['RoleName']}/{session_name}"
+            f"arn:{partition}:sts::{account_id}:assumed-role/{role['Role']['RoleName']}/{session_name}"
         )
         assert assumed_role_user["AssumedRoleId"].startswith("ARO1")
         assert assumed_role_user["AssumedRoleId"].endswith(f":{session_name}")
 
     @markers.aws.only_localstack
-    def test_assume_role_with_saml(self, aws_client, account_id, create_role):
+    def test_assume_role_with_saml(self, aws_client, account_id, create_role, partition):
         """
         Test assume_role_with_saml returns valid temporary credentials.
         """
@@ -331,7 +331,7 @@ class TestSTSIntegrations:
             fed_name=fed_name,
         ).replace("\n", "")
 
-        principal_arn = f"arn:aws:iam::{account_id}:saml-provider/{provider_name}"
+        principal_arn = f"arn:{partition}:iam::{account_id}:saml-provider/{provider_name}"
         base64_saml_assertion = b64encode(saml_assertion.encode("utf-8")).decode("utf-8")
 
         response = aws_client.sts.assume_role_with_saml(
@@ -393,10 +393,12 @@ class TestSTSIntegrations:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
-    def test_federation_token_policy_too_long(self, aws_client, snapshot):
+    def test_federation_token_policy_too_long(self, aws_client, snapshot, partition):
         """Test that federation token with policy > 2048 characters is rejected."""
         # Create a policy that exceeds 2048 characters
-        resource_template = "arn:aws:s3:::my-example-bucket-with-long-name/folder-name-{num}/*"
+        resource_template = (
+            f"arn:{partition}:s3:::my-example-bucket-with-long-name/folder-name-{{num}}/*"
+        )
         statements = []
         for num in range(30):
             statements.append(
@@ -480,11 +482,11 @@ class TestSTSCallerIdentity:
     """Tests for STS GetCallerIdentity API."""
 
     @markers.aws.only_localstack
-    def test_get_caller_identity_root(self, aws_client):
+    def test_get_caller_identity_root(self, aws_client, partition):
         """Test that root identity returns the correct ARN format."""
         response = aws_client.sts.get_caller_identity()
         account_id = response["Account"]
-        assert f"arn:aws:iam::{account_id}:root" == response["Arn"]
+        assert f"arn:{partition}:iam::{account_id}:root" == response["Arn"]
 
     @markers.aws.validated
     def test_get_caller_identity_with_iam_user_credentials(
