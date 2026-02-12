@@ -3386,7 +3386,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_token_safe_chars": {
-    "recorded-date": "11-02-2026, 16:14:46",
+    "recorded-date": "12-02-2026, 07:39:42",
     "recorded-content": {
       "list-objects-v2-max-5": {
         "Contents": [
@@ -3737,6 +3737,122 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_objects_v2]": {
+    "recorded-date": "12-02-2026, 10:24:30",
+    "recorded-content": {
+      "list_objects_v2-error-wrong-value": {
+        "Error": {
+          "ArgumentName": "encoding-type",
+          "ArgumentValue": "value",
+          "Code": "InvalidArgument",
+          "Message": "Invalid Encoding Method specified in Request"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_objects_v2-error-empty-value": {
+        "Error": {
+          "ArgumentName": "encoding-type",
+          "ArgumentValue": null,
+          "Code": "InvalidArgument",
+          "Message": "Invalid Encoding Method specified in Request"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_objects]": {
+    "recorded-date": "12-02-2026, 10:24:32",
+    "recorded-content": {
+      "list_objects-error-wrong-value": {
+        "Error": {
+          "ArgumentName": "encoding-type",
+          "ArgumentValue": "value",
+          "Code": "InvalidArgument",
+          "Message": "Invalid Encoding Method specified in Request"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_objects-error-empty-value": {
+        "Error": {
+          "ArgumentName": "encoding-type",
+          "ArgumentValue": null,
+          "Code": "InvalidArgument",
+          "Message": "Invalid Encoding Method specified in Request"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_object_versions]": {
+    "recorded-date": "12-02-2026, 10:24:34",
+    "recorded-content": {
+      "list_object_versions-error-wrong-value": {
+        "Error": {
+          "ArgumentName": "encoding-type",
+          "ArgumentValue": "value",
+          "Code": "InvalidArgument",
+          "Message": "Invalid Encoding Method specified in Request"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_object_versions-error-empty-value": {
+        "Error": {
+          "ArgumentName": "encoding-type",
+          "ArgumentValue": null,
+          "Code": "InvalidArgument",
+          "Message": "Invalid Encoding Method specified in Request"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_multipart_uploads]": {
+    "recorded-date": "12-02-2026, 10:24:36",
+    "recorded-content": {
+      "list_multipart_uploads-error-wrong-value": {
+        "Error": {
+          "ArgumentName": "encoding-type",
+          "ArgumentValue": "value",
+          "Code": "InvalidArgument",
+          "Message": "Invalid Encoding Method specified in Request"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_multipart_uploads-error-empty-value": {
+        "Error": {
+          "ArgumentName": "encoding-type",
+          "ArgumentValue": null,
+          "Code": "InvalidArgument",
+          "Message": "Invalid Encoding Method specified in Request"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

@@ -483,13 +483,14 @@ class TestS3ListObjectsV2:
         self, s3_bucket, snapshot, aws_client_factory
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        # S3 does not have a consitent ContinuationToken, must be based on a paginator
+        # S3 does not have a consistent ContinuationToken, must be based on a paginator
         snapshot.add_transformer(
             snapshot.transform.key_value("NextContinuationToken", reference_replacement=False)
         )
         snapshot.add_transformer(
             snapshot.transform.key_value("ContinuationToken", reference_replacement=False)
         )
+        # we disable validation on the client to be able to set EncodingType to None (only valid value is `url`)
         s3_client = aws_client_factory(config=Config(parameter_validation=False)).s3
         keys = [
             "file%2Fname",
@@ -553,6 +554,37 @@ class TestS3ListObjectsV2:
             MaxKeys=2,
         )
         snapshot.match("list-objects-continuation-token-2", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "s3_operation",
+        (
+            "list_objects_v2",
+            "list_objects",
+            "list_object_versions",
+            "list_multipart_uploads",
+        ),
+    )
+    def test_list_ops_encoding_type_validation(
+        self, s3_bucket, snapshot, aws_client_factory, s3_operation
+    ):
+        # we disable validation on the client to be able to set EncodingType to None (only valid value is `url`)
+        s3_client = aws_client_factory(config=Config(parameter_validation=False)).s3
+        if s3_operation == "list_object_versions":
+            # to test list_object_versions, we need the bucket to be versioned
+            s3_client.put_bucket_versioning(
+                Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+            )
+
+        client_method = getattr(s3_client, s3_operation)
+
+        with pytest.raises(ClientError) as e:
+            client_method(Bucket=s3_bucket, EncodingType="value")
+        snapshot.match(f"{s3_operation}-error-wrong-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            client_method(Bucket=s3_bucket, EncodingType="")
+        snapshot.match(f"{s3_operation}-error-empty-value", e.value.response)
 
 
 class TestS3ListObjectVersions:

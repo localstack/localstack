@@ -84,12 +84,12 @@
     "last_validated_date": "2025-01-21T18:14:48+00:00"
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_token_safe_chars": {
-    "last_validated_date": "2026-02-11T16:14:47+00:00",
+    "last_validated_date": "2026-02-12T07:39:43+00:00",
     "durations_in_seconds": {
-      "setup": 1.11,
-      "call": 2.79,
-      "teardown": 1.18,
-      "total": 5.08
+      "setup": 1.03,
+      "call": 2.6,
+      "teardown": 1.11,
+      "total": 4.74
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_with_prefix": {
@@ -97,6 +97,42 @@
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_with_prefix_and_delimiter": {
     "last_validated_date": "2025-01-21T18:14:43+00:00"
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_multipart_uploads]": {
+    "last_validated_date": "2026-02-12T10:24:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.53,
+      "call": 0.68,
+      "teardown": 0.59,
+      "total": 1.8
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_object_versions]": {
+    "last_validated_date": "2026-02-12T10:24:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 0.91,
+      "teardown": 0.61,
+      "total": 2.04
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_objects]": {
+    "last_validated_date": "2026-02-12T10:24:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.55,
+      "call": 0.67,
+      "teardown": 0.64,
+      "total": 1.86
+    }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_objects_v2]": {
+    "last_validated_date": "2026-02-12T10:24:31+00:00",
+    "durations_in_seconds": {
+      "setup": 1.02,
+      "call": 0.68,
+      "teardown": 0.61,
+      "total": 2.31
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_empty_part_number_marker": {
     "last_validated_date": "2025-01-21T18:15:20+00:00"

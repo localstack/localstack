@@ -323,6 +323,7 @@ from localstack.services.s3.validation import (
     validate_canned_acl,
     validate_checksum_value,
     validate_cors_configuration,
+    validate_encoding_type,
     validate_inventory_configuration,
     validate_lifecycle_configuration,
     validate_object_key,
@@ -1724,6 +1725,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         **kwargs,
     ) -> ListObjectsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        validate_encoding_type(encoding_type)
 
         common_prefixes = set()
         count = 0
@@ -1732,7 +1734,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         max_keys = max_keys or 1000
         prefix = prefix or ""
         delimiter = delimiter or ""
-        if encoding_type:
+        if encoding_type == EncodingType.url:
             prefix = urlparse.quote(prefix)
             delimiter = urlparse.quote(delimiter)
 
@@ -1841,6 +1843,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "The continuation token provided is incorrect",
                 ArgumentName="continuation-token",
             )
+        validate_encoding_type(encoding_type)
 
         common_prefixes = set()
         count = 0
@@ -1852,7 +1855,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         start_after = start_after or ""
         decoded_continuation_token = decode_continuation_token(continuation_token)
 
-        if encoding_type:
+        if encoding_type == EncodingType.url:
             prefix = urlparse.quote(prefix)
             delimiter = urlparse.quote(delimiter)
             start_after = urlparse.quote(start_after)
@@ -1973,6 +1976,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentName="version-id-marker",
                 ArgumentValue=version_id_marker,
             )
+        validate_encoding_type(encoding_type)
 
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         common_prefixes = set()
@@ -1983,7 +1987,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         max_keys = max_keys or 1000
         prefix = prefix or ""
         delimiter = delimiter or ""
-        if encoding_type:
+        if encoding_type == EncodingType.url:
             prefix = urlparse.quote(prefix)
             delimiter = urlparse.quote(delimiter)
         version_key_marker_found = False
@@ -2970,6 +2974,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         **kwargs,
     ) -> ListMultipartUploadsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        validate_encoding_type(encoding_type)
 
         common_prefixes = set()
         count = 0
@@ -2977,7 +2982,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         max_uploads = max_uploads or 1000
         prefix = prefix or ""
         delimiter = delimiter or ""
-        if encoding_type:
+        if encoding_type == EncodingType.url:
             prefix = urlparse.quote(prefix)
             delimiter = urlparse.quote(delimiter)
         upload_id_marker_found = False
