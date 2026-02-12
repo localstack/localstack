@@ -107,6 +107,15 @@
       "total": 5.77
     }
   },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_attach_detach_aws_managed_policy_role": {
+    "last_validated_date": "2026-02-16T15:40:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.71,
+      "call": 2.17,
+      "teardown": 0.7,
+      "total": 3.58
+    }
+  },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_role_managed_policy_errors": {
     "last_validated_date": "2026-02-11T17:02:18+00:00",
     "durations_in_seconds": {
