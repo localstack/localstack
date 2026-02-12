@@ -1,0 +1,200 @@
+{
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_create_group": {
+    "last_validated_date": "2026-02-12T18:20:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.47,
+      "teardown": 0.41,
+      "total": 1.25
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_delete_group": {
+    "last_validated_date": "2026-02-12T18:26:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.65,
+      "teardown": 0.0,
+      "total": 1.02
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_delete_unknown_group": {
+    "last_validated_date": "2026-02-12T18:28:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.37,
+      "teardown": 0.0,
+      "total": 0.74
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_get_group": {
+    "last_validated_date": "2026-02-12T18:23:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.38,
+      "call": 0.56,
+      "teardown": 0.39,
+      "total": 1.33
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_get_group_with_path": {
+    "last_validated_date": "2026-02-12T18:24:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.56,
+      "teardown": 0.82,
+      "total": 1.75
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_list_groups": {
+    "last_validated_date": "2026-02-12T18:25:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.58,
+      "teardown": 0.84,
+      "total": 1.79
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_duplicate_name": {
+    "last_validated_date": "2026-02-12T18:45:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.44,
+      "call": 0.79,
+      "teardown": 1.11,
+      "total": 2.34
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_name": {
+    "last_validated_date": "2026-02-12T18:33:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 0.84,
+      "teardown": 0.12,
+      "total": 1.44
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_not_found": {
+    "last_validated_date": "2026-02-12T18:43:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 0.48,
+      "teardown": 0.0,
+      "total": 0.97
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_path": {
+    "last_validated_date": "2026-02-12T18:42:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.42,
+      "call": 0.75,
+      "teardown": 0.13,
+      "total": 1.3
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_unknown_user_to_group": {
+    "last_validated_date": "2026-02-12T18:50:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 0.61,
+      "teardown": 0.54,
+      "total": 1.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_user_to_group": {
+    "last_validated_date": "2026-02-12T18:48:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 1.04,
+      "teardown": 1.3,
+      "total": 2.85
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_user_to_group_idempotent": {
+    "last_validated_date": "2026-02-12T18:57:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.45,
+      "call": 1.28,
+      "teardown": 1.06,
+      "total": 2.79
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_user_to_unknown_group": {
+    "last_validated_date": "2026-02-12T18:50:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.55,
+      "call": 0.7,
+      "teardown": 0.67,
+      "total": 1.92
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_list_groups_for_user": {
+    "last_validated_date": "2026-02-12T18:58:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.46,
+      "call": 1.24,
+      "teardown": 2.33,
+      "total": 4.03
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_remove_user_from_group": {
+    "last_validated_date": "2026-02-12T18:51:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.41,
+      "call": 1.18,
+      "teardown": 1.15,
+      "total": 2.74
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_remove_user_from_unknown_group": {
+    "last_validated_date": "2026-02-12T18:52:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.45,
+      "call": 0.49,
+      "teardown": 0.0,
+      "total": 0.94
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_attach_detach_group_policy": {
+    "last_validated_date": "2026-02-12T19:19:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 1.17,
+      "teardown": 0.71,
+      "total": 2.35
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_detach_unattached_group_policy": {
+    "last_validated_date": "2026-02-12T19:28:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.44,
+      "call": 0.88,
+      "teardown": 0.84,
+      "total": 2.16
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_get_group_policy": {
+    "last_validated_date": "2026-02-12T19:16:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.43,
+      "call": 0.77,
+      "teardown": 0.59,
+      "total": 1.79
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_list_group_policies": {
+    "last_validated_date": "2026-02-12T19:18:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 0.84,
+      "teardown": 0.67,
+      "total": 1.98
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_put_group_policy": {
+    "last_validated_date": "2026-02-12T19:15:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 0.63,
+      "teardown": 0.64,
+      "total": 1.77
+    }
+  }
+}
