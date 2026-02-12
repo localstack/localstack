@@ -4397,13 +4397,7 @@ class TestApiGatewayStage:
         Regression test for https://github.com/localstack/localstack/issues/13667
         Verifies that get_stages filters results by deploymentId when provided.
         """
-        # deploymentId and restApiId are not covered by the autouse apigateway_api() transformer
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value("deploymentId"),
-                snapshot.transform.key_value("restApiId"),
-            ]
-        )
+        snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
 
         # Create REST API with a MOCK method (required for deployment)
         response = apigw_create_rest_api(name=f"test-stages-{short_uid()}")

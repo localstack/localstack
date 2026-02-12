@@ -743,14 +743,7 @@ class TestServerlessApigwLambda:
 
         Uses MOCK integrations (no Lambda dependency) to isolate the CF deployment replacement bug.
         """
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value("deploymentId"),
-                snapshot.transform.key_value("id"),
-                snapshot.transform.key_value("parentId"),
-                snapshot.transform.key_value("restApiId"),
-            ]
-        )
+        snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
 
         template_path = os.path.join(
             os.path.dirname(__file__), "../../../templates/apigateway-mock-cors-deployment.json"
