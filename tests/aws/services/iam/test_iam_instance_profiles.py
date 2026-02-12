@@ -4,6 +4,7 @@ import json
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -27,11 +28,10 @@ def snapshot_transformers(snapshot):
 
 class TestInstanceProfileLifecycle:
     @markers.aws.validated
-    def test_instance_profile_lifecycle(
-        self, aws_client, create_instance_profile, create_role, snapshot
-    ):
+    def test_instance_profile_lifecycle(self, aws_client, create_instance_profile, snapshot):
         """Test basic instance profile lifecycle: create, get, delete."""
         profile_name = f"profile-{short_uid()}"
+        profile_name_default = f"profile-default-{short_uid()}"
         path_prefix = f"/test-path-{short_uid()}/"
         snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
 
@@ -46,7 +46,6 @@ class TestInstanceProfileLifecycle:
         snapshot.match("get-instance-profile", get_response)
 
         # Create another profile with default path
-        profile_name_default = f"profile-default-{short_uid()}"
         create_default_response = create_instance_profile(InstanceProfileName=profile_name_default)
         snapshot.match("create-instance-profile-default-path", create_default_response)
 
@@ -86,15 +85,16 @@ class TestInstanceProfileLifecycle:
         self, aws_client, create_instance_profile, create_role, snapshot
     ):
         """Test listing instance profiles."""
-        path_prefix = f"/list-test-{short_uid()}/"
-        snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
+        snapshot.add_transformer(
+            SortingTransformer("InstanceProfiles", lambda p: p["InstanceProfileName"])
+        )
 
         profile_name_1 = f"profile-1-{short_uid()}"
         profile_name_2 = f"profile-2-{short_uid()}"
 
         # Create profiles with same path
-        create_instance_profile(InstanceProfileName=profile_name_1, Path=path_prefix)
-        create_instance_profile(InstanceProfileName=profile_name_2, Path=path_prefix)
+        create_instance_profile(InstanceProfileName=profile_name_1)
+        create_instance_profile(InstanceProfileName=profile_name_2)
 
         # Create a role and add to one profile
         role_name = f"role-{short_uid()}"
@@ -104,53 +104,13 @@ class TestInstanceProfileLifecycle:
         )
 
         # List all profiles with path prefix - filter to test profiles only
-        list_response = aws_client.iam.list_instance_profiles(PathPrefix=path_prefix)
-        # Sort by name for consistent snapshot
-        list_response["InstanceProfiles"] = sorted(
-            list_response["InstanceProfiles"], key=lambda p: p["InstanceProfileName"]
-        )
+        list_response = aws_client.iam.list_instance_profiles()
+        list_response["InstanceProfiles"] = [
+            instance_profile
+            for instance_profile in list_response["InstanceProfiles"]
+            if instance_profile["InstanceProfileName"] in {profile_name_1, profile_name_2}
+        ]
         snapshot.match("list-instance-profiles", list_response)
-
-    @markers.aws.validated
-    def test_list_instance_profiles_for_role(
-        self, aws_client, create_instance_profile, create_role, snapshot
-    ):
-        """Test listing instance profiles for a specific role."""
-        path_prefix = f"/role-list-{short_uid()}/"
-        snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
-
-        profile_name_1 = f"profile-role-1-{short_uid()}"
-        profile_name_2 = f"profile-role-2-{short_uid()}"
-        role_name = f"role-{short_uid()}"
-        role_name_2 = f"role-2-{short_uid()}"
-
-        # Create role
-        create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(TRUST_POLICY))
-        create_role(RoleName=role_name_2, AssumeRolePolicyDocument=json.dumps(TRUST_POLICY))
-
-        # Create profiles
-        create_instance_profile(InstanceProfileName=profile_name_1, Path=path_prefix)
-        create_instance_profile(InstanceProfileName=profile_name_2, Path=path_prefix)
-
-        # Add role to both profiles
-        aws_client.iam.add_role_to_instance_profile(
-            InstanceProfileName=profile_name_1, RoleName=role_name
-        )
-        aws_client.iam.add_role_to_instance_profile(
-            InstanceProfileName=profile_name_2, RoleName=role_name
-        )
-
-        # List for role with profiles
-        list_response = aws_client.iam.list_instance_profiles_for_role(RoleName=role_name)
-        # Sort by name for consistent snapshot
-        list_response["InstanceProfiles"] = sorted(
-            list_response["InstanceProfiles"], key=lambda p: p["InstanceProfileName"]
-        )
-        snapshot.match("list-for-role", list_response)
-
-        # List for role with no profiles
-        list_empty = aws_client.iam.list_instance_profiles_for_role(RoleName=role_name_2)
-        snapshot.match("list-for-role-empty", list_empty)
 
     @markers.aws.validated
     def test_list_instance_profiles_path_prefix(
@@ -331,12 +291,56 @@ class TestInstanceProfileRoles:
             )
         snapshot.match("remove-unattached-role-error", e.value.response)
 
+        # List instance profiles for non-existent role
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.list_instance_profiles_for_role(RoleName=nonexistent_role)
+        snapshot.match("list-profiles-nonexistent-role-error", e.value.response)
+
+    @markers.aws.validated
+    def test_list_instance_profiles_for_role(
+        self, aws_client, create_instance_profile, create_role, snapshot
+    ):
+        """Test listing instance profiles for a specific role."""
+        snapshot.add_transformer(
+            SortingTransformer("InstanceProfiles", lambda p: p["InstanceProfileName"])
+        )
+
+        profile_name_1 = f"profile-role-1-{short_uid()}"
+        profile_name_2 = f"profile-role-2-{short_uid()}"
+        role_name = f"role-{short_uid()}"
+        role_name_2 = f"role-2-{short_uid()}"
+
+        # Create roles
+        create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(TRUST_POLICY))
+        create_role(RoleName=role_name_2, AssumeRolePolicyDocument=json.dumps(TRUST_POLICY))
+
+        # Create profiles
+        create_instance_profile(InstanceProfileName=profile_name_1)
+        create_instance_profile(InstanceProfileName=profile_name_2)
+
+        # Add role to both profiles
+        aws_client.iam.add_role_to_instance_profile(
+            InstanceProfileName=profile_name_1, RoleName=role_name
+        )
+        aws_client.iam.add_role_to_instance_profile(
+            InstanceProfileName=profile_name_2, RoleName=role_name
+        )
+
+        # List for role with profiles
+        list_response = aws_client.iam.list_instance_profiles_for_role(RoleName=role_name)
+        snapshot.match("list-for-role", list_response)
+
+        # List for role with no profiles
+        list_empty = aws_client.iam.list_instance_profiles_for_role(RoleName=role_name_2)
+        snapshot.match("list-for-role-empty", list_empty)
+
 
 class TestInstanceProfileTags:
     @markers.aws.validated
     def test_instance_profile_tag_lifecycle(self, aws_client, create_instance_profile, snapshot):
         """Test tag, list tags, untag operations on instance profile."""
         profile_name = f"profile-{short_uid()}"
+        snapshot.add_transformer(SortingTransformer("Tags", lambda t: t["Key"]))
 
         # Create profile
         create_instance_profile(InstanceProfileName=profile_name)
@@ -370,7 +374,6 @@ class TestInstanceProfileTags:
         # List tags after adding another
         list_tags_2 = aws_client.iam.list_instance_profile_tags(InstanceProfileName=profile_name)
         # Sort tags for consistent snapshot
-        list_tags_2["Tags"] = sorted(list_tags_2["Tags"], key=lambda t: t["Key"])
         snapshot.match("list-tags-two-tags", list_tags_2)
 
         # Untag one key

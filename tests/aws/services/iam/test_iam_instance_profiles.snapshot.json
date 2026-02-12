@@ -111,16 +111,16 @@
     }
   },
   "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileLifecycle::test_list_instance_profiles": {
-    "recorded-date": "12-02-2026, 11:27:51",
+    "recorded-date": "12-02-2026, 13:03:34",
     "recorded-content": {
       "list-instance-profiles": {
         "InstanceProfiles": [
           {
-            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<path-prefix>/<instance-profile-name:1>",
+            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
             "CreateDate": "<datetime>",
             "InstanceProfileId": "<instance-profile-id:1>",
             "InstanceProfileName": "<instance-profile-name:1>",
-            "Path": "/<path-prefix>/",
+            "Path": "/",
             "Roles": [
               {
                 "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
@@ -144,11 +144,11 @@
             ]
           },
           {
-            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<path-prefix>/<instance-profile-name:2>",
+            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:2>",
             "CreateDate": "<datetime>",
             "InstanceProfileId": "<instance-profile-id:2>",
             "InstanceProfileName": "<instance-profile-name:2>",
-            "Path": "/<path-prefix>/",
+            "Path": "/",
             "Roles": []
           }
         ],
@@ -445,7 +445,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileRoles::test_role_instance_profile_operations_errors": {
-    "recorded-date": "12-02-2026, 11:28:07",
+    "recorded-date": "12-02-2026, 13:01:50",
     "recorded-content": {
       "create-profile": {
         "InstanceProfile": {
@@ -534,6 +534,17 @@
         "Error": {
           "Code": "NoSuchEntity",
           "Message": "Role <role-name:1> in Instance Profile <instance-profile-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list-profiles-nonexistent-role-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role with name nonexistent-role cannot be found.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -706,6 +717,84 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_instance_profiles.py::TestInstanceProfileRoles::test_list_instance_profiles_for_role": {
+    "recorded-date": "12-02-2026, 13:01:54",
+    "recorded-content": {
+      "list-for-role": {
+        "InstanceProfiles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+            "CreateDate": "<datetime>",
+            "InstanceProfileId": "<instance-profile-id:1>",
+            "InstanceProfileName": "<instance-profile-name:1>",
+            "Path": "/",
+            "Roles": [
+              {
+                "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+                "AssumeRolePolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "sts:AssumeRole",
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": "ec2.amazonaws.com"
+                      }
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "CreateDate": "<datetime>",
+                "Path": "/",
+                "RoleId": "<role-id:1>",
+                "RoleName": "<role-name:1>"
+              }
+            ]
+          },
+          {
+            "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:2>",
+            "CreateDate": "<datetime>",
+            "InstanceProfileId": "<instance-profile-id:2>",
+            "InstanceProfileName": "<instance-profile-name:2>",
+            "Path": "/",
+            "Roles": [
+              {
+                "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+                "AssumeRolePolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "sts:AssumeRole",
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": "ec2.amazonaws.com"
+                      }
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "CreateDate": "<datetime>",
+                "Path": "/",
+                "RoleId": "<role-id:1>",
+                "RoleName": "<role-name:1>"
+              }
+            ]
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-for-role-empty": {
+        "InstanceProfiles": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
