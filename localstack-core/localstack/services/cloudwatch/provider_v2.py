@@ -212,6 +212,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 self.alarm_scheduler.delete_scheduler_for_alarm(alarm_arn)
                 store = self.get_store(context.account_id, context.region)
                 store.alarms.pop(alarm_arn, None)
+                self._remove_all_resource_tags(alarm_arn, context.account_id, context.region)
 
     def put_metric_data(
         self,
@@ -406,6 +407,32 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         """
         return {"metrics": self.cloudwatch_database.get_all_metric_data() or []}
 
+    # These tagging methods are overwritten in the Pro implementation.
+    def _get_resource_tags(
+        self, resource_arn: AmazonResourceName, account_id: str, region: str
+    ) -> TagList:
+        store = self.get_store(account_id, region)
+        tags = store.TAGS.list_tags_for_resource(resource_arn).get("Tags", [])
+        return tags
+
+    def _set_resource_tags(
+        self, resource_arn: AmazonResourceName, account_id: str, region: str, tags: TagList
+    ) -> None:
+        store = self.get_store(account_id, region)
+        store.TAGS.tag_resource(arn=resource_arn, tags=tags)
+
+    def _remove_resource_tags(
+        self, resource_arn: AmazonResourceName, account_id: str, region: str, tag_keys: TagKeyList
+    ) -> None:
+        store = self.get_store(account_id, region)
+        store.TAGS.untag_resource(resource_arn, tag_keys)
+
+    def _remove_all_resource_tags(
+        self, resource_arn: AmazonResourceName, account_id: str, region: str
+    ):
+        store = self.get_store(account_id, region)
+        store.TAGS.del_resource(resource_arn)
+
     @handler("PutMetricAlarm", expand=False)
     def put_metric_alarm(self, context: RequestContext, request: PutMetricAlarmInput) -> None:
         # missing will be the default, when not set (but it will not explicitly be set)
@@ -457,6 +484,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             alarm_arn = metric_alarm.alarm["AlarmArn"]
             store.alarms[alarm_arn] = metric_alarm
             self.alarm_scheduler.schedule_metric_alarm(alarm_arn)
+            self._set_resource_tags(
+                alarm_arn, context.account_id, context.region, request.get("Tags", [])
+            )
 
     @handler("PutCompositeAlarm", expand=False)
     def put_composite_alarm(self, context: RequestContext, request: PutCompositeAlarmInput) -> None:
@@ -472,6 +502,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
             alarm_arn = composite_alarm.alarm["AlarmArn"]
             store.alarms[alarm_arn] = composite_alarm
+            self._set_resource_tags(
+                alarm_arn, context.account_id, context.region, request.get("Tags", [])
+            )
 
     def describe_alarms(
         self,
@@ -539,9 +572,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceOutput:
-        store = self.get_store(context.account_id, context.region)
-        tags = store.TAGS.list_tags_for_resource(resource_arn)
-        return ListTagsForResourceOutput(Tags=tags.get("Tags", []))
+        tags = self._get_resource_tags(resource_arn, context.account_id, context.region)
+        return ListTagsForResourceOutput(Tags=tags)
 
     def untag_resource(
         self,
@@ -550,15 +582,13 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         tag_keys: TagKeyList,
         **kwargs,
     ) -> UntagResourceOutput:
-        store = self.get_store(context.account_id, context.region)
-        store.TAGS.untag_resource(resource_arn, tag_keys)
+        self._remove_resource_tags(resource_arn, context.account_id, context.region, tag_keys)
         return UntagResourceOutput()
 
     def tag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
     ) -> TagResourceOutput:
-        store = self.get_store(context.account_id, context.region)
-        store.TAGS.tag_resource(resource_arn, tags)
+        self._set_resource_tags(resource_arn, context.account_id, context.region, tags)
         return TagResourceOutput()
 
     def put_dashboard(
