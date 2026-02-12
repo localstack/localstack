@@ -1,4 +1,5 @@
 import itertools
+import logging
 import time
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -23,6 +24,8 @@ from localstack.services.stores import (
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
 from localstack.utils.tagging import TaggingService
+
+LOG = logging.getLogger(__name__)
 
 
 class Topic(TypedDict, total=True):
@@ -120,6 +123,7 @@ class SnsMessage:
     sequencer_number: str | None = None
 
     def __post_init__(self):
+        LOG.debug("\n\n\n post init of SnsMessage\n\n\n")
         if self.message_attributes is None:
             self.message_attributes = {}
         if self.is_fifo:
