@@ -257,50 +257,105 @@ class TestSTSIntegrations:
             assert assume_role_id_parts[1] == test_role_session_name
 
     @markers.aws.only_localstack
-    def test_assume_role_with_web_identity(self, aws_client):
-        test_role_session_name = "web_token"
-        test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
-        test_web_identity_token = "token"
-        response = aws_client.sts.assume_role_with_web_identity(
-            RoleArn=test_role_arn,
-            RoleSessionName=test_role_session_name,
-            WebIdentityToken=test_web_identity_token,
-        )
+    def test_assume_role_with_web_identity(self, aws_client, create_role, account_id):
+        """
+        Test assume_role_with_web_identity returns valid temporary credentials.
+        """
 
-        assert response["Credentials"]
-        assert response["Credentials"]["SecretAccessKey"]
-        if response["AssumedRoleUser"]["AssumedRoleId"]:
-            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
-            assert assume_role_id_parts[1] == test_role_session_name
+        role = create_role(
+            AssumeRolePolicyDocument=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {"Service": "sts.amazonaws.com"},
+                            "Action": "sts:AssumeRole",
+                        }
+                    ],
+                }
+            )
+        )
+        session_name = "test-session"
+
+        response = aws_client.sts.assume_role_with_web_identity(
+            RoleArn=role["Role"]["Arn"],
+            RoleSessionName=session_name,
+            WebIdentityToken="test-web-identity-token",
+            DurationSeconds=903,
+        )
+        credentials = response["Credentials"]
+
+        # Validate credential format
+        assert len(credentials["SessionToken"]) == 356
+        assert credentials["SessionToken"].startswith("FQoGZXIvYXdzE")
+        assert len(credentials["AccessKeyId"]) == 20
+        assert credentials["AccessKeyId"].startswith("LSIA")
+        assert len(credentials["SecretAccessKey"]) == 40
+        assert "Expiration" in credentials
+
+        # Validate AssumedRoleUser
+        assumed_role_user = response["AssumedRoleUser"]
+        assert assumed_role_user["Arn"] == (
+            f"arn:aws:sts::{account_id}:assumed-role/{role['Role']['RoleName']}/{session_name}"
+        )
+        assert assumed_role_user["AssumedRoleId"].startswith("ARO1")
+        assert assumed_role_user["AssumedRoleId"].endswith(f":{session_name}")
 
     @markers.aws.only_localstack
-    def test_assume_role_with_saml(self, aws_client):
-        account_id = "000000000000"
-        role_name = "test-role"
+    def test_assume_role_with_saml(self, aws_client, account_id, create_role):
+        """
+        Test assume_role_with_saml returns valid temporary credentials.
+        """
+        role = create_role(
+            AssumeRolePolicyDocument=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {"Service": "sts.amazonaws.com"},
+                            "Action": "sts:AssumeRole",
+                        }
+                    ],
+                }
+            )
+        )
         provider_name = "TestProvFed"
         fed_name = "testuser"
 
         saml_assertion = TEST_SAML_ASSERTION.format(
             account_id=account_id,
-            role_name=role_name,
+            role_name=role["Role"]["RoleName"],
             provider_name=provider_name,
             fed_name=fed_name,
         ).replace("\n", "")
 
-        role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
-        principal_arn = f"arn:aws:iam:{account_id}:saml-provider/{provider_name}"
+        principal_arn = f"arn:aws:iam::{account_id}:saml-provider/{provider_name}"
         base64_saml_assertion = b64encode(saml_assertion.encode("utf-8")).decode("utf-8")
+
         response = aws_client.sts.assume_role_with_saml(
-            RoleArn=role_arn,
+            RoleArn=role["Role"]["Arn"],
             PrincipalArn=principal_arn,
             SAMLAssertion=base64_saml_assertion,
         )
 
-        assert response["Credentials"]
-        assert response["Credentials"]["SecretAccessKey"]
-        if response["AssumedRoleUser"]["AssumedRoleId"]:
-            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
-            assert assume_role_id_parts[1] == fed_name
+        # Validate credential format
+        credentials = response["Credentials"]
+        assert len(credentials["SessionToken"]) == 356
+        assert credentials["SessionToken"].startswith("FQoGZXIvYXdzE")
+        assert len(credentials["AccessKeyId"]) == 20
+        assert credentials["AccessKeyId"].startswith("LSIA")
+        assert len(credentials["SecretAccessKey"]) == 40
+        assert "Expiration" in credentials
+
+        # Validate AssumedRoleUser
+        assumed_role_user = response["AssumedRoleUser"]
+        assert assumed_role_user["Arn"] == (
+            f"arn:aws:sts::{account_id}:assumed-role/{role['Role']['RoleName']}/{fed_name}"
+        )
+        assert assumed_role_user["AssumedRoleId"].startswith("AROA")
+        assert assumed_role_user["AssumedRoleId"].endswith(f":{fed_name}")
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
