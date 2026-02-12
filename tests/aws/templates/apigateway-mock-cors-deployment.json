@@ -1,0 +1,86 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "Api": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "cors-test-api"
+      }
+    },
+    "MethodGet": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": { "Ref": "Api" },
+        "ResourceId": { "Fn::GetAtt": ["Api", "RootResourceId"] },
+        "HttpMethod": "GET",
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "Type": "MOCK",
+          "RequestTemplates": {
+            "application/json": "{\"statusCode\":200}"
+          },
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseTemplates": {
+                "application/json": "{\"msg\":\"{{ response_msg }}\"}"
+              }
+            }
+          ]
+        },
+        "MethodResponses": [{ "StatusCode": "200" }]
+      }
+    },
+    "MethodOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": { "Ref": "Api" },
+        "ResourceId": { "Fn::GetAtt": ["Api", "RootResourceId"] },
+        "HttpMethod": "OPTIONS",
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "Type": "MOCK",
+          "RequestTemplates": {
+            "application/json": "{\"statusCode\":200}"
+          },
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ]
+        },
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            }
+          }
+        ]
+      }
+    },
+    "{{ deployment_logical_id }}": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "DependsOn": ["MethodGet", "MethodOptions"],
+      "Properties": {
+        "RestApiId": { "Ref": "Api" },
+        "StageName": "local"
+      }
+    }
+  },
+  "Outputs": {
+    "ApiId": {
+      "Value": { "Ref": "Api" }
+    }
+  }
+}

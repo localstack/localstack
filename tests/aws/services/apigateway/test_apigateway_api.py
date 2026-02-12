@@ -4402,3 +4402,58 @@ class TestApigatewayMethodResponse:
             statusCode="200",
         )
         snapshot.match("delete-method-response", delete_response)
+
+
+class TestApiGatewayStage:
+    @markers.aws.validated
+    def test_get_stages_filters_by_deployment_id(self, aws_client, apigw_create_rest_api, snapshot):
+        """
+        Regression test for https://github.com/localstack/localstack/issues/13667
+        Verifies that get_stages filters results by deploymentId when provided.
+        """
+        snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
+
+        # Create REST API with a MOCK method (required for deployment)
+        response = apigw_create_rest_api(name=f"test-stages-{short_uid()}")
+        api_id = response["id"]
+        root_id = response["rootResourceId"]
+
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        # Create two deployments with different stages
+        deploy1 = aws_client.apigateway.create_deployment(restApiId=api_id, stageName="stage1")
+        if is_aws_cloud():
+            time.sleep(1)
+        deploy2 = aws_client.apigateway.create_deployment(restApiId=api_id, stageName="stage2")
+
+        # get_stages without deploymentId returns all stages
+        all_stages = aws_client.apigateway.get_stages(restApiId=api_id)
+        snapshot.match("all-stages", all_stages)
+        assert len(all_stages["item"]) == 2
+
+        # get_stages with deploymentId should return only the matching stage
+        stages_deploy1 = aws_client.apigateway.get_stages(
+            restApiId=api_id, deploymentId=deploy1["id"]
+        )
+        snapshot.match("stages-deploy1", stages_deploy1)
+        assert len(stages_deploy1["item"]) == 1
+        assert stages_deploy1["item"][0]["stageName"] == "stage1"
+
+        stages_deploy2 = aws_client.apigateway.get_stages(
+            restApiId=api_id, deploymentId=deploy2["id"]
+        )
+        snapshot.match("stages-deploy2", stages_deploy2)
+        assert len(stages_deploy2["item"]) == 1
+        assert stages_deploy2["item"][0]["stageName"] == "stage2"

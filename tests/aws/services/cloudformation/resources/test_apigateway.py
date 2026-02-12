@@ -730,6 +730,58 @@ class TestServerlessApigwLambda:
         get_fn_2 = aws_client.lambda_.get_function(FunctionName="test-service-local-api")
         assert get_fn_2["Configuration"]["Handler"] == "index.handler2"
 
+    @markers.aws.validated
+    def test_serverless_like_deployment_stage_survives_update(
+        self, deploy_cfn_template, aws_client, snapshot
+    ):
+        """
+        Regression test for https://github.com/localstack/localstack/issues/13667
+        When the Serverless Framework redeploys, it generates a new deployment logical ID each time.
+        CloudFormation sees this as Add(new) + Remove(old). The old deployment's delete handler
+        was incorrectly deleting stages that now belong to the new deployment, causing all
+        subsequent API requests (including CORS OPTIONS) to return 404.
+
+        Uses MOCK integrations (no Lambda dependency) to isolate the CF deployment replacement bug.
+        """
+        snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
+
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/apigateway-mock-cors-deployment.json"
+        )
+
+        # 1. Create stack with first deployment logical ID
+        stack = deploy_cfn_template(
+            template_path=template_path,
+            template_mapping={"deployment_logical_id": "Deploy1000000001", "response_msg": "v1"},
+        )
+        api_id = stack.outputs["ApiId"]
+
+        # Verify stage and deployment exist after initial creation
+        stages_after_create = aws_client.apigateway.get_stages(restApiId=api_id)
+        snapshot.match("stages-after-create", stages_after_create)
+        assert len(stages_after_create["item"]) == 1
+        assert stages_after_create["item"][0]["stageName"] == "local"
+
+        # 2. Update stack with a NEW deployment logical ID (simulates Serverless Framework redeploy)
+        # CF will Add Deploy2000000002, then Remove Deploy1000000001
+        deploy_cfn_template(
+            is_update=True,
+            stack_name=stack.stack_name,
+            template_path=template_path,
+            template_mapping={"deployment_logical_id": "Deploy2000000002", "response_msg": "v2"},
+        )
+
+        # KEY ASSERTIONS: stage must survive the deployment replacement
+        stages_after_update = aws_client.apigateway.get_stages(restApiId=api_id)
+        snapshot.match("stages-after-update", stages_after_update)
+        assert len(stages_after_update["item"]) == 1, (
+            "Stage 'local' was deleted during deployment replacement — this is the bug in #13667"
+        )
+        assert stages_after_update["item"][0]["stageName"] == "local"
+
+        deployments_after_update = aws_client.apigateway.get_deployments(restApiId=api_id)
+        snapshot.match("deployments-after-update", deployments_after_update)
+
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..tags"])
 @markers.aws.validated
