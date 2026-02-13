@@ -13,7 +13,7 @@ class OpenSearchStore(BaseStore):
     opensearch_domains: dict[str, DomainStatus] = LocalAttribute(default=dict)
 
     # static tagging service instance
-    TAGS = CrossRegionAttribute(default=TaggingService)
+    TAGS: dict[str, dict[str, str]] = CrossRegionAttribute(default=TaggingService)
 
 
 opensearch_stores = AccountRegionBundle("opensearch", OpenSearchStore)
