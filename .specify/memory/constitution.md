@@ -1,14 +1,19 @@
 <!--
   Sync Impact Report
   ═══════════════════════════════════════════════
-  Version change: N/A → 1.0.0 (initial ratification)
-  Modified principles: N/A (initial creation)
+  Version change: 1.0.0 → 1.1.0
+  Modified principles:
+    - II. Provider Pattern (ASF) — added AGENTS.md reference
+      implementation cross-references
+    - III. Parity Testing — added AGENTS.md reference
+      implementation cross-references
+    - V. Simplicity and Convention — added AGENTS.md
+      development process reference
   Added sections:
-    - Core Principles (5 principles)
-    - Technical Constraints
-    - Development Workflow
-    - Governance
-  Removed sections: N/A
+    - VI. AGENTS.md Compliance (new core principle)
+    - Technical Constraints: expanded with AGENTS.md hard
+      constraints
+  Removed sections: none
   Templates requiring updates:
     - .specify/templates/plan-template.md ✅ no updates needed
       (Constitution Check section already generic)
@@ -60,6 +65,10 @@ Framework (ASF) provider pattern.
   generate <service>` to regenerate.
 - Service registration MUST go through the plugin system
   (`plux.ini` via `make entrypoints`).
+- **Reference implementation**: See the CodeBuild service
+  (`localstack-pro-core/.../codebuild/provider.py` and
+  `models.py`) as documented in `AGENTS.md` for the canonical
+  `@handler`, `AccountRegionBundle`, and exception patterns.
 
 ### III. Parity Testing (NON-NEGOTIABLE)
 
@@ -85,6 +94,10 @@ implementations.
   `account_id` and `region_name` fixtures.
 - Test resource names MUST include `short_uid()` for parallel
   execution safety.
+- **Reference implementation**: See the Pipes tests
+  (`localstack-pro-core/.../pipes/`) as documented in
+  `AGENTS.md` for canonical fixture factories, snapshot
+  matching, parametrize patterns, and cleanup conventions.
 
 ### IV. State Isolation
 
@@ -119,6 +132,37 @@ complexity.
   utilities) rather than reimplementing common operations.
 - Complexity MUST be justified. If a simpler approach exists
   that satisfies parity requirements, prefer it.
+- The development process defined in `AGENTS.md` MUST be
+  followed: write a failing test first, find the provider,
+  check the store, compare with AWS docs, then iterate.
+
+### VI. AGENTS.md Compliance (NON-NEGOTIABLE)
+
+`AGENTS.md` in the repository root is the authoritative
+operational guide for all development on LocalStack. It MUST
+be consulted and followed during any implementation work.
+
+- All developers and automated agents MUST read and comply
+  with `AGENTS.md` before making changes to the codebase.
+- The hard constraints listed in `AGENTS.md` under
+  "Critical Hard Constraints" are absolute prohibitions.
+  Violating any of them is grounds for rejecting a
+  contribution.
+- The reference implementations cited in `AGENTS.md` (CodeBuild
+  for providers, Pipes for tests) MUST be consulted when
+  creating new services or test suites.
+- The fixture rules, transformer conventions, and best
+  practices in `AGENTS.md` MUST be followed. These include:
+  returning entire responses from create operations, storing
+  only names/ARNs in cleanup lists, logging cleanup errors,
+  and adding transformers before `snapshot.match()`.
+- When `AGENTS.md` and this constitution overlap, the more
+  specific guidance in `AGENTS.md` takes precedence for
+  implementation details. This constitution governs
+  architectural principles and governance process.
+- Changes to `AGENTS.md` SHOULD be reviewed with the same
+  rigor as changes to this constitution, as it directly
+  governs development behavior.
 
 ## Technical Constraints
 
@@ -134,18 +178,41 @@ complexity.
   artifacts. Never edit manually.
 - **Snapshot files**: `*.snapshot.json` and `*.validation.json`
   are test-generated. Never edit manually.
+- **Hard constraints from AGENTS.md** (reproduced here for
+  emphasis — `AGENTS.md` is the canonical source):
+  - NEVER modify `*.snapshot.json` or `*.validation.json`
+    manually.
+  - NEVER use plain `assert` in validated tests — use
+    `snapshot.match()`.
+  - NEVER create AWS resources directly in test bodies — use
+    fixtures.
+  - NEVER hardcode account IDs or region names.
+  - NEVER modify files in `aws/api/`.
+  - NEVER add project dependencies without approval.
+  - NEVER run `git push` or modify repository history without
+    authorization.
 
 ## Development Workflow
 
-- **Branch model**: Fork the repository; create feature
-  branches from `main`.
+- **Canonical process** (from `AGENTS.md`):
+  1. Write a failing test first — capture AWS behavior with
+     `TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1`.
+  2. Find the provider in `services/<service>/provider.py`.
+  3. Check the store in `models.py`.
+  4. Compare with AWS docs for expected behavior.
+  5. Run tests against LocalStack to verify snapshot match.
+  6. Iterate: run tests individually, see failures, fix,
+     re-run.
+- **Branch model**: create feature branches from `main`.
 - **PR requirements**: Reference a GitHub issue, include tests,
   run `make format` and `make lint`, add a `semver:` label
   (`patch` | `minor` | `major`).
 - **Pre-commit hooks**: MUST NOT be skipped (`--no-verify` is
   forbidden).
-- **Test execution**: `TEST_PATH="tests/aws/services/<svc>"
-  make test` or direct pytest invocation with `-k` filter.
+- **Test execution**: `pytest <path/to/test_file.py>` or
+  `pytest <path> -k <test_name>` for specific tests.
+  Use `AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD
+  SNAPSHOT_UPDATE=1 pytest <path>` for AWS validation.
 - **Commit discipline**: Commit after each logical unit of
   work. Never force-push or rewrite published history.
 
@@ -166,7 +233,10 @@ principles.
 - **Compliance review**: Reviewers SHOULD use the Constitution
   Check section in plan documents to verify alignment before
   approving implementation plans.
-- **Runtime guidance**: For detailed implementation guidance,
-  refer to `AGENTS.md` and `docs/` in the repository root.
+- **Runtime guidance**: `AGENTS.md` is the primary operational
+  reference for day-to-day development. This constitution
+  governs architectural principles and the amendment process.
+  Additional documentation lives in `docs/` in the repository
+  root.
 
-**Version**: 1.0.0 | **Ratified**: 2026-02-12 | **Last Amended**: 2026-02-12
+**Version**: 1.1.0 | **Ratified**: 2026-02-12 | **Last Amended**: 2026-02-12
