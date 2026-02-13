@@ -6,7 +6,7 @@ shopt -s nullglob
 
 # global defaults
 DOCKERFILE=${DOCKERFILE-"Dockerfile"}
-DEFAULT_TAG=${DEFAULT_TAG-"latest-amd64"}
+DEFAULT_TAG=${DEFAULT_TAG-"latest"}
 DOCKER_BUILD_CONTEXT=${DOCKER_BUILD_CONTEXT-"."}
 
 function usage() {
