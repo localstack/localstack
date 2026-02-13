@@ -222,7 +222,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         attributes["EffectiveDeliveryPolicy"] = _create_default_effective_delivery_policy()
 
-        topic = _create_topic(name=name, attributes=attributes, context=context)
+        topic = _create_topic(
+            name=name,
+            attributes=attributes,
+            data_protection_policy=data_protection_policy,
+            context=context,
+        )
         if tags:
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
 
@@ -997,7 +1002,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         attributes = attributes or {}
         _validate_endpoint_attributes(attributes, allow_empty=True)
         # CustomUserData can be specified both in attributes and as parameter. Attributes take precedence
-        attributes.setdefault(EndpointAttributeNames.CUSTOM_USER_DATA, custom_user_data)
+        if custom_user_data:
+            attributes.setdefault(EndpointAttributeNames.CUSTOM_USER_DATA, custom_user_data)
         _attributes = {"Enabled": "true", "Token": token, **attributes}
         if endpoint_arn and (
             platform_endpoint_details := store.platform_endpoints.get(endpoint_arn)
@@ -1284,7 +1290,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise NotFoundException("PlatformApplication does not exist")
 
 
-def _create_topic(name: str, attributes: dict, context: RequestContext) -> Topic:
+def _create_topic(
+    name: str, attributes: dict, data_protection_policy: str, context: RequestContext
+) -> Topic:
     topic_arn = sns_topic_arn(
         topic_name=name, region_name=context.region, account_id=context.account_id
     )
@@ -1293,6 +1301,7 @@ def _create_topic(name: str, attributes: dict, context: RequestContext) -> Topic
         "arn": topic_arn,
         "attributes": {},
         "subscriptions": [],
+        "data_protection_policy": data_protection_policy,
     }
     attrs = _default_attributes(topic, context)
     attrs.update(attributes or {})
@@ -1439,6 +1448,7 @@ def _validate_platform_application_name(name: str) -> None:
         reason = "must contain only characters 'a'-'z', 'A'-'Z', '0'-'9', '_', '-', and '.'"
 
     if reason:
+        LOG.debug("SNS Platform Application Name rejected due to reason: %s", reason)
         raise InvalidParameterException(f"Invalid parameter: {name} Reason: {reason}")
 
 
