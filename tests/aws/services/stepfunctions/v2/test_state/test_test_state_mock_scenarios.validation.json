@@ -44,6 +44,15 @@
       "total": 0.2
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_parallel_state_mock_execution": {
+    "last_validated_date": "2026-02-13T01:28:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.62,
+      "call": 0.64,
+      "teardown": 0.0,
+      "total": 1.26
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_put_events_mock_success": {
     "last_validated_date": "2025-12-03T00:34:14+00:00",
     "durations_in_seconds": {
