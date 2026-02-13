@@ -2,10 +2,12 @@ import functools
 import json
 import logging
 from collections import defaultdict
+from concurrent.futures import Future, ThreadPoolExecutor
 from functools import cached_property
 
 from botocore.client import BaseClient
 
+from localstack import config
 from localstack.aws.api.pipes import PipeSourceSqsQueueParameters
 from localstack.aws.api.sqs import MessageSystemAttributeName
 from localstack.aws.connect import connect_to
@@ -33,6 +35,7 @@ LOG = logging.getLogger(__name__)
 DEFAULT_MAX_RECEIVE_COUNT = 10
 # See https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-short-and-long-polling.html
 DEFAULT_MAX_WAIT_TIME_SECONDS = 20
+DEFAULT_MAX_PARALLEL_RECEIVE_CALLS = 10
 
 
 class SqsPoller(Poller):
@@ -40,6 +43,8 @@ class SqsPoller(Poller):
 
     batch_size: int
     maximum_batching_window: int
+    parallelism_enabled: bool
+    max_parallel_receive_calls: int
 
     def __init__(
         self,
@@ -58,6 +63,15 @@ class SqsPoller(Poller):
         self.maximum_batching_window = self.sqs_queue_parameters.get(
             "MaximumBatchingWindowInSeconds", 0
         )
+        self.parallelism_enabled = config.LAMBDA_SQS_EVENT_SOURCE_MAPPING_PARALLELISM
+        self.max_parallel_receive_calls = DEFAULT_MAX_PARALLEL_RECEIVE_CALLS
+        self._executor = None
+        self._inflight_futures: set[Future] = set()
+        if self.parallelism_enabled:
+            self._executor = ThreadPoolExecutor(
+                max_workers=self.max_parallel_receive_calls,
+                thread_name_prefix="lambda-esm-sqs",
+            )
 
         self._register_client_hooks()
 
@@ -146,6 +160,18 @@ class SqsPoller(Poller):
         # [3] Note: Under high volumes of requests, the LocalStack gateway becomes a major performance bottleneck.
         # [4] ESM blog mentioning long-polling: https://aws.amazon.com/de/blogs/aws/aws-lambda-adds-amazon-simple-queue-service-to-supported-event-sources/
 
+        self._cleanup_done_futures()
+        if self.parallelism_enabled and not self.is_fifo_queue:
+            self._poll_events_parallel()
+            return
+
+        messages = self._receive_messages()
+        if not messages:
+            raise EmptyPollResultsException(service="sqs", source_arn=self.source_arn)
+
+        self._process_polled_messages(messages)
+
+    def _receive_messages(self) -> list[dict]:
         # TODO: Handle exceptions differently i.e QueueNotExist or ConnectionFailed should retry with backoff
         response = self.source_client.receive_message(
             QueueUrl=self.queue_url,
@@ -158,11 +184,27 @@ class SqsPoller(Poller):
             # Override how long to wait until batching conditions are met
             sqs_override_wait_time_seconds=self.maximum_batching_window,
         )
+        return response.get("Messages", [])
 
-        messages = response.get("Messages", [])
-        if not messages:
+    def _poll_events_parallel(self) -> None:
+        available_receive_calls = self.max_parallel_receive_calls - len(self._inflight_futures)
+        if available_receive_calls <= 0:
+            return
+
+        has_polled_messages = False
+        for _ in range(available_receive_calls):
+            messages = self._receive_messages()
+            if not messages:
+                break
+            has_polled_messages = True
+            self._process_polled_messages(messages, submit_to_executor=True)
+
+        if not has_polled_messages and not self._inflight_futures:
             raise EmptyPollResultsException(service="sqs", source_arn=self.source_arn)
 
+    def _process_polled_messages(
+        self, messages: list[dict], submit_to_executor: bool = False
+    ) -> None:
         LOG.debug("Polled %d events from %s", len(messages), self.source_arn)
         # TODO: implement invocation payload size quota
         # NOTE: Split up a batch into mini-batches of up to 2.5K records each. This is to prevent exceeding the 6MB size-limit
@@ -182,6 +224,8 @@ class SqsPoller(Poller):
                     fifo_groups = split_by_message_group_id(message_batch)
                     for fifo_group_messages in fifo_groups.values():
                         self.handle_messages(fifo_group_messages)
+                elif submit_to_executor:
+                    self._submit_batch_for_processing(message_batch)
                 else:
                     self.handle_messages(message_batch)
 
@@ -193,6 +237,30 @@ class SqsPoller(Poller):
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
+
+    def _submit_batch_for_processing(self, message_batch: list[dict]) -> None:
+        if not self._executor:
+            self.handle_messages(message_batch)
+            return
+        self._inflight_futures.add(self._executor.submit(self.handle_messages, message_batch))
+
+    def _cleanup_done_futures(self) -> None:
+        done_futures = [future for future in self._inflight_futures if future.done()]
+        for future in done_futures:
+            self._inflight_futures.remove(future)
+            try:
+                future.result()
+            except Exception as e:
+                LOG.warning(
+                    "Polling or batch processing failed: %s",
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+
+    def close(self) -> None:
+        if self._executor:
+            self._executor.shutdown(wait=True)
+            self._cleanup_done_futures()
 
     def handle_messages(self, messages):
         polled_events = transform_into_events(messages)
