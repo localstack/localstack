@@ -1748,7 +1748,7 @@ class TestSQSEventSourceMapping:
         queue_name = f"queue-{short_uid()}"
         mapping_uuid = None
         sleep_seconds = 2
-        message_count = 4
+        message_count = 8
 
         create_lambda_function(
             func_name=function_name,
@@ -1777,7 +1777,7 @@ class TestSQSEventSourceMapping:
 
         retry(
             check_expected_lambda_log_events_length,
-            retries=40,
+            retries=5,
             sleep=1,
             expected_length=message_count,
             function_name=function_name,
@@ -1796,7 +1796,7 @@ class TestSQSEventSourceMapping:
             assert int(attributes["ApproximateNumberOfMessages"]) == 0
             assert int(attributes["ApproximateNumberOfMessagesNotVisible"]) == 0
 
-        retry(_assert_queue_drained, retries=10, sleep=1)
+        retry(_assert_queue_drained, retries=5, sleep=1)
 
 
 def _await_queue_size(sqs_client, queue_url: str, qsize: int, retries=10, sleep=1):
