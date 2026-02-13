@@ -411,6 +411,8 @@ class CmdDockerClient(ContainerClient):
                 raise AccessDenied(docker_image)
             if "failed to authorize: failed to fetch oauth token" in to_str(e.stdout):
                 raise AccessDenied(docker_image)
+            if "insufficient_scope: authorization failed" in to_str(e.stdout):
+                raise AccessDenied(docker_image)
             if "does not exist" in to_str(e.stdout):
                 raise NoSuchImage(docker_image)
             if "connection refused" in to_str(e.stdout):

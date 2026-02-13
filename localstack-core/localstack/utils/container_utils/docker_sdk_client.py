@@ -390,6 +390,8 @@ class SdkDockerClient(ContainerClient):
                     raise AccessDenied(docker_image)
                 if "unauthorized: authentication required" in to_str(result):
                     raise AccessDenied(docker_image)
+                if "insufficient_scope: authorization failed" in to_str(result):
+                    raise AccessDenied(docker_image)
                 if "connection refused" in to_str(result):
                     raise RegistryConnectionError(result)
                 if "failed to do request:" in to_str(result):
