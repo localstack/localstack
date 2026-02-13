@@ -2075,5 +2075,71 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_delete_role_with_instance_profile": {
+    "recorded-date": "12-02-2026, 12:49:35",
+    "recorded-content": {
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-instance-profile": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-role-with-instance-profile-error": {
+        "Error": {
+          "Code": "DeleteConflict",
+          "Message": "Cannot delete entity, must remove roles from instance profile first.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "get-role-after-deletion-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The role with name <role-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
