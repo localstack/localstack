@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-sfn-teststate-parallel`
 **Created**: 2026-02-12
-**Status**: Draft
+**Status**: Complete
 **Input**: User description: "Add support for Parallel state to StepFunctions TestState implementation. Relevant input validations to implement: 1) mock.result is not a valid JSON array, and definition contains a Parallel state 2) definition contains a Parallel state and mock.result is a JSON array whose size is not equal to the number of branches in the Parallel state"
 
 ## User Scenarios & Testing *(mandatory)*

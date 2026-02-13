@@ -87,7 +87,7 @@ the same validation method, so they are combined into a single phase.
 
 > **NOTE: Write test FIRST, run against AWS to capture snapshot, ensure it FAILS against LocalStack, then implement**
 
-- [X] T009 [US3] Add test_parallel_state_mock_execution to tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py (or test_state_mock_validation.py — use BASE_PARALLEL_STATE with 2 branches, provide valid mock.result array of 2 elements, verify successful execution output with sfn_snapshot.match)
+- [X] T009 [US3] Add test_parallel_state_mock_execution to tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py (use BASE_PARALLEL_STATE with 2 branches, provide valid mock.result array of 2 elements, verify successful execution output with sfn_snapshot.match)
 - [X] T016 [US3] 🎯 SNAPSHOT Record AWS snapshot for execution test by running: AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 python -m pytest tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_parallel_state_mock_execution -v (verify snapshot file is created/updated)
 
 ### Implementation for US3
