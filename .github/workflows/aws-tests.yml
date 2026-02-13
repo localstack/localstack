@@ -950,6 +950,7 @@ jobs:
           IMAGE_NAME: "localstack/localstack:latest"
         run: |
           source .venv/bin/activate
+          pip install --pre localstack
           localstack start -d
           localstack wait -t 120 || (localstack logs && false)
 
