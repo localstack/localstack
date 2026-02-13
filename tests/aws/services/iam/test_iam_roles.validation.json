@@ -53,6 +53,15 @@
       "total": 1.27
     }
   },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_delete_role_with_instance_profile": {
+    "last_validated_date": "2026-02-12T12:49:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.68,
+      "call": 1.82,
+      "teardown": 0.54,
+      "total": 3.04
+    }
+  },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleLifecycle::test_list_roles_path_prefix": {
     "last_validated_date": "2026-02-11T17:58:49+00:00",
     "durations_in_seconds": {
