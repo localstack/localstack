@@ -812,6 +812,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 queue = StandardQueue(
                     queue_name, context.region, context.account_id, attributes, tags
                 )
+            self._tag_queue(context, queue_name, tags)
 
             LOG.debug("creating queue key=%s attributes=%s tags=%s", queue_name, attributes, tags)
 
@@ -936,6 +937,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             )
             # Trigger a shutdown prior to removing the queue resource
             store.queues[queue.name].shutdown()
+            self._delete_all_queue_tags(context, queue_url)
             del store.queues[queue.name]
             store.deleted[queue.name] = time.time()
 
@@ -1484,7 +1486,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             ApproximateNumberOfMessagesMoved=move_task.approximate_number_of_messages_moved,
         )
 
-    def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap, **kwargs) -> None:
+    def _tag_queue(self, context: RequestContext, queue_url: str, tags: TagMap):
         queue = self._resolve_queue(context, queue_url=queue_url)
 
         if not tags:
@@ -1493,20 +1495,39 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         for k, v in tags.items():
             queue.tags[k] = v
 
-    def list_queue_tags(
-        self, context: RequestContext, queue_url: String, **kwargs
-    ) -> ListQueueTagsResult:
+    def _list_queue_tags(self, context: RequestContext, queue_url: str, **kwargs) -> TagMap | None:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        return ListQueueTagsResult(Tags=(queue.tags if queue.tags else None))
+        return queue.tags
 
-    def untag_queue(
-        self, context: RequestContext, queue_url: String, tag_keys: TagKeyList, **kwargs
-    ) -> None:
+    def _untag_queue(
+        self,
+        context: RequestContext,
+        queue_url: str,
+        tag_keys: TagKeyList,
+    ):
         queue = self._resolve_queue(context, queue_url=queue_url)
 
         for k in tag_keys:
             if k in queue.tags:
                 del queue.tags[k]
+
+    def _delete_all_queue_tags(self, context: RequestContext, queue_url: str):
+        queue = self._resolve_queue(context, queue_url=queue_url)
+        queue.tags = {}
+
+    def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap, **kwargs) -> None:
+        self._tag_queue(context, queue_url, tags)
+
+    def list_queue_tags(
+        self, context: RequestContext, queue_url: String, **kwargs
+    ) -> ListQueueTagsResult:
+        tags = self._list_queue_tags(context, queue_url)
+        return ListQueueTagsResult(Tags=(tags if tags else None))
+
+    def untag_queue(
+        self, context: RequestContext, queue_url: String, tag_keys: TagKeyList, **kwargs
+    ) -> None:
+        self._untag_queue(context, queue_url, tag_keys)
 
     def add_permission(
         self,
