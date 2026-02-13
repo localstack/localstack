@@ -163,6 +163,43 @@ class TestRoleLifecycle:
         snapshot.match("get-role-after-deletion-error", e.value.response)
 
     @markers.aws.validated
+    def test_delete_role_with_instance_profile(
+        self, aws_client, create_role, create_instance_profile, snapshot
+    ):
+        """Test that deleting a role attached to an instance profile fails with DeleteConflict."""
+        role_name = f"role-{short_uid()}"
+        profile_name = f"profile-{short_uid()}"
+
+        create_role_response = create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+        )
+        snapshot.match("create-role", create_role_response)
+
+        create_profile_response = create_instance_profile(InstanceProfileName=profile_name)
+        snapshot.match("create-instance-profile", create_profile_response)
+
+        # Add role to instance profile
+        aws_client.iam.add_role_to_instance_profile(
+            InstanceProfileName=profile_name, RoleName=role_name
+        )
+
+        # Try to delete role while attached to instance profile - should fail
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_role(RoleName=role_name)
+        snapshot.match("delete-role-with-instance-profile-error", e.value.response)
+
+        # Remove role from instance profile and delete the role
+        aws_client.iam.remove_role_from_instance_profile(
+            InstanceProfileName=profile_name, RoleName=role_name
+        )
+        aws_client.iam.delete_role(RoleName=role_name)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get-role-after-deletion-error", e.value.response)
+
+    @markers.aws.validated
     def test_update_role(self, aws_client, create_role, snapshot):
         """Test update_role and update_role_description operations."""
         role_name = f"role-{short_uid()}"

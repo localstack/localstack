@@ -1730,10 +1730,65 @@ def create_role(aws_client):
                     role_policy,
                     role_name,
                 )
+        instance_profiles = iam_client.list_instance_profiles_for_role(RoleName=role_name)[
+            "InstanceProfiles"
+        ]
+        for instance_profile in instance_profiles:
+            try:
+                iam_client.remove_role_from_instance_profile(
+                    InstanceProfileName=instance_profile["InstanceProfileName"], RoleName=role_name
+                )
+            except Exception:
+                LOG.debug(
+                    "Could not delete instance profile '%s' from '%s' during cleanup",
+                    instance_profile["InstanceProfileName"],
+                    role_name,
+                )
         try:
             iam_client.delete_role(RoleName=role_name)
         except Exception:
             LOG.debug("Could not delete role '%s' during cleanup", role_name)
+
+
+@pytest.fixture
+def create_instance_profile(aws_client):
+    profile_names = []
+
+    def _create_instance_profile(**kwargs):
+        if not kwargs.get("InstanceProfileName"):
+            kwargs["InstanceProfileName"] = f"instance-profile-{short_uid()}"
+        result = aws_client.iam.create_instance_profile(**kwargs)
+        profile_names.append(result["InstanceProfile"]["InstanceProfileName"])
+        return result
+
+    yield _create_instance_profile
+
+    for profile_name in profile_names:
+        # Remove any attached roles before deleting
+        try:
+            profile = aws_client.iam.get_instance_profile(InstanceProfileName=profile_name)
+            for role in profile["InstanceProfile"].get("Roles", []):
+                try:
+                    aws_client.iam.remove_role_from_instance_profile(
+                        InstanceProfileName=profile_name, RoleName=role["RoleName"]
+                    )
+                except Exception:
+                    LOG.debug(
+                        "Could not remove role '%s' from instance profile '%s' during cleanup",
+                        role["RoleName"],
+                        profile_name,
+                    )
+        except ClientError as e:
+            LOG.debug(
+                "Cannot get instance profile: %s. Instance profile %s probably already deleted...",
+                e,
+                profile_name,
+            )
+            continue
+        try:
+            aws_client.iam.delete_instance_profile(InstanceProfileName=profile_name)
+        except Exception:
+            LOG.debug("Could not delete instance profile '%s' during cleanup", profile_name)
 
 
 @pytest.fixture
