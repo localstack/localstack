@@ -1,0 +1,168 @@
+{
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_put_destination": {
+    "recorded-date": "05-02-2026, 15:14:39",
+    "recorded-content": {
+      "put-destination": {
+        "destination": {
+          "arn": "arn:<partition>:logs:<region>:111111111111:destination:<destination>",
+          "creationTime": "timestamp",
+          "destinationName": "<destination>",
+          "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+          "targetArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<stream-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_describe_destinations_empty": {
+    "recorded-date": "04-02-2026, 21:49:47",
+    "recorded-content": {
+      "describe-destinations-empty": {
+        "destinations": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_describe_destinations_with_prefix": {
+    "recorded-date": "05-02-2026, 15:15:49",
+    "recorded-content": {
+      "describe-destinations": {
+        "destinations": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:destination:<destination>",
+            "creationTime": "timestamp",
+            "destinationName": "<destination>",
+            "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+            "targetArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<stream-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_update_destination": {
+    "recorded-date": "05-02-2026, 15:16:48",
+    "recorded-content": {
+      "original-description": {
+        "destinations": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:destination:<destination>",
+            "creationTime": "timestamp",
+            "destinationName": "<destination>",
+            "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+            "targetArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<stream-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-description": {
+        "destinations": [
+          {
+            "arn": "arn:<partition>:logs:<region>:111111111111:destination:<destination>",
+            "creationTime": "timestamp",
+            "destinationName": "<destination>",
+            "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+            "targetArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<stream-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_put_destination_policy": {
+    "recorded-date": "05-02-2026, 15:23:25",
+    "recorded-content": {
+      "put-destination-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "destination-with-policy": {
+        "destinations": [
+          {
+            "accessPolicy": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "AWS": "logs.<region>.amazonaws.com"
+                  },
+                  "Action": "logs:PutSubscriptionFilter",
+                  "Resource": "arn:<partition>:kinesis:<region>:111111111111:stream/<stream-name>"
+                }
+              ]
+            },
+            "arn": "arn:<partition>:logs:<region>:111111111111:destination:<destination>",
+            "creationTime": "timestamp",
+            "destinationName": "<destination>",
+            "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+            "targetArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<stream-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_delete_destination": {
+    "recorded-date": "05-02-2026, 15:41:43",
+    "recorded-content": {
+      "delete-destination": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "no-destination-found": {
+        "destinations": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_destinations.py::TestDestinationsTags::test_destination_tags": {
+    "recorded-date": "05-02-2026, 15:45:33",
+    "recorded-content": {
+      "list-tags-after-add": {
+        "tags": {
+          "key1": "val1",
+          "key2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-after-remove": {
+        "tags": {
+          "key1": "val1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

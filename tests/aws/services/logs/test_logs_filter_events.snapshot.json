@@ -1,0 +1,32 @@
+{
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEvents::test_filter_log_events_limit_validation": {
+    "recorded-date": "05-02-2026, 18:50:36",
+    "recorded-content": {
+      "error-limit-exceeded": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "1 validation error detected: Value '10001' at 'limit' failed to satisfy constraint: Member must have value less than or equal to 10000"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/logs/test_logs_filter_events.py::TestFilterLogEvents::test_filter_log_events_unknown_token": {
+    "recorded-date": "05-02-2026, 18:50:36",
+    "recorded-content": {
+      "invalid-token": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "The specified nextToken is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

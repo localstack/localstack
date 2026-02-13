@@ -1,0 +1,128 @@
+{
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_create_and_delete_log_group": {
+    "last_validated_date": "2026-02-03T20:57:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.78,
+      "teardown": 0.0,
+      "total": 0.78
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_create_log_group_duplicate_error": {
+    "last_validated_date": "2026-02-03T20:57:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.18,
+      "teardown": 0.1,
+      "total": 0.28
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_create_log_group_invalid_name_length": {
+    "last_validated_date": "2026-02-03T20:57:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.07,
+      "teardown": 0.0,
+      "total": 0.07
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_create_log_group_with_kms_key": {
+    "last_validated_date": "2026-02-03T21:00:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.39,
+      "call": 0.94,
+      "teardown": 0.21,
+      "total": 1.54
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_describe_log_groups_prefix_and_pattern_error": {
+    "last_validated_date": "2026-02-03T20:57:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.16,
+      "teardown": 0.11,
+      "total": 0.27
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_describe_log_groups_with_pattern": {
+    "last_validated_date": "2026-02-03T20:57:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.46,
+      "teardown": 0.1,
+      "total": 1.56
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_describe_log_groups_with_prefix": {
+    "last_validated_date": "2026-02-03T20:57:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.41,
+      "teardown": 0.31,
+      "total": 0.72
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroups::test_list_log_groups_with_pattern": {
+    "last_validated_date": "2026-02-03T20:57:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.52,
+      "teardown": 0.1,
+      "total": 1.62
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroupsRetention::test_delete_retention_policy": {
+    "last_validated_date": "2026-02-03T21:02:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.43,
+      "teardown": 0.11,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroupsRetention::test_put_retention_policy": {
+    "last_validated_date": "2026-02-03T21:02:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 0.59,
+      "teardown": 0.13,
+      "total": 0.73
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroupsTags::test_create_log_group_with_tags": {
+    "last_validated_date": "2026-02-03T21:03:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.38,
+      "call": 0.51,
+      "teardown": 0.18,
+      "total": 1.07
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroupsTags::test_tag_log_group": {
+    "last_validated_date": "2026-02-03T21:03:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.63,
+      "teardown": 0.14,
+      "total": 0.77
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroupsTags::test_tag_resource_api": {
+    "last_validated_date": "2026-02-03T21:03:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.17,
+      "teardown": 0.13,
+      "total": 1.3
+    }
+  },
+  "tests/aws/services/logs/test_logs_groups.py::TestLogsGroupsTags::test_untag_log_group": {
+    "last_validated_date": "2026-02-03T21:03:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.46,
+      "teardown": 0.13,
+      "total": 0.59
+    }
+  }
+}
