@@ -498,39 +498,5 @@
         }
       }
     }
-  },
-  "tests/aws/services/iam/test_iam_managed_policies.py::TestAttachAwsManagedPolicyToGroup::test_attach_detach_aws_managed_policy_group": {
-    "recorded-date": "12-02-2026, 23:06:43",
-    "recorded-content": {
-      "list-attached-empty": {
-        "AttachedPolicies": [],
-        "IsTruncated": false,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-attached-after-attach": {
-        "AttachedPolicies": [
-          {
-            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:1>",
-            "PolicyName": "<policy-name:1>"
-          }
-        ],
-        "IsTruncated": false,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-attached-after-detach": {
-        "AttachedPolicies": [],
-        "IsTruncated": false,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
   }
 }

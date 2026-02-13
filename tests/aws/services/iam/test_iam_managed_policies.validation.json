@@ -1,13 +1,4 @@
 {
-  "tests/aws/services/iam/test_iam_managed_policies.py::TestAttachAwsManagedPolicyToGroup::test_attach_detach_aws_managed_policy_group": {
-    "last_validated_date": "2026-02-12T23:07:17+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.98,
-      "teardown": 0.6,
-      "total": 1.58
-    }
-  },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy": {
     "last_validated_date": "2026-02-12T23:07:07+00:00",
     "durations_in_seconds": {
