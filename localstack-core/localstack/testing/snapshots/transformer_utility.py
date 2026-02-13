@@ -379,6 +379,8 @@ class TransformerUtility:
             TransformerUtility.key_value("PolicyId"),
             TransformerUtility.key_value("GroupName"),
             TransformerUtility.key_value("GroupId"),
+            TransformerUtility.key_value("InstanceProfileName"),
+            TransformerUtility.key_value("InstanceProfileId"),
             TransformerUtility.key_value("Marker"),
         ]
 
