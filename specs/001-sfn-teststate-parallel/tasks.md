@@ -30,8 +30,8 @@ the same validation method, so they are combined into a single phase.
 
 **Purpose**: Create test fixtures and templates needed by all stories
 
-- [ ] T001 [P] Create Parallel state test template with 2 branches in tests/aws/services/stepfunctions/templates/test_state/statemachines/base_parallel_state.json5 (follow base_map_state.json5 pattern: Parallel type with 2 branches, each containing a simple Pass state with End: true)
-- [ ] T002 [P] Add BASE_PARALLEL_STATE constant to tests/aws/services/stepfunctions/templates/test_state/test_state_templates.py (follow BASE_MAP_STATE pattern, pointing to statemachines/base_parallel_state.json5)
+- [X] T001 [P] Create Parallel state test template with 2 branches in tests/aws/services/stepfunctions/templates/test_state/statemachines/base_parallel_state.json5 (follow base_map_state.json5 pattern: Parallel type with 2 branches, each containing a simple Pass state with End: true)
+- [X] T002 [P] Add BASE_PARALLEL_STATE constant to tests/aws/services/stepfunctions/templates/test_state/test_state_templates.py (follow BASE_MAP_STATE pattern, pointing to statemachines/base_parallel_state.json5)
 
 ---
 
@@ -41,7 +41,7 @@ the same validation method, so they are combined into a single phase.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Add StateType.Parallel to _SUPPORTED_STATE_TYPES set in localstack-core/localstack/services/stepfunctions/asl/static_analyser/test_state/test_state_analyser.py (line 60-68, add StateType.Parallel to the set alongside the existing 7 types)
+- [X] T003 Add StateType.Parallel to _SUPPORTED_STATE_TYPES set in localstack-core/localstack/services/stepfunctions/asl/static_analyser/test_state/test_state_analyser.py (line 60-68, add StateType.Parallel to the set alongside the existing 7 types)
 
 **Checkpoint**: Parallel states are now accepted by the TestState static analyser. The existing `validate_test_state_allows_mocking()` already handles Parallel (line 139 checks `isinstance(test_state, (StateMap, StateParallel))`), so "Parallel requires mock" validation works automatically.
 
@@ -57,14 +57,14 @@ the same validation method, so they are combined into a single phase.
 
 > **NOTE: Write these tests FIRST, run against AWS to capture snapshots, ensure they FAIL against LocalStack, then implement**
 
-- [ ] T004 [P] [US1] Add test_mock_result_is_not_array_on_parallel_state to tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py (follow test_mock_result_is_not_array_on_map_state_without_result_writer pattern: load BASE_PARALLEL_STATE template, provide non-array mock.result e.g. JSON object, pytest.raises + sfn_snapshot.match)
-- [ ] T005 [P] [US2] Add test_mock_result_array_size_mismatch_on_parallel_state to tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py (use BASE_PARALLEL_STATE template with 2 branches, provide mock.result as JSON array of size 1, pytest.raises + sfn_snapshot.match)
-- [ ] T006 [P] [US1] Add Parallel state entries to STATES_REQUIRING_MOCKS list in tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py (add pytest.param(TST.BASE_PARALLEL_STATE, id="ParallelState") so existing test_state_type_requires_mock covers Parallel without mock)
+- [X] T004 [P] [US1] Add test_mock_result_is_not_array_on_parallel_state to tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py (follow test_mock_result_is_not_array_on_map_state_without_result_writer pattern: load BASE_PARALLEL_STATE template, provide non-array mock.result e.g. JSON object, pytest.raises + sfn_snapshot.match)
+- [X] T005 [P] [US2] Add test_mock_result_array_size_mismatch_on_parallel_state to tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py (use BASE_PARALLEL_STATE template with 2 branches, provide mock.result as JSON array of size 1, pytest.raises + sfn_snapshot.match)
+- [X] T006 [P] [US1] Add Parallel state entries to STATES_REQUIRING_MOCKS list in tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py (add pytest.param(TST.BASE_PARALLEL_STATE, id="ParallelState") so existing test_state_type_requires_mock covers Parallel without mock)
 
 ### Implementation for US1 & US2
 
-- [ ] T007 [US1] Add validate_mock_result_matches_parallel_definition() static method to TestStateStaticAnalyser in localstack-core/localstack/services/stepfunctions/asl/static_analyser/test_state/test_state_analyser.py (accept mock_result: Any and test_state: StateParallel; check 1: if not isinstance(mock_result, list) raise ValidationException("Mocked result must be an array."); check 2: if len(mock_result) != len(test_state.branches.programs) raise ValidationException with branch count mismatch message from AWS snapshot)
-- [ ] T008 [US2] Add isinstance(test_state, StateParallel) dispatch in validate_mock() method in localstack-core/localstack/services/stepfunctions/asl/static_analyser/test_state/test_state_analyser.py (after the existing StateMap check at line 120-123, add: if isinstance(test_state, StateParallel): call validate_mock_result_matches_parallel_definition)
+- [X] T007 [US1] Add validate_mock_result_matches_parallel_definition() static method to TestStateStaticAnalyser in localstack-core/localstack/services/stepfunctions/asl/static_analyser/test_state/test_state_analyser.py (accept mock_result: Any and test_state: StateParallel; check 1: if not isinstance(mock_result, list) raise ValidationException("Mocked result must be an array."); check 2: if len(mock_result) != len(test_state.branches.programs) raise ValidationException with branch count mismatch message from AWS snapshot)
+- [X] T008 [US2] Add isinstance(test_state, StateParallel) dispatch in validate_mock() method in localstack-core/localstack/services/stepfunctions/asl/static_analyser/test_state/test_state_analyser.py (after the existing StateMap check at line 120-123, add: if isinstance(test_state, StateParallel): call validate_mock_result_matches_parallel_definition)
 
 **Checkpoint**: US1 and US2 validation tests pass against LocalStack with snapshot parity to AWS.
 
@@ -84,9 +84,9 @@ the same validation method, so they are combined into a single phase.
 
 ### Implementation for US3
 
-- [ ] T010 [US3] Create MockedStateParallel class in localstack-core/localstack/services/stepfunctions/asl/component/test_state/state/parallel.py (extend MockedBaseState[StateParallel] following MockedStateMap pattern; implement _apply_patches() to: wrap with MockedStateExecution, patch branches._eval_body with wrap_with_mock to inject mocked results per branch instead of running actual branch workers)
-- [ ] T011 [US3] Update _decorate_state_field() in localstack-core/localstack/services/stepfunctions/asl/parse/test_state/preprocessor.py (add elif isinstance(state_field, StateParallel): MockedStateParallel.wrap(state_field, is_single_state) after the StateMap check at line 99-100; add import for MockedStateParallel and StateParallel)
-- [ ] T012 [US3] Update find_state() in localstack-core/localstack/services/stepfunctions/asl/parse/test_state/preprocessor.py (add recursion into Parallel branches: for each program in state.branches.programs, search program.states.states — follow the existing StateMap recursion pattern at lines 112-115)
+- [X] T010 [US3] Create MockedStateParallel class in localstack-core/localstack/services/stepfunctions/asl/component/test_state/state/parallel.py (extend MockedBaseState[StateParallel] following MockedStateMap pattern; implement _apply_patches() to: wrap with MockedStateExecution, patch branches._eval_body with wrap_with_mock to inject mocked results per branch instead of running actual branch workers)
+- [X] T011 [US3] Update _decorate_state_field() in localstack-core/localstack/services/stepfunctions/asl/parse/test_state/preprocessor.py (add elif isinstance(state_field, StateParallel): MockedStateParallel.wrap(state_field, is_single_state) after the StateMap check at line 99-100; add import for MockedStateParallel and StateParallel)
+- [X] T012 [US3] Update find_state() in localstack-core/localstack/services/stepfunctions/asl/parse/test_state/preprocessor.py (add recursion into Parallel branches: for each program in state.branches.programs, search program.states.states — follow the existing StateMap recursion pattern at lines 112-115)
 
 **Checkpoint**: Valid Parallel state TestState requests execute successfully with mocked results matching AWS snapshot.
 
@@ -97,7 +97,7 @@ the same validation method, so they are combined into a single phase.
 **Purpose**: Regression testing and code quality
 
 - [ ] T013 Run full TestState mock validation test suite: pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v (verify no regressions to Map, Task, Pass, Fail, Succeed, Choice, Wait states)
-- [ ] T014 Run make format and make lint on all modified files
+- [X] T014 Run make format and make lint on all modified files
 
 ---
 
