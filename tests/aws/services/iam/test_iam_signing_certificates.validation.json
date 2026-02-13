@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/iam/test_iam_signing_certificates.py::TestSigningCertificate::test_signing_certificate_errors": {
+    "last_validated_date": "2026-02-13T15:39:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.18,
+      "teardown": 0.64,
+      "total": 2.82
+    }
+  },
+  "tests/aws/services/iam/test_iam_signing_certificates.py::TestSigningCertificate::test_signing_certificate_lifecycle": {
+    "last_validated_date": "2026-02-13T15:39:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.55,
+      "teardown": 0.66,
+      "total": 2.21
+    }
+  }
+}

@@ -1,0 +1,273 @@
+{
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_list_virtual_mfa_devices": {
+    "recorded-date": "13-02-2026, 15:38:35",
+    "recorded-content": {
+      "list-unassigned": {
+        "IsTruncated": false,
+        "VirtualMFADevices": [
+          {
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+          },
+          {
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+          },
+          {
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-assigned": {
+        "IsTruncated": false,
+        "VirtualMFADevices": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-any": {
+        "IsTruncated": false,
+        "VirtualMFADevices": [
+          {
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+          },
+          {
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+          },
+          {
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-invalid-marker-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Invalid Marker.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[None]": {
+    "recorded-date": "13-02-2026, 15:35:32",
+    "recorded-content": {
+      "create-mfa-device": {
+        "VirtualMFADevice": {
+          "Base32StringSeed": "<base32-seed>",
+          "QRCodePNG": "<qr-code-png>",
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-mfa-devices": {
+        "IsTruncated": false,
+        "VirtualMFADevices": [
+          {
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-mfa-device": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/]": {
+    "recorded-date": "13-02-2026, 15:35:33",
+    "recorded-content": {
+      "create-mfa-device": {
+        "VirtualMFADevice": {
+          "Base32StringSeed": "<base32-seed>",
+          "QRCodePNG": "<qr-code-png>",
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<path>/<mfa-device-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-mfa-devices": {
+        "IsTruncated": false,
+        "VirtualMFADevices": [
+          {
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<path>/<mfa-device-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-mfa-device": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/test-path/]": {
+    "recorded-date": "13-02-2026, 15:35:33",
+    "recorded-content": {
+      "create-mfa-device": {
+        "VirtualMFADevice": {
+          "Base32StringSeed": "<base32-seed>",
+          "QRCodePNG": "<qr-code-png>",
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<path>/<mfa-device-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-mfa-devices": {
+        "IsTruncated": false,
+        "VirtualMFADevices": [
+          {
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<path>/<mfa-device-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-mfa-device": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_mfa_device_errors": {
+    "recorded-date": "13-02-2026, 15:35:40",
+    "recorded-content": {
+      "enable-mfa-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "deactivate-mfa-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "deactivate-nonexistent-mfa-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "MFA Device with serial number arn:<partition>:iam::111111111111:mfa/nonexistent-mfa does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_errors": {
+    "recorded-date": "13-02-2026, 15:35:36",
+    "recorded-content": {
+      "create-mfa-device": {
+        "VirtualMFADevice": {
+          "Base32StringSeed": "<base32-seed>",
+          "QRCodePNG": "<qr-code-png>",
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-duplicate-error": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "MFA device already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "create-invalid-path-no-leading-slash-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "The specified value for path is invalid. It must begin and end with / and contain only alphanumeric characters and/or / characters.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-invalid-path-no-trailing-slash-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "The specified value for path is invalid. It must begin and end with / and contain only alphanumeric characters and/or / characters.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-path-too-long-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'path' failed to satisfy constraint: Member must have length less than or equal to 512",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-nonexistent-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "MFA Device with serial number arn:<partition>:iam::111111111111:mfa/nonexistent-device does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  }
+}

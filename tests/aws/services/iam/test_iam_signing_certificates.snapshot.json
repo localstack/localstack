@@ -1,0 +1,206 @@
+{
+  "tests/aws/services/iam/test_iam_signing_certificates.py::TestSigningCertificate::test_signing_certificate_lifecycle": {
+    "recorded-date": "13-02-2026, 15:39:28",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-certificate": {
+        "Certificate": {
+          "CertificateBody": "<certificate-body>",
+          "CertificateId": "<certificate-id:1>",
+          "Status": "Active",
+          "UploadDate": "<upload-date>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-certificates": {
+        "Certificates": [
+          {
+            "CertificateBody": "<certificate-body>",
+            "CertificateId": "<certificate-id:1>",
+            "Status": "Active",
+            "UploadDate": "<upload-date>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-certificate-inactive": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-certificates-after-inactive": {
+        "Certificates": [
+          {
+            "CertificateBody": "<certificate-body>",
+            "CertificateId": "<certificate-id:1>",
+            "Status": "Inactive",
+            "UploadDate": "<upload-date>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-certificate-active": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-certificates-after-active": {
+        "Certificates": [
+          {
+            "CertificateBody": "<certificate-body>",
+            "CertificateId": "<certificate-id:1>",
+            "Status": "Active",
+            "UploadDate": "<upload-date>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-certificate": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-certificates-after-delete": {
+        "Certificates": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_signing_certificates.py::TestSigningCertificate::test_signing_certificate_errors": {
+    "recorded-date": "13-02-2026, 15:39:31",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "upload-invalid-certificate-error": {
+        "Error": {
+          "Code": "MalformedCertificate",
+          "Message": "Certificate invalid-certificate-body is malformed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-nonexistent-certificate-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Certificate with id NONEXISTENTCERTID12345678901 cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-nonexistent-certificate-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Certificate with id NONEXISTENTCERTID12345678901 cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "upload-certificate-1": {
+        "Certificate": {
+          "CertificateBody": "<certificate-body>",
+          "CertificateId": "<certificate-id:1>",
+          "Status": "Active",
+          "UploadDate": "<upload-date>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-certificate-2": {
+        "Certificate": {
+          "CertificateBody": "<certificate-body>",
+          "CertificateId": "<certificate-id:2>",
+          "Status": "Active",
+          "UploadDate": "<upload-date>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-exceeds-limit-error": {
+        "Error": {
+          "Code": "LimitExceeded",
+          "Message": "Cannot exceed quota for CertificatesPerUser: 2",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  }
+}

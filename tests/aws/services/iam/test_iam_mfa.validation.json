@@ -1,0 +1,56 @@
+{
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_mfa_device_errors": {
+    "last_validated_date": "2026-02-13T15:39:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.86,
+      "teardown": 0.95,
+      "total": 1.81
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_list_virtual_mfa_devices": {
+    "last_validated_date": "2026-02-13T15:39:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.55,
+      "teardown": 1.51,
+      "total": 3.06
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_errors": {
+    "last_validated_date": "2026-02-13T15:39:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.05,
+      "teardown": 0.39,
+      "total": 2.44
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/]": {
+    "last_validated_date": "2026-02-13T15:39:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.72,
+      "teardown": 0.0,
+      "total": 0.72
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/test-path/]": {
+    "last_validated_date": "2026-02-13T15:39:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.75,
+      "teardown": 0.0,
+      "total": 0.75
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[None]": {
+    "last_validated_date": "2026-02-13T15:39:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.65,
+      "call": 1.12,
+      "teardown": 0.0,
+      "total": 1.77
+    }
+  }
+}
