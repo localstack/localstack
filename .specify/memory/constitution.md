@@ -1,27 +1,18 @@
 <!--
   Sync Impact Report
   ═══════════════════════════════════════════════
-  Version change: 1.0.0 → 1.1.0
-  Modified principles:
-    - II. Provider Pattern (ASF) — added AGENTS.md reference
-      implementation cross-references
-    - III. Parity Testing — added AGENTS.md reference
-      implementation cross-references
-    - V. Simplicity and Convention — added AGENTS.md
-      development process reference
-  Added sections:
-    - VI. AGENTS.md Compliance (new core principle)
-    - Technical Constraints: expanded with AGENTS.md hard
-      constraints
+  Version change: 1.1.0 → 1.1.1
+  Modified sections:
+    - Development Workflow — clarified how to start LocalStack
+      for local testing: MUST use `python -m localstack.dev.run`
+      from the project's .venv to ensure local code changes are
+      mounted correctly into the Docker container.
+  Added sections: none
   Removed sections: none
   Templates requiring updates:
     - .specify/templates/plan-template.md ✅ no updates needed
-      (Constitution Check section already generic)
     - .specify/templates/spec-template.md ✅ no updates needed
-      (User stories, requirements, and success criteria align)
     - .specify/templates/tasks-template.md ✅ no updates needed
-      (Phase structure and testing conventions align)
-    - .specify/templates/commands/ — no command files exist yet
   Follow-up TODOs: none
   ═══════════════════════════════════════════════
 -->
@@ -209,6 +200,12 @@ be consulted and followed during any implementation work.
   (`patch` | `minor` | `major`).
 - **Pre-commit hooks**: MUST NOT be skipped (`--no-verify` is
   forbidden).
+- **Starting LocalStack for local testing**: MUST use
+  `python -m localstack.dev.run` from the project's `.venv`
+  virtual environment. This ensures local code changes are
+  mounted correctly into the Docker container. Do NOT use
+  `localstack start` for development — it runs the pre-built
+  image without local source changes.
 - **Test execution**: `pytest <path/to/test_file.py>` or
   `pytest <path> -k <test_name>` for specific tests.
   Use `AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD
@@ -239,4 +236,4 @@ principles.
   Additional documentation lives in `docs/` in the repository
   root.
 
-**Version**: 1.1.0 | **Ratified**: 2026-02-12 | **Last Amended**: 2026-02-12
+**Version**: 1.1.1 | **Ratified**: 2026-02-12 | **Last Amended**: 2026-02-13

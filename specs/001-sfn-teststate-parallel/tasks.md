@@ -104,9 +104,9 @@ the same validation method, so they are combined into a single phase.
 
 **Purpose**: Regression testing and code quality
 
-- [ ] T013 Run full TestState mock validation test suite against LocalStack: pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v (verify no regressions to Map, Task, Pass, Fail, Succeed, Choice, Wait states; requires T015 snapshots to be recorded first)
+- [X] T013 Run full TestState mock validation test suite against LocalStack: pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v (verify no regressions to Map, Task, Pass, Fail, Succeed, Choice, Wait states; requires T015 snapshots to be recorded first)
 - [X] T014 Run make format and make lint on all modified files
-- [ ] T017 Run test_parallel_state_mock_execution against LocalStack to verify parity with AWS snapshot (requires T016 snapshot to be recorded first)
+- [X] T017 Run test_parallel_state_mock_execution against LocalStack to verify parity with AWS snapshot (requires T016 snapshot to be recorded first)
 
 ---
 
