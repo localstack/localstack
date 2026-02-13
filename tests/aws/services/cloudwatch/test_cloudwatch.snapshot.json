@@ -7022,5 +7022,536 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_metric_alarm[query]": {
+    "recorded-date": "13-02-2026, 07:00:01",
+    "recorded-content": {
+      "put_metric_alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_alarms": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "store_tags",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 60,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 30.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_empty ": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_metric_alarm[json]": {
+    "recorded-date": "13-02-2026, 07:00:01",
+    "recorded-content": {
+      "put_metric_alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_alarms": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "store_tags",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 60,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 30.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_empty ": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_metric_alarm[smithy-rpc-v2-cbor]": {
+    "recorded-date": "13-02-2026, 07:00:02",
+    "recorded-content": {
+      "put_metric_alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_alarms": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "store_tags",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 60,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 30.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_empty ": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_composite_alarm[query]": {
+    "recorded-date": "13-02-2026, 07:24:40",
+    "recorded-content": {
+      "describe_alarms": {
+        "CompositeAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:composite-a-f5fce5ab",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "composite-a-f5fce5ab",
+            "AlarmRule": "ALARM(\"a-8514a2d4\")",
+            "InsufficientDataActions": [],
+            "OKActions": [],
+            "StateReason": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:composite-a-f5fce5ab was created and its alarm rule evaluates to OK",
+            "StateReasonData": {
+              "triggeringAlarms": [
+                {
+                  "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:a-8514a2d4",
+                  "state": {
+                    "value": "INSUFFICIENT_DATA",
+                    "timestamp": "date"
+                  }
+                }
+              ]
+            },
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "OK"
+          }
+        ],
+        "MetricAlarms": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_empty ": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_composite_alarm[json]": {
+    "recorded-date": "13-02-2026, 07:24:40",
+    "recorded-content": {
+      "describe_alarms": {
+        "CompositeAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:composite-a-c723d42e",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "composite-a-c723d42e",
+            "AlarmRule": "ALARM(\"a-edf990a3\")",
+            "InsufficientDataActions": [],
+            "OKActions": [],
+            "StateReason": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:composite-a-c723d42e was created and its alarm rule evaluates to OK",
+            "StateReasonData": {
+              "triggeringAlarms": [
+                {
+                  "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:a-edf990a3",
+                  "state": {
+                    "value": "INSUFFICIENT_DATA",
+                    "timestamp": "date"
+                  }
+                }
+              ]
+            },
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "OK"
+          }
+        ],
+        "MetricAlarms": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_empty ": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_composite_alarm[smithy-rpc-v2-cbor]": {
+    "recorded-date": "13-02-2026, 07:24:41",
+    "recorded-content": {
+      "describe_alarms": {
+        "CompositeAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:composite-a-4b092d2c",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "composite-a-4b092d2c",
+            "AlarmRule": "ALARM(\"a-9db42bf0\")",
+            "InsufficientDataActions": [],
+            "OKActions": [],
+            "StateReason": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:composite-a-4b092d2c was created and its alarm rule evaluates to OK",
+            "StateReasonData": {
+              "triggeringAlarms": [
+                {
+                  "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:a-9db42bf0",
+                  "state": {
+                    "value": "INSUFFICIENT_DATA",
+                    "timestamp": "date"
+                  }
+                }
+              ]
+            },
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "OK"
+          }
+        ],
+        "MetricAlarms": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_empty ": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
