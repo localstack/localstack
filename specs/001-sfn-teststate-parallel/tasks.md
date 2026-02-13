@@ -9,6 +9,12 @@ description: "Task list for StepFunctions TestState Parallel State Support"
 
 **Tests**: Included — parity testing is required per FR-006 and AGENTS.md development process.
 
+**⚠️ SNAPSHOT RULE**: Any task that involves recording an AWS snapshot (tests using `sfn_snapshot.match`) MUST NOT be marked as completed unless the snapshot was actually recorded by running the test against real AWS with:
+```
+AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 python -m pytest <test_path> -v
+```
+If the snapshot file was not created/updated, the task remains incomplete.
+
 **Organization**: Tasks are grouped by user story. US1 and US2 are both P1 and share
 the same validation method, so they are combined into a single phase.
 
@@ -60,6 +66,7 @@ the same validation method, so they are combined into a single phase.
 - [X] T004 [P] [US1] Add test_mock_result_is_not_array_on_parallel_state to tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py (follow test_mock_result_is_not_array_on_map_state_without_result_writer pattern: load BASE_PARALLEL_STATE template, provide non-array mock.result e.g. JSON object, pytest.raises + sfn_snapshot.match)
 - [X] T005 [P] [US2] Add test_mock_result_array_size_mismatch_on_parallel_state to tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py (use BASE_PARALLEL_STATE template with 2 branches, provide mock.result as JSON array of size 1, pytest.raises + sfn_snapshot.match)
 - [X] T006 [P] [US1] Add Parallel state entries to STATES_REQUIRING_MOCKS list in tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py (add pytest.param(TST.BASE_PARALLEL_STATE, id="ParallelState") so existing test_state_type_requires_mock covers Parallel without mock)
+- [ ] T015 [P] [US1] 🎯 SNAPSHOT Record AWS snapshots for validation tests by running: AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 python -m pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_is_not_array_on_parallel_state tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_array_size_mismatch_on_parallel_state tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_requires_mock[ParallelState] -v (verify snapshot files are created/updated)
 
 ### Implementation for US1 & US2
 
@@ -80,7 +87,8 @@ the same validation method, so they are combined into a single phase.
 
 > **NOTE: Write test FIRST, run against AWS to capture snapshot, ensure it FAILS against LocalStack, then implement**
 
-- [ ] T009 [US3] Add test_parallel_state_mock_execution to tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py (or test_state_mock_validation.py — use BASE_PARALLEL_STATE with 2 branches, provide valid mock.result array of 2 elements, verify successful execution output with sfn_snapshot.match)
+- [X] T009 [US3] Add test_parallel_state_mock_execution to tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py (or test_state_mock_validation.py — use BASE_PARALLEL_STATE with 2 branches, provide valid mock.result array of 2 elements, verify successful execution output with sfn_snapshot.match)
+- [ ] T016 [US3] 🎯 SNAPSHOT Record AWS snapshot for execution test by running: AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 python -m pytest tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_parallel_state_mock_execution -v (verify snapshot file is created/updated)
 
 ### Implementation for US3
 
@@ -96,8 +104,9 @@ the same validation method, so they are combined into a single phase.
 
 **Purpose**: Regression testing and code quality
 
-- [ ] T013 Run full TestState mock validation test suite: pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v (verify no regressions to Map, Task, Pass, Fail, Succeed, Choice, Wait states)
+- [ ] T013 Run full TestState mock validation test suite against LocalStack: pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v (verify no regressions to Map, Task, Pass, Fail, Succeed, Choice, Wait states; requires T015 snapshots to be recorded first)
 - [X] T014 Run make format and make lint on all modified files
+- [ ] T017 Run test_parallel_state_mock_execution against LocalStack to verify parity with AWS snapshot (requires T016 snapshot to be recorded first)
 
 ---
 
@@ -109,7 +118,7 @@ the same validation method, so they are combined into a single phase.
 - **Foundational (Phase 2)**: Depends on Setup — BLOCKS all user stories
 - **US1 & US2 (Phase 3)**: Depends on Foundational (Phase 2) — validation only, no execution wrapper needed
 - **US3 (Phase 4)**: Depends on Phase 3 (validation must work before execution path)
-- **Polish (Phase 5)**: Depends on all user stories being complete
+- **Polish (Phase 5)**: Depends on all user stories being complete and all snapshots being recorded (T015, T016)
 
 ### User Story Dependencies
 
@@ -143,9 +152,11 @@ the same validation method, so they are combined into a single phase.
 ### Full Delivery
 
 1. Complete MVP (Phases 1-3)
-2. Complete Phase 4: US3 execution support (T009-T012)
-3. Complete Phase 5: Polish (T013-T014)
-4. All Parallel state TestState scenarios are complete
+2. Record AWS snapshots for validation tests (T015)
+3. Complete Phase 4: US3 execution support (T009-T012)
+4. Record AWS snapshot for execution test (T016)
+5. Complete Phase 5: Polish (T013, T014, T017)
+6. All Parallel state TestState scenarios are complete with recorded AWS snapshots
 
 ---
 

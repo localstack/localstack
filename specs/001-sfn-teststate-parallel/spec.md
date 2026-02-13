@@ -69,7 +69,7 @@ A user calls the TestState API with a Parallel state definition and a correctly 
 - **FR-003**: The system MUST reject TestState requests where the definition contains a Parallel state and mock.result is a JSON array whose length does not equal the number of branches in the Parallel state definition, returning a validation error with a message matching AWS behavior.
 - **FR-004**: The system MUST execute TestState successfully when the definition contains a Parallel state and mock.result is a valid JSON array whose length matches the number of branches.
 - **FR-005**: The system MUST continue to require a mock when a Parallel state is used with TestState (Parallel states cannot be executed without mocked results, consistent with Map state behavior).
-- **FR-006**: All error responses (codes and messages) MUST match the actual AWS StepFunctions TestState API responses, verified via parity/snapshot testing against real AWS.
+- **FR-006**: All error responses (codes and messages) MUST match the actual AWS StepFunctions TestState API responses, verified via parity/snapshot testing against real AWS using `AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1`. Snapshots MUST be recorded before a test task can be considered complete.
 
 ### Key Entities
 
@@ -85,8 +85,18 @@ A user calls the TestState API with a Parallel state definition and a correctly 
 - **SC-002**: Valid Parallel state TestState requests execute successfully and return correct mocked results, as verified by snapshot tests run against real AWS.
 - **SC-003**: Existing TestState functionality for all other state types (Task, Pass, Wait, Choice, Succeed, Fail, Map) continues to work without regression.
 
+### AWS Parity Testing Process
+
+- All snapshot-based tests MUST be run against real AWS to record expected responses before verifying against LocalStack.
+- The command to run tests against real AWS is:
+  ```
+  AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 python -m pytest <test_path> -v
+  ```
+- **CRITICAL**: A task that involves recording a snapshot MUST NOT be marked as completed unless the snapshot was actually recorded by running the test against real AWS. If the snapshot file was not created or updated, the task remains incomplete regardless of whether the implementation code is in place.
+- After snapshots are recorded against AWS, the same tests MUST pass against LocalStack to confirm parity.
+
 ### Assumptions
 
-- The exact AWS error messages for Parallel state validation failures will be captured by running tests against real AWS with `TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1` before implementing.
+- The exact AWS error messages for Parallel state validation failures will be captured by running tests against real AWS with `AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1` before implementing.
 - The Parallel state mock validation follows a pattern similar to the existing Map state mock validation (array requirement, structural match).
 - The Parallel state already has a working execution implementation in LocalStack (`StateParallel` class); this feature adds TestState-specific mock support and input validation on top of it.

@@ -70,6 +70,24 @@ class TestStateMockScenarios:
         )
         sfn_snapshot.match("test_case_response", test_case_response)
 
+    @markers.aws.validated
+    def test_parallel_state_mock_execution(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TST.load_sfn_template(TST.BASE_PARALLEL_STATE)
+        definition = json.dumps(template)
+        # BASE_PARALLEL_STATE has 2 branches, provide matching array of 2 elements
+        mock = {"result": json.dumps([{"branch1": "result1"}, {"branch2": "result2"}])}
+
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            inspectionLevel=InspectionLevel.INFO,
+            mock=mock,
+        )
+        sfn_snapshot.match("test_case_response", test_case_response)
+
     DYNAMODB_TEMPLATES = [
         pytest.param(TST.BASE_DYNAMODB_SERVICE_TASK_STATE, id="base"),
         pytest.param(TST.IO_DYNAMODB_SERVICE_TASK_STATE, id="io"),
