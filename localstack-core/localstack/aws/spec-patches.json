@@ -1376,7 +1376,7 @@
   "apigateway/2015-07-09/service-2": [
     {
       "op": "add",
-      "path": "/shapes/MapOfStringToNullableStrings",
+      "path": "/shapes/MapOfStringToNullableString",
       "value": {
         "type":"map",
         "key":{"shape":"String"},
@@ -1387,7 +1387,7 @@
     {
       "op": "replace",
       "path": "/shapes/IntegrationResponse/members/responseTemplates/shape",
-      "value": "MapOfStringToNullableStrings"
+      "value": "MapOfStringToNullableString"
     }
   ]
 }
