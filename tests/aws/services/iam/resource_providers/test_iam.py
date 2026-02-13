@@ -13,7 +13,7 @@ def test_delete_role_detaches_role_policy(deploy_cfn_template, aws_client):
     role_name = f"LsRole{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/iam_role_policy.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_role_policy.yaml"
         ),
         parameters={"RoleName": role_name},
     )
@@ -26,7 +26,7 @@ def test_delete_role_detaches_role_policy(deploy_cfn_template, aws_client):
         is_update=True,
         stack_name=stack.stack_name,
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/iam_role_policy.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_role_policy.yaml"
         ),
         parameters={"RoleName": f"role-{short_uid()}"},
     )
@@ -46,7 +46,7 @@ def test_policy_attachments(deploy_cfn_template, aws_client):
     linked_role_id = short_uid()
     deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/iam_policy_attachments.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_policy_attachments.yaml"
         ),
         template_mapping={
             "role_name": role_name,
@@ -119,7 +119,7 @@ def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     user_name = f"user-{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/iam_access_key.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_access_key.yaml"
         ),
         parameters={"UserName": user_name},
     )
@@ -133,7 +133,7 @@ def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
         stack_name=stack.stack_name,
         is_update=True,
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/iam_access_key.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_access_key.yaml"
         ),
         parameters={"UserName": user_name, "Status": "Inactive", "Serial": "2"},
     )
@@ -158,7 +158,7 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/iam_policy_role.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_policy_role.yaml"
         ),
         parameters={
             "PolicyName": policy_name,
@@ -179,7 +179,7 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
 
     deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/iam_policy_role_updated.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_policy_role_updated.yaml"
         ),
         parameters={
             "PolicyName": policy_name,
@@ -223,9 +223,7 @@ def test_managed_policy_with_empty_resource(deploy_cfn_template, snapshot, aws_c
         "policyName": f"managed-policy-{short_uid()}",
     }
 
-    template_path = os.path.join(
-        os.path.dirname(__file__), "../../../../templates/dynamodb_iam.yaml"
-    )
+    template_path = os.path.join(os.path.dirname(__file__), "../../../templates/dynamodb_iam.yaml")
 
     stack = deploy_cfn_template(template_path=template_path, parameters=parameters)
 
@@ -245,7 +243,7 @@ def test_managed_policy_with_empty_resource(deploy_cfn_template, snapshot, aws_c
 def test_server_certificate(deploy_cfn_template, snapshot, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/iam_server_certificate.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_server_certificate.yaml"
         ),
         parameters={"certificateName": f"server-certificate-{short_uid()}"},
     )
@@ -275,7 +273,7 @@ def test_server_certificate(deploy_cfn_template, snapshot, aws_client):
 def test_cfn_handle_iam_role_resource_no_role_name(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/iam_role_defaults.yml"
+            os.path.dirname(__file__), "../../../templates/iam_role_defaults.yml"
         )
     )
     role_path_prefix = "/test-role-prefix/"
@@ -296,9 +294,7 @@ def test_updating_stack_with_iam_role(deploy_cfn_template, aws_client):
 
     # Create stack and wait for 'CREATE_COMPLETE' status of the stack
     stack = deploy_cfn_template(
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/template7.json"
-        ),
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/template7.json"),
         parameters={
             "LambdaRoleName": lambda_role_name,
             "LambdaFunctionName": lambda_function_name,
@@ -318,9 +314,7 @@ def test_updating_stack_with_iam_role(deploy_cfn_template, aws_client):
     # Update stack and wait for 'UPDATE_COMPLETE' status of the stack
     stack = deploy_cfn_template(
         is_update=True,
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/template7.json"
-        ),
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/template7.json"),
         stack_name=stack.stack_name,
         parameters={
             "LambdaRoleName": lambda_role_name_new,
