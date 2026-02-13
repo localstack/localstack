@@ -64,6 +64,14 @@ def html_to_rst(html: str):
     return rst
 
 
+def is_sparse_shape(shape: ListShape | MapShape):
+    # see https://smithy.io/2.0/spec/type-refinement-traits.html#sparse-trait
+    # this is needed for generating Map that can have nullable values
+    # We need to access `_shape_model` directly, because `sparse` is not used by Botocore, so it is not picked in
+    # `metadata`: see ``botocore.model.Shape.METADATA_ATTRS`` and ``botocore.model.Shape.metadata``
+    return getattr(shape, "_shape_model", {}).get("sparse")
+
+
 class ShapeNode:
     service: ServiceModel
     shape: Shape
@@ -258,8 +266,12 @@ class ShapeNode:
                 f"{to_valid_python_name(shape.name)} = list[{q}{to_valid_python_name(shape.member.name)}{q}]"
             )
         elif isinstance(shape, MapShape):
+            if is_sparse_shape(shape):
+                value_key = f"{q}{to_valid_python_name(shape.value.name)} | None{q}"
+            else:
+                value_key = f"{q}{to_valid_python_name(shape.value.name)}{q}"
             output.write(
-                f"{to_valid_python_name(shape.name)} = dict[{q}{to_valid_python_name(shape.key.name)}{q}, {q}{to_valid_python_name(shape.value.name)}{q}]"
+                f"{to_valid_python_name(shape.name)} = dict[{q}{to_valid_python_name(shape.key.name)}{q}, {value_key}]"
             )
         elif isinstance(shape, StringShape):
             if shape.enum:

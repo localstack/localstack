@@ -1533,6 +1533,17 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
         if has_body and not has_content_type:
             serialized.headers["Content-Type"] = mime_type
 
+    def _serialize_type_map(
+        self, body: dict, value: dict, shape: MapShape, key: str, mime_type: str
+    ):
+        # REST JSON is different from regular JSON, it returns None values in Map
+        if value is None:
+            return
+        map_obj = {}
+        body[key] = map_obj
+        for sub_key, sub_value in value.items():
+            self._serialize(map_obj, sub_value, shape.value, sub_key, mime_type)
+
 
 class BaseCBORResponseSerializer(ResponseSerializer):
     """

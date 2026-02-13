@@ -1372,5 +1372,22 @@
       "path": "/operations/CreateApiMapping/http/responseCode",
       "value": 200
     }
+  ],
+  "apigateway/2015-07-09/service-2": [
+    {
+      "op": "add",
+      "path": "/shapes/MapOfStringToNullableString",
+      "value": {
+        "type":"map",
+        "key":{"shape":"String"},
+        "value":{"shape":"String"},
+        "sparse": true
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/shapes/IntegrationResponse/members/responseTemplates/shape",
+      "value": "MapOfStringToNullableString"
+    }
   ]
 }
