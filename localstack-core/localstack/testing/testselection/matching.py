@@ -160,6 +160,30 @@ def generic_service_test_matching_rule(
     return set()
 
 
+def cloudformation_resource_provider_test_matching_rule(
+    changed_file_path: str,
+    repo_root: str | pathlib.Path | None = None,
+) -> set[str]:
+    """
+    When CloudFormation implementation code changes, also select resource_providers/
+    test dirs under each service's test directory.
+    """
+    if not re.match(r"localstack/services/cloudformation/.+", changed_file_path):
+        return set()
+
+    if repo_root is None:
+        repo_root = pathlib.Path(__file__).parent.parent.parent.parent.parent
+
+    test_services_dir = pathlib.Path(repo_root) / "tests" / "aws" / "services"
+    result = set()
+    if test_services_dir.is_dir():
+        for svc_dir in test_services_dir.iterdir():
+            if (svc_dir / "resource_providers").is_dir() and svc_dir.name != "cloudformation":
+                result.add(f"tests/aws/services/{svc_dir.name}/resource_providers/")
+
+    return result
+
+
 MatchingRule = Callable[[str], Iterable[str]]
 
 
@@ -174,6 +198,7 @@ def check_rule_has_matches(rule: MatchingRule, files: Iterable[str]) -> bool:
 MATCHING_RULES: list[MatchingRule] = [
     # Generic rules
     generic_service_test_matching_rule,  # always *at least* the service tests and dependencies
+    cloudformation_resource_provider_test_matching_rule,
     Matchers.glob(
         "tests/**/test_*.py"
     ).passthrough(),  # changes in a test file should always at least test that file

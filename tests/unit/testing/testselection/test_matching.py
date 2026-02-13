@@ -9,6 +9,7 @@ from localstack.testing.testselection.matching import (
     SENTINEL_ALL_TESTS,
     Matchers,
     check_rule_has_matches,
+    cloudformation_resource_provider_test_matching_rule,
     generic_service_test_matching_rule,
     resolve_dependencies,
 )
@@ -127,6 +128,48 @@ def test_directory_rules_no_paths():
     )
 
     assert selected_tests == ["tests/aws/service/sns/"]
+
+
+@pytest.mark.skip
+def test_cloudformation_resource_provider_matching_rule(tmp_path):
+    services = tmp_path / "tests" / "aws" / "services"
+    (services / "iam" / "resource_providers").mkdir(parents=True)
+    (services / "s3" / "resource_providers").mkdir(parents=True)
+    (services / "sqs").mkdir(parents=True)
+    (services / "cloudformation" / "resource_providers").mkdir(parents=True)
+
+    result = cloudformation_resource_provider_test_matching_rule(
+        "localstack/services/cloudformation/engine/changes.py",
+        repo_root=tmp_path,
+    )
+
+    assert result == {
+        "tests/aws/services/iam/resource_providers/",
+        "tests/aws/services/s3/resource_providers/",
+    }
+
+
+@pytest.mark.skip
+def test_cloudformation_resource_provider_matching_rule_no_match(tmp_path):
+    services = tmp_path / "tests" / "aws" / "services"
+    (services / "iam" / "resource_providers").mkdir(parents=True)
+
+    result = cloudformation_resource_provider_test_matching_rule(
+        "localstack/services/iam/provider.py",
+        repo_root=tmp_path,
+    )
+
+    assert result == set()
+
+
+def test_cloudformation_change_selects_resource_provider_tests():
+    result = get_affected_tests_from_changes(
+        ["localstack/services/cloudformation/engine/changes.py"]
+    )
+
+    assert "tests/aws/services/cloudformation/" in result
+    assert "tests/aws/services/iam/resource_providers/" in result
+    assert "tests/aws/services/s3/resource_providers/" in result
 
 
 def test_directory_rules_no_match():
