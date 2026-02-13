@@ -73,6 +73,7 @@ from localstack.aws.api.cloudformation import (
     StackSetOperationStatus,
     StackStatus,
     StackStatusFilter,
+    Tag,
     TemplateStage,
     UpdateStackInput,
     UpdateStackOutput,
@@ -250,6 +251,20 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             "If you experience issues, please submit a bug report at this URL: %s",
             issue_url,
         )
+
+    # These tagging methods are overwritten in the Pro implementation.
+    def _get_resource_tags(self, resource_arn: str, account_id: str, region: str) -> list[Tag]:
+        return []
+
+    def _set_resource_tags(
+        self, resource_arn: str, account_id: str, region: str, tags: list[Tag]
+    ) -> None:
+        return
+
+    def _remove_resource_tags(
+        self, resource_arn: str, account_id: str, region: str, tag_keys: list[Tag]
+    ) -> None:
+        return
 
     @staticmethod
     def _resolve_parameters(
@@ -593,6 +608,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             # No change set available on this stack.
             pass
 
+        tags = request.get("Tags", [])
         # create change set for the stack and apply changes
         change_set = ChangeSet(
             stack,
@@ -600,6 +616,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template=after_template,
             template_body=template_body,
         )
+        self._set_resource_tags(change_set.change_set_id, context.account_id, context.region, tags)
         self._setup_change_set_model(
             change_set=change_set,
             before_template=before_template,
@@ -933,12 +950,14 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
+        tags = request.get("Tags", [])
         stack = Stack(
             account_id=context.account_id,
             region_name=context.region,
             request_payload=request,
-            tags=request.get("Tags"),
+            tags=tags,
         )
+        self._set_resource_tags(stack.stack_id, context.account_id, context.region, tags)
         # TODO: what is the correct initial status?
         state.stacks_v2[stack.stack_id] = stack
 
