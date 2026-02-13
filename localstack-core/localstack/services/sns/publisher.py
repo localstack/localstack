@@ -665,7 +665,7 @@ class ApplicationTopicPublisher(TopicPublisher):
         message_context: SnsMessage,
         subscriber: SnsSubscription,
         topic_attributes: TopicAttributesMap = None,
-    ) -> dict[str, str | MessageAttributeMap]:
+    ) -> dict[str, str | MessageAttributeMap | None]:
         endpoint_arn = subscriber["Endpoint"]
         platform_type = get_platform_type_from_endpoint_arn(endpoint_arn)
         return {
@@ -726,7 +726,7 @@ class SmsTopicPublisher(TopicPublisher):
         message_context: SnsMessage,
         subscriber: SnsSubscription,
         topic_attributes: TopicAttributesMap = None,
-    ) -> dict[str, str | MessageAttributeMap]:
+    ) -> dict[str, str | MessageAttributeMap | None]:
         return {
             "PhoneNumber": subscriber["Endpoint"],
             "TopicArn": subscriber["TopicArn"],
