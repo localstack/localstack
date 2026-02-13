@@ -196,11 +196,17 @@ class LambdaService:
     def publish_version_async(self, function_version: FunctionVersion):
         self.task_executor.submit(self.publish_version, function_version)
 
-    def delete_function_version_store(
+    def delete_function_version_async(
         self, function: Function, version: FunctionVersion, qualifier: str
     ):
-        def _cleanup(function: Function, qualifier: str):
-            time.sleep(0.1)
+        """
+        Simulates async function cleanup after function deletion API is called
+        by introducing a small delay before actually removing the function from the store
+        to allow for getting the function details after deletion.
+        """
+
+        def _cleanup():
+            time.sleep(0.5)
             function.versions.pop(qualifier, None)
 
         new_state = VersionState(state=State.Deleting)
@@ -214,9 +220,15 @@ class LambdaService:
 
         self.task_executor.submit(_cleanup, function, qualifier)
 
-    def delete_function_store(self, store: LambdaStore, function_name: str):
-        def _cleanup(store, function_name):
-            time.sleep(0.1)
+    def delete_function_async(self, store: LambdaStore, function_name: str):
+        """
+        Simulates async function version cleanup after function deletion API is called
+        by introducing a small delay before actually removing the function from the store
+        to allow for getting the function version details after deletion.
+        """
+
+        def _cleanup():
+            time.sleep(0.5)
             store.functions.pop(function_name)
 
         self.task_executor.submit(_cleanup, store, function_name)

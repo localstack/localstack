@@ -1640,7 +1640,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 if version.config.capacity_provider_config:
                     function_has_capacity_provider = True
                     # async delete from store
-                    self.lambda_service.delete_function_version_store(function, version, qualifier)
+                    self.lambda_service.delete_function_version_async(function, version, qualifier)
                 else:
                     function.versions.pop(qualifier, None)
                 self.lambda_service.stop_version(version.id.qualified_arn())
@@ -1658,7 +1658,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     if version.id.qualifier == "$LATEST":
                         pass
                     # async delete version from store
-                    self.lambda_service.delete_function_version_store(function, version, qualifier)
+                    self.lambda_service.delete_function_version_async(function, version, qualifier)
                 else:
                     self.lambda_service.stop_version(qualified_arn=version.id.qualified_arn())
                     store.functions.pop(function_name)
@@ -1668,7 +1668,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
             if function_has_capacity_provider:
                 # async delete whole function from store
-                self.lambda_service.delete_function_store(store, function_name)
+                self.lambda_service.delete_function_async(store, function_name)
 
         return DeleteFunctionResponse(StatusCode=202 if function_has_capacity_provider else 204)
 
