@@ -48,18 +48,23 @@ class StateChoice(CommonStateField):
                     raise RuntimeError(
                         f"Missing Next definition for state_choice rule '{rule}' in choices '{self}'."
                     )
+                # Push a flag indicating a choice rule matched (not the default).
+                env.stack.append(True)
                 env.stack.append(rule.next_stmt.name)
                 return
 
         if self.default_state is None:
             raise RuntimeError("No branching option reached in state %s", self.name)
+        # Push a flag indicating the default path was taken.
+        env.stack.append(False)
         env.stack.append(self.default_state.state_name)
 
     def _eval_state_output(self, env: Environment) -> None:
         next_state_name: str = env.stack.pop()
+        choice_rule_matched: bool = env.stack.pop()
 
-        # No choice rule matched: the default state is evaluated.
-        if self.default_state and self.default_state.state_name == next_state_name:
+        # No choice rule matched: evaluate the default state's assign and output.
+        if not choice_rule_matched:
             if self.assign_decl:
                 self.assign_decl.eval(env=env)
             if self.output:
