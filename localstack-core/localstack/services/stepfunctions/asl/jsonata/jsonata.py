@@ -33,8 +33,11 @@ _PATTERN_VARIABLE_REFERENCE = re.compile(
     #    allowing escapes
     r"(?:\"(?:\\.|[^\"\\])*\"|\'(?:\\.|[^\'\\])*\')"
     r"|"
-    # 3) Capturing branch for $$, $identifier[.prop…], or lone $
-    r"(\$\$|\$[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_][A-Za-z0-9_$]*)*|\$)"
+    # 3) Capturing branch for $identifier[.prop…]
+    #    Requires at least one identifier character after $, so bare $ (the
+    #    JSONata context variable used in filter predicates like [$ = 1]) is
+    #    never captured.  $$ is captured but filtered out downstream.
+    r"(\$[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_][A-Za-z0-9_$]*)*)"
 )
 
 _ILLEGAL_VARIABLE_REFERENCES: Final[set[str]] = {"$", "$$"}
