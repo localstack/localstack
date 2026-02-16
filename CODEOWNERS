@@ -166,10 +166,10 @@
 /tests/unit/services/kms/ @k-a-il
 
 # lambda
-/localstack-core/localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
-/localstack-core/localstack/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
-/tests/aws/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
-/tests/unit/services/lambda_/ @joe4dev @dominikschubert @dfangl @gregfurman
+/localstack-core/localstack/aws/api/lambda_/ @joe4dev @dfangl @gregfurman
+/localstack-core/localstack/services/lambda_/ @joe4dev @dfangl @gregfurman
+/tests/aws/services/lambda_/ @joe4dev @dfangl @gregfurman
+/tests/unit/services/lambda_/ @joe4dev @dfangl @gregfurman
 
 # logs
 /localstack-core/localstack/aws/api/logs/ @pinzon @steffyP
@@ -240,10 +240,10 @@
 /tests/aws/services/ssm/ @viren-nadkarni @dominikschubert
 
 # stepfunctions
-/localstack-core/localstack/aws/api/stepfunctions/ @dominikschubert @joe4dev @gregfurman @tiurin
-/localstack-core/localstack/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman @tiurin
-/tests/aws/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman @tiurin
-/tests/unit/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman @tiurin
+/localstack-core/localstack/aws/api/stepfunctions/ @tiurin @joe4dev @gregfurman
+/localstack-core/localstack/services/stepfunctions/ @tiurin @joe4dev @gregfurman
+/tests/aws/services/stepfunctions/ @tiurin @joe4dev @gregfurman
+/tests/unit/services/stepfunctions/ @tiurin @joe4dev @gregfurman
 
 # sts
 /localstack-core/localstack/aws/api/sts/ @pinzon @dfangl
