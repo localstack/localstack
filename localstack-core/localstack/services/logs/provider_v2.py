@@ -13,6 +13,7 @@ from localstack.aws.api.logs import (
     ApplyOnTransformedLogs,
     CreateLogGroupRequest,
     CreateLogStreamRequest,
+    Days,
     DeleteLogGroupRequest,
     DeleteLogStreamRequest,
     DescribeLimit,
@@ -70,6 +71,7 @@ from localstack.utils.threads import start_worker_thread
 from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
+MAX_LOG_GROUP_NAME_LEN = 512
 
 
 def get_pattern_matcher(pattern: str) -> Callable[[str, dict], bool]:
@@ -96,13 +98,18 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         store = logs_stores[context.account_id][context.region]
         log_group_name = request["logGroupName"]
 
+        if len(log_group_name) > MAX_LOG_GROUP_NAME_LEN:
+            raise InvalidParameterException(
+                "Invalid LogGroup or LogStream, both must have length less than or equal to 512."
+            )
+
         if log_group_name in store.log_groups:
-            raise ResourceAlreadyExistsException(f"Log group '{log_group_name}' already exists.")
+            raise ResourceAlreadyExistsException("The specified log group already exists")
 
         region = context.region
         account_id = context.account_id
         arn = arns.log_group_arn(log_group_name, account_id, region)
-        store.log_groups[log_group_name] = LogGroup(
+        log_group = LogGroup(
             logGroupName=log_group_name,
             creationTime=now_utc(),
             arn=f"{arn}:*",
@@ -111,7 +118,8 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             storedBytes=0,
             metricFilterCount=0,
         )
-        store.log_streams[log_group_name] = {}
+        if key_id := request.get("kmsKeyId"):
+            log_group["kmsKeyId"] = key_id
 
         if tags := request.get("tags"):
             resource_arn = arns.log_group_arn(
@@ -119,6 +127,9 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             )
             store = logs_stores[context.account_id][context.region]
             store.TAGS.setdefault(resource_arn, {}).update(tags)
+
+        store.log_groups[log_group_name] = log_group
+        store.log_streams[log_group_name] = {}
 
     @handler("DescribeLogGroups", expand=False)
     def describe_log_groups(
@@ -464,30 +475,63 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
     ) -> FilterLogEventsResponse:
         region = context.region
         account_id = context.account_id
-        log_group_name = request["logGroupName"]
-        try:
-            events_data = self.db_helper.filter_log_events(
-                log_group_name,
-                region,
-                account_id,
-                request.get("logStreamNames"),
-                request.get("startTime"),
-                request.get("endTime"),
-                request.get("filterPattern"),
-                request.get("limit"),
+        log_group_name = request.get("logGroupName")
+        log_group_identifier = request.get("logGroupIdentifier")
+        store = logs_stores[account_id][region]
+
+        if log_group_name and log_group_identifier:
+            raise InvalidParameterException(
+                "LogGroup name and LogGroup identifier are mutually exclusive parameters."
             )
-            events = [
-                FilteredLogEvent(
-                    logStreamName=data["logStreamName"],
-                    timestamp=data["timestamp"],
-                    message=data["message"],
-                    eventId=data["id"],
-                )
-                for data in events_data
-            ]
-            return FilterLogEventsResponse(events=events)
-        except ValueError as e:
-            raise self._get_exception_for_value_error(e, log_group_name)
+
+        if log_group_identifier:
+            log_group_name = log_group_identifier.split(":")[-1]
+
+        if not log_group_name or log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        # Parse nextToken to get the last event ID for pagination
+        after_event_id = None
+        if next_token := request.get("nextToken"):
+            try:
+                after_event_id = int(next_token)
+            except ValueError:
+                raise InvalidParameterException("The specified nextToken is invalid.")
+
+        limit = request.get("limit")
+        if int(limit or "0") > 10000:
+            raise InvalidParameterException(
+                f"1 validation error detected: Value '{limit}' at 'limit' failed to satisfy constraint: Member must have value less than or equal to 10000"
+            )
+
+        events_data = self.db_helper.filter_log_events(
+            log_group_name,
+            region,
+            account_id,
+            request.get("logStreamNames"),
+            request.get("startTime"),
+            request.get("endTime"),
+            request.get("filterPattern"),
+            limit,
+            after_event_id,
+        )
+        events = [
+            FilteredLogEvent(
+                logStreamName=data["logStreamName"],
+                timestamp=data["timestamp"],
+                message=data["message"],
+                eventId=data["id"],
+            )
+            for data in events_data
+        ]
+
+        response = FilterLogEventsResponse(events=events)
+
+        # Generate nextToken if there are potentially more results
+        if limit and events_data and len(events_data) == limit:
+            response["nextToken"] = events_data[-1]["id"]
+
+        return response
 
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
@@ -530,7 +574,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
     ) -> None:
         self._check_resource_arn_tagging(resource_arn)
         store = logs_stores[context.account_id][context.region]
-        store.TAGS.get(resource_arn, {}).update(tags or {})
+        store.TAGS.setdefault(resource_arn, {}).update(tags or {})
 
     def tag_log_group(
         self, context: RequestContext, log_group_name: LogGroupName, tags: Tags, **kwargs
@@ -543,7 +587,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             group_name=log_group_name, account_id=context.account_id, region_name=context.region
         )
         store = logs_stores[context.account_id][context.region]
-        store.TAGS.get(resource_arn, {}).update(tags or {})
+        store.TAGS.setdefault(resource_arn, {}).update(tags or {})
 
     def list_tags_log_group(
         self, context: RequestContext, log_group_name: LogGroupName, **kwargs
@@ -776,3 +820,30 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         ]
         # TODO add the other filter methods e.g. metric_name, metric_namespace
         return DescribeMetricFiltersResponse(metricFilters=filters)
+
+    def put_retention_policy(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        retention_in_days: Days,
+        **kwargs,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        store.log_groups[log_group_name]["retentionInDays"] = retention_in_days
+
+    def delete_retention_policy(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        **kwargs,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        store.log_groups[log_group_name].pop("retentionInDays", None)

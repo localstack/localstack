@@ -125,6 +125,7 @@ class LogsDatabaseHelper:
         end_time: int | None = None,
         filter_pattern: str | None = None,
         limit: int | None = None,
+        after_event_id: int | None = None,
     ) -> list[dict[str, Any]]:
         with self.lock, self._get_connection() as conn:
             cursor = conn.cursor()
@@ -133,7 +134,7 @@ class LogsDatabaseHelper:
                 FROM {self.TABLE_LOG_EVENTS}
                 WHERE log_group_name = ? AND region = ? AND account_id = ?
             """
-            params = [log_group_name, region, account_id]
+            params: list = [log_group_name, region, account_id]
 
             if log_stream_names:
                 placeholders = ",".join(["?"] * len(log_stream_names))
@@ -148,8 +149,11 @@ class LogsDatabaseHelper:
             if filter_pattern:
                 query += " AND message LIKE ?"
                 params.append(f"%{filter_pattern}%")  # Basic "contains" filtering
+            if after_event_id is not None:
+                query += " AND id > ?"
+                params.append(after_event_id)
 
-            query += " ORDER BY timestamp DESC"
+            query += " ORDER BY timestamp ASC, id ASC"
 
             if limit is not None:
                 query += " LIMIT ?"
@@ -163,7 +167,7 @@ class LogsDatabaseHelper:
                     "logStreamName": row[1],
                     "timestamp": row[2],
                     "message": row[3],
-                    "id": f"{row[0]}",  # Simple eventId for now
+                    "id": f"{row[0]}",
                 }
                 for row in rows
             ]
