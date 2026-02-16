@@ -277,7 +277,11 @@ def apply_patches():
 
     @patch(ec2_responses.fleets.Fleets.create_fleet)
     def ec2_create_fleet_response(fn, self: ec2_responses.fleets.Fleets):
-        """Patch create_fleet response to include LaunchTemplateAndOverrides"""
+        """Patch create_fleet response to include LaunchTemplateAndOverrides and handle DryRun"""
+
+        # Check for DryRun before executing the operation
+        # This prevents creating actual resources when DryRun=True
+        self.error_on_dryrun()
 
         # Call the original create_fleet method
         result = fn(self)
