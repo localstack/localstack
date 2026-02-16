@@ -218,7 +218,7 @@ class LambdaService:
             ),
         )
 
-        self.task_executor.submit(_cleanup, function, qualifier)
+        self.task_executor.submit(_cleanup)
 
     def delete_function_async(self, store: LambdaStore, function_name: str):
         """
@@ -231,7 +231,20 @@ class LambdaService:
             time.sleep(0.5)
             store.functions.pop(function_name)
 
-        self.task_executor.submit(_cleanup, store, function_name)
+        # set each version of the function to deleting state first, to allow for getting the function version details after deletion
+        function = store.functions.get(function_name)
+        if function:
+            for version in function.versions.values():
+                new_state = VersionState(state=State.Deleting)
+                new_last_status = UpdateStatus(status=LastUpdateStatus.InProgress)
+                function.versions[version.id.qualifier] = dataclasses.replace(
+                    version,
+                    config=dataclasses.replace(
+                        version.config, state=new_state, last_update=new_last_status
+                    ),
+                )
+
+        self.task_executor.submit(_cleanup)
 
     def publish_version(self, function_version: FunctionVersion):
         """
