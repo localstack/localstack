@@ -1279,6 +1279,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             else:
                 queue.attributes[k] = v
 
+        # Reconcile SSE attributes (KmsMasterKeyId and SqsManagedSseEnabled are mutually exclusive)
+        if QueueAttributeName.KmsMasterKeyId in attributes:
+            queue._reconcile_sse_attributes()
+
         # Special cases
         if queue.attributes.get(QueueAttributeName.Policy) == "":
             del queue.attributes[QueueAttributeName.Policy]
