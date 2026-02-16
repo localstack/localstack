@@ -91,5 +91,20 @@
         }
       }
     }
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_put_parameter_event_operation": {
+    "recorded-date": "16-02-2026, 12:00:00",
+    "recorded-content": {
+      "create-event": {
+        "name": "<name:1>",
+        "type": "String",
+        "operation": "Create"
+      },
+      "update-event": {
+        "name": "<name:1>",
+        "type": "String",
+        "operation": "Update"
+      }
+    }
   }
 }
