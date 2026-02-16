@@ -189,7 +189,3 @@ class TestListPoliciesScope:
 
         # Detach remaining policy
         aws_client.iam.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn_ct)
-
-
-class TestAttachAwsManagedPolicyToGroup:
-    """Tests for attaching/detaching AWS-managed policies to/from groups."""
