@@ -24,9 +24,9 @@
 /bin/release-helper.sh @thrau @alexrashed
 
 # Python project, packaging, and dependencies
-/pyproject.toml @alexrashed @silv-io @k-a-il @bentsku @sannya-singal
-/requirements-*.txt @alexrashed @silv-io @k-a-il @bentsku @sannya-singal
-/.pre-commit-config.yaml @alexrashed @silv-io @k-a-il @bentsku @sannya-singal
+/pyproject.toml @alexrashed @silv-io @k-a-il @bentsku @aidehn
+/requirements-*.txt @alexrashed @silv-io @k-a-il @bentsku @aidehn
+/.pre-commit-config.yaml @alexrashed @silv-io @k-a-il @bentsku @aidehn
 
 # ASF
 /localstack-core/localstack/aws/ @thrau
@@ -144,10 +144,10 @@
 /tests/aws/services/es/ @alexrashed @silv-io
 
 # events
-/localstack-core/localstack/aws/api/events/ @maxhoheiser @bentsku
-/localstack-core/localstack/services/events/ @maxhoheiser @bentsku
-/tests/aws/services/events/ @maxhoheiser @bentsku
-/tests/unit/services/events/ @maxhoheiser @bentsku
+/localstack-core/localstack/aws/api/events/ @bentsku
+/localstack-core/localstack/services/events/ @bentsku
+/tests/aws/services/events/ @bentsku
+/tests/unit/services/events/ @bentsku
 
 # firehose
 /localstack-core/localstack/aws/api/firehose/ @pinzon
@@ -197,9 +197,9 @@
 /tests/aws/services/route53/ @giograno
 
 # route53resolver
-/localstack-core/localstack/aws/api/route53resolver/ @macnev2013 @sannya-singal
-/localstack-core/localstack/services/route53resolver/ @macnev2013 @sannya-singal
-/tests/aws/services/route53resolver/ @macnev2013 @sannya-singal
+/localstack-core/localstack/aws/api/route53resolver/ @macnev2013
+/localstack-core/localstack/services/route53resolver/ @macnev2013
+/tests/aws/services/route53resolver/ @macnev2013
 
 # s3
 /localstack-core/localstack/aws/api/s3/ @bentsku @k-a-il @aidehn
