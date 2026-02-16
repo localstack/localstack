@@ -1,18 +1,51 @@
 {
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_list_virtual_mfa_devices": {
-    "recorded-date": "13-02-2026, 15:38:35",
+    "recorded-date": "16-02-2026, 19:15:32",
     "recorded-content": {
+      "create-virtual-mfa-device-0": {
+        "VirtualMFADevice": {
+          "Base32StringSeed": "<base32-seed>",
+          "QRCodePNG": "<qr-code-png>",
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name-0>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-virtual-mfa-device-1": {
+        "VirtualMFADevice": {
+          "Base32StringSeed": "<base32-seed>",
+          "QRCodePNG": "<qr-code-png>",
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name-1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-virtual-mfa-device-2": {
+        "VirtualMFADevice": {
+          "Base32StringSeed": "<base32-seed>",
+          "QRCodePNG": "<qr-code-png>",
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name-2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "list-unassigned": {
         "IsTruncated": false,
         "VirtualMFADevices": [
           {
-            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name-0>"
           },
           {
-            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name-1>"
           },
           {
-            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name-2>"
           }
         ],
         "ResponseMetadata": {
@@ -32,13 +65,13 @@
         "IsTruncated": false,
         "VirtualMFADevices": [
           {
-            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name-0>"
           },
           {
-            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name-1>"
           },
           {
-            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name-2>"
           }
         ],
         "ResponseMetadata": {
@@ -60,7 +93,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[None]": {
-    "recorded-date": "13-02-2026, 15:35:32",
+    "recorded-date": "16-02-2026, 19:09:45",
     "recorded-content": {
       "create-mfa-device": {
         "VirtualMFADevice": {
@@ -94,13 +127,13 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/]": {
-    "recorded-date": "13-02-2026, 15:35:33",
+    "recorded-date": "16-02-2026, 19:09:45",
     "recorded-content": {
       "create-mfa-device": {
         "VirtualMFADevice": {
           "Base32StringSeed": "<base32-seed>",
           "QRCodePNG": "<qr-code-png>",
-          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<path>/<mfa-device-name>"
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -111,7 +144,7 @@
         "IsTruncated": false,
         "VirtualMFADevices": [
           {
-            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<path>/<mfa-device-name>"
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
           }
         ],
         "ResponseMetadata": {
@@ -128,13 +161,13 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/test-path/]": {
-    "recorded-date": "13-02-2026, 15:35:33",
+    "recorded-date": "16-02-2026, 19:09:46",
     "recorded-content": {
       "create-mfa-device": {
         "VirtualMFADevice": {
           "Base32StringSeed": "<base32-seed>",
           "QRCodePNG": "<qr-code-png>",
-          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<path>/<mfa-device-name>"
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/test-path/<mfa-device-name>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -145,7 +178,7 @@
         "IsTruncated": false,
         "VirtualMFADevices": [
           {
-            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<path>/<mfa-device-name>"
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/test-path/<mfa-device-name>"
           }
         ],
         "ResponseMetadata": {
@@ -266,6 +299,40 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/test//double/]": {
+    "recorded-date": "16-02-2026, 19:09:47",
+    "recorded-content": {
+      "create-mfa-device": {
+        "VirtualMFADevice": {
+          "Base32StringSeed": "<base32-seed>",
+          "QRCodePNG": "<qr-code-png>",
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/test//double/<mfa-device-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-mfa-devices": {
+        "IsTruncated": false,
+        "VirtualMFADevices": [
+          {
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/test//double/<mfa-device-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-mfa-device": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

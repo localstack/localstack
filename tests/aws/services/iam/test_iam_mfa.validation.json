@@ -9,12 +9,12 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_list_virtual_mfa_devices": {
-    "last_validated_date": "2026-02-13T15:39:46+00:00",
+    "last_validated_date": "2026-02-16T19:17:21+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 1.55,
-      "teardown": 1.51,
-      "total": 3.06
+      "setup": 0.72,
+      "call": 1.78,
+      "teardown": 1.48,
+      "total": 3.98
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_errors": {
@@ -27,30 +27,39 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/]": {
-    "last_validated_date": "2026-02-13T15:39:40+00:00",
+    "last_validated_date": "2026-02-16T19:09:45+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.72,
+      "setup": 0.01,
+      "call": 0.7,
       "teardown": 0.0,
-      "total": 0.72
+      "total": 0.71
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/test-path/]": {
-    "last_validated_date": "2026-02-13T15:39:41+00:00",
+    "last_validated_date": "2026-02-16T19:09:46+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.75,
+      "call": 0.67,
       "teardown": 0.0,
-      "total": 0.75
+      "total": 0.67
+    }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/test//double/]": {
+    "last_validated_date": "2026-02-16T19:09:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.67,
+      "teardown": 0.0,
+      "total": 0.67
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[None]": {
-    "last_validated_date": "2026-02-13T15:39:39+00:00",
+    "last_validated_date": "2026-02-16T19:09:45+00:00",
     "durations_in_seconds": {
-      "setup": 0.65,
-      "call": 1.12,
+      "setup": 0.72,
+      "call": 1.11,
       "teardown": 0.0,
-      "total": 1.77
+      "total": 1.83
     }
   }
 }

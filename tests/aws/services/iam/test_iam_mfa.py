@@ -16,7 +16,7 @@ from localstack.utils.strings import short_uid
 LOG = logging.getLogger(__name__)
 
 # TODO remove after new IAM implementation of MFA devices
-pytestmark = pytest.mark.skip
+# pytestmark = pytest.mark.skip
 
 
 @pytest.fixture(autouse=True)
@@ -83,15 +83,13 @@ class TestVirtualMfaDevice:
     """Tests for virtual MFA device CRUD operations."""
 
     @markers.aws.validated
-    @pytest.mark.parametrize("path", [None, "/", "/test-path/"])
+    @pytest.mark.parametrize("path", [None, "/", "/test-path/", "/test//double/"])
     def test_virtual_mfa_device_lifecycle(
         self, aws_client, snapshot, create_virtual_mfa_device, account_id, partition, path
     ):
         """Test create, list, and delete virtual MFA device operations."""
         device_name = f"mfa-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(device_name, "<mfa-device-name>"))
-        if path:
-            snapshot.add_transformer(snapshot.transform.regex(path, "/<path>/"))
 
         # Create virtual MFA device
         kwargs = {}
@@ -116,10 +114,9 @@ class TestVirtualMfaDevice:
 
         # Verify device is no longer in list
         list_after_delete = aws_client.iam.list_virtual_mfa_devices()
-        device_exists = any(
-            d["SerialNumber"] == serial_number for d in list_after_delete["VirtualMFADevices"]
-        )
-        assert not device_exists, "Device should not exist after deletion"
+        assert serial_number not in [
+            d["SerialNumber"] for d in list_after_delete["VirtualMFADevices"]
+        ], "Device should not exist after deletion"
 
     @markers.aws.validated
     def test_virtual_mfa_device_errors(
@@ -174,13 +171,14 @@ class TestVirtualMfaDevice:
             SortingTransformer("VirtualMFADevices", lambda x: x["SerialNumber"])
         )
         # Create multiple MFA devices - use same prefix for consistent replacement
-        device_names = [f"mfa-list-{short_uid()}" for _ in range(3)]
+        device_names = [f"mfa-list-{idx}-{short_uid()}" for idx in range(3)]
         # Use regex to replace all device names with a generic placeholder
-        for name in device_names:
-            snapshot.add_transformer(snapshot.transform.regex(name, "<mfa-device-name>"))
+        for idx, name in enumerate(device_names):
+            snapshot.add_transformer(snapshot.transform.regex(name, f"<mfa-device-name-{idx}>"))
         serial_numbers = []
-        for name in device_names:
+        for idx, name in enumerate(device_names):
             response = create_virtual_mfa_device(device_name=name)
+            snapshot.match(f"create-virtual-mfa-device-{idx}", response)
             serial_numbers.append(response["VirtualMFADevice"]["SerialNumber"])
 
         # List all unassigned devices (our devices should appear)
@@ -208,14 +206,14 @@ class TestVirtualMfaDevice:
         list_paginated = aws_client.iam.list_virtual_mfa_devices(MaxItems=1)
         # Just verify structure, not content (other tests may have created devices)
         assert "VirtualMFADevices" in list_paginated
-        assert len(list_paginated["VirtualMFADevices"]) <= 1
+        assert len(list_paginated["VirtualMFADevices"]) == 1
+        assert list_paginated["IsTruncated"]
 
         # If there's a marker, use it for the next page
-        if list_paginated.get("IsTruncated") and list_paginated.get("Marker"):
-            list_next_page = aws_client.iam.list_virtual_mfa_devices(
-                Marker=list_paginated["Marker"], MaxItems=1
-            )
-            assert "VirtualMFADevices" in list_next_page
+        list_next_page = aws_client.iam.list_virtual_mfa_devices(
+            Marker=list_paginated["Marker"], MaxItems=1
+        )
+        assert "VirtualMFADevices" in list_next_page
 
         # Test invalid marker
         with pytest.raises(ClientError) as exc:
@@ -249,6 +247,7 @@ class TestVirtualMfaDevice:
         # List MFA devices for user (should be empty)
         list_mfa_before = aws_client.iam.list_mfa_devices(UserName=user_name)
         snapshot.match("list-mfa-devices-before", list_mfa_before)
+        # TODO use pyotp library to allow snapshot validation
 
         # Enable MFA device for user
         # Note: LocalStack accepts any 6-digit codes; AWS requires valid TOTP codes
@@ -273,10 +272,9 @@ class TestVirtualMfaDevice:
 
         # Verify unassigned list no longer has our device
         list_unassigned = aws_client.iam.list_virtual_mfa_devices(AssignmentStatus="Unassigned")
-        device_in_unassigned = any(
-            d["SerialNumber"] == serial_number for d in list_unassigned["VirtualMFADevices"]
-        )
-        assert not device_in_unassigned, "Assigned device should not appear in unassigned list"
+        assert serial_number not in [
+            d["SerialNumber"] for d in list_unassigned["VirtualMFADevices"]
+        ], "Assigned device should not appear in unassigned list"
 
         # Deactivate MFA device
         deactivate_response = aws_client.iam.deactivate_mfa_device(
@@ -287,6 +285,18 @@ class TestVirtualMfaDevice:
         # Verify MFA device is now unassigned
         list_mfa_after_deactivate = aws_client.iam.list_mfa_devices(UserName=user_name)
         snapshot.match("list-mfa-devices-after-deactivate", list_mfa_after_deactivate)
+
+        list_assigned = aws_client.iam.list_virtual_mfa_devices(AssignmentStatus="Assigned")
+        assert serial_number not in [
+            d["SerialNumber"] for d in list_assigned["VirtualMFADevices"]
+        ], "Unassigned device should not appear in assigned list"
+
+        # Verify unassigned list no longer has our device
+        list_unassigned = aws_client.iam.list_virtual_mfa_devices(AssignmentStatus="Unassigned")
+        list_unassigned["VirtualMFADevices"] = [
+            d for d in list_assigned["VirtualMFADevices"] if d["SerialNumber"] == serial_number
+        ]
+        snapshot.match("list-unassigned-after-deactivation", list_assigned)
 
     @markers.aws.validated
     def test_enable_mfa_device_errors(
@@ -326,3 +336,5 @@ class TestVirtualMfaDevice:
                 UserName=user_name, SerialNumber=nonexistent_serial
             )
         snapshot.match("deactivate-nonexistent-mfa-error", exc.value.response)
+
+    # TODO test "physical token MFA"
