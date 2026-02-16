@@ -237,11 +237,20 @@ class LambdaService:
             for version in function.versions.values():
                 new_state = VersionState(state=State.Deleting)
                 new_last_status = UpdateStatus(status=LastUpdateStatus.InProgress)
+                previous_revision_id = version.config.revision_id
+
                 function.versions[version.id.qualifier] = dataclasses.replace(
                     version,
                     config=dataclasses.replace(
                         version.config, state=new_state, last_update=new_last_status
                     ),
+                )
+                # Seems the revision id doesn't change when deleting a function right after it has been created (even though state has changed)
+                # reassign revision id to avoid dataclass replace removing it, since it's init=False
+                object.__setattr__(
+                    function.versions[version.id.qualifier].config,
+                    "revision_id",
+                    previous_revision_id,
                 )
 
         self.task_executor.submit(_cleanup)
