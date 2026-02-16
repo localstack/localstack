@@ -133,6 +133,8 @@ class ComparisonOperator(StrEnum):
 
 class EvaluationState(StrEnum):
     PARTIAL_DATA = "PARTIAL_DATA"
+    EVALUATION_FAILURE = "EVALUATION_FAILURE"
+    EVALUATION_ERROR = "EVALUATION_ERROR"
 
 
 class HistoryItemType(StrEnum):
