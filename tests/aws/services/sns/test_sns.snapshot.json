@@ -7489,5 +7489,33 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_tags_removed_after_deletion": {
+    "recorded-date": "16-02-2026, 05:26:44",
+    "recorded-content": {
+      "list-created-tags": {
+        "Tags": [
+          {
+            "Key": "k1",
+            "Value": "v1"
+          },
+          {
+            "Key": "k2",
+            "Value": "v2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-empty-tags": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
