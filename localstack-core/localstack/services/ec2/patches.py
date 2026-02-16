@@ -1,6 +1,7 @@
 import logging
 
 from moto.ec2 import models as ec2_models
+from moto.ec2 import responses as ec2_responses
 from moto.ec2.models.vpcs import VPCEndPoint
 from moto.utilities.id_generator import Tags
 
@@ -273,3 +274,74 @@ def apply_patches():
                 )
 
         return result
+
+    @patch(ec2_responses.fleets.Fleets.create_fleet)
+    def ec2_create_fleet_response(fn, self: ec2_responses.fleets.Fleets):
+        """Patch create_fleet response to include LaunchTemplateAndOverrides"""
+
+        # Call the original create_fleet method
+        result = fn(self)
+
+        # Get the ActionResult and extract the result dict
+        action_result = result
+        result_dict = action_result.result if hasattr(action_result, "result") else action_result
+
+        # Only modify instant fleet responses that have instances
+        if "Instances" in result_dict:
+            fleet_id = result_dict.get("FleetId")
+            if fleet_id:
+                # Get the fleet from backend
+                fleet = self.ec2_backend.get_fleet(fleet_id)
+                if fleet and fleet.fleet_type == "instant":
+                    # Get launch template configs from the request
+                    launch_template_configs = self._get_param("LaunchTemplateConfigs", [])
+
+                    # Build a list of all launch template configs with their overrides
+                    config_entries = []
+                    for config in launch_template_configs:
+                        lt_spec = config.get("LaunchTemplateSpecification", {})
+                        overrides_list = config.get("Overrides", [])
+
+                        # If no overrides, create a default empty override
+                        if not overrides_list:
+                            overrides_list = [{}]
+
+                        for override in overrides_list:
+                            config_entries.append(
+                                {"LaunchTemplateSpecification": lt_spec, "Overrides": override}
+                            )
+
+                    # Update instances with LaunchTemplateAndOverrides
+                    updated_instances = []
+                    for idx, instance_group in enumerate(result_dict["Instances"]):
+                        instance_type = instance_group.get("InstanceType")
+
+                        # Try to match instance type with override
+                        matched_config = None
+                        for entry in config_entries:
+                            override_instance_type = entry["Overrides"].get("InstanceType")
+                            if override_instance_type and instance_type == override_instance_type:
+                                matched_config = entry
+                                break
+
+                        # If no match by instance type, use first config or the config at the same index
+                        if not matched_config:
+                            if idx < len(config_entries):
+                                matched_config = config_entries[idx]
+                            elif config_entries:
+                                matched_config = config_entries[0]
+
+                        if matched_config:
+                            # Add LaunchTemplateAndOverrides to the instance group
+                            instance_group["LaunchTemplateAndOverrides"] = {
+                                "LaunchTemplateSpecification": matched_config[
+                                    "LaunchTemplateSpecification"
+                                ],
+                                "Overrides": matched_config["Overrides"],
+                            }
+
+                        updated_instances.append(instance_group)
+
+                    result_dict["Instances"] = updated_instances
+
+        return action_result
