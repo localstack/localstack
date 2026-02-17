@@ -1,9 +1,3 @@
-"""
-Tests for IAM Virtual MFA Device operations.
-
-Migrated from moto's test suite to LocalStack with snapshot testing for AWS parity validation.
-"""
-
 import logging
 from datetime import datetime
 

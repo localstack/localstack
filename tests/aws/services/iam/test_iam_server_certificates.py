@@ -1,9 +1,3 @@
-"""
-Tests for IAM Server Certificate operations.
-
-Migrated from moto's test suite to LocalStack with snapshot testing for AWS parity validation.
-"""
-
 import datetime
 import logging
 

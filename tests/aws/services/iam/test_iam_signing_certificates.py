@@ -1,9 +1,3 @@
-"""
-Tests for IAM Signing Certificate operations.
-
-Migrated from moto's test suite to LocalStack with snapshot testing for AWS parity validation.
-"""
-
 import logging
 from datetime import UTC, datetime, timedelta
 
