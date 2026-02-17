@@ -1,0 +1,19 @@
+{
+  "tests/aws/services/iam/test_iam_account_aliases.py::TestIAMAccountAliases::test_account_alias_lifecycle": {
+    "recorded-date": "13-02-2026, 18:04:41",
+    "recorded-content": {
+      "create-alias": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-alias": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
