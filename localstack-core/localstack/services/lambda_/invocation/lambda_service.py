@@ -503,6 +503,9 @@ class LambdaService:
 
         :param new_version: New version (with the same qualifier as an older one)
         """
+        if new_version.config.capacity_provider_config:
+            time.sleep(0.5)
+
         if (
             new_version.qualified_arn not in self.lambda_running_versions
             and not new_version.config.capacity_provider_config
