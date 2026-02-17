@@ -233,7 +233,6 @@ class TestVirtualMfaDevice:
         """
         # Create a user
         user_name = f"user-{short_uid()}"
-        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
 
         # Create a virtual MFA device
         device_name = f"mfa-{short_uid()}"
@@ -313,7 +312,6 @@ class TestVirtualMfaDevice:
         # Create a virtual MFA device for error testing
         device_name = f"mfa-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(device_name, "<mfa-device-name>"))
-        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
         create_device_response = create_virtual_mfa_device(device_name=device_name)
         serial_number = create_device_response["VirtualMFADevice"]["SerialNumber"]
 
@@ -344,4 +342,24 @@ class TestVirtualMfaDevice:
             )
         snapshot.match("deactivate-nonexistent-mfa-error", exc.value.response)
 
-    # TODO test "physical token MFA"
+    @markers.aws.only_localstack
+    def test_physical_token_mfa(self, aws_client, create_user):
+        """Test activating a physical token MFA. This should always succeed, but we cannot do anything with that token. Lacking a token, we also cannot validate that test."""
+        user_name = f"user-{short_uid()}"
+        create_user(UserName=user_name)
+        serial_number = "GAHT12345678"
+
+        aws_client.iam.enable_mfa_device(
+            UserName=user_name,
+            SerialNumber=serial_number,
+            AuthenticationCode1="123456",
+            AuthenticationCode2="654321",
+        )
+
+        response = aws_client.iam.list_mfa_devices(UserName=user_name)
+        device = response["MFADevices"][0]
+        assert device["SerialNumber"] == serial_number
+
+        aws_client.iam.deactivate_mfa_device(UserName=user_name, SerialNumber=serial_number)
+        response = aws_client.iam.list_mfa_devices(UserName=user_name)
+        assert not response["MFADevices"]
