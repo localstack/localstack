@@ -1,15 +1,3 @@
-"""
-Tests for IAM Credential Report operations.
-
-Migrated from moto: tests/test_iam/test_iam.py
-- test_generate_credential_report()
-- test_get_credential_report()
-- test_get_credential_report_content()
-
-Note: Credential reports can only be generated once every 4 hours in AWS.
-These tests use a class-scoped fixture to generate the report once and share it.
-"""
-
 import csv
 import io
 import logging

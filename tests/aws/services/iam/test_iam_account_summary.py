@@ -1,10 +1,3 @@
-"""
-Tests for IAM GetAccountSummary operation.
-
-Migrated from moto: tests/test_iam/test_iam.py
-- test_get_account_summary()
-"""
-
 import datetime
 import json
 import logging
@@ -12,9 +5,9 @@ import logging
 import pyotp
 import pytest
 
-from aws.services.iam.test_iam_server_certificates import root_certificate_as_string
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from tests.aws.services.iam.test_iam_server_certificates import root_certificate_as_string
 
 LOG = logging.getLogger(__name__)
 

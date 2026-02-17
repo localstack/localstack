@@ -1,10 +1,3 @@
-"""
-Tests for IAM GetAccountAuthorizationDetails operation.
-
-Migrated from moto: tests/test_iam/test_iam.py
-- test_get_account_authorization_details()
-"""
-
 import json
 import logging
 
