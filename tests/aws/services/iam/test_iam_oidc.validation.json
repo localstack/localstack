@@ -1,0 +1,146 @@
+{
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreate::test_create_open_id_connect_provider": {
+    "last_validated_date": "2026-02-17T19:15:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.63,
+      "teardown": 0.42,
+      "total": 1.42
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_duplicate_error": {
+    "last_validated_date": "2026-02-17T19:16:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.48,
+      "teardown": 0.14,
+      "total": 0.62
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_invalid_url[example.org]": {
+    "last_validated_date": "2026-02-17T19:16:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.35,
+      "teardown": 0.0,
+      "total": 0.72
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_invalid_url[example]": {
+    "last_validated_date": "2026-02-17T19:16:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.33,
+      "teardown": 0.0,
+      "total": 0.33
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_quota_error": {
+    "last_validated_date": "2026-02-17T19:16:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.37,
+      "teardown": 0.0,
+      "total": 0.37
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_too_many_thumbprints": {
+    "last_validated_date": "2026-02-17T19:16:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.1,
+      "teardown": 0.0,
+      "total": 0.1
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_validation_errors": {
+    "last_validated_date": "2026-02-17T19:16:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.08,
+      "teardown": 0.0,
+      "total": 0.08
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderList::test_list_open_id_connect_providers": {
+    "last_validated_date": "2026-02-17T19:22:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.38,
+      "call": 0.77,
+      "teardown": 0.4,
+      "total": 1.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_delete_open_id_connect_provider": {
+    "last_validated_date": "2026-02-17T19:17:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.32,
+      "teardown": 0.0,
+      "total": 0.32
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_get_open_id_connect_provider": {
+    "last_validated_date": "2026-02-17T19:17:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.36,
+      "call": 0.49,
+      "teardown": 0.13,
+      "total": 0.98
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_get_open_id_connect_provider_not_found": {
+    "last_validated_date": "2026-02-17T19:17:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.09,
+      "teardown": 0.0,
+      "total": 0.09
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_update_open_id_connect_provider_thumbprint": {
+    "last_validated_date": "2026-02-17T19:36:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.41,
+      "call": 0.61,
+      "teardown": 0.13,
+      "total": 1.15
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_list_open_id_connect_provider_tags": {
+    "last_validated_date": "2026-02-17T19:34:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.24,
+      "teardown": 0.13,
+      "total": 0.37
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_list_open_id_connect_provider_tags_max_items": {
+    "last_validated_date": "2026-02-17T19:34:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.46,
+      "teardown": 0.13,
+      "total": 0.59
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_tag_open_id_connect_provider": {
+    "last_validated_date": "2026-02-17T19:34:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.38,
+      "call": 0.6,
+      "teardown": 0.15,
+      "total": 1.13
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_untag_open_id_connect_provider": {
+    "last_validated_date": "2026-02-17T19:34:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.43,
+      "teardown": 0.13,
+      "total": 0.56
+    }
+  }
+}
