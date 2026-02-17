@@ -18,7 +18,7 @@ from botocore.credentials import Credentials, ReadOnlyCredentials
 from botocore.exceptions import NoCredentialsError
 from botocore.model import ServiceModel
 from botocore.utils import percent_encode_sequence
-from werkzeug.datastructures import ImmutableMultiDict
+from werkzeug.datastructures import Headers, ImmutableMultiDict
 
 from localstack import config, constants
 from localstack.aws.accounts import get_account_id_from_access_key_id
@@ -193,6 +193,8 @@ class S3PreSignedURLRequestHandler:
             return
         try:
             if not is_presigned_url_request(context):
+                # validate headers
+                _validate_streaming_headers(context.request.headers)
                 return
             # will raise exceptions if the url is not valid, except if S3_SKIP_SIGNATURE_VALIDATION is True
             # will still try to validate it and log if there's an error
@@ -206,6 +208,7 @@ class S3PreSignedURLRequestHandler:
             elif is_valid_sig_v4(query_arg_set):
                 validate_presigned_url_s3v4(context)
 
+            _validate_streaming_headers(context.request.headers)
             LOG.debug("Valid presign url.")
             # TODO: set the Authorization with the data from the pre-signed query string
 
@@ -729,6 +732,22 @@ class S3SigV4SignatureContext:
 def add_headers_to_original_request(context: RequestContext, headers: Mapping[str, str]):
     for header, value in headers.items():
         context.request.headers.add(header, value)
+
+
+def _validate_streaming_headers(headers: Headers) -> None:
+    """
+    The headers can contain values that do not have the right type, and should be validated.
+    Validate them before it get passed
+    :param headers: request headers
+    """
+    if headers.get("x-amz-content-sha256", None) == "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
+        content_length = headers.get("x-amz-decoded-content-length")
+        if not content_length:
+            raise SignatureDoesNotMatch('"X-Amz-Decoded-Content-Length" header is missing')
+        try:
+            int(content_length)
+        except ValueError:
+            raise SignatureDoesNotMatch('Wrong "X-Amz-Decoded-Content-Length" header')
 
 
 def validate_post_policy(
