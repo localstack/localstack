@@ -1,9 +1,3 @@
-"""
-Tests for IAM SSH Public Key operations.
-
-Migrated from moto tests: moto-repo/tests/test_iam/test_iam.py
-"""
-
 import pytest
 from botocore.exceptions import ClientError
 from cryptography.hazmat.backends import default_backend
