@@ -18,9 +18,9 @@ from botocore.credentials import Credentials, ReadOnlyCredentials
 from botocore.exceptions import NoCredentialsError
 from botocore.model import ServiceModel
 from botocore.utils import percent_encode_sequence
-from werkzeug.datastructures import Headers, ImmutableMultiDict
+from werkzeug.datastructures import ImmutableMultiDict
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.accounts import get_account_id_from_access_key_id
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.s3 import (
@@ -35,6 +35,7 @@ from localstack.aws.api.s3 import (
 from localstack.aws.chain import HandlerChain
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.aws.spec import get_service_catalog
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.http import Request, Response
 from localstack.http.request import get_raw_path
 from localstack.services.s3.constants import (
@@ -52,6 +53,7 @@ from localstack.services.s3.utils import (
     uses_host_addressing,
 )
 from localstack.utils.aws.arns import get_partition
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
@@ -191,8 +193,6 @@ class S3PreSignedURLRequestHandler:
             return
         try:
             if not is_presigned_url_request(context):
-                # validate headers, as some can raise ValueError in Moto
-                _validate_headers_for_moto(context.request.headers)
                 return
             # will raise exceptions if the url is not valid, except if S3_SKIP_SIGNATURE_VALIDATION is True
             # will still try to validate it and log if there's an error
@@ -206,7 +206,6 @@ class S3PreSignedURLRequestHandler:
             elif is_valid_sig_v4(query_arg_set):
                 validate_presigned_url_s3v4(context)
 
-            _validate_headers_for_moto(context.request.headers)
             LOG.debug("Valid presign url.")
             # TODO: set the Authorization with the data from the pre-signed query string
 
@@ -245,7 +244,10 @@ def get_credentials_from_parameters(parameters: dict, region: str) -> PreSignedC
         # fallback to the hardcoded value
         access_key_id = DEFAULT_PRE_SIGNED_ACCESS_KEY_ID
 
-    if not (secret_access_key := get_secret_access_key_from_access_key_id(access_key_id, region)):
+    if access_key_id in (constants.INTERNAL_AWS_ACCESS_KEY_ID, config.INTERNAL_RESOURCE_ACCOUNT):
+        secret_access_key = constants.INTERNAL_AWS_SECRET_ACCESS_KEY
+
+    elif not (secret_access_key := get_secret_access_key_from_access_key_id(access_key_id, region)):
         # if we could not retrieve the secret access key, it means the access key was not registered in LocalStack,
         # fallback to hardcoded necessary secret access key
         secret_access_key = DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
@@ -373,6 +375,14 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
                 access_key_id=credentials.access_key_id,
             )
             raise ex
+
+    # we need to add a new Authorization header to the request so that the request has the right account id
+    if not headers.get("Authorization"):
+        headers["Authorization"] = mock_aws_request_headers(
+            "s3",
+            aws_access_key_id=credentials.access_key_id,
+            region_name=AWS_REGION_US_EAST_1,
+        )["Authorization"]
 
     add_headers_to_original_request(context, headers)
 
@@ -719,25 +729,6 @@ class S3SigV4SignatureContext:
 def add_headers_to_original_request(context: RequestContext, headers: Mapping[str, str]):
     for header, value in headers.items():
         context.request.headers.add(header, value)
-
-
-def _validate_headers_for_moto(headers: Headers) -> None:
-    """
-    The headers can contain values that do not have the right type, and it will throw Exception when passed to Moto
-    Validate them before it get passed
-    :param headers: request headers
-    """
-    if headers.get("x-amz-content-sha256", None) == "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
-        # this is sign that this is a SigV4 request, with payload encoded
-        # we do not support payload encoding yet
-        # moto parses it to an int, it would raise a 500
-        content_length = headers.get("x-amz-decoded-content-length")
-        if not content_length:
-            raise SignatureDoesNotMatch('"X-Amz-Decoded-Content-Length" header is missing')
-        try:
-            int(content_length)
-        except ValueError:
-            raise SignatureDoesNotMatch('Wrong "X-Amz-Decoded-Content-Length" header')
 
 
 def validate_post_policy(
