@@ -382,7 +382,6 @@ class TransformerUtility:
             TransformerUtility.key_value("InstanceProfileName"),
             TransformerUtility.key_value("InstanceProfileId"),
             TransformerUtility.key_value("Marker"),
-            TransformerUtility.key_value("AccessKeyId"),
         ]
 
     @staticmethod
