@@ -1,0 +1,67 @@
+{
+  "tests/aws/services/iam/test_iam_account_summary.py::TestGetAccountSummary::test_get_account_summary_format": {
+    "recorded-date": "17-02-2026, 15:55:08",
+    "recorded-content": {
+      "transformed-summary": {
+        "SummaryMap": {
+          "AccessKeysPerUserQuota": 2,
+          "AccountAccessKeysPresent": 0,
+          "AccountMFAEnabled": 0,
+          "AccountPasswordPresent": "account-password-present",
+          "AccountSigningCertificatesPresent": 0,
+          "AssumeRolePolicySizeQuota": 2048,
+          "AttachedPoliciesPerGroupQuota": 10,
+          "AttachedPoliciesPerRoleQuota": 10,
+          "AttachedPoliciesPerUserQuota": 10,
+          "GlobalEndpointTokenVersion": 1,
+          "GroupPolicySizeQuota": 5120,
+          "Groups": "groups",
+          "GroupsPerUserQuota": 10,
+          "GroupsQuota": 300,
+          "InstanceProfiles": "instance-profiles",
+          "InstanceProfilesQuota": 1000,
+          "MFADevices": "m-f-a-devices",
+          "MFADevicesInUse": "m-f-a-devices-in-use",
+          "Policies": "policies",
+          "PoliciesQuota": 1500,
+          "PolicySizeQuota": 6144,
+          "PolicyVersionsInUse": "policy-versions-in-use",
+          "PolicyVersionsInUseQuota": 10000,
+          "Providers": "providers",
+          "RolePolicySizeQuota": 10240,
+          "Roles": "roles",
+          "RolesQuota": 1000,
+          "ServerCertificates": "server-certificates",
+          "ServerCertificatesQuota": 20,
+          "SigningCertificatesPerUserQuota": 2,
+          "UserPolicySizeQuota": 2048,
+          "Users": "users",
+          "UsersQuota": 5000,
+          "VersionsPerPolicyQuota": 5
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_account_summary.py::TestGetAccountSummary::test_get_account_summary_with_resources": {
+    "recorded-date": "17-02-2026, 15:55:14",
+    "recorded-content": {
+      "resource-deltas": {
+        "AccountPasswordPresent": 0,
+        "Groups": 1,
+        "InstanceProfiles": 1,
+        "MFADevices": 1,
+        "MFADevicesInUse": 1,
+        "Policies": 1,
+        "PolicyVersionsInUse": 1,
+        "Providers": 2,
+        "Roles": 1,
+        "ServerCertificates": 1,
+        "Users": 1
+      }
+    }
+  }
+}
