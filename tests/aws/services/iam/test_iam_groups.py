@@ -434,3 +434,33 @@ class TestIAMGroupsPolicies:
         with pytest.raises(ClientError) as ex:
             aws_client.iam.detach_group_policy(GroupName=group_name, PolicyArn=policy_arn)
         snapshot.match("detach-unattached-error", ex.value.response)
+
+    @markers.aws.validated
+    def test_attach_detach_aws_managed_policy_group(
+        self, aws_client, create_group, snapshot, partition
+    ):
+        """Attach and detach an AWS-managed policy to a group."""
+        group_name = f"group-{short_uid()}"
+        create_group(GroupName=group_name)
+
+        policy_arn = (
+            f"arn:{partition}:iam::aws:policy/service-role/AmazonElasticMapReduceforEC2Role"
+        )
+
+        # Verify empty attached list
+        response = aws_client.iam.list_attached_group_policies(GroupName=group_name)
+        snapshot.match("list-attached-empty", response)
+
+        # Attach policy
+        aws_client.iam.attach_group_policy(GroupName=group_name, PolicyArn=policy_arn)
+
+        # Verify attached
+        response = aws_client.iam.list_attached_group_policies(GroupName=group_name)
+        snapshot.match("list-attached-after-attach", response)
+
+        # Detach policy
+        aws_client.iam.detach_group_policy(GroupName=group_name, PolicyArn=policy_arn)
+
+        # Verify empty again
+        response = aws_client.iam.list_attached_group_policies(GroupName=group_name)
+        snapshot.match("list-attached-after-detach", response)

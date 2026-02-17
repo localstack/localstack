@@ -152,6 +152,15 @@
       "total": 0.12
     }
   },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_attach_detach_aws_managed_policy_group": {
+    "last_validated_date": "2026-02-13T14:51:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.68,
+      "call": 1.32,
+      "teardown": 0.54,
+      "total": 2.54
+    }
+  },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_attach_detach_group_policy": {
     "last_validated_date": "2026-02-12T21:59:37+00:00",
     "durations_in_seconds": {

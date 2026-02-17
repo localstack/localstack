@@ -666,6 +666,53 @@ class TestRoleManagedPolicies:
             aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=fake_policy_arn)
         snapshot.match("attach-nonexistent-policy-error", e.value.response)
 
+    @markers.aws.validated
+    def test_attach_detach_aws_managed_policy_role(
+        self, aws_client, create_role, snapshot, partition
+    ):
+        """Attach and detach AWS-managed policies to a role with error cases."""
+        role_name = f"role-{short_uid()}"
+        create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+        )
+
+        policy_arn_emr = f"arn:{partition}:iam::aws:policy/service-role/AmazonElasticMapReduceRole"
+        policy_arn_ct = (
+            f"arn:{partition}:iam::aws:policy/service-role/AWSControlTowerServiceRolePolicy"
+        )
+
+        # Attach two policies
+        aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn_emr)
+        aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn_ct)
+
+        # List attached policies
+        response = aws_client.iam.list_attached_role_policies(RoleName=role_name)
+        snapshot.match("list-attached-2", response)
+
+        # Detach one
+        aws_client.iam.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn_emr)
+
+        # List again
+        response = aws_client.iam.list_attached_role_policies(RoleName=role_name)
+        snapshot.match("list-attached-after-detach", response)
+
+        # Error: detach already-detached policy
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn_emr)
+        snapshot.match("detach-already-detached-error", e.value.response)
+
+        # Error: detach non-existent policy
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.detach_role_policy(
+                RoleName=role_name,
+                PolicyArn=f"arn:{partition}:iam::aws:policy/Nonexistent",
+            )
+        snapshot.match("detach-nonexistent-policy-error", e.value.response)
+
+        # Cleanup: detach remaining policy
+        aws_client.iam.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn_ct)
+
 
 class TestRoleTags:
     @markers.aws.validated
