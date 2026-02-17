@@ -1,74 +1,74 @@
 {
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_mfa_device_errors": {
-    "last_validated_date": "2026-02-13T15:39:48+00:00",
+    "last_validated_date": "2026-02-17T09:45:31+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.86,
-      "teardown": 0.95,
-      "total": 1.81
+      "call": 0.84,
+      "teardown": 1.09,
+      "total": 1.93
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_virtual_mfa_device": {
-    "last_validated_date": "2026-02-17T09:24:27+00:00",
+    "last_validated_date": "2026-02-17T09:45:29+00:00",
     "durations_in_seconds": {
-      "setup": 0.8,
-      "call": 2.49,
-      "teardown": 1.1,
-      "total": 4.39
+      "setup": 0.0,
+      "call": 2.11,
+      "teardown": 1.11,
+      "total": 3.22
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_list_virtual_mfa_devices": {
-    "last_validated_date": "2026-02-16T19:17:21+00:00",
+    "last_validated_date": "2026-02-17T09:45:26+00:00",
     "durations_in_seconds": {
-      "setup": 0.72,
-      "call": 1.78,
-      "teardown": 1.48,
-      "total": 3.98
+      "setup": 0.0,
+      "call": 1.64,
+      "teardown": 1.69,
+      "total": 3.33
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_errors": {
-    "last_validated_date": "2026-02-13T15:39:43+00:00",
+    "last_validated_date": "2026-02-17T09:45:23+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 2.05,
-      "teardown": 0.39,
-      "total": 2.44
+      "call": 2.25,
+      "teardown": 0.41,
+      "total": 2.66
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/]": {
-    "last_validated_date": "2026-02-16T19:09:45+00:00",
+    "last_validated_date": "2026-02-17T09:45:18+00:00",
     "durations_in_seconds": {
-      "setup": 0.01,
-      "call": 0.7,
-      "teardown": 0.0,
-      "total": 0.71
+      "setup": 0.0,
+      "call": 0.8,
+      "teardown": 0.34,
+      "total": 1.14
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/test-path/]": {
-    "last_validated_date": "2026-02-16T19:09:46+00:00",
+    "last_validated_date": "2026-02-17T09:45:19+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.67,
-      "teardown": 0.0,
-      "total": 0.67
+      "call": 0.83,
+      "teardown": 0.33,
+      "total": 1.16
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/test//double/]": {
-    "last_validated_date": "2026-02-16T19:09:47+00:00",
+    "last_validated_date": "2026-02-17T09:45:20+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.67,
-      "teardown": 0.0,
-      "total": 0.67
+      "call": 0.79,
+      "teardown": 0.33,
+      "total": 1.12
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[None]": {
-    "last_validated_date": "2026-02-16T19:09:45+00:00",
+    "last_validated_date": "2026-02-17T09:45:16+00:00",
     "durations_in_seconds": {
       "setup": 0.72,
-      "call": 1.11,
-      "teardown": 0.0,
-      "total": 1.83
+      "call": 1.27,
+      "teardown": 0.34,
+      "total": 2.33
     }
   }
 }

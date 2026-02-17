@@ -1,6 +1,6 @@
 {
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_list_virtual_mfa_devices": {
-    "recorded-date": "16-02-2026, 19:15:32",
+    "recorded-date": "17-02-2026, 09:44:52",
     "recorded-content": {
       "create-virtual-mfa-device-0": {
         "VirtualMFADevice": {
@@ -93,7 +93,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[None]": {
-    "recorded-date": "16-02-2026, 19:09:45",
+    "recorded-date": "17-02-2026, 09:44:42",
     "recorded-content": {
       "create-mfa-device": {
         "VirtualMFADevice": {
@@ -127,7 +127,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/]": {
-    "recorded-date": "16-02-2026, 19:09:45",
+    "recorded-date": "17-02-2026, 09:44:43",
     "recorded-content": {
       "create-mfa-device": {
         "VirtualMFADevice": {
@@ -161,7 +161,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/test-path/]": {
-    "recorded-date": "16-02-2026, 19:09:46",
+    "recorded-date": "17-02-2026, 09:44:44",
     "recorded-content": {
       "create-mfa-device": {
         "VirtualMFADevice": {
@@ -195,7 +195,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_mfa_device_errors": {
-    "recorded-date": "13-02-2026, 15:35:40",
+    "recorded-date": "17-02-2026, 09:44:57",
     "recorded-content": {
       "enable-mfa-nonexistent-user-error": {
         "Error": {
@@ -233,7 +233,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_errors": {
-    "recorded-date": "13-02-2026, 15:35:36",
+    "recorded-date": "17-02-2026, 09:44:48",
     "recorded-content": {
       "create-mfa-device": {
         "VirtualMFADevice": {
@@ -304,7 +304,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_virtual_mfa_device_lifecycle[/test//double/]": {
-    "recorded-date": "16-02-2026, 19:09:47",
+    "recorded-date": "17-02-2026, 09:44:46",
     "recorded-content": {
       "create-mfa-device": {
         "VirtualMFADevice": {
@@ -338,7 +338,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_virtual_mfa_device": {
-    "recorded-date": "17-02-2026, 09:24:27",
+    "recorded-date": "17-02-2026, 09:44:55",
     "recorded-content": {
       "create-user": {
         "User": {

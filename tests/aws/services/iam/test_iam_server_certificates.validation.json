@@ -1,38 +1,47 @@
 {
   "tests/aws/services/iam/test_iam_server_certificates.py::TestServerCertificate::test_server_certificate_errors": {
-    "last_validated_date": "2026-02-13T15:39:52+00:00",
+    "last_validated_date": "2026-02-17T10:12:42+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.61,
-      "teardown": 0.23,
-      "total": 0.84
+      "call": 0.7,
+      "teardown": 0.22,
+      "total": 0.92
     }
   },
   "tests/aws/services/iam/test_iam_server_certificates.py::TestServerCertificate::test_server_certificate_lifecycle[/]": {
-    "last_validated_date": "2026-02-13T15:39:50+00:00",
+    "last_validated_date": "2026-02-17T10:12:39+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.88,
-      "teardown": 0.0,
-      "total": 0.88
+      "call": 0.94,
+      "teardown": 0.16,
+      "total": 1.1
     }
   },
   "tests/aws/services/iam/test_iam_server_certificates.py::TestServerCertificate::test_server_certificate_lifecycle[/test-path/]": {
-    "last_validated_date": "2026-02-13T15:39:51+00:00",
+    "last_validated_date": "2026-02-17T10:12:41+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 1.0,
-      "teardown": 0.0,
-      "total": 1.0
+      "call": 1.19,
+      "teardown": 0.18,
+      "total": 1.37
     }
   },
   "tests/aws/services/iam/test_iam_server_certificates.py::TestServerCertificate::test_server_certificate_lifecycle[None]": {
-    "last_validated_date": "2026-02-13T15:39:49+00:00",
+    "last_validated_date": "2026-02-17T10:12:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.79,
+      "call": 1.35,
+      "teardown": 0.17,
+      "total": 2.31
+    }
+  },
+  "tests/aws/services/iam/test_iam_server_certificates.py::TestServerCertificate::test_server_certificate_with_chain": {
+    "last_validated_date": "2026-02-17T10:12:41+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.88,
-      "teardown": 0.0,
-      "total": 0.88
+      "call": 0.51,
+      "teardown": 0.24,
+      "total": 0.75
     }
   }
 }

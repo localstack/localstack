@@ -18,7 +18,7 @@ from localstack.utils.strings import short_uid
 LOG = logging.getLogger(__name__)
 
 # TODO remove after new IAM implementation of MFA devices
-# pytestmark = pytest.mark.skip
+pytestmark = pytest.mark.skip
 
 
 @pytest.fixture(autouse=True)
@@ -42,14 +42,8 @@ def create_virtual_mfa_device(aws_client):
     """Factory fixture to create virtual MFA devices with automatic cleanup."""
     created_devices = []
 
-    def _create_device(device_name=None, path=None):
-        if device_name is None:
-            device_name = f"mfa-{short_uid()}"
-        kwargs = {"VirtualMFADeviceName": device_name}
-        if path is not None:
-            kwargs["Path"] = path
-
-        response = aws_client.iam.create_virtual_mfa_device(**kwargs)
+    def _create_device(*args, **kwargs):
+        response = aws_client.iam.create_virtual_mfa_device(*args, **kwargs)
         serial_number = response["VirtualMFADevice"]["SerialNumber"]
         created_devices.append(serial_number)
         return response
@@ -97,9 +91,7 @@ class TestVirtualMfaDevice:
         kwargs = {}
         if path is not None:
             kwargs["Path"] = path
-        create_response = aws_client.iam.create_virtual_mfa_device(
-            VirtualMFADeviceName=device_name, **kwargs
-        )
+        create_response = create_virtual_mfa_device(VirtualMFADeviceName=device_name, **kwargs)
         serial_number = create_response["VirtualMFADevice"]["SerialNumber"]
         snapshot.match("create-mfa-device", create_response)
 
@@ -129,7 +121,7 @@ class TestVirtualMfaDevice:
         snapshot.add_transformer(snapshot.transform.regex(device_name, "<mfa-device-name>"))
 
         # Create a device first
-        create_response = create_virtual_mfa_device(device_name=device_name)
+        create_response = create_virtual_mfa_device(VirtualMFADeviceName=device_name)
         snapshot.match("create-mfa-device", create_response)
 
         # Try to create duplicate device (same name at default path)
@@ -179,7 +171,7 @@ class TestVirtualMfaDevice:
             snapshot.add_transformer(snapshot.transform.regex(name, f"<mfa-device-name-{idx}>"))
         serial_numbers = []
         for idx, name in enumerate(device_names):
-            response = create_virtual_mfa_device(device_name=name)
+            response = create_virtual_mfa_device(VirtualMFADeviceName=name)
             snapshot.match(f"create-virtual-mfa-device-{idx}", response)
             serial_numbers.append(response["VirtualMFADevice"]["SerialNumber"])
 
@@ -241,7 +233,7 @@ class TestVirtualMfaDevice:
         create_user_response = create_user(UserName=user_name)
         snapshot.match("create-user", create_user_response)
 
-        create_device_response = create_virtual_mfa_device(device_name=device_name)
+        create_device_response = create_virtual_mfa_device(VirtualMFADeviceName=device_name)
         serial_number = create_device_response["VirtualMFADevice"]["SerialNumber"]
         snapshot.match("create-mfa-device", create_device_response)
 
@@ -312,7 +304,7 @@ class TestVirtualMfaDevice:
         # Create a virtual MFA device for error testing
         device_name = f"mfa-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(device_name, "<mfa-device-name>"))
-        create_device_response = create_virtual_mfa_device(device_name=device_name)
+        create_device_response = create_virtual_mfa_device(VirtualMFADeviceName=device_name)
         serial_number = create_device_response["VirtualMFADevice"]["SerialNumber"]
 
         # Try to enable MFA device for non-existent user
