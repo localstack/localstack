@@ -74,7 +74,7 @@ class Markers:
     """The test and the LS instance have to be run in the same process"""
     requires_docker = pytest.mark.requires_docker
     """The test requires the LocalStack instance having access to docker or a compatible container engine - will not work on kubernetes"""
-    test_requires_docker = pytest.mark.requires_docker
+    test_requires_docker = pytest.mark.test_requires_docker
     """The test itself requires docker or a compatible container engine - will not work without the test having access to a docker instance"""
     lambda_runtime_update = pytest.mark.lambda_runtime_update
     """Tests to execute when updating snapshots for a new Lambda runtime"""
