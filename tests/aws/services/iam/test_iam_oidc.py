@@ -228,8 +228,9 @@ class TestOIDCProviderList:
         uid = short_uid()
         arns = []
         for i in range(3):
+            domain = f"oidc-list-{i}-{uid}.example.com"
             response = aws_client.iam.create_open_id_connect_provider(
-                Url=f"https://oidc-list-{i}-{uid}.example.com", ThumbprintList=["a" * 40]
+                Url=f"https://{domain}", ThumbprintList=["a" * 40]
             )
             arn = response["OpenIDConnectProviderArn"]
             arns.append(arn)
@@ -238,6 +239,7 @@ class TestOIDCProviderList:
                     OpenIDConnectProviderArn=a
                 )
             )
+            snapshot.add_transformer(snapshot.transform.regex(domain, f"<domain-{i}>"))
 
         # List providers
         response = aws_client.iam.list_open_id_connect_providers()

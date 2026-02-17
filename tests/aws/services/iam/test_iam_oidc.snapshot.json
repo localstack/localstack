@@ -173,12 +173,12 @@
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderList::test_list_open_id_connect_providers": {
-    "recorded-date": "17-02-2026, 19:22:17",
+    "recorded-date": "17-02-2026, 20:46:17",
     "recorded-content": {
       "list-response": [
-        "arn:<partition>:iam::111111111111:oidc-provider/oidc-list-0-e0d6bd4c.example.com",
-        "arn:<partition>:iam::111111111111:oidc-provider/oidc-list-1-e0d6bd4c.example.com",
-        "arn:<partition>:iam::111111111111:oidc-provider/oidc-list-2-e0d6bd4c.example.com"
+        "arn:<partition>:iam::111111111111:oidc-provider/<domain-0>",
+        "arn:<partition>:iam::111111111111:oidc-provider/<domain-1>",
+        "arn:<partition>:iam::111111111111:oidc-provider/<domain-2>"
       ]
     }
   },
