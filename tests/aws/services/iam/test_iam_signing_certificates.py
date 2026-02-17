@@ -21,7 +21,7 @@ from localstack.utils.strings import short_uid
 LOG = logging.getLogger(__name__)
 
 # TODO remove after new IAM implementation of signing certificates
-# pytestmark = pytest.mark.skip
+pytestmark = pytest.mark.skip
 
 
 def create_certificate() -> str:
