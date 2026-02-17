@@ -148,7 +148,7 @@ class AssignmentService(OtherServiceEndpoint):
         # current_provisioned_environments_count = len(current_provisioned_environments)
         # diff = target_provisioned_environments - current_provisioned_environments_count
 
-        # TODO: handle case where no provisioned environment is available during scaling
+        # TODO: handle case where no provisioned environment is available during scaling. Does AWS serve on-demand?
         # Most simple scaling implementation for now:
         futures = []
         # 1) Re-create new target

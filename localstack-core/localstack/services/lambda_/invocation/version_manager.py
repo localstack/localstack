@@ -3,7 +3,7 @@ import logging
 import threading
 import time
 from concurrent.futures import Future
-from concurrent.futures._base import CancelledError
+from concurrent.futures._base import ALL_COMPLETED, CancelledError
 
 from localstack import config
 from localstack.aws.api.lambda_ import (
@@ -79,10 +79,10 @@ class LambdaVersionManager:
         self.shutdown_event = threading.Event()
 
         # async state
-        self.provisioned_state = None
+        self.provisioned_state: ProvisionedConcurrencyState | None = None
         self.provisioned_state_lock = threading.RLock()
         # https://aws.amazon.com/blogs/compute/coming-soon-expansion-of-aws-lambda-states-to-all-functions/
-        self.state = VersionState(state=State.Pending)
+        self.state: VersionState = VersionState(state=State.Pending)
 
         self.ldm_provisioner = None
         lambda_hooks.inject_ldm_provisioner.run(self)
@@ -153,8 +153,6 @@ class LambdaVersionManager:
         TODO: implement update while in progress (see test_provisioned_concurrency test)
         TODO: loop until diff == 0 and retry to remove/add diff environments
         TODO: alias routing & allocated (i.e., the status while updating provisioned concurrency)
-        TODO: ProvisionedConcurrencyStatusEnum.FAILED
-        TODO: status reason
 
         :param provisioned_concurrent_executions: set to 0 to stop all provisioned environments
         """
@@ -175,16 +173,37 @@ class LambdaVersionManager:
             futures = self.assignment_service.scale_provisioned_concurrency(
                 self.id, self.function_version, provisioned_concurrent_executions
             )
+            # Wait for all provisioning/de-provisioning tasks to finish using a timeout longer than max Lambda execution
+            concurrent.futures.wait(futures, timeout=20 * 60, return_when=ALL_COMPLETED)
 
-            concurrent.futures.wait(futures)
+            success_count = 0
+            start_error = None
+            for i, future in enumerate(futures):
+                try:
+                    future.result()
+                    success_count += 1
+                except Exception as e:
+                    start_error = e
 
             with self.provisioned_state_lock:
                 if provisioned_concurrent_executions == 0:
                     self.provisioned_state = None
                 else:
-                    self.provisioned_state.available = provisioned_concurrent_executions
-                    self.provisioned_state.allocated = provisioned_concurrent_executions
-                    self.provisioned_state.status = ProvisionedConcurrencyStatusEnum.READY
+                    # TODO: check whether available changes with active invokes while updating
+                    self.provisioned_state.available = success_count
+                    self.provisioned_state.allocated = success_count
+                    if start_error or success_count < provisioned_concurrent_executions:
+                        self.provisioned_state.status = ProvisionedConcurrencyStatusEnum.FAILED
+                        self.provisioned_state.status_reason = "FUNCTION_ERROR_INIT_FAILURE"
+                        LOG.warning(
+                            "Failed to provision %d/%s environments for function %s. Error: %s",
+                            provisioned_concurrent_executions - success_count,
+                            provisioned_concurrent_executions,
+                            self.function_arn,
+                            start_error,
+                        )
+                    else:
+                        self.provisioned_state.status = ProvisionedConcurrencyStatusEnum.READY
 
         self.provisioning_thread = start_thread(scale_environments)
         return self.provisioning_thread.result_future
@@ -255,7 +274,7 @@ class LambdaVersionManager:
             return invocation_result
 
         with self.counting_service.get_invocation_lease(
-            self.function, self.function_version
+            self.function, self.function_version, self.provisioned_state
         ) as provisioning_type:
             # TODO: potential race condition when changing provisioned concurrency after getting the lease but before
             #   getting an environment

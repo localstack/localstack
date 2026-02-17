@@ -277,6 +277,22 @@ def concurrency_update_done(client, function_name, qualifier):
     return _concurrency_update_done
 
 
+def concurrency_update_failed(client, function_name, qualifier):
+    """wait fn for ProvisionedConcurrencyConfig 'Status'"""
+
+    def _concurrency_update_failed():
+        status = client.get_provisioned_concurrency_config(
+            FunctionName=function_name, Qualifier=qualifier
+        )["Status"]
+        if status == "READY":
+            # We are expecting a failure and short-circuit upon success
+            raise ShortCircuitWaitException(f"Concurrency update succeeded: {status=}")
+        else:
+            return status == "FAILED"
+
+    return _concurrency_update_failed
+
+
 def get_invoke_init_type(client, function_name, qualifier) -> InitializationType:
     """check the environment in the lambda for AWS_LAMBDA_INITIALIZATION_TYPE indicating ondemand/provisioned"""
     invoke_result = client.invoke(FunctionName=function_name, Qualifier=qualifier)

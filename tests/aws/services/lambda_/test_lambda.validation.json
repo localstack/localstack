@@ -230,6 +230,15 @@
       "total": 131.15
     }
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_provisioned_concurrency_init_failure": {
+    "last_validated_date": "2026-02-17T09:40:06+00:00",
+    "durations_in_seconds": {
+      "setup": 12.05,
+      "call": 323.08,
+      "teardown": 2.23,
+      "total": 337.36
+    }
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_provisioned_concurrency_on_alias": {
     "last_validated_date": "2025-11-24T23:21:03+00:00",
     "durations_in_seconds": {

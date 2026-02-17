@@ -26,6 +26,7 @@ from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
+    concurrency_update_failed,
     get_invoke_init_type,
     update_done,
 )
@@ -118,6 +119,9 @@ TEST_LAMBDA_SLEEP_ENVIRONMENT = os.path.join(THIS_FOLDER, "functions/lambda_slee
 TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_introspect.py")
 TEST_LAMBDA_ULIMITS = os.path.join(THIS_FOLDER, "functions/lambda_ulimits.py")
 TEST_LAMBDA_INVOCATION_TYPE = os.path.join(THIS_FOLDER, "functions/lambda_invocation_type.py")
+TEST_LAMBDA_INVOCATION_TYPE_FAILURE = os.path.join(
+    THIS_FOLDER, "functions/lambda_invocation_type_failure.py"
+)
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.py")
 TEST_LAMBDA_PROCESS_INSPECTION = os.path.join(THIS_FOLDER, "functions/lambda_process_inspection.py")
@@ -2639,6 +2643,74 @@ class TestLambdaConcurrency:
         invoke_result2 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier="$LATEST")
         result2 = json.load(invoke_result2["Payload"])
         assert result2 == "on-demand"
+
+    @markers.aws.validated
+    def test_provisioned_concurrency_init_failure(
+        self, create_lambda_function, snapshot, aws_client
+    ):
+        """Put provisioned concurrency on a Lambda function that fails upon initialization.
+        The intended failure only triggers for initialization of provisioned concurrency.
+        """
+        min_concurrent_executions = 10 + 1
+        check_concurrency_quota(aws_client, min_concurrent_executions)
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_function_response = create_lambda_function(
+            func_name=func_name,
+            runtime=Runtime.python3_12,
+            handler_file=TEST_LAMBDA_INVOCATION_TYPE_FAILURE,
+            # Provisioned concurrency requires publishing
+            Publish=True,
+        )
+        version = create_function_response["CreateFunctionResponse"]["Version"]
+
+        put_provisioned = aws_client.lambda_.put_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=version, ProvisionedConcurrentExecutions=1
+        )
+        snapshot.match("put_provisioned", put_provisioned)
+
+        get_provisioned_prewait = aws_client.lambda_.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=version
+        )
+        snapshot.match("get_provisioned_prewait", get_provisioned_prewait)
+
+        # Invokes should be served on-demand during provisioned concurrency initialization
+        assert get_invoke_init_type(aws_client.lambda_, func_name, version) == "on-demand"
+
+        # AWS attempts initialization a total of 6 times according to CloudWatch logs
+        wait_time = 10 if is_aws_cloud() else 1
+        assert wait_until(
+            concurrency_update_failed(aws_client.lambda_, func_name, version),
+            wait=wait_time,
+            max_retries=80,
+        )
+
+        get_provisioned_postwait = aws_client.lambda_.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=version
+        )
+        snapshot.match("get_provisioned_postwait", get_provisioned_postwait)
+
+        log_group_name = f"/aws/lambda/{func_name}"
+
+        def _log_stream_available():
+            result = aws_client.logs.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+            # We are expecting 7 log streams: total 6 provisioned init attempts + 1 on-demand
+            # TODO: assert and implement 6 total initialization attempts in LS (LS only attempts once)
+            num_expected_log_streams = 7 if is_aws_cloud() else 2
+            return len(result) >= num_expected_log_streams
+
+        wait_until(_log_stream_available, strategy="linear")
+
+        logs = aws_client.logs.filter_log_events(logGroupName=log_group_name)
+        expected_error_msg = (
+            "[ERROR] Exception: Intentional failure upon provisioned concurrency initialization"
+        )
+        # TODO: implement and enable this validation in LS
+        if is_aws_cloud():
+            assert any(expected_error_msg in e["message"] for e in logs["events"])
+
+        # Invokes should not be scheduled to failed provisioned concurrency
+        assert get_invoke_init_type(aws_client.lambda_, func_name, version) == "on-demand"
 
     @markers.aws.validated
     def test_provisioned_concurrency_on_alias(self, create_lambda_function, snapshot, aws_client):

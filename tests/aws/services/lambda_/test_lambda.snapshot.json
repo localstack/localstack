@@ -4617,5 +4617,44 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_non_existing_url": {
     "recorded-date": "24-11-2025, 23:11:02",
     "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_provisioned_concurrency_init_failure": {
+    "recorded-date": "17-02-2026, 09:40:04",
+    "recorded-content": {
+      "put_provisioned": {
+        "AllocatedProvisionedConcurrentExecutions": 0,
+        "AvailableProvisionedConcurrentExecutions": 0,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "IN_PROGRESS",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "get_provisioned_prewait": {
+        "AllocatedProvisionedConcurrentExecutions": 0,
+        "AvailableProvisionedConcurrentExecutions": 0,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "IN_PROGRESS",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_provisioned_postwait": {
+        "AllocatedProvisionedConcurrentExecutions": 0,
+        "AvailableProvisionedConcurrentExecutions": 0,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "FAILED",
+        "StatusReason": "FUNCTION_ERROR_INIT_FAILURE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
