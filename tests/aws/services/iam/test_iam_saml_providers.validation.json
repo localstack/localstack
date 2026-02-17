@@ -1,0 +1,65 @@
+{
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_create_saml_provider": {
+    "last_validated_date": "2026-02-13T20:46:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.45,
+      "call": 0.5,
+      "teardown": 0.23,
+      "total": 1.18
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_delete_saml_provider": {
+    "last_validated_date": "2026-02-13T21:06:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.46,
+      "call": 0.96,
+      "teardown": 0.0,
+      "total": 1.42
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_delete_saml_provider_not_found": {
+    "last_validated_date": "2026-02-13T21:06:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.42,
+      "call": 0.42,
+      "teardown": 0.0,
+      "total": 0.84
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_get_saml_provider": {
+    "last_validated_date": "2026-02-13T21:00:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 0.65,
+      "teardown": 0.21,
+      "total": 1.38
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_get_saml_provider_not_found": {
+    "last_validated_date": "2026-02-13T20:50:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.41,
+      "call": 0.42,
+      "teardown": 0.0,
+      "total": 0.83
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_list_saml_providers": {
+    "last_validated_date": "2026-02-13T21:08:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.45,
+      "call": 0.76,
+      "teardown": 0.21,
+      "total": 1.42
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_update_saml_provider": {
+    "last_validated_date": "2026-02-13T21:00:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.45,
+      "call": 1.05,
+      "teardown": 0.26,
+      "total": 1.76
+    }
+  }
+}
