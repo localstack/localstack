@@ -7,7 +7,20 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 # TODO remove after new IAM implementation of policies
-pytestmark = pytest.mark.skip
+# pytestmark = pytest.mark.skip
+
+ASSUME_ROLE_POLICY = json.dumps(
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {"Service": "ec2.amazonaws.com"},
+                "Action": "sts:AssumeRole",
+            }
+        ],
+    }
+)
 
 SAMPLE_POLICY = {
     "Version": "2012-10-17",
@@ -2047,3 +2060,82 @@ class TestPolicyDocumentValidity:
         """Test that valid policy documents are accepted."""
         response = create_policy(PolicyDocument=json.dumps(policy_doc))
         snapshot.match("response", response)
+
+
+class TestListEntitiesForPolicy:
+    """Tests for list_entities_for_policy API - migrated from moto test_iam.py."""
+
+    @markers.aws.validated
+    def test_list_entities_for_policy(
+        self,
+        aws_client,
+        snapshot,
+        create_policy,
+        create_user,
+        create_group,
+        create_role,
+    ):
+        """Test listing entities (users, groups, roles) attached to a policy."""
+        # Create a policy
+        policy_response = create_policy(PolicyDocument=json.dumps(SAMPLE_POLICY))
+        snapshot.match("create-policy", policy_response)
+        policy_arn = policy_response["Policy"]["Arn"]
+
+        # List entities before attaching - should all be empty
+        response = aws_client.iam.list_entities_for_policy(PolicyArn=policy_arn)
+        snapshot.match("empty-entities", response)
+
+        # Create user, group, and role
+        user_response = create_user()
+        snapshot.match("create-user", user_response)
+        user_name = user_response["User"]["UserName"]
+
+        group_response = create_group()
+        snapshot.match("create-group", group_response)
+        group_name = group_response["Group"]["GroupName"]
+
+        role_response = create_role(AssumeRolePolicyDocument=ASSUME_ROLE_POLICY)
+        snapshot.match("create-role", role_response)
+        role_name = role_response["Role"]["RoleName"]
+
+        # Attach the policy to user, group, and role
+        aws_client.iam.attach_user_policy(UserName=user_name, PolicyArn=policy_arn)
+        aws_client.iam.attach_group_policy(GroupName=group_name, PolicyArn=policy_arn)
+        aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+
+        # Test filter by Role
+        response = aws_client.iam.list_entities_for_policy(
+            PolicyArn=policy_arn, EntityFilter="Role"
+        )
+        snapshot.match("filter-role", response)
+
+        # Test filter by User
+        response = aws_client.iam.list_entities_for_policy(
+            PolicyArn=policy_arn, EntityFilter="User"
+        )
+        snapshot.match("filter-user", response)
+
+        # Test filter by Group
+        response = aws_client.iam.list_entities_for_policy(
+            PolicyArn=policy_arn, EntityFilter="Group"
+        )
+        snapshot.match("filter-group", response)
+
+        # Test filter by LocalManagedPolicy (returns all entities)
+        response = aws_client.iam.list_entities_for_policy(
+            PolicyArn=policy_arn, EntityFilter="LocalManagedPolicy"
+        )
+        snapshot.match("filter-local-managed-policy", response)
+
+        # Test no filter (returns all entities)
+        response = aws_client.iam.list_entities_for_policy(PolicyArn=policy_arn)
+        snapshot.match("no-filter", response)
+
+    @markers.aws.validated
+    def test_list_entities_for_policy_errors(self, aws_client, snapshot, account_id, partition):
+        """Test error cases for list_entities_for_policy."""
+        # Non-existent policy
+        non_existent_arn = f"arn:{partition}:iam::{account_id}:policy/NonExistentPolicy"
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.list_entities_for_policy(PolicyArn=non_existent_arn)
+        snapshot.match("err-nonexistent-policy", e.value.response)
