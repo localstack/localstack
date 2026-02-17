@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_cfn_handle_iam_role_resource_no_role_name": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_cfn_handle_iam_role_resource_no_role_name": {
     "last_validated_date": "2026-02-10T15:59:36+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -8,7 +8,7 @@
       "total": 42.43
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_delete_role_detaches_role_policy": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_delete_role_detaches_role_policy": {
     "last_validated_date": "2026-02-10T15:48:42+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -17,7 +17,7 @@
       "total": 95.69
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_iam_user_access_key": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_iam_user_access_key": {
     "last_validated_date": "2026-02-10T15:53:40+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -26,7 +26,7 @@
       "total": 103.38
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_iam_username_defaultname": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_iam_username_defaultname": {
     "last_validated_date": "2026-02-10T15:51:57+00:00",
     "durations_in_seconds": {
       "setup": 0.55,
@@ -35,7 +35,7 @@
       "total": 86.32
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_inline_policy_with_fn_sub_json_string": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_inline_policy_with_fn_sub_json_string": {
     "last_validated_date": "2026-02-10T16:04:14+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -44,7 +44,7 @@
       "total": 59.92
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_managed_policy_with_empty_resource": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_managed_policy_with_empty_resource": {
     "last_validated_date": "2026-02-10T15:56:37+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -53,7 +53,7 @@
       "total": 60.23
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_managedpolicy_with_fn_sub_and_arrays": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_managedpolicy_with_fn_sub_and_arrays": {
     "last_validated_date": "2026-02-10T16:03:14+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -62,7 +62,7 @@
       "total": 31.65
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_managedpolicy_with_fn_sub_json_string": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_managedpolicy_with_fn_sub_json_string": {
     "last_validated_date": "2026-02-10T16:02:11+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -71,7 +71,7 @@
       "total": 31.88
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_managedpolicy_with_fn_sub_multiline_yaml": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_managedpolicy_with_fn_sub_multiline_yaml": {
     "last_validated_date": "2026-02-10T16:02:43+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -80,7 +80,7 @@
       "total": 31.49
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_policy_attachments": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_policy_attachments": {
     "last_validated_date": "2026-02-10T15:50:31+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -89,7 +89,7 @@
       "total": 108.66
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_server_certificate": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_server_certificate": {
     "last_validated_date": "2026-02-10T15:58:54+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -98,7 +98,7 @@
       "total": 136.9
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_update_inline_policy": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_update_inline_policy": {
     "last_validated_date": "2026-02-10T15:55:37+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
@@ -107,7 +107,7 @@
       "total": 116.21
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_updating_stack_with_iam_role": {
+  "tests/aws/services/iam/resource_providers/test_iam.py::test_updating_stack_with_iam_role": {
     "last_validated_date": "2026-02-10T16:01:39+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
