@@ -1,0 +1,112 @@
+{
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_create_saml_provider": {
+    "recorded-date": "13-02-2026, 20:46:01",
+    "recorded-content": {
+      "create-response": {
+        "SAMLProviderArn": "arn:<partition>:iam::111111111111:saml-provider/<provider-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_get_saml_provider": {
+    "recorded-date": "13-02-2026, 21:00:15",
+    "recorded-content": {
+      "get-response": {
+        "AssertionEncryptionMode": "Allowed",
+        "CreateDate": "<datetime>",
+        "PrivateKeyList": [],
+        "SAMLMetadataDocument": "<saml-metatada-document:1>",
+        "SAMLProviderUUID": "<saml-provider-uuid:1>",
+        "Tags": [],
+        "ValidUntil": "<datetime>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_get_saml_provider_not_found": {
+    "recorded-date": "13-02-2026, 20:50:25",
+    "recorded-content": {
+      "get-not-found": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Manifest not found for arn arn:<partition>:iam::111111111111:saml-provider/NonExistentProvider",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_update_saml_provider": {
+    "recorded-date": "13-02-2026, 21:00:23",
+    "recorded-content": {
+      "update-response": {
+        "SAMLProviderArn": "arn:<partition>:iam::111111111111:saml-provider/<provider-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-after-update": {
+        "AssertionEncryptionMode": "Allowed",
+        "CreateDate": "<datetime>",
+        "PrivateKeyList": [],
+        "SAMLMetadataDocument": "<saml-metadata-document:1>",
+        "SAMLProviderUUID": "<saml-provider-uuid:1>",
+        "Tags": [],
+        "ValidUntil": "<datetime>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_list_saml_providers": {
+    "recorded-date": "13-02-2026, 21:08:09",
+    "recorded-content": {
+      "list-response": [
+        {
+          "Arn": "arn:<partition>:iam::111111111111:saml-provider/<provider-name>",
+          "ValidUntil": "<datetime>",
+          "CreateDate": "<datetime>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_delete_saml_provider": {
+    "recorded-date": "13-02-2026, 21:06:12",
+    "recorded-content": {
+      "delete-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_saml_providers.py::TestSAMLProviders::test_delete_saml_provider_not_found": {
+    "recorded-date": "13-02-2026, 21:06:36",
+    "recorded-content": {
+      "delete-not-found": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Manifest not found for arn arn:<partition>:iam::111111111111:saml-provider/NonExistentProvider",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  }
+}
