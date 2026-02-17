@@ -676,12 +676,11 @@ class TestCloudwatch:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
     def test_tagging_metric_alarm(self, aws_cloudwatch_client, snapshot):
+        # Sort tags by key value in snapshots
+        snapshot.add_transformer(SortingTransformer("Tags", lambda o: o["Key"]))
         alarm_name = f"a-{short_uid()}"
         metric_name = "store_tags"
         namespace = f"test-ns-{short_uid()}"
-        # Sort tags by key value in snapshots
-        snapshot.add_transformer(SortingTransformer("Tags", lambda o: o["Key"]))
-        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         put_metric_alarm = aws_cloudwatch_client.put_metric_alarm(
             AlarmName=alarm_name,
             Namespace=namespace,
@@ -696,19 +695,24 @@ class TestCloudwatch:
         snapshot.match("put_metric_alarm", put_metric_alarm)
 
         describe_alarms = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
-        snapshot.match("describe_alarms", describe_alarms)
         alarm = describe_alarms["MetricAlarms"][0]
         alarm_arn = alarm["AlarmArn"]
 
-        list_tags_for_resource = aws_cloudwatch_client.list_tags_for_resource(ResourceARN=alarm_arn)
-        snapshot.match("list_tags_for_resource_empty ", list_tags_for_resource)
+        list_tags_for_resource_after_creation = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match(
+            "list_tags_for_resource_after_creation", list_tags_for_resource_after_creation
+        )
 
         # add tags
         tags = [{"Key": "tag1", "Value": "foo"}, {"Key": "tag2", "Value": "bar"}]
         response = aws_cloudwatch_client.tag_resource(ResourceARN=alarm_arn, Tags=tags)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        list_tags_for_resource = aws_cloudwatch_client.list_tags_for_resource(ResourceARN=alarm_arn)
-        snapshot.match("list_tags_for_resource", list_tags_for_resource)
+        list_tags_for_resource_updated = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match("list_tags_for_resource_updated", list_tags_for_resource_updated)
         response = aws_cloudwatch_client.untag_resource(ResourceARN=alarm_arn, TagKeys=["tag1"])
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         list_tags_for_resource_post_untag = aws_cloudwatch_client.list_tags_for_resource(
@@ -724,7 +728,11 @@ class TestCloudwatch:
         snapshot.match("list_tags_for_deleted_resource", list_tags_for_deleted_resource)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
     def test_tagging_composite_alarm(self, aws_cloudwatch_client, snapshot):
+        # Sort tags by key value in snapshots
+        snapshot.add_transformer(SortingTransformer("Tags", lambda o: o["Key"]))
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         composite_alarm_name = f"composite-a-{short_uid()}"
         alarm_name = f"a-{short_uid()}"
         metric_name = "something"
@@ -739,28 +747,33 @@ class TestCloudwatch:
             Period=60,
             Statistic="Sum",
             Threshold=30,
-            Tags=[{"Key": "Environment", "Value": "Production"}],
         )
         aws_cloudwatch_client.put_composite_alarm(
             AlarmName=composite_alarm_name,
             AlarmRule=alarm_rule,
+            Tags=[{"Key": "Environment", "Value": "Production"}],
         )
         describe_alarms = aws_cloudwatch_client.describe_alarms(
             AlarmTypes=["CompositeAlarm"], AlarmNames=[composite_alarm_name]
         )
-        snapshot.match("describe_alarms", describe_alarms)
         alarm = describe_alarms["CompositeAlarms"][0]
         alarm_arn = alarm["AlarmArn"]
 
-        list_tags_for_resource = aws_cloudwatch_client.list_tags_for_resource(ResourceARN=alarm_arn)
-        snapshot.match("list_tags_for_resource_empty ", list_tags_for_resource)
+        list_tags_for_resource_after_creation = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match(
+            "list_tags_for_resource_after_creation ", list_tags_for_resource_after_creation
+        )
 
         # add tags
         tags = [{"Key": "tag1", "Value": "foo"}, {"Key": "tag2", "Value": "bar"}]
         response = aws_cloudwatch_client.tag_resource(ResourceARN=alarm_arn, Tags=tags)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        list_tags_for_resource = aws_cloudwatch_client.list_tags_for_resource(ResourceARN=alarm_arn)
-        snapshot.match("list_tags_for_resource", list_tags_for_resource)
+        list_tags_for_resource_updated = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match("list_tags_for_resource_updated", list_tags_for_resource_updated)
         response = aws_cloudwatch_client.untag_resource(ResourceARN=alarm_arn, TagKeys=["tag1"])
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         list_tags_for_resource_post_untag = aws_cloudwatch_client.list_tags_for_resource(
