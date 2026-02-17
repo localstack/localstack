@@ -1,6 +1,6 @@
 {
   "tests/aws/services/iam/test_iam_signing_certificates.py::TestSigningCertificate::test_signing_certificate_lifecycle": {
-    "recorded-date": "13-02-2026, 15:39:28",
+    "recorded-date": "17-02-2026, 12:48:57",
     "recorded-content": {
       "create-user": {
         "User": {
@@ -20,7 +20,7 @@
           "CertificateBody": "<certificate-body>",
           "CertificateId": "<certificate-id:1>",
           "Status": "Active",
-          "UploadDate": "<upload-date>",
+          "UploadDate": "<datetime>",
           "UserName": "<user-name:1>"
         },
         "ResponseMetadata": {
@@ -34,7 +34,7 @@
             "CertificateBody": "<certificate-body>",
             "CertificateId": "<certificate-id:1>",
             "Status": "Active",
-            "UploadDate": "<upload-date>",
+            "UploadDate": "<datetime>",
             "UserName": "<user-name:1>"
           }
         ],
@@ -56,7 +56,7 @@
             "CertificateBody": "<certificate-body>",
             "CertificateId": "<certificate-id:1>",
             "Status": "Inactive",
-            "UploadDate": "<upload-date>",
+            "UploadDate": "<datetime>",
             "UserName": "<user-name:1>"
           }
         ],
@@ -78,7 +78,7 @@
             "CertificateBody": "<certificate-body>",
             "CertificateId": "<certificate-id:1>",
             "Status": "Active",
-            "UploadDate": "<upload-date>",
+            "UploadDate": "<datetime>",
             "UserName": "<user-name:1>"
           }
         ],
@@ -105,7 +105,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_signing_certificates.py::TestSigningCertificate::test_signing_certificate_errors": {
-    "recorded-date": "13-02-2026, 15:39:31",
+    "recorded-date": "17-02-2026, 12:49:00",
     "recorded-content": {
       "create-user": {
         "User": {
@@ -121,6 +121,39 @@
         }
       },
       "upload-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list-certificates-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-certificate-nonexistent-user-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name nonexistent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-certificate-nonexistent-user-error": {
         "Error": {
           "Code": "NoSuchEntity",
           "Message": "The user with name nonexistent-user cannot be found.",
@@ -169,7 +202,7 @@
           "CertificateBody": "<certificate-body>",
           "CertificateId": "<certificate-id:1>",
           "Status": "Active",
-          "UploadDate": "<upload-date>",
+          "UploadDate": "<datetime>",
           "UserName": "<user-name:1>"
         },
         "ResponseMetadata": {
@@ -182,7 +215,7 @@
           "CertificateBody": "<certificate-body>",
           "CertificateId": "<certificate-id:2>",
           "Status": "Active",
-          "UploadDate": "<upload-date>",
+          "UploadDate": "<datetime>",
           "UserName": "<user-name:1>"
         },
         "ResponseMetadata": {

@@ -21,7 +21,7 @@ from localstack.utils.strings import short_uid
 LOG = logging.getLogger(__name__)
 
 # TODO remove after new IAM implementation of signing certificates
-pytestmark = pytest.mark.skip
+# pytestmark = pytest.mark.skip
 
 
 def create_certificate() -> str:
@@ -72,12 +72,6 @@ def snapshot_transformers(snapshot):
             "CertificateBody", value_replacement="<certificate-body>", reference_replacement=False
         )
     )
-    # UploadDate is a datetime object, not a string
-    snapshot.add_transformer(
-        snapshot.transform.key_value(
-            "UploadDate", value_replacement="<upload-date>", reference_replacement=False
-        )
-    )
 
 
 class TestSigningCertificate:
@@ -88,7 +82,6 @@ class TestSigningCertificate:
         """Test upload, list, update status, and delete signing certificate operations."""
         # Create a user
         user_name = f"user-{short_uid()}"
-        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
         create_user_response = create_user(UserName=user_name)
         snapshot.match("create-user", create_user_response)
 
@@ -138,11 +131,10 @@ class TestSigningCertificate:
         assert len(list_after_delete["Certificates"]) == 0
 
     @markers.aws.validated
-    def test_signing_certificate_errors(self, aws_client, snapshot, create_user):
+    def test_signing_certificate_errors(self, aws_client, snapshot, create_user, cleanups):
         """Test error cases for signing certificate operations."""
         # Create a user
         user_name = f"user-{short_uid()}"
-        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
         create_user_response = create_user(UserName=user_name)
         snapshot.match("create-user", create_user_response)
 
@@ -157,6 +149,27 @@ class TestSigningCertificate:
                 UserName="nonexistent-user", CertificateBody=cert_body_1
             )
         snapshot.match("upload-nonexistent-user-error", exc.value.response)
+
+        # Try to list certificates for a non-existent user
+        with pytest.raises(ClientError) as exc:
+            aws_client.iam.list_signing_certificates(UserName="nonexistent-user")
+        snapshot.match("list-certificates-nonexistent-user-error", exc.value.response)
+
+        # Try to delete certificates for a non-existent user
+        with pytest.raises(ClientError) as exc:
+            aws_client.iam.delete_signing_certificate(
+                UserName="nonexistent-user", CertificateId="NONEXISTENTCERTID12345678901"
+            )
+        snapshot.match("delete-certificate-nonexistent-user-error", exc.value.response)
+
+        # Try to update certificates for a non-existent user
+        with pytest.raises(ClientError) as exc:
+            aws_client.iam.update_signing_certificate(
+                UserName="nonexistent-user",
+                CertificateId="NONEXISTENTCERTID12345678901",
+                Status="Inactive",
+            )
+        snapshot.match("update-certificate-nonexistent-user-error", exc.value.response)
 
         # Try to upload invalid certificate body
         with pytest.raises(ClientError) as exc:
@@ -184,11 +197,21 @@ class TestSigningCertificate:
             UserName=user_name, CertificateBody=cert_body_1
         )
         snapshot.match("upload-certificate-1", upload_1)
+        cleanups.append(
+            lambda: aws_client.iam.delete_signing_certificate(
+                UserName=user_name, CertificateId=upload_1["Certificate"]["CertificateId"]
+            )
+        )
 
         upload_2 = aws_client.iam.upload_signing_certificate(
             UserName=user_name, CertificateBody=cert_body_2
         )
         snapshot.match("upload-certificate-2", upload_2)
+        cleanups.append(
+            lambda: aws_client.iam.delete_signing_certificate(
+                UserName=user_name, CertificateId=upload_2["Certificate"]["CertificateId"]
+            )
+        )
 
         # Try to upload a third certificate (should exceed limit)
         with pytest.raises(ClientError) as exc:
@@ -196,11 +219,3 @@ class TestSigningCertificate:
                 UserName=user_name, CertificateBody=cert_body_3
             )
         snapshot.match("upload-exceeds-limit-error", exc.value.response)
-
-        # Cleanup - delete the uploaded certificates
-        aws_client.iam.delete_signing_certificate(
-            UserName=user_name, CertificateId=upload_1["Certificate"]["CertificateId"]
-        )
-        aws_client.iam.delete_signing_certificate(
-            UserName=user_name, CertificateId=upload_2["Certificate"]["CertificateId"]
-        )

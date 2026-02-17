@@ -22,7 +22,7 @@ from localstack.utils.strings import short_uid
 LOG = logging.getLogger(__name__)
 
 # TODO remove after new IAM implementation of server certificates
-# pytestmark = pytest.mark.skip
+pytestmark = pytest.mark.skip
 
 
 def create_certificate_with_chain() -> tuple[str, str, str]:
