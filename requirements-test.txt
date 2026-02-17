@@ -323,6 +323,8 @@ pyopenssl==25.3.0
     # via
     #   localstack-core
     #   localstack-twisted
+pyotp==2.9.0
+    # via localstack-core
 pyparsing==3.3.2
     # via moto-ext
 pytest==9.0.2

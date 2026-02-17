@@ -1,0 +1,322 @@
+{
+  "tests/aws/services/iam/test_iam_server_certificates.py::TestServerCertificate::test_server_certificate_lifecycle[None]": {
+    "recorded-date": "17-02-2026, 10:12:23",
+    "recorded-content": {
+      "upload-certificate": {
+        "ServerCertificateMetadata": {
+          "Arn": "arn:<partition>:iam::111111111111:server-certificate/<server-certificate-name:1>",
+          "Expiration": "<datetime>",
+          "Path": "/",
+          "ServerCertificateId": "<server-certificate-id:1>",
+          "ServerCertificateName": "<server-certificate-name:1>",
+          "UploadDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-certificates": {
+        "IsTruncated": false,
+        "ServerCertificateMetadataList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:server-certificate/<server-certificate-name:1>",
+            "Expiration": "<datetime>",
+            "Path": "/",
+            "ServerCertificateId": "<server-certificate-id:1>",
+            "ServerCertificateName": "<server-certificate-name:1>",
+            "UploadDate": "<datetime>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-certificate": {
+        "ServerCertificate": {
+          "CertificateBody": "certificate-body",
+          "ServerCertificateMetadata": {
+            "Arn": "arn:<partition>:iam::111111111111:server-certificate/<server-certificate-name:1>",
+            "Expiration": "<datetime>",
+            "Path": "/",
+            "ServerCertificateId": "<server-certificate-id:1>",
+            "ServerCertificateName": "<server-certificate-name:1>",
+            "UploadDate": "<datetime>"
+          },
+          "Tags": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-certificate": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deleted-certificate-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Server Certificate with name <server-certificate-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_server_certificates.py::TestServerCertificate::test_server_certificate_lifecycle[/]": {
+    "recorded-date": "17-02-2026, 10:12:24",
+    "recorded-content": {
+      "upload-certificate": {
+        "ServerCertificateMetadata": {
+          "Arn": "arn:<partition>:iam::111111111111:server-certificate/<server-certificate-name:1>",
+          "Expiration": "<datetime>",
+          "Path": "/",
+          "ServerCertificateId": "<server-certificate-id:1>",
+          "ServerCertificateName": "<server-certificate-name:1>",
+          "UploadDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-certificates": {
+        "IsTruncated": false,
+        "ServerCertificateMetadataList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:server-certificate/<server-certificate-name:1>",
+            "Expiration": "<datetime>",
+            "Path": "/",
+            "ServerCertificateId": "<server-certificate-id:1>",
+            "ServerCertificateName": "<server-certificate-name:1>",
+            "UploadDate": "<datetime>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-certificate": {
+        "ServerCertificate": {
+          "CertificateBody": "certificate-body",
+          "ServerCertificateMetadata": {
+            "Arn": "arn:<partition>:iam::111111111111:server-certificate/<server-certificate-name:1>",
+            "Expiration": "<datetime>",
+            "Path": "/",
+            "ServerCertificateId": "<server-certificate-id:1>",
+            "ServerCertificateName": "<server-certificate-name:1>",
+            "UploadDate": "<datetime>"
+          },
+          "Tags": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-certificate": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deleted-certificate-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Server Certificate with name <server-certificate-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_server_certificates.py::TestServerCertificate::test_server_certificate_lifecycle[/test-path/]": {
+    "recorded-date": "17-02-2026, 10:12:25",
+    "recorded-content": {
+      "upload-certificate": {
+        "ServerCertificateMetadata": {
+          "Arn": "arn:<partition>:iam::111111111111:server-certificate/test-path/<server-certificate-name:1>",
+          "Expiration": "<datetime>",
+          "Path": "/test-path/",
+          "ServerCertificateId": "<server-certificate-id:1>",
+          "ServerCertificateName": "<server-certificate-name:1>",
+          "UploadDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-certificates": {
+        "IsTruncated": false,
+        "ServerCertificateMetadataList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:server-certificate/test-path/<server-certificate-name:1>",
+            "Expiration": "<datetime>",
+            "Path": "/test-path/",
+            "ServerCertificateId": "<server-certificate-id:1>",
+            "ServerCertificateName": "<server-certificate-name:1>",
+            "UploadDate": "<datetime>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-certificates-with-path": {
+        "IsTruncated": false,
+        "ServerCertificateMetadataList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:server-certificate/test-path/<server-certificate-name:1>",
+            "Expiration": "<datetime>",
+            "Path": "/test-path/",
+            "ServerCertificateId": "<server-certificate-id:1>",
+            "ServerCertificateName": "<server-certificate-name:1>",
+            "UploadDate": "<datetime>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-certificate": {
+        "ServerCertificate": {
+          "CertificateBody": "certificate-body",
+          "ServerCertificateMetadata": {
+            "Arn": "arn:<partition>:iam::111111111111:server-certificate/test-path/<server-certificate-name:1>",
+            "Expiration": "<datetime>",
+            "Path": "/test-path/",
+            "ServerCertificateId": "<server-certificate-id:1>",
+            "ServerCertificateName": "<server-certificate-name:1>",
+            "UploadDate": "<datetime>"
+          },
+          "Tags": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-certificate": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deleted-certificate-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Server Certificate with name <server-certificate-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_server_certificates.py::TestServerCertificate::test_server_certificate_with_chain": {
+    "recorded-date": "17-02-2026, 10:12:26",
+    "recorded-content": {
+      "upload-certificate-with-chain": {
+        "ServerCertificateMetadata": {
+          "Arn": "arn:<partition>:iam::111111111111:server-certificate/<server-certificate-name:1>",
+          "Expiration": "<datetime>",
+          "Path": "/",
+          "ServerCertificateId": "<server-certificate-id:1>",
+          "ServerCertificateName": "<server-certificate-name:1>",
+          "UploadDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-certificate-with-chain": {
+        "ServerCertificate": {
+          "CertificateBody": "certificate-body",
+          "CertificateChain": "certificate-chain",
+          "ServerCertificateMetadata": {
+            "Arn": "arn:<partition>:iam::111111111111:server-certificate/<server-certificate-name:1>",
+            "Expiration": "<datetime>",
+            "Path": "/",
+            "ServerCertificateId": "<server-certificate-id:1>",
+            "ServerCertificateName": "<server-certificate-name:1>",
+            "UploadDate": "<datetime>"
+          },
+          "Tags": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_server_certificates.py::TestServerCertificate::test_server_certificate_errors": {
+    "recorded-date": "17-02-2026, 10:12:27",
+    "recorded-content": {
+      "get-nonexistent-certificate-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Server Certificate with name nonexistent-certificate cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-nonexistent-certificate-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Server Certificate with name nonexistent-certificate cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "upload-certificate": {
+        "ServerCertificateMetadata": {
+          "Arn": "arn:<partition>:iam::111111111111:server-certificate/<server-certificate-name:1>",
+          "Expiration": "<datetime>",
+          "Path": "/",
+          "ServerCertificateId": "<server-certificate-id:1>",
+          "ServerCertificateName": "<server-certificate-name:1>",
+          "UploadDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-duplicate-certificate-error": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "The Server Certificate with name <server-certificate-name:1> already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  }
+}
