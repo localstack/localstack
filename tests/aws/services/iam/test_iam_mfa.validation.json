@@ -8,6 +8,15 @@
       "total": 1.81
     }
   },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_virtual_mfa_device": {
+    "last_validated_date": "2026-02-17T09:24:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.8,
+      "call": 2.49,
+      "teardown": 1.1,
+      "total": 4.39
+    }
+  },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_list_virtual_mfa_devices": {
     "last_validated_date": "2026-02-16T19:17:21+00:00",
     "durations_in_seconds": {

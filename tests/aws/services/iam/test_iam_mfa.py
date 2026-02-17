@@ -5,7 +5,9 @@ Migrated from moto's test suite to LocalStack with snapshot testing for AWS pari
 """
 
 import logging
+from datetime import datetime
 
+import pyotp
 import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
@@ -220,7 +222,7 @@ class TestVirtualMfaDevice:
             aws_client.iam.list_virtual_mfa_devices(Marker="invalid-marker-value")
         snapshot.match("list-invalid-marker-error", exc.value.response)
 
-    @markers.aws.only_localstack
+    @markers.aws.validated
     def test_enable_virtual_mfa_device(
         self, aws_client, snapshot, create_virtual_mfa_device, create_user
     ):
@@ -248,14 +250,19 @@ class TestVirtualMfaDevice:
         list_mfa_before = aws_client.iam.list_mfa_devices(UserName=user_name)
         snapshot.match("list-mfa-devices-before", list_mfa_before)
         # TODO use pyotp library to allow snapshot validation
+        otp = pyotp.TOTP(create_device_response["VirtualMFADevice"]["Base32StringSeed"])
+        # generate the last and the current auth code at once
+        current_time = datetime.now()
+        authcode_1 = otp.at(current_time, counter_offset=-1)
+        authcode_2 = otp.at(current_time)
 
         # Enable MFA device for user
         # Note: LocalStack accepts any 6-digit codes; AWS requires valid TOTP codes
         enable_response = aws_client.iam.enable_mfa_device(
             UserName=user_name,
             SerialNumber=serial_number,
-            AuthenticationCode1="123456",
-            AuthenticationCode2="654321",
+            AuthenticationCode1=authcode_1,
+            AuthenticationCode2=authcode_2,
         )
         snapshot.match("enable-mfa-device", enable_response)
 

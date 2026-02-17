@@ -336,5 +336,104 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_virtual_mfa_device": {
+    "recorded-date": "17-02-2026, 09:24:27",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-mfa-device": {
+        "VirtualMFADevice": {
+          "Base32StringSeed": "<base32-seed>",
+          "QRCodePNG": "<qr-code-png>",
+          "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-mfa-devices-before": {
+        "IsTruncated": false,
+        "MFADevices": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "enable-mfa-device": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-mfa-devices-after": {
+        "IsTruncated": false,
+        "MFADevices": [
+          {
+            "EnableDate": "<datetime>",
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-assigned-with-user": {
+        "IsTruncated": false,
+        "VirtualMFADevices": [
+          {
+            "EnableDate": "<datetime>",
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>",
+            "User": {
+              "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+              "CreateDate": "<datetime>",
+              "Path": "/",
+              "UserId": "<user-id:1>",
+              "UserName": "<user-name:1>"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deactivate-mfa-device": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-mfa-devices-after-deactivate": {
+        "IsTruncated": false,
+        "MFADevices": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-unassigned-after-deactivation": {
+        "IsTruncated": false,
+        "VirtualMFADevices": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
