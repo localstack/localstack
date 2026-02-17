@@ -34,8 +34,7 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 from urllib3 import HTTPHeaderDict
 
-import localstack.config
-from localstack import config
+from localstack import config, constants
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.s3 import StorageClass, TransitionDefaultMinimumObjectSize
 from localstack.config import S3_VIRTUAL_HOSTNAME
@@ -52,7 +51,7 @@ from localstack.services.s3.utils import (
     parse_expiration_header,
     rfc_1123_datetime,
 )
-from localstack.testing.aws.util import in_default_partition, is_aws_cloud
+from localstack.testing.aws.util import create_client_with_keys, in_default_partition, is_aws_cloud
 from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -8037,6 +8036,40 @@ class TestS3PresignedUrl:
         response = requests.put(req.url)
         assert response.status_code == 412
 
+    @markers.aws.only_localstack
+    @markers.requires_in_process  # Patches skip signature validation
+    @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
+    def test_pre_signed_url_validation_works_on_internal_account(
+        self,
+        aws_client,
+        account_id,
+        s3_create_bucket_with_client,
+        signature_version,
+        patch_s3_skip_signature_validation_false,
+    ):
+        bucket_name = f"bucket-{short_uid()}"
+        key_name = "test-key"
+        credentials = {
+            "AccessKeyId": config.INTERNAL_RESOURCE_ACCOUNT,
+            "SecretAccessKey": constants.INTERNAL_AWS_SECRET_ACCESS_KEY,
+        }
+        s3_client = create_client_with_keys(
+            service="s3",
+            region_name=AWS_REGION_US_EAST_1,
+            keys=credentials,
+            client_config=Config(signature_version=signature_version),
+        )
+
+        s3_create_bucket_with_client(s3_client=s3_client, Bucket=bucket_name)
+        s3_client.put_object(Body="test-value", Bucket=bucket_name, Key=key_name)
+        pre_signed_url = s3_client.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": bucket_name, "Key": key_name},
+            ExpiresIn=600,
+        )
+        response = requests.get(pre_signed_url)
+        assert response._content == b"test-value"
+
 
 class TestS3DeepArchive:
     """
@@ -13896,9 +13929,7 @@ def _website_bucket_url(bucket_name: str):
     if is_aws_cloud():
         region = AWS_REGION_US_EAST_1
         return f"http://{bucket_name}.s3-website-{region}.amazonaws.com"
-    return _bucket_url_vhost(
-        bucket_name, localstack_host=localstack.config.S3_STATIC_WEBSITE_HOSTNAME
-    )
+    return _bucket_url_vhost(bucket_name, localstack_host=config.S3_STATIC_WEBSITE_HOSTNAME)
 
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
