@@ -75,9 +75,7 @@ class TestOIDCProviderCreateErrors:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
-    def test_create_open_id_connect_provider_duplicate_error(
-        self, aws_client, snapshot, cleanups
-    ):
+    def test_create_open_id_connect_provider_duplicate_error(self, aws_client, snapshot, cleanups):
         """Test error when creating duplicate OIDC provider."""
         url = f"https://oidc-dup-{short_uid()}.example.com"
         response = aws_client.iam.create_open_id_connect_provider(
@@ -167,9 +165,7 @@ class TestOIDCProviderOperations:
         self, aws_client, account_id, snapshot, partition
     ):
         """Test error when getting a non-existent OIDC provider."""
-        fake_arn = (
-            f"arn:{partition}:iam::{account_id}:oidc-provider/non-existent-{short_uid()}.example.com"
-        )
+        fake_arn = f"arn:{partition}:iam::{account_id}:oidc-provider/non-existent-{short_uid()}.example.com"
 
         with pytest.raises(ClientError) as exc:
             aws_client.iam.get_open_id_connect_provider(OpenIDConnectProviderArn=fake_arn)
@@ -297,9 +293,7 @@ class TestOIDCProviderTags:
         )
 
         # Remove one tag
-        aws_client.iam.untag_open_id_connect_provider(
-            OpenIDConnectProviderArn=arn, TagKeys=["k2"]
-        )
+        aws_client.iam.untag_open_id_connect_provider(OpenIDConnectProviderArn=arn, TagKeys=["k2"])
 
         # Verify tag was removed
         get_response = aws_client.iam.get_open_id_connect_provider(OpenIDConnectProviderArn=arn)
