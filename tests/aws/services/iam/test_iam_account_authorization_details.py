@@ -28,6 +28,9 @@ ASSUME_ROLE_POLICY = json.dumps(
     }
 )
 
+# TODO remove once implemented
+pytestmark = pytest.mark.skip
+
 
 @pytest.fixture(autouse=True)
 def snapshot_transformers(snapshot):

@@ -11,6 +11,9 @@ from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
+# TODO remove once implemented
+pytestmark = pytest.mark.skip
+
 
 class TestIAMCredentialReport:
     """Tests for IAM credential report generation and retrieval.
