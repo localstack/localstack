@@ -2141,5 +2141,62 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_attach_detach_aws_managed_policy_role": {
+    "recorded-date": "16-02-2026, 15:40:29",
+    "recorded-content": {
+      "list-attached-2": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:1>",
+            "PolicyName": "<policy-name:1>"
+          },
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:2>",
+            "PolicyName": "<policy-name:2>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-attached-after-detach": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:2>",
+            "PolicyName": "<policy-name:2>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "detach-already-detached-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::aws:policy/service-role/<policy-name:1> was not found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "detach-nonexistent-policy-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::aws:policy/Nonexistent was not found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

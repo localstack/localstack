@@ -485,5 +485,39 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_attach_detach_aws_managed_policy_group": {
+    "recorded-date": "13-02-2026, 14:51:22",
+    "recorded-content": {
+      "list-attached-empty": {
+        "AttachedPolicies": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-attached-after-attach": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/AmazonElasticMapReduceforEC2Role",
+            "PolicyName": "AmazonElasticMapReduceforEC2Role"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-attached-after-detach": {
+        "AttachedPolicies": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
