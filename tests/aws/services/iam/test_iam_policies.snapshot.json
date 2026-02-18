@@ -1101,7 +1101,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-0]": {
-    "recorded-date": "18-02-2026, 13:36:05",
+    "recorded-date": "18-02-2026, 14:01:26",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1117,7 +1117,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-1]": {
-    "recorded-date": "18-02-2026, 13:36:06",
+    "recorded-date": "18-02-2026, 14:01:27",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1133,7 +1133,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-2]": {
-    "recorded-date": "18-02-2026, 13:36:07",
+    "recorded-date": "18-02-2026, 14:01:27",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1149,7 +1149,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-3]": {
-    "recorded-date": "18-02-2026, 13:36:07",
+    "recorded-date": "18-02-2026, 14:01:28",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1165,7 +1165,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-4]": {
-    "recorded-date": "18-02-2026, 13:36:08",
+    "recorded-date": "18-02-2026, 14:01:28",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1181,7 +1181,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-5]": {
-    "recorded-date": "18-02-2026, 13:36:08",
+    "recorded-date": "18-02-2026, 14:01:29",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1197,7 +1197,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-6]": {
-    "recorded-date": "18-02-2026, 13:36:09",
+    "recorded-date": "18-02-2026, 14:01:29",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1213,7 +1213,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-7]": {
-    "recorded-date": "18-02-2026, 13:36:09",
+    "recorded-date": "18-02-2026, 14:01:30",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1229,7 +1229,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-8]": {
-    "recorded-date": "18-02-2026, 13:36:10",
+    "recorded-date": "18-02-2026, 14:01:31",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1245,7 +1245,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-9]": {
-    "recorded-date": "18-02-2026, 13:36:11",
+    "recorded-date": "18-02-2026, 14:01:31",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1261,7 +1261,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-10]": {
-    "recorded-date": "18-02-2026, 13:36:11",
+    "recorded-date": "18-02-2026, 14:01:32",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1277,7 +1277,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-11]": {
-    "recorded-date": "18-02-2026, 13:36:12",
+    "recorded-date": "18-02-2026, 14:01:32",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1293,7 +1293,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-12]": {
-    "recorded-date": "18-02-2026, 13:36:12",
+    "recorded-date": "18-02-2026, 14:01:33",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1309,7 +1309,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-13]": {
-    "recorded-date": "18-02-2026, 13:36:13",
+    "recorded-date": "18-02-2026, 14:01:33",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1325,7 +1325,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-14]": {
-    "recorded-date": "18-02-2026, 13:36:13",
+    "recorded-date": "18-02-2026, 14:01:34",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1341,7 +1341,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-15]": {
-    "recorded-date": "18-02-2026, 13:36:14",
+    "recorded-date": "18-02-2026, 14:01:34",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1357,7 +1357,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-16]": {
-    "recorded-date": "18-02-2026, 13:36:15",
+    "recorded-date": "18-02-2026, 14:01:35",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1373,7 +1373,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-17]": {
-    "recorded-date": "18-02-2026, 13:36:15",
+    "recorded-date": "18-02-2026, 14:01:36",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1389,7 +1389,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-18]": {
-    "recorded-date": "18-02-2026, 13:36:16",
+    "recorded-date": "18-02-2026, 14:01:36",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1405,7 +1405,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-19]": {
-    "recorded-date": "18-02-2026, 13:36:16",
+    "recorded-date": "18-02-2026, 14:01:37",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1421,7 +1421,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-20]": {
-    "recorded-date": "18-02-2026, 13:36:17",
+    "recorded-date": "18-02-2026, 14:01:37",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1437,7 +1437,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-21]": {
-    "recorded-date": "18-02-2026, 13:36:17",
+    "recorded-date": "18-02-2026, 14:01:38",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1453,7 +1453,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-22]": {
-    "recorded-date": "18-02-2026, 13:36:18",
+    "recorded-date": "18-02-2026, 14:01:38",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1469,7 +1469,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-23]": {
-    "recorded-date": "18-02-2026, 13:36:18",
+    "recorded-date": "18-02-2026, 14:01:39",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1485,7 +1485,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-24]": {
-    "recorded-date": "18-02-2026, 13:36:19",
+    "recorded-date": "18-02-2026, 14:01:39",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1501,7 +1501,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-25]": {
-    "recorded-date": "18-02-2026, 13:36:20",
+    "recorded-date": "18-02-2026, 14:01:40",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1517,7 +1517,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-26]": {
-    "recorded-date": "18-02-2026, 13:36:20",
+    "recorded-date": "18-02-2026, 14:01:41",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1533,7 +1533,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-27]": {
-    "recorded-date": "18-02-2026, 13:36:21",
+    "recorded-date": "18-02-2026, 14:01:41",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1549,7 +1549,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-28]": {
-    "recorded-date": "18-02-2026, 13:36:21",
+    "recorded-date": "18-02-2026, 14:01:42",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1565,7 +1565,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-29]": {
-    "recorded-date": "18-02-2026, 13:36:22",
+    "recorded-date": "18-02-2026, 14:01:42",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1581,7 +1581,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-30]": {
-    "recorded-date": "18-02-2026, 13:36:22",
+    "recorded-date": "18-02-2026, 14:01:43",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1597,7 +1597,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-31]": {
-    "recorded-date": "18-02-2026, 13:36:23",
+    "recorded-date": "18-02-2026, 14:01:43",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1613,7 +1613,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-32]": {
-    "recorded-date": "18-02-2026, 13:36:23",
+    "recorded-date": "18-02-2026, 14:01:44",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1629,7 +1629,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-33]": {
-    "recorded-date": "18-02-2026, 13:36:24",
+    "recorded-date": "18-02-2026, 14:01:44",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1645,7 +1645,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-34]": {
-    "recorded-date": "18-02-2026, 13:36:24",
+    "recorded-date": "18-02-2026, 14:01:45",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1661,7 +1661,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-35]": {
-    "recorded-date": "18-02-2026, 13:36:25",
+    "recorded-date": "18-02-2026, 14:01:46",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1677,7 +1677,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-36]": {
-    "recorded-date": "18-02-2026, 13:36:25",
+    "recorded-date": "18-02-2026, 14:01:46",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1693,7 +1693,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-37]": {
-    "recorded-date": "18-02-2026, 13:36:26",
+    "recorded-date": "18-02-2026, 14:01:47",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1709,7 +1709,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-38]": {
-    "recorded-date": "18-02-2026, 13:36:27",
+    "recorded-date": "18-02-2026, 14:01:47",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1725,7 +1725,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-39]": {
-    "recorded-date": "18-02-2026, 13:36:27",
+    "recorded-date": "18-02-2026, 14:01:48",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1741,7 +1741,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-40]": {
-    "recorded-date": "18-02-2026, 13:36:28",
+    "recorded-date": "18-02-2026, 14:01:48",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1757,7 +1757,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-41]": {
-    "recorded-date": "18-02-2026, 13:36:28",
+    "recorded-date": "18-02-2026, 14:01:49",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1773,7 +1773,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-42]": {
-    "recorded-date": "18-02-2026, 13:36:29",
+    "recorded-date": "18-02-2026, 14:01:50",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1789,7 +1789,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-43]": {
-    "recorded-date": "18-02-2026, 13:36:29",
+    "recorded-date": "18-02-2026, 14:01:50",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1805,7 +1805,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-44]": {
-    "recorded-date": "18-02-2026, 13:36:30",
+    "recorded-date": "18-02-2026, 14:01:51",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1821,7 +1821,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-45]": {
-    "recorded-date": "18-02-2026, 13:36:30",
+    "recorded-date": "18-02-2026, 14:01:51",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1837,7 +1837,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-46]": {
-    "recorded-date": "18-02-2026, 13:36:31",
+    "recorded-date": "18-02-2026, 14:01:52",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1853,7 +1853,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-47]": {
-    "recorded-date": "18-02-2026, 13:36:32",
+    "recorded-date": "18-02-2026, 14:01:52",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1869,7 +1869,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-48]": {
-    "recorded-date": "18-02-2026, 13:36:32",
+    "recorded-date": "18-02-2026, 14:01:53",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1885,7 +1885,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-49]": {
-    "recorded-date": "18-02-2026, 13:36:33",
+    "recorded-date": "18-02-2026, 14:01:53",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1901,7 +1901,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-50]": {
-    "recorded-date": "18-02-2026, 13:36:33",
+    "recorded-date": "18-02-2026, 14:01:54",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1917,7 +1917,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-51]": {
-    "recorded-date": "18-02-2026, 13:36:34",
+    "recorded-date": "18-02-2026, 14:01:55",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1933,7 +1933,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-52]": {
-    "recorded-date": "18-02-2026, 13:36:34",
+    "recorded-date": "18-02-2026, 14:01:55",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1949,7 +1949,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-53]": {
-    "recorded-date": "18-02-2026, 13:36:35",
+    "recorded-date": "18-02-2026, 14:01:56",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1965,7 +1965,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-54]": {
-    "recorded-date": "18-02-2026, 13:36:35",
+    "recorded-date": "18-02-2026, 14:01:56",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1981,7 +1981,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-55]": {
-    "recorded-date": "18-02-2026, 13:36:36",
+    "recorded-date": "18-02-2026, 14:01:57",
     "recorded-content": {
       "error": {
         "Error": {
@@ -1997,7 +1997,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-56]": {
-    "recorded-date": "18-02-2026, 13:36:36",
+    "recorded-date": "18-02-2026, 14:01:57",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2013,7 +2013,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-57]": {
-    "recorded-date": "18-02-2026, 13:36:37",
+    "recorded-date": "18-02-2026, 14:01:58",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2029,7 +2029,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-58]": {
-    "recorded-date": "18-02-2026, 13:36:37",
+    "recorded-date": "18-02-2026, 14:01:58",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2045,7 +2045,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-59]": {
-    "recorded-date": "18-02-2026, 13:36:38",
+    "recorded-date": "18-02-2026, 14:01:59",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2061,7 +2061,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-60]": {
-    "recorded-date": "18-02-2026, 13:36:39",
+    "recorded-date": "18-02-2026, 14:02:00",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2077,7 +2077,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-61]": {
-    "recorded-date": "18-02-2026, 13:36:39",
+    "recorded-date": "18-02-2026, 14:02:00",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2093,7 +2093,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-62]": {
-    "recorded-date": "18-02-2026, 13:36:40",
+    "recorded-date": "18-02-2026, 14:02:01",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2109,7 +2109,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-63]": {
-    "recorded-date": "18-02-2026, 13:36:40",
+    "recorded-date": "18-02-2026, 14:02:01",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2125,7 +2125,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-64]": {
-    "recorded-date": "18-02-2026, 13:36:41",
+    "recorded-date": "18-02-2026, 14:02:02",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2141,7 +2141,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-65]": {
-    "recorded-date": "18-02-2026, 13:36:41",
+    "recorded-date": "18-02-2026, 14:02:03",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2157,7 +2157,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-66]": {
-    "recorded-date": "18-02-2026, 13:36:42",
+    "recorded-date": "18-02-2026, 14:02:03",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2173,7 +2173,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-67]": {
-    "recorded-date": "18-02-2026, 13:36:42",
+    "recorded-date": "18-02-2026, 14:02:04",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2189,7 +2189,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-68]": {
-    "recorded-date": "18-02-2026, 13:36:43",
+    "recorded-date": "18-02-2026, 14:02:04",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2205,7 +2205,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-69]": {
-    "recorded-date": "18-02-2026, 13:36:43",
+    "recorded-date": "18-02-2026, 14:02:05",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2221,7 +2221,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-70]": {
-    "recorded-date": "18-02-2026, 13:36:44",
+    "recorded-date": "18-02-2026, 14:02:05",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2237,7 +2237,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-71]": {
-    "recorded-date": "18-02-2026, 13:36:45",
+    "recorded-date": "18-02-2026, 14:02:06",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2253,7 +2253,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-72]": {
-    "recorded-date": "18-02-2026, 13:36:45",
+    "recorded-date": "18-02-2026, 14:02:06",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2269,7 +2269,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-73]": {
-    "recorded-date": "18-02-2026, 13:36:46",
+    "recorded-date": "18-02-2026, 14:02:07",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2285,7 +2285,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-74]": {
-    "recorded-date": "18-02-2026, 13:36:46",
+    "recorded-date": "18-02-2026, 14:02:08",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2301,7 +2301,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-75]": {
-    "recorded-date": "18-02-2026, 13:36:47",
+    "recorded-date": "18-02-2026, 14:02:08",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2317,7 +2317,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-76]": {
-    "recorded-date": "18-02-2026, 13:36:47",
+    "recorded-date": "18-02-2026, 14:02:09",
     "recorded-content": {
       "error": {
         "Error": {
@@ -2333,7 +2333,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-77]": {
-    "recorded-date": "18-02-2026, 13:36:48",
+    "recorded-date": "18-02-2026, 14:02:09",
     "recorded-content": {
       "error": {
         "Error": {
@@ -3697,6 +3697,72 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_order": {
+    "recorded-date": "18-02-2026, 14:50:05",
+    "recorded-content": {
+      "create-with-case-sensitive-tags": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [
+            {
+              "Key": "abc",
+              "Value": "first"
+            },
+            {
+              "Key": "b",
+              "Value": "second"
+            },
+            {
+              "Key": "z",
+              "Value": "third"
+            },
+            {
+              "Key": "a",
+              "Value": "fourth"
+            }
+          ],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "a",
+            "Value": "fourth"
+          },
+          {
+            "Key": "b",
+            "Value": "second"
+          },
+          {
+            "Key": "z",
+            "Value": "third"
+          },
+          {
+            "Key": "abc",
+            "Value": "first"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

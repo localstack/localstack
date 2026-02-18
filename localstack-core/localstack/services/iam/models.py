@@ -5,7 +5,7 @@ Store and entity definitions for IAM service.
 import dataclasses
 from dataclasses import field
 
-from localstack.aws.api.iam import Policy, PolicyVersion, tagListType
+from localstack.aws.api.iam import Policy, PolicyVersion
 from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
 
 
@@ -16,7 +16,6 @@ class ManagedPolicyEntity:
     policy: Policy  # From localstack.aws.api.iam
     versions: dict[str, PolicyVersion] = field(default_factory=dict)  # version_id -> PolicyVersion
     next_version_num: int = 2  # Next version number (v1 is created with policy)
-    tags: tagListType = field(default_factory=list)
 
 
 class IamStore(BaseStore):
