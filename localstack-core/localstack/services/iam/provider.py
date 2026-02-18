@@ -282,6 +282,13 @@ class IamProvider(IamApi):
                 return tag["Value"]
         return None
 
+    def _get_policy_entity(self, store: IamStore, policy_arn: str) -> ManagedPolicyEntity:
+        """Gets the policy entity and raises the right exception if not found."""
+        entity = store.MANAGED_POLICIES.get(policy_arn)
+        if not entity:
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+        return entity
+
     def create_policy(
         self,
         context: RequestContext,
@@ -341,12 +348,12 @@ class IamProvider(IamApi):
                 policy["Description"] = description
 
             # Store the policy entity
-            entity = ManagedPolicyEntity(
+            policy_entity = ManagedPolicyEntity(
                 policy=policy,
                 versions={"v1": version},
                 next_version_num=2,
             )
-            store.MANAGED_POLICIES[policy_arn] = entity
+            store.MANAGED_POLICIES[policy_arn] = policy_entity
 
         # AWS create_policy response does NOT include Description (get_policy does)
         response_policy = Policy(policy)
@@ -361,21 +368,18 @@ class IamProvider(IamApi):
     ) -> GetPolicyResponse:
         store = self._get_store(context)
         with self._policy_lock:
-            entity = store.MANAGED_POLICIES.get(policy_arn)
-            if not entity:
-                raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+            policy_entity = self._get_policy_entity(store, policy_arn)
 
             # Return a copy of the policy with current tags (AWS returns empty list if no tags)
-            policy = dict(entity.policy)
+            policy = dict(policy_entity.policy)
 
         return GetPolicyResponse(Policy=policy)
 
     def delete_policy(self, context: RequestContext, policy_arn: arnType, **kwargs) -> None:
         store = self._get_store(context)
         with self._policy_lock:
-            policy = store.MANAGED_POLICIES.pop(policy_arn)
-            if not policy:
-                raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+            self._get_policy_entity(store, policy_arn)
+            store.MANAGED_POLICIES.pop(policy_arn)
 
     def list_policies(
         self,
@@ -445,20 +449,18 @@ class IamProvider(IamApi):
 
         store = self._get_store(context)
         with self._policy_lock:
-            entity = store.MANAGED_POLICIES.get(policy_arn)
-            if not entity:
-                raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+            policy_entity = self._get_policy_entity(store, policy_arn)
 
             # Check version limit
-            if len(entity.versions) >= MAX_POLICY_VERSIONS:
+            if len(policy_entity.versions) >= MAX_POLICY_VERSIONS:
                 raise LimitExceededException(
                     f"A managed policy can have up to {MAX_POLICY_VERSIONS} versions. "
                     f"Before you create a new version, you must delete an existing version."
                 )
 
             # Create new version
-            version_id = f"v{entity.next_version_num}"
-            entity.next_version_num += 1
+            version_id = f"v{policy_entity.next_version_num}"
+            policy_entity.next_version_num += 1
             now = datetime.now(UTC)
 
             version = PolicyVersion(
@@ -470,12 +472,12 @@ class IamProvider(IamApi):
 
             # If setting as default, update the old default
             if set_as_default:
-                for v in entity.versions.values():
+                for v in policy_entity.versions.values():
                     v["IsDefaultVersion"] = False
-                entity.policy["DefaultVersionId"] = version_id
-                entity.policy["UpdateDate"] = now
+                policy_entity.policy["DefaultVersionId"] = version_id
+                policy_entity.policy["UpdateDate"] = now
 
-            entity.versions[version_id] = version
+            policy_entity.versions[version_id] = version
 
         # Return version without Document (AWS doesn't include it in create response)
         response_version = PolicyVersion(
@@ -495,14 +497,14 @@ class IamProvider(IamApi):
     ) -> GetPolicyVersionResponse:
         store = self._get_store(context)
         with self._policy_lock:
-            entity = store.MANAGED_POLICIES.get(policy_arn)
+            policy_entity = store.MANAGED_POLICIES.get(policy_arn)
             # For get/set/delete version: if policy doesn't exist, use version-style error message
-            if not entity:
+            if not policy_entity:
                 raise NoSuchEntityException(
                     f"Policy {policy_arn} version {version_id} does not exist or is not attachable."
                 )
 
-            version = entity.versions.get(version_id)
+            version = policy_entity.versions.get(version_id)
             if not version:
                 raise NoSuchEntityException(
                     f"Policy {policy_arn} version {version_id} does not exist or is not attachable."
@@ -519,14 +521,11 @@ class IamProvider(IamApi):
         **kwargs,
     ) -> ListPolicyVersionsResponse:
         store = self._get_store(context)
-        entity = store.MANAGED_POLICIES.get(policy_arn)
-        if not entity:
-            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
-
         with self._policy_lock:
+            policy_entity = self._get_policy_entity(store, policy_arn)
             # Sort versions by version ID descending (most recent first)
             sorted_versions = sorted(
-                entity.versions.values(),
+                policy_entity.versions.values(),
                 key=lambda v: int(v["VersionId"][1:].split(".")[0]),
                 reverse=True,
             )
@@ -552,11 +551,9 @@ class IamProvider(IamApi):
     ) -> None:
         store = self._get_store(context)
         with self._policy_lock:
-            entity = store.MANAGED_POLICIES.get(policy_arn)
-            if not entity:
-                raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+            policy_entity = self._get_policy_entity(store, policy_arn)
 
-            version = entity.versions.get(version_id)
+            version = policy_entity.versions.get(version_id)
             if not version:
                 raise NoSuchEntityException(
                     f"Policy {policy_arn} version {version_id} does not exist or is not attachable."
@@ -566,7 +563,7 @@ class IamProvider(IamApi):
             if version.get("IsDefaultVersion"):
                 raise DeleteConflictException("Cannot delete the default version of a policy.")
 
-        del entity.versions[version_id]
+            del policy_entity.versions[version_id]
 
     def set_default_policy_version(
         self,
@@ -619,18 +616,16 @@ class IamProvider(IamApi):
 
         store = self._get_store(context)
         with self._policy_lock:
-            entity = store.MANAGED_POLICIES.get(policy_arn)
-            if not entity:
-                raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+            policy_entity = self._get_policy_entity(store, policy_arn)
 
             # Merge tags - update existing keys, add new ones
-            existing_keys = {tag["Key"]: i for i, tag in enumerate(entity.policy["Tags"])}
+            existing_keys = {tag["Key"]: i for i, tag in enumerate(policy_entity.policy["Tags"])}
             for tag in tags:
                 key = tag["Key"]
                 if key in existing_keys:
-                    entity.policy["Tags"][existing_keys[key]] = tag
+                    policy_entity.policy["Tags"][existing_keys[key]] = tag
                 else:
-                    entity.policy["Tags"].append(tag)
+                    policy_entity.policy["Tags"].append(tag)
 
     def untag_policy(
         self,
@@ -643,14 +638,12 @@ class IamProvider(IamApi):
 
         store = self._get_store(context)
         with self._policy_lock:
-            entity = store.MANAGED_POLICIES.get(policy_arn)
-            if not entity:
-                raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+            policy_entity = self._get_policy_entity(store, policy_arn)
 
             # Remove tags with matching keys (case-sensitive)
             tag_keys_set = set(tag_keys)
-            entity.policy["Tags"] = [
-                tag for tag in entity.policy["Tags"] if tag["Key"] not in tag_keys_set
+            policy_entity.policy["Tags"] = [
+                tag for tag in policy_entity.policy["Tags"] if tag["Key"] not in tag_keys_set
             ]
 
     def list_policy_tags(
@@ -663,11 +656,9 @@ class IamProvider(IamApi):
     ) -> ListPolicyTagsResponse:
         store = self._get_store(context)
         with self._policy_lock:
-            entity = store.MANAGED_POLICIES.get(policy_arn)
-            if not entity:
-                raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+            policy_entity = self._get_policy_entity(store, policy_arn)
 
-            tags = list(entity.policy.get("Tags") or [])
+            tags = list(policy_entity.policy.get("Tags") or [])
         # sort alphabetically
         tags.sort(key=lambda k: k["Key"])
         # then by length
@@ -678,6 +669,7 @@ class IamProvider(IamApi):
         def _token_generator(tag: Tag) -> str:
             return tag.get("Key")
 
+        # base64 encode/decode to avoid plaintext tag as marker
         if marker:
             marker = base64.b64decode(marker).decode("utf-8")
 
