@@ -796,6 +796,8 @@ class TestLambdaBehavior:
             "$..Payload.environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
             "$..Payload.environment.EDGE_PORT",
             "$..Payload.environment.LOCALSTACK_HOSTNAME",
+            # Missing in Python Lambda images (3.12, 3.13, 3.14) since around 2026-02-18
+            "$..Payload.environment.LC_CTYPE",
         ]
     )
     @markers.requires_in_process
@@ -823,8 +825,9 @@ class TestLambdaBehavior:
         )
         create_result = create_lambda_function(
             func_name=func_name,
+            # TODO: rework init env snapshotting test case because /proc/1 introspection does not work anymore at AWS
             handler_file=TEST_LAMBDA_PROCESS_INSPECTION,
-            runtime=Runtime.python3_12,
+            runtime=Runtime.python3_14,
             client=aws_client.lambda_,
         )
         snapshot.match("create-result", create_result)
