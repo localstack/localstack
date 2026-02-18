@@ -1,3 +1,4 @@
+import base64
 import inspect
 import json
 import logging
@@ -5,9 +6,9 @@ import random
 import re
 import string
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, TypeVar
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from moto.iam.models import (
     IAMBackend,
@@ -21,6 +22,8 @@ from moto.iam.utils import generate_access_key_id_from_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
     AttachedPermissionsBoundary,
+    CreatePolicyResponse,
+    CreatePolicyVersionResponse,
     CreateRoleRequest,
     CreateRoleResponse,
     CreateServiceLinkedRoleResponse,
@@ -30,15 +33,25 @@ from localstack.aws.api.iam import (
     DeleteServiceLinkedRoleResponse,
     DeletionTaskIdType,
     DeletionTaskStatusType,
+    EntityAlreadyExistsException,
+    GetPolicyResponse,
+    GetPolicyVersionResponse,
     GetServiceLinkedRoleDeletionStatusResponse,
     GetUserResponse,
     IamApi,
     InvalidInputException,
+    LimitExceededException,
     ListInstanceProfileTagsResponse,
+    ListPoliciesResponse,
+    ListPolicyTagsResponse,
+    ListPolicyVersionsResponse,
     ListRolesResponse,
     ListServiceSpecificCredentialsResponse,
     MalformedPolicyDocumentException,
     NoSuchEntityException,
+    Policy,
+    PolicyUsageType,
+    PolicyVersion,
     ResetServiceSpecificCredentialResponse,
     Role,
     ServiceSpecificCredential,
@@ -48,6 +61,7 @@ from localstack.aws.api.iam import (
     User,
     allUsers,
     arnType,
+    booleanType,
     credentialAgeDays,
     customSuffixType,
     existingUserNameType,
@@ -57,6 +71,12 @@ from localstack.aws.api.iam import (
     maxItemsType,
     pathPrefixType,
     pathType,
+    policyDescriptionType,
+    policyDocumentType,
+    policyNameType,
+    policyPathType,
+    policyScopeType,
+    policyVersionIdType,
     roleDescriptionType,
     roleNameType,
     serviceName,
@@ -69,6 +89,8 @@ from localstack.aws.api.iam import (
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.iam.iam_patches import apply_iam_patches
+from localstack.services.iam.models import ManagedPolicyEntity, iam_stores
+from localstack.services.iam.policy_validation import IAMPolicyDocumentValidator
 from localstack.services.iam.resources.policy_simulator import (
     BasicIAMPolicySimulator,
     IAMPolicySimulator,
@@ -76,6 +98,7 @@ from localstack.services.iam.resources.policy_simulator import (
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
 from localstack.services.moto import call_moto
 from localstack.state import StateVisitor
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 
 LOG = logging.getLogger(__name__)
@@ -85,6 +108,18 @@ SERVICE_LINKED_ROLE_PATH_PREFIX = "/aws-service-role"
 POLICY_ARN_REGEX = re.compile(r"arn:[^:]+:iam::(?:\d{12}|aws):policy/.*")
 
 CREDENTIAL_ID_REGEX = re.compile(r"^\w+$")
+
+# Version ID format: v1, v2, etc. (AWS also accepts v1.2.abc style but we use simple v<n>)
+VERSION_ID_REGEX = re.compile(r"^v[1-9][0-9]*(\.[A-Za-z0-9-]*)?$")
+
+# Tag key regex pattern (from AWS documentation)
+TAG_KEY_REGEX = re.compile(r"^[\w\s_.:/=+\-@]+$")
+
+# Maximum versions per policy
+MAX_POLICY_VERSIONS = 5
+
+# Maximum tags per policy
+MAX_POLICY_TAGS = 50
 
 T = TypeVar("T")
 
@@ -113,6 +148,7 @@ class IamProvider(IamApi):
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(iam_backends)
+        visitor.visit(iam_stores)
 
     @handler("CreateRole", expand=False)
     def create_role(
@@ -143,12 +179,508 @@ class IamProvider(IamApi):
     ) -> SimulatePolicyResponse:
         return self.policy_simulator.simulate_principal_policy(context, request)
 
-    def delete_policy(self, context: RequestContext, policy_arn: arnType, **kwargs) -> None:
-        backend = get_iam_backend(context)
-        if backend.managed_policies.get(policy_arn):
-            backend.managed_policies.pop(policy_arn, None)
-        else:
+    # ------------------------------ Managed Policy Operations ------------------------------ #
+
+    def _get_store(self, context: RequestContext):
+        """Get the IAM store for the current account and region."""
+        return iam_stores[context.account_id][context.region]
+
+    def _generate_policy_id(self) -> str:
+        """Generate a policy ID: 'A' followed by 20 random alphanumeric characters."""
+        return "A" + "".join(random.choices(string.ascii_uppercase + string.digits, k=20))
+
+    def _build_policy_arn(self, context: RequestContext, path: str, policy_name: str) -> str:
+        """Build the ARN for a managed policy."""
+        partition = get_partition(context.region)
+        # Path has a prefix like /my/path/
+        return f"arn:{partition}:iam::{context.account_id}:policy{path}{policy_name}"
+
+    def _validate_tags(self, tags: tagListType | None) -> None:
+        """Validate tags according to AWS rules."""
+        if not tags:
+            return
+
+        errors = []
+        if len(tags) > MAX_POLICY_TAGS:
+            errors.append(
+                "Value at 'tags' failed to satisfy constraint: Member must have length less than or equal to 50"
+            )
+
+        # early return
+        if errors:
+            raise ValidationListError(errors)
+
+        seen_keys = set()
+        for tag in tags:
+            key = tag.get("Key", "")
+            value = tag.get("Value", "")
+
+            # Check for duplicate keys (case-sensitive)
+            if key in seen_keys:
+                raise InvalidInputException("Duplicate tag keys found.")
+            seen_keys.add(key)
+
+            # Key length
+            if len(key) > 128:
+                errors.append(
+                    f"Value at 'tags.{len(seen_keys)}.member.key' "
+                    f"failed to satisfy constraint: Member must have length less than or equal to 128"
+                )
+
+            # Value length
+            if len(value) > 256:
+                errors.append(
+                    f"Value at 'tags.{len(seen_keys)}.member.value' "
+                    f"failed to satisfy constraint: Member must have length less than or equal to 256"
+                )
+
+            # Key format validation
+            if not TAG_KEY_REGEX.match(key):
+                errors.append(
+                    f"Value at 'tags.{len(seen_keys)}.member.key' "
+                    f"failed to satisfy constraint: Member must satisfy regular expression pattern: [\\p{{L}}\\p{{Z}}\\p{{N}}_.:/=+\\-@]+"
+                )
+        if errors:
+            raise ValidationListError(errors)
+
+    def _validate_tag_keys(self, tag_keys: tagKeyListType | None) -> None:
+        """Validate tag keys for untag operations."""
+        if not tag_keys:
+            return
+
+        errors = []
+        if len(tag_keys) > MAX_POLICY_TAGS:
+            errors.append(
+                "Value at 'tagKeys' "
+                "failed to satisfy constraint: Member must have length less than or equal to 50"
+            )
+
+        for i, key in enumerate(tag_keys):
+            if not key or len(key) > 128 or not TAG_KEY_REGEX.match(key):
+                errors.append(
+                    "Value at 'tagKeys' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 128, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+, Member must not be null]"
+                )
+        if errors:
+            raise ValidationListError(errors)
+
+    def create_policy(
+        self,
+        context: RequestContext,
+        policy_name: policyNameType,
+        policy_document: policyDocumentType,
+        path: policyPathType = None,
+        description: policyDescriptionType = None,
+        tags: tagListType = None,
+        **kwargs,
+    ) -> CreatePolicyResponse:
+        # Validate policy document
+        validator = IAMPolicyDocumentValidator(policy_document)
+        validator.validate()
+
+        # Validate tags
+        self._validate_tags(tags)
+
+        store = self._get_store(context)
+        path = path or "/"
+
+        # Build ARN and check for duplicates
+        policy_arn = self._build_policy_arn(context, path, policy_name)
+        if policy_arn in store.MANAGED_POLICIES:
+            raise EntityAlreadyExistsException(
+                f"A policy called {policy_name} already exists. Duplicate names are not allowed."
+            )
+
+        # Generate IDs and timestamps
+        policy_id = self._generate_policy_id()
+        now = datetime.now(UTC)
+
+        # Create the initial version (v1)
+        version = PolicyVersion(
+            Document=quote(policy_document, safe=""),
+            VersionId="v1",
+            IsDefaultVersion=True,
+            CreateDate=now,
+        )
+
+        # Create the policy for storage (with Description if provided)
+        policy = Policy(
+            PolicyName=policy_name,
+            PolicyId=policy_id,
+            Arn=policy_arn,
+            Path=path,
+            DefaultVersionId="v1",
+            AttachmentCount=0,
+            PermissionsBoundaryUsageCount=0,
+            IsAttachable=True,
+            CreateDate=now,
+            UpdateDate=now,
+            Tags=tags if tags else None,
+        )
+        # Store Description in the policy for get_policy to return
+        if description:
+            policy["Description"] = description
+
+        # Store the policy entity
+        entity = ManagedPolicyEntity(
+            policy=policy,
+            versions={"v1": version},
+            next_version_num=2,
+            tags=tags if tags else [],
+        )
+        store.MANAGED_POLICIES[policy_arn] = entity
+
+        # AWS create_policy response does NOT include Description (get_policy does)
+        response_policy = dict(policy)
+        if "Description" in response_policy:
+            del response_policy["Description"]
+
+        return CreatePolicyResponse(Policy=response_policy)
+
+    def get_policy(
+        self, context: RequestContext, policy_arn: arnType, **kwargs
+    ) -> GetPolicyResponse:
+        store = self._get_store(context)
+        entity = store.MANAGED_POLICIES.get(policy_arn)
+        if not entity:
             raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+
+        # Return a copy of the policy with current tags (AWS returns empty list if no tags)
+        policy = dict(entity.policy)
+        policy["Tags"] = entity.tags if entity.tags else []
+
+        return GetPolicyResponse(Policy=policy)
+
+    def delete_policy(self, context: RequestContext, policy_arn: arnType, **kwargs) -> None:
+        store = self._get_store(context)
+        if policy_arn not in store.MANAGED_POLICIES:
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+        del store.MANAGED_POLICIES[policy_arn]
+
+    def list_policies(
+        self,
+        context: RequestContext,
+        scope: policyScopeType = None,
+        only_attached: booleanType = None,
+        path_prefix: pathPrefixType = None,
+        policy_usage_filter: PolicyUsageType = None,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListPoliciesResponse:
+        store = self._get_store(context)
+
+        # Filter policies
+        policies = []
+        for entity in store.MANAGED_POLICIES.values():
+            policy = entity.policy
+
+            # Filter by scope - only "Local" customer-managed policies for now
+            if scope == "AWS":
+                continue  # Skip - we don't have AWS managed policies yet
+
+            # Filter by path prefix
+            if path_prefix and not policy.get("Path", "/").startswith(path_prefix):
+                continue
+
+            # Filter by attached
+            if only_attached and policy.get("AttachmentCount", 0) == 0:
+                continue
+
+            policies.append(policy)
+
+        # Sort by PolicyName
+        policies.sort(key=lambda p: p.get("PolicyName", ""))
+
+        # Pagination
+        start_index = 0
+        if marker:
+            for i, policy in enumerate(policies):
+                if policy.get("PolicyName") == marker:
+                    start_index = i + 1
+                    break
+
+        max_items = max_items or 100
+        end_index = start_index + max_items
+        page = policies[start_index:end_index]
+
+        is_truncated = end_index < len(policies)
+        next_marker = policies[end_index - 1].get("PolicyName") if is_truncated and page else None
+
+        response = ListPoliciesResponse(Policies=page, IsTruncated=is_truncated)
+        if next_marker:
+            response["Marker"] = next_marker
+
+        return response
+
+    # ------------------------------ Policy Version Operations ------------------------------ #
+
+    def create_policy_version(
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        policy_document: policyDocumentType,
+        set_as_default: booleanType = None,
+        **kwargs,
+    ) -> CreatePolicyVersionResponse:
+        # Validate policy document
+        validator = IAMPolicyDocumentValidator(policy_document)
+        validator.validate()
+
+        store = self._get_store(context)
+        entity = store.MANAGED_POLICIES.get(policy_arn)
+        if not entity:
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+
+        # Check version limit
+        if len(entity.versions) >= MAX_POLICY_VERSIONS:
+            raise LimitExceededException(
+                f"A managed policy can have up to {MAX_POLICY_VERSIONS} versions. "
+                f"Before you create a new version, you must delete an existing version."
+            )
+
+        # Create new version
+        version_id = f"v{entity.next_version_num}"
+        entity.next_version_num += 1
+        now = datetime.now(UTC)
+
+        version = PolicyVersion(
+            Document=quote(policy_document, safe=""),
+            VersionId=version_id,
+            IsDefaultVersion=bool(set_as_default),
+            CreateDate=now,
+        )
+
+        # If setting as default, update the old default
+        if set_as_default:
+            for v in entity.versions.values():
+                v["IsDefaultVersion"] = False
+            entity.policy["DefaultVersionId"] = version_id
+            entity.policy["UpdateDate"] = now
+
+        entity.versions[version_id] = version
+
+        # Return version without Document (AWS doesn't include it in create response)
+        response_version = PolicyVersion(
+            VersionId=version_id,
+            IsDefaultVersion=bool(set_as_default),
+            CreateDate=now,
+        )
+
+        return CreatePolicyVersionResponse(PolicyVersion=response_version)
+
+    def get_policy_version(
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        version_id: policyVersionIdType,
+        **kwargs,
+    ) -> GetPolicyVersionResponse:
+        store = self._get_store(context)
+        entity = store.MANAGED_POLICIES.get(policy_arn)
+        # For get/set/delete version: if policy doesn't exist, use version-style error message
+        if not entity:
+            raise NoSuchEntityException(
+                f"Policy {policy_arn} version {version_id} does not exist or is not attachable."
+            )
+
+        version = entity.versions.get(version_id)
+        if not version:
+            raise NoSuchEntityException(
+                f"Policy {policy_arn} version {version_id} does not exist or is not attachable."
+            )
+
+        # Return a copy with the Document decoded from URL-encoding
+        result_version = dict(version)
+        if result_version.get("Document"):
+            result_version["Document"] = unquote(result_version["Document"])
+
+        return GetPolicyVersionResponse(PolicyVersion=result_version)
+
+    def list_policy_versions(
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListPolicyVersionsResponse:
+        store = self._get_store(context)
+        entity = store.MANAGED_POLICIES.get(policy_arn)
+        if not entity:
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+
+        # Sort versions by version ID descending (most recent first)
+        sorted_versions = sorted(
+            entity.versions.values(),
+            key=lambda v: int(v["VersionId"][1:].split(".")[0]),
+            reverse=True,
+        )
+
+        # Return versions without Document field
+        versions = [
+            PolicyVersion(
+                VersionId=v["VersionId"],
+                IsDefaultVersion=v.get("IsDefaultVersion", False),
+                CreateDate=v.get("CreateDate"),
+            )
+            for v in sorted_versions
+        ]
+
+        return ListPolicyVersionsResponse(Versions=versions, IsTruncated=False)
+
+    def delete_policy_version(
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        version_id: policyVersionIdType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+        entity = store.MANAGED_POLICIES.get(policy_arn)
+        if not entity:
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+
+        version = entity.versions.get(version_id)
+        if not version:
+            raise NoSuchEntityException(
+                f"Policy {policy_arn} version {version_id} does not exist or is not attachable."
+            )
+
+        # Cannot delete the default version
+        if version.get("IsDefaultVersion"):
+            raise DeleteConflictException("Cannot delete the default version of a policy.")
+
+        del entity.versions[version_id]
+
+    def set_default_policy_version(
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        version_id: policyVersionIdType,
+        **kwargs,
+    ) -> None:
+        # Validate version ID format
+        if not VERSION_ID_REGEX.match(version_id):
+            raise ValidationError(
+                "1 validation error detected: Value at 'versionId' failed to satisfy constraint: "
+                r"Member must satisfy regular expression pattern: v[1-9][0-9]*(\.[A-Za-z0-9-]*)?"
+            )
+
+        store = self._get_store(context)
+        entity = store.MANAGED_POLICIES.get(policy_arn)
+        # For get/set/delete version: if policy doesn't exist, use version-style error message
+        if not entity:
+            raise NoSuchEntityException(
+                f"Policy {policy_arn} version {version_id} does not exist or is not attachable."
+            )
+
+        version = entity.versions.get(version_id)
+        if not version:
+            raise NoSuchEntityException(
+                f"Policy {policy_arn} version {version_id} does not exist or is not attachable."
+            )
+
+        # Update IsDefaultVersion for all versions
+        for v in entity.versions.values():
+            v["IsDefaultVersion"] = False
+        version["IsDefaultVersion"] = True
+
+        # Update the policy
+        entity.policy["DefaultVersionId"] = version_id
+        entity.policy["UpdateDate"] = datetime.now(UTC)
+
+    # ------------------------------ Policy Tag Operations ------------------------------ #
+
+    def tag_policy(
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        tags: tagListType,
+        **kwargs,
+    ) -> None:
+        self._validate_tags(tags)
+
+        store = self._get_store(context)
+        entity = store.MANAGED_POLICIES.get(policy_arn)
+        if not entity:
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+
+        # Merge tags - update existing keys, add new ones
+        existing_keys = {tag["Key"]: i for i, tag in enumerate(entity.tags)}
+        for tag in tags:
+            key = tag["Key"]
+            if key in existing_keys:
+                entity.tags[existing_keys[key]] = tag
+            else:
+                entity.tags.append(tag)
+
+        # Update policy tags reference
+        entity.policy["Tags"] = entity.tags if entity.tags else None
+
+    def untag_policy(
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        tag_keys: tagKeyListType,
+        **kwargs,
+    ) -> None:
+        self._validate_tag_keys(tag_keys)
+
+        store = self._get_store(context)
+        entity = store.MANAGED_POLICIES.get(policy_arn)
+        if not entity:
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+
+        # Remove tags with matching keys (case-sensitive)
+        tag_keys_set = set(tag_keys)
+        entity.tags = [tag for tag in entity.tags if tag["Key"] not in tag_keys_set]
+
+        # Update policy tags reference
+        entity.policy["Tags"] = entity.tags if entity.tags else None
+
+    def list_policy_tags(
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListPolicyTagsResponse:
+        store = self._get_store(context)
+        entity = store.MANAGED_POLICIES.get(policy_arn)
+        if not entity:
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+
+        # Sort tags by Key in ASCII order (uppercase before lowercase)
+        tags = sorted(entity.tags or [], key=lambda t: t.get("Key", ""))
+
+        # Pagination - decode marker to get start index
+        start_index = 0
+        if marker:
+            try:
+                # Marker is base64-encoded index
+                start_index = int(base64.b64decode(marker).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                # Invalid marker, start from beginning
+                start_index = 0
+
+        max_items = max_items or 100
+        end_index = start_index + max_items
+        page = tags[start_index:end_index]
+
+        is_truncated = end_index < len(tags)
+        # Encode next marker as base64 to avoid collision with tag keys
+        next_marker = (
+            base64.b64encode(str(end_index).encode("utf-8")).decode("utf-8")
+            if is_truncated and page
+            else None
+        )
+
+        response = ListPolicyTagsResponse(Tags=page, IsTruncated=is_truncated)
+        if next_marker:
+            response["Marker"] = next_marker
+
+        return response
 
     def detach_role_policy(
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs

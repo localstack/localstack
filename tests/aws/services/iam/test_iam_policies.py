@@ -6,8 +6,8 @@ from botocore.exceptions import ClientError
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
-# TODO remove after new IAM implementation of policies
-pytestmark = pytest.mark.skip
+# Skip tests that require list_entities_for_policy (attachments)
+pytestmark_entities = pytest.mark.skip(reason="Requires policy attachment implementation")
 
 ASSUME_ROLE_POLICY = json.dumps(
     {
@@ -2041,6 +2041,8 @@ class TestPolicyDocumentValidity:
     )
     def test_create_policy_invalid_document(self, create_policy, snapshot, policy_doc):
         """Test that invalid policy documents are rejected with MalformedPolicyDocument."""
+        # Manually add us-east-1 transformer if snapshots are run against different region
+        snapshot.add_transformer(snapshot.transform.regex("us-east-1", "<region>"))
         with pytest.raises(ClientError) as e:
             create_policy(
                 PolicyName=f"test-policy-{short_uid()}",
@@ -2062,6 +2064,7 @@ class TestPolicyDocumentValidity:
         snapshot.match("response", response)
 
 
+@pytest.mark.skip(reason="Requires policy attachment implementation")
 class TestListEntitiesForPolicy:
     """Tests for list_entities_for_policy API - migrated from moto test_iam.py."""
 
