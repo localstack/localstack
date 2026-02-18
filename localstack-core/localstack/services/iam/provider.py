@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import inspect
 import json
 import logging
@@ -43,6 +44,7 @@ from localstack.aws.api.iam import (
     GetRoleResponse,
     GetSAMLProviderResponse,
     GetServiceLinkedRoleDeletionStatusResponse,
+    GetSSHPublicKeyResponse,
     GetUserPolicyResponse,
     GetUserResponse,
     Group,
@@ -65,6 +67,7 @@ from localstack.aws.api.iam import (
     ListSAMLProvidersResponse,
     ListSAMLProviderTagsResponse,
     ListServiceSpecificCredentialsResponse,
+    ListSSHPublicKeysResponse,
     ListUserPoliciesResponse,
     ListUsersResponse,
     ListUserTagsResponse,
@@ -85,10 +88,13 @@ from localstack.aws.api.iam import (
     ServiceSpecificCredentialMetadata,
     SimulatePolicyResponse,
     SimulatePrincipalPolicyRequest,
+    SSHPublicKey,
+    SSHPublicKeyMetadata,
     Tag,
     UpdateRoleDescriptionResponse,
     UpdateRoleResponse,
     UpdateSAMLProviderResponse,
+    UploadSSHPublicKeyResponse,
     User,
     allUsers,
     arnType,
@@ -97,6 +103,7 @@ from localstack.aws.api.iam import (
     booleanType,
     credentialAgeDays,
     customSuffixType,
+    encodingType,
     existingUserNameType,
     groupNameType,
     instanceProfileNameType,
@@ -116,6 +123,8 @@ from localstack.aws.api.iam import (
     policyVersionIdType,
     privateKeyIdType,
     privateKeyType,
+    publicKeyIdType,
+    publicKeyMaterialType,
     roleDescriptionType,
     roleMaxSessionDurationType,
     roleNameType,
@@ -144,7 +153,10 @@ from localstack.services.iam.resources.policy_simulator import (
     IAMPolicySimulator,
 )
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
-from localstack.services.iam.utils import generate_iam_identifier
+from localstack.services.iam.utils import (
+    generate_access_key_id_from_account_id,
+    generate_iam_identifier,
+)
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX, get_partition
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
@@ -2992,3 +3004,142 @@ class IamProvider(IamApi):
         provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
         # TODO: Add pagination support with marker and max_items
         return ListSAMLProviderTagsResponse(Tags=provider.tags)
+
+    # ------------------------------ SSH Public Keys ------------------------------ #
+
+    def _generate_ssh_public_key_id(self, context: RequestContext) -> str:
+        """
+        Generate an SSH public key ID with APKA prefix.
+        """
+        return generate_access_key_id_from_account_id(
+            context.account_id, prefix="APKA", total_length=21
+        )
+
+    def _generate_ssh_key_fingerprint(self, ssh_public_key_body: str) -> str:
+        """
+        Generate a fingerprint for an SSH public key.
+        The fingerprint is the MD5 hash of the key body in colon-separated hex format.
+        """
+        md5_hash = hashlib.md5(ssh_public_key_body.encode("utf-8")).hexdigest()
+        return ":".join(md5_hash[i : i + 2] for i in range(0, len(md5_hash), 2))
+
+    def upload_ssh_public_key(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        ssh_public_key_body: publicKeyMaterialType,
+        **kwargs,
+    ) -> UploadSSHPublicKeyResponse:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        if user_name not in store.SSH_PUBLIC_KEYS:
+            store.SSH_PUBLIC_KEYS[user_name] = {}
+
+        ssh_public_key_id = self._generate_ssh_public_key_id(context)
+        fingerprint = self._generate_ssh_key_fingerprint(ssh_public_key_body)
+
+        ssh_key = SSHPublicKey(
+            UserName=user_name,
+            SSHPublicKeyId=ssh_public_key_id,
+            Fingerprint=fingerprint,
+            SSHPublicKeyBody=ssh_public_key_body,
+            Status=statusType.Active,
+            UploadDate=datetime.now(),
+        )
+
+        store.SSH_PUBLIC_KEYS[user_name][ssh_public_key_id] = ssh_key
+
+        return UploadSSHPublicKeyResponse(SSHPublicKey=ssh_key)
+
+    def get_ssh_public_key(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        ssh_public_key_id: publicKeyIdType,
+        encoding: encodingType,
+        **kwargs,
+    ) -> GetSSHPublicKeyResponse:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
+        ssh_key = user_keys.get(ssh_public_key_id)
+
+        if not ssh_key:
+            raise NoSuchEntityException(
+                f"The SSH Public Key with id {ssh_public_key_id} cannot be found."
+            )
+
+        return GetSSHPublicKeyResponse(SSHPublicKey=ssh_key)
+
+    def list_ssh_public_keys(
+        self,
+        context: RequestContext,
+        user_name: userNameType = None,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListSSHPublicKeysResponse:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
+
+        # Convert to metadata format (without SSHPublicKeyBody)
+        ssh_keys_metadata = [
+            SSHPublicKeyMetadata(
+                UserName=key["UserName"],
+                SSHPublicKeyId=key["SSHPublicKeyId"],
+                Status=key["Status"],
+                UploadDate=key["UploadDate"],
+            )
+            for key in user_keys.values()
+        ]
+
+        return ListSSHPublicKeysResponse(SSHPublicKeys=ssh_keys_metadata)
+
+    def update_ssh_public_key(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        ssh_public_key_id: publicKeyIdType,
+        status: statusType,
+        **kwargs,
+    ) -> None:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
+        ssh_key = user_keys.get(ssh_public_key_id)
+
+        if not ssh_key:
+            raise NoSuchEntityException(
+                f"The SSH Public Key with id {ssh_public_key_id} cannot be found."
+            )
+
+        ssh_key["Status"] = status
+
+    def delete_ssh_public_key(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        ssh_public_key_id: publicKeyIdType,
+        **kwargs,
+    ) -> None:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
+
+        if ssh_public_key_id not in user_keys:
+            raise NoSuchEntityException(
+                f"The SSH Public Key with id {ssh_public_key_id} cannot be found."
+            )
+
+        del user_keys[ssh_public_key_id]

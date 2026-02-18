@@ -14,6 +14,7 @@ from localstack.aws.api.iam import (
     PolicyVersion,
     Role,
     ServiceSpecificCredential,
+    SSHPublicKey,
     User,
     tagListType,
 )
@@ -98,6 +99,10 @@ class IamStore(BaseStore):
     # SAML providers: maps provider_arn -> SAMLProvider
     # Account-scoped (IAM is global within an account)
     SAML_PROVIDERS: dict[str, SAMLProvider] = CrossRegionAttribute(default=dict)
+
+    # SSH public keys: maps user_name -> ssh_public_key_id -> SSHPublicKey
+    # Account-scoped (IAM is global within an account)
+    SSH_PUBLIC_KEYS: dict[str, dict[str, SSHPublicKey]] = CrossRegionAttribute(default=dict)
 
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)
