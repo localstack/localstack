@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import re
-from typing import Any, Final, TypedDict
+from typing import TYPE_CHECKING, Any, Final, TypedDict
 
 import boto3
 import jsonpath_ng
@@ -43,10 +43,12 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 )
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import get_cloudformation_store
-from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.services.cloudformation.v2.types import EngineParameter, engine_parameter_value
 from localstack.utils import testutil
 from localstack.utils.strings import long_uid
+
+if TYPE_CHECKING:
+    from localstack.services.cloudformation.v2.entities import ChangeSet
 
 LOG = logging.getLogger(__name__)
 
@@ -97,9 +99,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
     def __init__(
         self,
-        change_set: ChangeSet,
-        before_parameters: dict,
-        after_parameters: dict,
+        change_set: "ChangeSet",
+        before_parameters: dict | None,
+        after_parameters: dict | None,
         before_template: dict | None,
         after_template: dict | None,
     ):
