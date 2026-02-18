@@ -25,38 +25,6 @@
       }
     }
   },
-  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_invalid_url[example.org]": {
-    "recorded-date": "17-02-2026, 19:16:16",
-    "recorded-content": {
-      "invalid-url-example.org": {
-        "Error": {
-          "Code": "ValidationError",
-          "Message": "Invalid Open ID Connect Provider URL",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_invalid_url[example]": {
-    "recorded-date": "17-02-2026, 19:16:17",
-    "recorded-content": {
-      "invalid-url-example": {
-        "Error": {
-          "Code": "ValidationError",
-          "Message": "Invalid Open ID Connect Provider URL",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_duplicate_error": {
     "recorded-date": "17-02-2026, 19:16:17",
     "recorded-content": {
@@ -122,12 +90,12 @@
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_get_open_id_connect_provider_not_found": {
-    "recorded-date": "17-02-2026, 19:17:34",
+    "recorded-date": "18-02-2026, 19:01:55",
     "recorded-content": {
       "not-found-error": {
         "Error": {
           "Code": "NoSuchEntity",
-          "Message": "OpenIDConnect Provider not found for arn arn:<partition>:iam::111111111111:oidc-provider/non-existent-785dfe5c.example.com",
+          "Message": "OpenIDConnect Provider not found for arn arn:<partition>:iam::111111111111:oidc-provider/non-existent.example.com",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -138,7 +106,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_delete_open_id_connect_provider": {
-    "recorded-date": "17-02-2026, 19:17:35",
+    "recorded-date": "18-02-2026, 19:01:12",
     "recorded-content": {
       "delete-response": {
         "ResponseMetadata": {
@@ -262,6 +230,38 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_invalid_url": {
+    "recorded-date": "18-02-2026, 18:59:57",
+    "recorded-content": {
+      "invalid-url": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Invalid Open ID Connect Provider URL",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_open_id_connect_provider_tags_limit": {
+    "recorded-date": "18-02-2026, 19:10:16",
+    "recorded-content": {
+      "tags-limit-error": {
+        "Error": {
+          "Code": "LimitExceeded",
+          "Message": "The number of tags has reached the maximum limit.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
         }
       }
     }

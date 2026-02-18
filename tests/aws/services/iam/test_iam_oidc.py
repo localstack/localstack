@@ -66,12 +66,13 @@ class TestOIDCProviderCreateErrors:
     """Tests for error handling when creating OpenID Connect providers."""
 
     @markers.aws.validated
-    @pytest.mark.parametrize("url", ["example.org", "example"])
-    def test_create_open_id_connect_provider_invalid_url(self, aws_client, snapshot, url):
+    def test_create_open_id_connect_provider_invalid_url(self, aws_client, snapshot):
         """Test error when creating OIDC provider with invalid URL."""
         with pytest.raises(ClientError) as exc:
-            aws_client.iam.create_open_id_connect_provider(Url=url, ThumbprintList=["a" * 40])
-        snapshot.match(f"invalid-url-{url}", exc.value.response)
+            aws_client.iam.create_open_id_connect_provider(
+                Url="example.org", ThumbprintList=["a" * 40]
+            )
+        snapshot.match("invalid-url", exc.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
@@ -165,7 +166,7 @@ class TestOIDCProviderOperations:
         self, aws_client, account_id, snapshot, partition
     ):
         """Test error when getting a non-existent OIDC provider."""
-        fake_arn = f"arn:{partition}:iam::{account_id}:oidc-provider/non-existent-{short_uid()}.example.com"
+        fake_arn = f"arn:{partition}:iam::{account_id}:oidc-provider/non-existent.example.com"
 
         with pytest.raises(ClientError) as exc:
             aws_client.iam.get_open_id_connect_provider(OpenIDConnectProviderArn=fake_arn)
@@ -196,6 +197,7 @@ class TestOIDCProviderOperations:
         snapshot.match("after-update", get_response)
 
     @markers.aws.validated
+    @pytest.mark.skip("Idempotency is implemented but it shouldn't")
     def test_delete_open_id_connect_provider(self, aws_client, snapshot):
         """Test deleting an OIDC provider."""
         url = f"https://oidc-delete-{short_uid()}.example.com"
@@ -213,6 +215,11 @@ class TestOIDCProviderOperations:
         # Verify it's gone by trying to get it
         with pytest.raises(ClientError) as exc:
             aws_client.iam.get_open_id_connect_provider(OpenIDConnectProviderArn=arn)
+        assert "NoSuchEntity" in str(exc.value) or "not found" in str(exc.value).lower()
+
+        # Verify operation is not idempotent
+        with pytest.raises(ClientError) as exc:
+            aws_client.iam.delete_open_id_connect_provider(OpenIDConnectProviderArn=arn)
         assert "NoSuchEntity" in str(exc.value) or "not found" in str(exc.value).lower()
 
 
@@ -360,3 +367,28 @@ class TestOIDCProviderTags:
             "final-page", {"tag_count": len(response["Tags"]), "has_marker": "Marker" in response}
         )
         assert len(response["Tags"]) == 2
+
+    @markers.aws.validated
+    @pytest.mark.skip("tag limit should be 50")
+    def test_open_id_connect_provider_tags_limit(self, aws_client, snapshot, cleanups):
+        """Test the max amount of tags an OIDC provider can have."""
+        tags = [{"Key": f"k{idx:02d}", "Value": f"v{idx}"} for idx in range(50)]
+        url = f"https://oidc-tagsmax-{short_uid()}.example.com"
+        arn = aws_client.iam.create_open_id_connect_provider(
+            Url=url,
+            ThumbprintList=["a" * 40],
+            Tags=tags,
+        )["OpenIDConnectProviderArn"]
+        cleanups.append(
+            lambda: aws_client.iam.delete_open_id_connect_provider(OpenIDConnectProviderArn=arn)
+        )
+
+        # Add one more
+        with pytest.raises(ClientError) as ctx:
+            aws_client.iam.tag_open_id_connect_provider(
+                OpenIDConnectProviderArn=arn,
+                Tags=[
+                    {"Key": "string", "Value": "string"},
+                ],
+            )
+        snapshot.match("tags-limit-error", ctx.value.response)

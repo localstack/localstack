@@ -17,6 +17,15 @@
       "total": 0.62
     }
   },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_invalid_url": {
+    "last_validated_date": "2026-02-18T18:59:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.36,
+      "call": 0.34,
+      "teardown": 0.0,
+      "total": 0.7
+    }
+  },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_invalid_url[example.org]": {
     "last_validated_date": "2026-02-17T19:16:16+00:00",
     "durations_in_seconds": {
@@ -72,12 +81,12 @@
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_delete_open_id_connect_provider": {
-    "last_validated_date": "2026-02-17T19:17:35+00:00",
+    "last_validated_date": "2026-02-18T19:01:12+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.32,
+      "setup": 0.37,
+      "call": 0.7,
       "teardown": 0.0,
-      "total": 0.32
+      "total": 1.07
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_get_open_id_connect_provider": {
@@ -90,12 +99,12 @@
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_get_open_id_connect_provider_not_found": {
-    "last_validated_date": "2026-02-17T19:17:34+00:00",
+    "last_validated_date": "2026-02-18T19:01:55+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 0.09,
+      "setup": 0.37,
+      "call": 0.36,
       "teardown": 0.0,
-      "total": 0.09
+      "total": 0.73
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_update_open_id_connect_provider_thumbprint": {
@@ -123,6 +132,15 @@
       "call": 0.46,
       "teardown": 0.13,
       "total": 0.59
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_open_id_connect_provider_tags_limit": {
+    "last_validated_date": "2026-02-18T19:10:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.36,
+      "call": 0.53,
+      "teardown": 0.14,
+      "total": 1.03
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_tag_open_id_connect_provider": {
