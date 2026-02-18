@@ -2472,7 +2472,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )
-        # the actual deletion of the ESM is happening synchronously, but we delete the Tags instantly
+        # the full deletion of the ESM is happening asynchronously, but we delete the Tags instantly
+        # this behavior is similar to ``get_event_source_mapping`` which will raise right after deletion, but it is not
+        # always the case in AWS. Add more testing and align behavior with ``get_event_source_mapping``.
         self._remove_all_tags(event_source_mapping["EventSourceMappingArn"])
         esm_worker.delete()
         return {**esm, "State": EsmState.DELETING}
