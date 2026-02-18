@@ -1,0 +1,848 @@
+{
+  "tests/aws/services/iam/test_iam_account_authorization_details.py::TestGetAccountAuthorizationDetails::test_get_account_authorization_details_filter_role": {
+    "recorded-date": "17-02-2026, 14:44:27",
+    "recorded-content": {
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/my-path/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/my-path/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-instance-profile": {
+        "InstanceProfile": {
+          "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+          "CreateDate": "<datetime>",
+          "InstanceProfileId": "<instance-profile-id:1>",
+          "InstanceProfileName": "<instance-profile-name:1>",
+          "Path": "/",
+          "Roles": []
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "role-filter-result": {
+        "GroupDetailList": [],
+        "Policies": [],
+        "RoleDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role/my-path/<role-name:1>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "AttachedManagedPolicies": [
+              {
+                "PolicyArn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+                "PolicyName": "<policy-name:1>"
+              }
+            ],
+            "CreateDate": "<datetime>",
+            "InstanceProfileList": [
+              {
+                "Arn": "arn:<partition>:iam::111111111111:instance-profile/<instance-profile-name:1>",
+                "CreateDate": "<datetime>",
+                "InstanceProfileId": "<instance-profile-id:1>",
+                "InstanceProfileName": "<instance-profile-name:1>",
+                "Path": "/",
+                "Roles": [
+                  {
+                    "Arn": "arn:<partition>:iam::111111111111:role/my-path/<role-name:1>",
+                    "AssumeRolePolicyDocument": {
+                      "Statement": [
+                        {
+                          "Action": "sts:AssumeRole",
+                          "Effect": "Allow",
+                          "Principal": {
+                            "Service": "ec2.amazonaws.com"
+                          }
+                        }
+                      ],
+                      "Version": "2012-10-17"
+                    },
+                    "CreateDate": "<datetime>",
+                    "Path": "/my-path/",
+                    "RoleId": "<role-id:1>",
+                    "RoleName": "<role-name:1>"
+                  }
+                ]
+              }
+            ],
+            "Path": "/my-path/",
+            "RoleId": "<role-id:1>",
+            "RoleLastUsed": {},
+            "RoleName": "<role-name:1>",
+            "RolePolicyList": [
+              {
+                "PolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "s3:ListBucket",
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "PolicyName": "<policy-name:2>"
+              }
+            ],
+            "Tags": [
+              {
+                "Key": "somekey",
+                "Value": "somevalue"
+              },
+              {
+                "Key": "someotherkey",
+                "Value": "someothervalue"
+              }
+            ]
+          }
+        ],
+        "UserDetailList": []
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_account_authorization_details.py::TestGetAccountAuthorizationDetails::test_get_account_authorization_details_filter_user": {
+    "recorded-date": "17-02-2026, 14:44:31",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-group": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "user-filter-result": {
+        "GroupDetailList": [],
+        "Policies": [],
+        "RoleDetailList": [],
+        "UserDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+            "AttachedManagedPolicies": [
+              {
+                "PolicyArn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+                "PolicyName": "<policy-name:1>"
+              }
+            ],
+            "CreateDate": "<datetime>",
+            "GroupList": [
+              "<group-name:1>"
+            ],
+            "Path": "/",
+            "Tags": [
+              {
+                "Key": "somekey",
+                "Value": "somevalue"
+              },
+              {
+                "Key": "someotherkey",
+                "Value": "someothervalue"
+              }
+            ],
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>",
+            "UserPolicyList": [
+              {
+                "PolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "s3:ListBucket",
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "PolicyName": "<policy-name:2>"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_account_authorization_details.py::TestGetAccountAuthorizationDetails::test_get_account_authorization_details_filter_group": {
+    "recorded-date": "17-02-2026, 14:44:33",
+    "recorded-content": {
+      "create-group": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "group-filter-result": {
+        "GroupDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+            "AttachedManagedPolicies": [
+              {
+                "PolicyArn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+                "PolicyName": "<policy-name:1>"
+              }
+            ],
+            "CreateDate": "<datetime>",
+            "GroupId": "<group-id:1>",
+            "GroupName": "<group-name:1>",
+            "GroupPolicyList": [
+              {
+                "PolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "s3:ListBucket",
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "PolicyName": "<policy-name:2>"
+              }
+            ],
+            "Path": "/"
+          }
+        ],
+        "Policies": [],
+        "RoleDetailList": [],
+        "UserDetailList": []
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_account_authorization_details.py::TestGetAccountAuthorizationDetails::test_get_account_authorization_details_filter_local_managed_policy": {
+    "recorded-date": "17-02-2026, 14:44:34",
+    "recorded-content": {
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "local-managed-policy-filter-result": {
+        "GroupDetailList": [],
+        "Policies": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+            "AttachmentCount": 0,
+            "CreateDate": "<datetime>",
+            "DefaultVersionId": "v1",
+            "IsAttachable": true,
+            "Path": "/",
+            "PermissionsBoundaryUsageCount": 0,
+            "PolicyId": "<policy-id:1>",
+            "PolicyName": "<policy-name:1>",
+            "PolicyVersionList": [
+              {
+                "CreateDate": "<datetime>",
+                "Document": {
+                  "Statement": [
+                    {
+                      "Action": "s3:ListBucket",
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "IsDefaultVersion": true,
+                "VersionId": "v1"
+              }
+            ],
+            "UpdateDate": "<datetime>"
+          }
+        ],
+        "RoleDetailList": [],
+        "UserDetailList": []
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_account_authorization_details.py::TestGetAccountAuthorizationDetails::test_get_account_authorization_details_filter_aws_managed_policy": {
+    "recorded-date": "17-02-2026, 14:59:02",
+    "recorded-content": {
+      "aws-managed-policy-result": {
+        "GroupDetailList": [],
+        "Policies": [
+          {
+            "Arn": "arn:<partition>:iam::aws:policy/<policy-name:1>",
+            "AttachmentCount": 2,
+            "CreateDate": "<datetime>",
+            "DefaultVersionId": "v2",
+            "IsAttachable": true,
+            "Path": "/",
+            "PermissionsBoundaryUsageCount": 0,
+            "PolicyId": "<policy-id:1>",
+            "PolicyName": "<policy-name:1>",
+            "PolicyVersionList": [
+              {
+                "CreateDate": "<datetime>",
+                "Document": {
+                  "Statement": [
+                    {
+                      "Action": [
+                        "s3:*",
+                        "s3-object-lambda:*"
+                      ],
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "IsDefaultVersion": true,
+                "VersionId": "v2"
+              },
+              {
+                "CreateDate": "<datetime>",
+                "Document": {
+                  "Statement": [
+                    {
+                      "Action": "s3:*",
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "IsDefaultVersion": false,
+                "VersionId": "v1"
+              }
+            ],
+            "UpdateDate": "<datetime>"
+          }
+        ],
+        "RoleDetailList": [],
+        "UserDetailList": []
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_account_authorization_details.py::TestGetAccountAuthorizationDetails::test_get_account_authorization_details_no_filter": {
+    "recorded-date": "17-02-2026, 14:45:01",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-group": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "no-filter-result": {
+        "GroupDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+            "AttachedManagedPolicies": [],
+            "CreateDate": "<datetime>",
+            "GroupId": "<group-id:1>",
+            "GroupName": "<group-name:1>",
+            "GroupPolicyList": [],
+            "Path": "/"
+          }
+        ],
+        "Policies": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+            "AttachmentCount": 0,
+            "CreateDate": "<datetime>",
+            "DefaultVersionId": "v1",
+            "IsAttachable": true,
+            "Path": "/",
+            "PermissionsBoundaryUsageCount": 0,
+            "PolicyId": "<policy-id:1>",
+            "PolicyName": "<policy-name:1>",
+            "PolicyVersionList": [
+              {
+                "CreateDate": "<datetime>",
+                "Document": {
+                  "Statement": [
+                    {
+                      "Action": "s3:ListBucket",
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "IsDefaultVersion": true,
+                "VersionId": "v1"
+              }
+            ],
+            "UpdateDate": "<datetime>"
+          }
+        ],
+        "RoleDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "AttachedManagedPolicies": [],
+            "CreateDate": "<datetime>",
+            "InstanceProfileList": [],
+            "Path": "/",
+            "RoleId": "<role-id:1>",
+            "RoleLastUsed": {},
+            "RoleName": "<role-name:1>",
+            "RolePolicyList": [],
+            "Tags": []
+          }
+        ],
+        "UserDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+            "AttachedManagedPolicies": [],
+            "CreateDate": "<datetime>",
+            "GroupList": [],
+            "Path": "/",
+            "Tags": [],
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_account_authorization_details.py::TestGetAccountAuthorizationDetails::test_get_account_authorization_details_with_inline_policies": {
+    "recorded-date": "17-02-2026, 14:45:18",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-group": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "inline-policies-result": {
+        "GroupDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+            "AttachedManagedPolicies": [],
+            "CreateDate": "<datetime>",
+            "GroupId": "<group-id:1>",
+            "GroupName": "<group-name:1>",
+            "GroupPolicyList": [
+              {
+                "PolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "s3:ListBucket",
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "PolicyName": "<policy-name:1>"
+              }
+            ],
+            "Path": "/"
+          }
+        ],
+        "Policies": [],
+        "RoleDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "AttachedManagedPolicies": [],
+            "CreateDate": "<datetime>",
+            "InstanceProfileList": [],
+            "Path": "/",
+            "RoleId": "<role-id:1>",
+            "RoleLastUsed": {},
+            "RoleName": "<role-name:1>",
+            "RolePolicyList": [
+              {
+                "PolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "s3:ListBucket",
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "PolicyName": "<policy-name:2>"
+              }
+            ],
+            "Tags": []
+          }
+        ],
+        "UserDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+            "AttachedManagedPolicies": [],
+            "CreateDate": "<datetime>",
+            "GroupList": [],
+            "Path": "/",
+            "Tags": [],
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>",
+            "UserPolicyList": [
+              {
+                "PolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "s3:ListBucket",
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "PolicyName": "<policy-name:3>"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_account_authorization_details.py::TestGetAccountAuthorizationDetails::test_get_account_authorization_details_with_tags": {
+    "recorded-date": "17-02-2026, 14:45:31",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-role": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tags-result": {
+        "GroupDetailList": [],
+        "Policies": [],
+        "RoleDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role/<role-name:1>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "AttachedManagedPolicies": [],
+            "CreateDate": "<datetime>",
+            "InstanceProfileList": [],
+            "Path": "/",
+            "RoleId": "<role-id:1>",
+            "RoleLastUsed": {},
+            "RoleName": "<role-name:1>",
+            "RolePolicyList": [],
+            "Tags": [
+              {
+                "Key": "environment",
+                "Value": "test"
+              },
+              {
+                "Key": "team",
+                "Value": "platform"
+              }
+            ]
+          }
+        ],
+        "UserDetailList": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+            "AttachedManagedPolicies": [],
+            "CreateDate": "<datetime>",
+            "GroupList": [],
+            "Path": "/",
+            "Tags": [
+              {
+                "Key": "environment",
+                "Value": "test"
+              },
+              {
+                "Key": "team",
+                "Value": "platform"
+              }
+            ],
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ]
+      }
+    }
+  }
+}
