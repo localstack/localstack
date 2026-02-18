@@ -1,0 +1,291 @@
+{
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreate::test_create_open_id_connect_provider": {
+    "recorded-date": "17-02-2026, 19:15:13",
+    "recorded-content": {
+      "create-https": {
+        "OpenIDConnectProviderArn": "<open-i-d-connect-provider-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-with-client": {
+        "OpenIDConnectProviderArn": "<open-i-d-connect-provider-arn:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-with-path": {
+        "OpenIDConnectProviderArn": "<open-i-d-connect-provider-arn:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_duplicate_error": {
+    "recorded-date": "17-02-2026, 19:16:17",
+    "recorded-content": {
+      "duplicate-error": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "Provider with url https://oidc-dup-04669428.example.com already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_too_many_thumbprints": {
+    "recorded-date": "17-02-2026, 19:16:17",
+    "recorded-content": {
+      "too-many-thumbprints": {
+        "Error": {
+          "Code": "InvalidInput",
+          "Message": "Thumbprint list must contain fewer than 5 entries.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_quota_error": {
+    "recorded-date": "17-02-2026, 19:16:18",
+    "recorded-content": {
+      "quota-error": {
+        "Error": {
+          "Code": "LimitExceeded",
+          "Message": "Cannot exceed quota for ClientIdsPerOpenIdConnectProvider: 100",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_validation_errors": {
+    "recorded-date": "17-02-2026, 19:16:18",
+    "recorded-content": {
+      "multiple-validation-errors": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "3 validation errors detected: Value at 'clientIDList' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 255, Member must have length greater than or equal to 1]; Value at 'thumbprintList' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 40, Member must have length greater than or equal to 40]; Value at 'url' failed to satisfy constraint: Member must have length less than or equal to 255",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_get_open_id_connect_provider_not_found": {
+    "recorded-date": "18-02-2026, 19:01:55",
+    "recorded-content": {
+      "not-found-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "OpenIDConnect Provider not found for arn arn:<partition>:iam::111111111111:oidc-provider/non-existent.example.com",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_delete_open_id_connect_provider": {
+    "recorded-date": "18-02-2026, 20:24:58",
+    "recorded-content": {
+      "delete-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-not-found-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "OpenIDConnect Provider not found for arn arn:<partition>:iam::111111111111:oidc-provider/<domain>",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "deletion-not-found-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "OpenId connect Provider arn:<partition>:iam::111111111111:oidc-provider/<domain> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_delete_open_id_connect_provider_idempotent": {
+    "recorded-date": "17-02-2026, 19:17:36",
+    "recorded-content": {}
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_get_open_id_connect_provider": {
+    "recorded-date": "17-02-2026, 19:17:34",
+    "recorded-content": {
+      "get-response": {
+        "ClientIDList": [
+          "client-id-1"
+        ],
+        "CreateDate": "<datetime>",
+        "Tags": [],
+        "ThumbprintList": [
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        ],
+        "Url": "<url:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderList::test_list_open_id_connect_providers": {
+    "recorded-date": "17-02-2026, 20:46:17",
+    "recorded-content": {
+      "list-response": [
+        "arn:<partition>:iam::111111111111:oidc-provider/<domain-0>",
+        "arn:<partition>:iam::111111111111:oidc-provider/<domain-1>",
+        "arn:<partition>:iam::111111111111:oidc-provider/<domain-2>"
+      ]
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_tag_open_id_connect_provider": {
+    "recorded-date": "17-02-2026, 19:34:28",
+    "recorded-content": {
+      "after-tagging": {
+        "Tags": [
+          {
+            "Key": "k1",
+            "Value": "v1"
+          },
+          {
+            "Key": "k2",
+            "Value": "v2"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_untag_open_id_connect_provider": {
+    "recorded-date": "17-02-2026, 19:34:28",
+    "recorded-content": {
+      "after-untagging": {
+        "Tags": [
+          {
+            "Key": "k1",
+            "Value": "v1"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_list_open_id_connect_provider_tags": {
+    "recorded-date": "17-02-2026, 19:34:28",
+    "recorded-content": {
+      "list-tags-response": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "k1",
+            "Value": "v1"
+          },
+          {
+            "Key": "k2",
+            "Value": "v2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_list_open_id_connect_provider_tags_paginated": {
+    "recorded-date": "17-02-2026, 19:28:05",
+    "recorded-content": {}
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_list_open_id_connect_provider_tags_max_items": {
+    "recorded-date": "17-02-2026, 19:34:29",
+    "recorded-content": {
+      "final-page": {
+        "has_marker": false,
+        "tag_count": 2
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_update_open_id_connect_provider_thumbprint": {
+    "recorded-date": "17-02-2026, 19:36:06",
+    "recorded-content": {
+      "after-update": {
+        "ClientIDList": [],
+        "CreateDate": "<datetime>",
+        "Tags": [],
+        "ThumbprintList": [
+          "cccccccccccccccccccccccccccccccccccccccc",
+          "dddddddddddddddddddddddddddddddddddddddd"
+        ],
+        "Url": "<url:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderCreateErrors::test_create_open_id_connect_provider_invalid_url": {
+    "recorded-date": "18-02-2026, 18:59:57",
+    "recorded-content": {
+      "invalid-url": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Invalid Open ID Connect Provider URL",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderTags::test_open_id_connect_provider_tags_limit": {
+    "recorded-date": "18-02-2026, 19:10:16",
+    "recorded-content": {
+      "tags-limit-error": {
+        "Error": {
+          "Code": "LimitExceeded",
+          "Message": "The number of tags has reached the maximum limit.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  }
+}
