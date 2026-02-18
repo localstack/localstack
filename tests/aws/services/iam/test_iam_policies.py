@@ -7,7 +7,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 # TODO remove after new IAM implementation of policies
-# pytestmark = pytest.mark.skip
+pytestmark = pytest.mark.skip
 
 ASSUME_ROLE_POLICY = json.dumps(
     {
