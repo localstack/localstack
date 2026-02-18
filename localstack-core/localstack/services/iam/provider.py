@@ -376,6 +376,7 @@ class IamProvider(IamApi):
         return GetPolicyResponse(Policy=policy)
 
     def delete_policy(self, context: RequestContext, policy_arn: arnType, **kwargs) -> None:
+        # TODO test deletion when attached to principals
         store = self._get_store(context)
         with self._policy_lock:
             self._get_policy_entity(store, policy_arn)
