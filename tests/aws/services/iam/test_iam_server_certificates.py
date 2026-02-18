@@ -156,25 +156,6 @@ def snapshot_transformers(snapshot):
     )
 
 
-@pytest.fixture
-def upload_server_certificate(aws_client):
-    """Factory fixture to upload server certificates with automatic cleanup."""
-    created_certs = []
-
-    def _upload_cert(*args, **kwargs):
-        response = aws_client.iam.upload_server_certificate(*args, **kwargs)
-        created_certs.append(response["ServerCertificateMetadata"]["ServerCertificateName"])
-        return response
-
-    yield _upload_cert
-
-    for cert_name in created_certs:
-        try:
-            aws_client.iam.delete_server_certificate(ServerCertificateName=cert_name)
-        except ClientError as e:
-            LOG.debug("Could not delete server certificate %s during cleanup: %s", cert_name, e)
-
-
 class TestServerCertificate:
     """Tests for server certificate operations."""
 
