@@ -13,6 +13,7 @@ from localstack.aws.api.iam import (
     PolicyVersion,
     Role,
     ServiceSpecificCredential,
+    SSHPublicKey,
     User,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
@@ -82,6 +83,10 @@ class IamStore(BaseStore):
     GROUPS: dict[str, GroupEntity] = CrossRegionAttribute(default=dict)
 
     PASSWORD_POLICY: PasswordPolicy | None = CrossRegionAttribute(default=None)
+
+    # SSH public keys: maps user_name -> ssh_public_key_id -> SSHPublicKey
+    # Account-scoped (IAM is global within an account)
+    SSH_PUBLIC_KEYS: dict[str, dict[str, SSHPublicKey]] = CrossRegionAttribute(default=dict)
 
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)
