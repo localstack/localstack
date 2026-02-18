@@ -200,7 +200,9 @@ class TestOIDCProviderOperations:
     @pytest.mark.skip("Idempotency is implemented but it shouldn't")
     def test_delete_open_id_connect_provider(self, aws_client, snapshot):
         """Test deleting an OIDC provider."""
-        url = f"https://oidc-delete-{short_uid()}.example.com"
+        domain = f"oidc-delete-{short_uid()}.example.com"
+        url = f"https://{domain}"
+        snapshot.add_transformer(snapshot.transform.regex(domain, "<domain>"))
         response = aws_client.iam.create_open_id_connect_provider(
             Url=url, ThumbprintList=["a" * 40]
         )
@@ -215,12 +217,12 @@ class TestOIDCProviderOperations:
         # Verify it's gone by trying to get it
         with pytest.raises(ClientError) as exc:
             aws_client.iam.get_open_id_connect_provider(OpenIDConnectProviderArn=arn)
-        assert "NoSuchEntity" in str(exc.value) or "not found" in str(exc.value).lower()
+        snapshot.match("get-not-found-error", exc.value.response)
 
         # Verify operation is not idempotent
         with pytest.raises(ClientError) as exc:
             aws_client.iam.delete_open_id_connect_provider(OpenIDConnectProviderArn=arn)
-        assert "NoSuchEntity" in str(exc.value) or "not found" in str(exc.value).lower()
+        snapshot.match("deletion-not-found-error", exc.value.response)
 
 
 class TestOIDCProviderList:

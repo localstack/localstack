@@ -106,12 +106,34 @@
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_delete_open_id_connect_provider": {
-    "recorded-date": "18-02-2026, 19:01:12",
+    "recorded-date": "18-02-2026, 20:24:58",
     "recorded-content": {
       "delete-response": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "get-not-found-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "OpenIDConnect Provider not found for arn arn:<partition>:iam::111111111111:oidc-provider/<domain>",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "deletion-not-found-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "OpenId connect Provider arn:<partition>:iam::111111111111:oidc-provider/<domain> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }

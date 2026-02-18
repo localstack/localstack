@@ -81,12 +81,12 @@
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_delete_open_id_connect_provider": {
-    "last_validated_date": "2026-02-18T19:01:12+00:00",
+    "last_validated_date": "2026-02-18T20:24:58+00:00",
     "durations_in_seconds": {
       "setup": 0.37,
-      "call": 0.7,
+      "call": 0.68,
       "teardown": 0.0,
-      "total": 1.07
+      "total": 1.05
     }
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_get_open_id_connect_provider": {
