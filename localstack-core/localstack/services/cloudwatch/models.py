@@ -57,7 +57,7 @@ class LocalStackCompositeAlarm:
         self.region = region
         self.alarm = alarm
         # Tags are already stored as part of Tagging Service or RGTA plugin
-        self.alarm.pop("Tags")
+        self.alarm.pop("Tags", None)
         self.set_default_attributes()
 
     def set_default_attributes(self):
