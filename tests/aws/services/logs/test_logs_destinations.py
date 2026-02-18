@@ -15,7 +15,7 @@ ACCESS_POLICY_DOC = json.dumps(
         "Statement": [
             {
                 "Effect": "Allow",
-                "Principal": {"AWS": "logs.us-east-1.amazonaws.com"},
+                "Principal": {"AWS": "logs.amazonaws.com"},
                 "Action": "logs:PutSubscriptionFilter",
                 "Resource": "destination_arn",
             }

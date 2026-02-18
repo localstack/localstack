@@ -36,12 +36,12 @@
     }
   },
   "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_put_destination_policy": {
-    "last_validated_date": "2026-02-05T15:23:25+00:00",
+    "last_validated_date": "2026-02-18T19:55:08+00:00",
     "durations_in_seconds": {
-      "setup": 6.18,
-      "call": 10.12,
-      "teardown": 0.81,
-      "total": 17.11
+      "setup": 6.6,
+      "call": 10.21,
+      "teardown": 0.76,
+      "total": 17.57
     }
   },
   "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_update_destination": {
