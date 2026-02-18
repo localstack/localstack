@@ -1,4 +1,22 @@
 {
+  "tests/aws/services/iam/test_iam_policies.py::TestListEntitiesForPolicy::test_list_entities_for_policy": {
+    "last_validated_date": "2026-02-17T17:17:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.71,
+      "call": 2.61,
+      "teardown": 2.8,
+      "total": 6.12
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestListEntitiesForPolicy::test_list_entities_for_policy_errors": {
+    "last_validated_date": "2026-02-17T17:17:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.15,
+      "teardown": 0.0,
+      "total": 0.15
+    }
+  },
   "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_errors": {
     "last_validated_date": "2026-02-10T12:42:55+00:00",
     "durations_in_seconds": {

@@ -31,44 +31,6 @@ def snapshot_transformers(snapshot):
     )
 
 
-@pytest.fixture
-def create_virtual_mfa_device(aws_client):
-    """Factory fixture to create virtual MFA devices with automatic cleanup."""
-    created_devices = []
-
-    def _create_device(*args, **kwargs):
-        response = aws_client.iam.create_virtual_mfa_device(*args, **kwargs)
-        serial_number = response["VirtualMFADevice"]["SerialNumber"]
-        created_devices.append(serial_number)
-        return response
-
-    yield _create_device
-
-    # Cleanup
-    for serial_number in created_devices:
-        try:
-            # First try to deactivate if it was enabled for a user
-            # List all MFA devices to see if this one is attached to a user
-            devices = aws_client.iam.list_virtual_mfa_devices(AssignmentStatus="Assigned")[
-                "VirtualMFADevices"
-            ]
-            for device in devices:
-                if device["SerialNumber"] == serial_number and "User" in device:
-                    try:
-                        aws_client.iam.deactivate_mfa_device(
-                            UserName=device["User"]["UserName"],
-                            SerialNumber=serial_number,
-                        )
-                    except ClientError:
-                        LOG.debug(
-                            "Could not deactivate MFA device %s during cleanup", serial_number
-                        )
-            # Now delete the device
-            aws_client.iam.delete_virtual_mfa_device(SerialNumber=serial_number)
-        except ClientError as e:
-            LOG.debug("Could not delete MFA device %s during cleanup: %s", serial_number, e)
-
-
 class TestVirtualMfaDevice:
     """Tests for virtual MFA device CRUD operations."""
 
