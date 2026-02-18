@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/iam/test_iam_account_summary.py::TestGetAccountSummary::test_get_account_summary_format": {
+    "last_validated_date": "2026-02-17T15:55:08+00:00",
+    "durations_in_seconds": {
+      "setup": 1.06,
+      "call": 0.63,
+      "teardown": 0.0,
+      "total": 1.69
+    }
+  },
+  "tests/aws/services/iam/test_iam_account_summary.py::TestGetAccountSummary::test_get_account_summary_with_resources": {
+    "last_validated_date": "2026-02-17T15:55:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.04,
+      "call": 2.66,
+      "teardown": 4.21,
+      "total": 6.91
+    }
+  }
+}
