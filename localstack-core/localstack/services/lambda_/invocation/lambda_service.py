@@ -217,6 +217,7 @@ class LambdaService:
                 version.config, state=new_state, last_update=new_last_status
             ),
         )
+        destroy_code_if_not_used(code=version.config.code, function=function)
 
         self.task_executor.submit(_cleanup)
 
