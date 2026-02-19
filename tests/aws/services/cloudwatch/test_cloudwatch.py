@@ -11,6 +11,7 @@ from urllib.request import Request, urlopen
 import pytest
 import requests
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
@@ -671,6 +672,122 @@ class TestCloudwatch:
             ResourceARN=alarm_arn
         )
         snapshot.match("list_tags_for_resource_post_untag", list_tags_for_resource_post_untag)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
+    def test_tagging_metric_alarm(self, aws_cloudwatch_client, snapshot):
+        # Sort tags by key value in snapshots
+        snapshot.add_transformer(SortingTransformer("Tags", lambda o: o["Key"]))
+        alarm_name = f"a-{short_uid()}"
+        metric_name = "store_tags"
+        namespace = f"test-ns-{short_uid()}"
+        put_metric_alarm = aws_cloudwatch_client.put_metric_alarm(
+            AlarmName=alarm_name,
+            Namespace=namespace,
+            MetricName=metric_name,
+            EvaluationPeriods=1,
+            ComparisonOperator="GreaterThanThreshold",
+            Period=60,
+            Statistic="Sum",
+            Threshold=30,
+            Tags=[{"Key": "Environment", "Value": "Production"}],
+        )
+        snapshot.match("put_metric_alarm", put_metric_alarm)
+
+        describe_alarms = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
+        alarm = describe_alarms["MetricAlarms"][0]
+        alarm_arn = alarm["AlarmArn"]
+
+        list_tags_for_resource_after_creation = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match(
+            "list_tags_for_resource_after_creation", list_tags_for_resource_after_creation
+        )
+
+        # add tags
+        tags = [{"Key": "tag1", "Value": "foo"}, {"Key": "tag2", "Value": "bar"}]
+        response = aws_cloudwatch_client.tag_resource(ResourceARN=alarm_arn, Tags=tags)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        list_tags_for_resource_updated = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match("list_tags_for_resource_updated", list_tags_for_resource_updated)
+        response = aws_cloudwatch_client.untag_resource(ResourceARN=alarm_arn, TagKeys=["tag1"])
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        list_tags_for_resource_post_untag = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match("list_tags_for_resource_post_untag", list_tags_for_resource_post_untag)
+
+        # delete alarm
+        aws_cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
+        list_tags_for_deleted_resource = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match("list_tags_for_deleted_resource", list_tags_for_deleted_resource)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
+    def test_tagging_composite_alarm(self, aws_cloudwatch_client, snapshot):
+        # Sort tags by key value in snapshots
+        snapshot.add_transformer(SortingTransformer("Tags", lambda o: o["Key"]))
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+        composite_alarm_name = f"composite-a-{short_uid()}"
+        alarm_name = f"a-{short_uid()}"
+        metric_name = "something"
+        namespace = f"test-ns-{short_uid()}"
+        alarm_rule = f'ALARM("{alarm_name}")'
+        aws_cloudwatch_client.put_metric_alarm(
+            AlarmName=alarm_name,
+            Namespace=namespace,
+            MetricName=metric_name,
+            EvaluationPeriods=1,
+            ComparisonOperator="GreaterThanThreshold",
+            Period=60,
+            Statistic="Sum",
+            Threshold=30,
+        )
+        aws_cloudwatch_client.put_composite_alarm(
+            AlarmName=composite_alarm_name,
+            AlarmRule=alarm_rule,
+            Tags=[{"Key": "Environment", "Value": "Production"}],
+        )
+        describe_alarms = aws_cloudwatch_client.describe_alarms(
+            AlarmTypes=["CompositeAlarm"], AlarmNames=[composite_alarm_name]
+        )
+        alarm = describe_alarms["CompositeAlarms"][0]
+        alarm_arn = alarm["AlarmArn"]
+
+        list_tags_for_resource_after_creation = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match(
+            "list_tags_for_resource_after_creation ", list_tags_for_resource_after_creation
+        )
+
+        # add tags
+        tags = [{"Key": "tag1", "Value": "foo"}, {"Key": "tag2", "Value": "bar"}]
+        response = aws_cloudwatch_client.tag_resource(ResourceARN=alarm_arn, Tags=tags)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        list_tags_for_resource_updated = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match("list_tags_for_resource_updated", list_tags_for_resource_updated)
+        response = aws_cloudwatch_client.untag_resource(ResourceARN=alarm_arn, TagKeys=["tag1"])
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        list_tags_for_resource_post_untag = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match("list_tags_for_resource_post_untag", list_tags_for_resource_post_untag)
+
+        # delete alarm
+        aws_cloudwatch_client.delete_alarms(AlarmNames=[composite_alarm_name])
+        list_tags_for_deleted_resource = aws_cloudwatch_client.list_tags_for_resource(
+            ResourceARN=alarm_arn
+        )
+        snapshot.match("list_tags_for_deleted_resource", list_tags_for_deleted_resource)
+        aws_cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
 
     @markers.aws.validated
     def test_list_metrics_uniqueness(self, aws_cloudwatch_client):

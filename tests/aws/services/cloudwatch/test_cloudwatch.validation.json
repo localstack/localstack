@@ -1514,6 +1514,60 @@
       "total": 1.63
     }
   },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_composite_alarm[json]": {
+    "last_validated_date": "2026-02-17T12:33:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.02,
+      "teardown": 0.0,
+      "total": 1.02
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_composite_alarm[query]": {
+    "last_validated_date": "2026-02-17T12:33:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.18,
+      "call": 0.78,
+      "teardown": 0.0,
+      "total": 0.96
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_composite_alarm[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2026-02-17T12:33:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.76,
+      "teardown": 0.0,
+      "total": 0.76
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_metric_alarm[json]": {
+    "last_validated_date": "2026-02-17T12:33:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.57,
+      "teardown": 0.0,
+      "total": 0.57
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_metric_alarm[query]": {
+    "last_validated_date": "2026-02-17T12:33:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.2,
+      "call": 0.67,
+      "teardown": 0.0,
+      "total": 0.87
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_metric_alarm[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2026-02-17T12:33:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.6,
+      "teardown": 0.0,
+      "total": 0.6
+    }
+  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_trigger_composite_alarm[json]": {
     "last_validated_date": "2025-09-19T21:03:36+00:00",
     "durations_in_seconds": {

@@ -7022,5 +7022,383 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_metric_alarm[query]": {
+    "recorded-date": "17-02-2026, 12:33:44",
+    "recorded-content": {
+      "put_metric_alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_after_creation": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_updated": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_metric_alarm[json]": {
+    "recorded-date": "17-02-2026, 12:33:45",
+    "recorded-content": {
+      "put_metric_alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_after_creation": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_updated": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_metric_alarm[smithy-rpc-v2-cbor]": {
+    "recorded-date": "17-02-2026, 12:33:45",
+    "recorded-content": {
+      "put_metric_alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_after_creation": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_updated": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_composite_alarm[query]": {
+    "recorded-date": "17-02-2026, 12:33:17",
+    "recorded-content": {
+      "list_tags_for_resource_after_creation ": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_updated": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_composite_alarm[json]": {
+    "recorded-date": "17-02-2026, 12:33:18",
+    "recorded-content": {
+      "list_tags_for_resource_after_creation ": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_updated": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_tagging_composite_alarm[smithy-rpc-v2-cbor]": {
+    "recorded-date": "17-02-2026, 12:33:18",
+    "recorded-content": {
+      "list_tags_for_resource_after_creation ": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_updated": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_deleted_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
