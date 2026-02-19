@@ -26,7 +26,7 @@ class LambdaStore(BaseStore):
     capacity_providers: dict[str, CapacityProvider] = LocalAttribute(default=dict)
 
     # maps resource ARNs for EventSourceMappings and CodeSigningConfiguration to tags
-    TAGS = LocalAttribute(default=TaggingService)
+    TAGS: TaggingService = LocalAttribute(default=TaggingService)
 
 
 lambda_stores = AccountRegionBundle("lambda", LambdaStore)

@@ -32,17 +32,17 @@ aws-sam-translator==1.107.0
     #   moto-ext
 aws-xray-sdk==2.15.0
     # via moto-ext
-awscli==1.44.35
+awscli==1.44.39
     # via localstack-core (pyproject.toml)
-awscrt==0.31.1
+awscrt==0.31.2
     # via localstack-core
-boto3==1.42.45
+boto3==1.42.49
     # via
     #   aws-sam-translator
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-botocore==1.42.45
+botocore==1.42.49
     # via
     #   aws-xray-sdk
     #   awscli
@@ -50,7 +50,7 @@ botocore==1.42.45
     #   localstack-core
     #   moto-ext
     #   s3transfer
-cachetools==7.0.0
+cachetools==7.0.1
     # via
     #   airspeed-ext
     #   localstack-core
@@ -142,7 +142,7 @@ jmespath==1.1.0
     # via
     #   boto3
     #   botocore
-joserfc==1.6.1
+joserfc==1.6.2
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core (pyproject.toml)
@@ -192,7 +192,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.22
+moto-ext==5.1.23
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -368,7 +368,7 @@ wrapt==2.1.1
     # via aws-xray-sdk
 wsproto==1.3.2
     # via hypercorn
-xmltodict==1.0.2
+xmltodict==1.0.3
     # via
     #   localstack-core
     #   moto-ext

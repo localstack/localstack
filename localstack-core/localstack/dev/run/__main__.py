@@ -16,7 +16,6 @@ from localstack.dev.run.configurators import (
     SourceVolumeMountConfigurator,
 )
 from localstack.dev.run.paths import HOST_PATH_MAPPINGS, HostPaths
-from localstack.dev.run.watcher import collect_watch_directories, start_file_watcher
 from localstack.runtime import hooks
 from localstack.utils.bootstrap import Container, ContainerConfigurators
 from localstack.utils.container_utils.container_client import (
@@ -356,6 +355,12 @@ def run(
     stop_live_reload_watcher = None
     try:
         if live_reload and mount_source:
+            # Some install targets don't include the `watchdog` dependency, and some developers
+            # don't install LocalStack using the `Makefile`, so they find that they don't have
+            # the `watchdog` dependency. We lazy import these functions so that we don't trigger
+            # an import error for these developers.
+            from localstack.dev.run.watcher import collect_watch_directories, start_file_watcher
+
             if watch_dirs := collect_watch_directories(host_paths, pro, local_packages):
                 stop_live_reload_watcher = start_file_watcher(watch_dirs, docker, container_id)
 

@@ -1624,9 +1624,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "$LATEST version cannot be deleted without deleting the function.", Type="User"
             )
 
+        unqualified_function_arn = api_utils.unqualified_lambda_arn(
+            function_name=function_name, region=region, account=account_id
+        )
         if function_name not in store.functions:
             e = ResourceNotFoundException(
-                f"Function not found: {api_utils.unqualified_lambda_arn(function_name=function_name, region=region, account=account_id)}",
+                f"Function not found: {unqualified_function_arn}",
                 Type="User",
             )
             raise e
@@ -1643,6 +1646,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 destroy_code_if_not_used(code=version.config.code, function=function)
         else:
             # delete the whole function
+            self._remove_all_tags(unqualified_function_arn)
             # TODO: introduce locking for safe deletion: We could create a new version at the API layer before
             #  the old version gets cleaned up in the internal lambda service.
             function = store.functions.pop(function_name)
@@ -2468,6 +2472,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )
+        # the full deletion of the ESM is happening asynchronously, but we delete the Tags instantly
+        # this behavior is similar to ``get_event_source_mapping`` which will raise right after deletion, but it is not
+        # always the case in AWS. Add more testing and align behavior with ``get_event_source_mapping``.
+        self._remove_all_tags(event_source_mapping["EventSourceMappingArn"])
         esm_worker.delete()
         return {**esm, "State": EsmState.DELETING}
 
@@ -4380,27 +4388,67 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
     # ===============  TAGS   ===============
     # =======================================
-    # only Function, Event Source Mapping, and Code Signing Config (not currently supported by LocalStack) ARNs an are available for tagging in AWS
+    # only Function, Event Source Mapping, and Code Signing Config (not currently supported by LocalStack) ARNs
+    # are available for tagging in AWS
+
+    def _update_resource_tags(
+        self, resource_arn: str, account_id: str, region: str, tags: dict[str, str]
+    ) -> None:
+        tagger_service = lambda_stores[account_id][region].TAGS
+        tag_svc_adapted_tags = [{"Key": key, "Value": value} for key, value in tags.items()]
+        tagger_service.tag_resource(resource_arn, tag_svc_adapted_tags)
+
+    def _list_resource_tags(
+        self, resource_arn: str, account_id: str, region: str
+    ) -> dict[str, str]:
+        tagger_service = lambda_stores[account_id][region].TAGS
+        return tagger_service.tags.get(resource_arn, {})
+
+    def _remove_resource_tags(
+        self, resource_arn: str, account_id: str, region: str, keys: TagKeyList
+    ) -> None:
+        tagger_service = lambda_stores[account_id][region].TAGS
+        tagger_service.untag_resource(resource_arn, keys)
+
+    def _remove_all_resource_tags(self, resource_arn: str, account_id: str, region: str) -> None:
+        tagger_service = lambda_stores[account_id][region].TAGS
+        return tagger_service.tags.pop(resource_arn, None)
 
     def _get_tags(self, resource: TaggableResource) -> dict[str, str]:
-        state = self.fetch_lambda_store_for_tagging(resource)
-        lambda_adapted_tags = {
-            tag["Key"]: tag["Value"]
-            for tag in state.TAGS.list_tags_for_resource(resource).get("Tags")
-        }
-        return lambda_adapted_tags
+        account_id, region = self._get_account_id_and_region_for_taggable_resource(resource)
+        tags = self._list_resource_tags(resource_arn=resource, account_id=account_id, region=region)
+        return tags
 
-    def _store_tags(self, resource: TaggableResource, tags: dict[str, str]):
-        state = self.fetch_lambda_store_for_tagging(resource)
-        if len(state.TAGS.tags.get(resource, {}) | tags) > LAMBDA_TAG_LIMIT_PER_RESOURCE:
+    def _store_tags(self, resource: TaggableResource, tags: dict[str, str]) -> None:
+        account_id, region = self._get_account_id_and_region_for_taggable_resource(resource)
+        existing_tags = self._list_resource_tags(
+            resource_arn=resource, account_id=account_id, region=region
+        )
+        if len({**existing_tags, **tags}) > LAMBDA_TAG_LIMIT_PER_RESOURCE:
+            # note: we cannot use | on `ImmutableDict` and regular `dict`
             raise InvalidParameterValueException(
                 "Number of tags exceeds resource tag limit.", Type="User"
             )
+        self._update_resource_tags(
+            resource_arn=resource,
+            account_id=account_id,
+            region=region,
+            tags=tags,
+        )
 
-        tag_svc_adapted_tags = [{"Key": key, "Value": value} for key, value in tags.items()]
-        state.TAGS.tag_resource(resource, tag_svc_adapted_tags)
+    def _remove_tags(self, resource: TaggableResource, keys: TagKeyList) -> None:
+        account_id, region = self._get_account_id_and_region_for_taggable_resource(resource)
+        self._remove_resource_tags(
+            resource_arn=resource, account_id=account_id, region=region, keys=keys
+        )
 
-    def fetch_lambda_store_for_tagging(self, resource: TaggableResource) -> LambdaStore:
+    def _remove_all_tags(self, resource: TaggableResource) -> None:
+        account_id, region = self._get_account_id_and_region_for_taggable_resource(resource)
+        self._remove_all_resource_tags(resource_arn=resource, account_id=account_id, region=region)
+
+    def _get_account_id_and_region_for_taggable_resource(
+        self, resource: TaggableResource
+    ) -> tuple[str, str]:
         """
         Takes a resource ARN for a TaggableResource (Lambda Function, Event Source Mapping, Code Signing Config, or Capacity Provider) and returns a corresponding
         LambdaStore for its region and account.
@@ -4461,7 +4509,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             _raise_validation_exception()
 
         # If no exceptions are raised, assume ARN and referenced resource is valid for tag operations
-        return lambda_stores[account_id][region]
+        return account_id, region
 
     def tag_resource(
         self, context: RequestContext, resource: TaggableResource, tags: Tags, **kwargs
@@ -4498,8 +4546,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "1 validation error detected: Value null at 'tagKeys' failed to satisfy constraint: Member must not be null"
             )  # should probably be generalized a bit
 
-        state = self.fetch_lambda_store_for_tagging(resource)
-        state.TAGS.untag_resource(resource, tag_keys)
+        self._remove_tags(resource, tag_keys)
 
         if (resource_id := extract_resource_from_arn(resource)) and resource_id.startswith(
             "function"

@@ -1376,6 +1376,15 @@
       "total": 3.48
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_tags_removed_after_deletion": {
+    "last_validated_date": "2026-02-16T05:26:44+00:00",
+    "durations_in_seconds": {
+      "setup": 4.17,
+      "call": 2.64,
+      "teardown": 0.72,
+      "total": 7.53
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_topic_delivery_policy_crud": {
     "last_validated_date": "2024-10-03T21:46:17+00:00"
   },

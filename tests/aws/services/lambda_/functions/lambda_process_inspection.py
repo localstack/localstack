@@ -3,6 +3,7 @@ import os
 
 def handler(event, context):
     return {"environment": dict(os.environ)}
+    # TODO: rework init env snapshotting test case because /proc/1 introspection does not work anymore at AWS
     # pid = event.get("pid")
     # with open(f"/proc/{pid}/environ", mode="rt") as f:
     #     environment = f.read()
