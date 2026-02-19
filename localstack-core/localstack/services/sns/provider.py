@@ -175,6 +175,52 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # see https://docs.aws.amazon.com/sns/latest/dg/sns-verify-signature-of-message.html
         return Response(self._signature_cert_pem, 200)
 
+    # Tag Utils
+
+    def _check_matching_tags(
+        self, context: RequestContext, topic_arn: str, tags: TagList | None
+    ) -> bool:
+        """
+        Checks if a topic to be created doesn't already exist with different tags
+        :param context: The context of the original request
+        :param topic_arn: Arn of the topic
+        :param tags: Tags to be checked
+        :return: False if there is a mismatch in tags, True otherwise
+        """
+        store = self.get_store(context.account_id, context.region)
+        existing_tags = self._list_resource_tags(context, resource_arn=topic_arn)
+        # if this is none there is nothing to check
+        if topic_arn in store.topics:
+            if tags is None:
+                tags = []
+            for tag in tags:
+                # this means topic already created with empty tags and when we try to create it
+                # again with other tag value then it should fail according to aws documentation.
+                if existing_tags is not None and tag not in existing_tags:
+                    return False
+        return True
+
+    def _list_resource_tags(self, context: RequestContext, resource_arn: str) -> TagList:
+        store = self.get_store(context.account_id, context.region)
+        tags = store.TAGS.list_tags_for_resource(resource_arn).get("Tags")
+        return tags
+
+    def _tag_resource(
+        self, context: RequestContext, resource_arn: str, tags: list[dict[str, str]]
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        store.TAGS.tag_resource(resource_arn, tags)
+
+    def _untag_resource(
+        self, context: RequestContext, resource_arn: str, tag_keys: list[str]
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        store.TAGS.untag_resource(resource_arn, tag_keys)
+
+    def _remove_resource_tags(self, context: RequestContext, resource_arn: str) -> None:
+        store = self.get_store(context.account_id, context.region)
+        store.TAGS.tags.pop(resource_arn, None)
+
     ## Topic Operations
 
     def create_topic(
@@ -213,7 +259,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     raise InvalidParameterException(
                         "Invalid parameter: Attributes Reason: Topic already exists with different attributes"
                     )
-            tag_resource_success = _check_matching_tags(topic_arn, tags, store)
+            tag_resource_success = self._check_matching_tags(context, topic_arn, tags)
             if not tag_resource_success:
                 raise InvalidParameterException(
                     "Invalid parameter: Tags Reason: Topic already exists with different tags"
@@ -229,7 +275,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             context=context,
         )
         if tags:
-            self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
+            self._tag_resource(context, resource_arn=topic_arn, tags=tags)
 
         store.topics[topic_arn] = topic
 
@@ -251,8 +297,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         arn_data = parse_and_validate_topic_arn(topic_arn)
         if context.region != arn_data["region"]:
             raise InvalidParameterException("Invalid parameter: TopicArn")
-        store = self.get_store(context.account_id, context.region)
 
+        store = self.get_store(context.account_id, context.region)
+        self._remove_resource_tags(context, topic_arn)
         store.topics.pop(topic_arn, None)
 
     def list_topics(
@@ -1233,9 +1280,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceResponse:
-        store = sns_stores[context.account_id][context.region]
-        tags = store.TAGS.list_tags_for_resource(resource_arn)
-        return ListTagsForResourceResponse(Tags=tags.get("Tags"))
+        tags = self._list_resource_tags(context, resource_arn)
+        return ListTagsForResourceResponse(Tags=tags)
 
     def tag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
@@ -1243,8 +1289,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         unique_tag_keys = {tag["Key"] for tag in tags}
         if len(unique_tag_keys) < len(tags):
             raise InvalidParameterException("Invalid parameter: Duplicated keys are not allowed.")
-        store = sns_stores[context.account_id][context.region]
-        store.TAGS.tag_resource(resource_arn, tags)
+        self._tag_resource(context, resource_arn, tags)
         return TagResourceResponse()
 
     def untag_resource(
@@ -1254,8 +1299,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         tag_keys: TagKeyList,
         **kwargs,
     ) -> UntagResourceResponse:
-        store = sns_stores[context.account_id][context.region]
-        store.TAGS.untag_resource(resource_arn, tag_keys)
+        self._untag_resource(context, resource_arn, tag_keys)
         return UntagResourceResponse()
 
     @staticmethod
@@ -1501,27 +1545,6 @@ def _validate_phone_number(phone_number: str):
         raise InvalidParameterException(
             "Invalid parameter: PhoneNumber Reason: input incorrectly formatted"
         )
-
-
-def _check_matching_tags(topic_arn: str, tags: TagList | None, store: SnsStore) -> bool:
-    """
-    Checks if a topic to be created doesn't already exist with different tags
-    :param topic_arn: Arn of the topic
-    :param tags: Tags to be checked
-    :param store: Store object that holds the topics and tags
-    :return: False if there is a mismatch in tags, True otherwise
-    """
-    existing_tags = store.TAGS.list_tags_for_resource(topic_arn)["Tags"]
-    # if this is none there is nothing to check
-    if topic_arn in store.topics:
-        if tags is None:
-            tags = []
-        for tag in tags:
-            # this means topic already created with empty tags and when we try to create it
-            # again with other tag value then it should fail according to aws documentation.
-            if existing_tags is not None and tag not in existing_tags:
-                return False
-    return True
 
 
 def _get_total_publish_size(
