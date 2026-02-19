@@ -11,7 +11,6 @@ LOG = logging.getLogger(__name__)
 # Config options for which both usage and values are reported in analytics.
 # Important: This list must only contain options whose values do not contain PII or sensitive data.
 TRACKED_ENV_VAR = [
-    "ACTIVATE_PRO",
     "ALLOW_NONSTANDARD_REGIONS",
     "BEDROCK_PREWARM",
     "CFN_IGNORE_UNSUPPORTED_TYPE_CREATE",
