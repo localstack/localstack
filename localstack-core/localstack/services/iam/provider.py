@@ -31,6 +31,7 @@ from localstack.aws.api.iam import (
     CreateServiceLinkedRoleResponse,
     CreateServiceSpecificCredentialResponse,
     CreateUserResponse,
+    CreateVirtualMFADeviceResponse,
     DeleteConflictException,
     DeleteServiceLinkedRoleResponse,
     DeletionTaskIdType,
@@ -65,6 +66,7 @@ from localstack.aws.api.iam import (
     ListInstanceProfilesForRoleResponse,
     ListInstanceProfilesResponse,
     ListInstanceProfileTagsResponse,
+    ListMFADevicesResponse,
     ListOpenIDConnectProvidersResponse,
     ListOpenIDConnectProviderTagsResponse,
     ListPoliciesResponse,
@@ -80,8 +82,10 @@ from localstack.aws.api.iam import (
     ListUserPoliciesResponse,
     ListUsersResponse,
     ListUserTagsResponse,
+    ListVirtualMFADevicesResponse,
     LoginProfile,
     MalformedPolicyDocumentException,
+    MFADevice,
     NoSuchEntityException,
     OpenIDConnectProviderListEntry,
     OpenIDConnectProviderUrlType,
@@ -107,9 +111,11 @@ from localstack.aws.api.iam import (
     UpdateSAMLProviderResponse,
     UploadSSHPublicKeyResponse,
     User,
+    VirtualMFADevice,
     allUsers,
     arnType,
-    assertionEncryptionModeType,
+    assignmentStatusType,
+    authenticationCodeType,
     booleanObjectType,
     booleanType,
     clientIDListType,
@@ -134,13 +140,12 @@ from localstack.aws.api.iam import (
     policyPathType,
     policyScopeType,
     policyVersionIdType,
-    privateKeyIdType,
-    privateKeyType,
     publicKeyIdType,
     publicKeyMaterialType,
     roleDescriptionType,
     roleMaxSessionDurationType,
     roleNameType,
+    serialNumberType,
     serviceName,
     serviceSpecificCredentialId,
     statusType,
@@ -148,6 +153,10 @@ from localstack.aws.api.iam import (
     tagListType,
     thumbprintListType,
     userNameType,
+    virtualMFADeviceName,
+)
+from localstack.aws.api.iam import (
+    VirtualMFADevice as VirtualMFADeviceModel,
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY, TAG_KEY_CUSTOM_ID
@@ -157,6 +166,7 @@ from localstack.services.iam.models import (
     IamStore,
     InstanceProfileEntity,
     ManagedPolicyEntity,
+    MFADeviceEntity,
     OIDCProvider,
     RoleEntity,
     SAMLProvider,
@@ -2493,7 +2503,7 @@ class IamProvider(IamApi):
 
     # ------------------------------ Service specific credentials ------------------------------ #
 
-    def _get_user_or_raise_error(self, user_name: str, context: RequestContext) -> User:
+    def _get_user_or_raise_error(self, user_name: str, context: RequestContext) -> UserEntity:
         """
         Return the user from the store, or raise the proper exception if no user can be found.
 
@@ -2865,9 +2875,7 @@ class IamProvider(IamApi):
         context: RequestContext,
         saml_metadata_document: SAMLMetadataDocumentType,
         name: SAMLProviderNameType,
-        tags: tagListType | None = None,
-        assertion_encryption_mode: assertionEncryptionModeType | None = None,
-        add_private_key: privateKeyType | None = None,
+        tags: tagListType = None,
         **kwargs,
     ) -> CreateSAMLProviderResponse:
 
@@ -2896,9 +2904,11 @@ class IamProvider(IamApi):
         return response
 
     def get_saml_provider(
-        self, context: RequestContext, saml_provider_arn: arnType, **kwargs
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        **kwargs,
     ) -> GetSAMLProviderResponse:
-
         provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
 
         return GetSAMLProviderResponse(
@@ -2927,13 +2937,9 @@ class IamProvider(IamApi):
         self,
         context: RequestContext,
         saml_provider_arn: arnType,
-        saml_metadata_document: SAMLMetadataDocumentType | None = None,
-        assertion_encryption_mode: assertionEncryptionModeType | None = None,
-        add_private_key: privateKeyType | None = None,
-        remove_private_key: privateKeyIdType | None = None,
+        saml_metadata_document: SAMLMetadataDocumentType = None,
         **kwargs,
     ) -> UpdateSAMLProviderResponse:
-
         provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
 
         if saml_metadata_document:
@@ -2943,7 +2949,10 @@ class IamProvider(IamApi):
         return UpdateSAMLProviderResponse(SAMLProviderArn=saml_provider_arn)
 
     def delete_saml_provider(
-        self, context: RequestContext, saml_provider_arn: arnType, **kwargs
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        **kwargs,
     ) -> None:
         store = self._get_store(context)
 
@@ -2953,9 +2962,12 @@ class IamProvider(IamApi):
         del store.SAML_PROVIDERS[saml_provider_arn]
 
     def tag_saml_provider(
-        self, context: RequestContext, saml_provider_arn: arnType, tags: tagListType, **kwargs
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        tags: tagListType,
+        **kwargs,
     ) -> None:
-
         provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
 
         # Merge tags: update existing keys, add new ones
@@ -2981,8 +2993,8 @@ class IamProvider(IamApi):
         self,
         context: RequestContext,
         saml_provider_arn: arnType,
-        marker: markerType | None = None,
-        max_items: maxItemsType | None = None,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
         **kwargs,
     ) -> ListSAMLProviderTagsResponse:
         provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
@@ -3706,3 +3718,294 @@ class IamProvider(IamApi):
 
         # TODO: Add pagination support
         return ListInstanceProfileTagsResponse(Tags=tags, IsTruncated=False)
+
+    # ------------------------------ Virtual MFA Devices ------------------------------ #
+
+    def _generate_mfa_serial_number(
+        self, name: str, path: str, account_id: str, partition: str = "aws"
+    ) -> str:
+        """
+        Generate a serial number (ARN) for a virtual MFA device.
+        Format: arn:{partition}:iam::{account_id}:mfa/{path_resource}{name}
+        """
+        # Path "/" becomes empty in the ARN, other paths have leading slash stripped
+        if path == "/":
+            path_resource = ""
+        else:
+            path_resource = path[1:]  # Remove leading slash, keep trailing slash
+        return f"arn:{partition}:iam::{account_id}:mfa/{path_resource}{name}"
+
+    def _generate_totp_secret(self) -> bytes:
+        """Generate a random Base32-encoded secret for TOTP."""
+        # Generate 20 random bytes (160 bits) for the secret
+        secret_bytes = bytes(random.getrandbits(8) for _ in range(20))
+        # Base32 encode it
+        return base64.b32encode(secret_bytes)
+
+    def _generate_qr_code_png(self, secret: bytes, device_name: str, account_id: str) -> bytes:
+        """
+        Generate a QR code PNG for the virtual MFA device.
+        In a real implementation, this would generate an actual QR code image.
+        For LocalStack, we return a minimal placeholder PNG.
+        """
+        # Minimal valid PNG (1x1 transparent pixel)
+        # This is a placeholder - real AWS returns an actual QR code
+        return base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        )
+
+    def _validate_mfa_path(self, path: str | None) -> str:
+        """Validate and return the MFA device path."""
+        if path is None:
+            return "/"
+
+        # Check path length
+        if len(path) > 512:
+            raise ValidationListError(
+                [
+                    "Value at 'path' failed to satisfy constraint: "
+                    "Member must have length less than or equal to 512"
+                ]
+            )
+
+        # Path must start and end with /
+        if not path.startswith("/") or not path.endswith("/"):
+            raise ValidationError(
+                "The specified value for path is invalid. It must begin and end with / "
+                "and contain only alphanumeric characters and/or / characters."
+            )
+
+        return path
+
+    def create_virtual_mfa_device(
+        self,
+        context: RequestContext,
+        virtual_mfa_device_name: virtualMFADeviceName,
+        path: pathType | None = None,
+        tags: tagListType | None = None,
+        **kwargs,
+    ) -> CreateVirtualMFADeviceResponse:
+        # Validate path
+        validated_path = self._validate_mfa_path(path)
+
+        store = self._get_store(context)
+        serial_number = self._generate_mfa_serial_number(
+            virtual_mfa_device_name, validated_path, context.account_id, context.partition
+        )
+
+        # Check for duplicate device
+        if serial_number in store.MFA_DEVICES:
+            raise EntityAlreadyExistsException("MFA device already exists.")
+
+        # Generate TOTP secret and QR code
+        base32_secret = self._generate_totp_secret()
+        qr_code_png = self._generate_qr_code_png(
+            base32_secret, virtual_mfa_device_name, context.account_id
+        )
+
+        # Create the device model
+        device_model = VirtualMFADeviceModel(
+            SerialNumber=serial_number,
+            Base32StringSeed=base32_secret,
+            QRCodePNG=qr_code_png,
+            Tags=tags or [],
+        )
+
+        store.MFA_DEVICES[serial_number] = MFADeviceEntity(
+            device=device_model, device_name=device_model, path=path
+        )
+
+        # Build response
+        virtual_mfa_device = VirtualMFADevice(
+            SerialNumber=serial_number,
+            Base32StringSeed=base32_secret,
+            QRCodePNG=qr_code_png,
+        )
+
+        return CreateVirtualMFADeviceResponse(VirtualMFADevice=virtual_mfa_device)
+
+    def delete_virtual_mfa_device(
+        self,
+        context: RequestContext,
+        serial_number: serialNumberType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        if serial_number not in store.MFA_DEVICES:
+            raise NoSuchEntityException(
+                f"MFA Device with serial number {serial_number} does not exist."
+            )
+
+        # If device is assigned to a user, remove it from the user's MFA devices
+        device = store.MFA_DEVICES[serial_number]
+        if device.user:
+            user_entity = store.USERS[device.user]
+            user_entity.mfa_devices.remove(serial_number)
+
+        del store.MFA_DEVICES[serial_number]
+
+    def list_virtual_mfa_devices(
+        self,
+        context: RequestContext,
+        assignment_status: assignmentStatusType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListVirtualMFADevicesResponse:
+        store = self._get_store(context)
+
+        # Get all virtual MFA devices
+        all_devices = list(store.MFA_DEVICES.values())
+
+        # Filter by assignment status
+        if assignment_status == "Assigned":
+            all_devices = [d for d in all_devices if d.user is not None and "QRCodePNG" in d.device]
+        elif assignment_status == "Unassigned":
+            all_devices = [d for d in all_devices if d.user is None and "QRCodePNG" in d.device]
+        # "Any" or None means no filtering
+
+        # Sort by serial number for consistent ordering
+        all_devices.sort(key=lambda d: d.device.get("SerialNumber"))
+
+        # Handle marker-based pagination
+        start_index = 0
+        if marker:
+            # Find the device with this serial number and start after it
+            found = False
+            for i, device in enumerate(all_devices):
+                if device.device.get("SerialNumber") == marker:
+                    start_index = i + 1
+                    found = True
+                    break
+            if not found:
+                raise ValidationError("Invalid Marker.")
+
+        # Apply pagination
+        if max_items:
+            end_index = start_index + max_items
+            paginated_devices = all_devices[start_index:end_index]
+            is_truncated = end_index < len(all_devices)
+        else:
+            paginated_devices = all_devices[start_index:]
+            is_truncated = False
+
+        # Convert to response format
+        response_devices = []
+        for device in paginated_devices:
+            vmd = VirtualMFADevice(SerialNumber=device.device.get("SerialNumber"))
+            if device.user:
+                vmd["User"] = device.user
+                # Include EnableDate for assigned devices
+                if "EnableDate" in device.device:
+                    vmd["EnableDate"] = device.device["EnableDate"]
+            response_devices.append(vmd)
+
+        response = ListVirtualMFADevicesResponse(
+            VirtualMFADevices=response_devices,
+            IsTruncated=is_truncated,
+        )
+
+        if is_truncated:
+            response["Marker"] = paginated_devices[-1].device.get("SerialNumber")
+
+        return response
+
+    def enable_mfa_device(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        serial_number: serialNumberType,
+        authentication_code1: authenticationCodeType,
+        authentication_code2: authenticationCodeType,
+        **kwargs,
+    ) -> None:
+        # Verify user exists
+        user_entity = self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_store(context)
+        enable_date = datetime.now(UTC)
+
+        if serial_number in store.MFA_DEVICES:
+            # Virtual MFA device - update existing entry
+            device = store.MFA_DEVICES[serial_number]
+            device.device["EnableDate"] = enable_date
+            device.user = user_entity.user
+        else:
+            # Physical token MFA - create new entry
+            mfa_device = MFADevice(
+                SerialNumber=serial_number,
+                EnableDate=enable_date,
+            )
+            device = MFADeviceEntity(
+                device_name=serial_number,
+                path="/",
+                device=mfa_device,
+                user=user_entity.user,
+            )
+            store.MFA_DEVICES[serial_number] = device
+
+        user_entity = store.USERS[user_name]
+        user_entity.mfa_devices.append(serial_number)
+
+    def deactivate_mfa_device(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        serial_number: serialNumberType,
+        **kwargs,
+    ) -> None:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_store(context)
+
+        # Check if MFA device is assigned to user
+        if serial_number not in store.MFA_DEVICES:
+            raise NoSuchEntityException(
+                f"MFA Device with serial number {serial_number} does not exist."
+            )
+
+        device = store.MFA_DEVICES[serial_number]
+        device.device["EnableDate"] = None
+        if device.user:
+            user_entity = store.USERS[device.user.get("UserName")]
+            user_entity.mfa_devices.remove(serial_number)
+            device.user = None
+
+    def list_mfa_devices(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListMFADevicesResponse:
+        # TODO extract user_name from keys if it's not passed
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+        store = self._get_store(context)
+        user_entity = store.USERS[user_name]
+
+        mfa_serial_numbers = user_entity.mfa_devices
+        all_mfa_devices = [
+            store.MFA_DEVICES[serial]
+            for serial in mfa_serial_numbers
+            if serial in store.MFA_DEVICES
+        ]
+
+        # Convert to response format
+        mfa_devices = [
+            MFADevice(
+                UserName=device.user.get("UserName") if device.user else user_name,
+                SerialNumber=device.device.get("SerialNumber"),
+                EnableDate=device.device.get("EnableDate"),
+            )
+            for device in all_mfa_devices
+        ]
+
+        # TODO: Add pagination support with marker and max_items
+        return ListMFADevicesResponse(
+            MFADevices=mfa_devices,
+            IsTruncated=False,
+        )

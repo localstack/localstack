@@ -10,6 +10,7 @@ from localstack.aws.api.iam import (
     Group,
     InstanceProfile,
     LoginProfile,
+    MFADevice,
     PasswordPolicy,
     Policy,
     PolicyVersion,
@@ -17,6 +18,7 @@ from localstack.aws.api.iam import (
     ServiceSpecificCredential,
     SSHPublicKey,
     User,
+    VirtualMFADevice,
     clientIDListType,
     tagListType,
     thumbprintListType,
@@ -61,6 +63,7 @@ class UserEntity:
     password: str | None = None  # Password for login profile (never in API responses)
     service_specific_credentials: list[ServiceSpecificCredential] = field(default_factory=list)
     ssh_public_keys: dict[str, SSHPublicKey] = field(default_factory=dict)  # key_id -> SSHPublicKey
+    mfa_devices: list[str] = field(default_factory=list)
 
 
 @dataclasses.dataclass
@@ -102,6 +105,14 @@ class InstanceProfileEntity:
     role_name: str | None = None  # Name of the attached role (max 1 role per profile)
 
 
+@dataclasses.dataclass
+class MFADeviceEntity:
+    device_name: str
+    path: str
+    device: VirtualMFADevice | MFADevice
+    user: User | None = None
+
+
 class IamStore(BaseStore):
     # Customer-managed policies keyed by ARN
     # Using CrossRegionAttribute since IAM is a global service (policies are account-wide)
@@ -128,6 +139,10 @@ class IamStore(BaseStore):
     # OIDC providers: maps provider_arn -> OIDCProvider
     # Account-scoped (IAM is global within an account)
     OIDC_PROVIDERS: dict[str, OIDCProvider] = CrossRegionAttribute(default=dict)
+
+    # MFA devices assigned to users: maps serial_number -> list of MFADevice
+    # Account-scoped (IAM is global within an account)
+    MFA_DEVICES: dict[str, list[MFADeviceEntity]] = CrossRegionAttribute(default=dict)
 
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)
