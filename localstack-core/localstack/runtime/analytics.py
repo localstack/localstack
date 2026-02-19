@@ -122,6 +122,10 @@ def _publish_config_as_analytics_event():
     env_vars = {key: os.getenv(key) for key in env_vars}
     present_env_vars = {env_var: 1 for env_var in PRESENCE_ENV_VAR if os.getenv(env_var)}
 
+    # filter out irrelevant None values, making the payload significantly smaller.
+    env_vars = {k: v for k, v in env_vars.items() if v is not None}
+    present_env_vars = {k: v for k, v in present_env_vars.items() if v is not None}
+
     log.event("config", env_vars=env_vars, set_vars=present_env_vars)
 
 

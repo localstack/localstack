@@ -2748,6 +2748,19 @@ class InstanceType(StrEnum):
     g7e_12xlarge = "g7e.12xlarge"
     g7e_24xlarge = "g7e.24xlarge"
     g7e_48xlarge = "g7e.48xlarge"
+    r8id_large = "r8id.large"
+    r8id_xlarge = "r8id.xlarge"
+    r8id_2xlarge = "r8id.2xlarge"
+    r8id_4xlarge = "r8id.4xlarge"
+    r8id_8xlarge = "r8id.8xlarge"
+    r8id_12xlarge = "r8id.12xlarge"
+    r8id_16xlarge = "r8id.16xlarge"
+    r8id_24xlarge = "r8id.24xlarge"
+    r8id_32xlarge = "r8id.32xlarge"
+    r8id_48xlarge = "r8id.48xlarge"
+    r8id_96xlarge = "r8id.96xlarge"
+    r8id_metal_48xl = "r8id.metal-48xl"
+    r8id_metal_96xl = "r8id.metal-96xl"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -3399,6 +3412,11 @@ class NatGatewayState(StrEnum):
     available = "available"
     deleting = "deleting"
     deleted = "deleted"
+
+
+class NestedVirtualizationSpecification(StrEnum):
+    enabled = "enabled"
+    disabled = "disabled"
 
 
 class NetworkInterfaceAttribute(StrEnum):
@@ -4171,6 +4189,7 @@ class SummaryStatus(StrEnum):
 
 class SupportedAdditionalProcessorFeature(StrEnum):
     amd_sev_snp = "amd-sev-snp"
+    nested_virtualization = "nested-virtualization"
 
 
 class TargetCapacityUnitType(StrEnum):
@@ -6347,6 +6366,20 @@ class AuthorizeSecurityGroupIngressResult(TypedDict, total=False):
     SecurityGroupRules: SecurityGroupRuleList | None
 
 
+class AvailabilityZoneSubGeography(TypedDict, total=False):
+    Name: String | None
+
+
+AvailabilityZoneSubGeographyList = list[AvailabilityZoneSubGeography]
+
+
+class AvailabilityZoneGeography(TypedDict, total=False):
+    Name: String | None
+
+
+AvailabilityZoneGeographyList = list[AvailabilityZoneGeography]
+
+
 class AvailabilityZoneMessage(TypedDict, total=False):
     Message: String | None
 
@@ -6366,6 +6399,8 @@ class AvailabilityZone(TypedDict, total=False):
     ParentZoneName: String | None
     ParentZoneId: String | None
     GroupLongName: String | None
+    Geography: AvailabilityZoneGeographyList | None
+    SubGeography: AvailabilityZoneSubGeographyList | None
     State: AvailabilityZoneState | None
 
 
@@ -7581,12 +7616,14 @@ class CpuOptions(TypedDict, total=False):
     CoreCount: Integer | None
     ThreadsPerCore: Integer | None
     AmdSevSnp: AmdSevSnpSpecification | None
+    NestedVirtualization: NestedVirtualizationSpecification | None
 
 
 class CpuOptionsRequest(TypedDict, total=False):
     CoreCount: Integer | None
     ThreadsPerCore: Integer | None
     AmdSevSnp: AmdSevSnpSpecification | None
+    NestedVirtualization: NestedVirtualizationSpecification | None
 
 
 class CreateCapacityManagerDataExportRequest(ServiceRequest):
@@ -8932,6 +8969,7 @@ class LaunchTemplateCpuOptionsRequest(TypedDict, total=False):
     CoreCount: Integer | None
     ThreadsPerCore: Integer | None
     AmdSevSnp: AmdSevSnpSpecification | None
+    NestedVirtualization: NestedVirtualizationSpecification | None
 
 
 class CreditSpecificationRequest(TypedDict, total=False):
@@ -9249,6 +9287,7 @@ class LaunchTemplateCpuOptions(TypedDict, total=False):
     CoreCount: Integer | None
     ThreadsPerCore: Integer | None
     AmdSevSnp: AmdSevSnpSpecification | None
+    NestedVirtualization: NestedVirtualizationSpecification | None
 
 
 class CreditSpecification(TypedDict, total=False):
@@ -16058,8 +16097,16 @@ class DescribeRegionsRequest(ServiceRequest):
     Filters: FilterList | None
 
 
+class RegionGeography(TypedDict, total=False):
+    Name: String | None
+
+
+RegionGeographyList = list[RegionGeography]
+
+
 class Region(TypedDict, total=False):
     OptInStatus: String | None
+    Geography: RegionGeographyList | None
     RegionName: String | None
     Endpoint: String | None
 
@@ -21075,8 +21122,9 @@ class ModifyInstanceConnectEndpointResult(TypedDict, total=False):
 
 class ModifyInstanceCpuOptionsRequest(ServiceRequest):
     InstanceId: InstanceId
-    CoreCount: Integer
-    ThreadsPerCore: Integer
+    CoreCount: Integer | None
+    ThreadsPerCore: Integer | None
+    NestedVirtualization: NestedVirtualizationSpecification | None
     DryRun: Boolean | None
 
 
@@ -21084,6 +21132,7 @@ class ModifyInstanceCpuOptionsResult(TypedDict, total=False):
     InstanceId: InstanceId | None
     CoreCount: Integer | None
     ThreadsPerCore: Integer | None
+    NestedVirtualization: NestedVirtualizationSpecification | None
 
 
 class ModifyInstanceCreditSpecificationRequest(ServiceRequest):
@@ -30707,8 +30756,9 @@ class Ec2Api:
         self,
         context: RequestContext,
         instance_id: InstanceId,
-        core_count: Integer,
-        threads_per_core: Integer,
+        core_count: Integer | None = None,
+        threads_per_core: Integer | None = None,
+        nested_virtualization: NestedVirtualizationSpecification | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> ModifyInstanceCpuOptionsResult:

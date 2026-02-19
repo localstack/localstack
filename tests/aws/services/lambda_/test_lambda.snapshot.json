@@ -3641,7 +3641,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_init_environment": {
-    "recorded-date": "25-11-2025, 22:02:31",
+    "recorded-date": "18-02-2026, 11:19:29",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -3670,7 +3670,7 @@
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.12",
+          "Runtime": "python3.14",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
@@ -3697,7 +3697,7 @@
         "Payload": {
           "environment": {
             "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
-            "AWS_EXECUTION_ENV": "AWS_Lambda_python3.12",
+            "AWS_EXECUTION_ENV": "AWS_Lambda_python3.14",
             "AWS_DEFAULT_REGION": "<region>",
             "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
             "AWS_REGION": "<region>",

@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/resource_providers/iam/aws_iam_user/test_parity.py::TestParity::test_create_with_full_properties": {
+  "tests/aws/services/iam/resource_providers/aws_iam_user/test_parity.py::TestParity::test_create_with_full_properties": {
     "recorded-date": "29-06-2023, 13:59:27",
     "recorded-content": {
       "stack-outputs": {
@@ -8,7 +8,7 @@
       "describe-user-resource": {
         "User": {
           "Arn": "arn:<partition>:iam::111111111111:user/<user-name>",
-          "CreateDate": "datetime",
+          "CreateDate": "<datetime>",
           "Path": "/",
           "UserId": "<user-id:1>",
           "UserName": "<user-name>"
@@ -22,14 +22,14 @@
         "Groups": [
           {
             "Arn": "arn:<partition>:iam::111111111111:group/<group-name-1>",
-            "CreateDate": "datetime",
+            "CreateDate": "<datetime>",
             "GroupId": "<group-id:1>",
             "GroupName": "<group-name-1>",
             "Path": "/"
           },
           {
             "Arn": "arn:<partition>:iam::111111111111:group/<group-name-2>",
-            "CreateDate": "datetime",
+            "CreateDate": "<datetime>",
             "GroupId": "<group-id:2>",
             "GroupName": "<group-name-2>",
             "Path": "/"
