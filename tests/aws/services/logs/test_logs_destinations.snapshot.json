@@ -85,7 +85,7 @@
     }
   },
   "tests/aws/services/logs/test_logs_destinations.py::TestDestinations::test_put_destination_policy": {
-    "recorded-date": "05-02-2026, 15:23:25",
+    "recorded-date": "18-02-2026, 19:55:08",
     "recorded-content": {
       "put-destination-policy": {
         "ResponseMetadata": {
@@ -102,7 +102,7 @@
                 {
                   "Effect": "Allow",
                   "Principal": {
-                    "AWS": "logs.<region>.amazonaws.com"
+                    "AWS": "logs.amazonaws.com"
                   },
                   "Action": "logs:PutSubscriptionFilter",
                   "Resource": "arn:<partition>:kinesis:<region>:111111111111:stream/<stream-name>"
