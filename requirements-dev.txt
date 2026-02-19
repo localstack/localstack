@@ -94,7 +94,7 @@ colorama==0.4.6
     # via awscli
 constantly==23.10.4
     # via localstack-twisted
-constructs==10.4.5
+constructs==10.5.0
     # via aws-cdk-lib
 coverage==7.13.4
     # via
@@ -142,7 +142,7 @@ docutils==0.19
     # via awscli
 events==0.5
     # via opensearch-py
-filelock==3.24.2
+filelock==3.24.3
     # via virtualenv
 graphql-core==3.2.7
     # via moto-ext
@@ -243,7 +243,7 @@ kclpy-ext==3.0.5
     # via localstack-core
 lazy-object-proxy==1.12.0
     # via openapi-spec-validator
-librt==0.8.0
+librt==0.8.1
     # via mypy
 localstack-snapshot==0.3.3
     # via localstack-core
@@ -501,7 +501,7 @@ urllib3==2.6.3
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.37.0
+virtualenv==20.38.0
     # via pre-commit
 watchdog==6.0.0
     # via localstack-core (pyproject.toml)
