@@ -118,7 +118,6 @@ def test_default_localstack_container_configurator(
     monkeypatch.setenv("DEBUG", "1")
     monkeypatch.setenv("LOCALSTACK_AUTH_TOKEN", "")
     monkeypatch.setenv("LOCALSTACK_API_KEY", "")
-    monkeypatch.setenv("ACTIVATE_PRO", "0")
     monkeypatch.setattr(config, "DEBUG", True)
     monkeypatch.setattr(config, "VOLUME_DIR", str(volume))
     monkeypatch.setattr(config, "DOCKER_FLAGS", "-p 23456:4566 -e MY_TEST_VAR=foobar")
