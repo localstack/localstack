@@ -666,9 +666,6 @@ class TestIAMPolicyEncoding:
         snapshot.match("get-policy-response", get_policy_response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Role.Tags"]
-    )  # Moto returns an empty list for no tags
     def test_put_role_policy_encoding(self, snapshot, aws_client, create_role, region_name):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
