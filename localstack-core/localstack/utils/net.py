@@ -70,10 +70,28 @@ def is_port_open(
     protocol = "http"
     protocols = protocols if isinstance(protocols, list) else [protocols]
     if isinstance(port, str):
-        url = urlparse(port_or_url)
-        port = url.port
-        host = url.hostname
-        protocol = url.scheme
+        url = urlparse(port)
+
+        # hack: if the port_or_url does not include a scheme, urlparse incorrectly parses the
+        # domain name as the scheme
+        # for example foo.com parses as
+        #     ParseResult(
+        #         scheme='foo.com',
+        #         netloc='',
+        #         path='4566',
+        #         params='',
+        #         query='',
+        #         fragment=''
+        #     )
+        if url.scheme and not url.hostname:
+            port = url.path
+            host = url.scheme
+            protocol = protocols[0]
+        else:
+            port = url.port
+            host = url.hostname
+            protocol = url.scheme
+
     nw_protocols = []
     nw_protocols += [socket.SOCK_STREAM] if "tcp" in protocols else []
     nw_protocols += [socket.SOCK_DGRAM] if "udp" in protocols else []
