@@ -1473,7 +1473,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             ),
         )
         function.versions["$LATEST"] = new_latest_version  # TODO: notify
-        self.lambda_service.update_version(new_version=new_latest_version)
+
+        if function.latest().config.capacity_provider_config:
+            self.lambda_service.task_executor.submit(
+                self.lambda_service.update_version, new_latest_version
+            )
+        else:
+            self.lambda_service.update_version(new_version=new_latest_version)
 
         return api_utils.map_config_out(new_latest_version)
 
