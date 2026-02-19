@@ -56,7 +56,7 @@ from localstack.services.lambda_.invocation.lambda_models import (
     VersionAlias,
     VersionState,
 )
-from localstack.services.lambda_.invocation.models import lambda_stores
+from localstack.services.lambda_.invocation.models import LambdaStore, lambda_stores
 from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.utils.archives import get_unzipped_size, is_zip_file
@@ -195,6 +195,66 @@ class LambdaService:
 
     def publish_version_async(self, function_version: FunctionVersion):
         self.task_executor.submit(self.publish_version, function_version)
+
+    def delete_function_version_async(
+        self, function: Function, version: FunctionVersion, qualifier: str
+    ):
+        """
+        Simulates async function cleanup after function deletion API is called
+        by introducing a small delay before actually removing the function from the store
+        to allow for getting the function details after deletion.
+        """
+
+        def _cleanup():
+            time.sleep(0.5)
+            function.versions.pop(qualifier, None)
+
+        new_state = VersionState(state=State.Deleting)
+        new_last_status = UpdateStatus(status=LastUpdateStatus.InProgress)
+        function.versions[version.id.qualifier] = dataclasses.replace(
+            version,
+            config=dataclasses.replace(
+                version.config, state=new_state, last_update=new_last_status
+            ),
+        )
+        destroy_code_if_not_used(code=version.config.code, function=function)
+
+        self.task_executor.submit(_cleanup)
+
+    def delete_function_async(self, store: LambdaStore, function_name: str):
+        """
+        Simulates async function version cleanup after function deletion API is called
+        by introducing a small delay before actually removing the function from the store
+        to allow for getting the function version details after deletion.
+        """
+
+        def _cleanup():
+            time.sleep(0.5)
+            store.functions.pop(function_name)
+
+        # set each version of the function to deleting state first, to allow for getting the function version details after deletion
+        function = store.functions.get(function_name)
+        if function:
+            for version in function.versions.values():
+                new_state = VersionState(state=State.Deleting)
+                new_last_status = UpdateStatus(status=LastUpdateStatus.InProgress)
+                previous_revision_id = version.config.revision_id
+
+                function.versions[version.id.qualifier] = dataclasses.replace(
+                    version,
+                    config=dataclasses.replace(
+                        version.config, state=new_state, last_update=new_last_status
+                    ),
+                )
+                # Seems the revision id doesn't change when deleting a function right after it has been created (even though state has changed)
+                # reassign revision id to avoid dataclass replace removing it, since it's init=False
+                object.__setattr__(
+                    function.versions[version.id.qualifier].config,
+                    "revision_id",
+                    previous_revision_id,
+                )
+
+        self.task_executor.submit(_cleanup)
 
     def publish_version(self, function_version: FunctionVersion):
         """
