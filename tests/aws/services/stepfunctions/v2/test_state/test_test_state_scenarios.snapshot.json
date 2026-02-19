@@ -2234,5 +2234,64 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_with_variables": {
+    "recorded-date": "19-02-2026, 16:02:21",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "input_values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "variables": {
+            "var_input_value": "test_value",
+            "var_constant_1": 10
+          }
+        },
+        "output": {
+          "ja_states_context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:2>:<resource:1>",
+              "Input": {
+                "input_values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": null,
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:2>",
+              "Name": "<resource:2>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date"
+            }
+          },
+          "ja_states_input": {
+            "input_values": [
+              1,
+              2,
+              3
+            ]
+          },
+          "ja_var_access": "test_value",
+          "ja_expr": 16
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

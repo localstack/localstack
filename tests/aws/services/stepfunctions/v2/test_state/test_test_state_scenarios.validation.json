@@ -394,5 +394,14 @@
       "teardown": 1.77,
       "total": 14.91
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_with_variables": {
+    "last_validated_date": "2026-02-19T16:02:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.66,
+      "teardown": 0.0,
+      "total": 1.17
+    }
   }
 }

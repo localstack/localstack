@@ -10,6 +10,9 @@ from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.evaluatejsonata.evaluate_jsonata_templates import (
     EvaluateJsonataTemplate as EJT,
 )
+from tests.aws.services.stepfunctions.templates.outputdecl.output_templates import (
+    OutputTemplates as OT,
+)
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
 )
@@ -413,3 +416,30 @@ class TestStateCaseScenarios:
             inspectionLevel=InspectionLevel.TRACE,
         )
         sfn_snapshot.match("check_approval_denied_response", check_approval_denied_response)
+
+    @markers.aws.validated
+    def test_state_with_variables(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.resource_name())
+        template = OT.load_sfn_template(OT.BASE_EXPR)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"input_values": [1, 2, 3]})
+        variables = json.dumps(
+            {
+                "var_input_value": "test_value",
+                "var_constant_1": 10,
+            }
+        )
+
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            stateName="State0",
+            input=exec_input,
+            variables=variables,
+            inspectionLevel=InspectionLevel.TRACE,
+        )
+        sfn_snapshot.match("test_case_response", test_case_response)
