@@ -1808,7 +1808,7 @@ class TestLambdaFeatures:
         snapshot.match("invocation-response", result)
 
     # TODO: implement in new provider (was tested in old provider)
-    @pytest.mark.skip(reason="Not yet implemented")
+
     @markers.aws.validated
     def test_lambda_with_context(
         self, create_lambda_function, check_lambda_logs, snapshot, aws_client
