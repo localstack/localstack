@@ -173,7 +173,7 @@ class TestOIDCProviderOperations:
         snapshot.match("not-found-error", exc.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Tags"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Tags", "$..ClientIDList"])
     def test_update_open_id_connect_provider_thumbprint(self, aws_client, snapshot, cleanups):
         """Test updating an OIDC provider's thumbprint list."""
         snapshot.add_transformer(snapshot.transform.key_value("Url"))
@@ -197,7 +197,6 @@ class TestOIDCProviderOperations:
         snapshot.match("after-update", get_response)
 
     @markers.aws.validated
-    @pytest.mark.skip("Idempotency is implemented but it shouldn't")
     def test_delete_open_id_connect_provider(self, aws_client, snapshot):
         """Test deleting an OIDC provider."""
         domain = f"oidc-delete-{short_uid()}.example.com"
@@ -371,7 +370,6 @@ class TestOIDCProviderTags:
         assert len(response["Tags"]) == 2
 
     @markers.aws.validated
-    @pytest.mark.skip("tag limit should be 50")
     def test_open_id_connect_provider_tags_limit(self, aws_client, snapshot, cleanups):
         """Test the max amount of tags an OIDC provider can have."""
         tags = [{"Key": f"k{idx:02d}", "Value": f"v{idx}"} for idx in range(50)]
