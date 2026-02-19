@@ -34,7 +34,7 @@ repos:
       - id: check-pinned-deps-for-needed-upgrade
 
   - repo: https://github.com/python-openapi/openapi-spec-validator
-    rev: 0.8.0b2
+    rev: 0.8.0b3
     hooks:
       - id: openapi-spec-validator
         files: .*openapi.*\.(json|yaml|yml)
