@@ -1,24 +1,36 @@
 import configparser
-import inspect
 import logging
 import os
 import shutil
 import stat
 import tempfile
 from pathlib import Path
+from typing import Any, AnyStr, Literal, overload
 
 LOG = logging.getLogger(__name__)
-TMP_FILES = []
+TMP_FILES: list[str] = []
 
 
-def parse_config_file(file_or_str: str, single_section: bool = True) -> dict:
+@overload
+def parse_config_file(file_or_str: str, single_section: Literal[True]) -> dict[str, str]: ...
+
+
+@overload
+def parse_config_file(
+    file_or_str: str, single_section: Literal[False]
+) -> dict[str, dict[str, str]]: ...
+
+
+def parse_config_file(
+    file_or_str: str, single_section: bool = True
+) -> dict[str, str] | dict[str, dict[str, str]]:
     """Parse the given properties config file/string and return a dict of section->key->value.
     If the config contains a single section, and 'single_section' is True, returns"""
 
     config = configparser.RawConfigParser()
 
     if os.path.exists(file_or_str):
-        file_or_str = load_file(file_or_str)
+        file_or_str = load_file(file_or_str)  # type: ignore[assignment]
 
     try:
         config.read_string(file_or_str)
@@ -30,7 +42,7 @@ def parse_config_file(file_or_str: str, single_section: bool = True) -> dict:
 
     result = {sec: dict(config.items(sec)) for sec in sections}
     if len(sections) == 1 and single_section:
-        result = result[sections[0]]
+        return result[sections[0]]
 
     return result
 
@@ -64,13 +76,18 @@ def cache_dir() -> Path:
     return get_user_cache_dir() / "localstack"
 
 
-def save_file(file, content, append=False, permissions=None):
+def save_file(
+    file: str | os.PathLike[AnyStr],
+    content: str | bytes,
+    append: bool = False,
+    permissions: int | None = None,
+) -> None:
     mode = "a" if append else "w+"
     if not isinstance(content, str):
         mode = mode + "b"
 
-    def _opener(path, flags):
-        return os.open(path, flags, permissions)
+    def _opener(path: str, flags: int) -> int:
+        return os.open(path, flags, permissions)  # type: ignore[arg-type]
 
     # make sure that the parent dir exists
     mkdir(os.path.dirname(file))
@@ -80,8 +97,35 @@ def save_file(file, content, append=False, permissions=None):
         f.flush()
 
 
+@overload
 def load_file(
-    file_path: str | os.PathLike,
+    file_path: str | os.PathLike[AnyStr],
+    default: None = None,
+    mode: None = None,
+    strict: bool = False,
+) -> str | None: ...
+
+
+@overload
+def load_file(
+    file_path: str | os.PathLike[AnyStr],
+    default: str,
+    mode: None = None,
+    strict: bool = False,
+) -> str | None: ...
+
+
+@overload
+def load_file(
+    file_path: str | os.PathLike[AnyStr],
+    default: bytes,
+    mode: Literal["rb"],
+    strict: bool = False,
+) -> bytes | None: ...
+
+
+def load_file(
+    file_path: str | os.PathLike[AnyStr],
     default: str | bytes | None = None,
     mode: str | None = None,
     strict: bool = False,
@@ -107,7 +151,11 @@ def load_file(
     return result
 
 
-def get_or_create_file(file_path, content=None, permissions=None):
+def get_or_create_file(
+    file_path: os.PathLike[AnyStr],
+    content: str | bytes | None = None,
+    permissions: int | None = None,
+) -> str | bytes | None:
     if os.path.exists(file_path):
         return load_file(file_path)
     content = "{}" if content is None else content
@@ -116,9 +164,10 @@ def get_or_create_file(file_path, content=None, permissions=None):
         return content
     except Exception:
         pass
+    return None
 
 
-def replace_in_file(search, replace, file_path):
+def replace_in_file(search: str, replace: str, file_path: os.PathLike[AnyStr]) -> None:
     """Replace all occurrences of `search` with `replace` in the given file (overwrites in place!)"""
     content = load_file(file_path) or ""
     content_new = content.replace(search, replace)
@@ -126,7 +175,7 @@ def replace_in_file(search, replace, file_path):
         save_file(file_path, content_new)
 
 
-def mkdir(folder: str):
+def mkdir(folder: str | bytes | os.PathLike[AnyStr]) -> None:
     if not os.path.exists(folder):
         os.makedirs(folder, exist_ok=True)
 
@@ -142,7 +191,7 @@ def is_empty_dir(directory: str, ignore_hidden: bool = False) -> bool:
     return not bool(entries)
 
 
-def ensure_readable(file_path: str, default_perms: int = None):
+def ensure_readable(file_path: str, default_perms: int | None = None) -> None:
     if default_perms is None:
         default_perms = 0o644
     try:
@@ -153,7 +202,7 @@ def ensure_readable(file_path: str, default_perms: int = None):
         os.chmod(file_path, default_perms)
 
 
-def chown_r(path: str, user: str):
+def chown_r(path: str, user: str) -> None:
     """Recursive chown on the given file/directory path."""
     # keep these imports here for Windows compatibility
     import grp
@@ -169,7 +218,7 @@ def chown_r(path: str, user: str):
             os.chown(os.path.join(root, filename), uid, gid)
 
 
-def chmod_r(path: str, mode: int):
+def chmod_r(path: str, mode: int) -> None:
     """
     Recursive chmod
     :param path: path to file or directory
@@ -185,7 +234,7 @@ def chmod_r(path: str, mode: int):
             idempotent_chmod(os.path.join(root, filename), mode)
 
 
-def idempotent_chmod(path: str, mode: int):
+def idempotent_chmod(path: str, mode: int) -> None:
     """
     Perform idempotent chmod on the given file path (non-recursively). The function attempts to call `os.chmod`, and
     will catch and only re-raise exceptions (e.g., PermissionError) if the file does not have the given mode already.
@@ -206,7 +255,7 @@ def idempotent_chmod(path: str, mode: int):
         raise
 
 
-def rm_rf(path: str):
+def rm_rf(path: str) -> None:
     """
     Recursively removes a file or directory
     """
@@ -218,7 +267,7 @@ def rm_rf(path: str):
     # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
     if is_debian():
         try:
-            return run(f'rm -rf "{path}"')
+            return run(f'rm -rf "{path}"')  # type: ignore[return-value]
         except Exception:
             pass
     # Make sure all files are writeable and dirs executable to remove
@@ -234,13 +283,15 @@ def rm_rf(path: str):
         shutil.rmtree(path)
 
 
-def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kwargs):
+def cp_r(
+    src: str, dst: str, rm_dest_on_conflict: bool = False, ignore_copystat_errors: bool = False
+) -> None | str:
     """Recursively copies file/directory"""
     # attention: this patch is not threadsafe
     copystat_orig = shutil.copystat
     if ignore_copystat_errors:
 
-        def _copystat(*args, **kwargs):
+        def _copystat(*args: Any, **kwargs: Any) -> None:
             try:
                 return copystat_orig(*args, **kwargs)
             except Exception:
@@ -252,21 +303,19 @@ def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=F
             if os.path.isdir(dst):
                 dst = os.path.join(dst, os.path.basename(src))
             return shutil.copyfile(src, dst)
-        if "dirs_exist_ok" in inspect.getfullargspec(shutil.copytree).args:
-            kwargs["dirs_exist_ok"] = True
         try:
-            return shutil.copytree(src, dst, **kwargs)
+            return shutil.copytree(src, dst, dirs_exist_ok=True)
         except FileExistsError:
             if rm_dest_on_conflict:
                 rm_rf(dst)
-                return shutil.copytree(src, dst, **kwargs)
+                return shutil.copytree(src, dst, dirs_exist_ok=True)
             raise
     except Exception as e:
 
-        def _info(_path):
+        def _info(_path: str) -> str:
             return f"{_path} (file={os.path.isfile(_path)}, symlink={os.path.islink(_path)})"
 
-        LOG.debug("Error copying files from %s to %s: %s", _info(src), _info(dst), e)
+        LOG.debug("Error copying files from %s to %s", _info(src), _info(dst), e)
         raise
     finally:
         shutil.copystat = copystat_orig
@@ -293,10 +342,10 @@ def disk_usage(path: str) -> int:
 
 def file_exists_not_empty(path: str) -> bool:
     """Return whether the given file or directory exists and is non-empty (i.e., >0 bytes content)"""
-    return path and disk_usage(path) > 0
+    return bool(path) and disk_usage(path) > 0
 
 
-def cleanup_tmp_files():
+def cleanup_tmp_files() -> None:
     for tmp in TMP_FILES:
         try:
             rm_rf(tmp)
