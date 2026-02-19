@@ -1628,10 +1628,7 @@ class IamProvider(IamApi):
         return CreateLoginProfileResponse(LoginProfile=login_profile)
 
     def get_login_profile(
-        self,
-        context: RequestContext,
-        user_name: userNameType,
-        **kwargs,
+        self, context: RequestContext, user_name: userNameType | None = None, **kwargs
     ) -> GetLoginProfileResponse:
         store = self._get_store(context)
 
