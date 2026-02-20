@@ -73,6 +73,7 @@ from localstack.aws.api.cloudformation import (
     StackSetOperationStatus,
     StackStatus,
     StackStatusFilter,
+    Tag,
     TemplateStage,
     UpdateStackInput,
     UpdateStackOutput,
@@ -250,6 +251,20 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             "If you experience issues, please submit a bug report at this URL: %s",
             issue_url,
         )
+
+    # Base implementation in community returns tags as-is. Pro provider overrides to query ResourceGroupsTaggingAPI.
+    def _get_tags(
+        self, resource_arn: str, account_id: str, region: str, tags: list[Tag]
+    ) -> list[Tag]:
+        return tags
+
+    # Placeholder method for pro provider override. Overridden in pro provider for ResourceGroupsTaggingAPI integration.
+    def _set_tags(self, resource_arn: str, account_id: str, region: str, tags: list[Tag]) -> None:
+        return
+
+    # Overridden in pro provider to remove all tags from ResourceGroupsTaggingAPI
+    def _remove_tags(self, resource_arn: str, account_id: str, region: str):
+        return
 
     @staticmethod
     def _resolve_parameters(
@@ -593,6 +608,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             # No change set available on this stack.
             pass
 
+        tags = request.get("Tags", [])
         # create change set for the stack and apply changes
         change_set = ChangeSet(
             stack,
@@ -600,6 +616,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template=after_template,
             template_body=template_body,
         )
+        self._set_tags(change_set.change_set_id, context.account_id, context.region, tags)
         self._setup_change_set_model(
             change_set=change_set,
             before_template=before_template,
@@ -659,6 +676,9 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         change_set.set_execution_status(ExecutionStatus.EXECUTE_IN_PROGRESS)
         # propagate the tags as this is done during execution
         change_set.stack.tags = change_set.tags
+        self._set_tags(
+            change_set.stack.stack_id, context.account_id, context.region, change_set.tags
+        )
         change_set.stack.set_stack_status(
             StackStatus.UPDATE_IN_PROGRESS
             if change_set.change_set_type == ChangeSetType.UPDATE
@@ -743,6 +763,10 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         # only relevant if change_set_name isn't an ARN
         state = get_cloudformation_store(context.account_id, context.region)
         change_set = find_change_set_v2(state, change_set_name, stack_name)
+        tags_stored_in_state = change_set.tags or []
+        tags = self._get_tags(
+            change_set.change_set_id, context.account_id, context.region, tags_stored_in_state
+        )
 
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
@@ -765,7 +789,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 # TODO: static information
                 IncludeNestedStacks=False,
                 NotificationARNs=[],
-                Tags=change_set.tags or None,
+                Tags=tags,
             )
 
         # TODO: The ChangeSetModelDescriber currently matches AWS behavior by listing
@@ -796,7 +820,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             # TODO: static information
             IncludeNestedStacks=False,
             NotificationARNs=[],
-            Tags=change_set.tags or None,
+            Tags=tags,
         )
         if change_set.resolved_parameters:
             result["Parameters"] = self._render_resolved_parameters(change_set.resolved_parameters)
@@ -863,6 +887,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             )
         try:
             state.change_sets.pop(change_set.change_set_id)
+            self._remove_tags(change_set.change_set_id, context.account_id, context.region)
         except KeyError:
             # This _should_ never fail since if we cannot find the change set in the store (using
             # `find_change_set_v2`) then we early return from this function
@@ -933,12 +958,14 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
+        tags = request.get("Tags", [])
         stack = Stack(
             account_id=context.account_id,
             region_name=context.region,
             request_payload=request,
-            tags=request.get("Tags"),
+            tags=tags,
         )
+        self._set_tags(stack.stack_id, context.account_id, context.region, tags)
         # TODO: what is the correct initial status?
         state.stacks_v2[stack.stack_id] = stack
 
@@ -1039,11 +1066,15 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
 
         describe_stack_output: list[ApiStack] = []
         for stack in stacks:
-            describe_stack_output.append(self._describe_stack(stack))
+            describe_stack_output.append(
+                self._describe_stack(stack, context.account_id, context.region)
+            )
 
         return DescribeStacksOutput(Stacks=describe_stack_output)
 
-    def _describe_stack(self, stack: Stack) -> ApiStack:
+    def _describe_stack(self, stack: Stack, account_id: str, region: str) -> ApiStack:
+        tags_stored_in_state = stack.tags or []
+        tags = self._get_tags(stack.stack_id, account_id, region, tags_stored_in_state)
         stack_description = ApiStack(
             Description=stack.description,
             CreationTime=stack.creation_time,
@@ -1056,7 +1087,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             DriftInformation=StackDriftInformation(StackDriftStatus=StackDriftStatus.NOT_CHECKED),
             EnableTerminationProtection=stack.enable_termination_protection,
             RollbackConfiguration=RollbackConfiguration(),
-            Tags=stack.tags,
+            Tags=tags,
             NotificationARNs=[],
         )
         if stack.status != StackStatus.REVIEW_IN_PROGRESS:
@@ -1091,7 +1122,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         state = get_cloudformation_store(context.account_id, context.region)
 
         stacks = [
-            self._describe_stack(s)
+            self._describe_stack(s, context.account_id, context.region)
             for s in state.stacks_v2.values()
             if not stack_status_filter or s.status in stack_status_filter
         ]
@@ -1736,6 +1767,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 change_set_executor.execute()
                 stack.set_stack_status(StackStatus.DELETE_COMPLETE)
                 stack.deletion_time = datetime.now(tz=UTC)
+                self._remove_tags(stack.stack_id, context.account_id, context.region)
             except Exception as e:
                 LOG.warning(
                     "Failed to delete stack '%s': %s",
