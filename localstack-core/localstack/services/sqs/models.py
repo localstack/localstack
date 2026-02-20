@@ -45,6 +45,7 @@ from localstack.services.sqs.utils import (
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.strings import long_uid
+from localstack.utils.tagging import Tags
 from localstack.utils.time import now
 from localstack.utils.urls import localstack_host
 
@@ -1388,6 +1389,8 @@ class SqsStore(BaseStore):
 
     move_tasks: dict[str, MessageMoveTask] = LocalAttribute(default=dict)
     """Maps task IDs to their ``MoveMessageTask`` object. Task IDs can be found by decoding a task handle."""
+
+    tags: Tags = LocalAttribute(default=Tags)
 
     def expire_deleted(self):
         for k in list(self.deleted.keys()):
