@@ -5,7 +5,7 @@ import copy
 import re
 from collections.abc import Callable
 from enum import StrEnum
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
 from botocore.exceptions import ClientError
 
@@ -58,7 +58,6 @@ from localstack.services.cloudformation.engine.validations import ValidationErro
 from localstack.services.cloudformation.stores import (
     exports_map,
 )
-from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.services.cloudformation.v2.types import ResolvedResource
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.numbers import to_number
@@ -66,6 +65,9 @@ from localstack.utils.objects import get_value_from_path
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import localstack_host
+
+if TYPE_CHECKING:
+    from localstack.services.cloudformation.v2.entities import ChangeSet
 
 _AWS_URL_SUFFIX = localstack_host().host  # The value in AWS is "amazonaws.com"
 

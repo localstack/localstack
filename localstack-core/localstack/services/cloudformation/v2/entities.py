@@ -1,6 +1,8 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import NotRequired, TypedDict
 
+from localstack import config
 from localstack.aws.api.cloudformation import (
     Capability,
     ChangeSetStatus,
@@ -27,10 +29,22 @@ from localstack.aws.api.cloudformation import (
 from localstack.services.cloudformation.engine.entities import (
     StackIdentifierV2,
 )
+from localstack.services.cloudformation.engine.transformers import FailedTransformationException
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    ChangeSetModel,
     ChangeType,
     UpdateModel,
 )
+from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
+    ChangeSetModelTransform,
+)
+from localstack.services.cloudformation.engine.v2.change_set_model_validator import (
+    ChangeSetModelValidator,
+)
+from localstack.services.cloudformation.engine.v2.change_set_resource_support_checker import (
+    ChangeSetResourceSupportChecker,
+)
+from localstack.services.cloudformation.engine.v2.resolving import resolve_parameters
 from localstack.services.cloudformation.v2.types import EngineParameter, ResolvedResource
 from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
@@ -190,11 +204,19 @@ class ChangeSetRequestPayload(TypedDict, total=False):
     ChangeSetType: NotRequired[ChangeSetType]
 
 
+@dataclass
+class UpdateModelInputs:
+    before_template: dict | None
+    after_template: dict | None
+    before_parameters: dict | None
+    after_parameters: dict | None
+    previous_update_model: UpdateModel | None = None
+
+
 class ChangeSet:
     change_set_name: str
     change_set_id: str
     change_set_type: ChangeSetType
-    update_model: UpdateModel | None
     status: ChangeSetStatus
     status_reason: str | None
     execution_status: ExecutionStatus
@@ -217,10 +239,12 @@ class ChangeSet:
         self.status = ChangeSetStatus.CREATE_IN_PROGRESS
         self.status_reason = None
         self.execution_status = ExecutionStatus.AVAILABLE
-        self.update_model = None
         self.creation_time = datetime.now(tz=UTC)
         self.resolved_parameters = {}
         self.tags = request_payload.get("Tags") or []
+
+        # non-persisted state
+        self.update_model: UpdateModel | None = None
 
         self.change_set_name = request_payload["ChangeSetName"]
         self.change_set_type = request_payload.get("ChangeSetType", ChangeSetType.UPDATE)
@@ -233,9 +257,6 @@ class ChangeSet:
         )
         self.processed_template = None
 
-    def set_update_model(self, update_model: UpdateModel) -> None:
-        self.update_model = update_model
-
     def set_change_set_status(self, status: ChangeSetStatus):
         self.status = status
 
@@ -243,6 +264,8 @@ class ChangeSet:
         self.execution_status = execution_status
 
     def has_changes(self) -> bool:
+        if self.update_model is None:
+            raise ValueError("update model has not been computed")
         return self.update_model.node_template.change_type != ChangeType.UNCHANGED
 
     @property
@@ -252,6 +275,117 @@ class ChangeSet:
     @property
     def region_name(self) -> str:
         return self.stack.region_name
+
+    def compute_update_model(self, inputs: UpdateModelInputs):
+        resolved_parameters = None
+        if inputs.after_parameters is not None:
+            resolved_parameters = resolve_parameters(
+                inputs.after_template,
+                inputs.after_parameters,
+                self.account_id,
+                self.region_name,
+                inputs.before_parameters,
+            )
+
+        self.resolved_parameters = resolved_parameters or {}
+
+        # Create and preprocess the update graph for this template update.
+        change_set_model = ChangeSetModel(
+            before_template=inputs.before_template,
+            after_template=inputs.after_template,
+            before_parameters=inputs.before_parameters,
+            after_parameters=resolved_parameters,
+        )
+        raw_update_model: UpdateModel = change_set_model.get_update_model()
+        # If there exists an update model which operated in the 'before' version of this change set,
+        # port the runtime values computed for the before version into this latest update model.
+        if inputs.previous_update_model:
+            raw_update_model.before_runtime_cache.clear()
+            raw_update_model.before_runtime_cache.update(
+                inputs.previous_update_model.after_runtime_cache
+            )
+        self.update_model = raw_update_model
+
+        # Apply global transforms.
+        # TODO: skip this process iff both versions of the template don't specify transform blocks.
+        change_set_model_transform = ChangeSetModelTransform(
+            change_set=self,
+            before_parameters=inputs.before_parameters,
+            after_parameters=resolved_parameters,
+            before_template=inputs.before_template,
+            after_template=inputs.after_template,
+        )
+        try:
+            transformed_before_template, transformed_after_template = (
+                change_set_model_transform.transform()
+            )
+        except FailedTransformationException as e:
+            self.status = ChangeSetStatus.FAILED
+            self.status_reason = e.message
+            self.stack.set_stack_status(status=StackStatus.ROLLBACK_IN_PROGRESS, reason=e.message)
+            self.stack.set_stack_status(status=StackStatus.CREATE_FAILED)
+            return
+
+        # Remodel the update graph after the applying the global transforms.
+        change_set_model = ChangeSetModel(
+            before_template=transformed_before_template,
+            after_template=transformed_after_template,
+            before_parameters=inputs.before_parameters,
+            after_parameters=resolved_parameters,
+        )
+        update_model = change_set_model.get_update_model()
+        # Bring the cache for the previous operations forward in the update graph for this version
+        # of the templates. This enables downstream update graph visitors to access runtime
+        # information computed whilst evaluating the previous version of this template, and during
+        # the transformations.
+        update_model.before_runtime_cache.update(raw_update_model.before_runtime_cache)
+        update_model.after_runtime_cache.update(raw_update_model.after_runtime_cache)
+        self.update_model = update_model
+
+        # perform validations
+        validator = ChangeSetModelValidator(
+            change_set=self,
+        )
+        validator.validate()
+
+        # hacky
+        if transform := raw_update_model.node_template.transform:
+            if transform.global_transforms:
+                # global transforms should always be considered "MODIFIED"
+                update_model.node_template.change_type = ChangeType.MODIFIED
+        self.processed_template = transformed_after_template
+
+        if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+            support_visitor = ChangeSetResourceSupportChecker(change_set_type=self.change_set_type)
+            support_visitor.visit(self.update_model.node_template)
+            failure_messages = support_visitor.failure_messages
+            if failure_messages:
+                reason_suffix = ", ".join(failure_messages)
+                status_reason = f"{ChangeSetResourceSupportChecker.TITLE_MESSAGE} {reason_suffix}"
+
+                self.status_reason = status_reason
+                self.set_change_set_status(ChangeSetStatus.FAILED)
+                failure_transitions = {
+                    ChangeSetType.CREATE: (
+                        StackStatus.ROLLBACK_IN_PROGRESS,
+                        StackStatus.CREATE_FAILED,
+                    ),
+                    ChangeSetType.UPDATE: (
+                        StackStatus.UPDATE_ROLLBACK_IN_PROGRESS,
+                        StackStatus.UPDATE_ROLLBACK_FAILED,
+                    ),
+                    ChangeSetType.IMPORT: (
+                        StackStatus.IMPORT_ROLLBACK_IN_PROGRESS,
+                        StackStatus.IMPORT_ROLLBACK_FAILED,
+                    ),
+                }
+                transitions = failure_transitions.get(self.change_set_type)
+                if transitions:
+                    first_status, *remaining_statuses = transitions
+                    self.stack.set_stack_status(first_status, status_reason)
+                    for status in remaining_statuses:
+                        self.stack.set_stack_status(status)
+                return
 
 
 class StackInstance:
