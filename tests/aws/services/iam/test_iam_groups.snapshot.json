@@ -198,7 +198,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_duplicate_name": {
-    "recorded-date": "12-02-2026, 18:45:25",
+    "recorded-date": "20-02-2026, 15:46:30",
     "recorded-content": {
       "update-duplicate-name": {
         "Error": {

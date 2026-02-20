@@ -12,12 +12,12 @@ from typing import Any, TypeVar
 from urllib.parse import quote
 
 from moto.iam.models import IAMBackend, iam_backends
-from moto.iam.models import User as MotoUser
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
     AttachedPermissionsBoundary,
     AttachedPolicy,
+    CreateGroupResponse,
     CreateLoginProfileResponse,
     CreatePolicyResponse,
     CreatePolicyVersionResponse,
@@ -30,6 +30,8 @@ from localstack.aws.api.iam import (
     DeletionTaskIdType,
     DeletionTaskStatusType,
     EntityAlreadyExistsException,
+    GetGroupPolicyResponse,
+    GetGroupResponse,
     GetLoginProfileResponse,
     GetPolicyResponse,
     GetPolicyVersionResponse,
@@ -38,11 +40,16 @@ from localstack.aws.api.iam import (
     GetServiceLinkedRoleDeletionStatusResponse,
     GetUserPolicyResponse,
     GetUserResponse,
+    Group,
     IamApi,
     InvalidInputException,
     LimitExceededException,
+    ListAttachedGroupPoliciesResponse,
     ListAttachedRolePoliciesResponse,
     ListAttachedUserPoliciesResponse,
+    ListGroupPoliciesResponse,
+    ListGroupsForUserResponse,
+    ListGroupsResponse,
     ListInstanceProfileTagsResponse,
     ListPoliciesResponse,
     ListPolicyTagsResponse,
@@ -105,6 +112,7 @@ from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY, TAG_KEY_CUSTOM_ID
 from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.iam.models import (
+    GroupEntity,
     IamStore,
     ManagedPolicyEntity,
     RoleEntity,
@@ -175,6 +183,7 @@ class IamProvider(IamApi):
         self.policy_simulator = BasicIAMPolicySimulator()
         self._policy_lock = threading.Lock()
         self._role_lock = threading.Lock()
+        self._group_lock = threading.Lock()
         self._user_lock = threading.Lock()
 
     def accept_state_visitor(self, visitor: StateVisitor):
@@ -1201,20 +1210,395 @@ class IamProvider(IamApi):
         else:
             return ListPolicyTagsResponse(Tags=result, IsTruncated=False)
 
+    # ------------------------------ Group Operations ------------------------------ #
+
+    def _get_group_entity(self, store: IamStore, group_name: str) -> GroupEntity:
+        """Gets the group entity and raises the right exception if not found."""
+        entity = store.GROUPS.get(group_name)
+        if not entity:
+            raise NoSuchEntityException(f"The group with name {group_name} cannot be found.")
+        return entity
+
+    def _generate_group_id(self, context: RequestContext) -> str:
+        """Generate a group ID: AGPA + 17 random chars."""
+        return generate_iam_identifier(context.account_id, prefix="AGPA", total_length=21)
+
+    def _build_group_arn(self, context: RequestContext, path: str, group_name: str) -> str:
+        """Build the ARN for a group."""
+        partition = get_partition(context.region)
+        # Path for ARN: /path/ becomes /path/ in the ARN resource portion
+        if path == "/":
+            return f"arn:{partition}:iam::{context.account_id}:group/{group_name}"
+        else:
+            # Remove leading slash for ARN construction
+            path_part = path[1:] if path.startswith("/") else path
+            return f"arn:{partition}:iam::{context.account_id}:group/{path_part}{group_name}"
+
+    def create_group(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        path: pathType | None = None,
+        **kwargs,
+    ) -> CreateGroupResponse:
+        store = self._get_store(context)
+        path = path or "/"
+
+        with self._group_lock:
+            # Check for duplicate group
+            if group_name in store.GROUPS:
+                raise EntityAlreadyExistsException(f"Group with name {group_name} already exists.")
+
+            # Generate group ID and ARN
+            group_id = self._generate_group_id(context)
+            group_arn = self._build_group_arn(context, path, group_name)
+
+            # Build the Group object
+            group = Group(
+                Path=path,
+                GroupName=group_name,
+                GroupId=group_id,
+                Arn=group_arn,
+                CreateDate=datetime.now(tz=UTC),
+            )
+
+            # Create group entity and store
+            group_entity = GroupEntity(group=group)
+            store.GROUPS[group_name] = group_entity
+
+        return CreateGroupResponse(Group=group)
+
+    def get_group(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> GetGroupResponse:
+        store = self._get_store(context)
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            users = []
+            for user_name in group_entity.member_user_names:
+                if user := store.USERS.get(user_name):
+                    users.append(user.user)
+
+            return GetGroupResponse(
+                Group=Group(group_entity.group),
+                Users=users,
+                IsTruncated=False,
+            )
+
+    def list_groups(
+        self,
+        context: RequestContext,
+        path_prefix: pathPrefixType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListGroupsResponse:
+        store = self._get_store(context)
+
+        def _filter(group: Group) -> bool:
+            if path_prefix:
+                return group.get("Path", "/").startswith(path_prefix)
+            return True
+
+        with self._group_lock:
+            groups = [Group(e.group) for e in store.GROUPS.values()]
+
+        # Filter and sort
+        filtered_groups = [g for g in groups if _filter(g)]
+        sorted_groups = sorted(filtered_groups, key=lambda g: g.get("GroupName", "").lower())
+
+        # TODO: Add pagination support
+        return ListGroupsResponse(Groups=sorted_groups, IsTruncated=False)
+
+    def delete_group(self, context: RequestContext, group_name: groupNameType, **kwargs) -> None:
+        store = self._get_store(context)
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Check if group has attached policies
+            if group_entity.attached_policy_arns:
+                raise DeleteConflictException(
+                    "Cannot delete entity, must detach all policies first."
+                )
+
+            # Check if group has inline policies
+            if group_entity.inline_policies:
+                raise DeleteConflictException("Cannot delete entity, must delete policies first.")
+
+            # Check if group has members
+            if group_entity.member_user_names:
+                raise DeleteConflictException(
+                    "Cannot delete entity, must remove users from group first."
+                )
+
+            del store.GROUPS[group_name]
+
     def update_group(
         self,
         context: RequestContext,
         group_name: groupNameType,
-        new_path: pathType = None,
-        new_group_name: groupNameType = None,
+        new_path: pathType | None = None,
+        new_group_name: groupNameType | None = None,
         **kwargs,
     ) -> None:
-        new_group_name = new_group_name or group_name
-        backend = get_iam_backend(context)
-        group = backend.get_group(group_name)
-        group.path = new_path
-        group.name = new_group_name
-        backend.groups[new_group_name] = backend.groups.pop(group_name)
+        store = self._get_store(context)
+        target_name = new_group_name or group_name
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Check if new name already exists (if changing name)
+            if new_group_name and new_group_name != group_name:
+                if new_group_name in store.GROUPS:
+                    raise EntityAlreadyExistsException(
+                        f"Group with name {new_group_name} already exists."
+                    )
+
+            # Update path if provided
+            if new_path is not None:
+                group_entity.group["Path"] = new_path
+                # Update ARN with new path
+                group_entity.group["Arn"] = self._build_group_arn(context, new_path, target_name)
+
+            # Update name if provided
+            if new_group_name and new_group_name != group_name:
+                group_entity.group["GroupName"] = new_group_name
+                # Update ARN with new name
+                path = group_entity.group.get("Path", "/")
+                group_entity.group["Arn"] = self._build_group_arn(context, path, new_group_name)
+                # Move in store
+                store.GROUPS[new_group_name] = store.GROUPS.pop(group_name)
+
+    # ------------------------------ Group Membership Operations ------------------------------ #
+
+    def add_user_to_group(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        user_name: existingUserNameType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        self._get_user_or_raise_error(user_name=user_name, context=context)
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Add user if not already a member (idempotent)
+            if user_name not in group_entity.member_user_names:
+                group_entity.member_user_names.append(user_name)
+
+    def remove_user_from_group(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        user_name: existingUserNameType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        self._get_user_or_raise_error(user_name=user_name, context=context)
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            if user_name in group_entity.member_user_names:
+                group_entity.member_user_names.remove(user_name)
+
+    def list_groups_for_user(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListGroupsForUserResponse:
+        store = self._get_store(context)
+        self._get_user_or_raise_error(user_name=user_name, context=context)
+
+        with self._group_lock:
+            groups = []
+            for group_entity in store.GROUPS.values():
+                if user_name in group_entity.member_user_names:
+                    groups.append(Group(group_entity.group))
+
+        # Sort by group name
+        sorted_groups = sorted(groups, key=lambda g: g.get("GroupName", "").lower())
+
+        return ListGroupsForUserResponse(Groups=sorted_groups, IsTruncated=False)
+
+    # ------------------------------ Group Inline Policy Operations ------------------------------ #
+
+    def put_group_policy(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_name: policyNameType,
+        policy_document: policyDocumentType,
+        **kwargs,
+    ) -> None:
+        # Validate policy document
+        validator = IAMPolicyDocumentValidator(policy_document)
+        validator.validate()
+
+        store = self._get_store(context)
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+            group_entity.inline_policies[policy_name] = quote(policy_document)
+
+    def get_group_policy(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_name: policyNameType,
+        **kwargs,
+    ) -> GetGroupPolicyResponse:
+        store = self._get_store(context)
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            policy_document = group_entity.inline_policies.get(policy_name)
+            if policy_document is None:
+                raise NoSuchEntityException(
+                    f"The group policy with name {policy_name} cannot be found."
+                )
+
+        return GetGroupPolicyResponse(
+            GroupName=group_name,
+            PolicyName=policy_name,
+            PolicyDocument=policy_document,
+        )
+
+    def list_group_policies(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListGroupPoliciesResponse:
+        store = self._get_store(context)
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+            policy_names = sorted(group_entity.inline_policies.keys())
+
+        return ListGroupPoliciesResponse(PolicyNames=policy_names, IsTruncated=False)
+
+    def delete_group_policy(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_name: policyNameType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            if policy_name not in group_entity.inline_policies:
+                raise NoSuchEntityException(
+                    f"The group policy with name {policy_name} cannot be found."
+                )
+
+            del group_entity.inline_policies[policy_name]
+
+    # ------------------------------ Group Managed Policy Operations ------------------------------ #
+
+    def attach_group_policy(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_arn: arnType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+        partition = get_partition(context.region)
+        aws_managed_prefix = f"arn:{partition}:iam::aws:policy/"
+        is_aws_managed = policy_arn.startswith(aws_managed_prefix)
+
+        with self._group_lock, self._policy_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Check if policy exists (for customer-managed policies only)
+            if not is_aws_managed and policy_arn not in store.MANAGED_POLICIES:
+                raise NoSuchEntityException(
+                    f"Policy {policy_arn} does not exist or is not attachable."
+                )
+
+            # Add policy if not already attached (idempotent)
+            if policy_arn not in group_entity.attached_policy_arns:
+                group_entity.attached_policy_arns.append(policy_arn)
+
+                # Update AttachmentCount for customer-managed policies
+                if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
+                    policy_entity = store.MANAGED_POLICIES[policy_arn]
+                    policy_entity.policy["AttachmentCount"] += 1
+
+    def detach_group_policy(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_arn: arnType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+        partition = get_partition(context.region)
+        aws_managed_prefix = f"arn:{partition}:iam::aws:policy/"
+        is_aws_managed = policy_arn.startswith(aws_managed_prefix)
+
+        with self._group_lock, self._policy_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Check if policy is attached
+            if policy_arn not in group_entity.attached_policy_arns:
+                raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+
+            # Remove the policy
+            group_entity.attached_policy_arns.remove(policy_arn)
+
+            # Update AttachmentCount for customer-managed policies
+            if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
+                policy_entity = store.MANAGED_POLICIES[policy_arn]
+                policy_entity.policy["AttachmentCount"] -= 1
+
+    def list_attached_group_policies(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        path_prefix: pathPrefixType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListAttachedGroupPoliciesResponse:
+        store = self._get_store(context)
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Build list of attached policies
+            attached_policies: list[AttachedPolicy] = []
+            for policy_arn in group_entity.attached_policy_arns:
+                # Extract policy name from ARN
+                policy_name = policy_arn.split("/")[-1]
+                attached_policies.append(
+                    AttachedPolicy(PolicyName=policy_name, PolicyArn=policy_arn)
+                )
+
+        # Sort by policy name
+        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower())
+
+        return ListAttachedGroupPoliciesResponse(
+            AttachedPolicies=attached_policies, IsTruncated=False
+        )
 
     def list_instance_profile_tags(
         self,
@@ -1857,7 +2241,7 @@ class IamProvider(IamApi):
                 )
 
         # Sort by policy name (case-insensitive, as AWS does)
-        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower())
+        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower(), reverse=True)
 
         paginated_list = PaginatedList(attached_policies)
 
@@ -2094,18 +2478,19 @@ class IamProvider(IamApi):
 
     # ------------------------------ Service specific credentials ------------------------------ #
 
-    def _get_user_or_raise_error(self, user_name: str, context: RequestContext) -> MotoUser:
+    def _get_user_or_raise_error(self, user_name: str, context: RequestContext) -> User:
         """
-        Return the moto user from the store, or raise the proper exception if no user can be found.
+        Return the user from the store, or raise the proper exception if no user can be found.
 
         :param user_name: Username to find
         :param context: Request context
-        :return: A moto user object
+        :return: A user object
         """
-        moto_user = get_iam_backend(context).users.get(user_name)
-        if not moto_user:
+        store = self._get_store(context)
+        user = store.USERS.get(user_name)
+        if not user:
             raise NoSuchEntityException(f"The user with name {user_name} cannot be found.")
-        return moto_user
+        return user
 
     def _validate_service_name(self, service_name: str) -> None:
         """
@@ -2187,11 +2572,11 @@ class IamProvider(IamApi):
         :param context: Request context (used to determine account and region)
         :return: Service specific credential
         """
-        moto_user = self._get_user_or_raise_error(user_name, context)
+        user = self._get_user_or_raise_error(user_name, context)
         self._validate_credential_id(credential_id)
         matching_credentials = [
             cred
-            for cred in moto_user.service_specific_credentials
+            for cred in user.service_specific_credentials
             if cred["ServiceSpecificCredentialId"] == credential_id
         ]
         if not matching_credentials:
@@ -2237,10 +2622,10 @@ class IamProvider(IamApi):
         **kwargs,
     ) -> CreateServiceSpecificCredentialResponse:
         # TODO add support for credential_age_days
-        moto_user = self._get_user_or_raise_error(user_name, context)
+        user = self._get_user_or_raise_error(user_name, context)
         self._validate_service_name(service_name)
         credential = self._new_service_specific_credential(user_name, service_name, context)
-        moto_user.service_specific_credentials.append(credential)
+        user.service_specific_credentials.append(credential)
         return CreateServiceSpecificCredentialResponse(ServiceSpecificCredential=credential)
 
     def list_service_specific_credentials(
@@ -2254,11 +2639,11 @@ class IamProvider(IamApi):
         **kwargs,
     ) -> ListServiceSpecificCredentialsResponse:
         # TODO add support for all_users, marker, max_items
-        moto_user = self._get_user_or_raise_error(user_name, context)
+        user = self._get_user_or_raise_error(user_name, context)
         self._validate_service_name(service_name)
         result = [
             self.build_dict_with_only_defined_keys(creds, ServiceSpecificCredentialMetadata)
-            for creds in moto_user.service_specific_credentials
+            for creds in user.service_specific_credentials
             if creds["ServiceName"] == service_name
         ]
         return ListServiceSpecificCredentialsResponse(ServiceSpecificCredentials=result)
@@ -2298,12 +2683,12 @@ class IamProvider(IamApi):
         user_name: userNameType = None,
         **kwargs,
     ) -> None:
-        moto_user = self._get_user_or_raise_error(user_name, context)
+        user = self._get_user_or_raise_error(user_name, context)
         credentials = self._find_credential_in_user_by_id(
             user_name, service_specific_credential_id, context
         )
         try:
-            moto_user.service_specific_credentials.remove(credentials)
+            user.service_specific_credentials.remove(credentials)
         # just in case of race conditions
         except ValueError:
             raise NoSuchEntityException(
