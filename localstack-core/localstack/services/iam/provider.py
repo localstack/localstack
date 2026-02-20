@@ -1255,16 +1255,16 @@ class IamProvider(IamApi):
             role_arn = self._build_role_arn(context, path, role_name)
 
             # Build the Role object
-            role: Role = {
-                "Path": path,
-                "RoleName": role_name,
-                "RoleId": role_id,
-                "Arn": role_arn,
-                "CreateDate": datetime.now(tz=UTC),
-                "AssumeRolePolicyDocument": quote(policy_doc),
-                "MaxSessionDuration": 3600,
-                "RoleLastUsed": RoleLastUsed(),
-            }
+            role = Role(
+                Path=path,
+                RoleName=role_name,
+                RoleId=role_id,
+                Arn=role_arn,
+                CreateDate=datetime.now(tz=UTC),
+                AssumeRolePolicyDocument=quote(policy_doc),
+                MaxSessionDuration=3600,
+                RoleLastUsed=RoleLastUsed(),
+            )
 
             if description:
                 role["Description"] = description
