@@ -264,3 +264,64 @@ class TestSSM:
             Names=[get_parameter_response["Parameter"]["ARN"]]
         )
         snapshot.match("get-parameters-by-arn-response", get_parameters_by_arn_response)
+
+    @markers.aws.validated
+    def test_put_parameter_event_operation(
+        self, create_parameter, aws_client, events_put_rule, sqs_as_events_target, snapshot
+    ):
+        """Verify that SSM parameter change events emit the correct operation (Create vs Update)
+        and include the parameter type in the event detail."""
+        snapshot.add_transformer(snapshot.transform.key_value("name"))
+        rule_name = f"test-ssm-rule-{short_uid()}"
+        target_id = f"test-target-{short_uid()}"
+        ssm_prefix = f"/test/event-{short_uid()}"
+        param_name = f"{ssm_prefix}/param"
+
+        # set up SQS queue as EventBridge target
+        queue_url, queue_arn, _ = sqs_as_events_target()
+
+        # create EventBridge rule for SSM parameter changes
+        events_put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(
+                {
+                    "source": ["aws.ssm"],
+                    "detail-type": ["Parameter Store Change"],
+                    "detail": {
+                        "name": [{"prefix": ssm_prefix}],
+                        "operation": ["Create", "Update", "Delete"],
+                    },
+                }
+            ),
+            State="ENABLED",
+        )
+
+        # set SQS as target with InputPath to extract the detail
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
+        )
+
+        # create a new parameter - should emit "Create" event
+        create_parameter(Name=param_name, Value="value1", Type="String")
+
+        def _get_message():
+            resp = aws_client.sqs.receive_message(
+                QueueUrl=queue_url, WaitTimeSeconds=5, MaxNumberOfMessages=1
+            )
+            messages = resp.get("Messages", [])
+            assert len(messages) == 1
+            body = json.loads(messages[0]["Body"])
+            aws_client.sqs.delete_message(
+                QueueUrl=queue_url, ReceiptHandle=messages[0]["ReceiptHandle"]
+            )
+            return body
+
+        create_event = retry(_get_message, retries=10, sleep=1)
+        snapshot.match("create-event", create_event)
+
+        # update the same parameter - should emit "Update" event
+        aws_client.ssm.put_parameter(Name=param_name, Value="value2", Type="String", Overwrite=True)
+
+        update_event = retry(_get_message, retries=10, sleep=1)
+        snapshot.match("update-event", update_event)

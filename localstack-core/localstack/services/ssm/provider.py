@@ -142,7 +142,12 @@ class SsmProvider(SsmApi, ABC):
             moto_res = call_moto_with_request(context, request)
         else:
             moto_res = call_moto(context)
-        SsmProvider._notify_event_subscribers(context.account_id, context.region, nname, "Create")
+        version = moto_res.get("Version", 1)
+        operation = "Create" if version == 1 else "Update"
+        param_type = request.get("Type")
+        SsmProvider._notify_event_subscribers(
+            context.account_id, context.region, nname, operation, param_type=param_type
+        )
         return PutParameterResult(**moto_res)
 
     def get_parameter(
@@ -433,7 +438,11 @@ class SsmProvider(SsmApi, ABC):
 
     @staticmethod
     def _notify_event_subscribers(
-        account_id: str, region_name: str, name: ParameterName, operation: str
+        account_id: str,
+        region_name: str,
+        name: ParameterName,
+        operation: str,
+        param_type: str | None = None,
     ):
         if not is_api_enabled("events"):
             LOG.warning(
@@ -444,6 +453,8 @@ class SsmProvider(SsmApi, ABC):
         """Publish an EventBridge event to notify subscribers of changes."""
         events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
         detail = {"name": name, "operation": operation}
+        if param_type:
+            detail["type"] = param_type
         event = {
             "Source": "aws.ssm",
             "Detail": json.dumps(detail),
