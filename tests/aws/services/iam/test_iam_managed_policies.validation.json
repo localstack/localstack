@@ -1,29 +1,38 @@
 {
-  "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy": {
-    "last_validated_date": "2026-02-12T23:07:07+00:00",
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_aws_managed_policy_errors": {
+    "last_validated_date": "2026-02-20T15:25:47+00:00",
     "durations_in_seconds": {
-      "setup": 0.72,
-      "call": 0.55,
+      "setup": 1.69,
+      "call": 1.68,
       "teardown": 0.0,
-      "total": 1.27
+      "total": 3.37
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy": {
+    "last_validated_date": "2026-02-20T15:14:28+00:00",
+    "durations_in_seconds": {
+      "setup": 1.24,
+      "call": 0.82,
+      "teardown": 0.0,
+      "total": 2.06
     }
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy_higher_version": {
-    "last_validated_date": "2026-02-12T23:07:08+00:00",
+    "last_validated_date": "2026-02-20T15:14:30+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.84,
+      "call": 0.72,
       "teardown": 0.0,
-      "total": 0.84
+      "total": 0.72
     }
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy_version": {
-    "last_validated_date": "2026-02-12T23:07:07+00:00",
+    "last_validated_date": "2026-02-20T15:14:29+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 0.65,
-      "teardown": 0.0,
-      "total": 0.65
+      "call": 0.86,
+      "teardown": 0.02,
+      "total": 0.88
     }
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_only_attached": {
