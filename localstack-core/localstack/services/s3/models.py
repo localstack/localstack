@@ -763,7 +763,7 @@ class S3Store(BaseStore):
     buckets: dict[BucketName, S3Bucket] = CrossRegionAttribute(default=dict)
     global_bucket_map: dict[BucketName, AccountId] = CrossAccountAttribute(default=dict)
     aws_managed_kms_key_id: SSEKMSKeyId = LocalAttribute(default=str)
-    tags: Tags = CrossAccountAttribute(default=Tags)
+    tags: Tags = LocalAttribute(default=Tags)
 
 
 class BucketCorsIndex:
