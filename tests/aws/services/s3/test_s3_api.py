@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 from moto.wafv2.models import US_EAST_1_REGION
 
+from localstack.aws.api.s3 import StorageClass
 from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid, short_uid
 from tests.aws.services.s3.conftest import TEST_S3_IMAGE
@@ -3110,6 +3111,14 @@ class TestS3ObjectWritePrecondition:
         snapshot.match("copy-obj-if-match-fail-no-object", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS started added ChecksumType to CopyObjectResult
+            "$..CopyObjectResult.ChecksumType",
+            # TODO: AWS stopped returning DisplayName (finally)
+            "$..Owner.DisplayName",
+        ]
+    )
     def test_copy_object_if_none_match_versioned_bucket(self, s3_bucket, aws_client, snapshot):
         """Test CopyObject with If-None-Match header in a versioned bucket.
 
@@ -3162,6 +3171,14 @@ class TestS3ObjectWritePrecondition:
         snapshot.match("list-object-versions", list_object_versions)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS started added ChecksumType to CopyObjectResult
+            "$..CopyObjectResult.ChecksumType",
+            # TODO: AWS stopped returning DisplayName (finally)
+            "$..Owner.DisplayName",
+        ]
+    )
     def test_copy_object_if_match_versioned_bucket(self, s3_bucket, aws_client, snapshot):
         """Test CopyObject with If-Match header in a versioned bucket.
 
@@ -3264,6 +3281,50 @@ class TestS3ObjectWritePrecondition:
                 IfNoneMatch=put_obj["ETag"],
             )
         snapshot.match("copy-obj-both", e.value.response)
+
+    @markers.aws.validated
+    def test_copy_object_if_none_match_in_place(self, s3_bucket, aws_client, snapshot):
+        """Test CopyObject with If-None-Match header (destination conditional)"""
+        src_key = "source-object"
+
+        # Create source object
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="source content")
+
+        # Copy should fail when destination already exists (in place)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{src_key}",
+                Key=src_key,
+                IfNoneMatch="*",
+                StorageClass=StorageClass.STANDARD,
+            )
+        snapshot.match("copy-obj-if-none-match-fail", e.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS started added ChecksumType to CopyObjectResult
+            "$..CopyObjectResult.ChecksumType",
+        ]
+    )
+    def test_copy_object_if_match_in_place(self, s3_bucket, aws_client, snapshot):
+        """Test CopyObject with If-None-Match header (destination conditional)"""
+        src_key = "source-object"
+
+        # Create source object
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="source content")
+
+        # Copy should fail when destination already exists (in place)
+        # with pytest.raises(ClientError) as e:
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{src_key}",
+            Key=src_key,
+            IfMatch=put_obj["ETag"],
+            StorageClass=StorageClass.STANDARD,
+        )
+        snapshot.match("copy-obj-if-match-in-place", copy_obj)
 
 
 class TestS3MetricsConfiguration:

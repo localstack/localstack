@@ -5547,11 +5547,12 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_none_match_versioned_bucket": {
-    "recorded-date": "23-12-2025, 18:48:32",
+    "recorded-date": "20-02-2026, 23:50:09",
     "recorded-content": {
       "copy-obj": {
         "CopyObjectResult": {
           "ChecksumCRC32": "wmoL/Q==",
+          "ChecksumType": "FULL_OBJECT",
           "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
           "LastModified": "datetime"
         },
@@ -5585,6 +5586,7 @@
       "copy-obj-after-del": {
         "CopyObjectResult": {
           "ChecksumCRC32": "wmoL/Q==",
+          "ChecksumType": "FULL_OBJECT",
           "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
           "LastModified": "datetime"
         },
@@ -5673,7 +5675,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_match_versioned_bucket": {
-    "recorded-date": "23-12-2025, 18:48:40",
+    "recorded-date": "20-02-2026, 23:51:46",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "P8fZPQ==",
@@ -5730,6 +5732,7 @@
       "copy-obj-if-match": {
         "CopyObjectResult": {
           "ChecksumCRC32": "wmoL/Q==",
+          "ChecksumType": "FULL_OBJECT",
           "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
           "LastModified": "datetime"
         },
@@ -5870,6 +5873,40 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 501
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_none_match_in_place": {
+    "recorded-date": "20-02-2026, 23:40:39",
+    "recorded-content": {
+      "copy-obj-if-none-match-fail": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-None-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_match_in_place": {
+    "recorded-date": "20-02-2026, 23:43:17",
+    "recorded-content": {
+      "copy-obj-if-match-in-place": {
+        "CopyObjectResult": {
+          "ChecksumCRC32": "wmoL/Q==",
+          "ChecksumType": "FULL_OBJECT",
+          "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
