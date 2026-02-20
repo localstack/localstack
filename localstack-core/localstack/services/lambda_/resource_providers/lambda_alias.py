@@ -116,7 +116,7 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
                 return ProgressEvent(
                     status=OperationStatus.FAILED,
                     resource_model=model,
-                    message="",
+                    message=result.get("StatusReason", "Unknown"),
                     error_code="VersionStateFailure",  # TODO: not parity tested
                 )
 
