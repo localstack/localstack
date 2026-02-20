@@ -1124,6 +1124,12 @@ LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC = float(
     os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING_MAX_BACKOFF_ON_EMPTY_POLL_SEC") or 10
 )
 
+# INTERNAL: 0 (default)
+# Enables parallel batch processing for Lambda Event Source Mappings with an SQS source.
+LAMBDA_SQS_EVENT_SOURCE_MAPPING_PARALLELISM = is_env_true(
+    "LAMBDA_SQS_EVENT_SOURCE_MAPPING_PARALLELISM"
+)
+
 # Specifies the path to the mock configuration file for Step Functions, commonly named MockConfigFile.json.
 SFN_MOCK_CONFIG = os.environ.get("SFN_MOCK_CONFIG", "").strip()
 
@@ -1380,6 +1386,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LAMBDA_RUNTIME_VALIDATION",
+    "LAMBDA_SQS_EVENT_SOURCE_MAPPING_PARALLELISM",
     "LAMBDA_SYNCHRONOUS_CREATE",
     "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL",
     "LAMBDA_TRUNCATE_STDOUT",
