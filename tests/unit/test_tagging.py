@@ -1,8 +1,7 @@
 import pytest
 
-from localstack.utils.tagging import TaggingService
 from localstack.utils.strings import short_uid
-from localstack.utils.tagging import Tags
+from localstack.utils.tagging import TaggingService, Tags
 
 
 class TestTaggingService:
@@ -48,6 +47,7 @@ class TestTaggingService:
             "Tags": [{"keY": "my", "valuE": "congratulations"}]
         }
 
+
 @pytest.fixture
 def mock_arn():
     return f"arn-{short_uid()}"
@@ -56,6 +56,7 @@ def mock_arn():
 @pytest.fixture
 def tags_collection():
     return Tags()
+
 
 class TestTagsCollection:
     def test_update_tags(self, tags_collection, mock_arn):

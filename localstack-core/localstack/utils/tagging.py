@@ -1,5 +1,6 @@
-from warnings import deprecated
 from dataclasses import dataclass, field
+from warnings import deprecated
+
 
 @deprecated("`TaggingService` is deprecated. Please use the `RGTAPlugin`/`Tags` system.")
 class TaggingService:
@@ -47,9 +48,11 @@ class TaggingService:
     def __delitem__(self, arn: str):
         self.del_resource(arn)
 
+
 ResourceARN = str
 TagKey = str
 TagValue = str
+
 
 @dataclass
 class Tags:
@@ -73,6 +76,7 @@ class Tags:
     This distinction is important to maintain parity with the Resource Groups Tagging API (RGTA) which will tap into
     supported service's `Tags` dataclass within it's store.
     """
+
     _tags: dict[ResourceARN, dict[TagKey, TagValue]] = field(default_factory=dict)
 
     def update_tags(self, arn: ResourceARN, tags: dict[TagKey, TagValue]) -> None:
