@@ -4651,7 +4651,6 @@ class TestSqsProvider:
         snapshot.match("sse_sqs_attributes", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Attributes.SqsManagedSseEnabled"])
     def test_set_queue_attributes_default_values(self, sqs_create_queue, snapshot, aws_sqs_client):
         queue_url = sqs_create_queue()
         response = aws_sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
