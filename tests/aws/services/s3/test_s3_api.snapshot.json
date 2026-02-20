@@ -5832,5 +5832,46 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_precondition_write_validation": {
+    "recorded-date": "20-02-2026, 23:31:07",
+    "recorded-content": {
+      "copy-obj-none-match-etag": {
+        "Error": {
+          "Code": "NotImplemented",
+          "Header": "If-None-Match",
+          "Message": "A header you provided implies functionality that is not implemented",
+          "additionalMessage": "We don't accept the provided value of If-None-Match header for this API"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 501
+        }
+      },
+      "copy-obj-if-match-star": {
+        "Error": {
+          "Code": "NotImplemented",
+          "Header": "If-Match",
+          "Message": "A header you provided implies functionality that is not implemented",
+          "additionalMessage": "We don't accept the provided value of If-Match header for this API"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 501
+        }
+      },
+      "copy-obj-both": {
+        "Error": {
+          "Code": "NotImplemented",
+          "Header": "If-Match,If-None-Match",
+          "Message": "A header you provided implies functionality that is not implemented",
+          "additionalMessage": "Multiple conditional request headers present in the request"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 501
+        }
+      }
+    }
   }
 }

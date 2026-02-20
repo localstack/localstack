@@ -1489,11 +1489,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
 
-        # Extract destination conditional headers
         if_match = request.get("IfMatch")
         if_none_match = request.get("IfNoneMatch")
 
-        # Validate conditional headers
         if if_none_match and if_match:
             raise NotImplementedException(
                 "A header you provided implies functionality that is not implemented",

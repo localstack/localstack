@@ -3075,7 +3075,9 @@ class TestS3ObjectWritePrecondition:
         aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="source content")
 
         # Create initial destination object
-        put_result = aws_client.s3.put_object(Bucket=s3_bucket, Key=dest_key, Body="initial content")
+        put_result = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=dest_key, Body="initial content"
+        )
         dest_etag = put_result["ETag"]
 
         # Copy should succeed when destination ETag matches
@@ -3177,7 +3179,9 @@ class TestS3ObjectWritePrecondition:
         aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="source content")
 
         # Create initial destination object
-        put_result = aws_client.s3.put_object(Bucket=s3_bucket, Key=dest_key, Body="initial content")
+        put_result = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=dest_key, Body="initial content"
+        )
         snapshot.match("put-obj", put_result)
         dest_etag_1 = put_result["ETag"]
 
@@ -3223,6 +3227,43 @@ class TestS3ObjectWritePrecondition:
 
         list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
         snapshot.match("list-object-versions", list_object_versions)
+
+    @markers.aws.validated
+    def test_copy_object_precondition_write_validation(self, s3_bucket, aws_client, snapshot):
+        src_key = "source-object"
+        dest_key = "dest-object"
+
+        # Create source object
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="source content")
+
+        # assert that IfNoneMatch only accept '*'
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{src_key}",
+                Key=dest_key,
+                IfNoneMatch=put_obj["ETag"],
+            )
+        snapshot.match("copy-obj-none-match-etag", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{src_key}",
+                Key=dest_key,
+                IfMatch="*",
+            )
+        snapshot.match("copy-obj-if-match-star", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{src_key}",
+                Key=dest_key,
+                IfMatch="*",
+                IfNoneMatch=put_obj["ETag"],
+            )
+        snapshot.match("copy-obj-both", e.value.response)
 
 
 class TestS3MetricsConfiguration:
