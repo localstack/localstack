@@ -18,6 +18,7 @@ from localstack.aws.api.dynamodbstreams import (
     ShardFilter,
     ShardId,
     ShardIteratorType,
+    ShardFilterType,
     Stream,
     StreamArn,
     StreamStatus,
@@ -71,7 +72,6 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         shard_filter: ShardFilter | None = None,
         **kwargs,
     ) -> DescribeStreamOutput:
-        # TODO add support for shard_filter
         og_region = get_original_region(context=context, stream_arn=stream_arn)
         store = get_dynamodbstreams_store(context.account_id, og_region)
         kinesis = get_kinesis_client(account_id=context.account_id, region_name=og_region)
@@ -109,6 +109,19 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
                 if exclusive_start_shard_id:
                     # slicing the resulting shards after the exclusive_start_shard_id parameters
                     stream_shards = stream_shards[start_index + 1 :]
+                
+                parent_shard_id = shard_filter.get("ShardId") if shard_filter else None
+                # Apply CHILD_SHARDS filter: return only shards whose parent is the given ShardId.
+                if (
+                    shard_filter
+                    and shard_filter.get("Type") == ShardFilterType.CHILD_SHARDS
+                    and parent_shard_id
+                ):
+                    stream_shards = [
+                        shard
+                        for shard in stream_shards
+                        if shard.get("ParentShardId") == parent_shard_id
+                    ]
 
                 stream_description["Shards"] = stream_shards
                 stream_description["StreamArn"] = _stream_arn
