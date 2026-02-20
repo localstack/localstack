@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from aws.services.logs.conftest import is_legacy_provider
 from localstack.testing.pytest import markers
 from localstack.utils.common import poll_condition, short_uid
 
@@ -87,7 +88,7 @@ class TestLogsGroups:
         snapshot.match("error-duplicate-log-group", ctx.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"], condition=is_legacy_provider)
     def test_create_log_group_invalid_name_length(self, aws_client, snapshot):
         """Test that log group names over 512 characters are rejected."""
         log_group_name = "a" * 513
@@ -234,7 +235,7 @@ class TestLogsGroupsTags:
         assert response["tags"] == {"env": "testing"}
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="TODO list tags returns empty")
+    @pytest.mark.skipif(condition=is_legacy_provider(), reason="TODO list tags returns empty")
     def test_tag_log_group(self, aws_client, snapshot, cleanups):
         """Test adding tags to an existing log group using tag_log_group API."""
         snapshot.add_transformer(snapshot.transform.logs_api())
@@ -269,7 +270,7 @@ class TestLogsGroupsTags:
         assert response["tags"] == {"tag_key_1": "tag_value_XX", "tag_key_2": "tag_value_2"}
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="TODO list tags returns empty")
+    @pytest.mark.skipif(condition=is_legacy_provider(), reason="TODO list tags returns empty")
     def test_untag_log_group(self, aws_client, snapshot, cleanups):
         """Test removing tags from a log group using untag_log_group API."""
         snapshot.add_transformer(snapshot.transform.logs_api())

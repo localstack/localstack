@@ -1,0 +1,849 @@
+import base64
+import io
+import json
+import logging
+from collections.abc import Callable
+from gzip import GzipFile
+
+from moto.core.utils import unix_time_millis
+
+from localstack.aws.api import RequestContext, handler
+from localstack.aws.api.logs import (
+    AmazonResourceName,
+    ApplyOnTransformedLogs,
+    CreateLogGroupRequest,
+    CreateLogStreamRequest,
+    Days,
+    DeleteLogGroupRequest,
+    DeleteLogStreamRequest,
+    DescribeLimit,
+    DescribeLogGroupsRequest,
+    DescribeLogGroupsResponse,
+    DescribeLogStreamsRequest,
+    DescribeLogStreamsResponse,
+    DescribeMetricFiltersResponse,
+    DescribeSubscriptionFiltersResponse,
+    DestinationArn,
+    Distribution,
+    EmitSystemFields,
+    FieldSelectionCriteria,
+    FilteredLogEvent,
+    FilterLogEventsRequest,
+    FilterLogEventsResponse,
+    FilterName,
+    FilterPattern,
+    GetLogEventsRequest,
+    GetLogEventsResponse,
+    InvalidParameterException,
+    ListLogGroupsRequest,
+    ListLogGroupsResponse,
+    ListTagsForResourceResponse,
+    ListTagsLogGroupResponse,
+    LogGroupClass,
+    LogGroupName,
+    LogGroupSummary,
+    LogsApi,
+    MetricFilter,
+    MetricName,
+    MetricNamespace,
+    MetricTransformations,
+    NextToken,
+    OutputLogEvent,
+    PutLogEventsRequest,
+    PutLogEventsResponse,
+    RejectedLogEventsInfo,
+    ResourceAlreadyExistsException,
+    ResourceNotFoundException,
+    RoleArn,
+    TagKeyList,
+    TagList,
+    Tags,
+    ValidationException,
+)
+from localstack.aws.connect import connect_to
+from localstack.services.logs.logs_database_helper import LogsDatabaseHelper
+from localstack.services.logs.models import LogGroup, LogStream, SubscriptionFilter, logs_stores
+from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws import arns
+from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.numbers import is_number
+from localstack.utils.threads import start_worker_thread
+from localstack.utils.time import now_utc
+
+LOG = logging.getLogger(__name__)
+MAX_LOG_GROUP_NAME_LEN = 512
+
+
+def get_pattern_matcher(pattern: str) -> Callable[[str, dict], bool]:
+    """Returns a pattern matcher. Can be patched by plugins to return a more sophisticated pattern matcher."""
+    return lambda _pattern, _log_event: True
+
+
+class LogsProviderV2(ServiceLifecycleHook, LogsApi):
+    def __init__(self):
+        self.db_helper = LogsDatabaseHelper()
+
+    def on_before_state_reset(self):
+        self.db_helper.clear_tables()
+
+    def on_after_state_reset(self):
+        self.db_helper = LogsDatabaseHelper()
+
+    @handler("CreateLogGroup", expand=False)
+    def create_log_group(
+        self,
+        context: RequestContext,
+        request: CreateLogGroupRequest,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+        log_group_name = request["logGroupName"]
+
+        if len(log_group_name) > MAX_LOG_GROUP_NAME_LEN:
+            raise InvalidParameterException(
+                "Invalid LogGroup or LogStream, both must have length less than or equal to 512."
+            )
+
+        if log_group_name in store.log_groups:
+            raise ResourceAlreadyExistsException("The specified log group already exists")
+
+        region = context.region
+        account_id = context.account_id
+        arn = arns.log_group_arn(log_group_name, account_id, region)
+        log_group = LogGroup(
+            logGroupName=log_group_name,
+            creationTime=now_utc(),
+            arn=f"{arn}:*",
+            logGroupArn=arn,
+            logGroupClass=request.get("logGroupClass", LogGroupClass.STANDARD),
+            storedBytes=0,
+            metricFilterCount=0,
+        )
+        if key_id := request.get("kmsKeyId"):
+            log_group["kmsKeyId"] = key_id
+
+        if tags := request.get("tags"):
+            resource_arn = arns.log_group_arn(
+                group_name=log_group_name, account_id=context.account_id, region_name=context.region
+            )
+            store = logs_stores[context.account_id][context.region]
+            store.TAGS.setdefault(resource_arn, {}).update(tags)
+
+        store.log_groups[log_group_name] = log_group
+        store.log_streams[log_group_name] = {}
+
+    @handler("DescribeLogGroups", expand=False)
+    def describe_log_groups(
+        self,
+        context: RequestContext,
+        request: DescribeLogGroupsRequest,
+    ) -> DescribeLogGroupsResponse:
+        store = logs_stores[context.account_id][context.region]
+        log_groups = list(store.log_groups.values())
+        log_group_name_prefix = request.get("logGroupNamePrefix")
+        log_group_name_pattern = request.get("logGroupNamePattern")
+
+        if log_group_name_prefix and log_group_name_pattern:
+            raise InvalidParameterException(
+                "LogGroup name prefix and LogGroup name pattern are mutually exclusive parameters."
+            )
+
+        if log_group_name_prefix:
+            log_groups = [
+                lg for lg in log_groups if lg["logGroupName"].startswith(log_group_name_prefix)
+            ]
+
+        if log_group_name_pattern:
+            log_groups = [lg for lg in log_groups if log_group_name_pattern in lg["logGroupName"]]
+
+        return DescribeLogGroupsResponse(logGroups=log_groups)
+
+    @handler("ListLogGroups", expand=False)
+    def list_log_groups(
+        self, context: RequestContext, request: ListLogGroupsRequest
+    ) -> ListLogGroupsResponse:
+        store = logs_stores[context.account_id][context.region]
+        log_groups = list(store.log_groups.values())
+        log_group_name_pattern = request.get("logGroupNamePattern")
+
+        if log_group_name_pattern:
+            log_groups = [
+                log_group
+                for log_group in log_groups
+                if log_group_name_pattern in log_group["logGroupName"]
+            ]
+
+        groups = [
+            LogGroupSummary(
+                logGroupName=lg["logGroupName"],
+                logGroupArn=lg["logGroupArn"],
+                logGroupClass=LogGroupClass.STANDARD,
+            )
+            for lg in log_groups
+        ]
+        return ListLogGroupsResponse(logGroups=groups)
+
+    @handler("DeleteLogGroup", expand=False)
+    def delete_log_group(
+        self,
+        context: RequestContext,
+        request: DeleteLogGroupRequest,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+        log_group_name = request["logGroupName"]
+        del store.log_groups[log_group_name]
+        del store.log_streams[log_group_name]
+
+    @handler("CreateLogStream", expand=False)
+    def create_log_stream(
+        self,
+        context: RequestContext,
+        request: CreateLogStreamRequest,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+        log_group_name = request["logGroupName"]
+        log_stream_name = request["logStreamName"]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+        if log_stream_name in store.log_streams.get(log_group_name, {}):
+            raise ResourceAlreadyExistsException("The specified log stream does not exist.")
+
+        region = context.region
+        account_id = context.account_id
+        arn = arns.log_stream_arn(log_group_name, log_stream_name, account_id, region)
+        store.log_streams[log_group_name][log_stream_name] = LogStream(
+            logStreamName=log_stream_name,
+            creationTime=now_utc(),
+            arn=arn,
+            storedBytes=0,
+        )
+
+    @handler("DescribeLogStreams", expand=False)
+    def describe_log_streams(
+        self,
+        context: RequestContext,
+        request: DescribeLogStreamsRequest,
+    ) -> DescribeLogStreamsResponse:
+        store = logs_stores[context.account_id][context.region]
+        log_group_name = request.get("logGroupName")
+        log_group_identifier = request.get("logGroupIdentifier")
+        log_stream_name_prefix = request.get("logStreamNamePrefix")
+
+        if log_group_name and log_group_identifier:
+            raise ValidationException(
+                "LogGroup name and LogGroup ARN are mutually exclusive parameters."
+            )
+
+        if log_group_identifier:
+            log_group_name = log_group_identifier.split(":")[-1]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        log_streams = list(store.log_streams[log_group_name].values())
+
+        if log_stream_name_prefix:
+            log_streams = [
+                ls for ls in log_streams if ls["logStreamName"].startswith(log_stream_name_prefix)
+            ]
+        elif log_group_name:
+            log_streams = [ls for ls in log_streams if log_group_name in ls["arn"]]
+
+        return DescribeLogStreamsResponse(logStreams=log_streams)
+
+    @handler("DeleteLogStream", expand=False)
+    def delete_log_stream(
+        self,
+        context: RequestContext,
+        request: DeleteLogStreamRequest,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+        log_group_name = request["logGroupName"]
+        log_stream_name = request["logStreamName"]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+        if log_stream_name not in store.log_streams.get(log_group_name, {}):
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        del store.log_streams[log_group_name][log_stream_name]
+
+    @handler("PutLogEvents", expand=False)
+    def put_log_events(
+        self,
+        context: RequestContext,
+        request: PutLogEventsRequest,
+    ) -> PutLogEventsResponse:
+        log_group_name = request["logGroupName"]
+        log_stream_name = request["logStreamName"]
+        log_events = request["logEvents"]
+        store = logs_stores[context.account_id][context.region]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+        if log_stream_name not in store.log_streams.get(log_group_name, {}):
+            raise ResourceNotFoundException("The specified log stream does not exist.")
+
+        self.db_helper.put_log_events(
+            log_group_name,
+            log_stream_name,
+            log_events,
+            context.region,
+            context.account_id,
+        )
+
+        def _send_events(*_):
+            self._send_events_to_subscription(
+                log_group_name,
+                log_stream_name,
+                log_events,
+                account_id=context.account_id,
+                region=context.region,
+            )
+
+            self._send_events_metrics(
+                log_group_name,
+                log_stream_name,
+                log_events,
+                account_id=context.account_id,
+                region=context.region,
+            )
+
+        start_worker_thread(_send_events)
+
+        return PutLogEventsResponse(rejectedLogEventsInfo=RejectedLogEventsInfo())
+
+    def _send_events_metrics(
+        self,
+        log_group_name: str,
+        log_stream_name: str,
+        events: list[dict],
+        account_id: str,
+        region: str,
+    ):
+        store = logs_stores[account_id][region]
+        metric_filters = store.metric_filters.get(log_group_name, [])
+        client = connect_to(aws_access_key_id=account_id, region_name=region).cloudwatch
+
+        for metric_filter in metric_filters:
+            pattern = metric_filter.get("filterPattern", "")
+            transformations = metric_filter.get("metricTransformations", [])
+            matches = get_pattern_matcher(pattern)
+            for log_event in events:
+                if matches(pattern, log_event):
+                    for tf in transformations:
+                        value = tf.get("metricValue") or "1"
+                        if "$size" in value:
+                            LOG.info(
+                                "Expression not yet supported for log filter metricValue", value
+                            )
+                        value = float(value) if is_number(value) else 1
+                        data = [{"MetricName": tf["metricName"], "Value": value}]
+                        try:
+                            client.put_metric_data(Namespace=tf["metricNamespace"], MetricData=data)
+                        except Exception as e:
+                            LOG.info(
+                                "Unable to put metric data for matching CloudWatch log events", e
+                            )
+
+    def _send_events_to_subscription(
+        self,
+        log_group_name: str,
+        log_stream_name: str,
+        events: list[dict],
+        account_id: str,
+        region: str,
+    ):
+        store = logs_stores[account_id][region]
+        subscription_filters = store.subscription_filters.get(log_group_name, [])
+        for subscription_filter in subscription_filters:
+            if subscription_filter.get("filterPattern"):
+                matches = get_pattern_matcher(subscription_filter.filter_pattern)
+                events = [
+                    event
+                    for event in events
+                    if matches(subscription_filter.get("filterPattern"), event)
+                ]
+
+            if events and subscription_filter.get("destinationArn"):
+                destination_arn = subscription_filter.get("destinationArn")
+                log_events = [
+                    {
+                        "id": event.get("id", "0"),
+                        "timestamp": event.get("timestamp"),
+                        "message": event.get("message"),
+                    }
+                    for event in events
+                ]
+
+                data = {
+                    "messageType": "DATA_MESSAGE",
+                    "owner": account_id,  # AWS Account ID of the originating log data
+                    "logGroup": log_group_name,
+                    "logStream": log_stream_name,
+                    "subscriptionFilters": [subscription_filter.get("filterName")],
+                    "logEvents": log_events,
+                }
+
+                output = io.BytesIO()
+                with GzipFile(fileobj=output, mode="w") as f:
+                    f.write(json.dumps(data, separators=(",", ":")).encode("utf-8"))
+                payload_gz_encoded = output.getvalue()
+                event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
+
+                log_group_arn = arns.log_group_arn(log_group_name, account_id, region)
+                arn_data = arns.parse_arn(destination_arn)
+
+                if role_arn := subscription_filter.get("roleArn"):
+                    factory = connect_to.with_assumed_role(
+                        role_arn=role_arn,
+                        service_principal=ServicePrincipal.logs,
+                        region_name=arn_data["region"],
+                    )
+                else:
+                    factory = connect_to(
+                        aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+                    )
+
+                if ":lambda:" in destination_arn:
+                    client = factory.lambda_.request_metadata(
+                        source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+                    )
+                    client.invoke(FunctionName=destination_arn, Payload=json.dumps(event))
+
+                if ":kinesis:" in destination_arn:
+                    client = factory.kinesis.request_metadata(
+                        source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+                    )
+                    stream_name = arns.kinesis_stream_name(destination_arn)
+                    client.put_record(
+                        StreamName=stream_name,
+                        Data=payload_gz_encoded,
+                        PartitionKey=log_group_name,
+                    )
+
+                if ":firehose:" in destination_arn:
+                    client = factory.firehose.request_metadata(
+                        source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+                    )
+                    firehose_name = arns.firehose_name(destination_arn)
+                    client.put_record(
+                        DeliveryStreamName=firehose_name,
+                        Record={"Data": payload_gz_encoded},
+                    )
+
+    @handler("GetLogEvents", expand=False)
+    def get_log_events(
+        self,
+        context: RequestContext,
+        request: GetLogEventsRequest,
+    ) -> GetLogEventsResponse:
+        region = context.region
+        account_id = context.account_id
+        store = logs_stores[context.account_id][context.region]
+        log_group_name = request["logGroupName"]
+        log_stream_name = request["logStreamName"]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+        if log_stream_name not in store.log_streams.get(log_group_name, {}):
+            raise ResourceNotFoundException("The specified log stream does not exist.")
+        try:
+            events_data = self.db_helper.get_log_events(
+                log_group_name,
+                log_stream_name,
+                region,
+                account_id,
+                request.get("startTime"),
+                request.get("endTime"),
+                request.get("limit"),
+                request.get("startFromHead"),
+            )
+            events = [
+                OutputLogEvent(timestamp=data["timestamp"], message=data["message"])
+                for data in events_data
+            ]
+            return GetLogEventsResponse(events=events)
+        except ValueError as e:
+            raise self._get_exception_for_value_error(e, log_group_name, log_stream_name)
+
+    @handler("FilterLogEvents", expand=False)
+    def filter_log_events(
+        self,
+        context: RequestContext,
+        request: FilterLogEventsRequest,
+    ) -> FilterLogEventsResponse:
+        region = context.region
+        account_id = context.account_id
+        log_group_name = request.get("logGroupName")
+        log_group_identifier = request.get("logGroupIdentifier")
+        store = logs_stores[account_id][region]
+
+        if log_group_name and log_group_identifier:
+            raise InvalidParameterException(
+                "LogGroup name and LogGroup identifier are mutually exclusive parameters."
+            )
+
+        if log_group_identifier:
+            log_group_name = log_group_identifier.split(":")[-1]
+
+        if not log_group_name or log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        # Parse nextToken to get the last event ID for pagination
+        after_event_id = None
+        if next_token := request.get("nextToken"):
+            try:
+                after_event_id = int(next_token)
+            except ValueError:
+                raise InvalidParameterException("The specified nextToken is invalid.")
+
+        limit = request.get("limit")
+        if int(limit or "0") > 10000:
+            raise InvalidParameterException(
+                f"1 validation error detected: Value '{limit}' at 'limit' failed to satisfy constraint: Member must have value less than or equal to 10000"
+            )
+
+        events_data = self.db_helper.filter_log_events(
+            log_group_name,
+            region,
+            account_id,
+            request.get("logStreamNames"),
+            request.get("startTime"),
+            request.get("endTime"),
+            request.get("filterPattern"),
+            limit,
+            after_event_id,
+        )
+        events = [
+            FilteredLogEvent(
+                logStreamName=data["logStreamName"],
+                timestamp=data["timestamp"],
+                message=data["message"],
+                eventId=data["id"],
+            )
+            for data in events_data
+        ]
+
+        response = FilterLogEventsResponse(events=events)
+
+        # Generate nextToken if there are potentially more results
+        if limit and events_data and len(events_data) == limit:
+            response["nextToken"] = events_data[-1]["id"]
+
+        return response
+
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
+    ) -> ListTagsForResourceResponse:
+        self._check_resource_arn_tagging(resource_arn)
+        store = logs_stores[context.account_id][context.region]
+        tags = store.TAGS.get(resource_arn, {})
+        return ListTagsForResourceResponse(tags=tags)
+
+    def untag_resource(
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        tag_keys: TagKeyList,
+        **kwargs,
+    ) -> None:
+        self._check_resource_arn_tagging(resource_arn)
+        store = logs_stores[context.account_id][context.region]
+        tags_stored = store.TAGS.get(resource_arn, {})
+        for tag in tag_keys:
+            tags_stored.pop(tag, None)
+
+    def untag_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName, tags: TagList, **kwargs
+    ) -> None:
+        # deprecated implementation -> new one: untag_resource
+        self._verify_log_group_exists(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        resource_arn = arns.log_group_arn(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        store = logs_stores[context.account_id][context.region]
+        tags_stored = store.TAGS.get(resource_arn, {})
+        for tag in tags:
+            tags_stored.pop(tag, None)
+
+    def tag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags, **kwargs
+    ) -> None:
+        self._check_resource_arn_tagging(resource_arn)
+        store = logs_stores[context.account_id][context.region]
+        store.TAGS.setdefault(resource_arn, {}).update(tags or {})
+
+    def tag_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName, tags: Tags, **kwargs
+    ) -> None:
+        # deprecated implementation -> new one: tag_resource
+        self._verify_log_group_exists(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        resource_arn = arns.log_group_arn(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        store = logs_stores[context.account_id][context.region]
+        store.TAGS.setdefault(resource_arn, {}).update(tags or {})
+
+    def list_tags_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName, **kwargs
+    ) -> ListTagsLogGroupResponse:
+        store = logs_stores[context.account_id][context.region]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        resource_arn = arns.log_group_arn(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        tags = store.TAGS.get(resource_arn, {})
+        return ListTagsLogGroupResponse(tags=tags)
+
+    def _check_resource_arn_tagging(self, resource_arn):
+        service = arns.extract_service_from_arn(resource_arn)
+        region = arns.extract_region_from_arn(resource_arn)
+        account = arns.extract_account_id_from_arn(resource_arn)
+
+        # AWS currently only supports tagging for Log Group and Destinations
+        # LS: we only verify if log group exists, and create tags for other resources
+        if service.lower().startswith("log-group:"):
+            self._verify_log_group_exists(
+                service.split(":")[-1], account_id=account, region_name=region
+            )
+
+    def _verify_log_group_exists(self, group_name: LogGroupName, account_id: str, region_name: str):
+        store = logs_stores[account_id][region_name]
+
+        if group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+    def put_subscription_filter(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name: FilterName,
+        filter_pattern: FilterPattern,
+        destination_arn: DestinationArn,
+        role_arn: RoleArn | None = None,
+        distribution: Distribution | None = None,
+        apply_on_transformed_logs: ApplyOnTransformedLogs | None = None,
+        field_selection_criteria: FieldSelectionCriteria | None = None,
+        emit_system_fields: EmitSystemFields | None = None,
+        **kwargs,
+    ) -> None:
+        self._verify_log_group_exists(log_group_name, context.account_id, context.region)
+
+        store = logs_stores[context.account_id][context.region]
+        log_group = store.log_groups.get(log_group_name)
+        log_group_arn = log_group["logGroupArn"]
+
+        if not log_group:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        arn_data = arns.parse_arn(destination_arn)
+
+        if role_arn:
+            factory = connect_to.with_assumed_role(
+                role_arn=role_arn,
+                service_principal=ServicePrincipal.logs,
+                region_name=arn_data["region"],
+            )
+        else:
+            factory = connect_to(
+                aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+            )
+
+        if ":lambda:" in destination_arn:
+            client = factory.lambda_.request_metadata(
+                source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+            )
+            try:
+                client.get_function(FunctionName=destination_arn)
+            except Exception:
+                raise InvalidParameterException(
+                    "destinationArn for vendor lambda cannot be used with roleArn"
+                )
+
+        elif ":kinesis:" in destination_arn:
+            client = factory.kinesis.request_metadata(
+                source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+            )
+            stream_name = arns.kinesis_stream_name(destination_arn)
+            try:
+                # Kinesis-Local DescribeStream does not support StreamArn param, so use StreamName instead
+                client.describe_stream(StreamName=stream_name)
+            except Exception:
+                raise InvalidParameterException(
+                    "Could not deliver message to specified Kinesis stream. "
+                    "Ensure that the Kinesis stream exists and is ACTIVE."
+                )
+
+        elif ":firehose:" in destination_arn:
+            client = factory.firehose.request_metadata(
+                source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+            )
+            firehose_name = arns.firehose_name(destination_arn)
+            try:
+                client.describe_delivery_stream(DeliveryStreamName=firehose_name)
+            except Exception:
+                raise InvalidParameterException(
+                    "Could not deliver message to specified Firehose stream. "
+                    "Ensure that the Firehose stream exists and is ACTIVE."
+                )
+
+        else:
+            raise InvalidParameterException(
+                f"PutSubscriptionFilter operation cannot work with destinationArn for vendor {arn_data['service']}"
+            )
+
+        previous_filters = store.subscription_filters.get(log_group_name, [])
+        previous_filters.append(
+            SubscriptionFilter(
+                filterName=filter_name,
+                filterPattern=filter_pattern,
+                destinationArn=destination_arn,
+                roleArn=role_arn,
+                logGroupName=log_group_name,
+                distribution=distribution or Distribution.ByLogStream,
+                creationTime=int(unix_time_millis()),
+            )
+        )
+
+        store.subscription_filters.update({log_group_name: previous_filters})
+
+    def describe_subscription_filters(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name_prefix: FilterName | None = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
+        **kwargs,
+    ) -> DescribeSubscriptionFiltersResponse:
+        filter_name_prefix = filter_name_prefix or ""
+        store = logs_stores[context.account_id][context.region]
+        filters = store.subscription_filters.get(log_group_name, [])
+        filters = [
+            _filter for _filter in filters if _filter["filterName"].startswith(filter_name_prefix)
+        ]
+        return DescribeSubscriptionFiltersResponse(subscriptionFilters=filters)
+
+    def delete_subscription_filter(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name: FilterName,
+        **kwargs,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+        filters = store.subscription_filters.get(log_group_name, [])
+        filters = [_filter for _filter in filters if _filter["filterName"] != filter_name]
+
+        store.subscription_filters.update({log_group_name: filters})
+
+    def _find_metric_filter(
+        log_group_name: str, filter_name: str, account_id: str, region_name: str
+    ) -> MetricFilter | None:
+        store = logs_stores[account_id][region_name]
+        if metric_filters := store.metric_filters.get(log_group_name):
+            for metric_filter in metric_filters:
+                if metric_filter.get("filterName") == filter_name:
+                    return metric_filter
+
+        return None
+
+    def put_metric_filter(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name: FilterName,
+        filter_pattern: FilterPattern,
+        metric_transformations: MetricTransformations,
+        apply_on_transformed_logs: ApplyOnTransformedLogs | None = None,
+        field_selection_criteria: FieldSelectionCriteria | None = None,
+        emit_system_field_dimensions: EmitSystemFields | None = None,
+        **kwargs,
+    ) -> None:
+        if self._find_metric_filter(log_group_name, filter_name):
+            # TODO find correct name
+            raise InvalidParameterException(
+                f"Filter with name $'{filter_name}' already exists for '{log_group_name}'"
+            )
+
+        store = logs_stores[context.account_id][context.region]
+        metric_filter = MetricFilter(
+            logGroupName=log_group_name,
+            filterName=filter_name,
+            filterPattern=filter_pattern,
+            metricTransformations=metric_transformations,
+            applyOnTransformedLogs=apply_on_transformed_logs,
+            fieldSelectionCriteria=field_selection_criteria,
+            emitSystemFieldDimensions=emit_system_field_dimensions,
+        )
+
+        previous_filters = store.metric_filters.get(log_group_name, [])
+        previous_filters.append(metric_filter)
+        store.metric_filters.update({log_group_name: previous_filters})
+
+    def delete_metric_filter(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name: FilterName,
+        **kwargs,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+        filters = store.metric_filters.get(log_group_name, [])
+        filters = [_filter for _filter in filters if _filter["filterName"] != filter_name]
+        store.metric_filters.update({log_group_name: filters})
+
+    def describe_metric_filters(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName | None = None,
+        filter_name_prefix: FilterName | None = None,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
+        metric_name: MetricName | None = None,
+        metric_namespace: MetricNamespace | None = None,
+        **kwargs,
+    ) -> DescribeMetricFiltersResponse:
+        filter_name_prefix = filter_name_prefix or ""
+        store = logs_stores[context.account_id][context.region]
+        filters = store.subscription_filters.get(log_group_name, [])
+        filters = [
+            _filter for _filter in filters if _filter["filterName"].startswith(filter_name_prefix)
+        ]
+        # TODO add the other filter methods e.g. metric_name, metric_namespace
+        return DescribeMetricFiltersResponse(metricFilters=filters)
+
+    def put_retention_policy(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        retention_in_days: Days,
+        **kwargs,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        store.log_groups[log_group_name]["retentionInDays"] = retention_in_days
+
+    def delete_retention_policy(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        **kwargs,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+
+        if log_group_name not in store.log_groups:
+            raise ResourceNotFoundException("The specified log group does not exist.")
+
+        store.log_groups[log_group_name].pop("retentionInDays", None)
