@@ -230,14 +230,6 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             issue_url,
         )
 
-    @classmethod
-    def _setup_change_set_model(
-        cls,
-        change_set: ChangeSet,
-        inputs: UpdateModelInputs,
-    ):
-        change_set.compute_update_model(inputs)
-
     @handler("CreateChangeSet", expand=False)
     def create_change_set(
         self, context: RequestContext, request: CreateChangeSetInput
@@ -378,15 +370,14 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template=after_template,
             template_body=template_body,
         )
-        self._setup_change_set_model(
-            change_set=change_set,
-            inputs=UpdateModelInputs(
+        change_set.compute_update_model(
+            UpdateModelInputs(
                 before_template=before_template,
                 after_template=after_template,
                 before_parameters=before_parameters,
                 after_parameters=after_parameters,
                 previous_update_model=previous_update_model,
-            ),
+            )
         )
         if change_set.status == ChangeSetStatus.FAILED:
             change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
@@ -738,14 +729,13 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template=after_template,
             template_body=template_body,
         )
-        self._setup_change_set_model(
-            change_set=change_set,
-            inputs=UpdateModelInputs(
+        change_set.compute_update_model(
+            UpdateModelInputs(
                 before_template=None,
                 after_template=after_template,
                 before_parameters=None,
                 after_parameters=after_parameters,
-            ),
+            )
         )
         if change_set.status == ChangeSetStatus.FAILED:
             return CreateStackOutput(StackId=stack.stack_id)
@@ -1404,15 +1394,14 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template_body=template_body,
             template=after_template,
         )
-        self._setup_change_set_model(
-            change_set=change_set,
-            inputs=UpdateModelInputs(
+        change_set.compute_update_model(
+            UpdateModelInputs(
                 before_template=before_template,
                 after_template=after_template,
                 before_parameters=before_parameters,
                 after_parameters=after_parameters,
                 previous_update_model=previous_update_model,
-            ),
+            )
         )
 
         # TODO: some changes are only detectable at runtime; consider using
@@ -1504,14 +1493,13 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         change_set = ChangeSet(
             stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"}, template_body=""
         )  # noqa
-        self._setup_change_set_model(
-            change_set=change_set,
-            inputs=UpdateModelInputs(
+        change_set.compute_update_model(
+            UpdateModelInputs(
                 before_template=stack.processed_template,
                 after_template=None,
                 before_parameters=stack.resolved_parameters,
                 after_parameters=None,
-            ),
+            )
         )
 
         change_set_executor = ChangeSetModelExecutor(change_set)
