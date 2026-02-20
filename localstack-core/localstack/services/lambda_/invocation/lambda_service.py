@@ -506,7 +506,7 @@ class LambdaService:
         """
         if new_version.config.capacity_provider_config:
             # simulate AWS behavior with a slight delay after update_function_configuration,
-            # so we can observe LastUpdateStatus transitioning from InProgress to Successful in subsequent get_function
+            # so we can observe LastUpdateStatus transitioning to InProgress before it becomes Successful
             time.sleep(0.5)
 
         if (

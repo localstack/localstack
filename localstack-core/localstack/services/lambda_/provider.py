@@ -1475,9 +1475,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function.versions["$LATEST"] = new_latest_version  # TODO: notify
 
         if function.latest().config.capacity_provider_config:
-            self.lambda_service.task_executor.submit(
-                self.lambda_service.update_version, new_latest_version
-            )
+
+            def _update_version_with_logging():
+                try:
+                    self.lambda_service.update_version(new_latest_version)
+                except Exception:
+                    LOG.error(
+                        "Failed to update Lambda Managed Instances function version %s",
+                        new_latest_version.id.qualified_arn(),
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    )
+
+            self.lambda_service.task_executor.submit(_update_version_with_logging)
         else:
             self.lambda_service.update_version(new_version=new_latest_version)
 
