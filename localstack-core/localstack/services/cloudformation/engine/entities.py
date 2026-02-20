@@ -1,7 +1,16 @@
+import dataclasses
 import logging
-from typing import TypedDict
+from typing import Any, TypedDict
 
-from localstack.aws.api.cloudformation import Capability, ChangeSetType, Parameter
+from localstack.aws.api.cloudformation import (
+    Capability,
+    ChangeSetType,
+    CreateStackSetInput,
+    Parameter,
+    StackInstanceComprehensiveStatus,
+    StackInstanceStatus,
+    StackSetOperation,
+)
 from localstack.services.cloudformation.engine.parameters import (
     StackParameter,
     convert_stack_parameters_to_list,
@@ -29,65 +38,58 @@ from localstack.utils.time import timestamp_millis
 LOG = logging.getLogger(__name__)
 
 
-class StackSet:
-    """A stack set contains multiple stack instances."""
+class StackInstanceDetails(TypedDict):
+    """Metadata for a StackInstance object. Loosely resembles the request input shape"""
 
-    # FIXME: confusing name. metadata is the complete incoming request object
-    def __init__(self, metadata: dict):
-        self.metadata = metadata
-        # list of stack instances
-        self.stack_instances = []
-        # maps operation ID to stack set operation details
-        self.operations = {}
-
-    @property
-    def stack_set_name(self):
-        return self.metadata.get("StackSetName")
-
-
-class StackInstance:
-    """A stack instance belongs to a stack set and is specific to a region / account ID."""
-
-    # FIXME: confusing name. metadata is the complete incoming request object
-    def __init__(self, metadata: dict):
-        self.metadata = metadata
-        # reference to the deployed stack belonging to this stack instance
-        self.stack = None
+    StackSetId: str | None
+    OperationId: str | None
+    Account: str | None
+    Region: str | None
+    StackId: str
+    Status: StackInstanceStatus
+    StackInstanceStatus: StackInstanceComprehensiveStatus | None
 
 
 class CreateChangeSetInput(TypedDict):
     StackName: str
     Capabilities: list[Capability]
     ChangeSetName: str | None
-    ChangSetType: ChangeSetType | None
+    ChangeSetType: ChangeSetType | None
     Parameters: list[Parameter]
 
 
-class StackTemplate(TypedDict):
-    StackName: str
-    ChangeSetName: str | None
-    Outputs: dict
-    Resources: dict
-
-
-class StackIdentifier(ResourceIdentifier):
-    service = "cloudformation"
-    resource = "stack"
-
-    def __init__(self, account_id: str, region: str, stack_name: str):
-        super().__init__(account_id, region, stack_name)
-
-    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
-        return generate_short_uid(resource_identifier=self, existing_ids=existing_ids, tags=tags)
-
-
-class StackIdentifierV2(StackIdentifier):
-    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
-        return generate_uid(resource_identifier=self, existing_ids=existing_ids, tags=tags)
+class StackTemplate(TypedDict, total=False):
+    # Standard CloudFormation template fields
+    AWSTemplateFormatVersion: str
+    Description: str
+    Metadata: dict[str, Any]
+    Parameters: dict[str, dict[str, Any]]
+    Rules: dict[str, Any]
+    Mappings: dict[str, dict[str, dict[str, str]]]
+    Conditions: dict[str, Any]
+    Transform: str | list[str]
+    Resources: dict[str, dict[str, Any]]
+    Outputs: dict[str, dict[str, Any]]
+    # LocalStack runtime additions
+    StackId: str
 
 
 # TODO: remove metadata (flatten into individual fields)
 class Stack:
+    account_id: str
+    region_name: str
+    resolved_outputs: list[dict[str, Any]]
+    resolved_parameters: dict[str, StackParameter]
+    resolved_conditions: dict[str, bool]
+
+    template: StackTemplate | None
+    _template: StackTemplate | None
+    template_original: StackTemplate | None
+    template_body: str
+    metadata: dict[str, Any]
+
+    _resource_states: dict[str, Any]
+    events: list[dict[str, Any]]
     change_sets: list["StackChangeSet"]
 
     def __init__(
@@ -104,9 +106,9 @@ class Stack:
         if template is None:
             template = {}
 
-        self.resolved_outputs = []  # TODO
-        self.resolved_parameters: dict[str, StackParameter] = {}
-        self.resolved_conditions: dict[str, bool] = {}
+        self.resolved_outputs = []
+        self.resolved_parameters = {}
+        self.resolved_conditions = {}
 
         self.metadata = metadata or {}
         self.template = template or {}
@@ -384,9 +386,70 @@ class Stack:
         )
 
 
-# FIXME: remove inheritance
-# TODO: what functionality of the Stack object do we rely on here?
-class StackChangeSet(Stack):
+class StackInstance:
+    """A stack instance belongs to a stack set and is specific to a region / account ID."""
+
+    details: StackInstanceDetails
+    stack: Stack
+
+    def __init__(self, details: StackInstanceDetails) -> None:
+        self.details = details
+        # reference to the deployed stack belonging to this stack instance
+        self.stack = None
+
+
+@dataclasses.dataclass
+class StackSetMetadata:
+    """Metadata for a StackSet"""
+
+    stack_set_request: CreateStackSetInput
+    """The original input request"""
+    stack_set_id: str
+    """The stack set id"""
+
+
+class StackSet:
+    """A stack set contains multiple stack instances."""
+
+    metadata: StackSetMetadata
+    stack_instances: list[StackInstance]
+    operations: dict[str, StackSetOperation]
+
+    def __init__(self, stack_set_request: CreateStackSetInput) -> None:
+        self.metadata = StackSetMetadata(
+            stack_set_request=stack_set_request,
+            stack_set_id=f"{stack_set_request['StackSetName']}:{long_uid()}",
+        )
+        self.stack_instances = []
+        # maps operation ID to stack set operation details
+        self.operations = {}
+
+    @property
+    def stack_set_name(self) -> str:
+        return self.metadata.stack_set_request.get("StackSetName")
+
+    @property
+    def stack_set_id(self) -> str:
+        return self.metadata.stack_set_id
+
+
+class StackIdentifier(ResourceIdentifier):
+    service = "cloudformation"
+    resource = "stack"
+
+    def __init__(self, account_id: str, region: str, stack_name: str):
+        super().__init__(account_id, region, stack_name)
+
+    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
+        return generate_short_uid(resource_identifier=self, existing_ids=existing_ids, tags=tags)
+
+
+class StackIdentifierV2(StackIdentifier):
+    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
+        return generate_uid(resource_identifier=self, existing_ids=existing_ids, tags=tags)
+
+
+class StackChangeSet:
     update_graph: NodeTemplate | None
     change_set_type: ChangeSetType | None
 
@@ -395,28 +458,41 @@ class StackChangeSet(Stack):
         account_id: str,
         region_name: str,
         stack: Stack,
-        params=None,
-        template=None,
+        params: dict | None = None,
+        template: StackTemplate | None = None,
         change_set_type: ChangeSetType | None = None,
     ):
-        if template is None:
-            template = {}
-        if params is None:
-            params = {}
-        super().__init__(account_id, region_name, params, template)
-
-        name = self.metadata["ChangeSetName"]
-        if not self.metadata.get("ChangeSetId"):
-            self.metadata["ChangeSetId"] = arns.cloudformation_change_set_arn(
-                name, change_set_id=short_uid(), account_id=account_id, region_name=region_name
-            )
+        params = params or {}
+        template = template or {}
 
         self.account_id = account_id
         self.region_name = region_name
         self.stack = stack
-        self.metadata["StackId"] = stack.stack_id
-        self.metadata["Status"] = "CREATE_PENDING"
         self.change_set_type = change_set_type
+        self.update_graph = None
+
+        self.metadata = dict(params)
+        self.metadata["StackId"] = stack.stack_id
+        self.metadata["StackName"] = stack.stack_name
+        self.metadata["Status"] = "CREATE_PENDING"
+
+        name = self.metadata.get("ChangeSetName", "")
+        if not self.metadata.get("ChangeSetId"):
+            self.metadata["ChangeSetId"] = arns.cloudformation_change_set_arn(
+                name,
+                change_set_id=short_uid(),
+                account_id=account_id,
+                region_name=region_name,
+            )
+
+        # The proposed new template
+        self.template = template
+        self.template_body: str | None = None
+        self._template_raw = clone_safe(template)
+
+        # Resolved parameters and conditions for the proposed change
+        self.resolved_parameters: dict[str, StackParameter] = {}
+        self.resolved_conditions: dict[str, bool] = {}
 
     @property
     def change_set_id(self):
@@ -427,13 +503,41 @@ class StackChangeSet(Stack):
         return self.metadata["ChangeSetName"]
 
     @property
+    def stack_name(self):
+        return self.metadata["StackName"]
+
+    @property
+    def stack_id(self):
+        return self.metadata["StackId"]
+
+    @property
     def resources(self):
         return dict(self.stack.resources)
+
+    @property
+    def template_resources(self):
+        return self.template.setdefault("Resources", {})
+
+    @property
+    def outputs(self):
+        return self.template.setdefault("Outputs", {})
+
+    @property
+    def conditions(self):
+        return self.template.setdefault("Conditions", {})
 
     @property
     def changes(self):
         result = self.metadata["Changes"] = self.metadata.get("Changes", [])
         return result
+
+    def set_resolved_parameters(self, resolved_parameters: dict[str, StackParameter]):
+        self.resolved_parameters = resolved_parameters
+        if resolved_parameters:
+            self.metadata["Parameters"] = list(resolved_parameters.values())
+
+    def set_resolved_stack_conditions(self, resolved_conditions: dict[str, bool]):
+        self.resolved_conditions = resolved_conditions
 
     # V2 only
     def populate_update_graph(
