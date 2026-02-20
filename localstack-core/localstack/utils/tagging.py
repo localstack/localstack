@@ -52,6 +52,7 @@ class TaggingService:
 ResourceARN = str
 TagKey = str
 TagValue = str
+TagMap = dict[TagKey, TagValue]
 
 
 @dataclass
@@ -77,9 +78,9 @@ class Tags:
     supported service's `Tags` dataclass within it's store.
     """
 
-    _tags: dict[ResourceARN, dict[TagKey, TagValue]] = field(default_factory=dict)
+    _tags: dict[ResourceARN, TagMap] = field(default_factory=dict)
 
-    def update_tags(self, arn: ResourceARN, tags: dict[TagKey, TagValue]) -> None:
+    def update_tags(self, arn: ResourceARN, tags: TagMap) -> None:
         """
         Updates the tags of the specified resource.
 
@@ -92,7 +93,7 @@ class Tags:
         for k, v in tags.items():
             stored_tags[k] = v
 
-    def get_tags(self, arn: ResourceARN) -> dict[TagKey, TagValue]:
+    def get_tags(self, arn: ResourceARN) -> TagMap:
         """
         Retrieves the tags for a specified resource.
 
@@ -130,3 +131,16 @@ class Tags:
         :return: None
         """
         self._tags.pop(arn, None)
+
+    def get_resource_tag_map(self) -> dict[ResourceARN, TagMap]:
+        """
+        Retrieves the entire mapping between Resource ARNs and their tags.
+
+        This should not be used to retrieve tags for a single resource and should instead use the
+        `Tags.get_tags(resource_arn)`. It should only be used in scenarios where visibility into the
+        entire internal tag store is required such as with the Resource Groups Tagging API (RGTA).
+
+        :return: A mapping between Resource ARN and tags.
+        """
+
+        return self._tags.copy()
