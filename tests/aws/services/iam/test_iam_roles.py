@@ -32,9 +32,6 @@ def snapshot_transformers(snapshot):
     snapshot.add_transformer(snapshot.transform.iam_api())
 
 
-pytestmark = pytest.mark.skip
-
-
 # TODO properly test role last used
 class TestRoleLifecycle:
     @markers.aws.validated
@@ -163,6 +160,7 @@ class TestRoleLifecycle:
         snapshot.match("get-role-after-deletion-error", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.skip  # Instance profiles not yet supported
     def test_delete_role_with_instance_profile(
         self, aws_client, create_role, create_instance_profile, snapshot
     ):
@@ -666,6 +664,15 @@ class TestRoleManagedPolicies:
             aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=fake_policy_arn)
         snapshot.match("attach-nonexistent-policy-error", e.value.response)
 
+        aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+
+        # Try to delete an attached policy
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_policy(
+                PolicyArn=policy_arn,
+            )
+        snapshot.match("delete-attached-policy-error", e.value.response)
+
     @markers.aws.validated
     def test_attach_detach_aws_managed_policy_role(
         self, aws_client, create_role, snapshot, partition
@@ -804,6 +811,26 @@ class TestRoleTags:
         aws_client.iam.untag_role(RoleName=role_name, TagKeys=["someotherkey"])
         list_tags_empty = aws_client.iam.list_role_tags(RoleName=role_name)
         snapshot.match("list-role-tags-empty", list_tags_empty)
+
+        # Remove tag again - should not fail
+        aws_client.iam.untag_role(
+            RoleName=role_name,
+            TagKeys=["someotherkey"],
+        )
+
+        # Check update for case insensitivity
+        aws_client.iam.tag_role(
+            RoleName=role_name,
+            Tags=[{"Key": "somekey", "Value": "somevalue"}],
+        )
+        list_tags_after_update = aws_client.iam.list_role_tags(RoleName=role_name)
+        snapshot.match("list-role-tags-before-casing-update", list_tags_after_update)
+        aws_client.iam.tag_role(
+            RoleName=role_name,
+            Tags=[{"Key": "Somekey", "Value": "updatedvalue"}],
+        )
+        list_tags_after_update = aws_client.iam.list_role_tags(RoleName=role_name)
+        snapshot.match("list-role-tags-after-casing-update", list_tags_after_update)
 
     @markers.aws.validated
     def test_role_tag_errors(self, aws_client, snapshot, create_role):
