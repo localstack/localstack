@@ -1645,7 +1645,12 @@ def create_user(aws_client):
                     attached_policy["PolicyArn"],
                     username,
                 )
-        access_keys = aws_client.iam.list_access_keys(UserName=username)["AccessKeyMetadata"]
+        # TODO remove this try catch again with access keys implemented
+        try:
+            access_keys = aws_client.iam.list_access_keys(UserName=username)["AccessKeyMetadata"]
+        except ClientError:
+            LOG.debug("Error listing access keys")
+            access_keys = []
         for access_key in access_keys:
             try:
                 aws_client.iam.delete_access_key(
