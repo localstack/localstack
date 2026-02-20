@@ -31,9 +31,6 @@ SAMPLE_POLICY_DOCUMENT = json.dumps(
     }
 )
 
-# TODO remove after new IAM implementation of users
-pytestmark = pytest.mark.skip
-
 
 @pytest.fixture(autouse=True)
 def snapshot_transformers(snapshot):
@@ -154,7 +151,8 @@ class TestUserLifecycle:
         """Test that deleting a user with attached policies fails."""
         user_name = f"user-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
-        create_user(UserName=user_name)
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
 
         # Create and attach a managed policy
         policy_response = create_policy(
@@ -183,7 +181,8 @@ class TestUserLifecycle:
         """Test that deleting a user with inline policies fails."""
         user_name = f"user-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
-        create_user(UserName=user_name)
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
 
         # Add inline policy
         aws_client.iam.put_user_policy(
@@ -280,6 +279,7 @@ class TestUserLoginProfile:
         snapshot.match("delete-login-profile-unknown-user-error", exc.value.response)
 
 
+@pytest.mark.skip(reason="Access keys not yet migrated to native IAM implementation")
 class TestUserAccessKeys:
     """Tests for user access key operations."""
 
@@ -577,7 +577,6 @@ class TestUserTags:
     """Tests for user tagging operations."""
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..User.Tags"])
     def test_user_tag_lifecycle(self, aws_client, create_user, snapshot):
         """Test creating user with tags and listing tags."""
         user_name = f"user-{short_uid()}"
@@ -649,6 +648,7 @@ class TestUserTags:
         snapshot.match("list-tags-nonexistent-user-error", exc.value.response)
 
 
+@pytest.mark.skip(reason="Groups not yet migrated to native IAM implementation")
 class TestUserGroups:
     """Tests for user-group membership operations."""
 

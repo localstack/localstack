@@ -18,6 +18,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
     AttachedPermissionsBoundary,
     AttachedPolicy,
+    CreateLoginProfileResponse,
     CreatePolicyResponse,
     CreatePolicyVersionResponse,
     CreateRoleResponse,
@@ -29,16 +30,19 @@ from localstack.aws.api.iam import (
     DeletionTaskIdType,
     DeletionTaskStatusType,
     EntityAlreadyExistsException,
+    GetLoginProfileResponse,
     GetPolicyResponse,
     GetPolicyVersionResponse,
     GetRolePolicyResponse,
     GetRoleResponse,
     GetServiceLinkedRoleDeletionStatusResponse,
+    GetUserPolicyResponse,
     GetUserResponse,
     IamApi,
     InvalidInputException,
     LimitExceededException,
     ListAttachedRolePoliciesResponse,
+    ListAttachedUserPoliciesResponse,
     ListInstanceProfileTagsResponse,
     ListPoliciesResponse,
     ListPolicyTagsResponse,
@@ -47,6 +51,10 @@ from localstack.aws.api.iam import (
     ListRolesResponse,
     ListRoleTagsResponse,
     ListServiceSpecificCredentialsResponse,
+    ListUserPoliciesResponse,
+    ListUsersResponse,
+    ListUserTagsResponse,
+    LoginProfile,
     MalformedPolicyDocumentException,
     NoSuchEntityException,
     Policy,
@@ -65,6 +73,7 @@ from localstack.aws.api.iam import (
     User,
     allUsers,
     arnType,
+    booleanObjectType,
     booleanType,
     credentialAgeDays,
     customSuffixType,
@@ -73,6 +82,7 @@ from localstack.aws.api.iam import (
     instanceProfileNameType,
     markerType,
     maxItemsType,
+    passwordType,
     pathPrefixType,
     pathType,
     policyDescriptionType,
@@ -94,7 +104,13 @@ from localstack.aws.api.iam import (
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY, TAG_KEY_CUSTOM_ID
 from localstack.services.iam.iam_patches import apply_iam_patches
-from localstack.services.iam.models import IamStore, ManagedPolicyEntity, RoleEntity, iam_stores
+from localstack.services.iam.models import (
+    IamStore,
+    ManagedPolicyEntity,
+    RoleEntity,
+    UserEntity,
+    iam_stores,
+)
 from localstack.services.iam.policy_validation import IAMPolicyDocumentValidator
 from localstack.services.iam.resources.policy_simulator import (
     BasicIAMPolicySimulator,
@@ -102,9 +118,8 @@ from localstack.services.iam.resources.policy_simulator import (
 )
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
 from localstack.services.iam.utils import generate_iam_identifier
-from localstack.services.moto import call_moto
 from localstack.state import StateVisitor
-from localstack.utils.aws.arns import get_partition
+from localstack.utils.aws.arns import ARN_PARTITION_REGEX, get_partition
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 from localstack.utils.collections import PaginatedList
 
@@ -121,6 +136,9 @@ VERSION_ID_REGEX = re.compile(r"^v[1-9][0-9]*(\.[A-Za-z0-9-]*)?$")
 
 # Tag key regex pattern (from AWS documentation)
 TAG_KEY_REGEX = re.compile(r"^[\w\s_.:/=+\-@]+$")
+
+# AWS managed policy ARN regex
+AWS_MANAGED_POLICY_ARN_REGEX = re.compile(rf"{ARN_PARTITION_REGEX}:iam::aws:policy/")
 
 # Maximum versions per policy
 MAX_POLICY_VERSIONS = 5
@@ -150,12 +168,14 @@ class IamProvider(IamApi):
     policy_simulator: IAMPolicySimulator
     _policy_lock: threading.Lock
     _role_lock: threading.Lock
+    _user_lock: threading.Lock
 
     def __init__(self):
         apply_iam_patches()
         self.policy_simulator = BasicIAMPolicySimulator()
         self._policy_lock = threading.Lock()
         self._role_lock = threading.Lock()
+        self._user_lock = threading.Lock()
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(iam_backends)
@@ -240,8 +260,7 @@ class IamProvider(IamApi):
             raise InvalidInputException(f"ARN {permissions_boundary} is not valid.")
 
         # Check if policy exists (for customer-managed policies)
-        aws_managed_prefix = f"arn:{context.partition}:iam::aws:policy/"
-        if not permissions_boundary.startswith(aws_managed_prefix):
+        if not self._is_managed_policy(permissions_boundary):
             store = self._get_store(context)
             if permissions_boundary not in store.MANAGED_POLICIES:
                 raise NoSuchEntityException(
@@ -697,6 +716,13 @@ class IamProvider(IamApi):
             raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
         return entity
 
+    def _is_managed_policy(self, policy_arn: str) -> bool:
+        """
+        Check if a policy arn is for an AWS managed policy
+        :param policy_arn: Policy ARN to check
+        """
+        return bool(AWS_MANAGED_POLICY_ARN_REGEX.match(policy_arn))
+
     # ------------------------------ Role Helper Methods ------------------------------ #
 
     def _generate_role_id(self, context: RequestContext, tags: list[Tag] | None = None) -> str:
@@ -754,6 +780,27 @@ class IamProvider(IamApi):
                     )
 
         return policy
+
+    # ------------------------------ User Helper Methods ------------------------------ #
+
+    def _generate_user_id(self, context: RequestContext, tags: list[Tag] | None = None) -> str:
+        """Generate a user ID: AIDA + 17 random chars, or use custom ID from tags."""
+        custom_id = self._get_custom_id_from_tags(tags)
+        if custom_id:
+            return custom_id
+        return generate_iam_identifier(context.account_id, prefix="AIDA", total_length=21)
+
+    def _build_user_arn(self, context: RequestContext, path: str, user_name: str) -> str:
+        """Build the ARN for a user."""
+        partition = get_partition(context.region)
+        return f"arn:{partition}:iam::{context.account_id}:user{path}{user_name}"
+
+    def _get_user_entity(self, store: IamStore, user_name: str) -> UserEntity:
+        """Gets the user entity and raises the right exception if not found."""
+        entity = store.USERS.get(user_name)
+        if not entity:
+            raise NoSuchEntityException(f"The user with name {user_name} cannot be found.")
+        return entity
 
     def create_policy(
         self,
@@ -1305,6 +1352,8 @@ class IamProvider(IamApi):
         # TODO: check if task id is valid
         return GetServiceLinkedRoleDeletionStatusResponse(Status=DeletionTaskStatusType.SUCCEEDED)
 
+    # ------------------------------ User Permissions Boundary Operations ------------------------------ #
+
     def put_user_permissions_boundary(
         self,
         context: RequestContext,
@@ -1312,19 +1361,26 @@ class IamProvider(IamApi):
         permissions_boundary: arnType,
         **kwargs,
     ) -> None:
-        if user := get_iam_backend(context).users.get(user_name):
-            user.permissions_boundary = permissions_boundary
-        else:
-            raise NoSuchEntityException()
+        # Validate the permissions boundary
+        self._validate_permissions_boundary(context, permissions_boundary)
+
+        store = self._get_store(context)
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+            user_entity.user["PermissionsBoundary"] = AttachedPermissionsBoundary(
+                PermissionsBoundaryType="Policy",
+                PermissionsBoundaryArn=permissions_boundary,
+            )
 
     def delete_user_permissions_boundary(
         self, context: RequestContext, user_name: userNameType, **kwargs
     ) -> None:
-        if user := get_iam_backend(context).users.get(user_name):
-            if hasattr(user, "permissions_boundary"):
-                delattr(user, "permissions_boundary")
-        else:
-            raise NoSuchEntityException()
+        store = self._get_store(context)
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+            user_entity.user.pop("PermissionsBoundary", None)
+
+    # ------------------------------ User CRUD Operations ------------------------------ #
 
     def create_user(
         self,
@@ -1335,24 +1391,55 @@ class IamProvider(IamApi):
         tags: tagListType = None,
         **kwargs,
     ) -> CreateUserResponse:
-        response = call_moto(context=context)
-        user = get_iam_backend(context).get_user(user_name)
+        store = self._get_store(context)
+
+        # Validate tags
+        self._validate_tags(tags, case_sensitive=False)
+
+        # Validate permissions boundary if provided
         if permissions_boundary:
-            user.permissions_boundary = permissions_boundary
-            response["User"]["PermissionsBoundary"] = AttachedPermissionsBoundary(
-                PermissionsBoundaryArn=permissions_boundary,
-                PermissionsBoundaryType="Policy",
+            self._validate_permissions_boundary(context, permissions_boundary)
+
+        with self._user_lock:
+            # Check if user already exists
+            if user_name in store.USERS:
+                raise EntityAlreadyExistsException(f"User with name {user_name} already exists.")
+
+            # Generate user ID and ARN
+            user_id = self._generate_user_id(context, tags)
+            path = path or "/"
+            user_arn = self._build_user_arn(context, path, user_name)
+
+            # Build the User object
+            user = User(
+                Path=path,
+                UserName=user_name,
+                UserId=user_id,
+                Arn=user_arn,
+                CreateDate=datetime.now(tz=UTC),
             )
-        return response
+
+            if tags:
+                user["Tags"] = tags
+            if permissions_boundary:
+                user["PermissionsBoundary"] = AttachedPermissionsBoundary(
+                    PermissionsBoundaryType="Policy",
+                    PermissionsBoundaryArn=permissions_boundary,
+                )
+
+            # Create user entity and store
+            user_entity = UserEntity(user=user)
+            store.USERS[user_name] = user_entity
+
+        return CreateUserResponse(User=User(user))
 
     def get_user(
         self, context: RequestContext, user_name: existingUserNameType = None, **kwargs
     ) -> GetUserResponse:
-        response = call_moto(context=context)
-        moto_user_name = response["User"]["UserName"]
-        moto_user = get_iam_backend(context).users.get(moto_user_name)
-        # if the user does not exist or is no user
-        if not moto_user and not user_name:
+        store = self._get_store(context)
+
+        # Handle case where no username is provided (get current user)
+        if not user_name:
             access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
             sts_client = connect_to(
                 region_name=context.region,
@@ -1361,6 +1448,8 @@ class IamProvider(IamApi):
             ).sts
             caller_identity = sts_client.get_caller_identity()
             caller_arn = caller_identity["Arn"]
+
+            # Check if this is the root user
             if caller_arn.endswith(":root"):
                 return GetUserResponse(
                     User=User(
@@ -1370,33 +1459,323 @@ class IamProvider(IamApi):
                         PasswordLastUsed=datetime.now(),
                     )
                 )
+
+            # Try to extract username from ARN for IAM users
+            # ARN format: arn:aws:iam::123456789012:user/username
+            if ":user/" in caller_arn:
+                user_name = caller_arn.split(":user/")[-1].split("/")[-1]
             else:
-                raise CommonServiceException(
-                    "ValidationError",
+                raise ValidationError(
                     "Must specify userName when calling with non-User credentials",
                 )
 
-        if hasattr(moto_user, "permissions_boundary") and moto_user.permissions_boundary:
-            response["User"]["PermissionsBoundary"] = AttachedPermissionsBoundary(
-                PermissionsBoundaryArn=moto_user.permissions_boundary,
-                PermissionsBoundaryType="Policy",
-            )
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+            # Return a copy of the user
+            user = User(user_entity.user)
 
-        return response
+        return GetUserResponse(User=user)
+
+    def list_users(
+        self,
+        context: RequestContext,
+        path_prefix: pathPrefixType = None,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListUsersResponse:
+        store = self._get_store(context)
+
+        def _filter(user: User) -> bool:
+            if path_prefix:
+                return user.get("Path", "/").startswith(path_prefix)
+            return True
+
+        def _map_to_response(user_entity: UserEntity) -> User:
+            user = user_entity.user
+            # ListUsers response includes all user fields
+            list_user = User(
+                Path=user["Path"],
+                UserName=user["UserName"],
+                UserId=user["UserId"],
+                Arn=user["Arn"],
+                CreateDate=user["CreateDate"],
+            )
+            if permissions_boundary := user.get("PermissionsBoundary"):
+                list_user["PermissionsBoundary"] = permissions_boundary
+            if tags := user.get("Tags"):
+                list_user["Tags"] = tags
+            return list_user
+
+        # Sort users by UserName (case-insensitive, as AWS does)
+        with self._user_lock:
+            users = list(store.USERS.values())
+            sorted_users = sorted(users, key=lambda e: e.user.get("UserName", "").lower())
+
+            paginated_list = PaginatedList([_map_to_response(e) for e in sorted_users])
+
+        def _token_generator(user: User) -> str:
+            return user.get("UserName")
+
+        # Decode marker if provided (markers are base64-encoded)
+        if marker:
+            marker = base64.b64decode(marker).decode("utf-8")
+
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator,
+            next_token=marker,
+            page_size=max_items or 100,
+            filter_function=_filter,
+        )
+
+        if next_marker:
+            # Encode the marker as base64 to make it opaque
+            next_marker = base64.b64encode(next_marker.encode("utf-8")).decode("utf-8")
+            return ListUsersResponse(Users=result, IsTruncated=True, Marker=next_marker)
+        else:
+            return ListUsersResponse(Users=result, IsTruncated=False)
+
+    def update_user(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        new_path: pathType = None,
+        new_user_name: userNameType = None,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Check if new username already exists (if renaming)
+            if new_user_name and new_user_name != user_name and new_user_name in store.USERS:
+                raise EntityAlreadyExistsException(
+                    f"User with name {new_user_name} already exists."
+                )
+
+            # Update path if provided
+            if new_path is not None:
+                user_entity.user["Path"] = new_path
+                # Update ARN with new path
+                user_entity.user["Arn"] = self._build_user_arn(
+                    context, new_path, new_user_name or user_name
+                )
+
+            # Update username if provided
+            if new_user_name and new_user_name != user_name:
+                # Update ARN with new username
+                path = user_entity.user.get("Path", "/")
+                user_entity.user["Arn"] = self._build_user_arn(context, path, new_user_name)
+                user_entity.user["UserName"] = new_user_name
+                # Move to new key in store
+                del store.USERS[user_name]
+                store.USERS[new_user_name] = user_entity
 
     def delete_user(
         self, context: RequestContext, user_name: existingUserNameType, **kwargs
     ) -> None:
-        moto_user = get_iam_backend(context).users.get(user_name)
-        if moto_user and moto_user.service_specific_credentials:
-            LOG.info(
-                "Cannot delete user '%s' because service specific credentials are still present.",
-                user_name,
+        store = self._get_store(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Check if user has attached managed policies
+            if user_entity.attached_policy_arns:
+                raise DeleteConflictException(
+                    "Cannot delete entity, must detach all policies first."
+                )
+
+            # Check if user has inline policies
+            if user_entity.inline_policies:
+                raise DeleteConflictException("Cannot delete entity, must delete policies first.")
+
+            # Delete the user from native store
+            del store.USERS[user_name]
+
+    # ------------------------------ User Login Profile Operations ------------------------------ #
+
+    def create_login_profile(
+        self,
+        context: RequestContext,
+        user_name: userNameType | None = None,
+        password: passwordType | None = None,
+        password_reset_required: booleanType | None = None,
+        **kwargs,
+    ) -> CreateLoginProfileResponse:
+        store = self._get_store(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Check if login profile already exists
+            if user_entity.login_profile is not None:
+                raise EntityAlreadyExistsException(
+                    f"Login Profile for user {user_name} already exists."
+                )
+
+            # Create the login profile
+            login_profile = LoginProfile(
+                UserName=user_name,
+                CreateDate=datetime.now(tz=UTC),
+                PasswordResetRequired=password_reset_required or False,
             )
-            raise DeleteConflictException(
-                "Cannot delete entity, must remove referenced objects first."
+
+            # Store login profile and password
+            user_entity.login_profile = login_profile
+            user_entity.password = password
+
+        return CreateLoginProfileResponse(LoginProfile=login_profile)
+
+    def get_login_profile(
+        self, context: RequestContext, user_name: userNameType | None = None, **kwargs
+    ) -> GetLoginProfileResponse:
+        store = self._get_store(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Check if login profile exists
+            if user_entity.login_profile is None:
+                raise NoSuchEntityException(f"Login Profile for User {user_name} cannot be found.")
+
+            # Return a copy of the login profile
+            login_profile = LoginProfile(user_entity.login_profile)
+
+        return GetLoginProfileResponse(LoginProfile=login_profile)
+
+    def update_login_profile(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        password: passwordType = None,
+        password_reset_required: booleanObjectType = None,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Check if login profile exists
+            if user_entity.login_profile is None:
+                raise NoSuchEntityException(f"Login Profile for User {user_name} cannot be found.")
+
+            # Update password if provided
+            if password is not None:
+                user_entity.password = password
+
+            # Update PasswordResetRequired if provided
+            if password_reset_required is not None:
+                user_entity.login_profile["PasswordResetRequired"] = password_reset_required
+
+    def delete_login_profile(
+        self, context: RequestContext, user_name: userNameType | None = None, **kwargs
+    ) -> None:
+        store = self._get_store(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Check if login profile exists
+            if user_entity.login_profile is None:
+                raise NoSuchEntityException(f"Login Profile for User {user_name} cannot be found.")
+
+            # Delete the login profile
+            user_entity.login_profile = None
+            user_entity.password = None
+
+    # ------------------------------ User Inline Policy Operations ------------------------------ #
+
+    def put_user_policy(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        policy_name: policyNameType,
+        policy_document: policyDocumentType,
+        **kwargs,
+    ) -> None:
+        # Validate policy document
+        validator = IAMPolicyDocumentValidator(policy_document)
+        validator.validate()
+
+        store = self._get_store(context)
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+            # Always quote policies for consistency
+            user_entity.inline_policies[policy_name] = quote(policy_document)
+
+    def get_user_policy(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        policy_name: policyNameType,
+        **kwargs,
+    ) -> GetUserPolicyResponse:
+        store = self._get_store(context)
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            policy_document = user_entity.inline_policies.get(policy_name)
+            if policy_document is None:
+                raise NoSuchEntityException(
+                    f"The user policy with name {policy_name} cannot be found."
+                )
+
+        return GetUserPolicyResponse(
+            UserName=user_name,
+            PolicyName=policy_name,
+            PolicyDocument=policy_document,
+        )
+
+    def list_user_policies(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListUserPoliciesResponse:
+        store = self._get_store(context)
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+            policy_names = sorted(user_entity.inline_policies.keys())
+
+        paginated_list = PaginatedList(policy_names)
+
+        def _token_generator(name: str) -> str:
+            return name
+
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator,
+            next_token=marker,
+            page_size=max_items or 100,
+        )
+
+        if next_marker:
+            return ListUserPoliciesResponse(
+                PolicyNames=result, IsTruncated=True, Marker=next_marker
             )
-        return call_moto(context=context)
+        else:
+            return ListUserPoliciesResponse(PolicyNames=result, IsTruncated=False)
+
+    def delete_user_policy(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        policy_name: policyNameType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            if policy_name not in user_entity.inline_policies:
+                raise NoSuchEntityException(
+                    f"The user policy with name {policy_name} cannot be found."
+                )
+
+            del user_entity.inline_policies[policy_name]
 
     def attach_role_policy(
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
@@ -1406,9 +1785,7 @@ class IamProvider(IamApi):
             raise ValidationError(f"ARN {policy_arn} is not valid.")
 
         store = self._get_store(context)
-        partition = get_partition(context.region)
-        aws_managed_prefix = f"arn:{partition}:iam::aws:policy/"
-        is_aws_managed = policy_arn.startswith(aws_managed_prefix)
+        is_aws_managed = self._is_managed_policy(policy_arn)
 
         with self._role_lock, self._policy_lock:
             role_entity = self._get_role_entity(store, role_name)
@@ -1432,9 +1809,6 @@ class IamProvider(IamApi):
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
     ) -> None:
         store = self._get_store(context)
-        partition = get_partition(context.region)
-        aws_managed_prefix = f"arn:{partition}:iam::aws:policy/"
-        is_aws_managed = policy_arn.startswith(aws_managed_prefix)
 
         with self._role_lock, self._policy_lock:
             role_entity = self._get_role_entity(store, role_name)
@@ -1447,7 +1821,7 @@ class IamProvider(IamApi):
             role_entity.attached_policy_arns.remove(policy_arn)
 
             # Update AttachmentCount for customer-managed policies
-            if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
+            if not self._is_managed_policy(policy_arn) and policy_arn in store.MANAGED_POLICIES:
                 policy_entity = store.MANAGED_POLICIES[policy_arn]
                 policy_entity.policy["AttachmentCount"] -= 1
 
@@ -1531,12 +1905,192 @@ class IamProvider(IamApi):
             role_entity = self._get_role_entity(store, role_name)
             role_entity.role.pop("PermissionsBoundary", None)
 
+    # ------------------------------ User Managed Policy Operations ------------------------------ #
+
     def attach_user_policy(
         self, context: RequestContext, user_name: userNameType, policy_arn: arnType, **kwargs
     ) -> None:
+        # Validate ARN format
         if not POLICY_ARN_REGEX.match(policy_arn):
-            raise ValidationError("Invalid ARN:  Could not be parsed!")
-        return call_moto(context=context)
+            raise ValidationError(f"ARN {policy_arn} is not valid.")
+
+        store = self._get_store(context)
+        is_aws_managed = self._is_managed_policy(policy_arn)
+
+        with self._user_lock, self._policy_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Check if policy exists (for customer-managed policies only)
+            if not is_aws_managed and policy_arn not in store.MANAGED_POLICIES:
+                raise NoSuchEntityException(
+                    f"Policy {policy_arn} does not exist or is not attachable."
+                )
+
+            # Add policy if not already attached (idempotent)
+            if policy_arn not in user_entity.attached_policy_arns:
+                user_entity.attached_policy_arns.append(policy_arn)
+
+                # Update AttachmentCount for customer-managed policies
+                if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
+                    policy_entity = store.MANAGED_POLICIES[policy_arn]
+                    policy_entity.policy["AttachmentCount"] += 1
+
+    def detach_user_policy(
+        self, context: RequestContext, user_name: userNameType, policy_arn: arnType, **kwargs
+    ) -> None:
+        store = self._get_store(context)
+        is_aws_managed = self._is_managed_policy(policy_arn)
+
+        with self._user_lock, self._policy_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Check if policy is attached
+            if policy_arn not in user_entity.attached_policy_arns:
+                raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+
+            # Remove the policy
+            user_entity.attached_policy_arns.remove(policy_arn)
+
+            # Update AttachmentCount for customer-managed policies
+            if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
+                policy_entity = store.MANAGED_POLICIES[policy_arn]
+                policy_entity.policy["AttachmentCount"] -= 1
+
+    def list_attached_user_policies(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        path_prefix: pathPrefixType = None,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListAttachedUserPoliciesResponse:
+        store = self._get_store(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Build list of attached policies
+            attached_policies: list[AttachedPolicy] = []
+            for policy_arn in user_entity.attached_policy_arns:
+                # Extract policy name from ARN
+                policy_name = policy_arn.split("/")[-1]
+                policy_path = "/" + "/".join(policy_arn.split("/")[:-1]).split(":policy/")[-1]
+                if policy_path == "/":
+                    policy_path = "/"
+
+                # Filter by path_prefix if provided
+                if path_prefix and not policy_path.startswith(path_prefix):
+                    continue
+
+                attached_policies.append(
+                    AttachedPolicy(PolicyName=policy_name, PolicyArn=policy_arn)
+                )
+
+        # Sort by policy name (case-insensitive, as AWS does)
+        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower())
+
+        paginated_list = PaginatedList(attached_policies)
+
+        def _token_generator(policy: AttachedPolicy) -> str:
+            return policy.get("PolicyName", "")
+
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator,
+            next_token=marker,
+            page_size=max_items or 100,
+        )
+
+        if next_marker:
+            return ListAttachedUserPoliciesResponse(
+                AttachedPolicies=result, IsTruncated=True, Marker=next_marker
+            )
+        else:
+            return ListAttachedUserPoliciesResponse(AttachedPolicies=result, IsTruncated=False)
+
+    # ------------------------------ User Tag Operations ------------------------------ #
+
+    def tag_user(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        tags: tagListType,
+        **kwargs,
+    ) -> None:
+        self._validate_tags(tags, case_sensitive=False)
+
+        store = self._get_store(context)
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Initialize tags if not present
+            if "Tags" not in user_entity.user or user_entity.user["Tags"] is None:
+                user_entity.user["Tags"] = []
+
+            # Merge tags - update existing keys, add new ones, case-insensitive
+            existing_keys = {
+                tag["Key"].lower(): i for i, tag in enumerate(user_entity.user["Tags"])
+            }
+            for tag in tags:
+                key = tag["Key"].lower()
+                if key in existing_keys:
+                    user_entity.user["Tags"][existing_keys[key]] = tag
+                else:
+                    user_entity.user["Tags"].append(tag)
+
+    def untag_user(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        tag_keys: tagKeyListType,
+        **kwargs,
+    ) -> None:
+        self._validate_tag_keys(tag_keys)
+
+        store = self._get_store(context)
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            if "Tags" in user_entity.user and user_entity.user["Tags"]:
+                # Remove tags with matching keys (case-insensitive)
+                tag_keys_set = {key.lower() for key in tag_keys}
+                user_entity.user["Tags"] = [
+                    tag
+                    for tag in user_entity.user["Tags"]
+                    if tag["Key"].lower() not in tag_keys_set
+                ]
+
+    def list_user_tags(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListUserTagsResponse:
+        store = self._get_store(context)
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+            tags = list(user_entity.user.get("Tags") or [])
+
+        paginated_list = PaginatedList(tags)
+
+        def _token_generator(tag: Tag) -> str:
+            return tag.get("Key")
+
+        # base64 encode/decode to avoid plaintext tag as marker
+        if marker:
+            marker = base64.b64decode(marker).decode("utf-8")
+
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator, next_token=marker, page_size=max_items or 100
+        )
+
+        if next_marker:
+            next_marker = base64.b64encode(next_marker.encode("utf-8")).decode("utf-8")
+            return ListUserTagsResponse(Tags=result, IsTruncated=True, Marker=next_marker)
+        else:
+            return ListUserTagsResponse(Tags=result, IsTruncated=False)
 
     # ------------------------------ Service specific credentials ------------------------------ #
 
