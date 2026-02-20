@@ -21,6 +21,7 @@ from localstack.aws.api.iam import (
     AttachedPermissionsBoundary,
     AttachedPolicy,
     CreateGroupResponse,
+    CreateInstanceProfileResponse,
     CreateLoginProfileResponse,
     CreateOpenIDConnectProviderResponse,
     CreatePolicyResponse,
@@ -38,6 +39,7 @@ from localstack.aws.api.iam import (
     GetAccountPasswordPolicyResponse,
     GetGroupPolicyResponse,
     GetGroupResponse,
+    GetInstanceProfileResponse,
     GetLoginProfileResponse,
     GetOpenIDConnectProviderResponse,
     GetPolicyResponse,
@@ -51,6 +53,7 @@ from localstack.aws.api.iam import (
     GetUserResponse,
     Group,
     IamApi,
+    InstanceProfile,
     InvalidInputException,
     LimitExceededException,
     ListAttachedGroupPoliciesResponse,
@@ -59,6 +62,8 @@ from localstack.aws.api.iam import (
     ListGroupPoliciesResponse,
     ListGroupsForUserResponse,
     ListGroupsResponse,
+    ListInstanceProfilesForRoleResponse,
+    ListInstanceProfilesResponse,
     ListInstanceProfileTagsResponse,
     ListOpenIDConnectProvidersResponse,
     ListOpenIDConnectProviderTagsResponse,
@@ -150,6 +155,7 @@ from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.iam.models import (
     GroupEntity,
     IamStore,
+    InstanceProfileEntity,
     ManagedPolicyEntity,
     OIDCProvider,
     RoleEntity,
@@ -216,7 +222,9 @@ class IamProvider(IamApi):
     policy_simulator: IAMPolicySimulator
     _policy_lock: threading.Lock
     _role_lock: threading.Lock
+    _group_lock: threading.Lock
     _user_lock: threading.Lock
+    _instance_profile_lock: threading.Lock
 
     def __init__(self):
         apply_iam_patches()
@@ -225,6 +233,7 @@ class IamProvider(IamApi):
         self._role_lock = threading.Lock()
         self._group_lock = threading.Lock()
         self._user_lock = threading.Lock()
+        self._instance_profile_lock = threading.Lock()
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(iam_backends)
@@ -1639,45 +1648,6 @@ class IamProvider(IamApi):
         return ListAttachedGroupPoliciesResponse(
             AttachedPolicies=attached_policies, IsTruncated=False
         )
-
-    def list_instance_profile_tags(
-        self,
-        context: RequestContext,
-        instance_profile_name: instanceProfileNameType,
-        marker: markerType = None,
-        max_items: maxItemsType = None,
-        **kwargs,
-    ) -> ListInstanceProfileTagsResponse:
-        backend = get_iam_backend(context)
-        profile = backend.get_instance_profile(instance_profile_name)
-        response = ListInstanceProfileTagsResponse()
-        response["Tags"] = profile.tags
-        return response
-
-    def tag_instance_profile(
-        self,
-        context: RequestContext,
-        instance_profile_name: instanceProfileNameType,
-        tags: tagListType,
-        **kwargs,
-    ) -> None:
-        backend = get_iam_backend(context)
-        profile = backend.get_instance_profile(instance_profile_name)
-        new_keys = [tag["Key"] for tag in tags]
-        updated_tags = [tag for tag in profile.tags if tag["Key"] not in new_keys]
-        updated_tags.extend(tags)
-        profile.tags = updated_tags
-
-    def untag_instance_profile(
-        self,
-        context: RequestContext,
-        instance_profile_name: instanceProfileNameType,
-        tag_keys: tagKeyListType,
-        **kwargs,
-    ) -> None:
-        backend = get_iam_backend(context)
-        profile = backend.get_instance_profile(instance_profile_name)
-        profile.tags = [tag for tag in profile.tags if tag["Key"] not in tag_keys]
 
     def create_service_linked_role(
         self,
@@ -3392,3 +3362,337 @@ class IamProvider(IamApi):
             )
         else:
             return ListOpenIDConnectProviderTagsResponse(Tags=result, IsTruncated=False)
+
+    # ------------------------------ Instance Profile Operations ------------------------------ #
+
+    def _get_instance_profile_entity(
+        self, store: IamStore, instance_profile_name: str
+    ) -> InstanceProfileEntity:
+        """Gets the instance profile entity and raises the right exception if not found."""
+        entity = store.INSTANCE_PROFILES.get(instance_profile_name)
+        if not entity:
+            raise NoSuchEntityException(
+                f"Instance Profile {instance_profile_name} cannot be found."
+            )
+        return entity
+
+    def _generate_instance_profile_id(self, context: RequestContext) -> str:
+        """Generate an instance profile ID: AIPA + 17 random chars."""
+        return generate_iam_identifier(context.account_id, prefix="AIPA", total_length=21)
+
+    def _build_instance_profile_arn(
+        self, context: RequestContext, path: str, profile_name: str
+    ) -> str:
+        """Build the ARN for an instance profile."""
+        partition = get_partition(context.region)
+        # Remove leading slash from path if present to avoid double slashes
+        path_part = path.rstrip("/")
+        if path_part == "":
+            return f"arn:{partition}:iam::{context.account_id}:instance-profile/{profile_name}"
+        return (
+            f"arn:{partition}:iam::{context.account_id}:instance-profile{path_part}/{profile_name}"
+        )
+
+    def _build_role_for_instance_profile(self, role_entity: RoleEntity) -> Role:
+        """Build a Role object suitable for inclusion in an InstanceProfile response."""
+        role = role_entity.role
+        # Return a subset of role fields for instance profile responses
+        return Role(
+            Path=role.get("Path", "/"),
+            RoleName=role.get("RoleName"),
+            RoleId=role.get("RoleId"),
+            Arn=role.get("Arn"),
+            CreateDate=role.get("CreateDate"),
+            AssumeRolePolicyDocument=role.get("AssumeRolePolicyDocument"),
+        )
+
+    @handler("CreateInstanceProfile")
+    def create_instance_profile(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        path: pathType | None = None,
+        tags: tagListType | None = None,
+        **kwargs,
+    ) -> CreateInstanceProfileResponse:
+        store = self._get_store(context)
+        path = path or "/"
+
+        with self._instance_profile_lock:
+            # Check for duplicate
+            if instance_profile_name in store.INSTANCE_PROFILES:
+                raise EntityAlreadyExistsException(
+                    f"Instance Profile {instance_profile_name} already exists."
+                )
+
+            # Generate ID and ARN
+            profile_id = self._generate_instance_profile_id(context)
+            profile_arn = self._build_instance_profile_arn(context, path, instance_profile_name)
+
+            # Build the InstanceProfile object
+            instance_profile = InstanceProfile(
+                Path=path,
+                InstanceProfileName=instance_profile_name,
+                InstanceProfileId=profile_id,
+                Arn=profile_arn,
+                CreateDate=datetime.now(UTC),
+                Roles=[],
+            )
+
+            # Add tags if provided
+            if tags:
+                instance_profile["Tags"] = tags
+
+            # Store the entity
+            entity = InstanceProfileEntity(instance_profile=instance_profile)
+            store.INSTANCE_PROFILES[instance_profile_name] = entity
+
+        return CreateInstanceProfileResponse(InstanceProfile=instance_profile)
+
+    @handler("GetInstanceProfile")
+    def get_instance_profile(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        **kwargs,
+    ) -> GetInstanceProfileResponse:
+        store = self._get_store(context)
+
+        with self._instance_profile_lock:
+            entity = self._get_instance_profile_entity(store, instance_profile_name)
+            profile = entity.instance_profile.copy()
+
+            # Add role if attached
+            if entity.role_name:
+                role_entity = store.ROLES.get(entity.role_name)
+                if role_entity:
+                    profile["Roles"] = [self._build_role_for_instance_profile(role_entity)]
+                else:
+                    profile["Roles"] = []
+            else:
+                profile["Roles"] = []
+
+            # Ensure Tags is present (AWS always returns it)
+            if "Tags" not in profile:
+                profile["Tags"] = []
+
+        return GetInstanceProfileResponse(InstanceProfile=profile)
+
+    @handler("DeleteInstanceProfile")
+    def delete_instance_profile(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        with self._instance_profile_lock:
+            entity = self._get_instance_profile_entity(store, instance_profile_name)
+
+            # Check if profile has a role attached
+            if entity.role_name:
+                raise DeleteConflictException(
+                    "Cannot delete entity, must remove roles from instance profile first."
+                )
+
+            del store.INSTANCE_PROFILES[instance_profile_name]
+
+    @handler("ListInstanceProfiles")
+    def list_instance_profiles(
+        self,
+        context: RequestContext,
+        path_prefix: pathPrefixType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListInstanceProfilesResponse:
+        store = self._get_store(context)
+        path_prefix = path_prefix or "/"
+
+        with self._instance_profile_lock:
+            profiles = []
+            for entity in store.INSTANCE_PROFILES.values():
+                profile = entity.instance_profile
+                # Filter by path prefix
+                if not profile.get("Path", "/").startswith(path_prefix):
+                    continue
+
+                # Build response profile with role
+                response_profile = profile.copy()
+                if entity.role_name:
+                    role_entity = store.ROLES.get(entity.role_name)
+                    if role_entity:
+                        response_profile["Roles"] = [
+                            self._build_role_for_instance_profile(role_entity)
+                        ]
+                    else:
+                        response_profile["Roles"] = []
+                else:
+                    response_profile["Roles"] = []
+
+                profiles.append(response_profile)
+
+        # Sort by name for consistent ordering
+        profiles.sort(key=lambda p: p.get("InstanceProfileName", "").lower())
+
+        # TODO: Add pagination support
+        return ListInstanceProfilesResponse(InstanceProfiles=profiles, IsTruncated=False)
+
+    @handler("AddRoleToInstanceProfile")
+    def add_role_to_instance_profile(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        role_name: roleNameType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        with self._instance_profile_lock:
+            # Validate instance profile exists
+            entity = self._get_instance_profile_entity(store, instance_profile_name)
+
+            # Validate role exists
+            role_entity = store.ROLES.get(role_name)
+            if not role_entity:
+                raise NoSuchEntityException(f"The role with name {role_name} cannot be found.")
+
+            # Check if profile already has a role (AWS limits to 1 role per profile)
+            if entity.role_name:
+                raise LimitExceededException(
+                    "Cannot exceed quota for InstanceSessionsPerInstanceProfile: 1"
+                )
+
+            # Attach the role
+            entity.role_name = role_name
+
+    @handler("RemoveRoleFromInstanceProfile")
+    def remove_role_from_instance_profile(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        role_name: roleNameType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        with self._instance_profile_lock:
+            # Validate instance profile exists
+            entity = self._get_instance_profile_entity(store, instance_profile_name)
+
+            # Validate role exists
+            role_entity = store.ROLES.get(role_name)
+            if not role_entity:
+                raise NoSuchEntityException(f"The role with name {role_name} cannot be found.")
+
+            # Check if the role is actually attached to this profile
+            if entity.role_name != role_name:
+                raise NoSuchEntityException(
+                    f"Role {role_name} in Instance Profile {instance_profile_name} cannot be found."
+                )
+
+            # Remove the role
+            entity.role_name = None
+
+    @handler("ListInstanceProfilesForRole")
+    def list_instance_profiles_for_role(
+        self,
+        context: RequestContext,
+        role_name: roleNameType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListInstanceProfilesForRoleResponse:
+        store = self._get_store(context)
+
+        # Validate role exists
+        role_entity = store.ROLES.get(role_name)
+        if not role_entity:
+            raise NoSuchEntityException(f"The role with name {role_name} cannot be found.")
+
+        with self._instance_profile_lock:
+            profiles = []
+            for entity in store.INSTANCE_PROFILES.values():
+                if entity.role_name == role_name:
+                    response_profile = entity.instance_profile.copy()
+                    response_profile["Roles"] = [self._build_role_for_instance_profile(role_entity)]
+                    profiles.append(response_profile)
+
+        # Sort by name for consistent ordering
+        profiles.sort(key=lambda p: p.get("InstanceProfileName", "").lower())
+
+        # TODO: Add pagination support
+        return ListInstanceProfilesForRoleResponse(InstanceProfiles=profiles, IsTruncated=False)
+
+    @handler("TagInstanceProfile")
+    def tag_instance_profile(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        tags: tagListType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        with self._instance_profile_lock:
+            entity = self._get_instance_profile_entity(store, instance_profile_name)
+            profile = entity.instance_profile
+
+            # Initialize tags if not present
+            if "Tags" not in profile:
+                profile["Tags"] = []
+
+            existing_tags = profile["Tags"]
+
+            # Update or add tags
+            for new_tag in tags:
+                key = new_tag.get("Key")
+                # Check if tag with this key already exists
+                found = False
+                for existing_tag in existing_tags:
+                    if existing_tag.get("Key") == key:
+                        existing_tag["Value"] = new_tag.get("Value")
+                        found = True
+                        break
+                if not found:
+                    existing_tags.append(new_tag)
+
+    @handler("UntagInstanceProfile")
+    def untag_instance_profile(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        tag_keys: tagKeyListType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        with self._instance_profile_lock:
+            entity = self._get_instance_profile_entity(store, instance_profile_name)
+            profile = entity.instance_profile
+
+            if "Tags" not in profile:
+                return
+
+            # Remove tags with matching keys
+            profile["Tags"] = [tag for tag in profile["Tags"] if tag.get("Key") not in tag_keys]
+
+    @handler("ListInstanceProfileTags")
+    def list_instance_profile_tags(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListInstanceProfileTagsResponse:
+        store = self._get_store(context)
+
+        with self._instance_profile_lock:
+            entity = self._get_instance_profile_entity(store, instance_profile_name)
+            profile = entity.instance_profile
+            tags = profile.get("Tags", [])
+
+        # TODO: Add pagination support
+        return ListInstanceProfileTagsResponse(Tags=tags, IsTruncated=False)
