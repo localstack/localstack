@@ -1,17 +1,9 @@
-"""
-IAM Policy Document Validation.
-
-Ported from moto's policy validation to LocalStack.
-"""
-
 import json
 import re
 from typing import Any
 
 from localstack.aws.api.iam import MalformedPolicyDocumentException
-
-# Valid partitions for ARN validation
-PARTITION_NAMES = ["aws", "aws-cn", "aws-us-gov", "aws-iso", "aws-iso-b"]
+from localstack.utils.aws.arns import PARTITION_NAMES
 
 VALID_TOP_ELEMENTS = ["Version", "Id", "Statement", "Conditions"]
 
