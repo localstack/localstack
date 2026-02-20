@@ -1,8 +1,10 @@
 import base64
+import copy
 import hashlib
 import inspect
 import json
 import logging
+import os
 import random
 import re
 import string
@@ -165,6 +167,7 @@ from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY, TAG_KEY_CUSTOM_ID
 from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.iam.models import (
+    AwsManagedPolicy,
     GroupEntity,
     IamStore,
     InstanceProfileEntity,
@@ -182,11 +185,10 @@ from localstack.services.iam.resources.policy_simulator import (
     IAMPolicySimulator,
 )
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
-from localstack.services.iam.utils import (
-    generate_iam_identifier,
-)
+from localstack.services.iam.utils import generate_iam_identifier
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
-from localstack.utils.aws.arns import ARN_PARTITION_REGEX, get_partition
+from localstack.utils.aws.arns import ARN_PARTITION_REGEX, get_partition, parse_arn
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 from localstack.utils.collections import PaginatedList
 
@@ -207,6 +209,9 @@ TAG_KEY_REGEX = re.compile(r"^[\w\s_.:/=+\-@]+$")
 # AWS managed policy ARN regex
 AWS_MANAGED_POLICY_ARN_REGEX = re.compile(rf"{ARN_PARTITION_REGEX}:iam::aws:policy/")
 
+# Regex to normalize any AWS managed policy ARN to the "aws" partition for index lookup
+_AWS_MANAGED_ARN_NORMALIZE_RE = re.compile(r"^arn:[^:]+:iam::aws:policy/")
+
 # Maximum versions per policy
 MAX_POLICY_VERSIONS = 5
 
@@ -214,6 +219,65 @@ MAX_POLICY_VERSIONS = 5
 MAX_POLICY_TAGS = 50
 
 T = TypeVar("T")
+
+
+def _build_aws_managed_policy_cache() -> dict[str, ManagedPolicyEntity]:
+    """Parse the static managed-policy dataset and build an ARN-keyed lookup dict.
+
+    Keys are normalized ARNs of the form ``arn:aws:iam::aws:policy<Path><Name>``.
+    Each value is the raw data dict augmented with the ``PolicyName`` key.
+    """
+    with open(os.path.join(os.path.dirname(__file__), "resources/aws_managed_policies.json")) as f:
+        data: dict[str, dict] = json.load(f)
+    index: dict[str, ManagedPolicyEntity] = {}
+    for name, policy_data in data.items():
+        path: str = policy_data["Path"]
+        arn = f"arn:aws:iam::aws:policy{path}{name}"
+        policy = Policy(
+            PolicyName=name,
+            PolicyId=_generate_aws_managed_policy_id(name),
+            Arn=arn,
+            Path=path,
+            DefaultVersionId=policy_data["DefaultVersionId"],
+            AttachmentCount=0,
+            PermissionsBoundaryUsageCount=0,
+            IsAttachable=True,
+            CreateDate=datetime.fromisoformat(policy_data["CreateDate"]),
+            UpdateDate=datetime.fromisoformat(policy_data["UpdateDate"]),
+            Tags=[],
+        )
+        versions = {
+            policy_data["DefaultVersionId"]: PolicyVersion(
+                VersionId=policy_data["DefaultVersionId"],
+                Document=quote(json.dumps(policy_data["Document"])),
+                IsDefaultVersion=True,
+                CreateDate=datetime.fromisoformat(policy_data["UpdateDate"]),
+            )
+        }
+        index[arn] = ManagedPolicyEntity(
+            policy=policy,
+            versions=versions,
+        )
+    return index
+
+
+def _normalize_aws_managed_arn(arn: str) -> str:
+    """Return the canonical ``arn:aws:iam::aws:policy/...`` form of an AWS managed policy ARN.
+
+    This handles China (aws-cn) and GovCloud (aws-us-gov) partitions transparently.
+    """
+    return _AWS_MANAGED_ARN_NORMALIZE_RE.sub("arn:aws:iam::aws:policy/", arn)
+
+
+def _generate_aws_managed_policy_id(name: str) -> str:
+    """Generate a deterministic, stable PolicyId for an AWS managed policy.
+
+    The format mirrors real AWS IDs (``ANPA`` + 17 upper-hex chars).  The value
+    is derived from a SHA-256 hash of the policy name so it is consistent across
+    restarts without needing to be persisted.
+    """
+    hash_hex = hashlib.sha256(name.encode()).hexdigest()[:17].upper()
+    return f"ANPA{hash_hex}"
 
 
 class ValidationError(CommonServiceException):
@@ -227,17 +291,23 @@ class ValidationListError(ValidationError):
         super().__init__(message)
 
 
+class AccessDeniedError(CommonServiceException):
+    def __init__(self, message: str):
+        super().__init__("AccessDenied", message, 403, True)
+
+
 def get_iam_backend(context: RequestContext) -> IAMBackend:
     return iam_backends[context.account_id][context.partition]
 
 
-class IamProvider(IamApi):
+class IamProvider(IamApi, ServiceLifecycleHook):
     policy_simulator: IAMPolicySimulator
     _policy_lock: threading.Lock
     _role_lock: threading.Lock
     _group_lock: threading.Lock
     _user_lock: threading.Lock
     _instance_profile_lock: threading.Lock
+    _aws_managed_policy_cache: dict[str, ManagedPolicyEntity] | None
 
     def __init__(self):
         apply_iam_patches()
@@ -247,6 +317,10 @@ class IamProvider(IamApi):
         self._group_lock = threading.Lock()
         self._user_lock = threading.Lock()
         self._instance_profile_lock = threading.Lock()
+        self._aws_managed_policy_cache = None
+
+    def on_after_init(self):
+        self._aws_managed_policy_cache = _build_aws_managed_policy_cache()
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(iam_backends)
@@ -330,8 +404,15 @@ class IamProvider(IamApi):
         if ":policy/" not in permissions_boundary:
             raise InvalidInputException(f"ARN {permissions_boundary} is not valid.")
 
-        # Check if policy exists (for customer-managed policies)
-        if not self._is_managed_policy(permissions_boundary):
+        if self._is_managed_policy(permissions_boundary):
+            # Validate against the static AWS managed policy index
+            normalized_arn = _normalize_aws_managed_arn(permissions_boundary)
+            if normalized_arn not in self._aws_managed_policy_cache:
+                raise NoSuchEntityException(
+                    f"Scope ARN: {permissions_boundary} does not exist or is not attachable."
+                )
+        else:
+            # Customer-managed: must exist in the store
             store = self._get_store(context)
             if permissions_boundary not in store.MANAGED_POLICIES:
                 raise NoSuchEntityException(
@@ -797,6 +878,21 @@ class IamProvider(IamApi):
         """
         return bool(AWS_MANAGED_POLICY_ARN_REGEX.match(policy_arn))
 
+    def _get_aws_managed_policy(self, store: IamStore, policy_arn: str) -> ManagedPolicyEntity:
+        normalized_arn = _normalize_aws_managed_arn(policy_arn)
+        policy_entity = self._aws_managed_policy_cache.get(normalized_arn)
+        if not policy_entity:
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+        policy_entity = copy.copy(policy_entity)
+        policy_entity.policy = Policy(policy_entity.policy)
+        managed_policy_store_data = store.AWS_MANAGED_POLICIES.get(policy_arn)
+        policy_entity.policy["AttachmentCount"] = (
+            managed_policy_store_data.attachment_count if managed_policy_store_data else 0
+        )
+        # set the right partitions ARN in the return entity
+        policy_entity.policy["Arn"] = policy_arn
+        return policy_entity
+
     # ------------------------------ Role Helper Methods ------------------------------ #
 
     def _generate_role_id(self, context: RequestContext, tags: list[Tag] | None = None) -> str:
@@ -955,6 +1051,10 @@ class IamProvider(IamApi):
         self, context: RequestContext, policy_arn: arnType, **kwargs
     ) -> GetPolicyResponse:
         store = self._get_store(context)
+
+        if self._is_managed_policy(policy_arn):
+            policy = self._get_aws_managed_policy(store, policy_arn).policy
+            return GetPolicyResponse(Policy=policy)
         with self._policy_lock:
             policy_entity = self._get_policy_entity(store, policy_arn)
 
@@ -964,6 +1064,8 @@ class IamProvider(IamApi):
         return GetPolicyResponse(Policy=policy)
 
     def delete_policy(self, context: RequestContext, policy_arn: arnType, **kwargs) -> None:
+        if parse_arn(policy_arn)["account"] != context.account_id:
+            raise AccessDeniedError("Cannot delete policies outside your own account.")
         # TODO test deletion when attached to principals
         store = self._get_store(context)
         with self._policy_lock:
@@ -985,33 +1087,53 @@ class IamProvider(IamApi):
     ) -> ListPoliciesResponse:
         store = self._get_store(context)
 
-        def _map_to_list(policy: Policy) -> Policy:
-            result = Policy(policy)
-            if not result.get("Tags"):
-                result.pop("Tags", None)
-            return result
+        # Collect customer-managed ("Local") policies, sorted alphabetically
+        local_policies: list[Policy] = []
+        if scope != "AWS":
+            for entity in store.MANAGED_POLICIES.values():
+                policy = Policy(entity.policy)
+                if not policy.get("Tags"):
+                    policy.pop("Tags", None)
+                local_policies.append(policy)
+            local_policies.sort(key=lambda p: p.get("PolicyName", ""))
 
-        paginated_list = PaginatedList(
-            [_map_to_list(entity.policy) for entity in store.MANAGED_POLICIES.values()]
-        )
+        # Collect AWS-managed policies from the static index, sorted alphabetically
+        aws_policies: list[Policy] = []
+        if scope != "Local":
+            for normalized_arn, entry in self._aws_managed_policy_cache.items():
+                policy_arn = normalized_arn.replace("arn:aws:", f"arn:{context.partition}:")
+                aws_mp = store.AWS_MANAGED_POLICIES.get(policy_arn)
+                attachment_count = aws_mp.attachment_count if aws_mp else 0
+                policy = Policy(entry.policy)
+                policy["Arn"] = policy_arn
+                policy["AttachmentCount"] = attachment_count
+                # list_policies does not return Tags (unlike get_policy)
+                if not policy.get("Tags"):
+                    policy.pop("Tags", None)
+                aws_policies.append(policy)
+            aws_policies.sort(key=lambda p: p.get("PolicyName", ""))
 
-        def _filter(policy: Policy):
-            # Filter by scope - only "Local" customer-managed policies for now
-            if scope == "AWS":
-                return False
+        # For Scope=AWS or Scope=Local return a single sorted list.
+        # For Scope=All (default), place customer-managed policies first so they always appear
+        # on the first page regardless of alphabetical position relative to AWS managed names.
+        if scope == "AWS":
+            all_policies = aws_policies
+        elif scope == "Local":
+            all_policies = local_policies
+        else:
+            all_policies = local_policies + aws_policies
 
-            # Filter by path prefix
+        def _filter(policy: Policy) -> bool:
             if path_prefix and not policy.get("Path", "/").startswith(path_prefix):
                 return False
-
-            # Filter by attached
             if only_attached and policy.get("AttachmentCount", 0) == 0:
                 return False
             return True
 
-        def _token_generator(policy: Policy):
-            return policy.get("PolicyName")
+        def _token_generator(policy: Policy) -> str:
+            return policy.get("PolicyName", "")
 
+        paginated_list = PaginatedList(all_policies)
         result, next_marker = paginated_list.get_page(
             token_generator=_token_generator,
             next_token=marker,
@@ -1087,6 +1209,29 @@ class IamProvider(IamApi):
         version_id: policyVersionIdType,
         **kwargs,
     ) -> GetPolicyVersionResponse:
+        # Validate version ID format (AWS returns ValidationError for malformed IDs)
+        if not VERSION_ID_REGEX.match(version_id):
+            raise ValidationError(
+                "1 validation error detected: Value at 'versionId' failed to satisfy constraint: "
+                r"Member must satisfy regular expression pattern: v[1-9][0-9]*(\.[A-Za-z0-9-]*)?"
+            )
+
+        if self._is_managed_policy(policy_arn):
+            normalized_arn = _normalize_aws_managed_arn(policy_arn)
+            entry = self._aws_managed_policy_cache.get(normalized_arn)
+            if not entry:
+                raise NoSuchEntityException(
+                    f"Policy {policy_arn} version {version_id} does not exist or is not attachable."
+                )
+            version = entry.versions.get(version_id)
+            # Only the current default version is available in the static dataset
+            if not version:
+                raise NoSuchEntityException(
+                    f"Policy {policy_arn} version {version_id} does not exist or is not attachable."
+                )
+            version = PolicyVersion(version)
+            return GetPolicyVersionResponse(PolicyVersion=version)
+
         store = self._get_store(context)
         with self._policy_lock:
             policy_entity = store.MANAGED_POLICIES.get(policy_arn)
@@ -1114,7 +1259,11 @@ class IamProvider(IamApi):
     ) -> ListPolicyVersionsResponse:
         store = self._get_store(context)
         with self._policy_lock:
-            policy_entity = self._get_policy_entity(store, policy_arn)
+            if self._is_managed_policy(policy_arn):
+                policy_entity = self._get_aws_managed_policy(store, policy_arn)
+            else:
+                policy_entity = self._get_policy_entity(store, policy_arn)
+
             # Sort versions by version ID descending (most recent first)
             sorted_versions = sorted(
                 policy_entity.versions.values(),
@@ -1141,6 +1290,10 @@ class IamProvider(IamApi):
         version_id: policyVersionIdType,
         **kwargs,
     ) -> None:
+        if parse_arn(policy_arn)["account"] != context.account_id:
+            raise AccessDeniedError(
+                "Cannot delete policy versions for policies outside your own account."
+            )
         store = self._get_store(context)
         with self._policy_lock:
             policy_entity = self._get_policy_entity(store, policy_arn)
@@ -1170,6 +1323,9 @@ class IamProvider(IamApi):
                 "1 validation error detected: Value at 'versionId' failed to satisfy constraint: "
                 r"Member must satisfy regular expression pattern: v[1-9][0-9]*(\.[A-Za-z0-9-]*)?"
             )
+
+        if parse_arn(policy_arn)["account"] != context.account_id:
+            raise AccessDeniedError("Cannot update policies outside your own account.")
 
         store = self._get_store(context)
         with self._policy_lock:
@@ -2202,18 +2358,31 @@ class IamProvider(IamApi):
         with self._role_lock, self._policy_lock:
             role_entity = self._get_role_entity(store, role_name)
 
-            # Check if policy exists (for customer-managed policies only)
-            if not is_aws_managed and policy_arn not in store.MANAGED_POLICIES:
-                raise NoSuchEntityException(
-                    f"Policy {policy_arn} does not exist or is not attachable."
-                )
+            if is_aws_managed:
+                # Validate that the AWS managed policy actually exists in the static index
+                normalized_arn = _normalize_aws_managed_arn(policy_arn)
+                if normalized_arn not in self._aws_managed_policy_cache:
+                    raise NoSuchEntityException(
+                        f"Policy {policy_arn} does not exist or is not attachable."
+                    )
+            else:
+                # Customer-managed: must exist in the store
+                if policy_arn not in store.MANAGED_POLICIES:
+                    raise NoSuchEntityException(
+                        f"Policy {policy_arn} does not exist or is not attachable."
+                    )
 
             # Add policy if not already attached (idempotent)
             if policy_arn not in role_entity.attached_policy_arns:
                 role_entity.attached_policy_arns.append(policy_arn)
 
-                # Update AttachmentCount for customer-managed policies
-                if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
+                if is_aws_managed:
+                    # Track attachment count for AWS managed policies
+                    if normalized_arn not in store.AWS_MANAGED_POLICIES:
+                        store.AWS_MANAGED_POLICIES[normalized_arn] = AwsManagedPolicy()
+                    store.AWS_MANAGED_POLICIES[normalized_arn].attachment_count += 1
+                else:
+                    # Update AttachmentCount for customer-managed policies
                     policy_entity = store.MANAGED_POLICIES[policy_arn]
                     policy_entity.policy["AttachmentCount"] += 1
 
@@ -2221,6 +2390,7 @@ class IamProvider(IamApi):
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
     ) -> None:
         store = self._get_store(context)
+        is_aws_managed = self._is_managed_policy(policy_arn)
 
         with self._role_lock, self._policy_lock:
             role_entity = self._get_role_entity(store, role_name)
@@ -2232,10 +2402,18 @@ class IamProvider(IamApi):
             # Remove the policy
             role_entity.attached_policy_arns.remove(policy_arn)
 
-            # Update AttachmentCount for customer-managed policies
-            if not self._is_managed_policy(policy_arn) and policy_arn in store.MANAGED_POLICIES:
-                policy_entity = store.MANAGED_POLICIES[policy_arn]
-                policy_entity.policy["AttachmentCount"] -= 1
+            if is_aws_managed:
+                # Decrement attachment count for AWS managed policies
+                normalized_arn = _normalize_aws_managed_arn(policy_arn)
+                if normalized_arn in store.AWS_MANAGED_POLICIES:
+                    store.AWS_MANAGED_POLICIES[normalized_arn].attachment_count -= 1
+                    if store.AWS_MANAGED_POLICIES[normalized_arn].attachment_count <= 0:
+                        del store.AWS_MANAGED_POLICIES[normalized_arn]
+            else:
+                # Update AttachmentCount for customer-managed policies
+                if policy_arn in store.MANAGED_POLICIES:
+                    policy_entity = store.MANAGED_POLICIES[policy_arn]
+                    policy_entity.policy["AttachmentCount"] -= 1
 
     def list_attached_role_policies(
         self,
@@ -2332,18 +2510,31 @@ class IamProvider(IamApi):
         with self._user_lock, self._policy_lock:
             user_entity = self._get_user_entity(store, user_name)
 
-            # Check if policy exists (for customer-managed policies only)
-            if not is_aws_managed and policy_arn not in store.MANAGED_POLICIES:
-                raise NoSuchEntityException(
-                    f"Policy {policy_arn} does not exist or is not attachable."
-                )
+            if is_aws_managed:
+                # Validate that the AWS managed policy actually exists in the static index
+                normalized_arn = _normalize_aws_managed_arn(policy_arn)
+                if normalized_arn not in self._aws_managed_policy_cache:
+                    raise NoSuchEntityException(
+                        f"Policy {policy_arn} does not exist or is not attachable."
+                    )
+            else:
+                # Customer-managed: must exist in the store
+                if policy_arn not in store.MANAGED_POLICIES:
+                    raise NoSuchEntityException(
+                        f"Policy {policy_arn} does not exist or is not attachable."
+                    )
 
             # Add policy if not already attached (idempotent)
             if policy_arn not in user_entity.attached_policy_arns:
                 user_entity.attached_policy_arns.append(policy_arn)
 
-                # Update AttachmentCount for customer-managed policies
-                if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
+                if is_aws_managed:
+                    # Track attachment count for AWS managed policies
+                    if normalized_arn not in store.AWS_MANAGED_POLICIES:
+                        store.AWS_MANAGED_POLICIES[normalized_arn] = AwsManagedPolicy()
+                    store.AWS_MANAGED_POLICIES[normalized_arn].attachment_count += 1
+                else:
+                    # Update AttachmentCount for customer-managed policies
                     policy_entity = store.MANAGED_POLICIES[policy_arn]
                     policy_entity.policy["AttachmentCount"] += 1
 
@@ -2363,10 +2554,18 @@ class IamProvider(IamApi):
             # Remove the policy
             user_entity.attached_policy_arns.remove(policy_arn)
 
-            # Update AttachmentCount for customer-managed policies
-            if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
-                policy_entity = store.MANAGED_POLICIES[policy_arn]
-                policy_entity.policy["AttachmentCount"] -= 1
+            if is_aws_managed:
+                # Decrement attachment count for AWS managed policies
+                normalized_arn = _normalize_aws_managed_arn(policy_arn)
+                if normalized_arn in store.AWS_MANAGED_POLICIES:
+                    store.AWS_MANAGED_POLICIES[normalized_arn].attachment_count -= 1
+                    if store.AWS_MANAGED_POLICIES[normalized_arn].attachment_count <= 0:
+                        del store.AWS_MANAGED_POLICIES[normalized_arn]
+            else:
+                # Update AttachmentCount for customer-managed policies
+                if policy_arn in store.MANAGED_POLICIES:
+                    policy_entity = store.MANAGED_POLICIES[policy_arn]
+                    policy_entity.policy["AttachmentCount"] -= 1
 
     def list_attached_user_policies(
         self,
