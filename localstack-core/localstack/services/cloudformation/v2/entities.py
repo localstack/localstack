@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import NotRequired, TypedDict
 
@@ -203,6 +204,15 @@ class ChangeSetRequestPayload(TypedDict, total=False):
     ChangeSetType: NotRequired[ChangeSetType]
 
 
+@dataclass
+class UpdateModelInputs:
+    before_template: dict | None
+    after_template: dict | None
+    before_parameters: dict | None
+    after_parameters: dict | None
+    previous_update_model: UpdateModel | None = None
+
+
 class ChangeSet:
     change_set_name: str
     change_set_id: str
@@ -266,49 +276,44 @@ class ChangeSet:
     def region_name(self) -> str:
         return self.stack.region_name
 
-    def compute_update_model(
-        self,
-        before_template: dict | None,
-        after_template: dict | None,
-        before_parameters: dict | None,
-        after_parameters: dict | None,
-        previous_update_model: UpdateModel | None = None,
-    ):
+    def compute_update_model(self, inputs: UpdateModelInputs):
         resolved_parameters = None
-        if after_parameters is not None:
+        if inputs.after_parameters is not None:
             resolved_parameters = resolve_parameters(
-                after_template,
-                after_parameters,
+                inputs.after_template,
+                inputs.after_parameters,
                 self.account_id,
                 self.region_name,
-                before_parameters,
+                inputs.before_parameters,
             )
 
         self.resolved_parameters = resolved_parameters or {}
 
         # Create and preprocess the update graph for this template update.
         change_set_model = ChangeSetModel(
-            before_template=before_template,
-            after_template=after_template,
-            before_parameters=before_parameters,
+            before_template=inputs.before_template,
+            after_template=inputs.after_template,
+            before_parameters=inputs.before_parameters,
             after_parameters=resolved_parameters,
         )
         raw_update_model: UpdateModel = change_set_model.get_update_model()
         # If there exists an update model which operated in the 'before' version of this change set,
         # port the runtime values computed for the before version into this latest update model.
-        if previous_update_model:
+        if inputs.previous_update_model:
             raw_update_model.before_runtime_cache.clear()
-            raw_update_model.before_runtime_cache.update(previous_update_model.after_runtime_cache)
+            raw_update_model.before_runtime_cache.update(
+                inputs.previous_update_model.after_runtime_cache
+            )
         self.update_model = raw_update_model
 
         # Apply global transforms.
         # TODO: skip this process iff both versions of the template don't specify transform blocks.
         change_set_model_transform = ChangeSetModelTransform(
             change_set=self,
-            before_parameters=before_parameters,
+            before_parameters=inputs.before_parameters,
             after_parameters=resolved_parameters,
-            before_template=before_template,
-            after_template=after_template,
+            before_template=inputs.before_template,
+            after_template=inputs.after_template,
         )
         try:
             transformed_before_template, transformed_after_template = (
@@ -325,7 +330,7 @@ class ChangeSet:
         change_set_model = ChangeSetModel(
             before_template=transformed_before_template,
             after_template=transformed_after_template,
-            before_parameters=before_parameters,
+            before_parameters=inputs.before_parameters,
             after_parameters=resolved_parameters,
         )
         update_model = change_set_model.get_update_model()
