@@ -552,7 +552,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_role_managed_policy_errors": {
-    "recorded-date": "11-02-2026, 17:02:18",
+    "recorded-date": "19-02-2026, 14:15:19",
     "recorded-content": {
       "create-policy": {
         "Policy": {
@@ -614,6 +614,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "delete-attached-policy-error": {
+        "Error": {
+          "Code": "DeleteConflict",
+          "Message": "Cannot delete a policy attached to entities.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
         }
       }
     }
@@ -761,7 +772,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleTags::test_role_tag_operations": {
-    "recorded-date": "11-02-2026, 17:35:28",
+    "recorded-date": "19-02-2026, 13:14:09",
     "recorded-content": {
       "get-role-no-tags": {
         "Role": {
@@ -894,6 +905,32 @@
       "list-role-tags-empty": {
         "IsTruncated": false,
         "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-role-tags-before-casing-update": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "somekey",
+            "Value": "somevalue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-role-tags-after-casing-update": {
+        "IsTruncated": false,
+        "Tags": [
+          {
+            "Key": "Somekey",
+            "Value": "updatedvalue"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2143,7 +2180,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_roles.py::TestRoleManagedPolicies::test_attach_detach_aws_managed_policy_role": {
-    "recorded-date": "16-02-2026, 15:40:29",
+    "recorded-date": "19-02-2026, 14:14:22",
     "recorded-content": {
       "list-attached-2": {
         "AttachedPolicies": [
