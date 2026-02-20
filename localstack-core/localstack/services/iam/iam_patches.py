@@ -5,7 +5,6 @@ from moto.iam.models import (
     AWSManagedPolicy,
     IAMBackend,
     InlinePolicy,
-    Policy,
     User,
 )
 from moto.iam.models import Role as MotoRole
@@ -78,25 +77,6 @@ def apply_iam_patches():
 
     if "Principal" not in VALID_STATEMENT_ELEMENTS:
         VALID_STATEMENT_ELEMENTS.append("Principal")
-
-    # patch policy __init__ to set document as attribute
-
-    @patch(Policy.__init__)
-    def policy__init__(
-        fn,
-        self,
-        name,
-        account_id,
-        region,
-        default_version_id=None,
-        description=None,
-        document=None,
-        **kwargs,
-    ):
-        fn(self, name, account_id, region, default_version_id, description, document, **kwargs)
-        self.document = document
-        if "tags" in kwargs and TAG_KEY_CUSTOM_ID in kwargs["tags"]:
-            self.id = kwargs["tags"][TAG_KEY_CUSTOM_ID]["Value"]
 
     @patch(IAMBackend.create_role)
     def iam_backend_create_role(
