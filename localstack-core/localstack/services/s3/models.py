@@ -91,7 +91,7 @@ from localstack.services.stores import (
     LocalAttribute,
 )
 from localstack.utils.aws import arns
-from localstack.utils.tagging import TaggingService
+from localstack.utils.tagging import Tags
 
 LOG = logging.getLogger(__name__)
 
@@ -763,9 +763,10 @@ class S3Store(BaseStore):
     buckets: dict[BucketName, S3Bucket] = CrossRegionAttribute(default=dict)
     global_bucket_map: dict[BucketName, AccountId] = CrossAccountAttribute(default=dict)
     aws_managed_kms_key_id: SSEKMSKeyId = LocalAttribute(default=str)
+    tags: Tags = CrossAccountAttribute(default=Tags)
 
-    # static tagging service instance
-    TAGS: TaggingService = CrossAccountAttribute(default=TaggingService)
+    # Keep object tags separate since they aren't supported by RGTA and are stored using a unique key instead of ARN.
+    object_tags: Tags = CrossAccountAttribute(default=Tags)
 
 
 class BucketCorsIndex:
