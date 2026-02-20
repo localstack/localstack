@@ -492,15 +492,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
     @staticmethod
     def _create_object_tags(store: S3Store, key_id: str, tags: dict[str, str]):
-        store.object_tags.update_tags(key_id, tags)
+        store.tags.update_tags(key_id, tags)
 
     @staticmethod
     def _remove_all_object_tags(store: S3Store, key_id: str):
-        store.object_tags.delete_all_tags(key_id)
+        store.tags.delete_all_tags(key_id)
 
     @staticmethod
     def _list_object_tags(store: S3Store, key_id: str) -> dict[str, str]:
-        return store.object_tags.get_tags(key_id)
+        return store.tags.get_tags(key_id)
 
     @staticmethod
     def get_store(account_id: str, region_name: str) -> S3Store:

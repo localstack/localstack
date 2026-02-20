@@ -765,9 +765,6 @@ class S3Store(BaseStore):
     aws_managed_kms_key_id: SSEKMSKeyId = LocalAttribute(default=str)
     tags: Tags = CrossAccountAttribute(default=Tags)
 
-    # Keep object tags separate since they aren't supported by RGTA and are stored using a unique key instead of ARN.
-    object_tags: Tags = CrossAccountAttribute(default=Tags)
-
 
 class BucketCorsIndex:
     def __init__(self):
