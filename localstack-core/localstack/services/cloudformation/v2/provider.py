@@ -83,9 +83,6 @@ from localstack.aws.api.cloudformation import (
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
-from localstack.services.cloudformation.engine.v2.change_set_model import (
-    UpdateModel,
-)
 from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
     ChangeSetModelDescriber,
 )
@@ -108,6 +105,7 @@ from localstack.services.cloudformation.v2.entities import (
     Stack,
     StackInstance,
     StackSet,
+    UpdateModelInputs,
 )
 from localstack.services.cloudformation.v2.types import EngineParameter
 from localstack.services.plugins import ServiceLifecycleHook
@@ -236,19 +234,9 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
     def _setup_change_set_model(
         cls,
         change_set: ChangeSet,
-        before_template: dict | None,
-        after_template: dict | None,
-        before_parameters: dict | None,
-        after_parameters: dict | None,
-        previous_update_model: UpdateModel | None = None,
+        inputs: UpdateModelInputs,
     ):
-        change_set.compute_update_model(
-            before_template,
-            after_template,
-            before_parameters,
-            after_parameters,
-            previous_update_model,
-        )
+        change_set.compute_update_model(inputs)
 
     @handler("CreateChangeSet", expand=False)
     def create_change_set(
@@ -392,11 +380,13 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         )
         self._setup_change_set_model(
             change_set=change_set,
-            before_template=before_template,
-            after_template=after_template,
-            before_parameters=before_parameters,
-            after_parameters=after_parameters,
-            previous_update_model=previous_update_model,
+            inputs=UpdateModelInputs(
+                before_template=before_template,
+                after_template=after_template,
+                before_parameters=before_parameters,
+                after_parameters=after_parameters,
+                previous_update_model=previous_update_model,
+            ),
         )
         if change_set.status == ChangeSetStatus.FAILED:
             change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
@@ -750,11 +740,12 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         )
         self._setup_change_set_model(
             change_set=change_set,
-            before_template=None,
-            after_template=after_template,
-            before_parameters=None,
-            after_parameters=after_parameters,
-            previous_update_model=None,
+            inputs=UpdateModelInputs(
+                before_template=None,
+                after_template=after_template,
+                before_parameters=None,
+                after_parameters=after_parameters,
+            ),
         )
         if change_set.status == ChangeSetStatus.FAILED:
             return CreateStackOutput(StackId=stack.stack_id)
@@ -1415,11 +1406,13 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         )
         self._setup_change_set_model(
             change_set=change_set,
-            before_template=before_template,
-            after_template=after_template,
-            before_parameters=before_parameters,
-            after_parameters=after_parameters,
-            previous_update_model=previous_update_model,
+            inputs=UpdateModelInputs(
+                before_template=before_template,
+                after_template=after_template,
+                before_parameters=before_parameters,
+                after_parameters=after_parameters,
+                previous_update_model=previous_update_model,
+            ),
         )
 
         # TODO: some changes are only detectable at runtime; consider using
@@ -1513,10 +1506,12 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         )  # noqa
         self._setup_change_set_model(
             change_set=change_set,
-            before_template=stack.processed_template,
-            after_template=None,
-            before_parameters=stack.resolved_parameters,
-            after_parameters=None,
+            inputs=UpdateModelInputs(
+                before_template=stack.processed_template,
+                after_template=None,
+                before_parameters=stack.resolved_parameters,
+                after_parameters=None,
+            ),
         )
 
         change_set_executor = ChangeSetModelExecutor(change_set)
