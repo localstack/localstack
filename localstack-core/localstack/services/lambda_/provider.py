@@ -4400,28 +4400,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # only Function, Event Source Mapping, and Code Signing Config (not currently supported by LocalStack) ARNs
     # are available for tagging in AWS
 
+    @staticmethod
     def _update_resource_tags(
-        self, resource_arn: str, account_id: str, region: str, tags: dict[str, str]
+        resource_arn: str, account_id: str, region: str, tags: dict[str, str]
     ) -> None:
-        tagger_service = lambda_stores[account_id][region].TAGS
-        tag_svc_adapted_tags = [{"Key": key, "Value": value} for key, value in tags.items()]
-        tagger_service.tag_resource(resource_arn, tag_svc_adapted_tags)
+        lambda_stores[account_id][region].tags.update_tags(resource_arn, tags)
 
-    def _list_resource_tags(
-        self, resource_arn: str, account_id: str, region: str
-    ) -> dict[str, str]:
-        tagger_service = lambda_stores[account_id][region].TAGS
-        return tagger_service.tags.get(resource_arn, {})
+    @staticmethod
+    def _list_resource_tags(resource_arn: str, account_id: str, region: str) -> dict[str, str]:
+        return lambda_stores[account_id][region].tags.get_tags(resource_arn)
 
+    @staticmethod
     def _remove_resource_tags(
-        self, resource_arn: str, account_id: str, region: str, keys: TagKeyList
+        resource_arn: str, account_id: str, region: str, keys: TagKeyList
     ) -> None:
-        tagger_service = lambda_stores[account_id][region].TAGS
-        tagger_service.untag_resource(resource_arn, keys)
+        lambda_stores[account_id][region].tags.delete_tags(resource_arn, keys)
 
-    def _remove_all_resource_tags(self, resource_arn: str, account_id: str, region: str) -> None:
-        tagger_service = lambda_stores[account_id][region].TAGS
-        return tagger_service.tags.pop(resource_arn, None)
+    @staticmethod
+    def _remove_all_resource_tags(resource_arn: str, account_id: str, region: str) -> None:
+        lambda_stores[account_id][region].tags.delete_all_tags(resource_arn)
 
     def _get_tags(self, resource: TaggableResource) -> dict[str, str]:
         account_id, region = self._get_account_id_and_region_for_taggable_resource(resource)

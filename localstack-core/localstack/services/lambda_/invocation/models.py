@@ -6,7 +6,7 @@ from localstack.services.lambda_.invocation.lambda_models import (
     Layer,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.tagging import TaggingService
+from localstack.utils.tagging import Tags
 
 
 class LambdaStore(BaseStore):
@@ -26,7 +26,7 @@ class LambdaStore(BaseStore):
     capacity_providers: dict[str, CapacityProvider] = LocalAttribute(default=dict)
 
     # maps resource ARNs for EventSourceMappings and CodeSigningConfiguration to tags
-    TAGS: TaggingService = LocalAttribute(default=TaggingService)
+    tags: Tags = LocalAttribute(default=Tags)
 
 
 lambda_stores = AccountRegionBundle("lambda", LambdaStore)
