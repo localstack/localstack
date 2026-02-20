@@ -5,11 +5,12 @@ from collections.abc import Iterator
 from threading import RLock
 
 from localstack import config
-from localstack.aws.api.lambda_ import TooManyRequestsException
+from localstack.aws.api.lambda_ import ProvisionedConcurrencyStatusEnum, TooManyRequestsException
 from localstack.services.lambda_.invocation.lambda_models import (
     Function,
     FunctionVersion,
     InitializationType,
+    ProvisionedConcurrencyState,
 )
 from localstack.services.lambda_.invocation.models import lambda_stores
 
@@ -84,7 +85,10 @@ class CountingService:
 
     @contextlib.contextmanager
     def get_invocation_lease(
-        self, function: Function | None, function_version: FunctionVersion
+        self,
+        function: Function | None,
+        function_version: FunctionVersion,
+        provisioned_state: ProvisionedConcurrencyState | None = None,
     ) -> Iterator[InitializationType]:
         """An invocation lease reserves the right to schedule an invocation.
         The returned lease type can either be on-demand or provisioned.
@@ -118,13 +122,6 @@ class CountingService:
                         ConcurrencyTracker()
                     )
 
-        # TODO: check that we don't give a lease while updating provisioned concurrency
-        # Potential challenge if an update happens in between reserving the lease here and actually assigning
-        # * Increase provisioned: It could happen that we give a lease for provisioned-concurrency although
-        # brand new provisioned environments are not yet initialized.
-        # * Decrease provisioned: It could happen that we have running invocations that should still be counted
-        # against the limit but they are not because we already updated the concurrency config to fewer envs.
-
         unqualified_function_arn = function_version.id.unqualified_arn()
         qualified_arn = function_version.id.qualified_arn()
 
@@ -145,7 +142,17 @@ class CountingService:
                                 function.provisioned_concurrency_configs.get(alias.name)
                             )
                             break
-                if provisioned_concurrency_config:
+                # Favor provisioned concurrency if configured and ready
+                # TODO: test updating provisioned concurrency? Does AWS serve on-demand during updates?
+                # Potential challenge if an update happens in between reserving the lease here and actually assigning
+                # * Increase provisioned: It could happen that we give a lease for provisioned-concurrency although
+                # brand new provisioned environments are not yet initialized.
+                # * Decrease provisioned: It could happen that we have running invocations that should still be counted
+                # against the limit but they are not because we already updated the concurrency config to fewer envs.
+                if (
+                    provisioned_concurrency_config
+                    and provisioned_state.status == ProvisionedConcurrencyStatusEnum.READY
+                ):
                     available_provisioned_concurrency = (
                         provisioned_concurrency_config.provisioned_concurrent_executions
                         - provisioned_tracker.concurrent_executions[qualified_arn]
