@@ -10,6 +10,13 @@ from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegi
 
 
 @dataclasses.dataclass
+class AwsManagedPolicy:
+    """Tracks account-specific state for AWS managed policies (currently just attachment count)."""
+
+    attachment_count: int = 0
+
+
+@dataclasses.dataclass
 class RoleEntity:
     """Wrapper for Role with inline policies and managed policy tracking."""
 
@@ -45,16 +52,18 @@ class ManagedPolicyEntity:
     next_version_num: int = 2  # Next version number (v1 is created with policy)
 
 
+# Using CrossRegionAttributes since IAM is a global service
 class IamStore(BaseStore):
     # Customer-managed policies keyed by ARN
-    # Using CrossRegionAttribute since IAM is a global service (policies are account-wide)
     MANAGED_POLICIES: dict[str, ManagedPolicyEntity] = CrossRegionAttribute(default=dict)
     # Roles keyed by role name (unique per account)
-    # Using CrossRegionAttribute since IAM is a global service
     ROLES: dict[str, RoleEntity] = CrossRegionAttribute(default=dict)
     # Users keyed by user name (unique per account)
-    # Using CrossRegionAttribute since IAM is a global service
     USERS: dict[str, UserEntity] = CrossRegionAttribute(default=dict)
+    # Attachment counts for AWS managed policies, keyed by normalized ARN.
+    # Normalized ARN format: ``arn:aws:iam::aws:policy/<path>/<name>``.
+    # A key is present only when the policy has been attached at least once.
+    AWS_MANAGED_POLICIES: dict[str, AwsManagedPolicy] = CrossRegionAttribute(default=dict)
 
 
 # validate=False because IAM is a global service without region-specific endpoints

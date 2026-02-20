@@ -26,9 +26,6 @@ MOCK_POLICY = {
     },
 }
 
-# TODO remove after new IAM implementation of managed policies
-pytestmark = pytest.mark.skip
-
 
 @pytest.fixture(autouse=True)
 def snapshot_transformers(snapshot):
@@ -39,6 +36,14 @@ class TestGetAwsManagedPolicy:
     """Tests for getting AWS-managed policies and their versions."""
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # moto's static data lags behind real AWS on policy version numbers
+            "$..Policy.DefaultVersionId",
+            # Description is not included in moto's managed-policy dataset
+            "$..Policy.Description",
+        ]
+    )
     def test_get_aws_managed_policy(self, aws_client, snapshot, partition):
         """Get an AWS-managed policy by ARN and verify its structure."""
         managed_policy_arn = f"arn:{partition}:iam::aws:policy/IAMUserChangePassword"
@@ -64,17 +69,23 @@ class TestGetAwsManagedPolicy:
         snapshot.match("get-version-v1", response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # moto's static data lags behind real AWS on policy version numbers
+            "$..Policy.DefaultVersionId",
+            "$..PolicyVersion.VersionId",
+            # Description is not included in moto's managed-policy dataset
+            "$..Policy.Description",
+            # Document content differs between the version in moto and real AWS
+            "$..PolicyVersion.Document",
+            # We only have one version of the policy stored
+            "$..Versions",
+        ]
+    )
     def test_get_aws_managed_policy_higher_version(self, aws_client, snapshot, partition):
         """Get a higher version of an AWS-managed policy (job-function path).
         Dynamically discovers the default version to avoid hardcoding a version that drifts."""
         managed_policy_arn = f"arn:{partition}:iam::aws:policy/job-function/SystemAdministrator"
-
-        # Error: non-existent version
-        with pytest.raises(ClientError) as e:
-            aws_client.iam.get_policy_version(
-                PolicyArn=managed_policy_arn, VersionId="v2-does-not-exist"
-            )
-        snapshot.match("get-version-error", e.value.response)
 
         # Discover the default version dynamically
         policy = aws_client.iam.get_policy(PolicyArn=managed_policy_arn)
@@ -86,6 +97,38 @@ class TestGetAwsManagedPolicy:
             PolicyArn=managed_policy_arn, VersionId=default_version_id
         )
         snapshot.match("get-version-default", response)
+
+        # List policy versions
+        response = aws_client.iam.list_policy_versions(PolicyArn=managed_policy_arn)
+        snapshot.match("list-policy-versions", response)
+
+    @markers.aws.validated
+    def test_aws_managed_policy_errors(self, aws_client, create_user, partition, snapshot):
+        managed_policy_arn = (
+            f"arn:{partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        )
+
+        # Error: cannot delete AWS managed policy
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_policy(PolicyArn=managed_policy_arn)
+        snapshot.match("delete-managed-policy-error", e.value.response)
+
+        # Error: cannot delete AWS managed policy version
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.delete_policy_version(PolicyArn=managed_policy_arn, VersionId="v2")
+        snapshot.match("delete-managed-policy-version-error", e.value.response)
+
+        # Error: cannot set new default for AWS managed policy version
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.set_default_policy_version(PolicyArn=managed_policy_arn, VersionId="v2")
+        snapshot.match("set-default-managed-policy-version-error", e.value.response)
+
+        # Error: non-existent version
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.get_policy_version(
+                PolicyArn=managed_policy_arn, VersionId="v2-does-not-exist"
+            )
+        snapshot.match("get-version-error", e.value.response)
 
 
 class TestListPoliciesScope:
@@ -111,8 +154,20 @@ class TestListPoliciesScope:
         assert policy_name not in aws_names
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # moto's static data lags behind real AWS; version numbers and the exact set of
+            # policies returned on page 1 may differ from what was recorded against real AWS
+            "$..Policies..DefaultVersionId",
+            "$..Policies..PolicyName",
+            "$..Policies..Arn",
+        ]
+    )
     def test_list_policies_scope_aws(self, aws_client, snapshot):
         """Verify list_policies with Scope=AWS returns AWS-managed policies with pagination."""
+        snapshot.transform.key_value(
+            "AttachmentCount", "<attachment_count>", reference_replacement=False
+        )
         response = aws_client.iam.list_policies(Scope="AWS", MaxItems=5)
         snapshot.match("list-policies-aws-page", response)
 
