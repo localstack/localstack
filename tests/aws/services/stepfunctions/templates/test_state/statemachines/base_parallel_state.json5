@@ -1,0 +1,25 @@
+{
+  "Comment": "BASE_PARALLEL_STATE",
+  "Type": "Parallel",
+  "Branches": [
+    {
+      "StartAt": "Branch1",
+      "States": {
+        "Branch1": {
+          "Type": "Pass",
+          "End": true
+        }
+      }
+    },
+    {
+      "StartAt": "Branch2",
+      "States": {
+        "Branch2": {
+          "Type": "Pass",
+          "End": true
+        }
+      }
+    }
+  ],
+  "End": true
+}

@@ -37,6 +37,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     ToleratedFailurePercentagePath,
     ToleratedFailurePercentageStringJSONata,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_parallel.state_parallel import (
+    StateParallel,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
     StateTask,
 )
@@ -54,6 +57,9 @@ from localstack.services.stepfunctions.asl.component.test_state.state.common imp
 )
 from localstack.services.stepfunctions.asl.component.test_state.state.map import (
     MockedStateMap,
+)
+from localstack.services.stepfunctions.asl.component.test_state.state.parallel import (
+    MockedStateParallel,
 )
 from localstack.services.stepfunctions.asl.component.test_state.state.task import (
     MockedStateTask,
@@ -98,6 +104,8 @@ def _decorated_updates_inspection_data(method, inspection_data_key: InspectionDa
 def _decorate_state_field(state_field: CommonStateField, is_single_state: bool = False) -> None:
     if isinstance(state_field, StateMap):
         MockedStateMap.wrap(state_field, is_single_state)
+    elif isinstance(state_field, StateParallel):
+        MockedStateParallel.wrap(state_field, is_single_state)
     elif isinstance(state_field, StateTask):
         MockedStateTask.wrap(state_field, is_single_state)
     elif isinstance(state_field, (StateChoice, StatePass, StateFail, StateSucceed)):
@@ -113,6 +121,11 @@ def find_state(state_name: str, states: dict[str, CommonStateField]) -> CommonSt
             found_state = find_state(state_name, state.iteration_component._states.states)
             if found_state:
                 return found_state
+        elif isinstance(state, StateParallel):
+            for program in state.branches.programs:
+                found_state = find_state(state_name, program.states.states)
+                if found_state:
+                    return found_state
 
 
 class TestStatePreprocessor(Preprocessor):

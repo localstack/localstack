@@ -147,5 +147,18 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_parallel_state_mock_execution": {
+    "recorded-date": "13-02-2026, 01:28:29",
+    "recorded-content": {
+      "test_case_response": {
+        "output": "[{\"branch1\": \"result1\"}, {\"branch2\": \"result2\"}]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
