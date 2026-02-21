@@ -585,7 +585,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if bucket_region == "us-east-1"
             else get_full_default_bucket_location(bucket_name)
         )
-        response = CreateBucketOutput(Location=location)
+        response = CreateBucketOutput(Location=location, BucketArn=s3_bucket.bucket_arn)
         return response
 
     def delete_bucket(
@@ -705,7 +705,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO: this call is also used to check if the user has access/authorization for the bucket
         #  it can return 403
-        return HeadBucketOutput(BucketRegion=s3_bucket.bucket_region)
+        return HeadBucketOutput(
+            BucketRegion=s3_bucket.bucket_region, BucketArn=s3_bucket.bucket_arn
+        )
 
     def get_bucket_location(
         self,
