@@ -104,7 +104,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
         # Install dependencies to add additional repos
         # g++ is a workaround to fix the JPype1 compile error on ARM Linux "gcc: fatal error: cannot execute ‘cc1plus’"
-        apt-get install -y gcc g++
+        apt-get install -y --no-install-recommends gcc g++
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
