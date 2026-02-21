@@ -1,0 +1,26 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "ChoiceState",
+  "States": {
+    "ChoiceState": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.condition %}",
+          "Next": "EndState",
+          "Assign": {
+            "Assignment": "Condition assignment"
+          }
+        }
+      ],
+      "Default": "EndState",
+      "Assign": {
+        "Assignment": "Default Assignment"
+      }
+    },
+    "EndState": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

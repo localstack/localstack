@@ -132,3 +132,7 @@ class AssignTemplate(TemplateLoader):
     CHOICE_CONDITION_JSONATA: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_condition_jsonata.json5"
     )
+
+    CHOICE_CONDITION_SHARED_NEXT_JSONATA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_condition_shared_next_jsonata.json5"
+    )

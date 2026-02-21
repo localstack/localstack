@@ -17,3 +17,6 @@ class OutputTemplates(TemplateLoader):
     CHOICE_CONDITION_JSONATA = os.path.join(
         _THIS_FOLDER, "statemachines/choice_condition_jsonata.json5"
     )
+    CHOICE_CONDITION_SHARED_NEXT_JSONATA = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_condition_shared_next_jsonata.json5"
+    )
