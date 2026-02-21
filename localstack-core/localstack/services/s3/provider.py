@@ -1513,6 +1513,25 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # request_payer: RequestPayer = None,  # TODO:
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
+
+        if_match = request.get("IfMatch")
+        if_none_match = request.get("IfNoneMatch")
+
+        if if_none_match and if_match:
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header="If-Match,If-None-Match",
+                additionalMessage="Multiple conditional request headers present in the request",
+            )
+
+        elif (if_none_match and if_none_match != "*") or (if_match and if_match == "*"):
+            header_name = "If-None-Match" if if_none_match else "If-Match"
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header=header_name,
+                additionalMessage=f"We don't accept the provided value of {header_name} header for this API",
+            )
+
         validate_object_key(dest_key)
         store, dest_s3_bucket = self._get_cross_account_bucket(context, dest_bucket)
 
@@ -1615,6 +1634,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             system_metadata = src_s3_object.system_metadata
 
         dest_version_id = generate_version_id(dest_s3_bucket.versioning_status)
+        if dest_version_id != "null":
+            # if we are in a versioned bucket, we need to lock around the full key (all the versions)
+            # because object versions have locks per version
+            precondition_lock = self._preconditions_locks[dest_bucket][dest_key]
+        else:
+            precondition_lock = contextlib.nullcontext()
 
         encryption_parameters = get_encryption_parameters_from_request_and_bucket(
             request,
@@ -1654,12 +1679,25 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             owner=dest_s3_bucket.owner,
         )
 
-        with self._storage_backend.copy(
-            src_bucket=src_bucket,
-            src_object=src_s3_object,
-            dest_bucket=dest_bucket,
-            dest_object=s3_object,
-        ) as s3_stored_object:
+        with (
+            precondition_lock,
+            self._storage_backend.copy(
+                src_bucket=src_bucket,
+                src_object=src_s3_object,
+                dest_bucket=dest_bucket,
+                dest_object=s3_object,
+            ) as s3_stored_object,
+        ):
+            # Check destination write preconditions inside the lock to prevent race conditions.
+            if if_none_match and object_exists_for_precondition_write(dest_s3_bucket, dest_key):
+                raise PreconditionFailed(
+                    "At least one of the pre-conditions you specified did not hold",
+                    Condition="If-None-Match",
+                )
+
+            elif if_match:
+                verify_object_equality_precondition_write(dest_s3_bucket, dest_key, if_match)
+
             s3_object.checksum_value = s3_stored_object.checksum or src_s3_object.checksum_value
             s3_object.etag = s3_stored_object.etag or src_s3_object.etag
 
