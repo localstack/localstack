@@ -162,7 +162,6 @@ class TestIAMGroupsCRUD:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Error.message", "$..Error.Type", "$..ResponseMetadata.HTTPStatusCode"]
     )
-    @pytest.mark.skip("TODO - FAILS against pro. needs investigation")
     def test_update_group_not_found(self, aws_client, snapshot):
         """Test error handling when updating non-existent group."""
         snapshot.add_transformer(snapshot.transform.iam_api())
@@ -172,13 +171,12 @@ class TestIAMGroupsCRUD:
         snapshot.match("update-nonexistent-group", ex.value.response)
 
     @markers.aws.validated
-    @pytest.mark.skip("TODO - Exception not raised")
     def test_update_group_duplicate_name(self, create_group, aws_client, snapshot):
         """Test error handling when updating to existing group name."""
         group_name_1 = f"group-{short_uid()}"
         group_name_2 = f"group-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+        snapshot.add_transformer(snapshot.transform.regex(group_name_2, "<group-name-2>"))
 
         create_group(GroupName=group_name_1)
         create_group(GroupName=group_name_2)

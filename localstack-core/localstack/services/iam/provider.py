@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import inspect
 import json
 import logging
@@ -7,81 +8,124 @@ import re
 import string
 import threading
 import uuid
+import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from typing import Any, TypeVar
 from urllib.parse import quote
 
+from cryptography import x509
 from moto.iam.models import IAMBackend, iam_backends
-from moto.iam.models import User as MotoUser
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
     AttachedPermissionsBoundary,
     AttachedPolicy,
+    CreateGroupResponse,
     CreateLoginProfileResponse,
+    CreateOpenIDConnectProviderResponse,
     CreatePolicyResponse,
     CreatePolicyVersionResponse,
     CreateRoleResponse,
+    CreateSAMLProviderResponse,
     CreateServiceLinkedRoleResponse,
     CreateServiceSpecificCredentialResponse,
     CreateUserResponse,
+    CreateVirtualMFADeviceResponse,
     DeleteConflictException,
     DeleteServiceLinkedRoleResponse,
     DeletionTaskIdType,
     DeletionTaskStatusType,
     EntityAlreadyExistsException,
+    GetAccountPasswordPolicyResponse,
+    GetGroupPolicyResponse,
+    GetGroupResponse,
     GetLoginProfileResponse,
+    GetOpenIDConnectProviderResponse,
     GetPolicyResponse,
     GetPolicyVersionResponse,
     GetRolePolicyResponse,
     GetRoleResponse,
+    GetSAMLProviderResponse,
     GetServiceLinkedRoleDeletionStatusResponse,
+    GetSSHPublicKeyResponse,
     GetUserPolicyResponse,
     GetUserResponse,
+    Group,
     IamApi,
     InvalidInputException,
     LimitExceededException,
+    ListAttachedGroupPoliciesResponse,
     ListAttachedRolePoliciesResponse,
     ListAttachedUserPoliciesResponse,
+    ListGroupPoliciesResponse,
+    ListGroupsForUserResponse,
+    ListGroupsResponse,
     ListInstanceProfileTagsResponse,
+    ListMFADevicesResponse,
+    ListOpenIDConnectProvidersResponse,
+    ListOpenIDConnectProviderTagsResponse,
     ListPoliciesResponse,
     ListPolicyTagsResponse,
     ListPolicyVersionsResponse,
     ListRolePoliciesResponse,
     ListRolesResponse,
     ListRoleTagsResponse,
+    ListSAMLProvidersResponse,
+    ListSAMLProviderTagsResponse,
     ListServiceSpecificCredentialsResponse,
+    ListSSHPublicKeysResponse,
     ListUserPoliciesResponse,
     ListUsersResponse,
     ListUserTagsResponse,
+    ListVirtualMFADevicesResponse,
     LoginProfile,
     MalformedPolicyDocumentException,
+    MFADevice,
     NoSuchEntityException,
+    OpenIDConnectProviderListEntry,
+    OpenIDConnectProviderUrlType,
+    PasswordPolicy,
     Policy,
     PolicyUsageType,
     PolicyVersion,
     ResetServiceSpecificCredentialResponse,
     Role,
     RoleLastUsed,
+    SAMLMetadataDocumentType,
+    SAMLProviderListEntry,
+    SAMLProviderNameType,
     ServiceSpecificCredential,
     ServiceSpecificCredentialMetadata,
     SimulatePolicyResponse,
     SimulatePrincipalPolicyRequest,
+    SSHPublicKey,
+    SSHPublicKeyMetadata,
     Tag,
     UpdateRoleDescriptionResponse,
     UpdateRoleResponse,
+    UpdateSAMLProviderResponse,
+    UploadSSHPublicKeyResponse,
     User,
+    VirtualMFADevice,
     allUsers,
     arnType,
+    assignmentStatusType,
+    authenticationCodeType,
     booleanObjectType,
     booleanType,
+    clientIDListType,
+    clientIDType,
     credentialAgeDays,
     customSuffixType,
+    encodingType,
     existingUserNameType,
     groupNameType,
     instanceProfileNameType,
     markerType,
     maxItemsType,
+    maxPasswordAgeType,
+    minimumPasswordLengthType,
+    passwordReusePreventionType,
     passwordType,
     pathPrefixType,
     pathType,
@@ -91,23 +135,35 @@ from localstack.aws.api.iam import (
     policyPathType,
     policyScopeType,
     policyVersionIdType,
+    publicKeyIdType,
+    publicKeyMaterialType,
     roleDescriptionType,
     roleMaxSessionDurationType,
     roleNameType,
+    serialNumberType,
     serviceName,
     serviceSpecificCredentialId,
     statusType,
     tagKeyListType,
     tagListType,
+    thumbprintListType,
     userNameType,
+    virtualMFADeviceName,
+)
+from localstack.aws.api.iam import (
+    VirtualMFADevice as VirtualMFADeviceModel,
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY, TAG_KEY_CUSTOM_ID
 from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.iam.models import (
+    GroupEntity,
     IamStore,
     ManagedPolicyEntity,
+    MFADeviceEntity,
+    OIDCProvider,
     RoleEntity,
+    SAMLProvider,
     UserEntity,
     iam_stores,
 )
@@ -117,7 +173,10 @@ from localstack.services.iam.resources.policy_simulator import (
     IAMPolicySimulator,
 )
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
-from localstack.services.iam.utils import generate_iam_identifier
+from localstack.services.iam.utils import (
+    generate_access_key_id_from_account_id,
+    generate_iam_identifier,
+)
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX, get_partition
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
@@ -175,6 +234,7 @@ class IamProvider(IamApi):
         self.policy_simulator = BasicIAMPolicySimulator()
         self._policy_lock = threading.Lock()
         self._role_lock = threading.Lock()
+        self._group_lock = threading.Lock()
         self._user_lock = threading.Lock()
 
     def accept_state_visitor(self, visitor: StateVisitor):
@@ -1201,20 +1261,395 @@ class IamProvider(IamApi):
         else:
             return ListPolicyTagsResponse(Tags=result, IsTruncated=False)
 
+    # ------------------------------ Group Operations ------------------------------ #
+
+    def _get_group_entity(self, store: IamStore, group_name: str) -> GroupEntity:
+        """Gets the group entity and raises the right exception if not found."""
+        entity = store.GROUPS.get(group_name)
+        if not entity:
+            raise NoSuchEntityException(f"The group with name {group_name} cannot be found.")
+        return entity
+
+    def _generate_group_id(self, context: RequestContext) -> str:
+        """Generate a group ID: AGPA + 17 random chars."""
+        return generate_iam_identifier(context.account_id, prefix="AGPA", total_length=21)
+
+    def _build_group_arn(self, context: RequestContext, path: str, group_name: str) -> str:
+        """Build the ARN for a group."""
+        partition = get_partition(context.region)
+        # Path for ARN: /path/ becomes /path/ in the ARN resource portion
+        if path == "/":
+            return f"arn:{partition}:iam::{context.account_id}:group/{group_name}"
+        else:
+            # Remove leading slash for ARN construction
+            path_part = path[1:] if path.startswith("/") else path
+            return f"arn:{partition}:iam::{context.account_id}:group/{path_part}{group_name}"
+
+    def create_group(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        path: pathType | None = None,
+        **kwargs,
+    ) -> CreateGroupResponse:
+        store = self._get_store(context)
+        path = path or "/"
+
+        with self._group_lock:
+            # Check for duplicate group
+            if group_name in store.GROUPS:
+                raise EntityAlreadyExistsException(f"Group with name {group_name} already exists.")
+
+            # Generate group ID and ARN
+            group_id = self._generate_group_id(context)
+            group_arn = self._build_group_arn(context, path, group_name)
+
+            # Build the Group object
+            group = Group(
+                Path=path,
+                GroupName=group_name,
+                GroupId=group_id,
+                Arn=group_arn,
+                CreateDate=datetime.now(tz=UTC),
+            )
+
+            # Create group entity and store
+            group_entity = GroupEntity(group=group)
+            store.GROUPS[group_name] = group_entity
+
+        return CreateGroupResponse(Group=group)
+
+    def get_group(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> GetGroupResponse:
+        store = self._get_store(context)
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            users = []
+            for user_name in group_entity.member_user_names:
+                if user := store.USERS.get(user_name):
+                    users.append(user.user)
+
+            return GetGroupResponse(
+                Group=Group(group_entity.group),
+                Users=users,
+                IsTruncated=False,
+            )
+
+    def list_groups(
+        self,
+        context: RequestContext,
+        path_prefix: pathPrefixType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListGroupsResponse:
+        store = self._get_store(context)
+
+        def _filter(group: Group) -> bool:
+            if path_prefix:
+                return group.get("Path", "/").startswith(path_prefix)
+            return True
+
+        with self._group_lock:
+            groups = [Group(e.group) for e in store.GROUPS.values()]
+
+        # Filter and sort
+        filtered_groups = [g for g in groups if _filter(g)]
+        sorted_groups = sorted(filtered_groups, key=lambda g: g.get("GroupName", "").lower())
+
+        # TODO: Add pagination support
+        return ListGroupsResponse(Groups=sorted_groups, IsTruncated=False)
+
+    def delete_group(self, context: RequestContext, group_name: groupNameType, **kwargs) -> None:
+        store = self._get_store(context)
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Check if group has attached policies
+            if group_entity.attached_policy_arns:
+                raise DeleteConflictException(
+                    "Cannot delete entity, must detach all policies first."
+                )
+
+            # Check if group has inline policies
+            if group_entity.inline_policies:
+                raise DeleteConflictException("Cannot delete entity, must delete policies first.")
+
+            # Check if group has members
+            if group_entity.member_user_names:
+                raise DeleteConflictException(
+                    "Cannot delete entity, must remove users from group first."
+                )
+
+            del store.GROUPS[group_name]
+
     def update_group(
         self,
         context: RequestContext,
         group_name: groupNameType,
-        new_path: pathType = None,
-        new_group_name: groupNameType = None,
+        new_path: pathType | None = None,
+        new_group_name: groupNameType | None = None,
         **kwargs,
     ) -> None:
-        new_group_name = new_group_name or group_name
-        backend = get_iam_backend(context)
-        group = backend.get_group(group_name)
-        group.path = new_path
-        group.name = new_group_name
-        backend.groups[new_group_name] = backend.groups.pop(group_name)
+        store = self._get_store(context)
+        target_name = new_group_name or group_name
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Check if new name already exists (if changing name)
+            if new_group_name and new_group_name != group_name:
+                if new_group_name in store.GROUPS:
+                    raise EntityAlreadyExistsException(
+                        f"Group with name {new_group_name} already exists."
+                    )
+
+            # Update path if provided
+            if new_path is not None:
+                group_entity.group["Path"] = new_path
+                # Update ARN with new path
+                group_entity.group["Arn"] = self._build_group_arn(context, new_path, target_name)
+
+            # Update name if provided
+            if new_group_name and new_group_name != group_name:
+                group_entity.group["GroupName"] = new_group_name
+                # Update ARN with new name
+                path = group_entity.group.get("Path", "/")
+                group_entity.group["Arn"] = self._build_group_arn(context, path, new_group_name)
+                # Move in store
+                store.GROUPS[new_group_name] = store.GROUPS.pop(group_name)
+
+    # ------------------------------ Group Membership Operations ------------------------------ #
+
+    def add_user_to_group(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        user_name: existingUserNameType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        self._get_user_or_raise_error(user_name=user_name, context=context)
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Add user if not already a member (idempotent)
+            if user_name not in group_entity.member_user_names:
+                group_entity.member_user_names.append(user_name)
+
+    def remove_user_from_group(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        user_name: existingUserNameType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        self._get_user_or_raise_error(user_name=user_name, context=context)
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            if user_name in group_entity.member_user_names:
+                group_entity.member_user_names.remove(user_name)
+
+    def list_groups_for_user(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListGroupsForUserResponse:
+        store = self._get_store(context)
+        self._get_user_or_raise_error(user_name=user_name, context=context)
+
+        with self._group_lock:
+            groups = []
+            for group_entity in store.GROUPS.values():
+                if user_name in group_entity.member_user_names:
+                    groups.append(Group(group_entity.group))
+
+        # Sort by group name
+        sorted_groups = sorted(groups, key=lambda g: g.get("GroupName", "").lower())
+
+        return ListGroupsForUserResponse(Groups=sorted_groups, IsTruncated=False)
+
+    # ------------------------------ Group Inline Policy Operations ------------------------------ #
+
+    def put_group_policy(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_name: policyNameType,
+        policy_document: policyDocumentType,
+        **kwargs,
+    ) -> None:
+        # Validate policy document
+        validator = IAMPolicyDocumentValidator(policy_document)
+        validator.validate()
+
+        store = self._get_store(context)
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+            group_entity.inline_policies[policy_name] = quote(policy_document)
+
+    def get_group_policy(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_name: policyNameType,
+        **kwargs,
+    ) -> GetGroupPolicyResponse:
+        store = self._get_store(context)
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            policy_document = group_entity.inline_policies.get(policy_name)
+            if policy_document is None:
+                raise NoSuchEntityException(
+                    f"The group policy with name {policy_name} cannot be found."
+                )
+
+        return GetGroupPolicyResponse(
+            GroupName=group_name,
+            PolicyName=policy_name,
+            PolicyDocument=policy_document,
+        )
+
+    def list_group_policies(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListGroupPoliciesResponse:
+        store = self._get_store(context)
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+            policy_names = sorted(group_entity.inline_policies.keys())
+
+        return ListGroupPoliciesResponse(PolicyNames=policy_names, IsTruncated=False)
+
+    def delete_group_policy(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_name: policyNameType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            if policy_name not in group_entity.inline_policies:
+                raise NoSuchEntityException(
+                    f"The group policy with name {policy_name} cannot be found."
+                )
+
+            del group_entity.inline_policies[policy_name]
+
+    # ------------------------------ Group Managed Policy Operations ------------------------------ #
+
+    def attach_group_policy(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_arn: arnType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+        partition = get_partition(context.region)
+        aws_managed_prefix = f"arn:{partition}:iam::aws:policy/"
+        is_aws_managed = policy_arn.startswith(aws_managed_prefix)
+
+        with self._group_lock, self._policy_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Check if policy exists (for customer-managed policies only)
+            if not is_aws_managed and policy_arn not in store.MANAGED_POLICIES:
+                raise NoSuchEntityException(
+                    f"Policy {policy_arn} does not exist or is not attachable."
+                )
+
+            # Add policy if not already attached (idempotent)
+            if policy_arn not in group_entity.attached_policy_arns:
+                group_entity.attached_policy_arns.append(policy_arn)
+
+                # Update AttachmentCount for customer-managed policies
+                if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
+                    policy_entity = store.MANAGED_POLICIES[policy_arn]
+                    policy_entity.policy["AttachmentCount"] += 1
+
+    def detach_group_policy(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_arn: arnType,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+        partition = get_partition(context.region)
+        aws_managed_prefix = f"arn:{partition}:iam::aws:policy/"
+        is_aws_managed = policy_arn.startswith(aws_managed_prefix)
+
+        with self._group_lock, self._policy_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Check if policy is attached
+            if policy_arn not in group_entity.attached_policy_arns:
+                raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
+
+            # Remove the policy
+            group_entity.attached_policy_arns.remove(policy_arn)
+
+            # Update AttachmentCount for customer-managed policies
+            if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
+                policy_entity = store.MANAGED_POLICIES[policy_arn]
+                policy_entity.policy["AttachmentCount"] -= 1
+
+    def list_attached_group_policies(
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        path_prefix: pathPrefixType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListAttachedGroupPoliciesResponse:
+        store = self._get_store(context)
+
+        with self._group_lock:
+            group_entity = self._get_group_entity(store, group_name)
+
+            # Build list of attached policies
+            attached_policies: list[AttachedPolicy] = []
+            for policy_arn in group_entity.attached_policy_arns:
+                # Extract policy name from ARN
+                policy_name = policy_arn.split("/")[-1]
+                attached_policies.append(
+                    AttachedPolicy(PolicyName=policy_name, PolicyArn=policy_arn)
+                )
+
+        # Sort by policy name
+        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower())
+
+        return ListAttachedGroupPoliciesResponse(
+            AttachedPolicies=attached_policies, IsTruncated=False
+        )
 
     def list_instance_profile_tags(
         self,
@@ -1857,7 +2292,7 @@ class IamProvider(IamApi):
                 )
 
         # Sort by policy name (case-insensitive, as AWS does)
-        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower())
+        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower(), reverse=True)
 
         paginated_list = PaginatedList(attached_policies)
 
@@ -2094,18 +2529,19 @@ class IamProvider(IamApi):
 
     # ------------------------------ Service specific credentials ------------------------------ #
 
-    def _get_user_or_raise_error(self, user_name: str, context: RequestContext) -> MotoUser:
+    def _get_user_or_raise_error(self, user_name: str, context: RequestContext) -> User:
         """
-        Return the moto user from the store, or raise the proper exception if no user can be found.
+        Return the user from the store, or raise the proper exception if no user can be found.
 
         :param user_name: Username to find
         :param context: Request context
-        :return: A moto user object
+        :return: A user object
         """
-        moto_user = get_iam_backend(context).users.get(user_name)
-        if not moto_user:
+        store = self._get_store(context)
+        user = store.USERS.get(user_name)
+        if not user:
             raise NoSuchEntityException(f"The user with name {user_name} cannot be found.")
-        return moto_user
+        return user.user
 
     def _validate_service_name(self, service_name: str) -> None:
         """
@@ -2187,11 +2623,11 @@ class IamProvider(IamApi):
         :param context: Request context (used to determine account and region)
         :return: Service specific credential
         """
-        moto_user = self._get_user_or_raise_error(user_name, context)
+        user = self._get_user_or_raise_error(user_name, context)
         self._validate_credential_id(credential_id)
         matching_credentials = [
             cred
-            for cred in moto_user.service_specific_credentials
+            for cred in user.service_specific_credentials
             if cred["ServiceSpecificCredentialId"] == credential_id
         ]
         if not matching_credentials:
@@ -2237,10 +2673,10 @@ class IamProvider(IamApi):
         **kwargs,
     ) -> CreateServiceSpecificCredentialResponse:
         # TODO add support for credential_age_days
-        moto_user = self._get_user_or_raise_error(user_name, context)
+        user = self._get_user_or_raise_error(user_name, context)
         self._validate_service_name(service_name)
         credential = self._new_service_specific_credential(user_name, service_name, context)
-        moto_user.service_specific_credentials.append(credential)
+        user.service_specific_credentials.append(credential)
         return CreateServiceSpecificCredentialResponse(ServiceSpecificCredential=credential)
 
     def list_service_specific_credentials(
@@ -2254,11 +2690,11 @@ class IamProvider(IamApi):
         **kwargs,
     ) -> ListServiceSpecificCredentialsResponse:
         # TODO add support for all_users, marker, max_items
-        moto_user = self._get_user_or_raise_error(user_name, context)
+        user = self._get_user_or_raise_error(user_name, context)
         self._validate_service_name(service_name)
         result = [
             self.build_dict_with_only_defined_keys(creds, ServiceSpecificCredentialMetadata)
-            for creds in moto_user.service_specific_credentials
+            for creds in user.service_specific_credentials
             if creds["ServiceName"] == service_name
         ]
         return ListServiceSpecificCredentialsResponse(ServiceSpecificCredentials=result)
@@ -2298,14 +2734,989 @@ class IamProvider(IamApi):
         user_name: userNameType = None,
         **kwargs,
     ) -> None:
-        moto_user = self._get_user_or_raise_error(user_name, context)
+        user = self._get_user_or_raise_error(user_name, context)
         credentials = self._find_credential_in_user_by_id(
             user_name, service_specific_credential_id, context
         )
         try:
-            moto_user.service_specific_credentials.remove(credentials)
+            user.service_specific_credentials.remove(credentials)
         # just in case of race conditions
         except ValueError:
             raise NoSuchEntityException(
                 f"No such credential {service_specific_credential_id} exists"
             )
+
+    # ------------------------------ Account Password Policy ------------------------------ #
+
+    def _get_iam_store(self, account_id: str, region: str):
+        return iam_stores[account_id][region]
+
+    def update_account_password_policy(
+        self,
+        context: RequestContext,
+        minimum_password_length: minimumPasswordLengthType | None = None,
+        require_symbols: booleanType | None = None,
+        require_numbers: booleanType | None = None,
+        require_uppercase_characters: booleanType | None = None,
+        require_lowercase_characters: booleanType | None = None,
+        allow_users_to_change_password: booleanType | None = None,
+        max_password_age: maxPasswordAgeType | None = None,
+        password_reuse_prevention: passwordReusePreventionType | None = None,
+        hard_expiry: booleanObjectType | None = None,
+        **kwargs,
+    ) -> None:
+        # Validate constraints
+        validation_errors = []
+        if minimum_password_length is not None and minimum_password_length > 128:
+            validation_errors.append(
+                "Value at 'minimumPasswordLength' failed to satisfy constraint: "
+                "Member must have value less than or equal to 128"
+            )
+        if password_reuse_prevention is not None and password_reuse_prevention > 24:
+            validation_errors.append(
+                "Value at 'passwordReusePrevention' failed to satisfy constraint: "
+                "Member must have value less than or equal to 24"
+            )
+        if max_password_age is not None and max_password_age > 1095:
+            validation_errors.append(
+                "Value at 'maxPasswordAge' failed to satisfy constraint: "
+                "Member must have value less than or equal to 1095"
+            )
+        if validation_errors:
+            raise ValidationListError(validation_errors)
+
+        # Build the password policy with defaults
+        expire_passwords = max_password_age is not None and max_password_age > 0
+
+        policy = PasswordPolicy(
+            MinimumPasswordLength=minimum_password_length
+            if minimum_password_length is not None
+            else 6,
+            RequireSymbols=require_symbols if require_symbols is not None else False,
+            RequireNumbers=require_numbers if require_numbers is not None else False,
+            RequireUppercaseCharacters=require_uppercase_characters
+            if require_uppercase_characters is not None
+            else False,
+            RequireLowercaseCharacters=require_lowercase_characters
+            if require_lowercase_characters is not None
+            else False,
+            AllowUsersToChangePassword=allow_users_to_change_password
+            if allow_users_to_change_password is not None
+            else False,
+            ExpirePasswords=expire_passwords,
+        )
+
+        # Only include optional fields if they were provided
+        if max_password_age is not None:
+            policy["MaxPasswordAge"] = max_password_age
+        if password_reuse_prevention is not None:
+            policy["PasswordReusePrevention"] = password_reuse_prevention
+        if hard_expiry is not None:
+            policy["HardExpiry"] = hard_expiry
+
+        store = self._get_iam_store(context.account_id, context.region)
+        store.PASSWORD_POLICY = policy
+
+    def get_account_password_policy(
+        self,
+        context: RequestContext,
+        **kwargs,
+    ) -> GetAccountPasswordPolicyResponse:
+        store = self._get_iam_store(context.account_id, context.region)
+        if store.PASSWORD_POLICY is None:
+            raise NoSuchEntityException(
+                f"The Password Policy with domain name {context.account_id} cannot be found."
+            )
+        return GetAccountPasswordPolicyResponse(PasswordPolicy=store.PASSWORD_POLICY)
+
+    def delete_account_password_policy(
+        self,
+        context: RequestContext,
+        **kwargs,
+    ) -> None:
+        store = self._get_iam_store(context.account_id, context.region)
+        if store.PASSWORD_POLICY is None:
+            raise NoSuchEntityException(
+                "The account policy with name PasswordPolicy cannot be found."
+            )
+        store.PASSWORD_POLICY = None
+
+    # ------------------------------ SSH Public Keys ------------------------------ #
+
+    def _generate_ssh_public_key_id(self, context: RequestContext) -> str:
+        """
+        Generate an SSH public key ID with APKA prefix.
+        """
+        return generate_access_key_id_from_account_id(
+            context.account_id, prefix="APKA", total_length=21
+        )
+
+    def _generate_ssh_key_fingerprint(self, ssh_public_key_body: str) -> str:
+        """
+        Generate a fingerprint for an SSH public key.
+        The fingerprint is the MD5 hash of the key body in colon-separated hex format.
+        """
+        md5_hash = hashlib.md5(ssh_public_key_body.encode("utf-8")).hexdigest()
+        return ":".join(md5_hash[i : i + 2] for i in range(0, len(md5_hash), 2))
+
+    def upload_ssh_public_key(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        ssh_public_key_body: publicKeyMaterialType,
+        **kwargs,
+    ) -> UploadSSHPublicKeyResponse:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        if user_name not in store.SSH_PUBLIC_KEYS:
+            store.SSH_PUBLIC_KEYS[user_name] = {}
+
+        ssh_public_key_id = self._generate_ssh_public_key_id(context)
+        fingerprint = self._generate_ssh_key_fingerprint(ssh_public_key_body)
+
+        ssh_key = SSHPublicKey(
+            UserName=user_name,
+            SSHPublicKeyId=ssh_public_key_id,
+            Fingerprint=fingerprint,
+            SSHPublicKeyBody=ssh_public_key_body,
+            Status=statusType.Active,
+            UploadDate=datetime.now(),
+        )
+
+        store.SSH_PUBLIC_KEYS[user_name][ssh_public_key_id] = ssh_key
+
+        return UploadSSHPublicKeyResponse(SSHPublicKey=ssh_key)
+
+    def get_ssh_public_key(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        ssh_public_key_id: publicKeyIdType,
+        encoding: encodingType,
+        **kwargs,
+    ) -> GetSSHPublicKeyResponse:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
+        ssh_key = user_keys.get(ssh_public_key_id)
+
+        if not ssh_key:
+            raise NoSuchEntityException(
+                f"The SSH Public Key with id {ssh_public_key_id} cannot be found."
+            )
+
+        return GetSSHPublicKeyResponse(SSHPublicKey=ssh_key)
+
+    def list_ssh_public_keys(
+        self,
+        context: RequestContext,
+        user_name: userNameType = None,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListSSHPublicKeysResponse:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
+
+        # Convert to metadata format (without SSHPublicKeyBody)
+        ssh_keys_metadata = [
+            SSHPublicKeyMetadata(
+                UserName=key["UserName"],
+                SSHPublicKeyId=key["SSHPublicKeyId"],
+                Status=key["Status"],
+                UploadDate=key["UploadDate"],
+            )
+            for key in user_keys.values()
+        ]
+
+        return ListSSHPublicKeysResponse(SSHPublicKeys=ssh_keys_metadata)
+
+    def update_ssh_public_key(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        ssh_public_key_id: publicKeyIdType,
+        status: statusType,
+        **kwargs,
+    ) -> None:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
+        ssh_key = user_keys.get(ssh_public_key_id)
+
+        if not ssh_key:
+            raise NoSuchEntityException(
+                f"The SSH Public Key with id {ssh_public_key_id} cannot be found."
+            )
+
+        ssh_key["Status"] = status
+
+    def delete_ssh_public_key(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        ssh_public_key_id: publicKeyIdType,
+        **kwargs,
+    ) -> None:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
+
+        if ssh_public_key_id not in user_keys:
+            raise NoSuchEntityException(
+                f"The SSH Public Key with id {ssh_public_key_id} cannot be found."
+            )
+
+        del user_keys[ssh_public_key_id]
+
+    # ------------------------------ SAML Providers ------------------------------ #
+
+    def _parse_saml_metadata_expiration(self, saml_metadata_document: str) -> datetime | None:
+        """
+        Parse the SAML metadata XML and extract the certificate expiration date.
+        Returns the earliest expiration date if multiple certificates are present.
+        """
+        try:
+            root = ET.fromstring(saml_metadata_document)
+
+            # SAML metadata uses namespaces
+            namespaces = {
+                "md": "urn:oasis:names:tc:SAML:2.0:metadata",
+                "ds": "http://www.w3.org/2000/09/xmldsig#",
+            }
+
+            # Find all X509Certificate elements
+            cert_elements = root.findall(".//ds:X509Certificate", namespaces)
+
+            if not cert_elements:
+                return None
+
+            expiration_dates = []
+            for cert_elem in cert_elements:
+                cert_pem = cert_elem.text
+                if not cert_pem:
+                    continue
+
+                # Decode base64 certificate
+                cert_der = base64.b64decode(cert_pem.strip())
+
+                # Parse the X.509 certificate
+                cert = x509.load_der_x509_certificate(cert_der)
+                expiration_dates.append(cert.not_valid_after_utc)
+
+            # Return the earliest expiration date
+            if expiration_dates:
+                return min(expiration_dates)
+
+        except Exception as e:
+            LOG.debug("Failed to parse SAML metadata for expiration date: ", e)
+
+        return None
+
+    def _get_saml_provider_arn(self, name: str, account_id: str, partition: str = "aws") -> str:
+        """Generate an ARN for a SAML provider."""
+        return f"arn:{partition}:iam::{account_id}:saml-provider/{name}"
+
+    def _get_saml_provider_or_raise(
+        self, saml_provider_arn: str, context: RequestContext
+    ) -> SAMLProvider:
+        """Get a SAML provider by ARN or raise NoSuchEntityException."""
+        store = self._get_iam_store(context.account_id, context.region)
+        provider = store.SAML_PROVIDERS.get(saml_provider_arn)
+        if not provider:
+            raise NoSuchEntityException(f"SAMLProvider {saml_provider_arn} does not exist.")
+        return provider
+
+    def create_saml_provider(
+        self,
+        context: RequestContext,
+        saml_metadata_document: SAMLMetadataDocumentType,
+        name: SAMLProviderNameType,
+        tags: tagListType = None,
+        **kwargs,
+    ) -> CreateSAMLProviderResponse:
+        store = self._get_iam_store(context.account_id, context.region)
+        arn = self._get_saml_provider_arn(name, context.account_id, context.partition)
+
+        if arn in store.SAML_PROVIDERS:
+            raise InvalidInputException(f"SAMLProvider {name} already exists.")
+
+        valid_until = self._parse_saml_metadata_expiration(saml_metadata_document)
+
+        provider = SAMLProvider(
+            arn=arn,
+            name=name,
+            saml_metadata_document=saml_metadata_document,
+            create_date=datetime.now(UTC),
+            valid_until=valid_until,
+            tags=tags or [],
+        )
+
+        store.SAML_PROVIDERS[arn] = provider
+
+        response = CreateSAMLProviderResponse(SAMLProviderArn=arn)
+        if tags:
+            response["Tags"] = tags
+        return response
+
+    def get_saml_provider(
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        **kwargs,
+    ) -> GetSAMLProviderResponse:
+        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+
+        return GetSAMLProviderResponse(
+            SAMLMetadataDocument=provider.saml_metadata_document,
+            CreateDate=provider.create_date,
+            ValidUntil=provider.valid_until,
+            Tags=provider.tags if provider.tags else None,
+        )
+
+    def list_saml_providers(
+        self,
+        context: RequestContext,
+        **kwargs,
+    ) -> ListSAMLProvidersResponse:
+        store = self._get_iam_store(context.account_id, context.region)
+
+        provider_list = [
+            SAMLProviderListEntry(
+                Arn=provider.arn,
+                CreateDate=provider.create_date,
+                ValidUntil=provider.valid_until,
+            )
+            for provider in store.SAML_PROVIDERS.values()
+        ]
+
+        return ListSAMLProvidersResponse(SAMLProviderList=provider_list)
+
+    def update_saml_provider(
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        saml_metadata_document: SAMLMetadataDocumentType = None,
+        **kwargs,
+    ) -> UpdateSAMLProviderResponse:
+        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+
+        if saml_metadata_document:
+            provider.saml_metadata_document = saml_metadata_document
+            provider.valid_until = self._parse_saml_metadata_expiration(saml_metadata_document)
+
+        return UpdateSAMLProviderResponse(SAMLProviderArn=saml_provider_arn)
+
+    def delete_saml_provider(
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        **kwargs,
+    ) -> None:
+        store = self._get_iam_store(context.account_id, context.region)
+
+        if saml_provider_arn not in store.SAML_PROVIDERS:
+            raise NoSuchEntityException(f"Manifest not found for arn {saml_provider_arn}")
+
+        del store.SAML_PROVIDERS[saml_provider_arn]
+
+    def tag_saml_provider(
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        tags: tagListType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+
+        # Merge tags: update existing keys, add new ones
+        existing_keys = {tag["Key"]: i for i, tag in enumerate(provider.tags)}
+        for tag in tags:
+            key = tag["Key"]
+            if key in existing_keys:
+                provider.tags[existing_keys[key]] = tag
+            else:
+                provider.tags.append(tag)
+
+    def untag_saml_provider(
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        tag_keys: tagKeyListType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+        provider.tags = [tag for tag in provider.tags if tag["Key"] not in tag_keys]
+
+    def list_saml_provider_tags(
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListSAMLProviderTagsResponse:
+        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+        # TODO: Add pagination support with marker and max_items
+        return ListSAMLProviderTagsResponse(Tags=provider.tags)
+
+    # ------------------------------ OIDC Providers ------------------------------ #
+
+    def _get_oidc_provider_arn(self, url: str, account_id: str, partition: str = "aws") -> str:
+        """
+        Generate an ARN for an OIDC provider.
+        The ARN uses the URL host (without protocol) as the resource identifier.
+        """
+        # Remove protocol prefix if present
+        host = url
+        if host.startswith("https://"):
+            host = host[8:]
+        elif host.startswith("http://"):
+            host = host[7:]
+        # Remove trailing slash
+        host = host.rstrip("/")
+        return f"arn:{partition}:iam::{account_id}:oidc-provider/{host}"
+
+    def _get_oidc_provider_or_raise(
+        self, oidc_provider_arn: str, context: RequestContext
+    ) -> OIDCProvider:
+        """Get an OIDC provider by ARN or raise NoSuchEntityException."""
+        store = self._get_iam_store(context.account_id, context.region)
+        provider = store.OIDC_PROVIDERS.get(oidc_provider_arn)
+        if not provider:
+            raise NoSuchEntityException(
+                f"OpenIDConnect Provider not found for arn {oidc_provider_arn}"
+            )
+        return provider
+
+    def create_open_id_connect_provider(
+        self,
+        context: RequestContext,
+        url: OpenIDConnectProviderUrlType,
+        client_id_list: clientIDListType | None = None,
+        thumbprint_list: thumbprintListType | None = None,
+        tags: tagListType | None = None,
+        **kwargs,
+    ) -> CreateOpenIDConnectProviderResponse:
+        # Validate URL, thumbprint, and client ID constraints
+        validation_errors = []
+
+        if url and len(url) > 255:
+            validation_errors.append(
+                "Value at 'url' failed to satisfy constraint: "
+                "Member must have length less than or equal to 255"
+            )
+
+        if thumbprint_list:
+            for thumbprint in thumbprint_list:
+                if len(thumbprint) != 40:
+                    validation_errors.append(
+                        "Value at 'thumbprintList' failed to satisfy constraint: "
+                        "Member must satisfy constraint: [Member must have length less than or equal to 40, "
+                        "Member must have length greater than or equal to 40]"
+                    )
+                    break
+
+        if client_id_list:
+            for client_id in client_id_list:
+                if len(client_id) > 255 or len(client_id) < 1:
+                    validation_errors.append(
+                        "Value at 'clientIDList' failed to satisfy constraint: "
+                        "Member must satisfy constraint: [Member must have length less than or equal to 255, "
+                        "Member must have length greater than or equal to 1]"
+                    )
+                    break
+
+        if validation_errors:
+            raise ValidationListError(validation_errors)
+
+        # Validate URL format (must start with https://)
+        if not url or not url.startswith("https://"):
+            raise ValidationError("Invalid Open ID Connect Provider URL")
+
+        # Validate thumbprint list limit (max 5)
+        if thumbprint_list and len(thumbprint_list) > 5:
+            raise InvalidInputException("Thumbprint list must contain fewer than 5 entries.")
+
+        # Validate client ID list limit (max 100)
+        if client_id_list and len(client_id_list) > 100:
+            raise LimitExceededException(
+                "Cannot exceed quota for ClientIdsPerOpenIdConnectProvider: 100"
+            )
+
+        # Validate tag limit (max 50)
+        if tags and len(tags) > 50:
+            raise LimitExceededException("The number of tags has reached the maximum limit.")
+
+        store = self._get_iam_store(context.account_id, context.region)
+        arn = self._get_oidc_provider_arn(url, context.account_id, context.partition)
+
+        # Check for duplicate provider
+        if arn in store.OIDC_PROVIDERS:
+            raise EntityAlreadyExistsException(f"Provider with url {url} already exists.")
+
+        provider = OIDCProvider(
+            arn=arn,
+            url=url,
+            create_date=datetime.now(UTC),
+            client_id_list=client_id_list or [],
+            thumbprint_list=thumbprint_list or [],
+            tags=tags or [],
+        )
+
+        store.OIDC_PROVIDERS[arn] = provider
+
+        response = CreateOpenIDConnectProviderResponse(OpenIDConnectProviderArn=arn)
+        if tags:
+            response["Tags"] = tags
+        return response
+
+    def get_open_id_connect_provider(
+        self, context: RequestContext, open_id_connect_provider_arn: arnType, **kwargs
+    ) -> GetOpenIDConnectProviderResponse:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        return GetOpenIDConnectProviderResponse(
+            Url=provider.url,
+            ClientIDList=provider.client_id_list if provider.client_id_list else None,
+            ThumbprintList=provider.thumbprint_list if provider.thumbprint_list else None,
+            CreateDate=provider.create_date,
+            Tags=provider.tags if provider.tags else None,
+        )
+
+    def list_open_id_connect_providers(
+        self, context: RequestContext, **kwargs
+    ) -> ListOpenIDConnectProvidersResponse:
+        store = self._get_iam_store(context.account_id, context.region)
+
+        provider_list = [
+            OpenIDConnectProviderListEntry(Arn=provider.arn)
+            for provider in store.OIDC_PROVIDERS.values()
+        ]
+
+        return ListOpenIDConnectProvidersResponse(OpenIDConnectProviderList=provider_list)
+
+    def delete_open_id_connect_provider(
+        self, context: RequestContext, open_id_connect_provider_arn: arnType, **kwargs
+    ) -> None:
+        store = self._get_iam_store(context.account_id, context.region)
+
+        if open_id_connect_provider_arn not in store.OIDC_PROVIDERS:
+            raise NoSuchEntityException(
+                f"OpenId connect Provider {open_id_connect_provider_arn} cannot be found."
+            )
+
+        del store.OIDC_PROVIDERS[open_id_connect_provider_arn]
+
+    def add_client_id_to_open_id_connect_provider(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        client_id: clientIDType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        if client_id not in provider.client_id_list:
+            provider.client_id_list.append(client_id)
+
+    def remove_client_id_from_open_id_connect_provider(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        client_id: clientIDType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        if client_id in provider.client_id_list:
+            provider.client_id_list.remove(client_id)
+        else:
+            raise NoSuchEntityException(f"Client ID {client_id} not found.")
+
+    def update_open_id_connect_provider_thumbprint(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        thumbprint_list: thumbprintListType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+        provider.thumbprint_list = thumbprint_list
+
+    def tag_open_id_connect_provider(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        tags: tagListType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        # Calculate how many new tags would be added
+        existing_keys = {tag["Key"]: i for i, tag in enumerate(provider.tags)}
+        new_tag_count = sum(1 for tag in tags if tag["Key"] not in existing_keys)
+
+        # Check tag limit (max 50 tags)
+        if len(provider.tags) + new_tag_count > 50:
+            raise LimitExceededException("The number of tags has reached the maximum limit.")
+
+        # Merge tags: update existing keys, add new ones
+        for tag in tags:
+            key = tag["Key"]
+            if key in existing_keys:
+                provider.tags[existing_keys[key]] = tag
+            else:
+                provider.tags.append(tag)
+
+    def untag_open_id_connect_provider(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        tag_keys: tagKeyListType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+        provider.tags = [tag for tag in provider.tags if tag["Key"] not in tag_keys]
+
+    def list_open_id_connect_provider_tags(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListOpenIDConnectProviderTagsResponse:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        tags = provider.tags
+        start_index = 0
+
+        # Handle marker-based pagination
+        if marker:
+            # Marker is the index (0-based) as a string
+            try:
+                start_index = int(marker)
+            except ValueError:
+                start_index = 0
+
+        # Apply pagination
+        if max_items:
+            end_index = start_index + max_items
+            paginated_tags = tags[start_index:end_index]
+            is_truncated = end_index < len(tags)
+        else:
+            paginated_tags = tags[start_index:]
+            is_truncated = False
+
+        response = ListOpenIDConnectProviderTagsResponse(
+            Tags=paginated_tags,
+            IsTruncated=is_truncated,
+        )
+
+        if is_truncated:
+            response["Marker"] = str(start_index + max_items)
+
+        return response
+
+    # ------------------------------ Virtual MFA Devices ------------------------------ #
+
+    def _generate_mfa_serial_number(
+        self, name: str, path: str, account_id: str, partition: str = "aws"
+    ) -> str:
+        """
+        Generate a serial number (ARN) for a virtual MFA device.
+        Format: arn:{partition}:iam::{account_id}:mfa/{path_resource}{name}
+        """
+        # Path "/" becomes empty in the ARN, other paths have leading slash stripped
+        if path == "/":
+            path_resource = ""
+        else:
+            path_resource = path[1:]  # Remove leading slash, keep trailing slash
+        return f"arn:{partition}:iam::{account_id}:mfa/{path_resource}{name}"
+
+    def _generate_totp_secret(self) -> bytes:
+        """Generate a random Base32-encoded secret for TOTP."""
+        # Generate 20 random bytes (160 bits) for the secret
+        secret_bytes = bytes(random.getrandbits(8) for _ in range(20))
+        # Base32 encode it
+        return base64.b32encode(secret_bytes)
+
+    def _generate_qr_code_png(self, secret: bytes, device_name: str, account_id: str) -> bytes:
+        """
+        Generate a QR code PNG for the virtual MFA device.
+        In a real implementation, this would generate an actual QR code image.
+        For LocalStack, we return a minimal placeholder PNG.
+        """
+        # Minimal valid PNG (1x1 transparent pixel)
+        # This is a placeholder - real AWS returns an actual QR code
+        return base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        )
+
+    def _validate_mfa_path(self, path: str | None) -> str:
+        """Validate and return the MFA device path."""
+        if path is None:
+            return "/"
+
+        # Check path length
+        if len(path) > 512:
+            raise ValidationListError(
+                [
+                    "Value at 'path' failed to satisfy constraint: "
+                    "Member must have length less than or equal to 512"
+                ]
+            )
+
+        # Path must start and end with /
+        if not path.startswith("/") or not path.endswith("/"):
+            raise ValidationError(
+                "The specified value for path is invalid. It must begin and end with / "
+                "and contain only alphanumeric characters and/or / characters."
+            )
+
+        return path
+
+    def create_virtual_mfa_device(
+        self,
+        context: RequestContext,
+        virtual_mfa_device_name: virtualMFADeviceName,
+        path: pathType | None = None,
+        tags: tagListType | None = None,
+        **kwargs,
+    ) -> CreateVirtualMFADeviceResponse:
+        # Validate path
+        validated_path = self._validate_mfa_path(path)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        serial_number = self._generate_mfa_serial_number(
+            virtual_mfa_device_name, validated_path, context.account_id, context.partition
+        )
+
+        # Check for duplicate device
+        if serial_number in store.MFA_DEVICES:
+            raise EntityAlreadyExistsException("MFA device already exists.")
+
+        # Generate TOTP secret and QR code
+        base32_secret = self._generate_totp_secret()
+        qr_code_png = self._generate_qr_code_png(
+            base32_secret, virtual_mfa_device_name, context.account_id
+        )
+
+        # Create the device model
+        device_model = VirtualMFADeviceModel(
+            SerialNumber=serial_number,
+            Base32StringSeed=base32_secret,
+            QRCodePNG=qr_code_png,
+            Tags=tags or [],
+        )
+
+        store.MFA_DEVICES[serial_number] = MFADeviceEntity(
+            device=device_model, device_name=device_model, path=path
+        )
+
+        # Build response
+        virtual_mfa_device = VirtualMFADevice(
+            SerialNumber=serial_number,
+            Base32StringSeed=base32_secret,
+            QRCodePNG=qr_code_png,
+        )
+
+        return CreateVirtualMFADeviceResponse(VirtualMFADevice=virtual_mfa_device)
+
+    def delete_virtual_mfa_device(
+        self,
+        context: RequestContext,
+        serial_number: serialNumberType,
+        **kwargs,
+    ) -> None:
+        store = self._get_iam_store(context.account_id, context.region)
+
+        if serial_number not in store.MFA_DEVICES:
+            raise NoSuchEntityException(
+                f"MFA Device with serial number {serial_number} does not exist."
+            )
+
+        # If device is assigned to a user, remove it from the user's MFA devices
+        device = store.MFA_DEVICES[serial_number]
+        if device.user:
+            user_entity = store.USERS[device.user]
+            user_entity.mfa_devices.remove(serial_number)
+
+        del store.MFA_DEVICES[serial_number]
+
+    def list_virtual_mfa_devices(
+        self,
+        context: RequestContext,
+        assignment_status: assignmentStatusType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListVirtualMFADevicesResponse:
+        store = self._get_iam_store(context.account_id, context.region)
+
+        # Get all virtual MFA devices
+        all_devices = list(store.MFA_DEVICES.values())
+
+        # Filter by assignment status
+        if assignment_status == "Assigned":
+            all_devices = [d for d in all_devices if d.user is not None and "QRCodePNG" in d.device]
+        elif assignment_status == "Unassigned":
+            all_devices = [d for d in all_devices if d.user is None and "QRCodePNG" in d.device]
+        # "Any" or None means no filtering
+
+        # Sort by serial number for consistent ordering
+        all_devices.sort(key=lambda d: d.device.get("SerialNumber"))
+
+        # Handle marker-based pagination
+        start_index = 0
+        if marker:
+            # Find the device with this serial number and start after it
+            found = False
+            for i, device in enumerate(all_devices):
+                if device.device.get("SerialNumber") == marker:
+                    start_index = i + 1
+                    found = True
+                    break
+            if not found:
+                raise ValidationError("Invalid Marker.")
+
+        # Apply pagination
+        if max_items:
+            end_index = start_index + max_items
+            paginated_devices = all_devices[start_index:end_index]
+            is_truncated = end_index < len(all_devices)
+        else:
+            paginated_devices = all_devices[start_index:]
+            is_truncated = False
+
+        # Convert to response format
+        response_devices = []
+        for device in paginated_devices:
+            vmd = VirtualMFADevice(SerialNumber=device.device.get("SerialNumber"))
+            if device.user:
+                vmd["User"] = device.user
+                # Include EnableDate for assigned devices
+                if "EnableDate" in device.device:
+                    vmd["EnableDate"] = device.device["EnableDate"]
+            response_devices.append(vmd)
+
+        response = ListVirtualMFADevicesResponse(
+            VirtualMFADevices=response_devices,
+            IsTruncated=is_truncated,
+        )
+
+        if is_truncated:
+            response["Marker"] = paginated_devices[-1].device.get("SerialNumber")
+
+        return response
+
+    def enable_mfa_device(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        serial_number: serialNumberType,
+        authentication_code1: authenticationCodeType,
+        authentication_code2: authenticationCodeType,
+        **kwargs,
+    ) -> None:
+        # Verify user exists
+        user = self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+        enable_date = datetime.now(UTC)
+
+        if serial_number in store.MFA_DEVICES:
+            # Virtual MFA device - update existing entry
+            device = store.MFA_DEVICES[serial_number]
+            device.device["EnableDate"] = enable_date
+            device.user = user
+        else:
+            # Physical token MFA - create new entry
+            mfa_device = MFADevice(
+                SerialNumber=serial_number,
+                EnableDate=enable_date,
+            )
+            device = MFADeviceEntity(
+                device_name=serial_number,
+                path="/",
+                device=mfa_device,
+                user=user,
+            )
+            store.MFA_DEVICES[serial_number] = device
+
+        user_entity = store.USERS[user_name]
+        user_entity.mfa_devices.append(serial_number)
+
+    def deactivate_mfa_device(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        serial_number: serialNumberType,
+        **kwargs,
+    ) -> None:
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+
+        store = self._get_iam_store(context.account_id, context.region)
+
+        # Check if MFA device is assigned to user
+        if serial_number not in store.MFA_DEVICES:
+            raise NoSuchEntityException(
+                f"MFA Device with serial number {serial_number} does not exist."
+            )
+
+        device = store.MFA_DEVICES[serial_number]
+        device.device["EnableDate"] = None
+        if device.user:
+            user_entity = store.USERS[device.user.get("UserName")]
+            user_entity.mfa_devices.remove(serial_number)
+            device.user = None
+
+    def list_mfa_devices(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListMFADevicesResponse:
+        # TODO extract user_name from keys if it's not passed
+        # Verify user exists
+        self._get_user_or_raise_error(user_name, context)
+        store = self._get_iam_store(context.account_id, context.region)
+        user_entity = store.USERS[user_name]
+
+        mfa_serial_numbers = user_entity.mfa_devices
+        all_mfa_devices = [
+            store.MFA_DEVICES[serial]
+            for serial in mfa_serial_numbers
+            if serial in store.MFA_DEVICES
+        ]
+
+        # Convert to response format
+        mfa_devices = [
+            MFADevice(
+                UserName=device.user.get("UserName") if device.user else user_name,
+                SerialNumber=device.device.get("SerialNumber"),
+                EnableDate=device.device.get("EnableDate"),
+            )
+            for device in all_mfa_devices
+        ]
+
+        # TODO: Add pagination support with marker and max_items
+        return ListMFADevicesResponse(
+            MFADevices=mfa_devices,
+            IsTruncated=False,
+        )
