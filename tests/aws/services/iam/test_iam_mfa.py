@@ -11,9 +11,6 @@ from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
-# TODO remove after new IAM implementation of MFA devices
-pytestmark = pytest.mark.skip
-
 
 @pytest.fixture(autouse=True)
 def snapshot_transformers(snapshot):
