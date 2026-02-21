@@ -1721,6 +1721,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             copy_object_result[f"Checksum{s3_object.checksum_algorithm.upper()}"] = (
                 s3_object.checksum_value
             )
+            copy_object_result["ChecksumType"] = s3_object.checksum_type
 
         response = CopyObjectOutput(
             CopyObjectResult=copy_object_result,
@@ -2343,7 +2344,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm = request.get("ChecksumAlgorithm")
         if checksum_algorithm and checksum_algorithm not in CHECKSUM_ALGORITHMS:
             raise InvalidRequest(
-                "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
+                "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, CRC64NVME, SHA1, SHA256]"
             )
 
         if not (checksum_type := request.get("ChecksumType")) and checksum_algorithm:

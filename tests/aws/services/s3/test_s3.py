@@ -12956,8 +12956,11 @@ class TestS3PutObjectChecksum:
 class TestS3MultipartUploadChecksum:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        # it seems the PartNumber might not be deterministic, possibly parallelized on S3 side?
-        paths=["$.complete-multipart-wrong-parts-checksum.Error.PartNumber"]
+        # it seems the PartNumber (and ETag by extension) might not be deterministic, possibly parallelized on S3 side?
+        paths=[
+            "$.complete-multipart-wrong-parts-checksum.Error.PartNumber",
+            "$.complete-multipart-wrong-parts-checksum.Error.ETag",
+        ]
     )
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])
     def test_complete_multipart_parts_checksum_composite(
