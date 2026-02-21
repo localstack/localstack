@@ -78,7 +78,7 @@ RUN chmod 777 . && \
 
 # install the entrypoint script
 ADD bin/docker-entrypoint.sh /usr/local/bin/
-# add the shipped hosts file to prevent performance degredation in windows container mode on windows
+# add the shipped hosts file to prevent performance degradation in windows container mode on windows
 # (where hosts file is not mounted) See https://github.com/localstack/localstack/issues/5178
 ADD bin/hosts /etc/hosts
 
