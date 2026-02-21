@@ -666,6 +666,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 Name=bucket.name,
                 CreationDate=bucket.creation_date,
                 BucketRegion=bucket.bucket_region,
+                BucketArn=bucket.bucket_arn,
             )
             buckets.append(output_bucket)
             count += 1
@@ -2387,7 +2388,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         acl = get_access_control_policy_for_new_resource_request(request, owner=s3_bucket.owner)
 
-        # validate encryption values
+        initiator = get_owner_for_account_id(context.account_id)
+        # This is weird, but for all other operations, AWS does not return a DisplayName anymore except for the
+        # `initiator` field in Multipart related operation. We will probably remove this soon once AWS changes that
+        initiator["DisplayName"] = "webfile"
+
         s3_multipart = S3Multipart(
             key=key,
             storage_class=storage_class,
@@ -2406,7 +2411,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             website_redirect_location=request.get("WebsiteRedirectLocation"),
             expiration=None,  # TODO, from lifecycle, or should it be updated with config?
             acl=acl,
-            initiator=get_owner_for_account_id(context.account_id),
+            initiator=initiator,
             tagging=tagging,
             owner=s3_bucket.owner,
             precondition=object_exists_for_precondition_write(s3_bucket, key),
@@ -2973,7 +2978,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             Key=key,
             UploadId=upload_id,
             Initiator=s3_multipart.initiator,
-            Owner=s3_multipart.initiator,
+            Owner=s3_multipart.object.owner,
             StorageClass=s3_multipart.object.storage_class,
             IsTruncated=is_truncated,
             MaxParts=max_parts,
@@ -3089,7 +3094,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     Key=multipart.object.key,
                     Initiated=multipart.initiated,
                     StorageClass=multipart.object.storage_class,
-                    Owner=multipart.initiator,  # TODO: check the difference
+                    Owner=multipart.object.owner,
                     Initiator=multipart.initiator,
                 )
                 if multipart.checksum_algorithm:

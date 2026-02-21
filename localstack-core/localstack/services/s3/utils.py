@@ -146,7 +146,6 @@ def get_owner_for_account_id(account_id: str):
     :return: the Owner object containing the DisplayName and owner ID
     """
     return Owner(
-        DisplayName="webfile",  # only in certain regions, see above
         ID="75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a",
     )
 

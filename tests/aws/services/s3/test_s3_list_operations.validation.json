@@ -1,155 +1,335 @@
 {
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
-    "last_validated_date": "2025-05-14T09:11:19+00:00"
+    "last_validated_date": "2026-02-21T00:05:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.53,
+      "teardown": 2.28,
+      "total": 4.81
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
-    "last_validated_date": "2025-05-14T09:11:11+00:00"
+    "last_validated_date": "2026-02-21T00:04:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 1.65,
+      "teardown": 1.18,
+      "total": 3.32
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_region_validation": {
-    "last_validated_date": "2025-11-18T17:59:17+00:00",
+    "last_validated_date": "2026-02-21T00:05:12+00:00",
     "durations_in_seconds": {
-      "setup": 0.48,
-      "call": 0.34,
+      "setup": 0.0,
+      "call": 0.1,
       "teardown": 0.0,
-      "total": 0.82
+      "total": 0.1
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
-    "last_validated_date": "2025-05-14T09:11:17+00:00"
+    "last_validated_date": "2026-02-21T00:05:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.24,
+      "teardown": 1.17,
+      "total": 2.41
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_continuation_token": {
-    "last_validated_date": "2025-05-14T09:11:24+00:00"
+    "last_validated_date": "2026-02-21T00:05:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.1,
+      "teardown": 1.74,
+      "total": 3.84
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_max_buckets": {
-    "last_validated_date": "2025-05-14T09:11:14+00:00"
+    "last_validated_date": "2026-02-21T00:05:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.31,
+      "teardown": 1.16,
+      "total": 2.47
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multipart_uploads_marker_common_prefixes": {
-    "last_validated_date": "2025-01-21T18:15:14+00:00"
+    "last_validated_date": "2026-02-21T00:06:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 0.93,
+      "teardown": 0.59,
+      "total": 2.02
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multiparts_next_marker": {
-    "last_validated_date": "2025-01-21T18:15:10+00:00"
+    "last_validated_date": "2026-02-21T00:06:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 2.19,
+      "teardown": 0.59,
+      "total": 3.29
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multiparts_with_prefix_and_delimiter": {
-    "last_validated_date": "2025-01-21T18:15:12+00:00"
+    "last_validated_date": "2026-02-21T00:06:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 1.24,
+      "teardown": 0.6,
+      "total": 2.34
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_s3_list_multiparts_timestamp_precision": {
-    "last_validated_date": "2025-01-21T18:15:16+00:00"
+    "last_validated_date": "2026-02-21T00:06:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.47,
+      "teardown": 0.58,
+      "total": 1.56
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_object_versions_pagination_common_prefixes": {
-    "last_validated_date": "2025-01-21T18:14:59+00:00"
+    "last_validated_date": "2026-02-21T00:06:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 1.73,
+      "teardown": 1.42,
+      "total": 3.66
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_markers": {
-    "last_validated_date": "2025-01-21T18:14:56+00:00"
+    "last_validated_date": "2026-02-21T00:05:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 3.36,
+      "teardown": 1.51,
+      "total": 5.38
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_with_prefix": {
-    "last_validated_date": "2025-01-21T18:15:03+00:00"
+    "last_validated_date": "2026-02-21T00:06:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 2.28,
+      "teardown": 1.53,
+      "total": 4.33
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_with_prefix_only_and_pagination": {
-    "last_validated_date": "2025-02-13T03:52:21+00:00"
+    "last_validated_date": "2026-02-21T00:06:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 2.35,
+      "teardown": 1.39,
+      "total": 4.24
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_with_prefix_only_and_pagination_many_versions": {
-    "last_validated_date": "2025-02-13T20:24:26+00:00"
+    "last_validated_date": "2026-02-21T00:06:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 12.94,
+      "teardown": 2.22,
+      "total": 15.68
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_s3_list_object_versions_timestamp_precision": {
-    "last_validated_date": "2025-01-21T18:15:06+00:00"
+    "last_validated_date": "2026-02-21T00:06:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.9,
+      "teardown": 0.97,
+      "total": 2.38
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_marker_common_prefixes": {
-    "last_validated_date": "2025-01-21T18:14:33+00:00"
+    "last_validated_date": "2026-02-21T00:05:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.54,
+      "call": 1.49,
+      "teardown": 0.99,
+      "total": 3.02
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_next_marker": {
-    "last_validated_date": "2025-01-21T18:14:29+00:00"
+    "last_validated_date": "2026-02-21T00:05:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 1.19,
+      "teardown": 1.02,
+      "total": 2.73
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[%2F]": {
-    "last_validated_date": "2025-01-21T18:14:26+00:00"
+    "last_validated_date": "2026-02-21T00:05:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 0.75,
+      "teardown": 0.93,
+      "total": 2.18
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[/]": {
-    "last_validated_date": "2025-01-21T18:14:24+00:00"
+    "last_validated_date": "2026-02-21T00:05:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 0.45,
+      "teardown": 0.91,
+      "total": 1.86
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[]": {
-    "last_validated_date": "2025-01-21T18:14:22+00:00"
+    "last_validated_date": "2026-02-21T00:05:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.42,
+      "teardown": 0.93,
+      "total": 1.86
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_s3_list_objects_empty_marker": {
-    "last_validated_date": "2025-01-21T18:14:31+00:00"
+    "last_validated_date": "2026-02-21T00:05:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 0.21,
+      "teardown": 0.6,
+      "total": 1.33
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_s3_list_objects_timestamp_precision[ListObjectsV2]": {
-    "last_validated_date": "2025-01-21T18:14:37+00:00"
+    "last_validated_date": "2026-02-21T00:05:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.55,
+      "teardown": 0.95,
+      "total": 2.01
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_s3_list_objects_timestamp_precision[ListObjects]": {
-    "last_validated_date": "2025-01-21T18:14:35+00:00"
+    "last_validated_date": "2026-02-21T00:05:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 0.54,
+      "teardown": 0.94,
+      "total": 2.0
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_common_prefixes": {
-    "last_validated_date": "2025-01-21T18:14:51+00:00"
+    "last_validated_date": "2026-02-21T00:05:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 1.36,
+      "teardown": 0.99,
+      "total": 2.86
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_start_after": {
-    "last_validated_date": "2025-01-21T18:14:48+00:00"
+    "last_validated_date": "2026-02-21T00:05:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 3.17,
+      "teardown": 1.31,
+      "total": 4.97
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_token_safe_chars": {
-    "last_validated_date": "2026-02-12T07:39:43+00:00",
+    "last_validated_date": "2026-02-21T00:05:46+00:00",
     "durations_in_seconds": {
-      "setup": 1.03,
-      "call": 2.6,
-      "teardown": 1.11,
-      "total": 4.74
+      "setup": 0.52,
+      "call": 2.63,
+      "teardown": 1.15,
+      "total": 4.3
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_with_prefix": {
-    "last_validated_date": "2025-01-21T18:14:40+00:00"
+    "last_validated_date": "2026-02-21T00:05:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 1.41,
+      "teardown": 0.95,
+      "total": 2.85
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_with_prefix_and_delimiter": {
-    "last_validated_date": "2025-01-21T18:14:43+00:00"
+    "last_validated_date": "2026-02-21T00:05:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 1.2,
+      "teardown": 0.76,
+      "total": 2.46
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_multipart_uploads]": {
-    "last_validated_date": "2026-02-12T10:24:36+00:00",
+    "last_validated_date": "2026-02-21T00:05:53+00:00",
     "durations_in_seconds": {
-      "setup": 0.53,
-      "call": 0.68,
+      "setup": 0.51,
+      "call": 0.64,
       "teardown": 0.59,
-      "total": 1.8
+      "total": 1.74
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_object_versions]": {
-    "last_validated_date": "2026-02-12T10:24:35+00:00",
+    "last_validated_date": "2026-02-21T00:05:52+00:00",
     "durations_in_seconds": {
-      "setup": 0.52,
-      "call": 0.91,
-      "teardown": 0.61,
+      "setup": 0.51,
+      "call": 0.94,
+      "teardown": 0.59,
       "total": 2.04
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_objects]": {
-    "last_validated_date": "2026-02-12T10:24:33+00:00",
+    "last_validated_date": "2026-02-21T00:05:50+00:00",
     "durations_in_seconds": {
-      "setup": 0.55,
-      "call": 0.67,
-      "teardown": 0.64,
-      "total": 1.86
+      "setup": 0.51,
+      "call": 0.64,
+      "teardown": 0.59,
+      "total": 1.74
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_objects_v2]": {
-    "last_validated_date": "2026-02-12T10:24:31+00:00",
+    "last_validated_date": "2026-02-21T00:05:48+00:00",
     "durations_in_seconds": {
-      "setup": 1.02,
-      "call": 0.68,
-      "teardown": 0.61,
-      "total": 2.31
+      "setup": 0.5,
+      "call": 0.64,
+      "teardown": 0.59,
+      "total": 1.73
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_empty_part_number_marker": {
-    "last_validated_date": "2025-01-21T18:15:20+00:00"
+    "last_validated_date": "2026-02-21T00:06:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 0.82,
+      "teardown": 0.6,
+      "total": 1.94
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_pagination": {
-    "last_validated_date": "2025-01-21T18:15:18+00:00"
+    "last_validated_date": "2026-02-21T00:06:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 1.21,
+      "teardown": 0.59,
+      "total": 2.32
+    }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_via_object_attrs_pagination": {
-    "last_validated_date": "2025-06-16T13:47:28+00:00",
+    "last_validated_date": "2026-02-21T00:06:48+00:00",
     "durations_in_seconds": {
-      "setup": 0.97,
-      "call": 10.45,
+      "setup": 0.53,
+      "call": 2.56,
       "teardown": 0.97,
-      "total": 12.39
+      "total": 4.06
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_s3_list_parts_timestamp_precision": {
-    "last_validated_date": "2025-01-21T18:15:22+00:00"
+    "last_validated_date": "2026-02-21T00:06:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.72,
+      "teardown": 0.58,
+      "total": 1.81
+    }
   }
 }
