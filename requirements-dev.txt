@@ -366,6 +366,8 @@ pyopenssl==25.3.0
     # via
     #   localstack-core
     #   localstack-twisted
+pyotp==2.9.0
+    # via localstack-core
 pypandoc==1.16.2
     # via localstack-core (pyproject.toml)
 pyparsing==3.3.2

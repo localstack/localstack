@@ -1,0 +1,502 @@
+{
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy": {
+    "recorded-date": "12-02-2026, 23:06:32",
+    "recorded-content": {
+      "get-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::aws:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v5",
+          "Description": "Provides the ability for an IAM user to change their own password.",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy_version": {
+    "recorded-date": "12-02-2026, 23:06:33",
+    "recorded-content": {
+      "get-version-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'versionId' failed to satisfy constraint: Member must satisfy regular expression pattern: v[1-9][0-9]*(\\.[A-Za-z0-9-]*)?",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-version-v1": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "Document": {
+            "Statement": [
+              {
+                "Action": [
+                  "logs:CreateLogGroup",
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "IsDefaultVersion": true,
+          "VersionId": "v1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy_higher_version": {
+    "recorded-date": "12-02-2026, 23:06:34",
+    "recorded-content": {
+      "get-version-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'versionId' failed to satisfy constraint: Member must satisfy regular expression pattern: v[1-9][0-9]*(\\.[A-Za-z0-9-]*)?",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-policy": {
+        "Policy": {
+          "Arn": "arn:<partition>:iam::aws:policy/job-function/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "<datetime>",
+          "DefaultVersionId": "v12",
+          "Description": "Grants full access permissions necessary for resources required for application and development operations.",
+          "IsAttachable": true,
+          "Path": "/job-function/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [],
+          "UpdateDate": "<datetime>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-version-default": {
+        "PolicyVersion": {
+          "CreateDate": "<datetime>",
+          "Document": {
+            "Statement": [
+              {
+                "Action": [
+                  "acm:Describe*",
+                  "acm:Get*",
+                  "acm:List*",
+                  "acm:Request*",
+                  "acm:Resend*",
+                  "autoscaling:*",
+                  "cloudtrail:DescribeTrails",
+                  "cloudtrail:GetTrailStatus",
+                  "cloudtrail:ListPublicKeys",
+                  "cloudtrail:ListTags",
+                  "cloudtrail:LookupEvents",
+                  "cloudtrail:StartLogging",
+                  "cloudtrail:StopLogging",
+                  "cloudwatch:*",
+                  "codecommit:BatchGetRepositories",
+                  "codecommit:CreateBranch",
+                  "codecommit:CreateRepository",
+                  "codecommit:Get*",
+                  "codecommit:GitPull",
+                  "codecommit:GitPush",
+                  "codecommit:List*",
+                  "codecommit:Put*",
+                  "codecommit:Test*",
+                  "codecommit:Update*",
+                  "codedeploy:*",
+                  "codepipeline:*",
+                  "config:*",
+                  "ds:*",
+                  "ec2:Allocate*",
+                  "ec2:AssignPrivateIpAddresses*",
+                  "ec2:Associate*",
+                  "ec2:Allocate*",
+                  "ec2:AttachInternetGateway",
+                  "ec2:AttachNetworkInterface",
+                  "ec2:AttachVpnGateway",
+                  "ec2:Bundle*",
+                  "ec2:Cancel*",
+                  "ec2:Copy*",
+                  "ec2:CreateCustomerGateway",
+                  "ec2:CreateDhcpOptions",
+                  "ec2:CreateFlowLogs",
+                  "ec2:CreateImage",
+                  "ec2:CreateInstanceExportTask",
+                  "ec2:CreateInternetGateway",
+                  "ec2:CreateKeyPair",
+                  "ec2:CreateLaunchTemplate",
+                  "ec2:CreateLaunchTemplateVersion",
+                  "ec2:CreateNatGateway",
+                  "ec2:CreateNetworkInterface",
+                  "ec2:CreatePlacementGroup",
+                  "ec2:CreateReservedInstancesListing",
+                  "ec2:CreateRoute",
+                  "ec2:CreateRouteTable",
+                  "ec2:CreateSecurityGroup",
+                  "ec2:CreateSnapshot",
+                  "ec2:CreateSpotDatafeedSubscription",
+                  "ec2:CreateSubnet",
+                  "ec2:CreateTags",
+                  "ec2:CreateVolume",
+                  "ec2:CreateVpc",
+                  "ec2:CreateVpcEndpoint",
+                  "ec2:CreateVpnConnection",
+                  "ec2:CreateVpnConnectionRoute",
+                  "ec2:CreateVpnGateway",
+                  "ec2:DeleteFlowLogs",
+                  "ec2:DeleteKeyPair",
+                  "ec2:DeleteLaunchTemplate",
+                  "ec2:DeleteLaunchTemplateVersions",
+                  "ec2:DeleteNatGateway",
+                  "ec2:DeleteNetworkInterface",
+                  "ec2:DeletePlacementGroup",
+                  "ec2:DeleteSnapshot",
+                  "ec2:DeleteSpotDatafeedSubscription",
+                  "ec2:DeleteSubnet",
+                  "ec2:DeleteTags",
+                  "ec2:DeleteVpc",
+                  "ec2:DeleteVpcEndpoints",
+                  "ec2:DeleteVpnConnection",
+                  "ec2:DeleteVpnConnectionRoute",
+                  "ec2:DeleteVpnGateway",
+                  "ec2:DeregisterImage",
+                  "ec2:Describe*",
+                  "ec2:DetachInternetGateway",
+                  "ec2:DetachNetworkInterface",
+                  "ec2:DetachVpnGateway",
+                  "ec2:DisableVgwRoutePropagation",
+                  "ec2:DisableVpcClassicLinkDnsSupport",
+                  "ec2:DisassociateAddress",
+                  "ec2:DisassociateRouteTable",
+                  "ec2:EnableVgwRoutePropagation",
+                  "ec2:EnableVolumeIO",
+                  "ec2:EnableVpcClassicLinkDnsSupport",
+                  "ec2:GetConsoleOutput",
+                  "ec2:GetHostReservationPurchasePreview",
+                  "ec2:GetLaunchTemplateData",
+                  "ec2:GetPasswordData",
+                  "ec2:GetSecurityGroupsForVpc",
+                  "ec2:Import*",
+                  "ec2:Modify*",
+                  "ec2:MonitorInstances",
+                  "ec2:MoveAddressToVpc",
+                  "ec2:Purchase*",
+                  "ec2:RegisterImage",
+                  "ec2:Release*",
+                  "ec2:Replace*",
+                  "ec2:ReportInstanceStatus",
+                  "ec2:Request*",
+                  "ec2:Reset*",
+                  "ec2:RestoreAddressToClassic",
+                  "ec2:RunScheduledInstances",
+                  "ec2:UnassignPrivateIpAddresses",
+                  "ec2:UnmonitorInstances",
+                  "ec2:UpdateSecurityGroupRuleDescriptionsEgress",
+                  "ec2:UpdateSecurityGroupRuleDescriptionsIngress",
+                  "elasticloadbalancing:*",
+                  "events:*",
+                  "iam:GetAccount*",
+                  "iam:GetContextKeys*",
+                  "iam:GetCredentialReport",
+                  "iam:ListAccountAliases",
+                  "iam:ListGroups",
+                  "iam:ListOpenIDConnectProviders",
+                  "iam:ListPolicies",
+                  "iam:ListPoliciesGrantingServiceAccess",
+                  "iam:ListRoles",
+                  "iam:ListSAMLProviders",
+                  "iam:ListServerCertificates",
+                  "iam:Simulate*",
+                  "iam:UpdateServerCertificate",
+                  "iam:UpdateSigningCertificate",
+                  "kinesis:ListStreams",
+                  "kinesis:PutRecord",
+                  "kms:CreateAlias",
+                  "kms:CreateKey",
+                  "kms:DeleteAlias",
+                  "kms:Describe*",
+                  "kms:GenerateRandom",
+                  "kms:Get*",
+                  "kms:List*",
+                  "kms:Encrypt",
+                  "kms:ReEncrypt*",
+                  "lambda:Create*",
+                  "lambda:Delete*",
+                  "lambda:Get*",
+                  "lambda:InvokeFunction",
+                  "lambda:List*",
+                  "lambda:PublishVersion",
+                  "lambda:Update*",
+                  "logs:*",
+                  "rds:Describe*",
+                  "rds:ListTagsForResource",
+                  "rolesanywhere:GetCrl",
+                  "rolesanywhere:GetProfile",
+                  "rolesanywhere:GetSubject",
+                  "rolesanywhere:GetTrustAnchor",
+                  "rolesanywhere:ListCrls",
+                  "rolesanywhere:ListProfiles",
+                  "rolesanywhere:ListSubjects",
+                  "rolesanywhere:ListTagsForResource",
+                  "rolesanywhere:ListTrustAnchors",
+                  "rolesanywhere:PutNotificationSettings",
+                  "rolesanywhere:ResetNotificationSettings",
+                  "route53:*",
+                  "route53domains:*",
+                  "ses:*",
+                  "sns:*",
+                  "sqs:*",
+                  "trustedadvisor:*"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              },
+              {
+                "Action": [
+                  "ec2:AcceptVpcPeeringConnection",
+                  "ec2:AttachClassicLinkVpc",
+                  "ec2:AttachVolume",
+                  "ec2:AuthorizeSecurityGroupEgress",
+                  "ec2:AuthorizeSecurityGroupIngress",
+                  "ec2:CreateVpcPeeringConnection",
+                  "ec2:DeleteCustomerGateway",
+                  "ec2:DeleteDhcpOptions",
+                  "ec2:DeleteInternetGateway",
+                  "ec2:DeleteNetworkAcl*",
+                  "ec2:DeleteRoute",
+                  "ec2:DeleteRouteTable",
+                  "ec2:DeleteSecurityGroup",
+                  "ec2:DeleteVolume",
+                  "ec2:DeleteVpcPeeringConnection",
+                  "ec2:DetachClassicLinkVpc",
+                  "ec2:DetachVolume",
+                  "ec2:DisableVpcClassicLink",
+                  "ec2:EnableVpcClassicLink",
+                  "ec2:GetConsoleScreenshot",
+                  "ec2:RebootInstances",
+                  "ec2:RejectVpcPeeringConnection",
+                  "ec2:RevokeSecurityGroupEgress",
+                  "ec2:RevokeSecurityGroupIngress",
+                  "ec2:RunInstances",
+                  "ec2:StartInstances",
+                  "ec2:StopInstances",
+                  "ec2:TerminateInstances"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                  "*"
+                ]
+              },
+              {
+                "Action": "s3:*",
+                "Effect": "Allow",
+                "Resource": [
+                  "*"
+                ]
+              },
+              {
+                "Action": [
+                  "iam:GetAccessKeyLastUsed",
+                  "iam:GetGroup*",
+                  "iam:GetInstanceProfile",
+                  "iam:GetLoginProfile",
+                  "iam:GetOpenIDConnectProvider",
+                  "iam:GetPolicy*",
+                  "iam:GetRole*",
+                  "iam:GetSAMLProvider",
+                  "iam:GetSSHPublicKey",
+                  "iam:GetServerCertificate",
+                  "iam:GetServiceLastAccessed*",
+                  "iam:GetUser*",
+                  "iam:ListAccessKeys",
+                  "iam:ListAttached*",
+                  "iam:ListEntitiesForPolicy",
+                  "iam:ListGroupPolicies",
+                  "iam:ListGroupsForUser",
+                  "iam:ListInstanceProfiles*",
+                  "iam:ListMFADevices",
+                  "iam:ListPolicyVersions",
+                  "iam:ListRolePolicies",
+                  "iam:ListSSHPublicKeys",
+                  "iam:ListSigningCertificates",
+                  "iam:ListUserPolicies",
+                  "iam:Upload*"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                  "*"
+                ]
+              },
+              {
+                "Action": [
+                  "iam:GetRole",
+                  "iam:ListRoles",
+                  "iam:PassRole"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                  "arn:<partition>:iam::*:role/rds-monitoring-role",
+                  "arn:<partition>:iam::*:role/ec2-sysadmin-*",
+                  "arn:<partition>:iam::*:role/ecr-sysadmin-*",
+                  "arn:<partition>:iam::*:role/lambda-sysadmin-*"
+                ]
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "IsDefaultVersion": true,
+          "VersionId": "v12"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_scope_local": {
+    "recorded-date": "12-02-2026, 23:06:35",
+    "recorded-content": {}
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_scope_aws": {
+    "recorded-date": "12-02-2026, 23:06:35",
+    "recorded-content": {
+      "list-policies-aws-page": {
+        "IsTruncated": true,
+        "Marker": "<marker:1>",
+        "Policies": [
+          {
+            "Arn": "arn:<partition>:iam::aws:policy/<policy-name:1>",
+            "AttachmentCount": 6,
+            "CreateDate": "<datetime>",
+            "DefaultVersionId": "v1",
+            "IsAttachable": true,
+            "Path": "/",
+            "PermissionsBoundaryUsageCount": 0,
+            "PolicyId": "<policy-id:1>",
+            "PolicyName": "<policy-name:1>",
+            "UpdateDate": "<datetime>"
+          },
+          {
+            "Arn": "arn:<partition>:iam::aws:policy/<policy-name:2>",
+            "AttachmentCount": 1,
+            "CreateDate": "<datetime>",
+            "DefaultVersionId": "v12",
+            "IsAttachable": true,
+            "Path": "/",
+            "PermissionsBoundaryUsageCount": 0,
+            "PolicyId": "<policy-id:2>",
+            "PolicyName": "<policy-name:2>",
+            "UpdateDate": "<datetime>"
+          },
+          {
+            "Arn": "arn:<partition>:iam::aws:policy/<policy-name:3>",
+            "AttachmentCount": 4,
+            "CreateDate": "<datetime>",
+            "DefaultVersionId": "v178",
+            "IsAttachable": true,
+            "Path": "/",
+            "PermissionsBoundaryUsageCount": 0,
+            "PolicyId": "<policy-id:3>",
+            "PolicyName": "<policy-name:3>",
+            "UpdateDate": "<datetime>"
+          },
+          {
+            "Arn": "arn:<partition>:iam::aws:policy/AWSCloudFormation<policy-name:3>",
+            "AttachmentCount": 0,
+            "CreateDate": "<datetime>",
+            "DefaultVersionId": "v7",
+            "IsAttachable": true,
+            "Path": "/",
+            "PermissionsBoundaryUsageCount": 0,
+            "PolicyId": "<policy-id:4>",
+            "PolicyName": "AWSCloudFormation<policy-name:3>",
+            "UpdateDate": "<datetime>"
+          },
+          {
+            "Arn": "arn:<partition>:iam::aws:policy/<policy-name:5>",
+            "AttachmentCount": 0,
+            "CreateDate": "<datetime>",
+            "DefaultVersionId": "v14",
+            "IsAttachable": true,
+            "Path": "/",
+            "PermissionsBoundaryUsageCount": 0,
+            "PolicyId": "<policy-id:5>",
+            "PolicyName": "<policy-name:5>",
+            "UpdateDate": "<datetime>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_scope_all": {
+    "recorded-date": "12-02-2026, 23:06:39",
+    "recorded-content": {}
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_only_attached": {
+    "recorded-date": "12-02-2026, 23:06:41",
+    "recorded-content": {
+      "list-attached-role-policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:1>",
+            "PolicyName": "<policy-name:1>"
+          },
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:2>",
+            "PolicyName": "<policy-name:2>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-attached-role-policies-after-detach": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:2>",
+            "PolicyName": "<policy-name:2>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

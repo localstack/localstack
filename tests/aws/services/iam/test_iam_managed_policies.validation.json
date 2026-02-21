@@ -1,0 +1,65 @@
+{
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy": {
+    "last_validated_date": "2026-02-12T23:07:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.72,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 1.27
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy_higher_version": {
+    "last_validated_date": "2026-02-12T23:07:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.84,
+      "teardown": 0.0,
+      "total": 0.84
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy_version": {
+    "last_validated_date": "2026-02-12T23:07:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.65,
+      "teardown": 0.0,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_only_attached": {
+    "last_validated_date": "2026-02-12T23:07:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.69,
+      "teardown": 0.55,
+      "total": 2.24
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_scope_all": {
+    "last_validated_date": "2026-02-12T23:07:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.89,
+      "teardown": 0.41,
+      "total": 3.3
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_scope_aws": {
+    "last_validated_date": "2026-02-12T23:07:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 0.17,
+      "teardown": 0.0,
+      "total": 0.18
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_scope_local": {
+    "last_validated_date": "2026-02-12T23:07:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.01,
+      "teardown": 0.43,
+      "total": 1.44
+    }
+  }
+}
