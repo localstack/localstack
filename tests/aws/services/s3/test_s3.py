@@ -5750,9 +5750,6 @@ class TestS3:
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882"
-    )
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
     def test_s3_sse_default_kms_key(
