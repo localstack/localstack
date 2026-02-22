@@ -49,7 +49,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && rm "$LATEST_VERSION_FILENAME.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
   && ln -s /usr/local/bin/node /usr/local/bin/nodejs \
   # upgrade npm to the latest version
-  && npm upgrade -g npm \
+  && npm install -g npm@latest \
   # smoke tests
   && node --version \
   && npm --version \
