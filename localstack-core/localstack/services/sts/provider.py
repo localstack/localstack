@@ -1,14 +1,17 @@
 import logging
 import re
 
+from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.sts import (
     AssumeRoleResponse,
     GetCallerIdentityResponse,
+    GetWebIdentityTokenResponse,
     ProvidedContextsListType,
     StsApi,
     arnType,
     externalIdType,
+    jwtAlgorithmType,
     policyDescriptorListType,
     roleDurationSecondsType,
     roleSessionNameType,
@@ -18,10 +21,20 @@ from localstack.aws.api.sts import (
     tagListType,
     tokenCodeType,
     unrestrictedSessionPolicyDocumentType,
+    webIdentityTokenAudienceListType,
+    webIdentityTokenDurationSecondsType,
 )
+from localstack.aws.connect import connect_to
+from localstack.services.edge import ROUTER
 from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.sts.jwt import (
+    SUPPORTED_ALGORITHMS,
+    create_jwt,
+    generate_ec_signing_key,
+    generate_rsa_signing_key,
+)
 from localstack.services.sts.models import SessionConfig, sts_stores
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import extract_account_id_from_arn
@@ -48,8 +61,15 @@ class ValidationError(CommonServiceException):
 
 
 class StsProvider(StsApi, ServiceLifecycleHook):
+    _custom_router_rules: list = []
+
     def __init__(self):
         apply_iam_patches()
+
+    def on_after_init(self):
+        from localstack.services.sts.custom_endpoints import StsCustomEndpoints
+
+        self._custom_router_rules = ROUTER.add(StsCustomEndpoints())
 
     def accept_state_visitor(self, visitor: StateVisitor):
         from moto.sts.models import sts_backends
@@ -134,3 +154,66 @@ class StsProvider(StsApi, ServiceLifecycleHook):
                 iam_context={},
             )
         return response
+
+    def get_web_identity_token(
+        self,
+        context: RequestContext,
+        audience: webIdentityTokenAudienceListType,
+        signing_algorithm: jwtAlgorithmType,
+        duration_seconds: webIdentityTokenDurationSecondsType | None = None,
+        tags: tagListType | None = None,
+        **kwargs,
+    ) -> GetWebIdentityTokenResponse:
+        if signing_algorithm not in SUPPORTED_ALGORITHMS:
+            raise ValidationError(
+                f"1 validation error detected: Value '{signing_algorithm}' at 'signingAlgorithm' "
+                f"failed to satisfy constraint: Member must satisfy enum value set: "
+                f"[RS256, RS384, RS512, ES384]"
+            )
+
+        if duration_seconds is None:
+            duration_seconds = 3600
+        duration_seconds = max(900, min(43200, duration_seconds))
+
+        store = sts_stores[context.account_id]["us-east-1"]
+
+        # Select key based on algorithm family
+        if signing_algorithm == "ES384":
+            if store.ec_signing_key is None:
+                store.ec_signing_key = generate_ec_signing_key()
+            private_key = store.ec_signing_key
+        else:
+            if store.signing_key is None:
+                store.signing_key = generate_rsa_signing_key()
+            private_key = store.signing_key
+
+        issuer = f"{config.internal_service_url()}/_aws/sts/{context.account_id}"
+
+        # Use caller identity as subject
+        sts_client = connect_to(region_name=context.region).sts
+        caller_identity = sts_client.get_caller_identity()
+        subject = caller_identity["Arn"]
+
+        # Build audience string (join list for JWT claim)
+        aud = audience[0] if len(audience) == 1 else audience
+
+        additional_claims = {
+            "https://sts.amazonaws.com/": {"aws_account": context.account_id},
+        }
+        if tags:
+            additional_claims["tags"] = {tag["Key"]: tag["Value"] for tag in tags}
+
+        token, expiration = create_jwt(
+            private_key=private_key,
+            issuer=issuer,
+            subject=subject,
+            audience=aud,
+            duration_seconds=duration_seconds,
+            algorithm=signing_algorithm,
+            additional_claims=additional_claims,
+        )
+
+        return GetWebIdentityTokenResponse(
+            WebIdentityToken=token,
+            Expiration=expiration,
+        )
