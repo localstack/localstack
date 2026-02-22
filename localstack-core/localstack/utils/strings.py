@@ -205,17 +205,6 @@ def base64_decode(data: str | bytes) -> bytes:
     return base64.b64decode(data)
 
 
-def base64url_encode(data: bytes) -> str:
-    """RFC 7515 base64url encoding (no padding)."""
-    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
-
-
-def base64url_decode(s: str) -> bytes:
-    """RFC 7515 base64url decoding (adds padding back)."""
-    s += "=" * (4 - len(s) % 4)
-    return base64.urlsafe_b64decode(s)
-
-
 def get_random_hex(length: int) -> str:
     return "".join(random.choices(string.hexdigits[:16], k=length)).lower()
 

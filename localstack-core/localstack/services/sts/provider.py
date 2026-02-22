@@ -168,7 +168,7 @@ class StsProvider(StsApi, ServiceLifecycleHook):
             raise ValidationError(
                 f"1 validation error detected: Value '{signing_algorithm}' at 'signingAlgorithm' "
                 f"failed to satisfy constraint: Member must satisfy enum value set: "
-                f"[RS256, RS384, RS512, ES384]"
+                f"[RS256, ES384]"
             )
 
         if duration_seconds is None:
