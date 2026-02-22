@@ -136,9 +136,12 @@ from localstack.services.kms.models import (
 )
 from localstack.services.kms.utils import (
     execute_dry_run_capable,
+    get_custom_key_id,
+    get_custom_key_material,
     is_valid_key_arn,
     parse_key_arn,
     validate_alias_name,
+    validate_and_filter_tags,
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
@@ -228,7 +231,13 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         account_id: str, region_name: str, request: CreateKeyRequest = None
     ) -> KmsKey:
         store = kms_stores[account_id][region_name]
-        key = KmsKey(request, account_id, region_name)
+        key = KmsKey(
+            request,
+            account_id,
+            region_name,
+            get_custom_key_material(request),
+            get_custom_key_id(request),
+        )
         key_id = key.metadata["KeyId"]
         store.keys[key_id] = key
         return key
@@ -298,11 +307,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         store = kms_stores[account_id][region_name]
         if alias_name not in RESERVED_ALIASES or alias_name in store.aliases:
             return
-        create_key_request = {}
         key_id = KmsProvider._create_kms_key(
             account_id,
             region_name,
-            create_key_request,
         ).metadata.get("KeyId")
         create_alias_request = CreateAliasRequest(AliasName=alias_name, TargetKeyId=key_id)
         KmsProvider._create_kms_alias(account_id, region_name, create_alias_request)
@@ -392,19 +399,25 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def _is_rsa_spec(key_spec: str) -> bool:
         return key_spec in [KeySpec.RSA_2048, KeySpec.RSA_3072, KeySpec.RSA_4096]
 
-    # These tagging methods are overwritten in the Pro implementation.
-    def _get_key_tags(self, key: KmsKey, account_id: str, region: str) -> TagList:
-        return [Tag(TagKey=key, TagValue=value) for key, value in key.tags.items()]
+    def _get_key_tags(self, account_id: str, region: str, resource_arn: str) -> TagList:
+        store = self._get_store(account_id, region)
+        return [
+            Tag(TagKey=key, TagValue=value)
+            for key, value in store.tags.get_tags(resource_arn).items()
+        ]
 
-    def _set_key_tags(self, key: KmsKey, account_id: str, region: str, tags: TagList) -> None:
-        return
+    def _set_key_tags(self, account_id: str, region: str, resource_arn: str, tags: TagList) -> None:
+        validated_tags = validate_and_filter_tags(tags)
+        store = self._get_store(account_id, region)
+        store.tags.update_tags(
+            resource_arn, {tag["TagKey"]: tag["TagValue"] for tag in validated_tags}
+        )
 
     def _remove_key_tags(
-        self, key: KmsKey, account_id: str, region: str, tag_keys: TagKeyList
+        self, account_id: str, region: str, resource_arn: str, tag_keys: TagKeyList
     ) -> None:
-        # AWS doesn't seem to mind removal of a non-existent tag, so we do not raise any exception.
-        for tag_key in tag_keys:
-            key.tags.pop(tag_key, None)
+        store = self._get_store(account_id, region)
+        store.tags.delete_tags(resource_arn, tag_keys)
 
     #
     # Operation Handlers
@@ -416,8 +429,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateKeyRequest = None,
     ) -> CreateKeyResponse:
+        tags = validate_and_filter_tags(request.get("Tags", []))
         key = self._create_kms_key(context.account_id, context.region, request)
-        self._set_key_tags(key, context.account_id, context.region, request.get("Tags", []))
+        if tags:
+            self._set_key_tags(context.account_id, context.region, key.metadata["Arn"], tags)
         return CreateKeyResponse(KeyMetadata=key.metadata)
 
     @handler("ScheduleKeyDeletion", expand=False)
@@ -1484,7 +1499,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key = self._get_kms_key(
             context.account_id, context.region, request.get("KeyId"), any_key_state_allowed=True
         )
-        keys_list = PaginatedList(self._get_key_tags(key, context.account_id, context.region))
+        keys_list = PaginatedList(
+            self._get_key_tags(context.account_id, context.region, key.metadata["Arn"])
+        )
         page, next_token = keys_list.get_page(
             lambda tag: tag.get("TagKey"),
             next_token=request.get("Marker"),
@@ -1516,7 +1533,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     @handler("TagResource", expand=False)
     def tag_resource(self, context: RequestContext, request: TagResourceRequest) -> None:
-        tags = request["Tags"]
         key = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1524,14 +1540,11 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             enabled_key_allowed=True,
             disabled_key_allowed=True,
         )
-        key.add_tags(tags)
-        self._set_key_tags(key, context.account_id, context.region, tags)
+        if tags := request["Tags"]:
+            self._set_key_tags(context.account_id, context.region, key.metadata["Arn"], tags)
 
     @handler("UntagResource", expand=False)
     def untag_resource(self, context: RequestContext, request: UntagResourceRequest) -> None:
-        if not (tag_keys := request.get("TagKeys", [])):
-            return
-
         key = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1539,7 +1552,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             enabled_key_allowed=True,
             disabled_key_allowed=True,
         )
-        self._remove_key_tags(key, context.account_id, context.region, tag_keys)
+        self._remove_key_tags(
+            context.account_id, context.region, key.metadata["Arn"], request["TagKeys"]
+        )
 
     def derive_shared_secret(
         self,
