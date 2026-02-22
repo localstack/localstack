@@ -1,3 +1,6 @@
+# pyright: reportUnknownMemberType=false, reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false
+
+import base64
 import json
 from base64 import b64encode
 
@@ -361,6 +364,225 @@ class TestSTSIntegrations:
                 RoleArn="arn:a:b:::something/test-role", RoleSessionName="Session1:2"
             )
         snapshot.match("invalid-session-name", e.value.response)
+
+
+class TestSTSWebIdentityToken:
+    @markers.aws.validated
+    def test_get_web_identity_token(self, aws_client, snapshot):
+        """Test that GetWebIdentityToken returns a valid ES384 JWT."""
+        snapshot.add_transformer(
+            snapshot.transform.key_value("WebIdentityToken", reference_replacement=False)
+        )
+        response = aws_client.sts.get_web_identity_token(
+            Audience=["https://example.com"],
+            SigningAlgorithm="ES384",
+        )
+        snapshot.match("get-web-identity-token-es384", response)
+
+        token = response["WebIdentityToken"]
+        # JWT must have 3 dot-separated parts
+        parts = token.split(".")
+        assert len(parts) == 3, f"Expected 3 JWT parts, got {len(parts)}"
+
+        # Decode header and verify algorithm
+        header_json = base64.urlsafe_b64decode(parts[0] + "==")
+        header = json.loads(header_json)
+        assert header["alg"] == "ES384"
+        assert "kid" in header
+        assert "aud" in header
+        assert header["aud"] == "https://example.com"
+
+    @markers.aws.validated
+    def test_get_web_identity_token_rs256(self, aws_client, snapshot):
+        """Test that GetWebIdentityToken returns a valid RS256 JWT."""
+        snapshot.add_transformer(
+            snapshot.transform.key_value("WebIdentityToken", reference_replacement=False)
+        )
+        response = aws_client.sts.get_web_identity_token(
+            Audience=["https://example.com"],
+            SigningAlgorithm="RS256",
+        )
+        snapshot.match("get-web-identity-token-rs256", response)
+
+        token = response["WebIdentityToken"]
+        parts = token.split(".")
+        assert len(parts) == 3
+
+        header_json = base64.urlsafe_b64decode(parts[0] + "==")
+        header = json.loads(header_json)
+        assert header["alg"] == "RS256"
+        assert "kid" in header
+
+    @markers.aws.validated
+    def test_get_web_identity_token_invalid_algorithm(self, aws_client, snapshot):
+        """Test that an unsupported algorithm raises ValidationError."""
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.get_web_identity_token(
+                Audience=["https://example.com"],
+                SigningAlgorithm="RS384",
+            )
+        snapshot.match("invalid-algorithm", e.value.response)
+
+    @markers.aws.validated
+    def test_get_web_identity_token_default_duration(self, aws_client, snapshot):
+        """Test that default duration is 300 seconds when DurationSeconds is omitted."""
+        snapshot.add_transformer(
+            snapshot.transform.key_value("WebIdentityToken", reference_replacement=False)
+        )
+        response = aws_client.sts.get_web_identity_token(
+            Audience=["https://example.com"],
+            SigningAlgorithm="ES384",
+        )
+        snapshot.match("get-web-identity-token-default-duration", response)
+
+        token = response["WebIdentityToken"]
+        parts = token.split(".")
+        payload_json = base64.urlsafe_b64decode(parts[1] + "==")
+        payload = json.loads(payload_json)
+
+        assert "iat" in payload
+        assert "exp" in payload
+        assert payload["exp"] - payload["iat"] == 300
+
+    @markers.aws.validated
+    def test_get_web_identity_token_custom_duration(self, aws_client, snapshot):
+        """Test GetWebIdentityToken with custom duration and ES384."""
+        snapshot.add_transformer(
+            snapshot.transform.key_value("WebIdentityToken", reference_replacement=False)
+        )
+        response = aws_client.sts.get_web_identity_token(
+            Audience=["https://example.com"],
+            SigningAlgorithm="ES384",
+            DurationSeconds=1800,
+        )
+        snapshot.match("get-web-identity-token-custom-duration", response)
+
+        token = response["WebIdentityToken"]
+        parts = token.split(".")
+        assert len(parts) == 3
+
+        payload_json = base64.urlsafe_b64decode(parts[1] + "==")
+        payload = json.loads(payload_json)
+        assert payload["exp"] - payload["iat"] == 1800
+
+    @markers.aws.validated
+    def test_get_web_identity_token_invalid_duration(self, aws_client_factory, snapshot):
+        """Test that out-of-range durations raise ValidationError."""
+        aws_client = aws_client_factory(config=Config(parameter_validation=False))
+        # Too low (below 60)
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.get_web_identity_token(
+                Audience=["https://example.com"],
+                SigningAlgorithm="ES384",
+                DurationSeconds=30,
+            )
+        snapshot.match("duration-too-low", e.value.response)
+
+        # Too high (above 3600)
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.get_web_identity_token(
+                Audience=["https://example.com"],
+                SigningAlgorithm="ES384",
+                DurationSeconds=7200,
+            )
+        snapshot.match("duration-too-high", e.value.response)
+
+    @markers.aws.validated
+    def test_get_web_identity_token_claims(self, aws_client, account_id, snapshot):
+        """Test that the JWT payload contains the expected claims."""
+        snapshot.add_transformer(
+            snapshot.transform.key_value("WebIdentityToken", reference_replacement=False)
+        )
+        response = aws_client.sts.get_web_identity_token(
+            Audience=["https://example.com"],
+            SigningAlgorithm="ES384",
+        )
+        snapshot.match("get-web-identity-token-claims", response)
+
+        token = response["WebIdentityToken"]
+        parts = token.split(".")
+        payload_json = base64.urlsafe_b64decode(parts[1] + "==")
+        payload = json.loads(payload_json)
+
+        assert "iss" in payload
+        assert account_id in payload["iss"]
+        assert "sub" in payload
+        assert "aud" in payload
+        assert payload["aud"] == "https://example.com"
+        assert "iat" in payload
+        assert "exp" in payload
+        assert payload["exp"] > payload["iat"]
+
+    @markers.aws.validated
+    def test_get_web_identity_token_with_tags(self, aws_client, snapshot):
+        """Test that tags are included in the JWT claims."""
+        snapshot.add_transformer(
+            snapshot.transform.key_value("WebIdentityToken", reference_replacement=False)
+        )
+        response = aws_client.sts.get_web_identity_token(
+            Audience=["https://example.com"],
+            SigningAlgorithm="ES384",
+            Tags=[{"Key": "env", "Value": "prod"}],
+        )
+        snapshot.match("get-web-identity-token-with-tags", response)
+
+        token = response["WebIdentityToken"]
+        parts = token.split(".")
+        payload_json = base64.urlsafe_b64decode(parts[1] + "==")
+        payload = json.loads(payload_json)
+
+        assert "tags" in payload
+        assert payload["tags"] == {"env": "prod"}
+
+    @markers.aws.only_localstack
+    def test_jwks_endpoint(self, aws_client, account_id):
+        """Test that the JWKS endpoint returns valid keys after token issuance."""
+        # Issue an ES384 token to ensure the EC key is generated
+        aws_client.sts.get_web_identity_token(
+            Audience=["https://example.com"],
+            SigningAlgorithm="ES384",
+        )
+
+        # Fetch the JWKS endpoint
+        jwks_url = f"{config.internal_service_url()}/_aws/sts/{account_id}/.well-known/jwks.json"
+        jwks_response = requests.get(jwks_url)
+        assert jwks_response.status_code == 200
+        jwks = jwks_response.json()
+
+        assert "keys" in jwks
+        assert len(jwks["keys"]) >= 1
+
+        # Find the EC key
+        ec_keys = [k for k in jwks["keys"] if k.get("kty") == "EC"]
+        assert len(ec_keys) == 1
+        ec_key = ec_keys[0]
+        assert ec_key["crv"] == "P-384"
+        assert ec_key["alg"] == "ES384"
+        assert ec_key["use"] == "sig"
+        assert "kid" in ec_key
+        assert "x" in ec_key
+        assert "y" in ec_key
+
+        # Also issue an RS256 token and verify RSA key appears in JWKS
+        aws_client.sts.get_web_identity_token(
+            Audience=["https://example.com"],
+            SigningAlgorithm="RS256",
+        )
+        jwks_response = requests.get(jwks_url)
+        assert jwks_response.status_code == 200
+        jwks = jwks_response.json()
+
+        rsa_keys = [k for k in jwks["keys"] if k.get("kty") == "RSA"]
+        assert len(rsa_keys) == 1
+        rsa_key = rsa_keys[0]
+        assert rsa_key["alg"] == "RS256"
+        assert rsa_key["use"] == "sig"
+        assert "kid" in rsa_key
+        assert "n" in rsa_key
+        assert "e" in rsa_key
+
+        # Both keys should now be present
+        assert len(jwks["keys"]) >= 2
 
 
 class TestSTSAssumeRoleTagging:

@@ -278,5 +278,126 @@
         }
       }
     }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSWebIdentityToken::test_get_web_identity_token": {
+    "recorded-date": "22-02-2026, 19:23:32",
+    "recorded-content": {
+      "get-web-identity-token-es384": {
+        "Expiration": "<datetime>",
+        "WebIdentityToken": "web-identity-token",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSWebIdentityToken::test_get_web_identity_token_custom_duration": {
+    "recorded-date": "22-02-2026, 19:23:32",
+    "recorded-content": {
+      "get-web-identity-token-custom-duration": {
+        "Expiration": "<datetime>",
+        "WebIdentityToken": "web-identity-token",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSWebIdentityToken::test_get_web_identity_token_rs256": {
+    "recorded-date": "22-02-2026, 19:23:32",
+    "recorded-content": {
+      "get-web-identity-token-rs256": {
+        "Expiration": "<datetime>",
+        "WebIdentityToken": "web-identity-token",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSWebIdentityToken::test_get_web_identity_token_default_duration": {
+    "recorded-date": "22-02-2026, 19:23:32",
+    "recorded-content": {
+      "get-web-identity-token-default-duration": {
+        "Expiration": "<datetime>",
+        "WebIdentityToken": "web-identity-token",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSWebIdentityToken::test_get_web_identity_token_invalid_algorithm": {
+    "recorded-date": "22-02-2026, 19:23:32",
+    "recorded-content": {
+      "invalid-algorithm": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value 'RS384' at 'signingAlgorithm' failed to satisfy constraint: Member must satisfy enum value set: [RS256, ES384]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSWebIdentityToken::test_get_web_identity_token_invalid_duration": {
+    "recorded-date": "22-02-2026, 19:23:32",
+    "recorded-content": {
+      "duration-too-low": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value '30' at 'durationSeconds' failed to satisfy constraint: Member must have value between 60 and 3600",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "duration-too-high": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value '7200' at 'durationSeconds' failed to satisfy constraint: Member must have value between 60 and 3600",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSWebIdentityToken::test_get_web_identity_token_claims": {
+    "recorded-date": "22-02-2026, 19:23:32",
+    "recorded-content": {
+      "get-web-identity-token-claims": {
+        "Expiration": "<datetime>",
+        "WebIdentityToken": "web-identity-token",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSWebIdentityToken::test_get_web_identity_token_with_tags": {
+    "recorded-date": "22-02-2026, 19:23:32",
+    "recorded-content": {
+      "get-web-identity-token-with-tags": {
+        "Expiration": "<datetime>",
+        "WebIdentityToken": "web-identity-token",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
