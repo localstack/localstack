@@ -4,7 +4,6 @@ Uses the ``cryptography`` library directly (no PyJWT dependency).
 Supports RS256, RS384, RS512 (RSA PKCS1v15 + SHA-256/384/512) and ES384 (ECDSA P-384).
 """
 
-import base64
 import hashlib
 import json
 import time
@@ -18,6 +17,8 @@ from cryptography.hazmat.primitives.asymmetric.ec import (
 )
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 
+from localstack.utils.strings import base64url_decode, base64url_encode
+
 SUPPORTED_ALGORITHMS = {"RS256", "RS384", "RS512", "ES384"}
 
 _ALGORITHM_HASH_MAP: dict[str, type[hashes.HashAlgorithm]] = {
@@ -26,17 +27,6 @@ _ALGORITHM_HASH_MAP: dict[str, type[hashes.HashAlgorithm]] = {
     "RS512": hashes.SHA512,
     "ES384": hashes.SHA384,
 }
-
-
-def _base64url_encode(data: bytes) -> str:
-    """RFC 7515 base64url encoding (no padding)."""
-    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
-
-
-def _base64url_decode(s: str) -> bytes:
-    """RFC 7515 base64url decoding (adds padding back)."""
-    s += "=" * (4 - len(s) % 4)
-    return base64.urlsafe_b64decode(s)
 
 
 def generate_rsa_signing_key() -> RSAPrivateKey:
@@ -60,24 +50,24 @@ def compute_kid(public_key: RSAPublicKey | EllipticCurvePublicKey) -> str:
         thumbprint_input = {
             "crv": "P-384",
             "kty": "EC",
-            "x": _base64url_encode(numbers.x.to_bytes(48, byteorder="big")),
-            "y": _base64url_encode(numbers.y.to_bytes(48, byteorder="big")),
+            "x": base64url_encode(numbers.x.to_bytes(48, byteorder="big")),
+            "y": base64url_encode(numbers.y.to_bytes(48, byteorder="big")),
         }
     else:
         numbers = public_key.public_numbers()
         byte_length = (numbers.n.bit_length() + 7) // 8
         thumbprint_input = {
-            "e": _base64url_encode(
+            "e": base64url_encode(
                 numbers.e.to_bytes((numbers.e.bit_length() + 7) // 8, byteorder="big")
             ),
             "kty": "RSA",
-            "n": _base64url_encode(numbers.n.to_bytes(byte_length, byteorder="big")),
+            "n": base64url_encode(numbers.n.to_bytes(byte_length, byteorder="big")),
         }
 
     # RFC 7638: canonical JSON with sorted keys, no whitespace
     canonical = json.dumps(thumbprint_input, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(canonical.encode("utf-8")).digest()
-    return _base64url_encode(digest)
+    return base64url_encode(digest)
 
 
 def public_key_to_jwk(public_key: RSAPublicKey | EllipticCurvePublicKey) -> dict[str, str]:
@@ -89,8 +79,8 @@ def public_key_to_jwk(public_key: RSAPublicKey | EllipticCurvePublicKey) -> dict
         return {
             "kty": "EC",
             "crv": "P-384",
-            "x": _base64url_encode(numbers.x.to_bytes(48, byteorder="big")),
-            "y": _base64url_encode(numbers.y.to_bytes(48, byteorder="big")),
+            "x": base64url_encode(numbers.x.to_bytes(48, byteorder="big")),
+            "y": base64url_encode(numbers.y.to_bytes(48, byteorder="big")),
             "kid": kid,
             "use": "sig",
             "alg": "ES384",
@@ -100,8 +90,8 @@ def public_key_to_jwk(public_key: RSAPublicKey | EllipticCurvePublicKey) -> dict
         byte_length = (numbers.n.bit_length() + 7) // 8
         return {
             "kty": "RSA",
-            "n": _base64url_encode(numbers.n.to_bytes(byte_length, byteorder="big")),
-            "e": _base64url_encode(
+            "n": base64url_encode(numbers.n.to_bytes(byte_length, byteorder="big")),
+            "e": base64url_encode(
                 numbers.e.to_bytes((numbers.e.bit_length() + 7) // 8, byteorder="big")
             ),
             "kid": kid,
@@ -144,8 +134,8 @@ def create_jwt(
     if additional_claims:
         payload = {**payload, **additional_claims}
 
-    header_b64 = _base64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
-    payload_b64 = _base64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
+    header_b64 = base64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
+    payload_b64 = base64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
     signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
 
     hash_alg = _ALGORITHM_HASH_MAP[algorithm]()
@@ -163,7 +153,7 @@ def create_jwt(
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
 
-    signature_b64 = _base64url_encode(signature)
+    signature_b64 = base64url_encode(signature)
 
     token = f"{header_b64}.{payload_b64}.{signature_b64}"
     return token, expiration
@@ -180,9 +170,9 @@ def decode_jwt(token: str) -> tuple[dict[str, object], dict[str, object], bytes]
         raise ValueError("Malformed JWT: expected 3 dot-separated parts")
 
     try:
-        header: dict[str, object] = json.loads(_base64url_decode(parts[0]))
-        payload: dict[str, object] = json.loads(_base64url_decode(parts[1]))
-        signature = _base64url_decode(parts[2])
+        header: dict[str, object] = json.loads(base64url_decode(parts[0]))
+        payload: dict[str, object] = json.loads(base64url_decode(parts[1]))
+        signature = base64url_decode(parts[2])
     except Exception as e:
         raise ValueError(f"Malformed JWT: {e}") from e
 
