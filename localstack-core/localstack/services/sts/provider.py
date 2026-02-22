@@ -164,16 +164,18 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         tags: tagListType | None = None,
         **kwargs,
     ) -> GetWebIdentityTokenResponse:
+        # See: https://docs.aws.amazon.com/STS/latest/APIReference/API_GetWebIdentityToken.html#API_GetWebIdentityToken_RequestParameters
         if signing_algorithm not in SUPPORTED_ALGORITHMS:
             raise ValidationError(
-                f"1 validation error detected: Value '{signing_algorithm}' at 'signingAlgorithm' "
-                f"failed to satisfy constraint: Member must satisfy enum value set: "
-                f"[RS256, ES384]"
+                f"1 validation error detected: Value '{signing_algorithm}' at 'signingAlgorithm' failed to satisfy constraint: Member must satisfy enum value set: [RS256, ES384]"
             )
 
         if duration_seconds is None:
-            duration_seconds = 3600
-        duration_seconds = max(900, min(43200, duration_seconds))
+            duration_seconds = 300
+        if duration_seconds < 60 or duration_seconds > 3600:
+            raise ValidationError(
+                f"1 validation error detected: Value '{duration_seconds}' at 'durationSeconds' failed to satisfy constraint: Member must have value between 60 and 3600"
+            )
 
         store = sts_stores[context.account_id]["us-east-1"]
 
@@ -197,7 +199,7 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         # Build audience string (join list for JWT claim)
         aud = audience[0] if len(audience) == 1 else audience
 
-        additional_claims = {
+        additional_claims: dict[str, object] = {
             "https://sts.amazonaws.com/": {"aws_account": context.account_id},
         }
         if tags:

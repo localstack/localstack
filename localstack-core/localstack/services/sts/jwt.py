@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from joserfc import jwt
 from joserfc.jwk import ECKey, RSAKey
 
+# https://docs.aws.amazon.com/STS/latest/APIReference/API_GetWebIdentityToken.html#API_GetWebIdentityToken_RequestParameters
 SUPPORTED_ALGORITHMS = {"RS256", "ES384"}
 
 
