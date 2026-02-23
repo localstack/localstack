@@ -20,6 +20,13 @@ class MockedCommonState(MockedBaseState[CommonStateField]):
     def add_inspection_data(self, env: TestStateEnvironment):
         state = self._wrapped
 
+        if state._is_language_query_jsonpath():
+            self._add_jsonpath_inspection_data(env)
+
+    def _add_jsonpath_inspection_data(self, env: TestStateEnvironment):
+
+        state = self._wrapped
+
         if not isinstance(state, StatePass):
             if not self.is_single_state:
                 return

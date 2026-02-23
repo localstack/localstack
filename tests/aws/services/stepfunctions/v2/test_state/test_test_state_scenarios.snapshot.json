@@ -2236,7 +2236,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_with_variables": {
-    "recorded-date": "19-02-2026, 16:02:21",
+    "recorded-date": "23-02-2026, 12:08:28",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
