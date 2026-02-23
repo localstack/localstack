@@ -922,7 +922,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # in case we are overriding an object, delete the tags entry
         key_id = get_unique_key_id(bucket_name, key, version_id)
-        store.object_tags.delete_all_tags(key_id)
+        store.tags.delete_all_tags(key_id)
         if tagging:
             self._create_object_tags(store, key_id, tagging)
 
