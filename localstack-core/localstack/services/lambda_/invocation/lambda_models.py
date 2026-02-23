@@ -621,9 +621,9 @@ class CapacityProvider:
     CapacityProviderScalingConfig: CapacityProviderScalingConfig
     LastModified: Timestamp
     KmsKeyArn: KMSKeyArn | None = None
-    DesiredState: DesiredCapacityProviderState = (
-        DesiredCapacityProviderState.Running
-    )  # TODO filter out stopped capacity providers in hook
+    # Tracks whether the capacity provider should be running or stopped.
+    # Set to Stopped when deletion is initiated; used to skip restoration on state load.
+    DesiredState: DesiredCapacityProviderState = DesiredCapacityProviderState.Running
 
 
 @dataclasses.dataclass
