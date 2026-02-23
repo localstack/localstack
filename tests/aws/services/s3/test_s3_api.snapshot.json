@@ -485,7 +485,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects_versioned": {
-    "recorded-date": "21-02-2026, 01:01:49",
+    "recorded-date": "23-02-2026, 11:04:21",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "1jy6qw==",
@@ -502,17 +502,17 @@
         "Deleted": [
           {
             "DeleteMarker": true,
-            "DeleteMarkerVersionId": "<delete-marker-version-id:1>",
+            "DeleteMarkerVersionId": "<version-id:2>",
             "Key": "test-delete"
           },
           {
             "DeleteMarker": true,
-            "DeleteMarkerVersionId": "<delete-marker-version-id:2>",
+            "DeleteMarkerVersionId": "<delete-marker-version-id:1>",
             "Key": "wrongkey"
           },
           {
             "DeleteMarker": true,
-            "DeleteMarkerVersionId": "<version-id:2>",
+            "DeleteMarkerVersionId": "<delete-marker-version-id:2>",
             "Key": "wrongkey-x"
           }
         ],
@@ -524,6 +524,8 @@
       "delete-objects-marker": {
         "Deleted": [
           {
+            "DeleteMarker": true,
+            "DeleteMarkerVersionId": "<version-id:2>",
             "Key": "test-delete",
             "VersionId": "<version-id:2>"
           }
