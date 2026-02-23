@@ -102,4 +102,17 @@ class KMSAliasProvider(ResourceProvider[KMSAliasProperties]):
         IAM permissions required:
           - kms:UpdateAlias
         """
-        raise NotImplementedError
+        model = request.desired_state
+        prev = request.previous_state
+        kms = request.aws_client_factory.kms
+
+        # Preserve create-only props
+        model["AliasName"] = prev["AliasName"]
+
+        kms.update_alias(AliasName=model["AliasName"], TargetKeyId=model["TargetKeyId"])
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
