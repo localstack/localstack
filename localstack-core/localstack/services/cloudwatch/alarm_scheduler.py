@@ -44,14 +44,16 @@ class AlarmScheduler:
 
     def start(self) -> None:
         if not (self.thread and self.thread.is_alive()):
+            LOG.debug("Starting CloudWatch scheduler")
             self.thread = threading.Thread(target=self.scheduler.run, name="cloudwatch-scheduler")
             self.thread.start()
             SHUTDOWN_HANDLERS.register(self.shutdown)
 
     def shutdown(self) -> None:
         """
-        Shutsdown the scheduler, must be called before application stops
+        Shutdown the scheduler, must be called before application stops
         """
+        LOG.debug("Stopping CloudWatch scheduler")
         self.scheduler.close()
         self.scheduled_alarms.clear()
         SHUTDOWN_HANDLERS.unregister(self.shutdown)
