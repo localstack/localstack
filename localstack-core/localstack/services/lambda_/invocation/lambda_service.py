@@ -504,6 +504,11 @@ class LambdaService:
 
         :param new_version: New version (with the same qualifier as an older one)
         """
+        if new_version.config.capacity_provider_config:
+            # simulate AWS behavior with a slight delay after update_function_configuration,
+            # so we can observe LastUpdateStatus transitioning to InProgress before it becomes Successful
+            time.sleep(0.5)
+
         if (
             new_version.qualified_arn not in self.lambda_running_versions
             and not new_version.config.capacity_provider_config
