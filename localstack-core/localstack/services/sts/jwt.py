@@ -29,11 +29,6 @@ def public_key_to_jwk(key: RSAKey | ECKey) -> dict[str, str | list[str]]:
     return key.as_dict(private=False, use="sig", alg=alg)
 
 
-def build_jwks(keys: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
-    """Build a JWKS document from a list of JWK dicts."""
-    return {"keys": keys}
-
-
 def create_jwt(
     private_key: RSAKey | ECKey,
     issuer: str,
