@@ -4,5 +4,8 @@
   },
   "tests/aws/services/ssm/test_ssm.py::TestSSM::test_parameters_with_path": {
     "last_validated_date": "2025-01-08T17:04:53+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_put_parameter_event_operation": {
+    "last_validated_date": "2026-02-22T14:25:00+00:00"
   }
 }
