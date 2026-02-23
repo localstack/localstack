@@ -17,9 +17,7 @@ class TestExtractJsonataVariableReferences:
         assert refs == {"$states.input.foo"}
 
     def test_multiple_variables(self):
-        refs = extract_jsonata_variable_references(
-            "$states.input.part1 + $states.input.part2"
-        )
+        refs = extract_jsonata_variable_references("$states.input.part1 + $states.input.part2")
         assert refs == {"$states.input.part1", "$states.input.part2"}
 
     def test_variables_inside_array_literal(self):
