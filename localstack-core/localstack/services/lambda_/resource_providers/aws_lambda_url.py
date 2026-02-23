@@ -128,4 +128,32 @@ class LambdaUrlProvider(ResourceProvider[LambdaUrlProperties]):
         IAM permissions required:
           - lambda:UpdateFunctionUrlConfig
         """
-        raise NotImplementedError
+        model = request.desired_state
+        prev = request.previous_state
+        lambda_client = request.aws_client_factory.lambda_
+
+        # Preserve create-only and read-only props
+        model["TargetFunctionArn"] = prev["TargetFunctionArn"]
+        model["FunctionArn"] = prev["FunctionArn"]
+        model["FunctionUrl"] = prev["FunctionUrl"]
+        if prev.get("Qualifier"):
+            model["Qualifier"] = prev["Qualifier"]
+
+        params = {"FunctionName": model["TargetFunctionArn"]}
+        if model.get("AuthType"):
+            params["AuthType"] = model["AuthType"]
+        if model.get("Cors"):
+            params["Cors"] = model["Cors"]
+        if model.get("InvokeMode"):
+            params["InvokeMode"] = model["InvokeMode"]
+        if model.get("Qualifier"):
+            params["Qualifier"] = model["Qualifier"]
+
+        response = lambda_client.update_function_url_config(**params)
+        model["FunctionUrl"] = response["FunctionUrl"]
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
