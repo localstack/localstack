@@ -10071,6 +10071,7 @@ class CreatePlacementGroupRequest(ServiceRequest):
     TagSpecifications: TagSpecificationList | None
     SpreadLevel: SpreadLevel | None
     LinkedGroupId: PlacementGroupId | None
+    Operator: OperatorRequest | None
     DryRun: Boolean | None
     GroupName: String | None
     Strategy: PlacementStrategy | None
@@ -10086,6 +10087,7 @@ class PlacementGroup(TypedDict, total=False):
     GroupArn: String | None
     SpreadLevel: SpreadLevel | None
     LinkedGroupId: PlacementGroupId | None
+    Operator: OperatorResponse | None
 
 
 class CreatePlacementGroupResult(TypedDict, total=False):
@@ -24750,6 +24752,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList | None = None,
         spread_level: SpreadLevel | None = None,
         linked_group_id: PlacementGroupId | None = None,
+        operator: OperatorRequest | None = None,
         dry_run: Boolean | None = None,
         group_name: String | None = None,
         strategy: PlacementStrategy | None = None,
