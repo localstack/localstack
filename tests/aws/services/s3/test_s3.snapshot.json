@@ -1114,7 +1114,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "recorded-date": "21-02-2026, 00:21:03",
+    "recorded-date": "23-02-2026, 12:30:37",
     "recorded-content": {
       "get-bucket-location-bucket-us-east-1": {
         "LocationConstraint": null,
@@ -1135,7 +1135,7 @@
         }
       },
       "create-bucket-constraint-us-east-1-with-None": {
-        "BucketArn": "arn:<partition>:s3:::bucket-0397e57b",
+        "BucketArn": "<bucket-arn:1>",
         "Location": "<location>",
         "ResponseMetadata": {
           "HTTPHeaders": {},

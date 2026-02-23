@@ -2836,6 +2836,7 @@ class TestS3:
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformers_list(
             [
+                snapshot.transform.key_value("BucketArn"),
                 snapshot.transform.key_value("Location", "<location>", reference_replacement=False),
                 snapshot.transform.key_value(
                     "LocationConstraint", "<location-constraint>", reference_replacement=False
