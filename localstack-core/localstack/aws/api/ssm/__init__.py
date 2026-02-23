@@ -21,6 +21,7 @@ AllowedPattern = str
 ApplyOnlyAtCronInterval = bool
 ApproveAfterDays = int
 Architecture = str
+AssociationDispatchAssumeRoleArn = str
 AssociationExecutionFilterValue = str
 AssociationExecutionId = str
 AssociationExecutionTargetsFilterValue = str
@@ -2214,6 +2215,7 @@ class AssociationDescription(TypedDict, total=False):
     TargetMaps: TargetMaps | None
     AlarmConfiguration: AlarmConfiguration | None
     TriggeredAlarms: AlarmStateInformationList | None
+    AssociationDispatchAssumeRole: AssociationDispatchAssumeRoleArn | None
 
 
 AssociationDescriptionList = list[AssociationDescription]
@@ -2299,6 +2301,7 @@ class AssociationVersionInfo(TypedDict, total=False):
     ScheduleOffset: ScheduleOffset | None
     Duration: Duration | None
     TargetMaps: TargetMaps | None
+    AssociationDispatchAssumeRole: AssociationDispatchAssumeRoleArn | None
 
 
 AssociationVersionList = list[AssociationVersionInfo]
@@ -2823,6 +2826,7 @@ CreateAssociationBatchRequestEntries = list[CreateAssociationBatchRequestEntry]
 
 class CreateAssociationBatchRequest(ServiceRequest):
     Entries: CreateAssociationBatchRequestEntries
+    AssociationDispatchAssumeRole: AssociationDispatchAssumeRoleArn | None
 
 
 class FailedCreateAssociation(TypedDict, total=False):
@@ -2861,6 +2865,7 @@ class CreateAssociationRequest(ServiceRequest):
     TargetMaps: TargetMaps | None
     Tags: TagList | None
     AlarmConfiguration: AlarmConfiguration | None
+    AssociationDispatchAssumeRole: AssociationDispatchAssumeRoleArn | None
 
 
 class CreateAssociationResult(TypedDict, total=False):
@@ -5747,6 +5752,7 @@ class UpdateAssociationRequest(ServiceRequest):
     Duration: Duration | None
     TargetMaps: TargetMaps | None
     AlarmConfiguration: AlarmConfiguration | None
+    AssociationDispatchAssumeRole: AssociationDispatchAssumeRoleArn | None
 
 
 class UpdateAssociationResult(TypedDict, total=False):
@@ -6062,13 +6068,18 @@ class SsmApi:
         target_maps: TargetMaps | None = None,
         tags: TagList | None = None,
         alarm_configuration: AlarmConfiguration | None = None,
+        association_dispatch_assume_role: AssociationDispatchAssumeRoleArn | None = None,
         **kwargs,
     ) -> CreateAssociationResult:
         raise NotImplementedError
 
     @handler("CreateAssociationBatch")
     def create_association_batch(
-        self, context: RequestContext, entries: CreateAssociationBatchRequestEntries, **kwargs
+        self,
+        context: RequestContext,
+        entries: CreateAssociationBatchRequestEntries,
+        association_dispatch_assume_role: AssociationDispatchAssumeRoleArn | None = None,
+        **kwargs,
     ) -> CreateAssociationBatchResult:
         raise NotImplementedError
 
@@ -7478,6 +7489,7 @@ class SsmApi:
         duration: Duration | None = None,
         target_maps: TargetMaps | None = None,
         alarm_configuration: AlarmConfiguration | None = None,
+        association_dispatch_assume_role: AssociationDispatchAssumeRoleArn | None = None,
         **kwargs,
     ) -> UpdateAssociationResult:
         raise NotImplementedError

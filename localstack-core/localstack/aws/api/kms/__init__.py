@@ -123,6 +123,10 @@ class DataKeySpec(StrEnum):
     AES_128 = "AES_128"
 
 
+class DryRunModifierType(StrEnum):
+    IGNORE_CIPHERTEXT = "IGNORE_CIPHERTEXT"
+
+
 class EncryptionAlgorithmSpec(StrEnum):
     SYMMETRIC_DEFAULT = "SYMMETRIC_DEFAULT"
     RSAES_OAEP_SHA_1 = "RSAES_OAEP_SHA_1"
@@ -767,6 +771,7 @@ class CustomKeyStoresListEntry(TypedDict, total=False):
 
 
 CustomKeyStoresList = list[CustomKeyStoresListEntry]
+DryRunModifierList = list[DryRunModifierType]
 
 
 class RecipientInfo(TypedDict, total=False):
@@ -775,13 +780,14 @@ class RecipientInfo(TypedDict, total=False):
 
 
 class DecryptRequest(ServiceRequest):
-    CiphertextBlob: CiphertextType
+    CiphertextBlob: CiphertextType | None
     EncryptionContext: EncryptionContextType | None
     GrantTokens: GrantTokenList | None
     KeyId: KeyIdType | None
     EncryptionAlgorithm: EncryptionAlgorithmSpec | None
     Recipient: RecipientInfo | None
     DryRun: NullableBooleanType | None
+    DryRunModifiers: DryRunModifierList | None
 
 
 PlaintextType = bytes
@@ -1188,7 +1194,7 @@ class PutKeyPolicyRequest(ServiceRequest):
 
 
 class ReEncryptRequest(ServiceRequest):
-    CiphertextBlob: CiphertextType
+    CiphertextBlob: CiphertextType | None
     SourceEncryptionContext: EncryptionContextType | None
     SourceKeyId: KeyIdType | None
     DestinationKeyId: KeyIdType
@@ -1197,6 +1203,7 @@ class ReEncryptRequest(ServiceRequest):
     DestinationEncryptionAlgorithm: EncryptionAlgorithmSpec | None
     GrantTokens: GrantTokenList | None
     DryRun: NullableBooleanType | None
+    DryRunModifiers: DryRunModifierList | None
 
 
 class ReEncryptResponse(TypedDict, total=False):
@@ -1428,13 +1435,14 @@ class KmsApi:
     def decrypt(
         self,
         context: RequestContext,
-        ciphertext_blob: CiphertextType,
+        ciphertext_blob: CiphertextType | None = None,
         encryption_context: EncryptionContextType | None = None,
         grant_tokens: GrantTokenList | None = None,
         key_id: KeyIdType | None = None,
         encryption_algorithm: EncryptionAlgorithmSpec | None = None,
         recipient: RecipientInfo | None = None,
         dry_run: NullableBooleanType | None = None,
+        dry_run_modifiers: DryRunModifierList | None = None,
         **kwargs,
     ) -> DecryptResponse:
         raise NotImplementedError
@@ -1765,8 +1773,8 @@ class KmsApi:
     def re_encrypt(
         self,
         context: RequestContext,
-        ciphertext_blob: CiphertextType,
         destination_key_id: KeyIdType,
+        ciphertext_blob: CiphertextType | None = None,
         source_encryption_context: EncryptionContextType | None = None,
         source_key_id: KeyIdType | None = None,
         destination_encryption_context: EncryptionContextType | None = None,
@@ -1774,6 +1782,7 @@ class KmsApi:
         destination_encryption_algorithm: EncryptionAlgorithmSpec | None = None,
         grant_tokens: GrantTokenList | None = None,
         dry_run: NullableBooleanType | None = None,
+        dry_run_modifiers: DryRunModifierList | None = None,
         **kwargs,
     ) -> ReEncryptResponse:
         raise NotImplementedError

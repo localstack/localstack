@@ -102,6 +102,8 @@ def _collect_operations() -> tuple[ServiceModel, OperationModel]:
                     "sagemaker-featurestore-runtime",
                     "sagemaker-metrics",
                     "signin",
+                    "signer",  # `signer` has conflicts with `signer-data` `GetRevocationStatus`
+                    "signer-data",
                     "sms-voice",
                     "sso",
                     "sso-oidc",
