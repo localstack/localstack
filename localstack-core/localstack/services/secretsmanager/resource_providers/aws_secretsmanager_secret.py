@@ -256,7 +256,43 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
           - secretsmanager:ReplicateSecretToRegions
           - secretsmanager:RemoveRegionsFromReplication
         """
-        raise NotImplementedError
+        model = request.desired_state
+        prev = request.previous_state
+        secretsmanager = request.aws_client_factory.secretsmanager
+
+        # Preserve create-only and read-only props
+        model["Name"] = prev["Name"]
+        model["Id"] = prev["Id"]
+
+        # Build update params
+        update_params = {"SecretId": prev["Name"]}
+        if "Description" in model:
+            update_params["Description"] = model["Description"]
+        elif "Description" in prev:
+            update_params["Description"] = ""
+        if "KmsKeyId" in model:
+            update_params["KmsKeyId"] = model["KmsKeyId"]
+        if "SecretString" in model:
+            update_params["SecretString"] = model["SecretString"]
+
+        secretsmanager.update_secret(**update_params)
+
+        # Tags
+        tags_rm, tags_add = util.resource_tags_to_remove_or_update(
+            prev.get("Tags", []), model.get("Tags", [])
+        )
+        if tags_rm:
+            secretsmanager.untag_resource(SecretId=prev["Id"], TagKeys=tags_rm)
+        if tags_add:
+            secretsmanager.tag_resource(
+                SecretId=prev["Id"],
+                Tags=[{"Key": k, "Value": v} for k, v in tags_add.items()],
+            )
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+        )
 
     def list(
         self,
