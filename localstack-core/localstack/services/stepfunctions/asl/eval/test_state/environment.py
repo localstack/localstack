@@ -51,8 +51,9 @@ class TestStateEnvironment(Environment):
             variable_store=variable_store,
         )
         self.inspection_data = InspectionData()
-        if variable_store:
-            self.inspection_data["variables"] = to_json_str(variable_store.to_key_value_dict())
+        variables = variable_store.to_dict()
+        if variables:
+            self.inspection_data["variables"] = to_json_str(variables)
         self.mock = mock
 
     def is_test_state_mocked_mode(self) -> bool:

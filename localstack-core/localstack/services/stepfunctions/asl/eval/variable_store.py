@@ -89,7 +89,7 @@ class VariableStore:
             assigned_variables[traced_declaration_identifier] = traced_declaration_value_json_str
         return assigned_variables
 
-    def to_key_value_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         assigned_variables: dict[str, str] = {}
         for traced_declaration_identifier in self._declaration_tracing:
             assigned_variables[traced_declaration_identifier] = self.get(
@@ -131,6 +131,3 @@ class VariableStore:
             [self._outer_variable_declaration_cache, inner_variable_declarations_cache]
         )
         return self._variable_declarations_cache
-
-    def __len__(self):
-        return len(self._declaration_tracing)
