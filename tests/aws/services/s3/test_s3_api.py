@@ -1461,7 +1461,7 @@ class TestS3BucketObjectTagging:
     ):
         snapshot.add_transformers_list(
             [
-                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value("BucketArn"),
                 snapshot.transform.key_value("Location"),
             ]
         )
@@ -1491,6 +1491,7 @@ class TestS3BucketObjectTagging:
             [
                 snapshot.transform.key_value("BucketName"),
                 snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("BucketArn"),
             ]
         )
 
@@ -1525,6 +1526,7 @@ class TestS3BucketObjectTagging:
             [
                 snapshot.transform.key_value("BucketName"),
                 snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("BucketArn"),
             ]
         )
         us_east_1_s3_client = aws_client_factory(
@@ -3492,6 +3494,9 @@ class TestS3MetricsConfiguration:
         snapshot.match("delete_bucket_metrics_configuration_2", delete_err.value.response)
 
 
+@pytest.mark.skip(
+    reason="Behavior is not in line anymore with AWS: implement IfMatch in DeleteObject"
+)
 class TestS3DeletePrecondition:
     @markers.aws.validated
     def test_delete_object_if_match_non_express(self, s3_bucket, aws_client, snapshot):

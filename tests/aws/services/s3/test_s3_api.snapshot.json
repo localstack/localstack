@@ -1648,7 +1648,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_crud": {
-    "recorded-date": "21-02-2026, 01:03:04",
+    "recorded-date": "23-02-2026, 11:08:45",
     "recorded-content": {
       "get-bucket-tags-empty": {
         "Error": {
@@ -1716,7 +1716,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_crud": {
-    "recorded-date": "21-02-2026, 01:03:31",
+    "recorded-date": "23-02-2026, 11:09:07",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lpqTBg==",
@@ -1824,7 +1824,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_with_tags": {
-    "recorded-date": "21-02-2026, 01:03:45",
+    "recorded-date": "23-02-2026, 11:09:19",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lpqTBg==",
@@ -1940,7 +1940,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_exc": {
-    "recorded-date": "21-02-2026, 01:03:12",
+    "recorded-date": "23-02-2026, 11:08:53",
     "recorded-content": {
       "get-no-bucket-tags": {
         "Error": {
@@ -1978,7 +1978,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
-    "recorded-date": "21-02-2026, 01:03:41",
+    "recorded-date": "23-02-2026, 11:09:16",
     "recorded-content": {
       "put-obj-0": {
         "ChecksumCRC32": "XCKz9A==",
@@ -2154,7 +2154,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_exc": {
-    "recorded-date": "21-02-2026, 01:03:35",
+    "recorded-date": "23-02-2026, 11:09:10",
     "recorded-content": {
       "get-no-bucket-tags": {
         "Error": {
@@ -2249,7 +2249,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tags_delete_or_overwrite_object": {
-    "recorded-date": "21-02-2026, 01:03:50",
+    "recorded-date": "23-02-2026, 11:09:25",
     "recorded-content": {
       "get-object-after-creation": {
         "TagSet": [
@@ -2280,7 +2280,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_tagging_validation": {
-    "recorded-date": "21-02-2026, 01:03:56",
+    "recorded-date": "23-02-2026, 11:09:30",
     "recorded-content": {
       "put-bucket-tags-duplicate-keys": {
         "Error": {
@@ -4762,7 +4762,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_tagging_none_value": {
-    "recorded-date": "21-02-2026, 01:03:37",
+    "recorded-date": "23-02-2026, 11:09:12",
     "recorded-content": {
       "put-none-tag-set": {
         "ResponseMetadata": {
@@ -4780,7 +4780,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_bucket_tagging_none_value": {
-    "recorded-date": "21-02-2026, 01:03:29",
+    "recorded-date": "23-02-2026, 11:09:04",
     "recorded-content": {
       "put-bucket-tags-origin": {
         "ResponseMetadata": {
@@ -5158,10 +5158,10 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags": {
-    "recorded-date": "21-02-2026, 01:03:06",
+    "recorded-date": "23-02-2026, 11:08:46",
     "recorded-content": {
       "create-bucket-with-tags": {
-        "BucketArn": "arn:<partition>:s3:::test-bucket-tag-3fde2c7c",
+        "BucketArn": "<bucket-arn:1>",
         "Location": "<location:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5183,7 +5183,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags_us_east_1_idempotency": {
-    "recorded-date": "21-02-2026, 01:03:10",
+    "recorded-date": "23-02-2026, 11:12:03",
     "recorded-content": {
       "create-bucket-with-tags": {
         "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
@@ -5270,7 +5270,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags_exc": {
-    "recorded-date": "21-02-2026, 01:03:27",
+    "recorded-date": "23-02-2026, 11:09:02",
     "recorded-content": {
       "tags-key-none": {
         "Error": {
@@ -5338,7 +5338,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_empty_tags": {
-    "recorded-date": "21-02-2026, 01:03:07",
+    "recorded-date": "23-02-2026, 11:11:49",
     "recorded-content": {
       "create-bucket-with-empty-tags": {
         "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
@@ -5370,7 +5370,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_head_object_with_tags": {
-    "recorded-date": "21-02-2026, 01:03:47",
+    "recorded-date": "23-02-2026, 11:09:22",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lpqTBg==",

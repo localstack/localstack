@@ -545,8 +545,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     BucketName=bucket_name,
                 )
             else:
+                existing_bucket = store.buckets[bucket_name]
                 # CreateBucket is idempotent in us-east-1
-                return CreateBucketOutput(Location=f"/{bucket_name}")
+                return CreateBucketOutput(
+                    Location=f"/{bucket_name}",
+                    BucketArn=existing_bucket.bucket_arn,
+                )
 
         if (
             object_ownership := request.get("ObjectOwnership")
