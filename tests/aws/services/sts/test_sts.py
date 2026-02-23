@@ -1,5 +1,3 @@
-# pyright: reportUnknownMemberType=false, reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false
-
 import base64
 import json
 from base64 import b64encode
