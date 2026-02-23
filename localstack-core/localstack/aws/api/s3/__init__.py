@@ -2679,8 +2679,11 @@ class GlacierJobParameters(TypedDict, total=False):
 
 
 class HeadBucketOutput(TypedDict, total=False):
-    BucketRegion: BucketRegion | None
-    BucketContentType: BucketContentType | None
+    BucketArn: S3RegionalOrS3ExpressBucketArnString | None
+    BucketLocationType: LocationType | None
+    BucketLocationName: BucketLocationName | None
+    BucketRegion: Region | None
+    AccessPointAlias: AccessPointAlias | None
 
 
 class HeadBucketRequest(ServiceRequest):

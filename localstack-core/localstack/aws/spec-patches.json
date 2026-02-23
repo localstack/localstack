@@ -64,32 +64,6 @@
     },
     {
       "op": "add",
-      "path": "/shapes/HeadBucketOutput",
-      "value": {
-        "type": "structure",
-        "members": {
-          "BucketRegion": {
-            "shape": "BucketRegion",
-            "location": "header",
-            "locationName": "x-amz-bucket-region"
-          },
-          "BucketContentType": {
-            "shape": "BucketContentType",
-            "location": "header",
-            "locationName": "content-type"
-          }
-        }
-      }
-    },
-    {
-      "op": "add",
-      "path": "/operations/HeadBucket/output",
-      "value": {
-        "shape": "HeadBucketOutput"
-      }
-    },
-    {
-      "op": "add",
       "path": "/operations/PutBucketPolicy/http/responseCode",
       "value": 204
     },

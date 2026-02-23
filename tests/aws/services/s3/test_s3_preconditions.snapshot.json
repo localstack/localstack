@@ -1,6 +1,6 @@
 {
   "tests/aws/services/s3/test_s3_preconditions.py::TestS3CopySourcePreconditions::test_s3_copy_object_preconditions": {
-    "recorded-date": "12-11-2025, 19:06:12",
+    "recorded-date": "23-02-2026, 11:37:02",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -62,6 +62,7 @@
       "copy-ignore-future-modified-since": {
         "CopyObjectResult": {
           "ChecksumCRC32": "rfPzYw==",
+          "ChecksumType": "FULL_OBJECT",
           "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
           "LastModified": "datetime"
         },
@@ -85,6 +86,7 @@
       "copy-success": {
         "CopyObjectResult": {
           "ChecksumCRC32": "rfPzYw==",
+          "ChecksumType": "FULL_OBJECT",
           "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
           "LastModified": "datetime"
         },
@@ -97,7 +99,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_preconditions.py::TestS3CopySourcePreconditions::test_s3_copy_object_if_source_modified_since_versioned": {
-    "recorded-date": "12-11-2025, 19:05:15",
+    "recorded-date": "23-02-2026, 11:37:05",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -116,6 +118,7 @@
       "copy-if-modified-since": {
         "CopyObjectResult": {
           "ChecksumCRC32": "rfPzYw==",
+          "ChecksumType": "FULL_OBJECT",
           "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
           "LastModified": "datetime"
         },
@@ -141,7 +144,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_preconditions.py::TestS3CopySourcePreconditions::test_s3_copy_object_if_source_unmodified_since_versioned": {
-    "recorded-date": "12-11-2025, 19:05:32",
+    "recorded-date": "23-02-2026, 11:37:08",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -160,6 +163,7 @@
       "copy-if-unmodified-since": {
         "CopyObjectResult": {
           "ChecksumCRC32": "rfPzYw==",
+          "ChecksumType": "FULL_OBJECT",
           "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
           "LastModified": "datetime"
         },

@@ -1,6 +1,6 @@
 {
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[]": {
-    "recorded-date": "21-01-2025, 18:14:22",
+    "recorded-date": "21-02-2026, 00:05:13",
     "recorded-content": {
       "list-objects": {
         "Contents": [
@@ -13,7 +13,6 @@
             "Key": "test/foo/bar/123",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -34,7 +33,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[/]": {
-    "recorded-date": "21-01-2025, 18:14:24",
+    "recorded-date": "21-02-2026, 00:05:14",
     "recorded-content": {
       "list-objects": {
         "CommonPrefixes": [
@@ -57,7 +56,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[%2F]": {
-    "recorded-date": "21-01-2025, 18:14:26",
+    "recorded-date": "21-02-2026, 00:05:17",
     "recorded-content": {
       "list-objects": {
         "Contents": [
@@ -70,7 +69,6 @@
             "Key": "test/foo/bar/123",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -105,7 +103,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_next_marker": {
-    "recorded-date": "21-01-2025, 18:14:29",
+    "recorded-date": "21-02-2026, 00:05:19",
     "recorded-content": {
       "list-objects-all": {
         "Contents": [
@@ -118,7 +116,6 @@
             "Key": "<key:1>",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -133,7 +130,6 @@
             "Key": "<key:2>",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -148,7 +144,6 @@
             "Key": "<key:3>",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -177,7 +172,6 @@
             "Key": "<key:1>",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -208,7 +202,6 @@
             "Key": "<key:2>",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -237,7 +230,6 @@
             "Key": "<key:1>",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -258,7 +250,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_s3_list_objects_empty_marker": {
-    "recorded-date": "21-01-2025, 18:14:31",
+    "recorded-date": "21-02-2026, 00:05:21",
     "recorded-content": {
       "list-objects": {
         "EncodingType": "url",
@@ -275,7 +267,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_with_prefix": {
-    "recorded-date": "21-01-2025, 18:14:40",
+    "recorded-date": "21-02-2026, 00:05:31",
     "recorded-content": {
       "list-objects-v2-1": {
         "Contents": [
@@ -428,7 +420,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_with_prefix_and_delimiter": {
-    "recorded-date": "21-01-2025, 18:14:43",
+    "recorded-date": "21-02-2026, 00:05:33",
     "recorded-content": {
       "list-objects-v2-1": {
         "CommonPrefixes": [
@@ -509,7 +501,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_start_after": {
-    "recorded-date": "21-01-2025, 18:14:48",
+    "recorded-date": "21-02-2026, 00:05:38",
     "recorded-content": {
       "list-objects-v2-max-5": {
         "Contents": [
@@ -816,7 +808,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_common_prefixes": {
-    "recorded-date": "21-01-2025, 18:14:51",
+    "recorded-date": "21-02-2026, 00:05:41",
     "recorded-content": {
       "list-objects-v2-all-keys": {
         "Contents": [
@@ -953,7 +945,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_markers": {
-    "recorded-date": "21-01-2025, 18:14:56",
+    "recorded-date": "21-02-2026, 00:05:57",
     "recorded-content": {
       "version-order": {
         "Versions": [
@@ -993,7 +985,6 @@
             "Key": "test_0",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "VersionId": "<version-id:5>"
@@ -1003,7 +994,6 @@
             "Key": "test_1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "VersionId": "<version-id:6>"
@@ -1013,7 +1003,6 @@
             "Key": "test_2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "VersionId": "<version-id:7>"
@@ -1037,7 +1026,6 @@
             "Key": "test_0",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1054,7 +1042,6 @@
             "Key": "test_0",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1071,7 +1058,6 @@
             "Key": "test_1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1088,7 +1074,6 @@
             "Key": "test_1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1105,7 +1090,6 @@
             "Key": "test_2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1122,7 +1106,6 @@
             "Key": "test_2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1142,7 +1125,6 @@
             "Key": "test_0",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "VersionId": "<version-id:5>"
@@ -1152,7 +1134,6 @@
             "Key": "test_1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "VersionId": "<version-id:6>"
@@ -1178,7 +1159,6 @@
             "Key": "test_0",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1195,7 +1175,6 @@
             "Key": "test_0",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1212,7 +1191,6 @@
             "Key": "test_1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1232,7 +1210,6 @@
             "Key": "test_2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "VersionId": "<version-id:7>"
@@ -1298,7 +1275,6 @@
             "Key": "test_1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1330,7 +1306,6 @@
             "Key": "test_2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1364,7 +1339,6 @@
             "Key": "test_0",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 9,
@@ -1380,7 +1354,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_object_versions_pagination_common_prefixes": {
-    "recorded-date": "21-01-2025, 18:14:59",
+    "recorded-date": "21-02-2026, 00:06:01",
     "recorded-content": {
       "list-object-versions-all-keys": {
         "EncodingType": "url",
@@ -1401,7 +1375,6 @@
             "Key": "folder/aSubfolder/subFile1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -1418,7 +1391,6 @@
             "Key": "folder/aSubfolder/subFile2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -1435,7 +1407,6 @@
             "Key": "folder/file1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -1452,7 +1423,6 @@
             "Key": "folder/file2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -1507,7 +1477,6 @@
             "Key": "folder/file1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -1540,7 +1509,6 @@
             "Key": "folder/file2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -1575,7 +1543,6 @@
             "Key": "folder/file1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -1591,7 +1558,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_with_prefix": {
-    "recorded-date": "21-01-2025, 18:15:03",
+    "recorded-date": "21-02-2026, 00:06:05",
     "recorded-content": {
       "list-object-version-1": {
         "CommonPrefixes": [
@@ -1618,7 +1585,6 @@
             "Key": "dir/test",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 15,
@@ -1635,7 +1601,6 @@
             "Key": "dir/test",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 15,
@@ -1687,7 +1652,6 @@
             "Key": "dir/test",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 15,
@@ -1704,7 +1668,6 @@
             "Key": "dir/test",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 15,
@@ -1756,7 +1719,6 @@
             "Key": "dir/subdir/test2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 15,
@@ -1773,7 +1735,6 @@
             "Key": "dir/subdir/test2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 15,
@@ -1806,7 +1767,6 @@
             "Key": "dir/subdir/test2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 15,
@@ -1823,7 +1783,6 @@
             "Key": "dir/subdir/test2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 15,
@@ -1853,7 +1812,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multiparts_next_marker": {
-    "recorded-date": "21-01-2025, 18:15:10",
+    "recorded-date": "21-02-2026, 00:06:32",
     "recorded-content": {
       "list-multiparts-empty": {
         "Bucket": "<bucket:1>",
@@ -1904,7 +1863,6 @@
             },
             "Key": "<key:1>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -1918,7 +1876,6 @@
             },
             "Key": "<key:1>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -1932,7 +1889,6 @@
             },
             "Key": "<key:1>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -1946,7 +1902,6 @@
             },
             "Key": "<key:2>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -1960,7 +1915,6 @@
             },
             "Key": "<key:3>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -1989,7 +1943,6 @@
             },
             "Key": "<key:1>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -2018,7 +1971,6 @@
             },
             "Key": "<key:2>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -2060,7 +2012,6 @@
             },
             "Key": "<key:1>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -2089,7 +2040,6 @@
             },
             "Key": "<key:1>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -2118,7 +2068,6 @@
             },
             "Key": "<key:2>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -2147,7 +2096,6 @@
             },
             "Key": "<key:3>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -2188,7 +2136,6 @@
             },
             "Key": "<key:1>",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -2203,7 +2150,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multiparts_with_prefix_and_delimiter": {
-    "recorded-date": "21-01-2025, 18:15:12",
+    "recorded-date": "21-02-2026, 00:06:34",
     "recorded-content": {
       "list-multiparts-1": {
         "Bucket": "<bucket:1>",
@@ -2289,7 +2236,6 @@
               },
               "Key": "<key:1>",
               "Owner": {
-                "DisplayName": "display-name",
                 "ID": "owner-id"
               },
               "StorageClass": "STANDARD",
@@ -2303,7 +2249,6 @@
               },
               "Key": "<key:2>",
               "Owner": {
-                "DisplayName": "display-name",
                 "ID": "owner-id"
               },
               "StorageClass": "STANDARD",
@@ -2316,7 +2261,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_pagination": {
-    "recorded-date": "21-01-2025, 18:15:18",
+    "recorded-date": "21-02-2026, 00:06:40",
     "recorded-content": {
       "list-parts-empty": {
         "Bucket": "bucket",
@@ -2329,7 +2274,6 @@
         "MaxParts": 1000,
         "NextPartNumberMarker": 0,
         "Owner": {
-          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 0,
@@ -2351,7 +2295,6 @@
         "MaxParts": 1000,
         "NextPartNumberMarker": 2,
         "Owner": {
-          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 0,
@@ -2387,7 +2330,6 @@
         "MaxParts": 1,
         "NextPartNumberMarker": 1,
         "Owner": {
-          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 0,
@@ -2417,7 +2359,6 @@
         "MaxParts": 1,
         "NextPartNumberMarker": 2,
         "Owner": {
-          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 1,
@@ -2447,7 +2388,6 @@
         "MaxParts": 1,
         "NextPartNumberMarker": 0,
         "Owner": {
-          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 10,
@@ -2461,7 +2401,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_marker_common_prefixes": {
-    "recorded-date": "21-01-2025, 18:14:33",
+    "recorded-date": "21-02-2026, 00:05:24",
     "recorded-content": {
       "list-objects-all-keys": {
         "Contents": [
@@ -2474,7 +2414,6 @@
             "Key": "folder/aSubfolder/subFile1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -2489,7 +2428,6 @@
             "Key": "folder/aSubfolder/subFile2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -2504,7 +2442,6 @@
             "Key": "folder/file1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -2519,7 +2456,6 @@
             "Key": "folder/file2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -2567,7 +2503,6 @@
             "Key": "folder/file1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -2598,7 +2533,6 @@
             "Key": "folder/file2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -2628,7 +2562,6 @@
             "Key": "folder/file1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -2651,7 +2584,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListMultipartUploads::test_list_multipart_uploads_marker_common_prefixes": {
-    "recorded-date": "21-01-2025, 18:15:14",
+    "recorded-date": "21-02-2026, 00:06:36",
     "recorded-content": {
       "list-multiparts-start": {
         "Bucket": "<bucket:1>",
@@ -2692,7 +2625,6 @@
             },
             "Key": "folder/file1",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -2723,7 +2655,6 @@
             },
             "Key": "folder/file1",
             "Owner": {
-              "DisplayName": "display-name",
               "ID": "owner-id"
             },
             "StorageClass": "STANDARD",
@@ -2738,7 +2669,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_empty_part_number_marker": {
-    "recorded-date": "21-01-2025, 18:15:20",
+    "recorded-date": "21-02-2026, 00:06:42",
     "recorded-content": {
       "list-parts-empty-marker": {
         "Bucket": "bucket",
@@ -2751,7 +2682,6 @@
         "MaxParts": 1000,
         "NextPartNumberMarker": 1,
         "Owner": {
-          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 0,
@@ -2781,7 +2711,6 @@
         "MaxParts": 1000,
         "NextPartNumberMarker": 1,
         "Owner": {
-          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 0,
@@ -2803,7 +2732,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectVersions::test_list_objects_versions_with_prefix_only_and_pagination": {
-    "recorded-date": "13-02-2025, 03:52:21",
+    "recorded-date": "21-02-2026, 00:06:10",
     "recorded-content": {
       "list-object-version-prefix-full": {
         "EncodingType": "url",
@@ -2824,7 +2753,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -2841,7 +2769,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -2858,7 +2785,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -2875,7 +2801,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -2892,7 +2817,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -2926,7 +2850,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -2943,7 +2866,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -2960,7 +2882,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -3005,7 +2926,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -3022,7 +2942,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -3054,7 +2973,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -3071,7 +2989,6 @@
             "Key": "prefixed_key",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 0,
@@ -3087,11 +3004,12 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_max_buckets": {
-    "recorded-date": "14-05-2025, 09:10:49",
+    "recorded-date": "21-02-2026, 00:04:59",
     "recorded-content": {
       "list-objects-with-max-buckets": {
         "Buckets": [
           {
+            "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
             "BucketRegion": "<region>",
             "CreationDate": "datetime",
             "Name": "<bucket-name:1>"
@@ -3099,7 +3017,6 @@
         ],
         "ContinuationToken": "<continuation-token:1>",
         "Owner": {
-          "DisplayName": "<display-name>",
           "ID": "<owner-id>"
         },
         "ResponseMetadata": {
@@ -3110,11 +3027,12 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_with_continuation_token": {
-    "recorded-date": "14-05-2025, 09:10:59",
+    "recorded-date": "21-02-2026, 00:05:10",
     "recorded-content": {
       "list-objects-with-continuation": {
         "Buckets": [
           {
+            "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
             "BucketRegion": "<region>",
             "CreationDate": "datetime",
             "Name": "<bucket-name:1>"
@@ -3122,7 +3040,6 @@
         ],
         "ContinuationToken": "<continuation-token:1>",
         "Owner": {
-          "DisplayName": "<display-name>",
           "ID": "<owner-id>"
         },
         "ResponseMetadata": {
@@ -3133,11 +3050,12 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_when_continuation_token_is_empty": {
-    "recorded-date": "14-05-2025, 09:10:50",
+    "recorded-date": "21-02-2026, 00:05:02",
     "recorded-content": {
       "list-objects-with-empty-continuation-token": {
         "Buckets": [
           {
+            "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
             "BucketRegion": "<region>",
             "CreationDate": "datetime",
             "Name": "<bucket-name:1>"
@@ -3145,7 +3063,6 @@
         ],
         "ContinuationToken": "<continuation-token:1>",
         "Owner": {
-          "DisplayName": "<display-name>",
           "ID": "<owner-id>"
         },
         "ResponseMetadata": {
@@ -3156,12 +3073,11 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_prefix_with_case_sensitivity": {
-    "recorded-date": "14-05-2025, 09:10:46",
+    "recorded-date": "21-02-2026, 00:04:57",
     "recorded-content": {
       "list-objects-by-prefix-empty": {
         "Buckets": [],
         "Owner": {
-          "DisplayName": "<display-name>",
           "ID": "<owner-id>"
         },
         "Prefix": "<prefix:1>",
@@ -3173,13 +3089,13 @@
       "list-objects-by-prefix-not-empty": {
         "Buckets": [
           {
+            "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
             "BucketRegion": "<region>",
             "CreationDate": "datetime",
             "Name": "<bucket-name:1>"
           }
         ],
         "Owner": {
-          "DisplayName": "<display-name>",
           "ID": "<owner-id>"
         },
         "Prefix": "<bucket-name:1>",
@@ -3191,7 +3107,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_by_bucket_region": {
-    "recorded-date": "14-05-2025, 09:10:54",
+    "recorded-date": "21-02-2026, 00:05:05",
     "recorded-content": {
       "list-objects-by-bucket-region-empty": {
         "Buckets": [],
@@ -3207,13 +3123,13 @@
       "list-objects-by-bucket-region-not-empty": {
         "Buckets": [
           {
+            "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
             "BucketRegion": "<region>",
             "CreationDate": "datetime",
             "Name": "<bucket-name:1>"
           }
         ],
         "Owner": {
-          "DisplayName": "<display-name>",
           "ID": "<owner-id>"
         },
         "Prefix": "<bucket-name:1>",
@@ -3225,7 +3141,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_via_object_attrs_pagination": {
-    "recorded-date": "16-06-2025, 13:47:27",
+    "recorded-date": "21-02-2026, 00:06:47",
     "recorded-content": {
       "list-parts": {
         "Bucket": "bucket",
@@ -3240,7 +3156,6 @@
         "MaxParts": 1000,
         "NextPartNumberMarker": 2,
         "Owner": {
-          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 0,
@@ -3370,7 +3285,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListBuckets::test_list_buckets_region_validation": {
-    "recorded-date": "18-11-2025, 17:59:17",
+    "recorded-date": "21-02-2026, 00:05:12",
     "recorded-content": {
       "bad-region": {
         "Error": {
@@ -3386,7 +3301,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_objects_v2_continuation_token_safe_chars": {
-    "recorded-date": "12-02-2026, 07:39:42",
+    "recorded-date": "21-02-2026, 00:05:45",
     "recorded-content": {
       "list-objects-v2-max-5": {
         "Contents": [
@@ -3742,7 +3657,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_objects_v2]": {
-    "recorded-date": "12-02-2026, 10:24:30",
+    "recorded-date": "21-02-2026, 00:05:47",
     "recorded-content": {
       "list_objects_v2-error-wrong-value": {
         "Error": {
@@ -3771,7 +3686,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_objects]": {
-    "recorded-date": "12-02-2026, 10:24:32",
+    "recorded-date": "21-02-2026, 00:05:49",
     "recorded-content": {
       "list_objects-error-wrong-value": {
         "Error": {
@@ -3800,7 +3715,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_object_versions]": {
-    "recorded-date": "12-02-2026, 10:24:34",
+    "recorded-date": "21-02-2026, 00:05:51",
     "recorded-content": {
       "list_object_versions-error-wrong-value": {
         "Error": {
@@ -3829,7 +3744,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjectsV2::test_list_ops_encoding_type_validation[list_multipart_uploads]": {
-    "recorded-date": "12-02-2026, 10:24:36",
+    "recorded-date": "21-02-2026, 00:05:53",
     "recorded-content": {
       "list_multipart_uploads-error-wrong-value": {
         "Error": {
