@@ -173,7 +173,52 @@ class KMSKeyProvider(ResourceProvider[KMSKeyProperties]):
           - kms:UntagResource
           - kms:UpdateKeyDescription
         """
-        raise NotImplementedError
+        model = request.desired_state
+        prev = request.previous_state
+        kms = request.aws_client_factory.kms
+
+        # Preserve read-only and create-only props
+        model["KeyId"] = prev["KeyId"]
+        model["Arn"] = prev["Arn"]
+        key_id = model["KeyId"]
+
+        # Description
+        kms.update_key_description(KeyId=key_id, Description=model.get("Description", ""))
+
+        # Enabled
+        if model.get("Enabled", True):
+            kms.enable_key(KeyId=key_id)
+        else:
+            kms.disable_key(KeyId=key_id)
+
+        # EnableKeyRotation
+        if model.get("EnableKeyRotation", False):
+            kms.enable_key_rotation(KeyId=key_id)
+        else:
+            kms.disable_key_rotation(KeyId=key_id)
+
+        # KeyPolicy
+        if model.get("KeyPolicy"):
+            kms.put_key_policy(
+                KeyId=key_id, PolicyName="default", Policy=json.dumps(model["KeyPolicy"])
+            )
+
+        # Tags - KMS API uses TagKey/TagValue format
+        tags_rm, tags_add = util.resource_tags_to_remove_or_update(
+            prev.get("Tags", []), model.get("Tags", [])
+        )
+        if tags_rm:
+            kms.untag_resource(KeyId=key_id, TagKeys=tags_rm)
+        if tags_add:
+            kms.tag_resource(
+                KeyId=key_id,
+                Tags=[{"TagKey": k, "TagValue": v} for k, v in tags_add.items()],
+            )
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+        )
 
     def list(self, request: ResourceRequest[KMSKeyProperties]) -> ProgressEvent[KMSKeyProperties]:
         """

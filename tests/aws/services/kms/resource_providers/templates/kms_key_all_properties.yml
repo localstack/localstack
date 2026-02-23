@@ -1,0 +1,27 @@
+Resources:
+  KmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: 'Initial test KMS key'
+      Enabled: true
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+      Tags:
+        - Key: Environment
+          Value: Dev
+        - Key: Team
+          Value: Engineering
+
+Outputs:
+  KeyId:
+    Value: !Ref KmsKey
+  KeyArn:
+    Value: !GetAtt KmsKey.Arn
