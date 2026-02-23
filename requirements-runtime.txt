@@ -358,7 +358,7 @@ urllib3==2.6.3
     #   opensearch-py
     #   requests
     #   responses
-werkzeug==3.1.5
+werkzeug==3.1.6
     # via
     #   localstack-core
     #   moto-ext

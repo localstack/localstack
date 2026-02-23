@@ -449,7 +449,7 @@ urllib3==2.6.3
     #   responses
 websocket-client==1.9.0
     # via localstack-core (pyproject.toml)
-werkzeug==3.1.5
+werkzeug==3.1.6
     # via
     #   localstack-core
     #   moto-ext

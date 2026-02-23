@@ -711,7 +711,7 @@ watchdog==6.0.0
     # via localstack-core
 websocket-client==1.9.0
     # via localstack-core
-werkzeug==3.1.5
+werkzeug==3.1.6
     # via
     #   localstack-core
     #   moto-ext
