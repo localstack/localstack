@@ -1,0 +1,17 @@
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '${AWS::StackName}-test-log-group'
+      RetentionInDays: 14
+      Tags:
+        - Key: Environment
+          Value: Prod
+        - Key: Project
+          Value: CloudFormation
+
+Outputs:
+  LogGroupName:
+    Value: !Ref LogGroup
+  LogGroupArn:
+    Value: !GetAtt LogGroup.Arn

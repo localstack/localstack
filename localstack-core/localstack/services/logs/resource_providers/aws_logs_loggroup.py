@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import TypedDict
 
@@ -141,4 +142,48 @@ class LogsLogGroupProvider(ResourceProvider[LogsLogGroupProperties]):
           - s3:REST.PUT.OBJECT
           - firehose:TagDeliveryStream
         """
-        raise NotImplementedError
+        model = request.desired_state
+        prev = request.previous_state
+        logs = request.aws_client_factory.logs
+
+        # Preserve create-only and read-only props
+        model["LogGroupName"] = prev["LogGroupName"]
+        model["Arn"] = prev["Arn"]
+        log_group_name = model["LogGroupName"]
+
+        # RetentionInDays
+        if model.get("RetentionInDays"):
+            logs.put_retention_policy(
+                logGroupName=log_group_name, retentionInDays=model["RetentionInDays"]
+            )
+        elif prev.get("RetentionInDays"):
+            logs.delete_retention_policy(logGroupName=log_group_name)
+
+        # KmsKeyId
+        if model.get("KmsKeyId"):
+            logs.associate_kms_key(logGroupName=log_group_name, kmsKeyId=model["KmsKeyId"])
+        elif prev.get("KmsKeyId"):
+            logs.disassociate_kms_key(logGroupName=log_group_name)
+
+        # DataProtectionPolicy
+        if model.get("DataProtectionPolicy"):
+            logs.put_data_protection_policy(
+                logGroupIdentifier=log_group_name,
+                policyDocument=json.dumps(model["DataProtectionPolicy"]),
+            )
+        elif prev.get("DataProtectionPolicy"):
+            logs.delete_data_protection_policy(logGroupIdentifier=log_group_name)
+
+        # Tags
+        tags_rm, tags_add = util.resource_tags_to_remove_or_update(
+            prev.get("Tags", []), model.get("Tags", [])
+        )
+        if tags_rm:
+            logs.untag_resource(resourceArn=prev["Arn"], tagKeys=tags_rm)
+        if tags_add:
+            logs.tag_resource(resourceArn=prev["Arn"], tags=tags_add)
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+        )
