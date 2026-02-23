@@ -1,0 +1,25 @@
+Resources:
+  Topic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${AWS::StackName}-test-topic'
+
+  TopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref Topic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: UpdatedPolicy
+            Effect: Allow
+            Principal: '*'
+            Action:
+              - 'sns:Publish'
+              - 'sns:Subscribe'
+            Resource: !Ref Topic
+
+Outputs:
+  TopicArn:
+    Value: !Ref Topic

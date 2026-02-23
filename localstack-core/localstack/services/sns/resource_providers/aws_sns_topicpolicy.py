@@ -122,4 +122,24 @@ class SNSTopicPolicyProvider(ResourceProvider[SNSTopicPolicyProperties]):
         IAM permissions required:
           - sns:SetTopicAttributes
         """
-        raise NotImplementedError
+        model = request.desired_state
+        prev = request.previous_state
+        sns = request.aws_client_factory.sns
+
+        # Preserve identifier props from previous state
+        model["Id"] = prev["Id"]
+        model["Topics"] = prev["Topics"]
+
+        policy = json.dumps(model["PolicyDocument"])
+        for topic_arn in model["Topics"]:
+            sns.set_topic_attributes(
+                TopicArn=topic_arn,
+                AttributeName="Policy",
+                AttributeValue=policy,
+            )
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
