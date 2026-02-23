@@ -107,4 +107,18 @@ class S3BucketPolicyProvider(ResourceProvider[S3BucketPolicyProperties]):
 
 
         """
-        raise NotImplementedError
+        model = request.desired_state
+        prev = request.previous_state
+        s3 = request.aws_client_factory.s3
+
+        # Preserve create-only props
+        model["Bucket"] = prev["Bucket"]
+
+        s3.put_bucket_policy(Bucket=model["Bucket"], Policy=json.dumps(model["PolicyDocument"]))
+        model["Id"] = md5(canonical_json(model["PolicyDocument"]))
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
