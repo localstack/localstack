@@ -607,16 +607,23 @@ class FunctionVersion:
         return self.id.qualified_arn()
 
 
+class DesiredCapacityProviderState(StrEnum):
+    Running = "Running"
+    Stopped = "Stopped"
+
+
 @dataclasses.dataclass
 class CapacityProvider:
     CapacityProviderArn: CapacityProviderArn
-    # State is determined dynamically
     VpcConfig: CapacityProviderVpcConfig
     PermissionsConfig: CapacityProviderPermissionsConfig
     InstanceRequirements: InstanceRequirements
     CapacityProviderScalingConfig: CapacityProviderScalingConfig
     LastModified: Timestamp
     KmsKeyArn: KMSKeyArn | None = None
+    DesiredState: DesiredCapacityProviderState = (
+        DesiredCapacityProviderState.Running
+    )  # TODO filter out stopped capacity providers in hook
 
 
 @dataclasses.dataclass
