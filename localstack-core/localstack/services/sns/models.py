@@ -22,7 +22,7 @@ from localstack.services.stores import (
 )
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
-from localstack.utils.tagging import TaggingService
+from localstack.utils.tagging import Tags
 
 
 class Topic(TypedDict, total=True):
@@ -195,7 +195,7 @@ class SnsStore(BaseStore):
     # list of sent SMS messages
     sms_messages: list[dict[str, str | MessageAttributeMap | None]] = LocalAttribute(default=list)
 
-    TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
+    tags: Tags = CrossRegionAttribute(default=Tags)
 
     PHONE_NUMBERS_OPTED_OUT: set[PhoneNumber] = CrossRegionAttribute(default=set)
 

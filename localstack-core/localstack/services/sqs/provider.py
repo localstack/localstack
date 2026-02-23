@@ -812,9 +812,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 queue = StandardQueue(
                     queue_name, context.region, context.account_id, attributes, tags
                 )
-
             if tags:
-                self._tag_queue(queue, tags)
+                self._tag_queue(context.account_id, context.region, queue.arn, tags)
 
             LOG.debug("creating queue key=%s attributes=%s tags=%s", queue_name, attributes, tags)
 
@@ -941,7 +940,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             store.queues[queue.name].shutdown()
             del store.queues[queue.name]
             store.deleted[queue.name] = time.time()
-            self._remove_all_queue_tags(queue)
+            self._remove_all_queue_tags(context.account_id, context.region, queue.arn)
 
     def get_queue_attributes(
         self,
@@ -1489,21 +1488,24 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         )
 
     def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap, **kwargs) -> None:
+        if not tags:
+            return
+
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._tag_queue(queue, tags)
+        self._tag_queue(context.account_id, context.region, queue.arn, tags)
 
     def list_queue_tags(
         self, context: RequestContext, queue_url: String, **kwargs
     ) -> ListQueueTagsResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        tags = self._get_queue_tags(queue)
+        tags = self._get_queue_tags(context.account_id, context.region, queue.arn)
         return ListQueueTagsResult(Tags=tags if tags else None)
 
     def untag_queue(
         self, context: RequestContext, queue_url: String, tag_keys: TagKeyList, **kwargs
     ) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._untag_queue(queue, tag_keys)
+        self._untag_queue(context.account_id, context.region, queue.arn, tag_keys)
 
     def add_permission(
         self,
@@ -1641,28 +1643,23 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             self._cloudwatch_publish_worker.stop()
             self._cloudwatch_dispatcher.shutdown()
 
-    @staticmethod
-    def _get_queue_tags(queue: SqsQueue) -> TagMap:
-        return queue.tags
+    def _get_queue_tags(self, account_id: str, region: str, resource_arn: str) -> TagMap:
+        store = self.get_store(account_id, region)
+        return store.tags.get_tags(resource_arn)
 
-    @staticmethod
-    def _tag_queue(queue: SqsQueue, tags: TagMap) -> None:
-        if not tags:
-            return
+    def _tag_queue(self, account_id: str, region: str, resource_arn: str, tags: TagMap) -> None:
+        store = self.get_store(account_id, region)
+        store.tags.update_tags(resource_arn, tags)
 
-        for k, v in tags.items():
-            queue.tags[k] = v
+    def _untag_queue(
+        self, account_id: str, region: str, resource_arn: str, tag_keys: TagKeyList
+    ) -> None:
+        store = self.get_store(account_id, region)
+        store.tags.delete_tags(resource_arn, tag_keys)
 
-    @staticmethod
-    def _untag_queue(queue: SqsQueue, tag_keys: TagKeyList) -> None:
-        for k in tag_keys:
-            if k in queue.tags:
-                del queue.tags[k]
-
-    @staticmethod
-    def _remove_all_queue_tags(queue: SqsQueue) -> None:
-        # Nothing required as tags are stored on the queue resource. Overwritten in Pro.
-        return None
+    def _remove_all_queue_tags(self, account_id: str, region: str, resource_arn: str) -> None:
+        store = self.get_store(account_id, region)
+        store.tags.delete_all_tags(resource_arn)
 
 
 def resolve_queue_location(

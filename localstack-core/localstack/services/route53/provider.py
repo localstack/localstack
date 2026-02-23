@@ -27,6 +27,7 @@ from localstack.aws.api.route53 import (
 from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.route53.models import Route53Store, route53_stores
 from localstack.state import StateVisitor
 
 
@@ -36,6 +37,10 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
 
         visitor.visit(route53_backends)
         visitor.visit(route53_stores)
+
+    @staticmethod
+    def get_route53_store(account_id: str, region: str) -> Route53Store:
+        return route53_stores[account_id][region]
 
     # No tag deletion logic to handle in Community. Overwritten in Pro implementation.
     def remove_resource_tags(

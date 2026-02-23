@@ -518,22 +518,20 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
                 cluster_manager().remove(DomainKey(domain_name, region, account_id).arn)
 
     def _add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
-        self.get_store(context.account_id, context.region).TAGS.tag_resource(arn, tag_list)
+        self.get_store(context.account_id, context.region).tags.update_tags(
+            arn, {tag["Key"]: tag["Value"] for tag in tag_list}
+        )
 
     def _remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
-        self.get_store(context.account_id, context.region).TAGS.untag_resource(arn, tag_keys)
+        self.get_store(context.account_id, context.region).tags.delete_tags(arn, tag_keys)
 
     def _remove_all_tags(self, context: RequestContext, arn: ARN) -> None:
-        self.get_store(context.account_id, context.region).TAGS.del_resource(arn)
+        self.get_store(context.account_id, context.region).tags.delete_all_tags(arn)
 
     def _list_tags(self, context: RequestContext, arn: ARN) -> TagList:
-        # The tagging service returns a dictionary with the given root name
         store = self.get_store(context.account_id, context.region)
-        tags = store.TAGS.list_tags_for_resource(arn=arn, root_name="root")
-        # Extract the actual list of tags for the typed response
-        tag_list: TagList = tags["root"]
-
-        return tag_list
+        tags = store.tags.get_tags(arn)
+        return [{"Key": key, "Value": value} for key, value in tags.items()]
 
     @handler("CreateDomain", expand=False)
     def create_domain(

@@ -45,16 +45,15 @@ from localstack.aws.api.kms import (
     OriginType,
     ReplicateKeyRequest,
     SigningAlgorithmSpec,
-    TagList,
     UnsupportedOperationException,
 )
-from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.kms.exceptions import ValidationException
-from localstack.services.kms.utils import is_valid_key_arn, validate_tag, validate_tag_list
+from localstack.services.kms.utils import is_valid_key_arn
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.arns import get_partition, kms_alias_arn, kms_key_arn
 from localstack.utils.crypto import decrypt, encrypt
 from localstack.utils.strings import long_uid, to_bytes, to_str
+from localstack.utils.tagging import Tags
 
 LOG = logging.getLogger(__name__)
 
@@ -113,9 +112,6 @@ RESERVED_ALIASES = [
 
 # list of key names that should be skipped when serializing the encryption context
 IGNORED_CONTEXT_KEYS = ["aws-crypto-public-key"]
-
-# special tag name to allow specifying a custom key material for created keys
-TAG_KEY_CUSTOM_KEY_MATERIAL = "_custom_key_material_"
 
 
 def _serialize_ciphertext_blob(ciphertext: Ciphertext) -> bytes:
@@ -289,7 +285,6 @@ class KmsCryptoKey:
 class KmsKey:
     metadata: KeyMetadata
     crypto_key: KmsCryptoKey
-    tags: dict[str, str]
     policy: str
     is_key_rotation_enabled: bool
     rotation_period_in_days: int
@@ -302,18 +297,13 @@ class KmsKey:
         create_key_request: CreateKeyRequest = None,
         account_id: str = None,
         region: str = None,
+        custom_key_material: bytes | None = None,
+        custom_key_id: str | None = None,
     ):
         create_key_request = create_key_request or CreateKeyRequest()
         self.previous_keys = []
 
-        # Please keep in mind that tags of a key could be present in the request, they are not a part of metadata. At
-        # least in the sense of DescribeKey not returning them with the rest of the metadata. Instead, tags are more
-        # like aliases:
-        # https://docs.aws.amazon.com/kms/latest/APIReference/API_DescribeKey.html
-        # "DescribeKey does not return the following information: ... Tags on the KMS key."
-        self.tags = {}
-        self.add_tags(create_key_request.get("Tags"))
-        # Same goes for the policy. It is in the request, but not in the metadata.
+        # Policy is in the request but not in the metadata.
         self.policy = create_key_request.get("Policy") or self._get_default_key_policy(
             account_id, region
         )
@@ -322,13 +312,7 @@ class KmsKey:
         # disable it."
         self.is_key_rotation_enabled = False
 
-        self._populate_metadata(create_key_request, account_id, region)
-        custom_key_material = None
-        if TAG_KEY_CUSTOM_KEY_MATERIAL in self.tags:
-            # check if the _custom_key_material_ tag is specified, to use a custom key material for this key
-            custom_key_material = base64.b64decode(self.tags[TAG_KEY_CUSTOM_KEY_MATERIAL])
-            # remove the _custom_key_material_ tag from the tags to not readily expose the custom key material
-            del self.tags[TAG_KEY_CUSTOM_KEY_MATERIAL]
+        self._populate_metadata(create_key_request, account_id, region, custom_key_id=custom_key_id)
         self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"), custom_key_material)
         self._internal_key_id = uuid.uuid4()
 
@@ -560,7 +544,11 @@ class KmsKey:
     #
     # Data keys are symmetric, data key pairs are asymmetric.
     def _populate_metadata(
-        self, create_key_request: CreateKeyRequest, account_id: str, region: str
+        self,
+        create_key_request: CreateKeyRequest,
+        account_id: str,
+        region: str,
+        custom_key_id: str | None = None,
     ) -> None:
         self.metadata = KeyMetadata()
         # Metadata fields coming from a creation request
@@ -597,9 +585,8 @@ class KmsKey:
             else KeyState.PendingImport
         )
 
-        if TAG_KEY_CUSTOM_ID in self.tags:
-            # check if the _custom_id_ tag is specified, to set a user-defined KeyId for this key
-            self.metadata["KeyId"] = self.tags[TAG_KEY_CUSTOM_ID].strip()
+        if custom_key_id:
+            self.metadata["KeyId"] = custom_key_id
         elif self.metadata.get("MultiRegion"):
             # https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html
             # "Notice that multi-Region keys have a distinctive key ID that begins with mrk-. You can use the mrk- prefix to
@@ -624,21 +611,6 @@ class KmsKey:
                 PrimaryKey=MultiRegionKey(Arn=self.metadata["Arn"], Region=region),
                 ReplicaKeys=[],
             )
-
-    def add_tags(self, tags: TagList) -> None:
-        # Just in case we get None from somewhere.
-        if not tags:
-            return
-
-        validate_tag_list(tags)
-
-        # Do not care if we overwrite an existing tag:
-        # https://docs.aws.amazon.com/kms/latest/APIReference/API_TagResource.html
-        # "To edit a tag, specify an existing tag key and a new tag value."
-        for i, tag in enumerate(tags, start=1):
-            if tag.get("TagKey") != TAG_KEY_CUSTOM_KEY_MATERIAL:
-                validate_tag(i, tag)
-            self.tags[tag.get("TagKey")] = tag.get("TagValue")
 
     def schedule_key_deletion(self, pending_window_in_days: int) -> None:
         self.metadata["Enabled"] = False
@@ -869,6 +841,9 @@ class KmsStore(BaseStore):
 
     # maps import tokens to import data
     imports: dict[str, KeyImportState] = LocalAttribute(default=dict)
+
+    # maps key arn to tags
+    tags: Tags = LocalAttribute(default=Tags)
 
 
 kms_stores = AccountRegionBundle("kms", KmsStore)

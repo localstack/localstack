@@ -54,6 +54,7 @@ from localstack.aws.api.sns import (
     SubscribeResponse,
     Subscription,
     SubscriptionAttributesMap,
+    Tag,
     TagKeyList,
     TagList,
     TagResourceResponse,
@@ -202,24 +203,22 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
     def _list_resource_tags(self, context: RequestContext, resource_arn: str) -> TagList:
         store = self.get_store(context.account_id, context.region)
-        tags = store.TAGS.list_tags_for_resource(resource_arn).get("Tags")
-        return tags
+        tags = store.tags.get_tags(resource_arn)
+        return [Tag(Key=key, Value=value) for key, value in tags.items()]
 
-    def _tag_resource(
-        self, context: RequestContext, resource_arn: str, tags: list[dict[str, str]]
-    ) -> None:
+    def _tag_resource(self, context: RequestContext, resource_arn: str, tags: TagList) -> None:
         store = self.get_store(context.account_id, context.region)
-        store.TAGS.tag_resource(resource_arn, tags)
+        store.tags.update_tags(resource_arn, {tag["Key"]: tag["Value"] for tag in tags})
 
     def _untag_resource(
-        self, context: RequestContext, resource_arn: str, tag_keys: list[str]
+        self, context: RequestContext, resource_arn: str, tag_keys: TagKeyList
     ) -> None:
         store = self.get_store(context.account_id, context.region)
-        store.TAGS.untag_resource(resource_arn, tag_keys)
+        store.tags.delete_tags(resource_arn, tag_keys)
 
     def _remove_resource_tags(self, context: RequestContext, resource_arn: str) -> None:
         store = self.get_store(context.account_id, context.region)
-        store.TAGS.tags.pop(resource_arn, None)
+        store.tags.delete_all_tags(resource_arn)
 
     ## Topic Operations
 
