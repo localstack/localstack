@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 
@@ -25,6 +26,7 @@ from localstack.aws.api.sts import (
     webIdentityTokenDurationSecondsType,
 )
 from localstack.aws.connect import connect_to
+from localstack.http import Request, Response, route
 from localstack.services.edge import ROUTER
 from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.moto import call_moto
@@ -34,6 +36,7 @@ from localstack.services.sts.jwt import (
     create_jwt,
     generate_ec_signing_key,
     generate_rsa_signing_key,
+    public_key_to_jwk,
 )
 from localstack.services.sts.models import SessionConfig, sts_stores
 from localstack.state import StateVisitor
@@ -61,15 +64,11 @@ class ValidationError(CommonServiceException):
 
 
 class StsProvider(StsApi, ServiceLifecycleHook):
-    _custom_router_rules: list = []
-
     def __init__(self):
         apply_iam_patches()
 
     def on_after_init(self):
-        from localstack.services.sts.custom_endpoints import StsCustomEndpoints
-
-        self._custom_router_rules = ROUTER.add(StsCustomEndpoints())
+        _ = ROUTER.add(StsCustomEndpoints())
 
     def accept_state_visitor(self, visitor: StateVisitor):
         from moto.sts.models import sts_backends
@@ -219,3 +218,15 @@ class StsProvider(StsApi, ServiceLifecycleHook):
             WebIdentityToken=token,
             Expiration=expiration,
         )
+
+
+class StsCustomEndpoints:
+    @route("/_aws/sts/<account_id>/.well-known/jwks.json", methods=["GET"])
+    def jwks(self, request: Request, account_id: str):
+        store = sts_stores[account_id]["us-east-1"]
+        keys = []
+        if store.signing_key:
+            keys.append(public_key_to_jwk(store.signing_key))
+        if store.ec_signing_key:
+            keys.append(public_key_to_jwk(store.ec_signing_key))
+        return Response(json.dumps({"keys": keys}), content_type="application/json")
