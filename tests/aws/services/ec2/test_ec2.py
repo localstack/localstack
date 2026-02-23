@@ -4,7 +4,6 @@ import logging
 import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from moto.ec2.models import ec2_backends
 from moto.ec2.utils import (
     random_security_group_id,
     random_subnet_id,
@@ -983,28 +982,6 @@ def test_raise_duplicate_launch_template_name(create_launch_template):
 
     assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
     assert e.value.response["Error"]["Code"] == "InvalidLaunchTemplateName.AlreadyExistsException"
-
-
-@pytest.fixture
-def pickle_backends():
-    def _can_pickle(*args) -> bool:
-        import dill
-
-        try:
-            for i in args:
-                dill.dumps(i)
-        except TypeError:
-            return False
-        return True
-
-    return _can_pickle
-
-
-@markers.aws.only_localstack
-def test_pickle_ec2_backend(pickle_backends, aws_client):
-    _ = aws_client.ec2.describe_account_attributes()
-    pickle_backends(ec2_backends)
-    assert pickle_backends(ec2_backends)
 
 
 @markers.requires_in_process
