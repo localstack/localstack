@@ -1,6 +1,6 @@
 {
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object_versioned": {
-    "recorded-date": "21-01-2025, 18:09:37",
+    "recorded-date": "21-02-2026, 01:01:45",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "1jy6qw==",
@@ -76,7 +76,6 @@
             "Key": "test-delete",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "VersionId": "<version-id:3>"
@@ -86,7 +85,6 @@
             "Key": "test-delete",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "VersionId": "<version-id:2>"
@@ -110,7 +108,6 @@
             "Key": "test-delete",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 11,
@@ -173,7 +170,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object": {
-    "recorded-date": "21-01-2025, 18:09:31",
+    "recorded-date": "21-02-2026, 01:01:39",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "1jy6qw==",
@@ -212,7 +209,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketCRUD::test_delete_versioned_bucket_with_objects": {
-    "recorded-date": "01-08-2023, 16:54:38",
+    "recorded-date": "21-02-2026, 01:01:38",
     "recorded-content": {
       "delete-with-obj-and-delete-marker": {
         "Error": {
@@ -260,7 +257,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_with_version_unversioned_bucket": {
-    "recorded-date": "21-01-2025, 18:09:42",
+    "recorded-date": "21-02-2026, 01:01:51",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "jSiR5g==",
@@ -303,7 +300,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_list_object_versions_order_unversioned": {
-    "recorded-date": "21-01-2025, 18:09:52",
+    "recorded-date": "21-02-2026, 01:02:01",
     "recorded-content": {
       "list-empty": {
         "EncodingType": "url",
@@ -367,7 +364,6 @@
             "Key": "a-test-object-1",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 13,
@@ -384,7 +380,6 @@
             "Key": "b-test-object-2",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 13,
@@ -401,7 +396,6 @@
             "Key": "c-test-object-3",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 13,
@@ -417,7 +411,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketCRUD::test_delete_bucket_with_objects": {
-    "recorded-date": "27-07-2023, 00:25:16",
+    "recorded-date": "21-02-2026, 01:01:36",
     "recorded-content": {
       "delete-with-obj": {
         "Error": {
@@ -445,7 +439,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects": {
-    "recorded-date": "21-01-2025, 18:09:33",
+    "recorded-date": "21-02-2026, 01:01:42",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "1jy6qw==",
@@ -491,7 +485,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects_versioned": {
-    "recorded-date": "21-01-2025, 18:09:40",
+    "recorded-date": "21-02-2026, 01:01:49",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "1jy6qw==",
@@ -508,17 +502,17 @@
         "Deleted": [
           {
             "DeleteMarker": true,
-            "DeleteMarkerVersionId": "<version-id:2>",
+            "DeleteMarkerVersionId": "<delete-marker-version-id:1>",
             "Key": "test-delete"
           },
           {
             "DeleteMarker": true,
-            "DeleteMarkerVersionId": "<delete-marker-version-id:1>",
+            "DeleteMarkerVersionId": "<delete-marker-version-id:2>",
             "Key": "wrongkey"
           },
           {
             "DeleteMarker": true,
-            "DeleteMarkerVersionId": "<delete-marker-version-id:2>",
+            "DeleteMarkerVersionId": "<version-id:2>",
             "Key": "wrongkey-x"
           }
         ],
@@ -530,8 +524,6 @@
       "delete-objects-marker": {
         "Deleted": [
           {
-            "DeleteMarker": true,
-            "DeleteMarkerVersionId": "<version-id:2>",
             "Key": "test-delete",
             "VersionId": "<version-id:2>"
           }
@@ -576,7 +568,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketVersioning::test_bucket_versioning_crud": {
-    "recorded-date": "21-01-2025, 18:10:29",
+    "recorded-date": "21-02-2026, 01:02:46",
     "recorded-content": {
       "get-versioning-before": {
         "ResponseMetadata": {
@@ -671,7 +663,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_put_object_on_suspended_bucket": {
-    "recorded-date": "21-01-2025, 18:09:46",
+    "recorded-date": "21-02-2026, 01:01:55",
     "recorded-content": {
       "put-object-0": {
         "ChecksumCRC32": "yAYCLA==",
@@ -725,7 +717,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -742,7 +733,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -759,7 +749,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -791,7 +780,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -808,7 +796,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -825,7 +812,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -867,7 +853,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 22,
@@ -884,7 +869,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -901,7 +885,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -918,7 +901,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -960,7 +942,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 22,
@@ -977,7 +958,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -994,7 +974,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -1011,7 +990,6 @@
             "Key": "test-version",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -1044,7 +1022,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object_on_suspended_bucket": {
-    "recorded-date": "21-01-2025, 18:09:50",
+    "recorded-date": "21-02-2026, 01:01:59",
     "recorded-content": {
       "put-object-0": {
         "ChecksumCRC32": "yAYCLA==",
@@ -1087,7 +1065,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -1104,7 +1081,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -1132,7 +1108,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "VersionId": "<version-id:3>"
@@ -1156,7 +1131,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -1173,7 +1147,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -1215,7 +1188,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 35,
@@ -1232,7 +1204,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -1249,7 +1220,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -1277,7 +1247,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "VersionId": "<version-id:3>"
@@ -1301,7 +1270,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -1318,7 +1286,6 @@
             "Key": "test-delete-suspended",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name>",
               "ID": "<owner-id>"
             },
             "Size": 14,
@@ -1334,7 +1301,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_default_bucket_encryption": {
-    "recorded-date": "21-01-2025, 18:10:45",
+    "recorded-date": "21-02-2026, 01:02:50",
     "recorded-content": {
       "default-bucket-encryption": {
         "ServerSideEncryptionConfiguration": {
@@ -1373,7 +1340,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_default_bucket_encryption_exc": {
-    "recorded-date": "21-01-2025, 18:10:47",
+    "recorded-date": "21-02-2026, 01:02:53",
     "recorded-content": {
       "get-bucket-enc-no-bucket": {
         "Error": {
@@ -1442,7 +1409,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_s3": {
-    "recorded-date": "27-11-2025, 15:27:11",
+    "recorded-date": "21-02-2026, 01:02:55",
     "recorded-content": {
       "put-bucket-enc": {
         "ResponseMetadata": {
@@ -1492,7 +1459,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms_aws_managed_key": {
-    "recorded-date": "11-11-2025, 11:17:47",
+    "recorded-date": "21-02-2026, 01:03:01",
     "recorded-content": {
       "put-bucket-enc": {
         "ResponseMetadata": {
@@ -1520,7 +1487,7 @@
         "BucketKeyEnabled": true,
         "ChecksumCRC32": "J1mCHA==",
         "ChecksumType": "FULL_OBJECT",
-        "ETag": "\"69e1edd35a04ba6a5a6038de9f7fa8a5\"",
+        "ETag": "\"ec9f92ff18167a8c0cbff69597b6abf1\"",
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
@@ -1558,7 +1525,7 @@
         "BucketKeyEnabled": true,
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"69e1edd35a04ba6a5a6038de9f7fa8a5\"",
+        "ETag": "\"ec9f92ff18167a8c0cbff69597b6abf1\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1576,7 +1543,7 @@
         "ChecksumType": "FULL_OBJECT",
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"69e1edd35a04ba6a5a6038de9f7fa8a5\"",
+        "ETag": "\"ec9f92ff18167a8c0cbff69597b6abf1\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1589,7 +1556,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms": {
-    "recorded-date": "21-01-2025, 18:10:53",
+    "recorded-date": "21-02-2026, 01:02:58",
     "recorded-content": {
       "put-bucket-enc": {
         "ResponseMetadata": {
@@ -1618,7 +1585,7 @@
         "BucketKeyEnabled": true,
         "ChecksumCRC32": "J1mCHA==",
         "ChecksumType": "FULL_OBJECT",
-        "ETag": "\"ed93a03fee21ae796b5619dfb8afbe13\"",
+        "ETag": "\"88206b4eb968f907bf407d28fb04ceff\"",
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
@@ -1631,7 +1598,7 @@
         "BucketKeyEnabled": true,
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"ed93a03fee21ae796b5619dfb8afbe13\"",
+        "ETag": "\"88206b4eb968f907bf407d28fb04ceff\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1649,7 +1616,7 @@
         "ChecksumType": "FULL_OBJECT",
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"ed93a03fee21ae796b5619dfb8afbe13\"",
+        "ETag": "\"88206b4eb968f907bf407d28fb04ceff\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1668,7 +1635,7 @@
       "put-object-encrypted-bucket-key-disabled": {
         "ChecksumCRC32": "J1mCHA==",
         "ChecksumType": "FULL_OBJECT",
-        "ETag": "\"0b507d4ef8c3b14da00a61984206ca0d\"",
+        "ETag": "\"7dfb290d8f2cc85b35a86adf9bceb32a\"",
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
@@ -1679,7 +1646,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_crud": {
-    "recorded-date": "27-11-2025, 14:45:14",
+    "recorded-date": "21-02-2026, 01:03:04",
     "recorded-content": {
       "get-bucket-tags-empty": {
         "Error": {
@@ -1747,7 +1714,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_crud": {
-    "recorded-date": "27-11-2025, 14:45:27",
+    "recorded-date": "21-02-2026, 01:03:31",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lpqTBg==",
@@ -1855,7 +1822,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_with_tags": {
-    "recorded-date": "27-11-2025, 14:45:39",
+    "recorded-date": "21-02-2026, 01:03:45",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lpqTBg==",
@@ -1971,7 +1938,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_exc": {
-    "recorded-date": "27-11-2025, 14:45:22",
+    "recorded-date": "21-02-2026, 01:03:12",
     "recorded-content": {
       "get-no-bucket-tags": {
         "Error": {
@@ -2009,7 +1976,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
-    "recorded-date": "27-11-2025, 14:45:36",
+    "recorded-date": "21-02-2026, 01:03:41",
     "recorded-content": {
       "put-obj-0": {
         "ChecksumCRC32": "XCKz9A==",
@@ -2185,7 +2152,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_exc": {
-    "recorded-date": "27-11-2025, 14:45:30",
+    "recorded-date": "21-02-2026, 01:03:35",
     "recorded-content": {
       "get-no-bucket-tags": {
         "Error": {
@@ -2280,7 +2247,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tags_delete_or_overwrite_object": {
-    "recorded-date": "27-11-2025, 14:45:42",
+    "recorded-date": "21-02-2026, 01:03:50",
     "recorded-content": {
       "get-object-after-creation": {
         "TagSet": [
@@ -2311,7 +2278,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_tagging_validation": {
-    "recorded-date": "27-11-2025, 15:16:36",
+    "recorded-date": "21-02-2026, 01:03:56",
     "recorded-content": {
       "put-bucket-tags-duplicate-keys": {
         "Error": {
@@ -2434,7 +2401,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_on_existing_bucket": {
-    "recorded-date": "21-01-2025, 18:11:36",
+    "recorded-date": "21-02-2026, 01:03:59",
     "recorded-content": {
       "get-object-lock-existing-bucket-no-config": {
         "Error": {
@@ -2497,7 +2464,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_get_put_object_lock_configuration": {
-    "recorded-date": "21-01-2025, 18:11:37",
+    "recorded-date": "21-02-2026, 01:04:00",
     "recorded-content": {
       "get-lock-config-start": {
         "ObjectLockConfiguration": {
@@ -2547,7 +2514,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_exc": {
-    "recorded-date": "20-06-2025, 17:03:24",
+    "recorded-date": "21-02-2026, 01:04:04",
     "recorded-content": {
       "put-lock-config-no-enabled": {
         "Error": {
@@ -2622,7 +2589,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_get_object_lock_configuration_exc": {
-    "recorded-date": "21-01-2025, 18:11:42",
+    "recorded-date": "21-02-2026, 01:04:06",
     "recorded-content": {
       "get-lock-config-no-enabled": {
         "Error": {
@@ -2649,7 +2616,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_disable_versioning_on_locked_bucket": {
-    "recorded-date": "21-01-2025, 18:11:43",
+    "recorded-date": "21-02-2026, 01:04:07",
     "recorded-content": {
       "disable-versioning-on-locked-bucket": {
         "Error": {
@@ -2670,7 +2637,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketOwnershipControls::test_crud_bucket_ownership_controls": {
-    "recorded-date": "10-08-2023, 02:57:08",
+    "recorded-date": "21-02-2026, 01:04:13",
     "recorded-content": {
       "default-ownership": {
         "OwnershipControls": {
@@ -2743,7 +2710,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketOwnershipControls::test_bucket_ownership_controls_exc": {
-    "recorded-date": "10-08-2023, 03:08:54",
+    "recorded-date": "21-02-2026, 01:04:17",
     "recorded-content": {
       "default-ownership": {
         "OwnershipControls": {
@@ -2813,7 +2780,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3PublicAccessBlock::test_crud_public_access_block": {
-    "recorded-date": "10-08-2023, 03:29:18",
+    "recorded-date": "21-02-2026, 01:04:19",
     "recorded-content": {
       "get-default-public-access-block": {
         "PublicAccessBlockConfiguration": {
@@ -2875,7 +2842,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketPolicy::test_bucket_policy_crud": {
-    "recorded-date": "20-10-2023, 17:31:38",
+    "recorded-date": "21-02-2026, 01:04:22",
     "recorded-content": {
       "get-bucket-default-policy": {
         "Error": {
@@ -2939,7 +2906,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketPolicy::test_bucket_policy_exc": {
-    "recorded-date": "10-08-2023, 17:35:26",
+    "recorded-date": "21-02-2026, 01:04:24",
     "recorded-content": {
       "put-empty-bucket-policy": {
         "Error": {
@@ -2974,7 +2941,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketAccelerateConfiguration::test_bucket_acceleration_configuration_crud": {
-    "recorded-date": "10-08-2023, 18:26:06",
+    "recorded-date": "21-02-2026, 01:04:28",
     "recorded-content": {
       "get-bucket-default-accelerate-config": {
         "ResponseMetadata": {
@@ -3011,7 +2978,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketAccelerateConfiguration::test_bucket_acceleration_configuration_exc": {
-    "recorded-date": "10-08-2023, 18:01:50",
+    "recorded-date": "21-02-2026, 01:04:30",
     "recorded-content": {
       "put-bucket-accelerate-config-lowercase": {
         "Error": {
@@ -3046,7 +3013,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_range": {
-    "recorded-date": "07-07-2025, 17:50:03",
+    "recorded-date": "21-02-2026, 01:02:09",
     "recorded-content": {
       "get-0-8": {
         "AcceptRanges": "bytes",
@@ -3320,7 +3287,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_range": {
-    "recorded-date": "13-06-2025, 12:42:54",
+    "recorded-date": "21-02-2026, 01:02:15",
     "recorded-content": {
       "put-src-object": {
         "ChecksumCRC32": "poTHxg==",
@@ -3386,7 +3353,6 @@
         "MaxParts": 1000,
         "NextPartNumberMarker": 3,
         "Owner": {
-          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 0,
@@ -3562,7 +3528,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_delete_object_with_no_locking": {
-    "recorded-date": "21-01-2025, 18:11:45",
+    "recorded-date": "21-02-2026, 01:04:09",
     "recorded-content": {
       "delete-object-bypass-no-lock": {
         "Error": {
@@ -3600,7 +3566,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_no_copy_source_range": {
-    "recorded-date": "13-06-2025, 12:42:57",
+    "recorded-date": "21-02-2026, 01:02:18",
     "recorded-content": {
       "put-src-object": {
         "ChecksumCRC32": "poTHxg==",
@@ -3644,7 +3610,6 @@
         "MaxParts": 1000,
         "NextPartNumberMarker": 1,
         "Owner": {
-          "DisplayName": "display-name",
           "ID": "i-d"
         },
         "PartNumberMarker": 0,
@@ -3666,7 +3631,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match": {
-    "recorded-date": "17-03-2025, 20:15:37",
+    "recorded-date": "21-02-2026, 01:04:34",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "AAAAAA==",
@@ -3708,7 +3673,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_validation": {
-    "recorded-date": "17-03-2025, 20:15:39",
+    "recorded-date": "21-02-2026, 01:04:36",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "AAAAAA==",
@@ -3735,7 +3700,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_none_match_versioned_bucket": {
-    "recorded-date": "17-03-2025, 20:15:48",
+    "recorded-date": "21-02-2026, 01:04:44",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "AAAAAA==",
@@ -3785,7 +3750,6 @@
             "Key": "test-precondition",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name:1>",
               "ID": "<i-d:1>"
             },
             "VersionId": "<version-id:2>"
@@ -3809,7 +3773,6 @@
             "Key": "test-precondition",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name:1>",
               "ID": "<i-d:1>"
             },
             "Size": 0,
@@ -3826,7 +3789,6 @@
             "Key": "test-precondition",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name:1>",
               "ID": "<i-d:1>"
             },
             "Size": 0,
@@ -3842,7 +3804,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_delete": {
-    "recorded-date": "17-03-2025, 20:15:42",
+    "recorded-date": "21-02-2026, 01:04:39",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "AAAAAA==",
@@ -3909,7 +3871,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_none_match_with_put": {
-    "recorded-date": "17-03-2025, 20:15:45",
+    "recorded-date": "21-02-2026, 01:04:41",
     "recorded-content": {
       "create-multipart": {
         "Bucket": "<bucket:1>",
@@ -3945,7 +3907,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketVersioning::test_object_version_id_format": {
-    "recorded-date": "21-01-2025, 18:10:31",
+    "recorded-date": "21-02-2026, 01:02:47",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "AAAAAA==",
@@ -3961,7 +3923,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match": {
-    "recorded-date": "17-03-2025, 20:15:51",
+    "recorded-date": "21-02-2026, 01:04:47",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4024,7 +3986,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match_validation": {
-    "recorded-date": "17-03-2025, 20:15:53",
+    "recorded-date": "21-02-2026, 01:04:49",
     "recorded-content": {
       "put-obj-if-match-star-value": {
         "Error": {
@@ -4063,7 +4025,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_with_put": {
-    "recorded-date": "17-03-2025, 20:15:56",
+    "recorded-date": "21-02-2026, 01:04:52",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4144,7 +4106,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_with_put_identical": {
-    "recorded-date": "17-03-2025, 20:15:59",
+    "recorded-date": "21-02-2026, 01:04:56",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4214,7 +4176,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_with_delete": {
-    "recorded-date": "17-03-2025, 20:16:02",
+    "recorded-date": "21-02-2026, 01:04:59",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4278,7 +4240,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match_versioned_bucket": {
-    "recorded-date": "17-03-2025, 20:16:06",
+    "recorded-date": "21-02-2026, 01:05:02",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4350,7 +4312,6 @@
             "Key": "test-precondition",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name:1>",
               "ID": "<i-d:1>"
             },
             "VersionId": "<version-id:2>"
@@ -4374,7 +4335,6 @@
             "Key": "test-precondition",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name:1>",
               "ID": "<i-d:1>"
             },
             "Size": 13,
@@ -4391,7 +4351,6 @@
             "Key": "test-precondition",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name:1>",
               "ID": "<i-d:1>"
             },
             "Size": 14,
@@ -4408,7 +4367,6 @@
             "Key": "test-precondition",
             "LastModified": "datetime",
             "Owner": {
-              "DisplayName": "<display-name:1>",
               "ID": "<i-d:1>"
             },
             "Size": 4,
@@ -4424,7 +4382,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_put_object_if_match_and_if_none_match_validation": {
-    "recorded-date": "17-03-2025, 20:16:07",
+    "recorded-date": "21-02-2026, 01:05:04",
     "recorded-content": {
       "put-obj-both-precondition": {
         "Error": {
@@ -4441,7 +4399,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_multipart_if_match_etag": {
-    "recorded-date": "17-03-2025, 20:16:10",
+    "recorded-date": "21-02-2026, 01:05:07",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "2H9+DA==",
@@ -4513,7 +4471,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_put_bucket_metrics_configuration": {
-    "recorded-date": "13-06-2025, 08:33:02",
+    "recorded-date": "21-02-2026, 01:05:25",
     "recorded-content": {
       "put_bucket_metrics_configuration": {
         "ResponseMetadata": {
@@ -4536,7 +4494,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_overwrite_bucket_metrics_configuration": {
-    "recorded-date": "13-06-2025, 08:33:03",
+    "recorded-date": "21-02-2026, 01:05:27",
     "recorded-content": {
       "overwrite_bucket_metrics_configuration": {
         "ResponseMetadata": {
@@ -4559,7 +4517,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_list_bucket_metrics_configurations": {
-    "recorded-date": "13-06-2025, 08:33:04",
+    "recorded-date": "21-02-2026, 01:05:28",
     "recorded-content": {
       "list_bucket_metrics_configurations": {
         "IsTruncated": false,
@@ -4585,7 +4543,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_get_bucket_metrics_configuration": {
-    "recorded-date": "13-06-2025, 08:33:17",
+    "recorded-date": "21-02-2026, 01:05:44",
     "recorded-content": {
       "get_bucket_metrics_configuration": {
         "MetricsConfiguration": {
@@ -4602,7 +4560,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_get_bucket_metrics_configuration_not_exist": {
-    "recorded-date": "13-06-2025, 08:33:18",
+    "recorded-date": "21-02-2026, 01:05:45",
     "recorded-content": {
       "get_bucket_metrics_configuration": {
         "Error": {
@@ -4617,7 +4575,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_delete_metrics_configuration": {
-    "recorded-date": "13-06-2025, 08:33:19",
+    "recorded-date": "21-02-2026, 01:05:47",
     "recorded-content": {
       "delete_bucket_metrics_configuration": {
         "ResponseMetadata": {
@@ -4638,7 +4596,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_list_bucket_metrics_configurations_paginated": {
-    "recorded-date": "13-06-2025, 08:33:16",
+    "recorded-date": "21-02-2026, 01:05:43",
     "recorded-content": {
       "list_bucket_metrics_configurations_page_2": {
         "ContinuationToken": "<continuation-token:1>",
@@ -4665,7 +4623,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_delete_metrics_configuration_twice": {
-    "recorded-date": "13-06-2025, 08:33:20",
+    "recorded-date": "21-02-2026, 01:05:48",
     "recorded-content": {
       "delete_bucket_metrics_configuration_1": {
         "ResponseMetadata": {
@@ -4686,23 +4644,23 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_non_express": {
-    "recorded-date": "23-06-2025, 08:53:20",
+    "recorded-date": "21-02-2026, 01:05:50",
     "recorded-content": {
       "delete-obj-if-match": {
         "Error": {
-          "Code": "NotImplemented",
-          "Header": "If-Match",
-          "Message": "A header you provided implies functionality that is not implemented"
+          "Code": "PreconditionFailed",
+          "Condition": "If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 501
+          "HTTPStatusCode": 412
         }
       }
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_modified_non_express": {
-    "recorded-date": "23-06-2025, 09:05:52",
+    "recorded-date": "21-02-2026, 01:05:52",
     "recorded-content": {
       "delete-obj-if-match-last-modified": {
         "Error": {
@@ -4718,7 +4676,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_size_non_express": {
-    "recorded-date": "23-06-2025, 09:05:59",
+    "recorded-date": "21-02-2026, 01:05:54",
     "recorded-content": {
       "delete-obj-if-match-size": {
         "Error": {
@@ -4734,7 +4692,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_all_non_express": {
-    "recorded-date": "23-06-2025, 09:06:41",
+    "recorded-date": "21-02-2026, 01:05:56",
     "recorded-content": {
       "delete-obj-if-match-all": {
         "Error": {
@@ -4750,7 +4708,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketNotificationConfiguration::test_bucket_notification_with_missing_values_in_rule": {
-    "recorded-date": "02-09-2025, 21:38:48",
+    "recorded-date": "21-02-2026, 01:05:59",
     "recorded-content": {
       "invalid-rule-no-values": {
         "Error": {
@@ -4785,7 +4743,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketNotificationConfiguration::test_bucket_notification_with_invalid_filter_rules": {
-    "recorded-date": "02-09-2025, 21:37:07",
+    "recorded-date": "21-02-2026, 01:06:01",
     "recorded-content": {
       "invalid_filter_name": {
         "Error": {
@@ -4802,7 +4760,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_tagging_none_value": {
-    "recorded-date": "27-11-2025, 14:45:32",
+    "recorded-date": "21-02-2026, 01:03:37",
     "recorded-content": {
       "put-none-tag-set": {
         "ResponseMetadata": {
@@ -4820,7 +4778,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_bucket_tagging_none_value": {
-    "recorded-date": "27-11-2025, 14:45:24",
+    "recorded-date": "21-02-2026, 01:03:29",
     "recorded-content": {
       "put-bucket-tags-origin": {
         "ResponseMetadata": {
@@ -4848,7 +4806,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_and_if_unmodified_since_match": {
-    "recorded-date": "06-09-2025, 09:23:25",
+    "recorded-date": "21-02-2026, 01:02:36",
     "recorded-content": {
       "upload-part-copy": {
         "CopyPartResult": {
@@ -4893,7 +4851,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_none_match_and_if_unmodified_since_match_failed": {
-    "recorded-date": "06-09-2025, 09:24:36",
+    "recorded-date": "21-02-2026, 01:02:38",
     "recorded-content": {
       "upload-part-copy-source-unmodified-since-and-if-none-match": {
         "Error": {
@@ -4909,7 +4867,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_if_modified_since_failed": {
-    "recorded-date": "06-09-2025, 09:24:51",
+    "recorded-date": "21-02-2026, 01:02:42",
     "recorded-content": {
       "upload-part-copy-source-modified-since-match": {
         "Error": {
@@ -4925,7 +4883,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_failed": {
-    "recorded-date": "06-09-2025, 09:22:26",
+    "recorded-date": "21-02-2026, 01:02:30",
     "recorded-content": {
       "upload-part-copy-source-if-match": {
         "Error": {
@@ -4941,7 +4899,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_none_match_failed": {
-    "recorded-date": "06-09-2025, 09:22:50",
+    "recorded-date": "21-02-2026, 01:02:32",
     "recorded-content": {
       "upload-part-copy-source-if-none-match": {
         "Error": {
@@ -4957,7 +4915,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_unmodified_since_match_failed": {
-    "recorded-date": "06-09-2025, 09:23:12",
+    "recorded-date": "21-02-2026, 01:02:34",
     "recorded-content": {
       "upload-part-copy-source-unmodified-since-match": {
         "Error": {
@@ -4973,7 +4931,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_success": {
-    "recorded-date": "06-09-2025, 09:36:51",
+    "recorded-date": "21-02-2026, 01:02:20",
     "recorded-content": {
       "upload-part-copy-if-match": {
         "CopyPartResult": {
@@ -5018,7 +4976,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_none_success": {
-    "recorded-date": "06-09-2025, 09:39:55",
+    "recorded-date": "21-02-2026, 01:02:22",
     "recorded-content": {
       "upload-part-copy-if-none-match": {
         "CopyPartResult": {
@@ -5063,7 +5021,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_unmodified_since_success": {
-    "recorded-date": "06-09-2025, 09:47:30",
+    "recorded-date": "21-02-2026, 01:02:24",
     "recorded-content": {
       "upload-part-copy-if-unmodified-since": {
         "CopyPartResult": {
@@ -5108,7 +5066,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_modified_since_success": {
-    "recorded-date": "06-09-2025, 10:07:29",
+    "recorded-date": "21-02-2026, 01:02:26",
     "recorded-content": {
       "upload-part-copy-if-modified-since": {
         "CopyPartResult": {
@@ -5153,7 +5111,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_modified_since_in_future_success": {
-    "recorded-date": "06-09-2025, 10:20:23",
+    "recorded-date": "21-02-2026, 01:02:28",
     "recorded-content": {
       "upload-part-copy-if-modified-since-in-future": {
         "CopyPartResult": {
@@ -5198,9 +5156,10 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags": {
-    "recorded-date": "27-11-2025, 14:45:15",
+    "recorded-date": "21-02-2026, 01:03:06",
     "recorded-content": {
       "create-bucket-with-tags": {
+        "BucketArn": "arn:<partition>:s3:::test-bucket-tag-3fde2c7c",
         "Location": "<location:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5222,9 +5181,10 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags_us_east_1_idempotency": {
-    "recorded-date": "27-11-2025, 14:45:19",
+    "recorded-date": "21-02-2026, 01:03:10",
     "recorded-content": {
       "create-bucket-with-tags": {
+        "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
         "Location": "/<bucket-name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5255,6 +5215,7 @@
         }
       },
       "create-bucket-with-no-tags": {
+        "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
         "Location": "/<bucket-name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5285,6 +5246,7 @@
         }
       },
       "create-bucket-with-empty-tags": {
+        "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
         "Location": "/<bucket-name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5306,7 +5268,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_tags_exc": {
-    "recorded-date": "27-11-2025, 15:19:32",
+    "recorded-date": "21-02-2026, 01:03:27",
     "recorded-content": {
       "tags-key-none": {
         "Error": {
@@ -5374,9 +5336,10 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_create_bucket_with_empty_tags": {
-    "recorded-date": "27-11-2025, 14:45:17",
+    "recorded-date": "21-02-2026, 01:03:07",
     "recorded-content": {
       "create-bucket-with-empty-tags": {
+        "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
         "Location": "/<bucket-name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5395,6 +5358,7 @@
         }
       },
       "create-bucket-with-none-tags": {
+        "BucketArn": "arn:<partition>:s3:::<bucket-name:1>",
         "Location": "/<bucket-name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5404,7 +5368,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_head_object_with_tags": {
-    "recorded-date": "27-11-2025, 15:35:45",
+    "recorded-date": "21-02-2026, 01:03:47",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lpqTBg==",
@@ -5480,11 +5444,12 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_none_match": {
-    "recorded-date": "24-12-2025, 05:58:48",
+    "recorded-date": "21-02-2026, 01:05:09",
     "recorded-content": {
       "copy-obj": {
         "CopyObjectResult": {
           "ChecksumCRC32": "wmoL/Q==",
+          "ChecksumType": "FULL_OBJECT",
           "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
           "LastModified": "datetime"
         },
@@ -5508,11 +5473,12 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_match": {
-    "recorded-date": "24-12-2025, 05:58:44",
+    "recorded-date": "21-02-2026, 01:05:11",
     "recorded-content": {
       "copy-obj-if-match": {
         "CopyObjectResult": {
           "ChecksumCRC32": "wmoL/Q==",
+          "ChecksumType": "FULL_OBJECT",
           "ETag": "\"4d96fd1280dd67fe2eac895339a0a8e3\"",
           "LastModified": "datetime"
         },
@@ -5547,7 +5513,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_none_match_versioned_bucket": {
-    "recorded-date": "20-02-2026, 23:50:09",
+    "recorded-date": "21-02-2026, 01:05:14",
     "recorded-content": {
       "copy-obj": {
         "CopyObjectResult": {
@@ -5675,7 +5641,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_match_versioned_bucket": {
-    "recorded-date": "20-02-2026, 23:51:46",
+    "recorded-date": "21-02-2026, 01:05:18",
     "recorded-content": {
       "put-obj": {
         "ChecksumCRC32": "P8fZPQ==",
@@ -5837,7 +5803,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_precondition_write_validation": {
-    "recorded-date": "20-02-2026, 23:31:07",
+    "recorded-date": "21-02-2026, 01:05:21",
     "recorded-content": {
       "copy-obj-none-match-etag": {
         "Error": {
@@ -5878,7 +5844,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_none_match_in_place": {
-    "recorded-date": "20-02-2026, 23:40:39",
+    "recorded-date": "21-02-2026, 01:05:22",
     "recorded-content": {
       "copy-obj-if-none-match-fail": {
         "Error": {
@@ -5894,7 +5860,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectWritePrecondition::test_copy_object_if_match_in_place": {
-    "recorded-date": "20-02-2026, 23:43:17",
+    "recorded-date": "21-02-2026, 01:05:24",
     "recorded-content": {
       "copy-obj-if-match-in-place": {
         "CopyObjectResult": {

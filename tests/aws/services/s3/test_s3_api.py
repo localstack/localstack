@@ -812,7 +812,8 @@ class TestS3Multipart:
         self, aws_client, s3_bucket, snapshot
     ):
         """
-        Providing CopyIfModifiedSince with a datetime which is in the future will always pass (even though it evaluates to false). This is AWS defined behaviour.
+        Providing CopyIfModifiedSince with a datetime which is in the future will always pass (even though it
+         evaluates to false). This is AWS defined behaviour.
         """
         snapshot.add_transformer(
             [
@@ -943,7 +944,8 @@ class TestS3Multipart:
         self, aws_client, s3_bucket, snapshot
     ):
         """
-        Providing CopySourceIfUnmodifiedSince with a datetime where the object has been modified since this datetime should fail.
+        Providing CopySourceIfUnmodifiedSince with a datetime where the object has been modified since
+         this datetime should fail.
         """
         snapshot.add_transformer(
             [
@@ -989,7 +991,8 @@ class TestS3Multipart:
         self, aws_client, s3_bucket, snapshot
     ):
         """
-        If CopySourceIfMatch is provided with CopySourceIfUnmodifiedSince it should proceed even if the latter evaluates to false.
+        If CopySourceIfMatch is provided with CopySourceIfUnmodifiedSince it should proceed even if the latter
+        evaluates to false.
         See documentation: https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPartCopy.html
         """
         snapshot.add_transformer(
@@ -1104,7 +1107,8 @@ class TestS3Multipart:
         )
         upload_id = create_multipart_upload["UploadId"]
 
-        # Don't do this, but required for behaviour with CopySourceIfModifiedSince which will pass if a future time is provided.
+        # Don't do this, but required for behaviour with CopySourceIfModifiedSince which will pass
+        # if a future time is provided.
         sleep(1)
 
         with pytest.raises(ClientError) as error:
@@ -2186,13 +2190,13 @@ class TestS3ObjectLock:
 
     @markers.aws.validated
     def test_get_put_object_lock_configuration(self, s3_create_bucket, aws_client, snapshot):
-        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
 
-        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=bucket_name)
         snapshot.match("get-lock-config-start", get_lock_config)
 
         put_lock_config = aws_client.s3.put_object_lock_configuration(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             ObjectLockConfiguration={
                 "ObjectLockEnabled": "Enabled",
                 "Rule": {
@@ -2205,26 +2209,26 @@ class TestS3ObjectLock:
         )
         snapshot.match("put-lock-config", put_lock_config)
 
-        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=bucket_name)
         snapshot.match("get-lock-config", get_lock_config)
 
         put_lock_config_enabled = aws_client.s3.put_object_lock_configuration(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             ObjectLockConfiguration={
                 "ObjectLockEnabled": "Enabled",
             },
         )
         snapshot.match("put-lock-config-enabled", put_lock_config_enabled)
 
-        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=bucket_name)
         snapshot.match("get-lock-config-only-enabled", get_lock_config)
 
     @markers.aws.validated
     def test_put_object_lock_configuration_exc(self, s3_create_bucket, aws_client, snapshot):
-        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_lock_configuration(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 ObjectLockConfiguration={
                     "Rule": {
                         "DefaultRetention": {
@@ -2238,20 +2242,20 @@ class TestS3ObjectLock:
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_lock_configuration(
-                Bucket=s3_bucket, ObjectLockConfiguration={}
+                Bucket=bucket_name, ObjectLockConfiguration={}
             )
         snapshot.match("put-lock-config-empty", e.value.response)
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_lock_configuration(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 ObjectLockConfiguration={"ObjectLockEnabled": "Enabled", "Rule": {}},
             )
         snapshot.match("put-lock-config-empty-rule", e.value.response)
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_lock_configuration(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 ObjectLockConfiguration={
                     "ObjectLockEnabled": "Enabled",
                     "Rule": {"DefaultRetention": {}},
@@ -2261,7 +2265,7 @@ class TestS3ObjectLock:
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_lock_configuration(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 ObjectLockConfiguration={
                     "ObjectLockEnabled": "Enabled",
                     "Rule": {
@@ -2275,7 +2279,7 @@ class TestS3ObjectLock:
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_lock_configuration(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 ObjectLockConfiguration={
                     "ObjectLockEnabled": "Enabled",
                     "Rule": {
@@ -2290,7 +2294,7 @@ class TestS3ObjectLock:
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_lock_configuration(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 ObjectLockConfiguration={
                     "ObjectLockEnabled": "Enabled",
                     "Rule": {
@@ -2384,8 +2388,8 @@ class TestS3BucketOwnershipControls:
         delete_idempotent = aws_client.s3.delete_bucket_ownership_controls(Bucket=default_s3_bucket)
         snapshot.match("delete-ownership-after-delete", delete_idempotent)
 
-        s3_bucket = s3_create_bucket(ObjectOwnership="BucketOwnerPreferred")
-        get_ownership_at_creation = aws_client.s3.get_bucket_ownership_controls(Bucket=s3_bucket)
+        bucket_name = s3_create_bucket(ObjectOwnership="BucketOwnerPreferred")
+        get_ownership_at_creation = aws_client.s3.get_bucket_ownership_controls(Bucket=bucket_name)
         snapshot.match("get-ownership-at-creation", get_ownership_at_creation)
 
     @markers.aws.validated
