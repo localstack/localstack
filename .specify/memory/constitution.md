@@ -1,22 +1,16 @@
 <!--
 Sync Impact Report
 ===================
-- Version change: [template] → 1.0.0
-- Principles added:
-  - I. Test-First Development (NON-NEGOTIABLE)
-  - II. AWS Parity Testing
-  - III. Snapshot Integrity
-  - IV. LocalStack Verification (NON-NEGOTIABLE)
-  - V. Development Environment
-  - VI. Resource Safety
-  - VII. Simplicity
-- Sections added:
-  - Hard Constraints (from AGENTS.md)
-  - Development Workflow
+- Version change: 1.0.0 → 1.1.0
+- Modified principles:
+  - V. Development Environment — added 5-step LocalStack Lifecycle Management
+    subsection (verify stopped, start, verify running, stop, verify stopped)
+- Modified sections:
+  - Development Workflow — expanded steps 6-11 with lifecycle checks
 - Templates requiring updates:
-  - .specify/templates/plan-template.md — ✅ compatible (Constitution Check section exists)
+  - .specify/templates/plan-template.md — ✅ compatible (no changes needed)
   - .specify/templates/spec-template.md — ✅ compatible (no changes needed)
-  - .specify/templates/tasks-template.md — ✅ compatible (test-first ordering already present)
+  - .specify/templates/tasks-template.md — ✅ compatible (no changes needed)
 - Follow-up TODOs: none
 -->
 
@@ -110,8 +104,59 @@ reflected immediately.
 - The `.venv` virtual environment contains all required dependencies including
   `ruff` at `.venv/bin/ruff`
 
-**Rationale**: Using the wrong start command means tests run against stale code,
-producing misleading pass/fail results.
+#### LocalStack Lifecycle Management
+
+Every LocalStack test run MUST follow this exact 5-step sequence:
+
+**Step 1 — Verify stopped before starting:**
+
+```bash
+localstack status
+```
+
+Confirm runtime status is `stopped` in the output. Do NOT proceed to
+Step 2 if LocalStack is already running — run `localstack stop` first and
+re-check.
+
+**Step 2 — Start LocalStack:**
+
+```bash
+python -m localstack.dev.run
+```
+
+Run from the project's `.venv`. This mounts local source code into the
+container.
+
+**Step 3 — Verify running:**
+
+```bash
+localstack status
+```
+
+Confirm runtime status is `running` in the output. Do NOT proceed to
+run tests until this is confirmed.
+
+**Step 4 — Stop LocalStack after tests:**
+
+```bash
+localstack stop
+```
+
+MUST be run after every test session completes, regardless of pass/fail.
+
+**Step 5 — Verify stopped before proceeding:**
+
+```bash
+localstack status
+```
+
+Confirm runtime status is `stopped` in the output. Do NOT proceed to
+the next task until shutdown is confirmed.
+
+**Rationale**: Using the wrong start command means tests run against stale
+code, producing misleading results. Verifying stopped state before start
+prevents port conflicts and stale container state. Stopping after tests
+prevents resource leaks.
 
 ### VI. Resource Safety
 
@@ -164,9 +209,15 @@ The standard development cycle for any feature or fix:
    created/updated
 4. **Find the provider** — locate `services/<service>/provider.py`
 5. **Implement** — follow existing patterns, check `models.py` for state
-6. **Start LocalStack** — `python -m localstack.dev.run` (from `.venv`)
-7. **Run against LocalStack** — `pytest <path> -v` (no `TEST_TARGET`)
-8. **Confirm pass** — all snapshot matches green before marking complete
+6. **Verify stopped** — `localstack status` must show runtime status
+   `"stopped"` (if running, `localstack stop` first)
+7. **Start LocalStack** — `python -m localstack.dev.run` (from `.venv`)
+8. **Verify running** — `localstack status` must show runtime status
+   `"running"`
+9. **Run against LocalStack** — `pytest <path> -v` (no `TEST_TARGET`)
+10. **Confirm pass** — all snapshot matches green before marking complete
+11. **Stop LocalStack** — `localstack stop`, then `localstack status` must
+    show runtime status `"stopped"` before proceeding
 
 Reference implementations:
 - **Provider patterns**: CodeBuild service (`localstack-pro-core/.../codebuild/provider.py`)
@@ -192,4 +243,4 @@ these principles. Specifically:
 Use `AGENTS.md` at the repository root as the runtime development guidance
 reference.
 
-**Version**: 1.0.0 | **Ratified**: 2026-02-24 | **Last Amended**: 2026-02-24
+**Version**: 1.1.0 | **Ratified**: 2026-02-24 | **Last Amended**: 2026-02-24
