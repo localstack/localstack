@@ -417,6 +417,21 @@ class TestStateCaseScenarios:
         )
         sfn_snapshot.match("check_approval_denied_response", check_approval_denied_response)
 
+    TEMPLATES_VARIABLES = [
+        pytest.param(
+            (
+                OT.BASE_EXPR,
+                {
+                    "var_input_value": "test_value",
+                    "var_constant_1": 10,
+                },
+            ),
+            id="base_expressions",
+        ),
+        pytest.param((OT.BASE_LITERALS, {}), id="empty_variables"),
+    ]
+
+    @pytest.mark.parametrize("templates_variables", TEMPLATES_VARIABLES)
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -428,21 +443,19 @@ class TestStateCaseScenarios:
         self,
         aws_client_no_sync_prefix,
         sfn_snapshot,
+        templates_variables,
     ):
         sfn_snapshot.add_transformer(
             sfn_snapshot.transform.key_value("RoleArn", "role-arn", reference_replacement=False)
         )  # roleArn is null in AWS but is not null in LocalStack, see comment in provider implementation. If this transformer is not added then roleArn is picked up as another resource name in LocalStack, causing resource placeholders mismatch, e.g. <resource:3> where <resource:2> is expected.
         sfn_snapshot.add_transformer(sfn_snapshot.transform.resource_name())
-        template = OT.load_sfn_template(OT.BASE_EXPR)
+        template_path, variables_raw = templates_variables
+        template = OT.load_sfn_template(template_path)
+
         definition = json.dumps(template)
 
         exec_input = json.dumps({"input_values": [1, 2, 3]})
-        variables = json.dumps(
-            {
-                "var_input_value": "test_value",
-                "var_constant_1": 10,
-            }
-        )
+        variables = json.dumps(variables_raw)
 
         test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
             definition=definition,

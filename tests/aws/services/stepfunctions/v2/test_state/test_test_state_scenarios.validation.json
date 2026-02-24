@@ -395,13 +395,22 @@
       "total": 14.91
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_with_variables": {
-    "last_validated_date": "2026-02-23T12:08:28+00:00",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_with_variables[base_expressions]": {
+    "last_validated_date": "2026-02-24T11:15:19+00:00",
     "durations_in_seconds": {
-      "setup": 0.51,
+      "setup": 0.49,
       "call": 0.63,
       "teardown": 0.0,
-      "total": 1.14
+      "total": 1.12
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_with_variables[empty_variables]": {
+    "last_validated_date": "2026-02-24T11:15:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.22,
+      "teardown": 0.0,
+      "total": 0.22
     }
   }
 }

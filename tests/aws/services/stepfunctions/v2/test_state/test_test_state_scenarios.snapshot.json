@@ -2235,8 +2235,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_with_variables": {
-    "recorded-date": "23-02-2026, 12:08:28",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_with_variables[base_expressions]": {
+    "recorded-date": "24-02-2026, 11:15:19",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -2285,6 +2285,83 @@
           },
           "ja_var_access": "test_value",
           "ja_expr": 16
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_state_with_variables[empty_variables]": {
+    "recorded-date": "24-02-2026, 11:15:19",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "input_values": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        "output": {
+          "constant_null": null,
+          "constant_int": 0,
+          "constant_float": 0.1,
+          "constant_bool": true,
+          "constant_str": "constant string",
+          "constant_not_jsonata": " {% states.input %} ",
+          "constant_varpath_states": "$states.input",
+          "constant_varpath": "$no.such.var.path",
+          "constant_jp_input": "$",
+          "constant_jp_input.$": "$",
+          "constant_jp_input_path": "$.input_value",
+          "constant_jp_context": "$$",
+          "constant_if": "States.Format('Format:{}', 101)",
+          "constant_lst_empty": [],
+          "constant_lst": [
+            null,
+            0,
+            0.1,
+            true,
+            [],
+            {
+              "constant": 0
+            },
+            " {% states.input %} ",
+            "$states.input",
+            "$no.such.var.path"
+          ],
+          "constant_obj_empty": {},
+          "constant_obj": {
+            "in_obj_constant_null": null,
+            "in_obj_constant_int": 0,
+            "in_obj_constant_float": 0.1,
+            "in_obj_constant_bool": true,
+            "in_obj_constant_str": "constant string",
+            "in_obj_constant_not_jsonata": " {% states.input %} ",
+            "in_obj_constant_lst_empty": [],
+            "in_obj_constant_lst": [
+              null,
+              0,
+              0.1,
+              true,
+              [],
+              {
+                "constant": 0
+              },
+              " {% states.input %} ",
+              "$states.input",
+              "$no.such.var.path"
+            ],
+            "in_obj_constant_obj_empty": {},
+            "in_obj_constant_obj": {
+              "constant": 0
+            }
+          }
         },
         "status": "SUCCEEDED",
         "ResponseMetadata": {
