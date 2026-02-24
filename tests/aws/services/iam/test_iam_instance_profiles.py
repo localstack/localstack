@@ -9,8 +9,6 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
-pytestmark = pytest.mark.skip
-
 TRUST_POLICY = {
     "Version": "2012-10-17",
     "Statement": [
