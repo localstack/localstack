@@ -154,7 +154,6 @@ from localstack.services.iam.resources.policy_simulator import (
 )
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
 from localstack.services.iam.utils import (
-    generate_access_key_id_from_account_id,
     generate_iam_identifier,
 )
 from localstack.state import StateVisitor
@@ -3011,9 +3010,7 @@ class IamProvider(IamApi):
         """
         Generate an SSH public key ID with APKA prefix.
         """
-        return generate_access_key_id_from_account_id(
-            context.account_id, prefix="APKA", total_length=21
-        )
+        return generate_iam_identifier(context.account_id, prefix="APKA", total_length=21)
 
     def _generate_ssh_key_fingerprint(self, ssh_public_key_body: str) -> str:
         """
@@ -3033,7 +3030,7 @@ class IamProvider(IamApi):
         # Verify user exists
         self._get_user_or_raise_error(user_name, context)
 
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         if user_name not in store.SSH_PUBLIC_KEYS:
             store.SSH_PUBLIC_KEYS[user_name] = {}
 
@@ -3064,13 +3061,13 @@ class IamProvider(IamApi):
         # Verify user exists
         self._get_user_or_raise_error(user_name, context)
 
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
         ssh_key = user_keys.get(ssh_public_key_id)
 
         if not ssh_key:
             raise NoSuchEntityException(
-                f"The SSH Public Key with id {ssh_public_key_id} cannot be found."
+                f"The Public Key with id {ssh_public_key_id} cannot be found."
             )
 
         return GetSSHPublicKeyResponse(SSHPublicKey=ssh_key)
@@ -3086,7 +3083,7 @@ class IamProvider(IamApi):
         # Verify user exists
         self._get_user_or_raise_error(user_name, context)
 
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
 
         # Convert to metadata format (without SSHPublicKeyBody)
@@ -3113,13 +3110,13 @@ class IamProvider(IamApi):
         # Verify user exists
         self._get_user_or_raise_error(user_name, context)
 
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
         ssh_key = user_keys.get(ssh_public_key_id)
 
         if not ssh_key:
             raise NoSuchEntityException(
-                f"The SSH Public Key with id {ssh_public_key_id} cannot be found."
+                f"The Public Key with id {ssh_public_key_id} cannot be found."
             )
 
         ssh_key["Status"] = status
@@ -3134,12 +3131,12 @@ class IamProvider(IamApi):
         # Verify user exists
         self._get_user_or_raise_error(user_name, context)
 
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
 
         if ssh_public_key_id not in user_keys:
             raise NoSuchEntityException(
-                f"The SSH Public Key with id {ssh_public_key_id} cannot be found."
+                f"The Public Key with id {ssh_public_key_id} cannot be found."
             )
 
         del user_keys[ssh_public_key_id]
