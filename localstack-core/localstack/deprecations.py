@@ -319,6 +319,11 @@ DEPRECATIONS = [
         "By default, LocalStack routes Step Functions traffic to its internal runtime. "
         "Use this variable only if you need to redirect traffic to a different local Step Functions runtime.",
     ),
+    EnvVarDeprecation(
+        "ACTIVATE_PRO",
+        "4.14.0",
+        "This option has no effect anymore. Please remove this environment variable.",
+    ),
 ]
 
 
