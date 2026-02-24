@@ -16,10 +16,15 @@ from urllib.parse import quote
 
 from moto.iam.models import IAMBackend, iam_backends
 
+from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
+    AccessKey,
+    AccessKeyLastUsed,
+    AccessKeyMetadata,
     AttachedPermissionsBoundary,
     AttachedPolicy,
+    CreateAccessKeyResponse,
     CreateGroupResponse,
     CreateLoginProfileResponse,
     CreatePolicyResponse,
@@ -33,6 +38,7 @@ from localstack.aws.api.iam import (
     DeletionTaskIdType,
     DeletionTaskStatusType,
     EntityAlreadyExistsException,
+    GetAccessKeyLastUsedResponse,
     GetGroupPolicyResponse,
     GetGroupResponse,
     GetLoginProfileResponse,
@@ -47,6 +53,7 @@ from localstack.aws.api.iam import (
     IamApi,
     InvalidInputException,
     LimitExceededException,
+    ListAccessKeysResponse,
     ListAttachedGroupPoliciesResponse,
     ListAttachedRolePoliciesResponse,
     ListAttachedUserPoliciesResponse,
@@ -81,6 +88,7 @@ from localstack.aws.api.iam import (
     UpdateRoleDescriptionResponse,
     UpdateRoleResponse,
     User,
+    accessKeyIdType,
     allUsers,
     arnType,
     booleanObjectType,
@@ -115,6 +123,7 @@ from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY, TAG_KEY_CUSTOM_ID
 from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.iam.models import (
+    AccessKeyEntity,
     AwsManagedPolicy,
     GroupEntity,
     IamStore,
@@ -161,6 +170,9 @@ MAX_POLICY_VERSIONS = 5
 
 # Maximum tags per policy
 MAX_POLICY_TAGS = 50
+
+# Maximum access keys per user
+LIMIT_ACCESS_KEYS_PER_USER = 2
 
 T = TypeVar("T")
 
@@ -2010,37 +2022,33 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         store = self._get_store(context)
 
         # Handle case where no username is provided (get current user)
-        if not user_name:
-            access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
-            sts_client = connect_to(
-                region_name=context.region,
-                aws_access_key_id=access_key_id,
-                aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-            ).sts
-            caller_identity = sts_client.get_caller_identity()
-            caller_arn = caller_identity["Arn"]
-
-            # Check if this is the root user
-            if caller_arn.endswith(":root"):
-                return GetUserResponse(
-                    User=User(
-                        UserId=context.account_id,
-                        Arn=caller_arn,
-                        CreateDate=datetime.now(),
-                        PasswordLastUsed=datetime.now(),
-                    )
-                )
-
-            # Try to extract username from ARN for IAM users
-            # ARN format: arn:aws:iam::123456789012:user/username
-            if ":user/" in caller_arn:
-                user_name = caller_arn.split(":user/")[-1].split("/")[-1]
-            else:
-                raise ValidationError(
-                    "Must specify userName when calling with non-User credentials",
-                )
-
         with self._user_lock:
+            if not user_name:
+                try:
+                    user_name = self._get_user_name_from_access_key_context(context)
+                except ValidationError:
+                    # Check if it's the root principal
+                    access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
+                    sts_client = connect_to(
+                        region_name=context.region,
+                        aws_access_key_id=access_key_id,
+                        aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+                    ).sts
+                    caller_identity = sts_client.get_caller_identity()
+                    caller_arn = caller_identity["Arn"]
+
+                    # Check if this is the root user
+                    if caller_arn.endswith(":root"):
+                        return GetUserResponse(
+                            User=User(
+                                UserId=context.account_id,
+                                Arn=caller_arn,
+                                CreateDate=datetime.now(),
+                                PasswordLastUsed=datetime.now(),
+                            )
+                        )
+                    raise
+
             user_entity = self._get_user_entity(store, user_name)
             # Return a copy of the user
             user = User(user_entity.user)
@@ -2160,6 +2168,17 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             # Check if user has inline policies
             if user_entity.inline_policies:
                 raise DeleteConflictException("Cannot delete entity, must delete policies first.")
+
+            # Check if user has access keys
+            if user_entity.access_keys:
+                raise DeleteConflictException(
+                    "Cannot delete entity, must delete access keys first."
+                )
+
+            if user_entity.service_specific_credentials:
+                raise DeleteConflictException(
+                    "Cannot delete entity, must remove referenced objects first."
+                )
 
             # Delete the user from native store
             del store.USERS[user_name]
@@ -2633,9 +2652,227 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         else:
             return ListUserTagsResponse(Tags=result, IsTruncated=False)
 
+    # ------------------------------ User Access Key Operations ------------------------------ #
+
+    def _generate_access_key_id(self, context: RequestContext) -> str:
+        """Generate an access key ID with the appropriate prefix based on config."""
+        prefix = "AKIA" if config.PARITY_AWS_ACCESS_KEY_ID else "LKIA"
+        return generate_iam_identifier(context.account_id, prefix=prefix, total_length=20)
+
+    def _generate_secret_access_key(self) -> str:
+        """Generate a 40-character random secret access key."""
+        charset = string.ascii_letters + string.digits + "+/"
+        return "".join(random.choices(charset, k=40))
+
+    def _get_access_key_entity(
+        self, user_entity: UserEntity, access_key_id: str
+    ) -> AccessKeyEntity:
+        """Find an access key entity in a user's dict, raise NoSuchEntityException if not found."""
+        key_entity = user_entity.access_keys.get(access_key_id)
+        if not key_entity:
+            raise NoSuchEntityException(f"The Access Key with id {access_key_id} cannot be found.")
+        return key_entity
+
+    def _get_caller_arn_from_access_key_context(self, context: RequestContext) -> str:
+        """
+        Get the caller ARN from the request context via STS GetCallerIdentity.
+        """
+        access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
+        sts_client = connect_to(
+            region_name=context.region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+        ).sts
+        caller_identity = sts_client.get_caller_identity()
+        return caller_identity["Arn"]
+
+    def _get_user_name_from_access_key_context(self, context: RequestContext) -> str:
+        """
+        Derive the user name from the request context for access key operations.
+        First tries to look up the access key in the store, then falls back to STS.
+        """
+        store = self._get_store(context)
+        access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
+
+        # Try to find user directly from our access key index
+        user_name = store.ACCESS_KEY_INDEX.get(access_key_id)
+        if user_name:
+            return user_name
+
+        raise ValidationError(
+            "Must specify userName when calling with non-User credentials",
+        )
+
+    def create_access_key(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType = None,
+        **kwargs,
+    ) -> CreateAccessKeyResponse:
+        store = self._get_store(context)
+
+        # Derive user_name from context if not provided
+        with self._user_lock:
+            if not user_name:
+                user_name = self._get_user_name_from_access_key_context(context)
+
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Check 2-key limit
+            if len(user_entity.access_keys) >= LIMIT_ACCESS_KEYS_PER_USER:
+                raise LimitExceededException(
+                    f"Cannot exceed quota for AccessKeysPerUser: {LIMIT_ACCESS_KEYS_PER_USER}"
+                )
+
+            # Generate access key
+            access_key_id = self._generate_access_key_id(context)
+            secret_access_key = self._generate_secret_access_key()
+
+            access_key = AccessKey(
+                UserName=user_name,
+                AccessKeyId=access_key_id,
+                Status="Active",
+                SecretAccessKey=secret_access_key,
+                CreateDate=datetime.now(tz=UTC),
+            )
+
+            # Create entity and add to user's dict
+            key_entity = AccessKeyEntity(access_key=access_key)
+            user_entity.access_keys[access_key_id] = key_entity
+
+            # Add to index for efficient lookups
+            store.ACCESS_KEY_INDEX[access_key_id] = user_name
+
+        return CreateAccessKeyResponse(AccessKey=access_key)
+
+    def delete_access_key(
+        self,
+        context: RequestContext,
+        access_key_id: accessKeyIdType,
+        user_name: existingUserNameType = None,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        with self._user_lock:
+            # Derive user_name from context if not provided
+            if not user_name:
+                user_name = self._get_user_name_from_access_key_context(context)
+            user_entity = self._get_user_entity(store, user_name)
+            # Validate key exists
+            self._get_access_key_entity(user_entity, access_key_id)
+
+            # Remove from user's dict
+            del user_entity.access_keys[access_key_id]
+
+            # Remove from index
+            store.ACCESS_KEY_INDEX.pop(access_key_id, None)
+
+    def list_access_keys(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType = None,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListAccessKeysResponse:
+        store = self._get_store(context)
+
+        with self._user_lock:
+            # Derive user_name from context if not provided
+            if not user_name:
+                user_name = self._get_user_name_from_access_key_context(context)
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Convert to AccessKeyMetadata (no SecretAccessKey)
+            metadata_list = [
+                AccessKeyMetadata(
+                    UserName=key_entity.access_key["UserName"],
+                    AccessKeyId=key_entity.access_key["AccessKeyId"],
+                    Status=key_entity.access_key["Status"],
+                    CreateDate=key_entity.access_key.get("CreateDate"),
+                )
+                for key_entity in user_entity.access_keys.values()
+            ]
+
+        # Apply pagination
+        paginated_list = PaginatedList(metadata_list)
+
+        def _token_generator(meta: AccessKeyMetadata) -> str:
+            return meta["AccessKeyId"]
+
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator,
+            next_token=marker,
+            page_size=max_items or 100,
+        )
+
+        if next_marker:
+            return ListAccessKeysResponse(
+                AccessKeyMetadata=result, IsTruncated=True, Marker=next_marker
+            )
+        else:
+            return ListAccessKeysResponse(AccessKeyMetadata=result, IsTruncated=False)
+
+    def update_access_key(
+        self,
+        context: RequestContext,
+        access_key_id: accessKeyIdType,
+        status: statusType,
+        user_name: existingUserNameType = None,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        with self._user_lock:
+            # Derive user_name from context if not provided
+            if not user_name:
+                user_name = self._get_user_name_from_access_key_context(context)
+            user_entity = self._get_user_entity(store, user_name)
+            key_entity = self._get_access_key_entity(user_entity, access_key_id)
+
+            # Update status
+            key_entity.access_key["Status"] = status
+
+    def get_access_key_last_used(
+        self,
+        context: RequestContext,
+        access_key_id: accessKeyIdType,
+        **kwargs,
+    ) -> GetAccessKeyLastUsedResponse:
+        store = self._get_store(context)
+
+        with self._user_lock:
+            # Look up user_name from index
+            user_name = store.ACCESS_KEY_INDEX.get(access_key_id)
+            if not user_name:
+                # AWS returns AccessDenied (not NoSuchEntity) for unknown keys
+                # to prevent enumeration attacks
+                raise AccessDeniedError(
+                    f"User: {self._get_caller_arn_from_access_key_context(context)} is not authorized to perform "
+                    f"iam:GetAccessKeyLastUsed on resource: access key {access_key_id}"
+                )
+
+            user_entity = self._get_user_entity(store, user_name)
+            key_entity = self._get_access_key_entity(user_entity, access_key_id)
+
+            # Return last_used info or N/A values for unused keys (AWS behavior)
+            if key_entity.last_used:
+                access_key_last_used = key_entity.last_used
+            else:
+                access_key_last_used = AccessKeyLastUsed(
+                    ServiceName="N/A",
+                    Region="N/A",
+                )
+
+        return GetAccessKeyLastUsedResponse(
+            UserName=user_name,
+            AccessKeyLastUsed=access_key_last_used,
+        )
+
     # ------------------------------ Service specific credentials ------------------------------ #
 
-    def _get_user_or_raise_error(self, user_name: str, context: RequestContext) -> User:
+    def _get_user_or_raise_error(self, user_name: str, context: RequestContext) -> UserEntity:
         """
         Return the user from the store, or raise the proper exception if no user can be found.
 

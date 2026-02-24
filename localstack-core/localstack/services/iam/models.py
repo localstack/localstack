@@ -6,6 +6,8 @@ import dataclasses
 from dataclasses import field
 
 from localstack.aws.api.iam import (
+    AccessKey,
+    AccessKeyLastUsed,
     Group,
     LoginProfile,
     Policy,
@@ -22,6 +24,14 @@ class AwsManagedPolicy:
     """Tracks account-specific state for AWS managed policies (currently just attachment count)."""
 
     attachment_count: int = 0
+
+
+@dataclasses.dataclass
+class AccessKeyEntity:
+    """Wrapper for AccessKey with last used tracking."""
+
+    access_key: AccessKey  # UserName, AccessKeyId, Status, SecretAccessKey, CreateDate
+    last_used: AccessKeyLastUsed | None = None
 
 
 @dataclasses.dataclass
@@ -50,6 +60,7 @@ class UserEntity:
     login_profile: LoginProfile | None = None  # Login profile for console access
     password: str | None = None  # Password for login profile (never in API responses)
     service_specific_credentials: list[ServiceSpecificCredential] = field(default_factory=list)
+    access_keys: dict[str, AccessKeyEntity] = field(default_factory=dict)  # access_key_id -> entity
 
 
 @dataclasses.dataclass
@@ -87,6 +98,8 @@ class IamStore(BaseStore):
     # Attachment counts for AWS managed policies, keyed by the policy ARN.
     # A key is present only when the policy has been attached at least once.
     AWS_MANAGED_POLICIES: dict[str, AwsManagedPolicy] = CrossRegionAttribute(default=dict)
+    # Index for efficient access key lookups: access_key_id -> user_name
+    ACCESS_KEY_INDEX: dict[str, str] = CrossRegionAttribute(default=dict)
 
 
 # validate=False because IAM is a global service without region-specific endpoints
