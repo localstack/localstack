@@ -16,7 +16,9 @@ from localstack.aws.api.iam import (
     ServiceSpecificCredential,
     SSHPublicKey,
     User,
+    clientIDListType,
     tagListType,
+    thumbprintListType,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
 
@@ -81,6 +83,16 @@ class GroupEntity:
     member_user_names: list[str] = field(default_factory=list)  # User names in this group
 
 
+@dataclasses.dataclass
+class OIDCProvider:
+    arn: str
+    url: str
+    create_date: datetime = field(default_factory=datetime.utcnow)
+    client_id_list: clientIDListType = field(default_factory=list)
+    thumbprint_list: thumbprintListType = field(default_factory=list)
+    tags: tagListType = field(default_factory=list)
+
+
 class IamStore(BaseStore):
     # Customer-managed policies keyed by ARN
     # Using CrossRegionAttribute since IAM is a global service (policies are account-wide)
@@ -100,6 +112,10 @@ class IamStore(BaseStore):
     # SAML providers: maps provider_arn -> SAMLProvider
     # Account-scoped (IAM is global within an account)
     SAML_PROVIDERS: dict[str, SAMLProvider] = CrossRegionAttribute(default=dict)
+
+    # OIDC providers: maps provider_arn -> OIDCProvider
+    # Account-scoped (IAM is global within an account)
+    OIDC_PROVIDERS: dict[str, OIDCProvider] = CrossRegionAttribute(default=dict)
 
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)
