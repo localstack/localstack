@@ -322,7 +322,8 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "ACTIVATE_PRO",
         "4.14.0",
-        "This option has no effect anymore. Please remove this environment variable.",
+        "Starting in March 2026, LocalStack will require an auth token. "
+        "Go to this page for more infos: https://localstack.cloud/2026-updates",
     ),
 ]
 
