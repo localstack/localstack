@@ -57,6 +57,7 @@ class UserEntity:
     login_profile: LoginProfile | None = None  # Login profile for console access
     password: str | None = None  # Password for login profile (never in API responses)
     service_specific_credentials: list[ServiceSpecificCredential] = field(default_factory=list)
+    ssh_public_keys: dict[str, SSHPublicKey] = field(default_factory=dict)  # key_id -> SSHPublicKey
 
 
 @dataclasses.dataclass
@@ -99,10 +100,6 @@ class IamStore(BaseStore):
     # SAML providers: maps provider_arn -> SAMLProvider
     # Account-scoped (IAM is global within an account)
     SAML_PROVIDERS: dict[str, SAMLProvider] = CrossRegionAttribute(default=dict)
-
-    # SSH public keys: maps user_name -> ssh_public_key_id -> SSHPublicKey
-    # Account-scoped (IAM is global within an account)
-    SSH_PUBLIC_KEYS: dict[str, dict[str, SSHPublicKey]] = CrossRegionAttribute(default=dict)
 
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)

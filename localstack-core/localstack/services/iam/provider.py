@@ -2004,6 +2004,8 @@ class IamProvider(IamApi):
             if user_entity.inline_policies:
                 raise DeleteConflictException("Cannot delete entity, must delete policies first.")
 
+            # TODO test if SSH keys block user deletion
+
             # Delete the user from native store
             del store.USERS[user_name]
 
@@ -3027,26 +3029,23 @@ class IamProvider(IamApi):
         ssh_public_key_body: publicKeyMaterialType,
         **kwargs,
     ) -> UploadSSHPublicKeyResponse:
-        # Verify user exists
-        self._get_user_or_raise_error(user_name, context)
-
         store = self._get_store(context)
-        if user_name not in store.SSH_PUBLIC_KEYS:
-            store.SSH_PUBLIC_KEYS[user_name] = {}
 
         ssh_public_key_id = self._generate_ssh_public_key_id(context)
         fingerprint = self._generate_ssh_key_fingerprint(ssh_public_key_body)
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
 
-        ssh_key = SSHPublicKey(
-            UserName=user_name,
-            SSHPublicKeyId=ssh_public_key_id,
-            Fingerprint=fingerprint,
-            SSHPublicKeyBody=ssh_public_key_body,
-            Status=statusType.Active,
-            UploadDate=datetime.now(),
-        )
+            ssh_key = SSHPublicKey(
+                UserName=user_name,
+                SSHPublicKeyId=ssh_public_key_id,
+                Fingerprint=fingerprint,
+                SSHPublicKeyBody=ssh_public_key_body,
+                Status=statusType.Active,
+                UploadDate=datetime.now(),
+            )
 
-        store.SSH_PUBLIC_KEYS[user_name][ssh_public_key_id] = ssh_key
+            user_entity.ssh_public_keys[ssh_public_key_id] = ssh_key
 
         return UploadSSHPublicKeyResponse(SSHPublicKey=ssh_key)
 
@@ -3058,17 +3057,16 @@ class IamProvider(IamApi):
         encoding: encodingType,
         **kwargs,
     ) -> GetSSHPublicKeyResponse:
-        # Verify user exists
-        self._get_user_or_raise_error(user_name, context)
-
         store = self._get_store(context)
-        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
-        ssh_key = user_keys.get(ssh_public_key_id)
 
-        if not ssh_key:
-            raise NoSuchEntityException(
-                f"The Public Key with id {ssh_public_key_id} cannot be found."
-            )
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+            ssh_key = user_entity.ssh_public_keys.get(ssh_public_key_id)
+
+            if not ssh_key:
+                raise NoSuchEntityException(
+                    f"The Public Key with id {ssh_public_key_id} cannot be found."
+                )
 
         return GetSSHPublicKeyResponse(SSHPublicKey=ssh_key)
 
@@ -3080,22 +3078,21 @@ class IamProvider(IamApi):
         max_items: maxItemsType = None,
         **kwargs,
     ) -> ListSSHPublicKeysResponse:
-        # Verify user exists
-        self._get_user_or_raise_error(user_name, context)
-
         store = self._get_store(context)
-        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
 
-        # Convert to metadata format (without SSHPublicKeyBody)
-        ssh_keys_metadata = [
-            SSHPublicKeyMetadata(
-                UserName=key["UserName"],
-                SSHPublicKeyId=key["SSHPublicKeyId"],
-                Status=key["Status"],
-                UploadDate=key["UploadDate"],
-            )
-            for key in user_keys.values()
-        ]
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Convert to metadata format (without SSHPublicKeyBody)
+            ssh_keys_metadata = [
+                SSHPublicKeyMetadata(
+                    UserName=key["UserName"],
+                    SSHPublicKeyId=key["SSHPublicKeyId"],
+                    Status=key["Status"],
+                    UploadDate=key["UploadDate"],
+                )
+                for key in user_entity.ssh_public_keys.values()
+            ]
 
         return ListSSHPublicKeysResponse(SSHPublicKeys=ssh_keys_metadata)
 
@@ -3107,19 +3104,18 @@ class IamProvider(IamApi):
         status: statusType,
         **kwargs,
     ) -> None:
-        # Verify user exists
-        self._get_user_or_raise_error(user_name, context)
-
         store = self._get_store(context)
-        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
-        ssh_key = user_keys.get(ssh_public_key_id)
 
-        if not ssh_key:
-            raise NoSuchEntityException(
-                f"The Public Key with id {ssh_public_key_id} cannot be found."
-            )
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+            ssh_key = user_entity.ssh_public_keys.get(ssh_public_key_id)
 
-        ssh_key["Status"] = status
+            if not ssh_key:
+                raise NoSuchEntityException(
+                    f"The Public Key with id {ssh_public_key_id} cannot be found."
+                )
+
+            ssh_key["Status"] = status
 
     def delete_ssh_public_key(
         self,
@@ -3128,15 +3124,14 @@ class IamProvider(IamApi):
         ssh_public_key_id: publicKeyIdType,
         **kwargs,
     ) -> None:
-        # Verify user exists
-        self._get_user_or_raise_error(user_name, context)
-
         store = self._get_store(context)
-        user_keys = store.SSH_PUBLIC_KEYS.get(user_name, {})
 
-        if ssh_public_key_id not in user_keys:
-            raise NoSuchEntityException(
-                f"The Public Key with id {ssh_public_key_id} cannot be found."
-            )
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
 
-        del user_keys[ssh_public_key_id]
+            if ssh_public_key_id not in user_entity.ssh_public_keys:
+                raise NoSuchEntityException(
+                    f"The Public Key with id {ssh_public_key_id} cannot be found."
+                )
+
+            del user_entity.ssh_public_keys[ssh_public_key_id]
