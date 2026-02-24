@@ -607,16 +607,24 @@ class FunctionVersion:
         return self.id.qualified_arn()
 
 
+class DesiredCapacityProviderState(StrEnum):
+    Running = "Running"
+    Stopped = "Stopped"
+
+
 @dataclasses.dataclass
 class CapacityProvider:
     CapacityProviderArn: CapacityProviderArn
-    # State is determined dynamically
+    # State is determined dynamically based on DesiredState
     VpcConfig: CapacityProviderVpcConfig
     PermissionsConfig: CapacityProviderPermissionsConfig
     InstanceRequirements: InstanceRequirements
     CapacityProviderScalingConfig: CapacityProviderScalingConfig
     LastModified: Timestamp
     KmsKeyArn: KMSKeyArn | None = None
+    # Tracks whether the capacity provider should be running or stopped.
+    # Set to Stopped when deletion is initiated; used to skip restoration on state load.
+    DesiredState: DesiredCapacityProviderState = DesiredCapacityProviderState.Running
 
 
 @dataclasses.dataclass
