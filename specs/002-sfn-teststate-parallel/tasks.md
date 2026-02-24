@@ -2,6 +2,7 @@
 
 **Input**: Design documents from `/specs/002-sfn-teststate-parallel/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md
+**Constitution**: v1.1.0 (includes 5-step LocalStack Lifecycle Management)
 
 **Tests**: Required by constitution (Test-First Development, NON-NEGOTIABLE).
 
@@ -45,17 +46,23 @@
 
 ### Tests for User Story 1
 
-> **NOTE: Write these tests FIRST, run against AWS to record snapshots, ensure they FAIL against LocalStack before implementation**
+> **NOTE: Write these tests FIRST, run against AWS to record snapshots, ensure they FAIL against LocalStack before implementation (Constitution Principle I)**
 
 - [ ] T005 [US1] Write test `test_mock_result_is_not_array_on_parallel_state` in `tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py` — call TestState with base_parallel_state template and a JSON object as mock result; expect ValidationException; use `sfn_snapshot.match()`
 - [ ] T006 [US1] Write test `test_parallel_state_requires_mock` in `tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py` — call TestState with base_parallel_state template and no mock; expect InvalidDefinition error; add to `STATES_REQUIRING_MOCKS` parametrize list
-- [ ] T007 [US1] Run US1 tests against AWS with `AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v -k "parallel"` to record snapshots. Task is NOT complete until snapshot files are created/updated on disk.
+- [ ] T007 [US1] Run US1 tests against AWS: `AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v -k "parallel"`. **Completion gate (Principle II+III)**: Task is NOT complete until snapshot files are created/updated on disk.
 
 ### Implementation for User Story 1
 
 - [ ] T008 [US1] Add `validate_mock_result_matches_parallel_definition` static method to `TestStateStaticAnalyser` in `localstack-core/localstack/services/stepfunctions/asl/static_analyser/test_state/test_state_analyser.py` — check `isinstance(mock_result, list)`, raise `ValidationException` if not
 - [ ] T009 [US1] Wire Parallel validation into `TestStateStaticAnalyser.validate_mock` in `localstack-core/localstack/services/stepfunctions/asl/static_analyser/test_state/test_state_analyser.py` — add `isinstance(test_state, StateParallel)` branch after the `isinstance(test_state, StateMap)` check, calling the new validation method
-- [ ] T010 [US1] Start LocalStack with `python -m localstack.dev.run` and run US1 tests against LocalStack with `pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v -k "parallel"`. Task is NOT complete until all tests pass.
+- [ ] T010 [US1] Verify US1 against LocalStack using 5-step lifecycle (Constitution Principle V, v1.1.0):
+  1. `localstack status` — confirm stopped (if running: `localstack stop`, re-check)
+  2. `python -m localstack.dev.run` — start from `.venv`
+  3. `localstack status` — confirm running
+  4. `pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v -k "parallel"` — run tests
+  5. `localstack stop` then `localstack status` — confirm stopped
+  **Completion gate (Principle IV)**: Task is NOT complete until all US1 tests pass against LocalStack.
 
 **Checkpoint**: Parallel state mock-result-must-be-array validation works. Snapshots match AWS.
 
@@ -69,15 +76,21 @@
 
 ### Tests for User Story 2
 
-> **NOTE: Write these tests FIRST, run against AWS to record snapshots, ensure they FAIL against LocalStack before implementation**
+> **NOTE: Write these tests FIRST, run against AWS to record snapshots, ensure they FAIL against LocalStack before implementation (Constitution Principle I)**
 
 - [ ] T011 [US2] Write test `test_mock_result_array_size_mismatch_on_parallel_state` in `tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py` — call TestState with base_parallel_state template (2 branches) and a mock result array of size 1; expect ValidationException; use `sfn_snapshot.match()`
-- [ ] T012 [US2] Run US2 tests against AWS with `AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v -k "mismatch"` to record snapshots. Task is NOT complete until snapshot files are created/updated on disk.
+- [ ] T012 [US2] Run US2 tests against AWS: `AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v -k "mismatch"`. **Completion gate (Principle II+III)**: Task is NOT complete until snapshot files are created/updated on disk.
 
 ### Implementation for User Story 2
 
 - [ ] T013 [US2] Extend `validate_mock_result_matches_parallel_definition` in `localstack-core/localstack/services/stepfunctions/asl/static_analyser/test_state/test_state_analyser.py` to also check `len(mock_result) == len(test_state.branches.programs)`, raising `ValidationException` if size mismatches
-- [ ] T014 [US2] Start LocalStack with `python -m localstack.dev.run` and run US2 tests against LocalStack with `pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v -k "mismatch"`. Task is NOT complete until all tests pass.
+- [ ] T014 [US2] Verify US2 against LocalStack using 5-step lifecycle (Constitution Principle V, v1.1.0):
+  1. `localstack status` — confirm stopped (if running: `localstack stop`, re-check)
+  2. `python -m localstack.dev.run` — start from `.venv`
+  3. `localstack status` — confirm running
+  4. `pytest tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py -v -k "mismatch"` — run tests
+  5. `localstack stop` then `localstack status` — confirm stopped
+  **Completion gate (Principle IV)**: Task is NOT complete until all US2 tests pass against LocalStack.
 
 **Checkpoint**: Both validation guards (format + size) work. All US1 + US2 tests pass against both AWS and LocalStack.
 
@@ -91,17 +104,23 @@
 
 ### Tests for User Story 3
 
-> **NOTE: Write these tests FIRST, run against AWS to record snapshots, ensure they FAIL against LocalStack before implementation**
+> **NOTE: Write these tests FIRST, run against AWS to record snapshots, ensure they FAIL against LocalStack before implementation (Constitution Principle I)**
 
 - [ ] T015 [P] [US3] Write test `test_base_parallel_state_mock_success` in `tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py` — call TestState with base_parallel_state template (2 branches) and valid mock result array of size 2; parametrize over all inspection levels (INFO, DEBUG, TRACE); use `sfn_snapshot.match()`
 - [ ] T016 [P] [US3] Write test `test_io_parallel_state_mock_success` in `tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py` — call TestState with io_parallel_state template (Parallel with InputPath/ResultPath/OutputPath) and valid mock result array; parametrize over all inspection levels; use `sfn_snapshot.match()`
-- [ ] T017 [US3] Run US3 tests against AWS with `AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 pytest tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py -v -k "parallel"` to record snapshots. Task is NOT complete until snapshot files are created/updated on disk.
+- [ ] T017 [US3] Run US3 tests against AWS: `AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 pytest tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py -v -k "parallel"`. **Completion gate (Principle II+III)**: Task is NOT complete until snapshot files are created/updated on disk.
 
 ### Implementation for User Story 3
 
 - [ ] T018 [US3] Create `MockedStateParallel` class in `localstack-core/localstack/services/stepfunctions/asl/component/test_state/state/parallel.py` — extend `MockedBaseState[StateParallel]`, follow `MockedStateMap` pattern; patch `BranchesDecl._eval_body` to distribute mock result array elements to branches
 - [ ] T019 [US3] Register `StateParallel` in `_decorate_state_field` function in `localstack-core/localstack/services/stepfunctions/asl/parse/test_state/preprocessor.py` — add `isinstance(state_field, StateParallel)` branch that calls `MockedStateParallel.wrap(state_field, is_single_state)`; add necessary imports
-- [ ] T020 [US3] Start LocalStack with `python -m localstack.dev.run` and run US3 tests against LocalStack with `pytest tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py -v -k "parallel"`. Task is NOT complete until all tests pass.
+- [ ] T020 [US3] Verify US3 against LocalStack using 5-step lifecycle (Constitution Principle V, v1.1.0):
+  1. `localstack status` — confirm stopped (if running: `localstack stop`, re-check)
+  2. `python -m localstack.dev.run` — start from `.venv`
+  3. `localstack status` — confirm running
+  4. `pytest tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py -v -k "parallel"` — run tests
+  5. `localstack stop` then `localstack status` — confirm stopped
+  **Completion gate (Principle IV)**: Task is NOT complete until all US3 tests pass against LocalStack.
 
 **Checkpoint**: Parallel state TestState execution works end-to-end. All US3 tests pass against both AWS and LocalStack at all inspection levels.
 
@@ -111,8 +130,14 @@
 
 **Purpose**: Regression verification and cleanup
 
-- [ ] T021 Run all existing TestState tests against LocalStack to verify zero regressions: `pytest tests/aws/services/stepfunctions/v2/test_state/ -v`. Task is NOT complete unless all pre-existing tests still pass.
-- [ ] T022 Run quickstart.md validation — manually verify the 3 CLI scenarios from `specs/002-sfn-teststate-parallel/quickstart.md` against running LocalStack
+- [ ] T021 Verify zero regressions using 5-step lifecycle (Constitution Principle V, v1.1.0):
+  1. `localstack status` — confirm stopped (if running: `localstack stop`, re-check)
+  2. `python -m localstack.dev.run` — start from `.venv`
+  3. `localstack status` — confirm running
+  4. `pytest tests/aws/services/stepfunctions/v2/test_state/ -v` — run ALL existing TestState tests
+  5. `localstack stop` then `localstack status` — confirm stopped
+  **Completion gate**: Task is NOT complete unless all pre-existing tests still pass (FR-005, SC-003).
+- [ ] T022 Run quickstart.md validation — manually verify the 3 CLI scenarios from `specs/002-sfn-teststate-parallel/quickstart.md` against running LocalStack (follow 5-step lifecycle for start/stop)
 
 ---
 
@@ -127,12 +152,13 @@
 - **US3 (Phase 5)**: Depends on Phase 2 completion (independent of US1/US2 for test writing, but implementation depends on validation being in place)
 - **Polish (Phase 6)**: Depends on all user stories being complete
 
-### Within Each User Story
+### Within Each User Story (Constitution Workflow)
 
-1. Tests MUST be written FIRST (T005-T007, T011-T012, T015-T017)
-2. Tests MUST be run against AWS to record snapshots — task NOT complete without snapshots on disk
-3. Implementation follows (T008-T009, T013, T018-T019)
-4. Tests MUST pass against LocalStack — task NOT complete without green tests (T010, T014, T020)
+1. Tests MUST be written FIRST (Constitution Principle I — NON-NEGOTIABLE)
+2. Tests MUST be run against AWS to record snapshots (Principle II) — task NOT complete without snapshots on disk (Principle III)
+3. Implementation follows
+4. Tests MUST pass against LocalStack using 5-step lifecycle (Principles IV + V v1.1.0) — task NOT complete without green tests
+5. LocalStack MUST be stopped and verified stopped before proceeding to next task (Principle V v1.1.0)
 
 ### Parallel Opportunities
 
@@ -162,9 +188,9 @@
 
 ## Notes
 
-- All tests use `@markers.aws.validated` decorator and `sfn_snapshot.match()` for assertions
+- **Constitution v1.1.0 compliance**: All LocalStack verification tasks (T010, T014, T020, T021) include the full 5-step lifecycle sequence: (1) verify stopped, (2) start with `python -m localstack.dev.run`, (3) verify running, (4) run tests, (5) stop and verify stopped
+- All tests use `@markers.aws.validated` decorator and `sfn_snapshot.match()` for assertions (Principle II + III)
 - Use `aws_client_no_sync_prefix` fixture for TestState calls (disables sync prefix on localhost)
-- Snapshot files (`*.snapshot.json`, `*.validation.json`) are auto-generated — never edit manually
-- Start LocalStack with `python -m localstack.dev.run` (from `.venv`) for local verification — NOT `localstack start`
-- Constitution Principle III: If a task involves recording a snapshot, the task MUST NOT be marked complete unless the snapshot was actually recorded on disk
-- Constitution Principle IV: Implementation tasks MUST NOT be marked complete unless tests pass against LocalStack
+- Snapshot files (`*.snapshot.json`, `*.validation.json`) are auto-generated — never edit manually (Principle III)
+- Start LocalStack with `python -m localstack.dev.run` (from `.venv`) — NOT `localstack start` (Principle V)
+- **Task completion gates**: Tasks involving snapshots MUST NOT be marked complete without recorded snapshots on disk; implementation tasks MUST NOT be marked complete without passing LocalStack tests (Governance)
