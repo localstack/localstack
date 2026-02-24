@@ -2858,7 +2858,7 @@ class IamProvider(IamApi):
         self, saml_provider_arn: str, context: RequestContext
     ) -> SAMLProvider:
         """Get a SAML provider by ARN or raise NoSuchEntityException."""
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         provider = store.SAML_PROVIDERS.get(saml_provider_arn)
         if not provider:
             raise NoSuchEntityException(f"SAMLProvider {saml_provider_arn} does not exist.")
@@ -2875,7 +2875,7 @@ class IamProvider(IamApi):
         **kwargs,
     ) -> CreateSAMLProviderResponse:
 
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         arn = self._get_saml_provider_arn(name, context.account_id, context.partition)
 
         if arn in store.SAML_PROVIDERS:
@@ -2914,7 +2914,7 @@ class IamProvider(IamApi):
 
     def list_saml_providers(self, context: RequestContext, **kwargs) -> ListSAMLProvidersResponse:
 
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
 
         provider_list = [
             SAMLProviderListEntry(
@@ -2949,7 +2949,7 @@ class IamProvider(IamApi):
     def delete_saml_provider(
         self, context: RequestContext, saml_provider_arn: arnType, **kwargs
     ) -> None:
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
 
         if saml_provider_arn not in store.SAML_PROVIDERS:
             raise NoSuchEntityException(f"Manifest not found for arn {saml_provider_arn}")
