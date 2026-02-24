@@ -1,14 +1,49 @@
 # Quickstart: StepFunctions TestState Parallel State Support
 
-## Verify the Feature
+## Development Workflow (Constitution v1.1.0)
 
-### 1. Start LocalStack with local changes
+### Step 1: Write tests and record AWS snapshots
 
 ```bash
-python -m localstack.dev.run
+# Run tests against real AWS to record snapshots
+AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 \
+  pytest tests/aws/services/stepfunctions/v2/test_state/ -v -k "parallel"
+
+# Verify snapshot files were created/updated
+ls tests/aws/services/stepfunctions/v2/test_state/*.snapshot.json
 ```
 
-### 2. Test validation: mock result is not an array
+### Step 2: Implement the feature
+
+Modify files per the plan's Source Code section.
+
+### Step 3: Verify against LocalStack (5-step lifecycle)
+
+```bash
+# (1) Verify stopped before starting
+localstack status
+# Confirm runtime status is "stopped". If running, stop first:
+# localstack stop && localstack status
+
+# (2) Start LocalStack with local changes
+python -m localstack.dev.run
+
+# (3) Verify running
+localstack status
+# Confirm runtime status is "running" before proceeding
+
+# (4) Run tests against LocalStack
+pytest tests/aws/services/stepfunctions/v2/test_state/ -v -k "parallel"
+
+# (5) Stop LocalStack and verify stopped
+localstack stop
+localstack status
+# Confirm runtime status is "stopped" before proceeding
+```
+
+## Manual Verification Examples
+
+### Test validation: mock result is not an array
 
 ```bash
 aws stepfunctions test-state \
@@ -28,7 +63,7 @@ aws stepfunctions test-state \
 Expected: `ValidationException` — mock result must be a JSON array for
 Parallel states.
 
-### 3. Test validation: mock result array size mismatch
+### Test validation: mock result array size mismatch
 
 ```bash
 aws stepfunctions test-state \
@@ -48,7 +83,7 @@ aws stepfunctions test-state \
 Expected: `ValidationException` — mock result array size (1) does not match
 branch count (2).
 
-### 4. Test successful execution
+### Test successful execution
 
 ```bash
 aws stepfunctions test-state \
@@ -67,13 +102,16 @@ aws stepfunctions test-state \
 
 Expected: Successful execution with output containing both branch results.
 
-## Run Tests
+## Run All Tests
 
 ```bash
-# Run against AWS to record snapshots
+# Against AWS (record snapshots)
 AWS_PROFILE=ls-sandbox TEST_TARGET=AWS_CLOUD SNAPSHOT_UPDATE=1 \
   pytest tests/aws/services/stepfunctions/v2/test_state/ -v -k "parallel"
 
-# Run against LocalStack
+# Against LocalStack (verify implementation)
 pytest tests/aws/services/stepfunctions/v2/test_state/ -v -k "parallel"
+
+# Regression: ensure existing tests still pass
+pytest tests/aws/services/stepfunctions/v2/test_state/ -v
 ```
