@@ -153,7 +153,6 @@ class TestSAMLProviders:
         assert provider_arn not in provider_arns
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="TODO: exception not raised")
     def test_delete_saml_provider_not_found(self, aws_client, account_id, snapshot, partition):
         """Test error when deleting a non-existent SAML provider."""
         fake_arn = f"arn:{partition}:iam::{account_id}:saml-provider/NonExistentProvider"

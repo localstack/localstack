@@ -4,6 +4,7 @@ Store and entity definitions for IAM service.
 
 import dataclasses
 from dataclasses import field
+from datetime import datetime
 
 from localstack.aws.api.iam import (
     Group,
@@ -14,6 +15,7 @@ from localstack.aws.api.iam import (
     Role,
     ServiceSpecificCredential,
     User,
+    tagListType,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
 
@@ -28,6 +30,16 @@ class RoleEntity:
         default_factory=list
     )  # ARNs of attached managed policies
     linked_service: str | None = None  # For service-linked roles
+
+
+@dataclasses.dataclass
+class SAMLProvider:
+    arn: str
+    name: str
+    saml_metadata_document: str
+    create_date: datetime = field(default_factory=datetime.utcnow)
+    valid_until: datetime | None = None
+    tags: tagListType = field(default_factory=list)
 
 
 @dataclasses.dataclass
@@ -82,6 +94,10 @@ class IamStore(BaseStore):
     GROUPS: dict[str, GroupEntity] = CrossRegionAttribute(default=dict)
 
     PASSWORD_POLICY: PasswordPolicy | None = CrossRegionAttribute(default=None)
+
+    # SAML providers: maps provider_arn -> SAMLProvider
+    # Account-scoped (IAM is global within an account)
+    SAML_PROVIDERS: dict[str, SAMLProvider] = CrossRegionAttribute(default=dict)
 
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)
