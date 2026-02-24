@@ -8,6 +8,7 @@ from datetime import datetime
 
 from localstack.aws.api.iam import (
     Group,
+    InstanceProfile,
     LoginProfile,
     PasswordPolicy,
     Policy,
@@ -93,6 +94,14 @@ class OIDCProvider:
     tags: tagListType = field(default_factory=list)
 
 
+@dataclasses.dataclass
+class InstanceProfileEntity:
+    """Wrapper for InstanceProfile with role tracking."""
+
+    instance_profile: InstanceProfile  # From localstack.aws.api.iam
+    role_name: str | None = None  # Name of the attached role (max 1 role per profile)
+
+
 class IamStore(BaseStore):
     # Customer-managed policies keyed by ARN
     # Using CrossRegionAttribute since IAM is a global service (policies are account-wide)
@@ -100,6 +109,9 @@ class IamStore(BaseStore):
     # Roles keyed by role name (unique per account)
     # Using CrossRegionAttribute since IAM is a global service
     ROLES: dict[str, RoleEntity] = CrossRegionAttribute(default=dict)
+    # Instance profiles keyed by profile name (unique per account)
+    # Using CrossRegionAttribute since IAM is a global service
+    INSTANCE_PROFILES: dict[str, InstanceProfileEntity] = CrossRegionAttribute(default=dict)
     # Users keyed by user name (unique per account)
     # Using CrossRegionAttribute since IAM is a global service
     USERS: dict[str, UserEntity] = CrossRegionAttribute(default=dict)
