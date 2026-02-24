@@ -3839,8 +3839,8 @@ class IamProvider(IamApi):
 
         # If device is assigned to a user, remove it from the user's MFA devices
         device = store.MFA_DEVICES[serial_number]
-        if device.user:
-            user_entity = store.USERS[device.user]
+        if device.user_name:
+            user_entity = store.USERS[device.user_name]
             user_entity.mfa_devices.remove(serial_number)
 
         del store.MFA_DEVICES[serial_number]
@@ -3855,59 +3855,55 @@ class IamProvider(IamApi):
     ) -> ListVirtualMFADevicesResponse:
         store = self._get_store(context)
 
-        # Get all virtual MFA devices
-        all_devices = list(store.MFA_DEVICES.values())
+        # Get all virtual MFA devices (those with QRCodePNG)
+        all_devices = [d for d in store.MFA_DEVICES.values() if "QRCodePNG" in d.device]
 
         # Filter by assignment status
         if assignment_status == "Assigned":
-            all_devices = [d for d in all_devices if d.user is not None and "QRCodePNG" in d.device]
+            all_devices = [d for d in all_devices if d.user_name is not None]
         elif assignment_status == "Unassigned":
-            all_devices = [d for d in all_devices if d.user is None and "QRCodePNG" in d.device]
+            all_devices = [d for d in all_devices if d.user_name is None]
         # "Any" or None means no filtering
 
         # Sort by serial number for consistent ordering
-        all_devices.sort(key=lambda d: d.device.get("SerialNumber"))
-
-        # Handle marker-based pagination
-        start_index = 0
-        if marker:
-            # Find the device with this serial number and start after it
-            found = False
-            for i, device in enumerate(all_devices):
-                if device.device.get("SerialNumber") == marker:
-                    start_index = i + 1
-                    found = True
-                    break
-            if not found:
-                raise ValidationError("Invalid Marker.")
-
-        # Apply pagination
-        if max_items:
-            end_index = start_index + max_items
-            paginated_devices = all_devices[start_index:end_index]
-            is_truncated = end_index < len(all_devices)
-        else:
-            paginated_devices = all_devices[start_index:]
-            is_truncated = False
+        all_devices.sort(key=lambda d: d.device.get("SerialNumber", ""))
 
         # Convert to response format
-        response_devices = []
-        for device in paginated_devices:
+        def _map_to_response(device: MFADeviceEntity) -> VirtualMFADevice:
             vmd = VirtualMFADevice(SerialNumber=device.device.get("SerialNumber"))
-            if device.user:
-                vmd["User"] = device.user
+            if device.user_name:
+                vmd["User"] = store.USERS[device.user_name].user
                 # Include EnableDate for assigned devices
                 if "EnableDate" in device.device:
                     vmd["EnableDate"] = device.device["EnableDate"]
-            response_devices.append(vmd)
+            return vmd
 
-        response = ListVirtualMFADevicesResponse(
-            VirtualMFADevices=response_devices,
-            IsTruncated=is_truncated,
+        response_devices = [_map_to_response(d) for d in all_devices]
+
+        # Validate marker if provided
+        if marker:
+            valid_markers = [d.get("SerialNumber") for d in response_devices]
+            if marker not in valid_markers:
+                raise ValidationError("Invalid Marker.")
+
+        paginated_list = PaginatedList(response_devices)
+
+        def _token_generator(vmd: VirtualMFADevice) -> str:
+            return vmd.get("SerialNumber", "")
+
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator,
+            next_token=marker,
+            page_size=max_items or 100,
         )
 
-        if is_truncated:
-            response["Marker"] = paginated_devices[-1].device.get("SerialNumber")
+        response = ListVirtualMFADevicesResponse(
+            VirtualMFADevices=result,
+            IsTruncated=next_marker is not None,
+        )
+
+        if next_marker:
+            response["Marker"] = next_marker
 
         return response
 
@@ -3930,7 +3926,7 @@ class IamProvider(IamApi):
             # Virtual MFA device - update existing entry
             device = store.MFA_DEVICES[serial_number]
             device.device["EnableDate"] = enable_date
-            device.user = user_entity.user
+            device.user_name = user_name
         else:
             # Physical token MFA - create new entry
             mfa_device = MFADevice(
@@ -3941,11 +3937,10 @@ class IamProvider(IamApi):
                 device_name=serial_number,
                 path="/",
                 device=mfa_device,
-                user=user_entity.user,
+                user_name=user_name,
             )
             store.MFA_DEVICES[serial_number] = device
 
-        user_entity = store.USERS[user_name]
         user_entity.mfa_devices.append(serial_number)
 
     def deactivate_mfa_device(
@@ -3956,11 +3951,8 @@ class IamProvider(IamApi):
         **kwargs,
     ) -> None:
         # Verify user exists
-        self._get_user_or_raise_error(user_name, context)
-
         store = self._get_store(context)
 
-        # Check if MFA device is assigned to user
         if serial_number not in store.MFA_DEVICES:
             raise NoSuchEntityException(
                 f"MFA Device with serial number {serial_number} does not exist."
@@ -3968,10 +3960,10 @@ class IamProvider(IamApi):
 
         device = store.MFA_DEVICES[serial_number]
         device.device["EnableDate"] = None
-        if device.user:
-            user_entity = store.USERS[device.user.get("UserName")]
-            user_entity.mfa_devices.remove(serial_number)
-            device.user = None
+        device.user_name = None
+
+        user_entity = self._get_user_or_raise_error(user_name, context)
+        user_entity.mfa_devices.remove(serial_number)
 
     def list_mfa_devices(
         self,
@@ -3982,10 +3974,9 @@ class IamProvider(IamApi):
         **kwargs,
     ) -> ListMFADevicesResponse:
         # TODO extract user_name from keys if it's not passed
-        # Verify user exists
-        self._get_user_or_raise_error(user_name, context)
+
+        user_entity = self._get_user_or_raise_error(user_name, context)
         store = self._get_store(context)
-        user_entity = store.USERS[user_name]
 
         mfa_serial_numbers = user_entity.mfa_devices
         all_mfa_devices = [
@@ -3997,7 +3988,7 @@ class IamProvider(IamApi):
         # Convert to response format
         mfa_devices = [
             MFADevice(
-                UserName=device.user.get("UserName") if device.user else user_name,
+                UserName=device.user_name or user_name,
                 SerialNumber=device.device.get("SerialNumber"),
                 EnableDate=device.device.get("EnableDate"),
             )

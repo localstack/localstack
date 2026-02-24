@@ -110,7 +110,7 @@ class MFADeviceEntity:
     device_name: str
     path: str
     device: VirtualMFADevice | MFADevice
-    user: User | None = None
+    user_name: str | None = None
 
 
 class IamStore(BaseStore):
@@ -142,7 +142,7 @@ class IamStore(BaseStore):
 
     # MFA devices assigned to users: maps serial_number -> list of MFADevice
     # Account-scoped (IAM is global within an account)
-    MFA_DEVICES: dict[str, list[MFADeviceEntity]] = CrossRegionAttribute(default=dict)
+    MFA_DEVICES: dict[str, MFADeviceEntity] = CrossRegionAttribute(default=dict)
 
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)
