@@ -3375,32 +3375,20 @@ class IamProvider(IamApi):
     ) -> ListOpenIDConnectProviderTagsResponse:
         provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
 
-        tags = provider.tags
-        start_index = 0
+        paginated_list = PaginatedList(provider.tags)
 
-        # Handle marker-based pagination
-        if marker:
-            # Marker is the index (0-based) as a string
-            try:
-                start_index = int(marker)
-            except ValueError:
-                start_index = 0
+        def _token_generator(tag: Tag) -> str:
+            return tag.get("Key")
 
-        # Apply pagination
-        if max_items:
-            end_index = start_index + max_items
-            paginated_tags = tags[start_index:end_index]
-            is_truncated = end_index < len(tags)
-        else:
-            paginated_tags = tags[start_index:]
-            is_truncated = False
-
-        response = ListOpenIDConnectProviderTagsResponse(
-            Tags=paginated_tags,
-            IsTruncated=is_truncated,
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator, next_token=marker, page_size=max_items or 100
         )
 
-        if is_truncated:
-            response["Marker"] = str(start_index + max_items)
-
-        return response
+        if next_marker:
+            return ListOpenIDConnectProviderTagsResponse(
+                Tags=result,
+                IsTruncated=True,
+                Marker=next_marker,
+            )
+        else:
+            return ListOpenIDConnectProviderTagsResponse(Tags=result, IsTruncated=False)
