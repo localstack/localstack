@@ -82,7 +82,6 @@ class TestSSHPublicKeys:
         snapshot.match("get-response", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
     def test_get_ssh_public_key_not_found(self, aws_client, create_user, snapshot):
         """Test error when getting a non-existent SSH public key."""
         user_name = f"test-user-{short_uid()}"
@@ -167,7 +166,6 @@ class TestSSHPublicKeys:
         assert get_response["SSHPublicKey"]["Status"] == "Inactive"
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
     def test_update_ssh_public_key_not_found(self, aws_client, create_user, snapshot):
         """Test error when updating a non-existent SSH public key."""
         user_name = f"test-user-{short_uid()}"
@@ -207,7 +205,6 @@ class TestSSHPublicKeys:
         snapshot.match("list-after-delete", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
     def test_delete_ssh_public_key_not_found(self, aws_client, create_user, snapshot):
         """Test error when deleting a non-existent SSH public key."""
         user_name = f"test-user-{short_uid()}"
