@@ -2,6 +2,7 @@ import json
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -201,6 +202,9 @@ class TestListPoliciesScope:
     def test_list_policies_only_attached(
         self, aws_client, create_role, create_policy, snapshot, partition
     ):
+        snapshot.add_transformer(
+            SortingTransformer("AttachedPolicies", lambda policy: policy["PolicyName"]), priority=-1
+        )
         """Verify OnlyAttached filter returns only policies with attachments."""
         role_name = f"role-{short_uid()}"
         create_role(

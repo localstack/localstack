@@ -523,7 +523,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_only_attached": {
-    "recorded-date": "12-02-2026, 23:06:41",
+    "recorded-date": "24-02-2026, 15:42:27",
     "recorded-content": {
       "list-attached-role-policies": {
         "AttachedPolicies": [
@@ -545,8 +545,8 @@
       "list-attached-role-policies-after-detach": {
         "AttachedPolicies": [
           {
-            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:2>",
-            "PolicyName": "<policy-name:2>"
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:1>",
+            "PolicyName": "<policy-name:1>"
           }
         ],
         "IsTruncated": false,

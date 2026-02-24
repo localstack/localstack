@@ -36,12 +36,12 @@
     }
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_only_attached": {
-    "last_validated_date": "2026-02-12T23:07:15+00:00",
+    "last_validated_date": "2026-02-24T15:42:27+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 1.69,
-      "teardown": 0.55,
-      "total": 2.24
+      "setup": 0.8,
+      "call": 2.34,
+      "teardown": 0.73,
+      "total": 3.87
     }
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_scope_all": {
