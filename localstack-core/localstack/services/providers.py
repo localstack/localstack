@@ -168,18 +168,9 @@ def iam():
 
 @aws_provider()
 def sts():
-    from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.sts.provider import StsProvider
 
     provider = StsProvider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
-
-
-@aws_provider(api="sts", name="v2")
-def sts_v2():
-    from localstack.services.sts.provider_v2 import StsProviderV2
-
-    provider = StsProviderV2()
     return Service.for_provider(provider)
 
 
