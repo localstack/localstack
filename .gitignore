@@ -85,3 +85,5 @@ gen/
 # claude code
 # claude commands depend on locally installed tools
 /.claude/commands/
+# claude local settings
+/.claude/settings.local.json
