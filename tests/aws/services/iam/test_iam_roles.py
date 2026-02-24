@@ -160,7 +160,6 @@ class TestRoleLifecycle:
         snapshot.match("get-role-after-deletion-error", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.skip  # Instance profiles not yet supported
     def test_delete_role_with_instance_profile(
         self, aws_client, create_role, create_instance_profile, snapshot
     ):
