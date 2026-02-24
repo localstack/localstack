@@ -3923,8 +3923,10 @@ class IamProvider(IamApi):
         enable_date = datetime.now(UTC)
 
         if serial_number in store.MFA_DEVICES:
-            # Virtual MFA device - update existing entry
+            # Virtual MFA device - check if already attached to another user
             device = store.MFA_DEVICES[serial_number]
+            if device.user_name is not None:
+                raise EntityAlreadyExistsException("MFA Device is already in use.")
             device.device["EnableDate"] = enable_date
             device.user_name = user_name
         else:

@@ -287,6 +287,45 @@ class TestVirtualMfaDevice:
             )
         snapshot.match("deactivate-nonexistent-mfa-error", exc.value.response)
 
+    @markers.aws.validated
+    def test_enable_mfa_device_already_attached(
+        self, aws_client, snapshot, create_virtual_mfa_device, create_user
+    ):
+        """Test error when trying to enable an MFA device that's already attached to another user."""
+        # Create two users
+        user_name_1 = f"user-{short_uid()}"
+        user_name_2 = f"user-{short_uid()}"
+        create_user(UserName=user_name_1)
+        create_user(UserName=user_name_2)
+
+        # Create a virtual MFA device
+        device_name = f"mfa-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(device_name, "<mfa-device-name>"))
+        create_device_response = create_virtual_mfa_device(VirtualMFADeviceName=device_name)
+        serial_number = create_device_response["VirtualMFADevice"]["SerialNumber"]
+
+        # Enable device for first user
+        otp = pyotp.TOTP(create_device_response["VirtualMFADevice"]["Base32StringSeed"])
+        current_time = datetime.now()
+        authcode_1 = otp.at(current_time, counter_offset=-1)
+        authcode_2 = otp.at(current_time)
+        aws_client.iam.enable_mfa_device(
+            UserName=user_name_1,
+            SerialNumber=serial_number,
+            AuthenticationCode1=authcode_1,
+            AuthenticationCode2=authcode_2,
+        )
+
+        # Try to enable same device for second user - should fail
+        with pytest.raises(ClientError) as exc:
+            aws_client.iam.enable_mfa_device(
+                UserName=user_name_2,
+                SerialNumber=serial_number,
+                AuthenticationCode1=authcode_1,
+                AuthenticationCode2=authcode_2,
+            )
+        snapshot.match("enable-mfa-already-attached-error", exc.value.response)
+
     @markers.aws.only_localstack
     def test_physical_token_mfa(self, aws_client, create_user):
         """Test activating a physical token MFA. This should always succeed, but we cannot do anything with that token. Lacking a token, we also cannot validate that test."""
