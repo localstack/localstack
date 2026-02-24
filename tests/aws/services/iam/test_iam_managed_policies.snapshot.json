@@ -444,7 +444,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_scope_aws": {
-    "recorded-date": "12-02-2026, 23:06:35",
+    "recorded-date": "24-02-2026, 13:21:39",
     "recorded-content": {
       "list-policies-aws-page": {
         "IsTruncated": true,
@@ -452,7 +452,7 @@
         "Policies": [
           {
             "Arn": "arn:<partition>:iam::aws:policy/<policy-name:1>",
-            "AttachmentCount": 6,
+            "AttachmentCount": "<attachment_count>",
             "CreateDate": "<datetime>",
             "DefaultVersionId": "v1",
             "IsAttachable": true,
@@ -464,7 +464,7 @@
           },
           {
             "Arn": "arn:<partition>:iam::aws:policy/<policy-name:2>",
-            "AttachmentCount": 1,
+            "AttachmentCount": "<attachment_count>",
             "CreateDate": "<datetime>",
             "DefaultVersionId": "v12",
             "IsAttachable": true,
@@ -476,7 +476,7 @@
           },
           {
             "Arn": "arn:<partition>:iam::aws:policy/<policy-name:3>",
-            "AttachmentCount": 4,
+            "AttachmentCount": "<attachment_count>",
             "CreateDate": "<datetime>",
             "DefaultVersionId": "v178",
             "IsAttachable": true,
@@ -488,7 +488,7 @@
           },
           {
             "Arn": "arn:<partition>:iam::aws:policy/AWSCloudFormation<policy-name:3>",
-            "AttachmentCount": 0,
+            "AttachmentCount": "<attachment_count>",
             "CreateDate": "<datetime>",
             "DefaultVersionId": "v7",
             "IsAttachable": true,
@@ -500,7 +500,7 @@
           },
           {
             "Arn": "arn:<partition>:iam::aws:policy/<policy-name:5>",
-            "AttachmentCount": 0,
+            "AttachmentCount": "<attachment_count>",
             "CreateDate": "<datetime>",
             "DefaultVersionId": "v14",
             "IsAttachable": true,
