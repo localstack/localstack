@@ -7,10 +7,12 @@ import re
 import string
 import threading
 import uuid
+import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from typing import Any, TypeVar
 from urllib.parse import quote
 
+from cryptography import x509
 from moto.iam.models import IAMBackend, iam_backends
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -22,6 +24,7 @@ from localstack.aws.api.iam import (
     CreatePolicyResponse,
     CreatePolicyVersionResponse,
     CreateRoleResponse,
+    CreateSAMLProviderResponse,
     CreateServiceLinkedRoleResponse,
     CreateServiceSpecificCredentialResponse,
     CreateUserResponse,
@@ -38,6 +41,7 @@ from localstack.aws.api.iam import (
     GetPolicyVersionResponse,
     GetRolePolicyResponse,
     GetRoleResponse,
+    GetSAMLProviderResponse,
     GetServiceLinkedRoleDeletionStatusResponse,
     GetUserPolicyResponse,
     GetUserResponse,
@@ -58,6 +62,8 @@ from localstack.aws.api.iam import (
     ListRolePoliciesResponse,
     ListRolesResponse,
     ListRoleTagsResponse,
+    ListSAMLProvidersResponse,
+    ListSAMLProviderTagsResponse,
     ListServiceSpecificCredentialsResponse,
     ListUserPoliciesResponse,
     ListUsersResponse,
@@ -72,6 +78,9 @@ from localstack.aws.api.iam import (
     ResetServiceSpecificCredentialResponse,
     Role,
     RoleLastUsed,
+    SAMLMetadataDocumentType,
+    SAMLProviderListEntry,
+    SAMLProviderNameType,
     ServiceSpecificCredential,
     ServiceSpecificCredentialMetadata,
     SimulatePolicyResponse,
@@ -79,9 +88,11 @@ from localstack.aws.api.iam import (
     Tag,
     UpdateRoleDescriptionResponse,
     UpdateRoleResponse,
+    UpdateSAMLProviderResponse,
     User,
     allUsers,
     arnType,
+    assertionEncryptionModeType,
     booleanObjectType,
     booleanType,
     credentialAgeDays,
@@ -103,6 +114,8 @@ from localstack.aws.api.iam import (
     policyPathType,
     policyScopeType,
     policyVersionIdType,
+    privateKeyIdType,
+    privateKeyType,
     roleDescriptionType,
     roleMaxSessionDurationType,
     roleNameType,
@@ -121,6 +134,7 @@ from localstack.services.iam.models import (
     IamStore,
     ManagedPolicyEntity,
     RoleEntity,
+    SAMLProvider,
     UserEntity,
     iam_stores,
 )
@@ -2791,3 +2805,190 @@ class IamProvider(IamApi):
                 "The account policy with name PasswordPolicy cannot be found."
             )
         store.PASSWORD_POLICY = None
+
+    # ------------------------------ SAML Providers ------------------------------ #
+
+    def _parse_saml_metadata_expiration(self, saml_metadata_document: str) -> datetime | None:
+        """
+        Parse the SAML metadata XML and extract the certificate expiration date.
+        Returns the earliest expiration date if multiple certificates are present.
+        """
+        try:
+            root = ET.fromstring(saml_metadata_document)
+
+            # SAML metadata uses namespaces
+            namespaces = {
+                "md": "urn:oasis:names:tc:SAML:2.0:metadata",
+                "ds": "http://www.w3.org/2000/09/xmldsig#",
+            }
+
+            # Find all X509Certificate elements
+            cert_elements = root.findall(".//ds:X509Certificate", namespaces)
+
+            if not cert_elements:
+                return None
+
+            expiration_dates = []
+            for cert_elem in cert_elements:
+                cert_pem = cert_elem.text
+                if not cert_pem:
+                    continue
+
+                # Decode base64 certificate
+                cert_der = base64.b64decode(cert_pem.strip())
+
+                # Parse the X.509 certificate
+                cert = x509.load_der_x509_certificate(cert_der)
+                expiration_dates.append(cert.not_valid_after_utc)
+
+            # Return the earliest expiration date
+            if expiration_dates:
+                return min(expiration_dates)
+
+        except Exception as e:
+            LOG.debug("Failed to parse SAML metadata for expiration date: ", e)
+
+        return None
+
+    def _get_saml_provider_arn(self, name: str, account_id: str, partition: str = "aws") -> str:
+        """Generate an ARN for a SAML provider."""
+        return f"arn:{partition}:iam::{account_id}:saml-provider/{name}"
+
+    def _get_saml_provider_or_raise(
+        self, saml_provider_arn: str, context: RequestContext
+    ) -> SAMLProvider:
+        """Get a SAML provider by ARN or raise NoSuchEntityException."""
+        store = self._get_store(context)
+        provider = store.SAML_PROVIDERS.get(saml_provider_arn)
+        if not provider:
+            raise NoSuchEntityException(f"SAMLProvider {saml_provider_arn} does not exist.")
+        return provider
+
+    def create_saml_provider(
+        self,
+        context: RequestContext,
+        saml_metadata_document: SAMLMetadataDocumentType,
+        name: SAMLProviderNameType,
+        tags: tagListType | None = None,
+        assertion_encryption_mode: assertionEncryptionModeType | None = None,
+        add_private_key: privateKeyType | None = None,
+        **kwargs,
+    ) -> CreateSAMLProviderResponse:
+
+        store = self._get_store(context)
+        arn = self._get_saml_provider_arn(name, context.account_id, context.partition)
+
+        if arn in store.SAML_PROVIDERS:
+            raise InvalidInputException(f"SAMLProvider {name} already exists.")
+
+        valid_until = self._parse_saml_metadata_expiration(saml_metadata_document)
+
+        provider = SAMLProvider(
+            arn=arn,
+            name=name,
+            saml_metadata_document=saml_metadata_document,
+            create_date=datetime.now(UTC),
+            valid_until=valid_until,
+            tags=tags or [],
+        )
+
+        store.SAML_PROVIDERS[arn] = provider
+
+        response = CreateSAMLProviderResponse(SAMLProviderArn=arn)
+        if tags:
+            response["Tags"] = tags
+        return response
+
+    def get_saml_provider(
+        self, context: RequestContext, saml_provider_arn: arnType, **kwargs
+    ) -> GetSAMLProviderResponse:
+
+        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+
+        return GetSAMLProviderResponse(
+            SAMLMetadataDocument=provider.saml_metadata_document,
+            CreateDate=provider.create_date,
+            ValidUntil=provider.valid_until,
+            Tags=provider.tags if provider.tags else None,
+        )
+
+    def list_saml_providers(self, context: RequestContext, **kwargs) -> ListSAMLProvidersResponse:
+
+        store = self._get_store(context)
+
+        provider_list = [
+            SAMLProviderListEntry(
+                Arn=provider.arn,
+                CreateDate=provider.create_date,
+                ValidUntil=provider.valid_until,
+            )
+            for provider in store.SAML_PROVIDERS.values()
+        ]
+
+        return ListSAMLProvidersResponse(SAMLProviderList=provider_list)
+
+    def update_saml_provider(
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        saml_metadata_document: SAMLMetadataDocumentType | None = None,
+        assertion_encryption_mode: assertionEncryptionModeType | None = None,
+        add_private_key: privateKeyType | None = None,
+        remove_private_key: privateKeyIdType | None = None,
+        **kwargs,
+    ) -> UpdateSAMLProviderResponse:
+
+        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+
+        if saml_metadata_document:
+            provider.saml_metadata_document = saml_metadata_document
+            provider.valid_until = self._parse_saml_metadata_expiration(saml_metadata_document)
+
+        return UpdateSAMLProviderResponse(SAMLProviderArn=saml_provider_arn)
+
+    def delete_saml_provider(
+        self, context: RequestContext, saml_provider_arn: arnType, **kwargs
+    ) -> None:
+        store = self._get_store(context)
+
+        if saml_provider_arn not in store.SAML_PROVIDERS:
+            raise NoSuchEntityException(f"Manifest not found for arn {saml_provider_arn}")
+
+        del store.SAML_PROVIDERS[saml_provider_arn]
+
+    def tag_saml_provider(
+        self, context: RequestContext, saml_provider_arn: arnType, tags: tagListType, **kwargs
+    ) -> None:
+
+        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+
+        # Merge tags: update existing keys, add new ones
+        existing_keys = {tag["Key"]: i for i, tag in enumerate(provider.tags)}
+        for tag in tags:
+            key = tag["Key"]
+            if key in existing_keys:
+                provider.tags[existing_keys[key]] = tag
+            else:
+                provider.tags.append(tag)
+
+    def untag_saml_provider(
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        tag_keys: tagKeyListType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+        provider.tags = [tag for tag in provider.tags if tag["Key"] not in tag_keys]
+
+    def list_saml_provider_tags(
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListSAMLProviderTagsResponse:
+        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+        # TODO: Add pagination support with marker and max_items
+        return ListSAMLProviderTagsResponse(Tags=provider.tags)
