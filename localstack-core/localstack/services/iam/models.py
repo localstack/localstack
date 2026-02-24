@@ -8,6 +8,7 @@ from dataclasses import field
 from localstack.aws.api.iam import (
     Group,
     LoginProfile,
+    PasswordPolicy,
     Policy,
     PolicyVersion,
     Role,
@@ -80,6 +81,7 @@ class IamStore(BaseStore):
     # Using CrossRegionAttribute since IAM is a global service
     GROUPS: dict[str, GroupEntity] = CrossRegionAttribute(default=dict)
 
+    PASSWORD_POLICY: PasswordPolicy | None = CrossRegionAttribute(default=None)
 
-# validate=False because IAM is a global service without region-specific endpoints
+
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)
