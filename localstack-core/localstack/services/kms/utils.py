@@ -102,13 +102,11 @@ def get_custom_key_material(request: CreateKeyRequest | None) -> bytes | None:
     if not request:
         return None
 
-    custom_key_material = None
     tags = request.get("Tags", [])
     for tag in tags:
         if tag["TagKey"] == TAG_KEY_CUSTOM_KEY_MATERIAL:
-            custom_key_material = base64.b64decode(tag["TagValue"])
-
-    return custom_key_material
+            return base64.b64decode(tag["TagValue"])
+    return None
 
 
 def get_custom_key_id(request: CreateKeyRequest | None) -> bytes | None:
@@ -121,13 +119,11 @@ def get_custom_key_id(request: CreateKeyRequest | None) -> bytes | None:
     if not request:
         return None
 
-    custom_key_id = None
     tags = request.get("Tags", [])
     for tag in tags:
         if tag["TagKey"] == TAG_KEY_CUSTOM_ID:
-            custom_key_id = tag["TagValue"]
-
-    return custom_key_id
+            return tag["TagValue"]
+    return None
 
 
 def execute_dry_run_capable[T](func: Callable[..., T], dry_run: bool, *args, **kwargs) -> T:
