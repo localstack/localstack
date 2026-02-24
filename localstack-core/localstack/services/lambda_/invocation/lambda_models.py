@@ -615,6 +615,7 @@ class DesiredCapacityProviderState(StrEnum):
 @dataclasses.dataclass
 class CapacityProvider:
     CapacityProviderArn: CapacityProviderArn
+    # State is determined dynamically based on DesiredState
     VpcConfig: CapacityProviderVpcConfig
     PermissionsConfig: CapacityProviderPermissionsConfig
     InstanceRequirements: InstanceRequirements
