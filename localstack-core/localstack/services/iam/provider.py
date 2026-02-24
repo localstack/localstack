@@ -2702,9 +2702,6 @@ class IamProvider(IamApi):
 
     # ------------------------------ Account Password Policy ------------------------------ #
 
-    def _get_iam_store(self, account_id: str, region: str):
-        return iam_stores[account_id][region]
-
     def update_account_password_policy(
         self,
         context: RequestContext,
@@ -2768,7 +2765,7 @@ class IamProvider(IamApi):
         if hard_expiry is not None:
             policy["HardExpiry"] = hard_expiry
 
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         store.PASSWORD_POLICY = policy
 
     def get_account_password_policy(
@@ -2776,7 +2773,7 @@ class IamProvider(IamApi):
         context: RequestContext,
         **kwargs,
     ) -> GetAccountPasswordPolicyResponse:
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         if store.PASSWORD_POLICY is None:
             raise NoSuchEntityException(
                 f"The Password Policy with domain name {context.account_id} cannot be found."
@@ -2788,7 +2785,7 @@ class IamProvider(IamApi):
         context: RequestContext,
         **kwargs,
     ) -> None:
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         if store.PASSWORD_POLICY is None:
             raise NoSuchEntityException(
                 "The account policy with name PasswordPolicy cannot be found."
