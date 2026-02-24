@@ -46,6 +46,11 @@ class JavaInstallerMixin:
         """
         if java_home := self.get_java_home():
             if is_mac_os():
+                # location in JRE versions 12+, see https://bugs.openjdk.org/browse/JDK-8210931
+                jli_path = os.path.join(java_home, "lib", "libjli.dylib")
+                if os.path.isfile(jli_path):
+                    return jli_path
+                # location in JRE versions 11-
                 return os.path.join(java_home, "lib", "jli", "libjli.dylib")
             return os.path.join(java_home, "lib", "server", "libjvm.so")
         return None
