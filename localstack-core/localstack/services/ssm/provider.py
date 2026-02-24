@@ -444,13 +444,13 @@ class SsmProvider(SsmApi, ABC):
         operation: str,
         param_type: str | None = None,
     ):
+        """Publish an EventBridge event to notify subscribers of changes."""
         if not is_api_enabled("events"):
             LOG.warning(
                 "Service 'events' is not enabled: skip emitting SSM event. "
                 "Please check your 'SERVICES' configuration variable."
             )
             return
-        """Publish an EventBridge event to notify subscribers of changes."""
         events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
         detail = {"name": name, "operation": operation}
         if param_type:

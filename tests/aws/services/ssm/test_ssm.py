@@ -227,6 +227,7 @@ class TestSSM:
             body = json.loads(result[0]["Body"])
             assert body == {
                 "name": f"/test/local/test-{param_suffix}",
+                "type": "String",
                 "operation": "Create",
             }
 
