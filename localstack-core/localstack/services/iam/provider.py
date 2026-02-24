@@ -351,7 +351,10 @@ class IamProvider(IamApi):
             if role_entity.inline_policies:
                 raise DeleteConflictException("Cannot delete entity, must delete policies first.")
 
-            # TODO check if role is attached to instance profiles
+            if self._get_profiles_for_role(store, role_name):
+                raise DeleteConflictException(
+                    "Cannot delete entity, must remove roles from instance profile first."
+                )
 
             # Delete the role from native store
             del store.ROLES[role_name]
@@ -3406,6 +3409,23 @@ class IamProvider(IamApi):
             AssumeRolePolicyDocument=role.get("AssumeRolePolicyDocument"),
         )
 
+    def _get_profiles_for_role(self, store: IamStore, role_name: str) -> list[InstanceProfile]:
+        """
+        Gets all instance profiles the given role is a part of
+        :param store: IamStore to check
+        :param role_name: Role name
+        :return: Instance Profiles with the given attached role
+        """
+        role_entity = self._get_role_entity(store, role_name)
+
+        profiles = []
+        for entity in store.INSTANCE_PROFILES.values():
+            if entity.role_name == role_name:
+                response_profile = entity.instance_profile.copy()
+                response_profile["Roles"] = [self._build_role_for_instance_profile(role_entity)]
+                profiles.append(response_profile)
+        return profiles
+
     @handler("CreateInstanceProfile")
     def create_instance_profile(
         self,
@@ -3606,18 +3626,8 @@ class IamProvider(IamApi):
     ) -> ListInstanceProfilesForRoleResponse:
         store = self._get_store(context)
 
-        # Validate role exists
-        role_entity = store.ROLES.get(role_name)
-        if not role_entity:
-            raise NoSuchEntityException(f"The role with name {role_name} cannot be found.")
-
-        with self._instance_profile_lock:
-            profiles = []
-            for entity in store.INSTANCE_PROFILES.values():
-                if entity.role_name == role_name:
-                    response_profile = entity.instance_profile.copy()
-                    response_profile["Roles"] = [self._build_role_for_instance_profile(role_entity)]
-                    profiles.append(response_profile)
+        with self._instance_profile_lock, self._role_lock:
+            profiles = self._get_profiles_for_role(store, role_name)
 
         # Sort by name for consistent ordering
         profiles.sort(key=lambda p: p.get("InstanceProfileName", "").lower())
