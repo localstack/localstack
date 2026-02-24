@@ -14,9 +14,6 @@ class TestAccountPasswordPolicy:
     """Tests for IAM account password policy operations."""
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..PasswordPolicy.HardExpiry", "$..PasswordPolicy.MaxPasswordAge"]
-    )
     def test_update_account_password_policy_defaults(self, aws_client, snapshot, cleanups):
         """Test updating password policy with default values."""
         response = aws_client.iam.update_account_password_policy()
@@ -48,7 +45,6 @@ class TestAccountPasswordPolicy:
         cleanups.append(lambda: aws_client.iam.delete_account_password_policy())
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
     def test_update_account_password_policy_validation_errors(self, aws_client, snapshot):
         """Test validation errors when updating password policy with invalid values."""
         with pytest.raises(ClientError) as exc:
