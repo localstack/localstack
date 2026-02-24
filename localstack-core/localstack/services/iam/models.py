@@ -14,6 +14,7 @@ from localstack.aws.api.iam import (
     PolicyVersion,
     Role,
     ServiceSpecificCredential,
+    SSHPublicKey,
     User,
     tagListType,
 )
@@ -56,6 +57,7 @@ class UserEntity:
     login_profile: LoginProfile | None = None  # Login profile for console access
     password: str | None = None  # Password for login profile (never in API responses)
     service_specific_credentials: list[ServiceSpecificCredential] = field(default_factory=list)
+    ssh_public_keys: dict[str, SSHPublicKey] = field(default_factory=dict)  # key_id -> SSHPublicKey
 
 
 @dataclasses.dataclass
