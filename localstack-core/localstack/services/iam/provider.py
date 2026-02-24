@@ -3167,7 +3167,7 @@ class IamProvider(IamApi):
         self, oidc_provider_arn: str, context: RequestContext
     ) -> OIDCProvider:
         """Get an OIDC provider by ARN or raise NoSuchEntityException."""
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         provider = store.OIDC_PROVIDERS.get(oidc_provider_arn)
         if not provider:
             raise NoSuchEntityException(
@@ -3234,7 +3234,7 @@ class IamProvider(IamApi):
         if tags and len(tags) > 50:
             raise LimitExceededException("The number of tags has reached the maximum limit.")
 
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
         arn = self._get_oidc_provider_arn(url, context.account_id, context.partition)
 
         # Check for duplicate provider
@@ -3273,7 +3273,7 @@ class IamProvider(IamApi):
     def list_open_id_connect_providers(
         self, context: RequestContext, **kwargs
     ) -> ListOpenIDConnectProvidersResponse:
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
 
         provider_list = [
             OpenIDConnectProviderListEntry(Arn=provider.arn)
@@ -3285,7 +3285,7 @@ class IamProvider(IamApi):
     def delete_open_id_connect_provider(
         self, context: RequestContext, open_id_connect_provider_arn: arnType, **kwargs
     ) -> None:
-        store = self._get_iam_store(context.account_id, context.region)
+        store = self._get_store(context)
 
         if open_id_connect_provider_arn not in store.OIDC_PROVIDERS:
             raise NoSuchEntityException(
