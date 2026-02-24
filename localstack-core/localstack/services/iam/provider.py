@@ -925,6 +925,21 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 policy_entity = store.MANAGED_POLICIES[policy_arn]
                 policy_entity.policy["AttachmentCount"] -= 1
 
+    def _assert_policy_exists(self, store: IamStore, policy_arn: str) -> None:
+        is_aws_managed = self._is_managed_policy(policy_arn)
+        errored = False
+        if is_aws_managed:
+            # Validate that the AWS managed policy actually exists in the static index
+            normalized_arn = self._normalize_aws_managed_arn(policy_arn)
+            if normalized_arn not in self._aws_managed_policy_cache:
+                errored = True
+        else:
+            # Customer-managed: must exist in the store
+            if policy_arn not in store.MANAGED_POLICIES:
+                errored = True
+        if errored:
+            raise NoSuchEntityException(f"Policy {policy_arn} does not exist or is not attachable.")
+
     # ------------------------------ Role Helper Methods ------------------------------ #
 
     def _generate_role_id(self, context: RequestContext, tags: list[Tag] | None = None) -> str:
@@ -1774,27 +1789,15 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         **kwargs,
     ) -> None:
         store = self._get_store(context)
-        partition = get_partition(context.region)
-        aws_managed_prefix = f"arn:{partition}:iam::aws:policy/"
-        is_aws_managed = policy_arn.startswith(aws_managed_prefix)
 
         with self._group_lock, self._policy_lock:
             group_entity = self._get_group_entity(store, group_name)
-
-            # Check if policy exists (for customer-managed policies only)
-            if not is_aws_managed and policy_arn not in store.MANAGED_POLICIES:
-                raise NoSuchEntityException(
-                    f"Policy {policy_arn} does not exist or is not attachable."
-                )
+            self._assert_policy_exists(store, policy_arn)
 
             # Add policy if not already attached (idempotent)
             if policy_arn not in group_entity.attached_policy_arns:
                 group_entity.attached_policy_arns.append(policy_arn)
-
-                # Update AttachmentCount for customer-managed policies
-                if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
-                    policy_entity = store.MANAGED_POLICIES[policy_arn]
-                    policy_entity.policy["AttachmentCount"] += 1
+                self._attach_policy(store, policy_arn)
 
     def detach_group_policy(
         self,
@@ -1804,9 +1807,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         **kwargs,
     ) -> None:
         store = self._get_store(context)
-        partition = get_partition(context.region)
-        aws_managed_prefix = f"arn:{partition}:iam::aws:policy/"
-        is_aws_managed = policy_arn.startswith(aws_managed_prefix)
 
         with self._group_lock, self._policy_lock:
             group_entity = self._get_group_entity(store, group_name)
@@ -1817,11 +1817,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
             # Remove the policy
             group_entity.attached_policy_arns.remove(policy_arn)
-
-            # Update AttachmentCount for customer-managed policies
-            if not is_aws_managed and policy_arn in store.MANAGED_POLICIES:
-                policy_entity = store.MANAGED_POLICIES[policy_arn]
-                policy_entity.policy["AttachmentCount"] -= 1
+            self._detach_policy(store, policy_arn)
 
     def list_attached_group_policies(
         self,
@@ -2385,24 +2381,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             raise ValidationError(f"ARN {policy_arn} is not valid.")
 
         store = self._get_store(context)
-        is_aws_managed = self._is_managed_policy(policy_arn)
 
         with self._role_lock, self._policy_lock:
             role_entity = self._get_role_entity(store, role_name)
-
-            if is_aws_managed:
-                # Validate that the AWS managed policy actually exists in the static index
-                normalized_arn = self._normalize_aws_managed_arn(policy_arn)
-                if normalized_arn not in self._aws_managed_policy_cache:
-                    raise NoSuchEntityException(
-                        f"Policy {policy_arn} does not exist or is not attachable."
-                    )
-            else:
-                # Customer-managed: must exist in the store
-                if policy_arn not in store.MANAGED_POLICIES:
-                    raise NoSuchEntityException(
-                        f"Policy {policy_arn} does not exist or is not attachable."
-                    )
+            self._assert_policy_exists(store, policy_arn)
 
             # Add policy if not already attached (idempotent)
             if policy_arn not in role_entity.attached_policy_arns:
@@ -2514,24 +2496,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             raise ValidationError(f"ARN {policy_arn} is not valid.")
 
         store = self._get_store(context)
-        is_aws_managed = self._is_managed_policy(policy_arn)
 
         with self._user_lock, self._policy_lock:
             user_entity = self._get_user_entity(store, user_name)
-
-            if is_aws_managed:
-                # Validate that the AWS managed policy actually exists in the static index
-                normalized_arn = self._normalize_aws_managed_arn(policy_arn)
-                if normalized_arn not in self._aws_managed_policy_cache:
-                    raise NoSuchEntityException(
-                        f"Policy {policy_arn} does not exist or is not attachable."
-                    )
-            else:
-                # Customer-managed: must exist in the store
-                if policy_arn not in store.MANAGED_POLICIES:
-                    raise NoSuchEntityException(
-                        f"Policy {policy_arn} does not exist or is not attachable."
-                    )
+            self._assert_policy_exists(store, policy_arn)
 
             # Add policy if not already attached (idempotent)
             if policy_arn not in user_entity.attached_policy_arns:
