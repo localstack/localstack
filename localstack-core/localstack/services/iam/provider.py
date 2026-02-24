@@ -22,6 +22,7 @@ from localstack.aws.api.iam import (
     AttachedPolicy,
     CreateGroupResponse,
     CreateLoginProfileResponse,
+    CreateOpenIDConnectProviderResponse,
     CreatePolicyResponse,
     CreatePolicyVersionResponse,
     CreateRoleResponse,
@@ -38,6 +39,7 @@ from localstack.aws.api.iam import (
     GetGroupPolicyResponse,
     GetGroupResponse,
     GetLoginProfileResponse,
+    GetOpenIDConnectProviderResponse,
     GetPolicyResponse,
     GetPolicyVersionResponse,
     GetRolePolicyResponse,
@@ -58,6 +60,8 @@ from localstack.aws.api.iam import (
     ListGroupsForUserResponse,
     ListGroupsResponse,
     ListInstanceProfileTagsResponse,
+    ListOpenIDConnectProvidersResponse,
+    ListOpenIDConnectProviderTagsResponse,
     ListPoliciesResponse,
     ListPolicyTagsResponse,
     ListPolicyVersionsResponse,
@@ -74,6 +78,8 @@ from localstack.aws.api.iam import (
     LoginProfile,
     MalformedPolicyDocumentException,
     NoSuchEntityException,
+    OpenIDConnectProviderListEntry,
+    OpenIDConnectProviderUrlType,
     PasswordPolicy,
     Policy,
     PolicyUsageType,
@@ -101,6 +107,8 @@ from localstack.aws.api.iam import (
     assertionEncryptionModeType,
     booleanObjectType,
     booleanType,
+    clientIDListType,
+    clientIDType,
     credentialAgeDays,
     customSuffixType,
     encodingType,
@@ -133,6 +141,7 @@ from localstack.aws.api.iam import (
     statusType,
     tagKeyListType,
     tagListType,
+    thumbprintListType,
     userNameType,
 )
 from localstack.aws.connect import connect_to
@@ -142,6 +151,7 @@ from localstack.services.iam.models import (
     GroupEntity,
     IamStore,
     ManagedPolicyEntity,
+    OIDCProvider,
     RoleEntity,
     SAMLProvider,
     UserEntity,
@@ -3135,3 +3145,250 @@ class IamProvider(IamApi):
                 )
 
             del user_entity.ssh_public_keys[ssh_public_key_id]
+
+    # ------------------------------ OIDC Providers ------------------------------ #
+
+    def _get_oidc_provider_arn(self, url: str, account_id: str, partition: str = "aws") -> str:
+        """
+        Generate an ARN for an OIDC provider.
+        The ARN uses the URL host (without protocol) as the resource identifier.
+        """
+        # Remove protocol prefix if present
+        host = url
+        if host.startswith("https://"):
+            host = host[8:]
+        elif host.startswith("http://"):
+            host = host[7:]
+        # Remove trailing slash
+        host = host.rstrip("/")
+        return f"arn:{partition}:iam::{account_id}:oidc-provider/{host}"
+
+    def _get_oidc_provider_or_raise(
+        self, oidc_provider_arn: str, context: RequestContext
+    ) -> OIDCProvider:
+        """Get an OIDC provider by ARN or raise NoSuchEntityException."""
+        store = self._get_store(context)
+        provider = store.OIDC_PROVIDERS.get(oidc_provider_arn)
+        if not provider:
+            raise NoSuchEntityException(
+                f"OpenIDConnect Provider not found for arn {oidc_provider_arn}"
+            )
+        return provider
+
+    def create_open_id_connect_provider(
+        self,
+        context: RequestContext,
+        url: OpenIDConnectProviderUrlType,
+        client_id_list: clientIDListType | None = None,
+        thumbprint_list: thumbprintListType | None = None,
+        tags: tagListType | None = None,
+        **kwargs,
+    ) -> CreateOpenIDConnectProviderResponse:
+        # Validate URL, thumbprint, and client ID constraints
+        validation_errors = []
+
+        if url and len(url) > 255:
+            validation_errors.append(
+                "Value at 'url' failed to satisfy constraint: "
+                "Member must have length less than or equal to 255"
+            )
+
+        if thumbprint_list:
+            for thumbprint in thumbprint_list:
+                if len(thumbprint) != 40:
+                    validation_errors.append(
+                        "Value at 'thumbprintList' failed to satisfy constraint: "
+                        "Member must satisfy constraint: [Member must have length less than or equal to 40, "
+                        "Member must have length greater than or equal to 40]"
+                    )
+                    break
+
+        if client_id_list:
+            for client_id in client_id_list:
+                if len(client_id) > 255 or len(client_id) < 1:
+                    validation_errors.append(
+                        "Value at 'clientIDList' failed to satisfy constraint: "
+                        "Member must satisfy constraint: [Member must have length less than or equal to 255, "
+                        "Member must have length greater than or equal to 1]"
+                    )
+                    break
+
+        if validation_errors:
+            raise ValidationListError(validation_errors)
+
+        # Validate URL format (must start with https://)
+        if not url or not url.startswith("https://"):
+            raise ValidationError("Invalid Open ID Connect Provider URL")
+
+        # Validate thumbprint list limit (max 5)
+        if thumbprint_list and len(thumbprint_list) > 5:
+            raise InvalidInputException("Thumbprint list must contain fewer than 5 entries.")
+
+        # Validate client ID list limit (max 100)
+        if client_id_list and len(client_id_list) > 100:
+            raise LimitExceededException(
+                "Cannot exceed quota for ClientIdsPerOpenIdConnectProvider: 100"
+            )
+
+        # Validate tag limit (max 50)
+        if tags and len(tags) > 50:
+            raise LimitExceededException("The number of tags has reached the maximum limit.")
+
+        store = self._get_store(context)
+        arn = self._get_oidc_provider_arn(url, context.account_id, context.partition)
+
+        # Check for duplicate provider
+        if arn in store.OIDC_PROVIDERS:
+            raise EntityAlreadyExistsException(f"Provider with url {url} already exists.")
+
+        provider = OIDCProvider(
+            arn=arn,
+            url=url,
+            create_date=datetime.now(UTC),
+            client_id_list=client_id_list or [],
+            thumbprint_list=thumbprint_list or [],
+            tags=tags or [],
+        )
+
+        store.OIDC_PROVIDERS[arn] = provider
+
+        response = CreateOpenIDConnectProviderResponse(OpenIDConnectProviderArn=arn)
+        if tags:
+            response["Tags"] = tags
+        return response
+
+    def get_open_id_connect_provider(
+        self, context: RequestContext, open_id_connect_provider_arn: arnType, **kwargs
+    ) -> GetOpenIDConnectProviderResponse:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        return GetOpenIDConnectProviderResponse(
+            Url=provider.url,
+            ClientIDList=provider.client_id_list if provider.client_id_list else None,
+            ThumbprintList=provider.thumbprint_list if provider.thumbprint_list else None,
+            CreateDate=provider.create_date,
+            Tags=provider.tags if provider.tags else None,
+        )
+
+    def list_open_id_connect_providers(
+        self, context: RequestContext, **kwargs
+    ) -> ListOpenIDConnectProvidersResponse:
+        store = self._get_store(context)
+
+        provider_list = [
+            OpenIDConnectProviderListEntry(Arn=provider.arn)
+            for provider in store.OIDC_PROVIDERS.values()
+        ]
+
+        return ListOpenIDConnectProvidersResponse(OpenIDConnectProviderList=provider_list)
+
+    def delete_open_id_connect_provider(
+        self, context: RequestContext, open_id_connect_provider_arn: arnType, **kwargs
+    ) -> None:
+        store = self._get_store(context)
+
+        if open_id_connect_provider_arn not in store.OIDC_PROVIDERS:
+            raise NoSuchEntityException(
+                f"OpenId connect Provider {open_id_connect_provider_arn} cannot be found."
+            )
+
+        del store.OIDC_PROVIDERS[open_id_connect_provider_arn]
+
+    def add_client_id_to_open_id_connect_provider(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        client_id: clientIDType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        if client_id not in provider.client_id_list:
+            provider.client_id_list.append(client_id)
+
+    def remove_client_id_from_open_id_connect_provider(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        client_id: clientIDType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        if client_id in provider.client_id_list:
+            provider.client_id_list.remove(client_id)
+        else:
+            raise NoSuchEntityException(f"Client ID {client_id} not found.")
+
+    def update_open_id_connect_provider_thumbprint(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        thumbprint_list: thumbprintListType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+        provider.thumbprint_list = thumbprint_list
+
+    def tag_open_id_connect_provider(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        tags: tagListType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        # Calculate how many new tags would be added
+        existing_keys = {tag["Key"]: i for i, tag in enumerate(provider.tags)}
+        new_tag_count = sum(1 for tag in tags if tag["Key"] not in existing_keys)
+
+        # Check tag limit (max 50 tags)
+        if len(provider.tags) + new_tag_count > 50:
+            raise LimitExceededException("The number of tags has reached the maximum limit.")
+
+        # Merge tags: update existing keys, add new ones
+        for tag in tags:
+            key = tag["Key"]
+            if key in existing_keys:
+                provider.tags[existing_keys[key]] = tag
+            else:
+                provider.tags.append(tag)
+
+    def untag_open_id_connect_provider(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        tag_keys: tagKeyListType,
+        **kwargs,
+    ) -> None:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+        provider.tags = [tag for tag in provider.tags if tag["Key"] not in tag_keys]
+
+    def list_open_id_connect_provider_tags(
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListOpenIDConnectProviderTagsResponse:
+        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        paginated_list = PaginatedList(provider.tags)
+
+        def _token_generator(tag: Tag) -> str:
+            return tag.get("Key")
+
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator, next_token=marker, page_size=max_items or 100
+        )
+
+        if next_marker:
+            return ListOpenIDConnectProviderTagsResponse(
+                Tags=result,
+                IsTruncated=True,
+                Marker=next_marker,
+            )
+        else:
+            return ListOpenIDConnectProviderTagsResponse(Tags=result, IsTruncated=False)
