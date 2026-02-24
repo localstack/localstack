@@ -213,7 +213,6 @@ from localstack.aws.api.s3 import (
     StorageClass,
     Tag,
     Tagging,
-    TagSet,
     Token,
     TransitionDefaultMinimumObjectSize,
     UploadIdMarker,
@@ -463,44 +462,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 f"The value of the expected bucket owner parameter must be an AWS Account ID... [{expected_bucket_owner}]",
             )
 
-        store = self.get_store(context.account_id, context.region)
-        if not (s3_bucket := store.buckets.get(bucket_name)):
-            if not (account_id := store.global_bucket_map.get(bucket_name)):
+        request_store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := request_store.buckets.get(bucket_name)):
+            if not (bucket_account_id := request_store.global_bucket_map.get(bucket_name)):
                 raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
 
-            store = self.get_store(account_id, context.region)
-            if not (s3_bucket := store.buckets.get(bucket_name)):
+            bucket_account_store = self.get_store(bucket_account_id, context.region)
+            if not (s3_bucket := bucket_account_store.buckets.get(bucket_name)):
                 raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
 
         if expected_bucket_owner and s3_bucket.bucket_account_id != expected_bucket_owner:
             raise AccessDenied("Access Denied")
 
-        return store, s3_bucket
-
-    def _create_bucket_tags(self, bucket: S3Bucket, tags: TagSet):
-        store = self.get_store(bucket.bucket_account_id, bucket.bucket_region)
-        store.tags.update_tags(bucket.bucket_arn, {tag["Key"]: tag["Value"] for tag in tags})
-
-    def _remove_all_bucket_tags(self, bucket: S3Bucket):
-        store = self.get_store(bucket.bucket_account_id, bucket.bucket_region)
-        store.tags.delete_all_tags(bucket.bucket_arn)
-
-    def _list_bucket_tags(self, bucket: S3Bucket) -> TagSet:
-        store = self.get_store(bucket.bucket_account_id, bucket.bucket_region)
-        tags = store.tags.get_tags(bucket.bucket_arn)
-        return [{"Key": key, "Value": value} for key, value in tags.items()]
-
-    @staticmethod
-    def _create_object_tags(store: S3Store, key_id: str, tags: dict[str, str]):
-        store.tags.update_tags(key_id, tags)
-
-    @staticmethod
-    def _remove_all_object_tags(store: S3Store, key_id: str):
-        store.tags.delete_all_tags(key_id)
-
-    @staticmethod
-    def _list_object_tags(store: S3Store, key_id: str) -> dict[str, str]:
-        return store.tags.get_tags(key_id)
+        regional_bucket_store = self.get_store(s3_bucket.bucket_account_id, s3_bucket.bucket_region)
+        return regional_bucket_store, s3_bucket
 
     @staticmethod
     def get_store(account_id: str, region_name: str) -> S3Store:
@@ -590,7 +565,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.buckets[bucket_name] = s3_bucket
         store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
         if bucket_tags:
-            self._create_bucket_tags(s3_bucket, bucket_tags)
+            store.tags.update_tags(
+                s3_bucket.bucket_arn, {tag["Key"]: tag["Value"] for tag in bucket_tags}
+            )
         self._cors_handler.invalidate_cache()
         self._storage_backend.create_bucket(bucket_name)
 
@@ -629,7 +606,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._preconditions_locks.pop(bucket, None)
         # clean up the storage backend
         self._storage_backend.delete_bucket(bucket)
-        self._remove_all_bucket_tags(s3_bucket)
+        store.tags.delete_all_tags(s3_bucket.bucket_arn)
 
     def list_buckets(
         self,
@@ -931,7 +908,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         key_id = get_unique_key_id(bucket_name, key, version_id)
         store.tags.delete_all_tags(key_id)
         if tagging:
-            self._create_object_tags(store, key_id, tagging)
+            store.tags.update_tags(key_id, tagging)
 
         # RequestCharged: Optional[RequestCharged]  # TODO
         response = PutObjectOutput(
@@ -949,7 +926,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 s3_bucket.lifecycle_rules,
                 bucket_name,
                 s3_object,
-                self._list_object_tags(store, key_id),
+                store.tags.get_tags(key_id),
             ):
                 # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to
                 #  apply them everytime we get/head an object
@@ -1094,9 +1071,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         add_encryption_to_response(response, s3_object=s3_object)
 
-        object_tags = self._list_object_tags(
-            store, get_unique_key_id(bucket_name, object_key, version_id)
-        )
+        object_tags = store.tags.get_tags(get_unique_key_id(bucket_name, object_key, version_id))
 
         if tag_count := len(object_tags):
             response["TagCount"] = tag_count
@@ -1237,8 +1212,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ChecksumType"] = checksum_type
 
         add_encryption_to_response(response, s3_object=s3_object)
-        object_tags = self._list_object_tags(
-            store, get_unique_key_id(bucket_name, object_key, s3_object.version_id)
+        object_tags = store.tags.get_tags(
+            get_unique_key_id(bucket_name, object_key, s3_object.version_id)
         )
         if tag_count := len(object_tags):
             response["TagCount"] = tag_count
@@ -1327,7 +1302,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if found_object:
                 self._storage_backend.remove(bucket, found_object)
                 self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
-                self._remove_all_object_tags(store, get_unique_key_id(bucket, key, version_id))
+                store.tags.delete_all_tags(get_unique_key_id(bucket, key, version_id))
 
             return DeleteObjectOutput()
 
@@ -1365,7 +1340,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["DeleteMarker"] = True
         else:
             self._storage_backend.remove(bucket, s3_object)
-            self._remove_all_object_tags(store, get_unique_key_id(bucket, key, version_id))
+            store.tags.delete_all_tags(get_unique_key_id(bucket, key, version_id))
         self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
 
         if key not in s3_bucket.objects:
@@ -1425,9 +1400,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 if found_object:
                     to_remove.append(found_object)
                     self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
-                    self._remove_all_object_tags(
-                        store, get_unique_key_id(bucket, object_key, version_id)
-                    )
+                    store.tags.delete_all_tags(get_unique_key_id(bucket, object_key, version_id))
                 # small hack to not create a fake object for nothing
                 elif s3_bucket.notification_configuration:
                     # DeleteObjects is a bit weird, even if the object didn't exist, S3 will trigger a notification
@@ -1505,7 +1478,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 to_remove.append(found_object)
 
             self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
-            self._remove_all_object_tags(store, get_unique_key_id(bucket, object_key, version_id))
+            store.tags.delete_all_tags(get_unique_key_id(bucket, object_key, version_id))
 
         for versioned_key in versioned_keys:
             # we clean up keys that do not have any object versions in them anymore
@@ -1725,13 +1698,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         dest_key_id = get_unique_key_id(dest_bucket, dest_key, dest_version_id)
 
         if (request.get("TaggingDirective")) == "REPLACE":
-            self._remove_all_object_tags(store, dest_key_id)
-            self._create_object_tags(store, dest_key_id, tagging or {})
+            store.tags.delete_all_tags(dest_key_id)
+            store.tags.update_tags(dest_key_id, tagging or {})
         else:
             src_key_id = get_unique_key_id(src_bucket, src_key, src_s3_object.version_id)
-            src_tags = self._list_object_tags(store, src_key_id)
-            self._remove_all_object_tags(store, dest_key_id)
-            self._create_object_tags(store, dest_key_id, src_tags)
+            src_tags = store.tags.get_tags(src_key_id)
+            store.tags.delete_all_tags(dest_key_id)
+            store.tags.update_tags(dest_key_id, src_tags)
 
         copy_object_result = CopyObjectResult(
             ETag=s3_object.quoted_etag,
@@ -2878,9 +2851,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.multiparts.pop(s3_multipart.id, None)
 
         key_id = get_unique_key_id(bucket, key, version_id)
-        self._remove_all_object_tags(store, key_id)
+        store.tags.delete_all_tags(key_id)
         if s3_multipart.tagging:
-            self._create_object_tags(store, key_id, s3_multipart.tagging)
+            store.tags.update_tags(key_id, s3_multipart.tagging)
 
         # RequestCharged: Optional[RequestCharged] TODO
 
@@ -3316,8 +3289,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         validate_tag_set(tag_set, type_set="bucket")
 
         # remove the previous tags before setting the new ones, it overwrites the whole TagSet
-        self._remove_all_bucket_tags(s3_bucket)
-        self._create_bucket_tags(s3_bucket, tag_set)
+        store.tags.delete_all_tags(s3_bucket.bucket_arn)
+        store.tags.update_tags(s3_bucket.bucket_arn, {tag["Key"]: tag["Value"] for tag in tag_set})
 
     def get_bucket_tagging(
         self,
@@ -3327,7 +3300,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         **kwargs,
     ) -> GetBucketTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
-        tag_set = self._list_bucket_tags(s3_bucket)
+        tags = store.tags.get_tags(s3_bucket.bucket_arn)
+        tag_set = [{"Key": key, "Value": value} for key, value in dict(tags).items()]
         if not tag_set:
             raise NoSuchTagSet(
                 "The TagSet does not exist",
@@ -3345,9 +3319,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        # This operation doesn't remove the tags from the store like deleting a resource does, it just sets them as empty.
-        self._remove_all_bucket_tags(s3_bucket)
-        self._create_bucket_tags(s3_bucket, [])
+        # This operation doesn't remove the tags from the store like deleting a resource does
+        # it just sets them as empty.
+        store.tags.delete_all_tags(s3_bucket.bucket_arn)
+        store.tags.update_tags(s3_bucket.bucket_arn, {})
 
     def put_object_tagging(
         self,
@@ -3374,8 +3349,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         key_id = get_unique_key_id(bucket, key, s3_object.version_id)
         # remove the previous tags before setting the new ones, it overwrites the whole TagSet
-        self._remove_all_object_tags(store, key_id)
-        self._create_object_tags(store, key_id, {tag["Key"]: tag["Value"] for tag in tag_set})
+        store.tags.delete_all_tags(key_id)
+        store.tags.update_tags(key_id, {tag["Key"]: tag["Value"] for tag in tag_set})
         response = PutObjectTaggingOutput()
         if s3_object.version_id:
             response["VersionId"] = s3_object.version_id
@@ -3395,6 +3370,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         **kwargs,
     ) -> GetObjectTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        print(f"{store._region_name=} {store._account_id=}")
+        print(f"{store.tags._tags=}")
 
         try:
             s3_object = s3_bucket.get_object(key=key, version_id=version_id)
@@ -3419,9 +3396,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             e.Key = f"{bucket}/{key}"
             raise e
 
-        object_tags = self._list_object_tags(
-            store, get_unique_key_id(bucket, key, s3_object.version_id)
-        )
+        object_tags = store.tags.get_tags(get_unique_key_id(bucket, key, s3_object.version_id))
         response = GetObjectTaggingOutput(
             TagSet=[Tag(Key=key, Value=value) for key, value in object_tags.items()]
         )
@@ -3443,7 +3418,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_object = s3_bucket.get_object(key=key, version_id=version_id, http_method="DELETE")
 
-        self._remove_all_object_tags(store, get_unique_key_id(bucket, key, s3_object.version_id))
+        store.tags.delete_all_tags(get_unique_key_id(bucket, key, s3_object.version_id))
         response = DeleteObjectTaggingOutput()
         if s3_object.version_id:
             response["VersionId"] = s3_object.version_id
@@ -4632,9 +4607,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # in case we are overriding an object, delete the tags entry
         key_id = get_unique_key_id(bucket, object_key, version_id)
-        self._remove_all_object_tags(store, key_id)
+        store.tags.delete_all_tags(key_id)
+        print(f"{tagging=}")
         if tagging:
-            self._create_object_tags(store, key_id, tagging)
+            print(f"{store._region_name=} {store._account_id=}")
+            store.tags.update_tags(key_id, tagging)
+            print(f"{store.tags._tags=}")
 
         response = PostResponse()
         # hacky way to set the etag in the headers as well: two locations for one value
@@ -4677,7 +4655,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 s3_bucket.lifecycle_rules,
                 bucket,
                 s3_object,
-                self._list_object_tags(store, key_id),
+                store.tags.get_tags(key_id),
             ):
                 # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to
                 #  apply them everytime we get/head an object
