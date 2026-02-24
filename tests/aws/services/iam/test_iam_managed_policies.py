@@ -165,8 +165,10 @@ class TestListPoliciesScope:
     )
     def test_list_policies_scope_aws(self, aws_client, snapshot):
         """Verify list_policies with Scope=AWS returns AWS-managed policies with pagination."""
-        snapshot.transform.key_value(
-            "AttachmentCount", "<attachment_count>", reference_replacement=False
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "AttachmentCount", "<attachment_count>", reference_replacement=False
+            )
         )
         response = aws_client.iam.list_policies(Scope="AWS", MaxItems=5)
         snapshot.match("list-policies-aws-page", response)
