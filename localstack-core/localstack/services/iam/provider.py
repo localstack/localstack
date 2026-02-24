@@ -114,6 +114,7 @@ from localstack.aws.api.iam import (
     VirtualMFADevice,
     allUsers,
     arnType,
+    assertionEncryptionModeType,
     assignmentStatusType,
     authenticationCodeType,
     booleanObjectType,
@@ -140,6 +141,8 @@ from localstack.aws.api.iam import (
     policyPathType,
     policyScopeType,
     policyVersionIdType,
+    privateKeyIdType,
+    privateKeyType,
     publicKeyIdType,
     publicKeyMaterialType,
     roleDescriptionType,
@@ -2904,10 +2907,7 @@ class IamProvider(IamApi):
         return response
 
     def get_saml_provider(
-        self,
-        context: RequestContext,
-        saml_provider_arn: arnType,
-        **kwargs,
+        self, context: RequestContext, saml_provider_arn: arnType, **kwargs
     ) -> GetSAMLProviderResponse:
         provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
 
@@ -2937,7 +2937,10 @@ class IamProvider(IamApi):
         self,
         context: RequestContext,
         saml_provider_arn: arnType,
-        saml_metadata_document: SAMLMetadataDocumentType = None,
+        saml_metadata_document: SAMLMetadataDocumentType | None = None,
+        assertion_encryption_mode: assertionEncryptionModeType | None = None,
+        add_private_key: privateKeyType | None = None,
+        remove_private_key: privateKeyIdType | None = None,
         **kwargs,
     ) -> UpdateSAMLProviderResponse:
         provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
@@ -2949,10 +2952,7 @@ class IamProvider(IamApi):
         return UpdateSAMLProviderResponse(SAMLProviderArn=saml_provider_arn)
 
     def delete_saml_provider(
-        self,
-        context: RequestContext,
-        saml_provider_arn: arnType,
-        **kwargs,
+        self, context: RequestContext, saml_provider_arn: arnType, **kwargs
     ) -> None:
         store = self._get_store(context)
 
@@ -2993,8 +2993,8 @@ class IamProvider(IamApi):
         self,
         context: RequestContext,
         saml_provider_arn: arnType,
-        marker: markerType = None,
-        max_items: maxItemsType = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
         **kwargs,
     ) -> ListSAMLProviderTagsResponse:
         provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
