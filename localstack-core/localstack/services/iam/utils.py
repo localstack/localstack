@@ -6,9 +6,6 @@ ACCOUNT_OFFSET = (
     549755813888  # int.from_bytes(base64.b32decode(b"QAAAAAAA"), byteorder="big"), start value
 )
 
-REQUIRE_RESOURCE_ACCESS_POLICIES_CHECK = ["sts:AssumeRole"]
-EXTERNAL_CONDITION_SOURCES = ["sts:ExternalId"]
-
 
 def _random_uppercase_or_digit_sequence(length: int) -> str:
     return "".join(str(random.choice(AWS_ROLE_ALPHABET)) for _ in range(length))
