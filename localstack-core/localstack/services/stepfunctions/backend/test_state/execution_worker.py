@@ -14,6 +14,7 @@ from localstack.services.stepfunctions.asl.eval.states import (
     StateMachineData,
 )
 from localstack.services.stepfunctions.asl.eval.test_state.environment import TestStateEnvironment
+from localstack.services.stepfunctions.asl.eval.variable_store import VariableStore
 from localstack.services.stepfunctions.asl.parse.test_state.asl_parser import (
     TestStateAmazonStateLanguageParser,
 )
@@ -29,6 +30,7 @@ class TestStateExecutionWorker(SyncExecutionWorker):
     env: TestStateEnvironment | None
     state_name: str | None = None
     mock: TestStateMock | None
+    variables: dict | None
 
     def __init__(
         self,
@@ -38,6 +40,7 @@ class TestStateExecutionWorker(SyncExecutionWorker):
         activity_store: dict[Arn, Activity],
         state_name: StateName | None = None,
         mock: TestStateMock | None = None,
+        variables: dict | None = None,
     ):
         super().__init__(
             evaluation_details,
@@ -48,6 +51,7 @@ class TestStateExecutionWorker(SyncExecutionWorker):
         )
         self.state_name = state_name
         self.mock = mock
+        self.variables = variables
 
     def _get_evaluation_entrypoint(self) -> EvalComponent:
         return TestStateAmazonStateLanguageParser.parse(
@@ -74,5 +78,6 @@ class TestStateExecutionWorker(SyncExecutionWorker):
             event_history_context=EventHistoryContext.of_program_start(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
+            variable_store=VariableStore(self.variables),
             mock=self.mock,
         )

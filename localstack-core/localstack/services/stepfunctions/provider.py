@@ -1566,6 +1566,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if input_json := request.get("input", {}):
             input_json = json.loads(input_json)
 
+        if variables_json := request.get("variables"):
+            variables_json = json.loads(variables_json)
+
         execution = TestStateExecution(
             name=exec_name,
             role_arn=role_arn,
@@ -1578,6 +1581,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             state_name=state_name,
             activity_store=self.get_store(context).activities,
             mock=state_mock,
+            variables=variables_json,
         )
         execution.start()
 

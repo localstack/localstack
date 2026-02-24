@@ -54,12 +54,16 @@ class VariableStore:
     _outer_variable_declaration_cache: VariableDeclarations | None
     _variable_declarations_cache: VariableDeclarations | None
 
-    def __init__(self):
+    def __init__(self, variables: dict | None = None):
         self._outer_scope = {}
         self._inner_scope = {}
         self._declaration_tracing = set()
         self._outer_variable_declaration_cache = None
         self._variable_declarations_cache = None
+
+        if variables:
+            for key, value in variables.items():
+                self.set(key, value)
 
     @classmethod
     def as_inner_scope_of(cls, outer_variable_store: VariableStore) -> VariableStore:
@@ -83,6 +87,14 @@ class VariableStore:
                     traced_declaration_value, separators=(",", ":")
                 )
             assigned_variables[traced_declaration_identifier] = traced_declaration_value_json_str
+        return assigned_variables
+
+    def to_dict(self) -> dict[str, str]:
+        assigned_variables: dict[str, str] = {}
+        for traced_declaration_identifier in self._declaration_tracing:
+            assigned_variables[traced_declaration_identifier] = self.get(
+                traced_declaration_identifier
+            )
         return assigned_variables
 
     def get(self, variable_identifier: VariableIdentifier) -> VariableValue:
