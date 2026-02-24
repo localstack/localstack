@@ -3370,9 +3370,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         **kwargs,
     ) -> GetObjectTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
-        print(f"{store._region_name=} {store._account_id=}")
-        print(f"{store.tags._tags=}")
-
         try:
             s3_object = s3_bucket.get_object(key=key, version_id=version_id)
         except NoSuchKey as e:
@@ -4608,11 +4605,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # in case we are overriding an object, delete the tags entry
         key_id = get_unique_key_id(bucket, object_key, version_id)
         store.tags.delete_all_tags(key_id)
-        print(f"{tagging=}")
         if tagging:
-            print(f"{store._region_name=} {store._account_id=}")
             store.tags.update_tags(key_id, tagging)
-            print(f"{store.tags._tags=}")
 
         response = PostResponse()
         # hacky way to set the etag in the headers as well: two locations for one value
