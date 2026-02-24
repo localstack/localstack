@@ -30,6 +30,7 @@ from localstack.aws.api.iam import (
     DeletionTaskIdType,
     DeletionTaskStatusType,
     EntityAlreadyExistsException,
+    GetAccountPasswordPolicyResponse,
     GetGroupPolicyResponse,
     GetGroupResponse,
     GetLoginProfileResponse,
@@ -64,6 +65,7 @@ from localstack.aws.api.iam import (
     LoginProfile,
     MalformedPolicyDocumentException,
     NoSuchEntityException,
+    PasswordPolicy,
     Policy,
     PolicyUsageType,
     PolicyVersion,
@@ -89,6 +91,9 @@ from localstack.aws.api.iam import (
     instanceProfileNameType,
     markerType,
     maxItemsType,
+    maxPasswordAgeType,
+    minimumPasswordLengthType,
+    passwordReusePreventionType,
     passwordType,
     pathPrefixType,
     pathType,
@@ -2694,3 +2699,95 @@ class IamProvider(IamApi):
             raise NoSuchEntityException(
                 f"No such credential {service_specific_credential_id} exists"
             )
+
+    # ------------------------------ Account Password Policy ------------------------------ #
+
+    def update_account_password_policy(
+        self,
+        context: RequestContext,
+        minimum_password_length: minimumPasswordLengthType | None = None,
+        require_symbols: booleanType | None = None,
+        require_numbers: booleanType | None = None,
+        require_uppercase_characters: booleanType | None = None,
+        require_lowercase_characters: booleanType | None = None,
+        allow_users_to_change_password: booleanType | None = None,
+        max_password_age: maxPasswordAgeType | None = None,
+        password_reuse_prevention: passwordReusePreventionType | None = None,
+        hard_expiry: booleanObjectType | None = None,
+        **kwargs,
+    ) -> None:
+        # Validate constraints
+        validation_errors = []
+        if minimum_password_length is not None and minimum_password_length > 128:
+            validation_errors.append(
+                "Value at 'minimumPasswordLength' failed to satisfy constraint: "
+                "Member must have value less than or equal to 128"
+            )
+        if password_reuse_prevention is not None and password_reuse_prevention > 24:
+            validation_errors.append(
+                "Value at 'passwordReusePrevention' failed to satisfy constraint: "
+                "Member must have value less than or equal to 24"
+            )
+        if max_password_age is not None and max_password_age > 1095:
+            validation_errors.append(
+                "Value at 'maxPasswordAge' failed to satisfy constraint: "
+                "Member must have value less than or equal to 1095"
+            )
+        if validation_errors:
+            raise ValidationListError(validation_errors)
+
+        # Build the password policy with defaults
+        expire_passwords = max_password_age is not None and max_password_age > 0
+
+        policy = PasswordPolicy(
+            MinimumPasswordLength=minimum_password_length
+            if minimum_password_length is not None
+            else 6,
+            RequireSymbols=require_symbols if require_symbols is not None else False,
+            RequireNumbers=require_numbers if require_numbers is not None else False,
+            RequireUppercaseCharacters=require_uppercase_characters
+            if require_uppercase_characters is not None
+            else False,
+            RequireLowercaseCharacters=require_lowercase_characters
+            if require_lowercase_characters is not None
+            else False,
+            AllowUsersToChangePassword=allow_users_to_change_password
+            if allow_users_to_change_password is not None
+            else False,
+            ExpirePasswords=expire_passwords,
+        )
+
+        # Only include optional fields if they were provided
+        if max_password_age is not None:
+            policy["MaxPasswordAge"] = max_password_age
+        if password_reuse_prevention is not None:
+            policy["PasswordReusePrevention"] = password_reuse_prevention
+        if hard_expiry is not None:
+            policy["HardExpiry"] = hard_expiry
+
+        store = self._get_store(context)
+        store.PASSWORD_POLICY = policy
+
+    def get_account_password_policy(
+        self,
+        context: RequestContext,
+        **kwargs,
+    ) -> GetAccountPasswordPolicyResponse:
+        store = self._get_store(context)
+        if store.PASSWORD_POLICY is None:
+            raise NoSuchEntityException(
+                f"The Password Policy with domain name {context.account_id} cannot be found."
+            )
+        return GetAccountPasswordPolicyResponse(PasswordPolicy=store.PASSWORD_POLICY)
+
+    def delete_account_password_policy(
+        self,
+        context: RequestContext,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+        if store.PASSWORD_POLICY is None:
+            raise NoSuchEntityException(
+                "The account policy with name PasswordPolicy cannot be found."
+            )
+        store.PASSWORD_POLICY = None
