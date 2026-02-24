@@ -1,5 +1,8 @@
 # Research: StepFunctions TestState Parallel State Support
 
+**Date**: 2026-02-24 | **Branch**: `002-sfn-teststate-parallel`
+**Constitution**: v1.1.0 (includes 5-step LocalStack Lifecycle Management)
+
 ## R1: Current TestState Architecture
 
 **Decision**: Extend the existing TestState mock/decorator pattern to support
