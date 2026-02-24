@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/sns/resource_providers/test_aws_sns_topicpolicy.py::test_update_topic_policy_modify": {
+    "last_validated_date": "2026-02-23T23:27:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 21.01,
+      "teardown": 49.45,
+      "total": 70.46
+    }
+  }
+}

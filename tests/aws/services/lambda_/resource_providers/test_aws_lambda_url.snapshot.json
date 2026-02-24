@@ -1,0 +1,37 @@
+{
+  "tests/aws/services/lambda_/resource_providers/test_aws_lambda_url.py::test_update_lambda_url_modify_properties": {
+    "recorded-date": "23-02-2026, 23:23:51",
+    "recorded-content": {
+      "initial_auth_type": {
+        "AuthType": "NONE"
+      },
+      "initial_cors": {
+        "Cors": {
+          "AllowMethods": [
+            "GET"
+          ],
+          "AllowOrigins": [
+            "https://example.com"
+          ]
+        }
+      },
+      "updated_auth_type": {
+        "AuthType": "NONE"
+      },
+      "updated_cors": {
+        "Cors": {
+          "AllowHeaders": [
+            "content-type"
+          ],
+          "AllowMethods": [
+            "GET",
+            "POST"
+          ],
+          "AllowOrigins": [
+            "*"
+          ]
+        }
+      }
+    }
+  }
+}

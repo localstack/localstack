@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/kms/resource_providers/test_aws_kms_alias.py::test_update_kms_alias_change_target_key": {
+    "last_validated_date": "2026-02-23T23:28:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 143.71,
+      "teardown": 80.03,
+      "total": 224.57
+    }
+  }
+}

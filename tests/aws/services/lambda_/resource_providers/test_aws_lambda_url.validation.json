@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/lambda_/resource_providers/test_aws_lambda_url.py::test_update_lambda_url_modify_properties": {
+    "last_validated_date": "2026-02-23T23:24:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 45.77,
+      "teardown": 20.73,
+      "total": 66.5
+    }
+  }
+}

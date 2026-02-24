@@ -1,0 +1,18 @@
+{
+  "tests/aws/services/logs/resource_providers/test_aws_logs_loggroup.py::test_update_loggroup_modify_properties": {
+    "recorded-date": "23-02-2026, 23:24:30",
+    "recorded-content": {
+      "initial_retention": {
+        "retentionInDays": 7
+      }
+    }
+  },
+  "tests/aws/services/logs/resource_providers/test_aws_logs_loggroup.py::test_update_loggroup_remove_optional_properties": {
+    "recorded-date": "23-02-2026, 23:25:00",
+    "recorded-content": {
+      "after_remove_retention": {
+        "retentionInDays": null
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/kms/resource_providers/test_aws_kms_key.py::test_update_kms_key_modify_properties": {
+    "last_validated_date": "2026-02-23T23:21:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 96.73,
+      "teardown": 18.72,
+      "total": 115.45
+    }
+  },
+  "tests/aws/services/kms/resource_providers/test_aws_kms_key.py::test_update_kms_key_remove_optional_properties": {
+    "last_validated_date": "2026-02-23T23:23:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 95.77,
+      "teardown": 18.65,
+      "total": 114.42
+    }
+  }
+}

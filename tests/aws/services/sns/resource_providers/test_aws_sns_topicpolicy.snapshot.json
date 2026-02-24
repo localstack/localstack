@@ -1,0 +1,13 @@
+{
+  "tests/aws/services/sns/resource_providers/test_aws_sns_topicpolicy.py::test_update_topic_policy_modify": {
+    "recorded-date": "23-02-2026, 23:26:49",
+    "recorded-content": {
+      "initial_policy_sid": {
+        "Sid": "InitialPolicy"
+      },
+      "updated_policy_sid": {
+        "Sid": "UpdatedPolicy"
+      }
+    }
+  }
+}

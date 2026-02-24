@@ -1,0 +1,60 @@
+{
+  "tests/aws/services/kms/resource_providers/test_aws_kms_key.py::test_update_kms_key_modify_properties": {
+    "recorded-date": "23-02-2026, 23:20:52",
+    "recorded-content": {
+      "initial_description": {
+        "Description": "Initial test KMS key"
+      },
+      "initial_enabled": {
+        "Enabled": true
+      },
+      "initial_rotation": {
+        "KeyRotationEnabled": true
+      },
+      "initial_tags": {
+        "Tags": [
+          {
+            "TagKey": "Environment",
+            "TagValue": "Dev"
+          },
+          {
+            "TagKey": "Team",
+            "TagValue": "Engineering"
+          }
+        ]
+      },
+      "updated_description": {
+        "Description": "Updated test KMS key"
+      },
+      "updated_enabled": {
+        "Enabled": true
+      },
+      "updated_rotation": {
+        "KeyRotationEnabled": false
+      },
+      "updated_tags": {
+        "Tags": [
+          {
+            "TagKey": "Environment",
+            "TagValue": "Prod"
+          },
+          {
+            "TagKey": "Project",
+            "TagValue": "CloudFormation"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/kms/resource_providers/test_aws_kms_key.py::test_update_kms_key_remove_optional_properties": {
+    "recorded-date": "23-02-2026, 23:22:46",
+    "recorded-content": {
+      "after_remove_description": {
+        "Description": ""
+      },
+      "after_remove_tags": {
+        "Tags": []
+      }
+    }
+  }
+}

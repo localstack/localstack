@@ -1,0 +1,21 @@
+{
+  "tests/aws/services/kms/resource_providers/test_aws_kms_alias.py::test_update_kms_alias_change_target_key": {
+    "recorded-date": "23-02-2026, 23:27:19",
+    "recorded-content": {
+      "alias-before": {
+        "AliasArn": "arn:<partition>:kms:<region>:111111111111:<alias-name>",
+        "AliasName": "<alias-name>",
+        "CreationDate": "datetime",
+        "LastUpdatedDate": "datetime",
+        "TargetKeyId": "<uuid:1>"
+      },
+      "alias-after": {
+        "AliasArn": "arn:<partition>:kms:<region>:111111111111:<alias-name>",
+        "AliasName": "<alias-name>",
+        "CreationDate": "datetime",
+        "LastUpdatedDate": "datetime",
+        "TargetKeyId": "<uuid:2>"
+      }
+    }
+  }
+}
