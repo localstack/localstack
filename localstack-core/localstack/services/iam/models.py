@@ -27,6 +27,13 @@ from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegi
 
 
 @dataclasses.dataclass
+class AwsManagedPolicy:
+    """Tracks account-specific state for AWS managed policies (currently just attachment count)."""
+
+    attachment_count: int = 0
+
+
+@dataclasses.dataclass
 class RoleEntity:
     """Wrapper for Role with inline policies and managed policy tracking."""
 
@@ -115,20 +122,20 @@ class MFADeviceEntity:
 
 class IamStore(BaseStore):
     # Customer-managed policies keyed by ARN
-    # Using CrossRegionAttribute since IAM is a global service (policies are account-wide)
     MANAGED_POLICIES: dict[str, ManagedPolicyEntity] = CrossRegionAttribute(default=dict)
     # Roles keyed by role name (unique per account)
-    # Using CrossRegionAttribute since IAM is a global service
     ROLES: dict[str, RoleEntity] = CrossRegionAttribute(default=dict)
     # Instance profiles keyed by profile name (unique per account)
     # Using CrossRegionAttribute since IAM is a global service
     INSTANCE_PROFILES: dict[str, InstanceProfileEntity] = CrossRegionAttribute(default=dict)
     # Users keyed by user name (unique per account)
-    # Using CrossRegionAttribute since IAM is a global service
     USERS: dict[str, UserEntity] = CrossRegionAttribute(default=dict)
     # Groups keyed by group name (unique per account)
     # Using CrossRegionAttribute since IAM is a global service
     GROUPS: dict[str, GroupEntity] = CrossRegionAttribute(default=dict)
+    # Attachment counts for AWS managed policies, keyed by the policy ARN.
+    # A key is present only when the policy has been attached at least once.
+    AWS_MANAGED_POLICIES: dict[str, AwsManagedPolicy] = CrossRegionAttribute(default=dict)
 
     PASSWORD_POLICY: PasswordPolicy | None = CrossRegionAttribute(default=None)
 

@@ -1,6 +1,6 @@
 {
   "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy": {
-    "recorded-date": "12-02-2026, 23:06:32",
+    "recorded-date": "20-02-2026, 15:14:28",
     "recorded-content": {
       "get-policy": {
         "Policy": {
@@ -25,7 +25,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy_version": {
-    "recorded-date": "12-02-2026, 23:06:33",
+    "recorded-date": "20-02-2026, 15:14:29",
     "recorded-content": {
       "get-version-error": {
         "Error": {
@@ -66,19 +66,8 @@
     }
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_get_aws_managed_policy_higher_version": {
-    "recorded-date": "12-02-2026, 23:06:34",
+    "recorded-date": "20-02-2026, 15:14:30",
     "recorded-content": {
-      "get-version-error": {
-        "Error": {
-          "Code": "ValidationError",
-          "Message": "1 validation error detected: Value at 'versionId' failed to satisfy constraint: Member must satisfy regular expression pattern: v[1-9][0-9]*(\\.[A-Za-z0-9-]*)?",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
       "get-policy": {
         "Policy": {
           "Arn": "arn:<partition>:iam::aws:policy/job-function/<policy-name:1>",
@@ -378,6 +367,75 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "list-policy-versions": {
+        "IsTruncated": false,
+        "Versions": [
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": true,
+            "VersionId": "v12"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v11"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v10"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v9"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v8"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v7"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v6"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v5"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v4"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v3"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v2"
+          },
+          {
+            "CreateDate": "<datetime>",
+            "IsDefaultVersion": false,
+            "VersionId": "v1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
@@ -386,7 +444,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_scope_aws": {
-    "recorded-date": "12-02-2026, 23:06:35",
+    "recorded-date": "24-02-2026, 13:21:39",
     "recorded-content": {
       "list-policies-aws-page": {
         "IsTruncated": true,
@@ -394,7 +452,7 @@
         "Policies": [
           {
             "Arn": "arn:<partition>:iam::aws:policy/<policy-name:1>",
-            "AttachmentCount": 6,
+            "AttachmentCount": "<attachment_count>",
             "CreateDate": "<datetime>",
             "DefaultVersionId": "v1",
             "IsAttachable": true,
@@ -406,7 +464,7 @@
           },
           {
             "Arn": "arn:<partition>:iam::aws:policy/<policy-name:2>",
-            "AttachmentCount": 1,
+            "AttachmentCount": "<attachment_count>",
             "CreateDate": "<datetime>",
             "DefaultVersionId": "v12",
             "IsAttachable": true,
@@ -418,7 +476,7 @@
           },
           {
             "Arn": "arn:<partition>:iam::aws:policy/<policy-name:3>",
-            "AttachmentCount": 4,
+            "AttachmentCount": "<attachment_count>",
             "CreateDate": "<datetime>",
             "DefaultVersionId": "v178",
             "IsAttachable": true,
@@ -430,7 +488,7 @@
           },
           {
             "Arn": "arn:<partition>:iam::aws:policy/AWSCloudFormation<policy-name:3>",
-            "AttachmentCount": 0,
+            "AttachmentCount": "<attachment_count>",
             "CreateDate": "<datetime>",
             "DefaultVersionId": "v7",
             "IsAttachable": true,
@@ -442,7 +500,7 @@
           },
           {
             "Arn": "arn:<partition>:iam::aws:policy/<policy-name:5>",
-            "AttachmentCount": 0,
+            "AttachmentCount": "<attachment_count>",
             "CreateDate": "<datetime>",
             "DefaultVersionId": "v14",
             "IsAttachable": true,
@@ -465,7 +523,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/iam/test_iam_managed_policies.py::TestListPoliciesScope::test_list_policies_only_attached": {
-    "recorded-date": "12-02-2026, 23:06:41",
+    "recorded-date": "24-02-2026, 15:42:27",
     "recorded-content": {
       "list-attached-role-policies": {
         "AttachedPolicies": [
@@ -487,14 +545,63 @@
       "list-attached-role-policies-after-detach": {
         "AttachedPolicies": [
           {
-            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:2>",
-            "PolicyName": "<policy-name:2>"
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/<policy-name:1>",
+            "PolicyName": "<policy-name:1>"
           }
         ],
         "IsTruncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_managed_policies.py::TestGetAwsManagedPolicy::test_aws_managed_policy_errors": {
+    "recorded-date": "20-02-2026, 15:25:47",
+    "recorded-content": {
+      "delete-managed-policy-error": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Cannot delete policies outside your own account.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "delete-managed-policy-version-error": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Cannot delete policy versions for policies outside your own account.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "set-default-managed-policy-version-error": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Cannot update policies outside your own account.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "get-version-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value at 'versionId' failed to satisfy constraint: Member must satisfy regular expression pattern: v[1-9][0-9]*(\\.[A-Za-z0-9-]*)?",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
