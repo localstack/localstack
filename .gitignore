@@ -87,3 +87,4 @@ gen/
 /.claude/commands/
 # claude local settings
 /.claude/settings.local.json
+/.claude/skills/
