@@ -28,9 +28,6 @@ ASSUME_ROLE_POLICY = json.dumps(
     }
 )
 
-# TODO remove once implemented
-pytestmark = pytest.mark.skip
-
 
 @pytest.fixture(autouse=True)
 def snapshot_transformers(snapshot):
@@ -222,6 +219,12 @@ class TestGetAccountAuthorizationDetails:
         snapshot.match("local-managed-policy-filter-result", result)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Policies..AttachmentCount",
+            "$..Policies..PolicyVersionList",
+        ]
+    )
     def test_get_account_authorization_details_filter_aws_managed_policy(
         self, aws_client, snapshot
     ):
