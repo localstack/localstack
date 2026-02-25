@@ -56,6 +56,7 @@ from localstack.aws.api.iam import (
     GetRolePolicyResponse,
     GetRoleResponse,
     GetSAMLProviderResponse,
+    GetServerCertificateResponse,
     GetServiceLinkedRoleDeletionStatusResponse,
     GetSSHPublicKeyResponse,
     GetUserPolicyResponse,
@@ -86,13 +87,17 @@ from localstack.aws.api.iam import (
     ListRoleTagsResponse,
     ListSAMLProvidersResponse,
     ListSAMLProviderTagsResponse,
+    ListServerCertificatesResponse,
+    ListServerCertificateTagsResponse,
     ListServiceSpecificCredentialsResponse,
+    ListSigningCertificatesResponse,
     ListSSHPublicKeysResponse,
     ListUserPoliciesResponse,
     ListUsersResponse,
     ListUserTagsResponse,
     ListVirtualMFADevicesResponse,
     LoginProfile,
+    MalformedCertificateException,
     MalformedPolicyDocumentException,
     MFADevice,
     NoSuchEntityException,
@@ -108,8 +113,11 @@ from localstack.aws.api.iam import (
     SAMLMetadataDocumentType,
     SAMLProviderListEntry,
     SAMLProviderNameType,
+    ServerCertificate,
+    ServerCertificateMetadata,
     ServiceSpecificCredential,
     ServiceSpecificCredentialMetadata,
+    SigningCertificate,
     SimulatePolicyResponse,
     SimulatePrincipalPolicyRequest,
     SSHPublicKey,
@@ -118,6 +126,8 @@ from localstack.aws.api.iam import (
     UpdateRoleDescriptionResponse,
     UpdateRoleResponse,
     UpdateSAMLProviderResponse,
+    UploadServerCertificateResponse,
+    UploadSigningCertificateResponse,
     UploadSSHPublicKeyResponse,
     User,
     VirtualMFADevice,
@@ -129,6 +139,9 @@ from localstack.aws.api.iam import (
     authenticationCodeType,
     booleanObjectType,
     booleanType,
+    certificateBodyType,
+    certificateChainType,
+    certificateIdType,
     clientIDListType,
     clientIDType,
     credentialAgeDays,
@@ -159,6 +172,7 @@ from localstack.aws.api.iam import (
     roleMaxSessionDurationType,
     roleNameType,
     serialNumberType,
+    serverCertificateNameType,
     serviceName,
     serviceSpecificCredentialId,
     statusType,
@@ -185,6 +199,7 @@ from localstack.services.iam.models import (
     OIDCProvider,
     RoleEntity,
     SAMLProvider,
+    ServerCertificateEntity,
     UserEntity,
     iam_stores,
 )
@@ -3522,6 +3537,411 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 )
 
             del user_entity.ssh_public_keys[ssh_public_key_id]
+
+    # ------------------------------ Server Certificates ------------------------------ #
+
+    def _generate_server_certificate_id(self, context: RequestContext) -> str:
+        """Generate a server certificate ID with ASCA prefix."""
+        return generate_iam_identifier(context.account_id, prefix="ASCA", total_length=21)
+
+    def _build_server_certificate_arn(
+        self, context: RequestContext, path: str, cert_name: str
+    ) -> str:
+        """Build the ARN for a server certificate."""
+        return (
+            f"arn:{context.partition}:iam::{context.account_id}:server-certificate{path}{cert_name}"
+        )
+
+    def _get_server_certificate_entity(
+        self, store: IamStore, cert_name: str
+    ) -> ServerCertificateEntity:
+        """Get a server certificate entity or raise NoSuchEntityException."""
+        entity = store.SERVER_CERTIFICATES.get(cert_name)
+        if not entity:
+            raise NoSuchEntityException(
+                f"The Server Certificate with name {cert_name} cannot be found."
+            )
+        return entity
+
+    def upload_server_certificate(
+        self,
+        context: RequestContext,
+        server_certificate_name: serverCertificateNameType,
+        certificate_body: certificateBodyType,
+        private_key: privateKeyType,
+        path: pathType | None = None,
+        certificate_chain: certificateChainType | None = None,
+        tags: tagListType | None = None,
+        **kwargs,
+    ) -> UploadServerCertificateResponse:
+        store = self._get_store(context)
+        path = path or "/"
+
+        # Validate tags
+        self._validate_tags(tags, case_sensitive=False)
+
+        # Check for duplicate name
+        if server_certificate_name in store.SERVER_CERTIFICATES:
+            raise EntityAlreadyExistsException(
+                f"The Server Certificate with name {server_certificate_name} already exists."
+            )
+
+        # Parse certificate to extract expiration date
+        expiration = None
+        try:
+            cert_data = certificate_body.encode("utf-8")
+            cert = x509.load_pem_x509_certificate(cert_data)
+            expiration = cert.not_valid_after_utc
+        except Exception:
+            # If parsing fails, we skip expiration extraction
+            # AWS is more lenient here than for signing certificates
+            pass
+
+        # Generate ID and ARN
+        cert_id = self._generate_server_certificate_id(context)
+        cert_arn = self._build_server_certificate_arn(context, path, server_certificate_name)
+
+        # Strip trailing whitespace from certificate body (AWS behavior)
+        certificate_body = certificate_body.rstrip()
+        if certificate_chain:
+            certificate_chain = certificate_chain.rstrip()
+
+        # Build metadata
+        metadata = ServerCertificateMetadata(
+            Path=path,
+            ServerCertificateName=server_certificate_name,
+            ServerCertificateId=cert_id,
+            Arn=cert_arn,
+            UploadDate=datetime.now(tz=UTC),
+        )
+        if expiration:
+            metadata["Expiration"] = expiration
+
+        # Create and store entity
+        entity = ServerCertificateEntity(
+            metadata=metadata,
+            certificate_body=certificate_body,
+            private_key=private_key,
+            certificate_chain=certificate_chain,
+            tags=tags or [],
+        )
+        store.SERVER_CERTIFICATES[server_certificate_name] = entity
+
+        response = UploadServerCertificateResponse(ServerCertificateMetadata=metadata)
+        if tags:
+            response["Tags"] = tags
+        return response
+
+    def get_server_certificate(
+        self, context: RequestContext, server_certificate_name: serverCertificateNameType, **kwargs
+    ) -> GetServerCertificateResponse:
+        store = self._get_store(context)
+        entity = self._get_server_certificate_entity(store, server_certificate_name)
+
+        # Build response - note: private key is NEVER returned
+        cert = ServerCertificate(
+            ServerCertificateMetadata=entity.metadata,
+            CertificateBody=entity.certificate_body,
+            Tags=entity.tags,  # AWS always returns Tags, even when empty
+        )
+        if entity.certificate_chain:
+            cert["CertificateChain"] = entity.certificate_chain
+
+        return GetServerCertificateResponse(ServerCertificate=cert)
+
+    def list_server_certificates(
+        self,
+        context: RequestContext,
+        path_prefix: pathPrefixType = None,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListServerCertificatesResponse:
+        store = self._get_store(context)
+
+        def _filter(metadata: ServerCertificateMetadata) -> bool:
+            if path_prefix:
+                return metadata.get("Path", "/").startswith(path_prefix)
+            return True
+
+        # Get all metadata sorted by name
+        all_metadata = [entity.metadata for entity in store.SERVER_CERTIFICATES.values()]
+        all_metadata.sort(key=lambda m: m.get("ServerCertificateName", ""))
+
+        paginated_list = PaginatedList(all_metadata)
+
+        def _token_generator(metadata: ServerCertificateMetadata) -> str:
+            return metadata.get("ServerCertificateName")
+
+        # Decode marker if provided
+        if marker:
+            marker = base64.b64decode(marker).decode("utf-8")
+
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator,
+            next_token=marker,
+            page_size=max_items or 100,
+            filter_function=_filter,
+        )
+
+        if next_marker:
+            next_marker = base64.b64encode(next_marker.encode("utf-8")).decode("utf-8")
+            return ListServerCertificatesResponse(
+                ServerCertificateMetadataList=result, IsTruncated=True, Marker=next_marker
+            )
+        return ListServerCertificatesResponse(
+            ServerCertificateMetadataList=result, IsTruncated=False
+        )
+
+    def delete_server_certificate(
+        self, context: RequestContext, server_certificate_name: serverCertificateNameType, **kwargs
+    ) -> None:
+        store = self._get_store(context)
+        # Validate exists (will raise NoSuchEntityException if not)
+        self._get_server_certificate_entity(store, server_certificate_name)
+        del store.SERVER_CERTIFICATES[server_certificate_name]
+
+    def update_server_certificate(
+        self,
+        context: RequestContext,
+        server_certificate_name: serverCertificateNameType,
+        new_path: pathType | None = None,
+        new_server_certificate_name: serverCertificateNameType | None = None,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+        entity = self._get_server_certificate_entity(store, server_certificate_name)
+
+        # Check if new name conflicts with existing certificate
+        if new_server_certificate_name and new_server_certificate_name != server_certificate_name:
+            if new_server_certificate_name in store.SERVER_CERTIFICATES:
+                raise EntityAlreadyExistsException(
+                    f"The Server Certificate with name {new_server_certificate_name} already exists."
+                )
+
+        # Update path if provided
+        if new_path:
+            entity.metadata["Path"] = new_path
+
+        # Update name if provided
+        target_name = new_server_certificate_name or server_certificate_name
+        if new_server_certificate_name and new_server_certificate_name != server_certificate_name:
+            entity.metadata["ServerCertificateName"] = new_server_certificate_name
+            # Re-key in store
+            del store.SERVER_CERTIFICATES[server_certificate_name]
+            store.SERVER_CERTIFICATES[new_server_certificate_name] = entity
+
+        # Update ARN
+        path = entity.metadata.get("Path", "/")
+        entity.metadata["Arn"] = self._build_server_certificate_arn(context, path, target_name)
+
+    def tag_server_certificate(
+        self,
+        context: RequestContext,
+        server_certificate_name: serverCertificateNameType,
+        tags: tagListType,
+        **kwargs,
+    ) -> None:
+        self._validate_tags(tags, case_sensitive=False)
+
+        store = self._get_store(context)
+        entity = self._get_server_certificate_entity(store, server_certificate_name)
+
+        # Merge tags - update existing keys, add new ones (case-insensitive)
+        existing_keys = {tag["Key"].lower(): i for i, tag in enumerate(entity.tags)}
+        for tag in tags:
+            key = tag["Key"].lower()
+            if key in existing_keys:
+                entity.tags[existing_keys[key]] = tag
+            else:
+                entity.tags.append(tag)
+
+    def untag_server_certificate(
+        self,
+        context: RequestContext,
+        server_certificate_name: serverCertificateNameType,
+        tag_keys: tagKeyListType,
+        **kwargs,
+    ) -> None:
+        self._validate_tag_keys(tag_keys)
+
+        store = self._get_store(context)
+        entity = self._get_server_certificate_entity(store, server_certificate_name)
+
+        # Remove tags with matching keys (case-insensitive)
+        tag_keys_set = {key.lower() for key in tag_keys}
+        entity.tags = [tag for tag in entity.tags if tag["Key"].lower() not in tag_keys_set]
+
+    def list_server_certificate_tags(
+        self,
+        context: RequestContext,
+        server_certificate_name: serverCertificateNameType,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListServerCertificateTagsResponse:
+        store = self._get_store(context)
+        entity = self._get_server_certificate_entity(store, server_certificate_name)
+        tags = list(entity.tags)
+
+        # Sort alphabetically by key
+        tags.sort(key=lambda k: k["Key"])
+
+        paginated_list = PaginatedList(tags)
+
+        def _token_generator(tag: Tag) -> str:
+            return tag.get("Key")
+
+        if marker:
+            marker = base64.b64decode(marker).decode("utf-8")
+
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator, next_token=marker, page_size=max_items or 100
+        )
+
+        if next_marker:
+            next_marker = base64.b64encode(next_marker.encode("utf-8")).decode("utf-8")
+            return ListServerCertificateTagsResponse(
+                Tags=result, IsTruncated=True, Marker=next_marker
+            )
+        return ListServerCertificateTagsResponse(Tags=result, IsTruncated=False)
+
+    # ------------------------------ Signing Certificates ------------------------------ #
+
+    def _generate_signing_certificate_id(self) -> str:
+        """Generate a 24-character signing certificate ID (uppercase alphanumeric)."""
+        return "".join(random.choices(string.ascii_uppercase + string.digits, k=24))
+
+    def upload_signing_certificate(
+        self,
+        context: RequestContext,
+        certificate_body: certificateBodyType,
+        user_name: existingUserNameType | None = None,
+        **kwargs,
+    ) -> UploadSigningCertificateResponse:
+        store = self._get_store(context)
+
+        # If no user_name provided, use the current user (caller)
+        if not user_name:
+            user_name = self._get_user_name_from_access_key_context(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            # Validate X.509 certificate format
+            try:
+                cert_data = certificate_body.encode("utf-8")
+                x509.load_pem_x509_certificate(cert_data)
+            except Exception:
+                raise MalformedCertificateException(f"Certificate {certificate_body} is malformed.")
+
+            # Check quota: max 2 signing certificates per user
+            if len(user_entity.signing_certificates) >= 2:
+                raise LimitExceededException("Cannot exceed quota for CertificatesPerUser: 2")
+
+            # Generate certificate ID
+            cert_id = self._generate_signing_certificate_id()
+
+            # Create signing certificate
+            signing_cert = SigningCertificate(
+                UserName=user_name,
+                CertificateId=cert_id,
+                CertificateBody=certificate_body,
+                Status="Active",
+                UploadDate=datetime.now(tz=UTC),
+            )
+
+            user_entity.signing_certificates[cert_id] = signing_cert
+
+        return UploadSigningCertificateResponse(Certificate=signing_cert)
+
+    def list_signing_certificates(
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListSigningCertificatesResponse:
+        store = self._get_store(context)
+
+        # If no user_name provided, use the current user (caller)
+        if not user_name:
+            user_name = self._get_user_name_from_access_key_context(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+            certs = list(user_entity.signing_certificates.values())
+
+        # Sort by certificate ID
+        certs.sort(key=lambda c: c.get("CertificateId", ""))
+
+        paginated_list = PaginatedList(certs)
+
+        def _token_generator(cert: SigningCertificate) -> str:
+            return cert.get("CertificateId")
+
+        if marker:
+            marker = base64.b64decode(marker).decode("utf-8")
+
+        result, next_marker = paginated_list.get_page(
+            token_generator=_token_generator, next_token=marker, page_size=max_items or 100
+        )
+
+        if next_marker:
+            next_marker = base64.b64encode(next_marker.encode("utf-8")).decode("utf-8")
+            return ListSigningCertificatesResponse(
+                Certificates=result, IsTruncated=True, Marker=next_marker
+            )
+        return ListSigningCertificatesResponse(Certificates=result, IsTruncated=False)
+
+    def update_signing_certificate(
+        self,
+        context: RequestContext,
+        certificate_id: certificateIdType,
+        status: statusType,
+        user_name: existingUserNameType | None = None,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        # If no user_name provided, use the current user (caller)
+        if not user_name:
+            user_name = self._get_user_name_from_access_key_context(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            signing_cert = user_entity.signing_certificates.get(certificate_id)
+            if not signing_cert:
+                raise NoSuchEntityException(
+                    f"The Certificate with id {certificate_id} cannot be found."
+                )
+
+            signing_cert["Status"] = status
+
+    def delete_signing_certificate(
+        self,
+        context: RequestContext,
+        certificate_id: certificateIdType,
+        user_name: existingUserNameType | None = None,
+        **kwargs,
+    ) -> None:
+        store = self._get_store(context)
+
+        # If no user_name provided, use the current user (caller)
+        if not user_name:
+            user_name = self._get_user_name_from_access_key_context(context)
+
+        with self._user_lock:
+            user_entity = self._get_user_entity(store, user_name)
+
+            if certificate_id not in user_entity.signing_certificates:
+                raise NoSuchEntityException(
+                    f"The Certificate with id {certificate_id} cannot be found."
+                )
+
+            del user_entity.signing_certificates[certificate_id]
 
     # ------------------------------ OIDC Providers ------------------------------ #
 
