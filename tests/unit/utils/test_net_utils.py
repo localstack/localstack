@@ -9,6 +9,7 @@ from localstack.testing.pytest import markers
 from localstack.utils import net
 from localstack.utils.common import short_uid
 from localstack.utils.net import (
+    ParsedUrl,
     Port,
     PortNotAvailableException,
     PortRange,
@@ -18,6 +19,7 @@ from localstack.utils.net import (
     get_free_tcp_port_range,
     get_free_udp_port,
     is_ip_address,
+    parse_url,
     port_can_be_bound,
     resolve_hostname,
 )
@@ -52,6 +54,58 @@ def test_port_open(protocol):
     # close socket, assert that port can be bound
     sock.close()
     assert port_can_be_bound(port)
+
+
+@pytest.mark.parametrize(
+    "url, expected",
+    [
+        ("http://example.com", ParsedUrl(host="example.com", port=None, protocol="http")),
+        ("example.com", ParsedUrl(host="example.com", port=None, protocol=None)),
+        ("http://example.com:4566", ParsedUrl(host="example.com", port=4566, protocol="http")),
+        ("example.com:4566", ParsedUrl(host="example.com", port=4566, protocol=None)),
+        ("https://example.com", ParsedUrl(host="example.com", port=None, protocol="https")),
+        ("https://example.com:443", ParsedUrl(host="example.com", port=443, protocol="https")),
+        # IPv4
+        ("http://127.0.0.1", ParsedUrl(host="127.0.0.1", port=None, protocol="http")),
+        ("http://127.0.0.1:4566", ParsedUrl(host="127.0.0.1", port=4566, protocol="http")),
+        ("127.0.0.1", ParsedUrl(host="127.0.0.1", port=None, protocol=None)),
+        ("127.0.0.1:4566", ParsedUrl(host="127.0.0.1", port=4566, protocol=None)),
+        # IPv6 with scheme
+        ("http://[::1]", ParsedUrl(host="::1", port=None, protocol="http")),
+        ("http://[::1]:4566", ParsedUrl(host="::1", port=4566, protocol="http")),
+        # IPv6 bare bracketed
+        ("[::1]", ParsedUrl(host="::1", port=None, protocol=None)),
+        ("[::1]:4566", ParsedUrl(host="::1", port=4566, protocol=None)),
+        # IPv6 bare without brackets
+        ("::1", ParsedUrl(host="::1", port=None, protocol=None)),
+        # IPv6 full address with scheme
+        (
+            "http://[2001:db8:85a3::8a2e:370:7334]",
+            ParsedUrl(host="2001:db8:85a3::8a2e:370:7334", port=None, protocol="http"),
+        ),
+        (
+            "http://[2001:db8:85a3::8a2e:370:7334]:4566",
+            ParsedUrl(host="2001:db8:85a3::8a2e:370:7334", port=4566, protocol="http"),
+        ),
+        # IPv6 full address bare bracketed
+        (
+            "[2001:db8:85a3::8a2e:370:7334]",
+            ParsedUrl(host="2001:db8:85a3::8a2e:370:7334", port=None, protocol=None),
+        ),
+        (
+            "[2001:db8:85a3::8a2e:370:7334]:4566",
+            ParsedUrl(host="2001:db8:85a3::8a2e:370:7334", port=4566, protocol=None),
+        ),
+        (
+            "localstack-localstack-operator-test.test-namespace:4510",
+            ParsedUrl(
+                host="localstack-localstack-operator-test.test-namespace", port=4510, protocol=None
+            ),
+        ),
+    ],
+)
+def test_parse_url(url, expected):
+    assert parse_url(url) == expected
 
 
 def test_get_free_udp_port():
