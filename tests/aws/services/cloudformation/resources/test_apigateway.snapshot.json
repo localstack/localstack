@@ -844,5 +844,38 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_apigateway_stage_with_access_log_settings": {
+    "recorded-date": "25-02-2026, 23:35:55",
+    "recorded-content": {
+      "get-stages": {
+        "item": [
+          {
+            "accessLogSettings": {
+              "destinationArn": "<destination-arn:1>",
+              "format": "$context.extendedRequestId $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] \"$context.httpMethod $context.resourcePath $context.protocol\" $context.status $context.responseLength $context.requestId"
+            },
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:1>",
+            "description": "test stage description",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "test",
+            "tags": {
+              "aws:cloudformation:logical-id": "TestStage",
+              "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<aws:cloudformation:stack-name:1>/<resource:2>",
+              "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+            },
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -29,6 +29,15 @@
       "total": 34.05
     }
   },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_apigateway_stage_with_access_log_settings": {
+    "last_validated_date": "2026-02-25T23:36:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 24.72,
+      "teardown": 9.14,
+      "total": 34.34
+    }
+  },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_apigateway_rest_api": {
     "last_validated_date": "2025-05-05T14:50:14+00:00"
   },

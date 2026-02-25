@@ -810,6 +810,32 @@ def test_apigateway_deployment_canary_settings(deploy_cfn_template, snapshot, aw
     snapshot.match("get-deployments", deployments)
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..tags"])
+@markers.aws.validated
+def test_apigateway_stage_with_access_log_settings(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("deploymentId"),
+            snapshot.transform.key_value("destinationArn"),
+            snapshot.transform.key_value("aws:cloudformation:stack-name"),
+            snapshot.transform.resource_name(),
+            SortingTransformer("items", itemgetter("description")),
+        ]
+    )
+
+    api_name = f"api-{short_uid()}"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/apigateway_stage_access_log_settings.yaml",
+        ),
+        parameters={"RestApiName": api_name},
+    )
+    api_id = stack.outputs["RestApiId"]
+    stage = aws_client.apigateway.get_stages(restApiId=api_id)
+    snapshot.match("get-stages", stage)
+
+
 class TestApiGatewayBasePathMapping:
     @markers.aws.only_localstack
     def test_delete_base_path_mapping_missing_base_path(

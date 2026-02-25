@@ -1,0 +1,52 @@
+Parameters:
+  RestApiName:
+    Type: String
+
+Resources:
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Ref RestApiName
+
+  MockMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !GetAtt
+        - RestApi
+        - RootResourceId
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: RestApi
+      Description: "basic deployment"
+    DependsOn:
+      - MockMethod
+
+  TestStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      StageName: test
+      RestApiId: !Ref RestApi
+      DeploymentId: !Ref ApiDeployment
+      Description: "test stage description"
+      AccessLogSetting:
+        DestinationArn: !GetAtt MyLogGroup.Arn
+        Format: $context.extendedRequestId $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId
+  MyLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - '-'
+        - - !Ref RestApi
+          - access-logs
+
+Outputs:
+    RestApiId:
+        Value: !GetAtt RestApi.RestApiId
