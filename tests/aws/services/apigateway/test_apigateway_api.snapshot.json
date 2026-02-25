@@ -5357,5 +5357,270 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayStage::test_stage_access_log_settings": {
+    "recorded-date": "25-02-2026, 23:08:31",
+    "recorded-content": {
+      "create-deployment": {
+        "createdDate": "datetime",
+        "id": "<id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-stage-access-log-dest-add": {
+        "accessLogSettings": {
+          "destinationArn": "<log-group-arn>"
+        },
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-access-log-dest-replace": {
+        "accessLogSettings": {
+          "destinationArn": "<log-group-arn>a"
+        },
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-access-log-format-add": {
+        "accessLogSettings": {
+          "destinationArn": "<log-group-arn>a",
+          "format": "$context.requestId $context.identity.sourceIp"
+        },
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-access-log-remove-all": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayStage::test_stage_access_log_settings_validation": {
+    "recorded-date": "25-02-2026, 23:16:02",
+    "recorded-content": {
+      "create-deployment": {
+        "createdDate": "datetime",
+        "id": "<id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invalid-path-add": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]"
+        },
+        "message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-path-remove": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Cannot remove method setting accessLogSettings/randomValue because there is no method setting for this method "
+        },
+        "message": "Cannot remove method setting accessLogSettings/randomValue because there is no method setting for this method ",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-path-replace": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]"
+        },
+        "message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "star-and-add": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]"
+        },
+        "message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "star-and-remove": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Cannot remove method setting accessLogSettings/* because there is no method setting for this method "
+        },
+        "message": "Cannot remove method setting accessLogSettings/* because there is no method setting for this method ",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "star-and-replace": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]"
+        },
+        "message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "root-and-add": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]"
+        },
+        "message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "root-and-replace": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]"
+        },
+        "message": "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage-access-log-dest-add": {
+        "accessLogSettings": {
+          "destinationArn": "<log-group-arn>"
+        },
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<id:1>",
+        "description": "dev stage",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "dev",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-access-log-destinationArn-empty": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Access Log value must not be empty"
+        },
+        "message": "Access Log value must not be empty",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage-access-log-format-empty": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Access Log value must not be empty"
+        },
+        "message": "Access Log value must not be empty",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage-access-log-dest-remove": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Cannot remove method setting accessLogSettings/destinationArn because there is no method setting for this method "
+        },
+        "message": "Cannot remove method setting accessLogSettings/destinationArn because there is no method setting for this method ",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

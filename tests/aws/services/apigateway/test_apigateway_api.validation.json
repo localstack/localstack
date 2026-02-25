@@ -269,6 +269,24 @@
       "total": 10.72
     }
   },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayStage::test_stage_access_log_settings": {
+    "last_validated_date": "2026-02-25T23:08:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.88,
+      "call": 3.57,
+      "teardown": 0.62,
+      "total": 5.07
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayStage::test_stage_access_log_settings_validation": {
+    "last_validated_date": "2026-02-25T23:16:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.92,
+      "call": 3.99,
+      "teardown": 0.49,
+      "total": 5.4
+    }
+  },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayVpcLink::test_create_vpc_link_invalid_parameters": {
     "last_validated_date": "2025-12-15T04:55:32+00:00",
     "durations_in_seconds": {
