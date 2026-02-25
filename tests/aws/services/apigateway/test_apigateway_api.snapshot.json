@@ -5255,7 +5255,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayStage::test_get_stages_filters_by_deployment_id": {
-    "recorded-date": "11-02-2026, 21:15:28",
+    "recorded-date": "25-02-2026, 23:40:35",
     "recorded-content": {
       "all-stages": {
         "item": [

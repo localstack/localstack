@@ -261,12 +261,12 @@
     "last_validated_date": "2024-04-15T20:47:11+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayStage::test_get_stages_filters_by_deployment_id": {
-    "last_validated_date": "2026-02-11T21:15:28+00:00",
+    "last_validated_date": "2026-02-25T23:40:35+00:00",
     "durations_in_seconds": {
-      "setup": 1.07,
-      "call": 9.37,
-      "teardown": 0.28,
-      "total": 10.72
+      "setup": 0.91,
+      "call": 13.16,
+      "teardown": 0.45,
+      "total": 14.52
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayStage::test_stage_access_log_settings": {
