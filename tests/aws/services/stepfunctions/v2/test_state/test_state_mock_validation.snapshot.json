@@ -190,5 +190,53 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_requires_mock[ParallelState]": {
+    "recorded-date": "25-02-2026, 22:47:33",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "InvalidDefinition",
+          "Message": "TestState API does not support Map or Parallel states. Supported state types include: [Task, Wait, Pass, Succeed, Fail, Choice]"
+        },
+        "message": "TestState API does not support Map or Parallel states. Supported state types include: [Task, Wait, Pass, Succeed, Fail, Choice]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_is_not_array_on_parallel_state": {
+    "recorded-date": "25-02-2026, 22:47:33",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Mocked result must be an array."
+        },
+        "message": "Mocked result must be an array.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_array_size_mismatch_on_parallel_state": {
+    "recorded-date": "25-02-2026, 22:47:34",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Mocked result must contain the same number of items as number of Parallel branches."
+        },
+        "message": "Mocked result must contain the same number of items as number of Parallel branches.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

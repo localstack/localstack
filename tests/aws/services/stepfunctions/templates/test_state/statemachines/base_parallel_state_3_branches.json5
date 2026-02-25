@@ -1,0 +1,52 @@
+{
+  "Comment": "BASE_PARALLEL_STATE_3_BRANCHES",
+  "Type": "Parallel",
+  "Branches": [
+    {
+      "StartAt": "Branch1",
+      "States": {
+        "Branch1": {
+          "Type": "Task",
+          "QueryLanguage": "JSONata",
+          "Resource": "arn:aws:states:::lambda:invoke",
+          "Arguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "End": true
+        }
+      }
+    },
+    {
+      "StartAt": "Branch2",
+      "States": {
+        "Branch2": {
+          "Type": "Task",
+          "QueryLanguage": "JSONata",
+          "Resource": "arn:aws:states:::lambda:invoke",
+          "Arguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "End": true
+        }
+      }
+    },
+    {
+      "StartAt": "Branch3",
+      "States": {
+        "Branch3": {
+          "Type": "Task",
+          "QueryLanguage": "JSONata",
+          "Resource": "arn:aws:states:::lambda:invoke",
+          "Arguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "End": true
+        }
+      }
+    }
+  ],
+  "End": true
+}
