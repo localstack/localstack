@@ -67,6 +67,7 @@ from localstack.aws.api.cloudwatch import (
     Statistic,
     Statistics,
     StrictEntityValidation,
+    Tag,
     TagKeyList,
     TagList,
     TagResourceOutput,
@@ -401,26 +402,27 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self, resource_arn: AmazonResourceName, account_id: str, region: str
     ) -> TagList:
         store = self.get_store(account_id, region)
-        tags = store.TAGS.list_tags_for_resource(resource_arn).get("Tags", [])
-        return tags
+        return [
+            Tag(Key=key, Value=value) for key, value in store.tags.get_tags(resource_arn).items()
+        ]
 
     def _set_resource_tags(
         self, resource_arn: AmazonResourceName, account_id: str, region: str, tags: TagList
     ) -> None:
         store = self.get_store(account_id, region)
-        store.TAGS.tag_resource(arn=resource_arn, tags=tags)
+        store.tags.update_tags(resource_arn, {tag["Key"]: tag["Value"] for tag in tags})
 
     def _remove_resource_tags(
         self, resource_arn: AmazonResourceName, account_id: str, region: str, tag_keys: TagKeyList
     ) -> None:
         store = self.get_store(account_id, region)
-        store.TAGS.untag_resource(resource_arn, tag_keys)
+        store.tags.delete_tags(resource_arn, tag_keys)
 
     def _remove_all_resource_tags(
         self, resource_arn: AmazonResourceName, account_id: str, region: str
     ):
         store = self.get_store(account_id, region)
-        store.TAGS.del_resource(resource_arn)
+        store.tags.delete_all_tags(resource_arn)
 
     @handler("PutMetricAlarm", expand=False)
     def put_metric_alarm(self, context: RequestContext, request: PutMetricAlarmInput) -> None:

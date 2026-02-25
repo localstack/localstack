@@ -10,11 +10,10 @@ from localstack.aws.api.cloudwatch import (
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
-    CrossRegionAttribute,
     LocalAttribute,
 )
 from localstack.utils.aws import arns
-from localstack.utils.tagging import TaggingService
+from localstack.utils.tagging import Tags
 
 
 class LocalStackMetricAlarm:
@@ -103,9 +102,6 @@ LocalStackAlarm = LocalStackMetricAlarm | LocalStackCompositeAlarm
 
 
 class CloudWatchStore(BaseStore):
-    # maps resource ARN to tags
-    TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
-
     # maps resource ARN to alarms
     alarms: dict[str, LocalStackAlarm] = LocalAttribute(default=dict)
 
@@ -114,6 +110,8 @@ class CloudWatchStore(BaseStore):
     histories: list[AlarmHistoryItem] = LocalAttribute(default=list)
 
     dashboards: dict[str, LocalStackDashboard] = LocalAttribute(default=dict)
+    # Maps resource ARN to tags
+    tags: Tags = LocalAttribute(default=Tags)
 
 
 cloudwatch_stores = AccountRegionBundle("cloudwatch", CloudWatchStore)
