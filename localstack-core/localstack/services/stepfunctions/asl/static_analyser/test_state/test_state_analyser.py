@@ -65,6 +65,7 @@ class TestStateStaticAnalyser(StaticAnalyser):
         StateType.Succeed,
         StateType.Fail,
         StateType.Map,
+        StateType.Parallel,
     }
 
     @staticmethod
@@ -122,6 +123,11 @@ class TestStateStaticAnalyser(StaticAnalyser):
                 mock_result=mock_result, test_state=test_state
             )
 
+        if isinstance(test_state, StateParallel):
+            TestStateStaticAnalyser.validate_mock_result_matches_parallel_definition(
+                mock_result=mock_result, test_state=test_state
+            )
+
         if isinstance(test_state, StateTaskService):
             field_validation_mode = mock_input.get(
                 "fieldValidationMode", MockResponseValidationMode.STRICT
@@ -155,6 +161,20 @@ class TestStateStaticAnalyser(StaticAnalyser):
 
         if test_state.result_writer is None and not isinstance(mock_result, list):
             raise ValidationException("Mocked result must be an array.")
+
+    @staticmethod
+    def validate_mock_result_matches_parallel_definition(
+        mock_result: Any, test_state: StateParallel
+    ):
+        if not isinstance(mock_result, list):
+            raise ValidationException("Mocked result must be an array.")
+
+        branch_count = len(test_state.branches.programs)
+        if len(mock_result) != branch_count:
+            raise ValidationException(
+                f"Mocked result must be an array with the same number of elements as the number of branches in the Parallel state. "
+                f"Expected {branch_count} elements, but got {len(mock_result)}."
+            )
 
     @staticmethod
     def validate_mock_result_matches_api_shape(

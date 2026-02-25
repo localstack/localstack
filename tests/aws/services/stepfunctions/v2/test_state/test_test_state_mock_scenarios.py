@@ -12,6 +12,12 @@ from tests.aws.services.stepfunctions.templates.test_state.test_state_templates 
     TestStateTemplate as TST,
 )
 
+INSPECTION_LEVELS = [
+    pytest.param(InspectionLevel.INFO, id="INFO"),
+    pytest.param(InspectionLevel.DEBUG, id="DEBUG"),
+    pytest.param(InspectionLevel.TRACE, id="TRACE"),
+]
+
 
 class TestStateMockScenarios:
     @markers.aws.validated
@@ -203,6 +209,48 @@ class TestStateMockScenarios:
             definition=definition,
             input=exec_input,
             inspectionLevel=InspectionLevel.INFO,
+            mock=mock,
+        )
+        sfn_snapshot.match("test_case_response", test_case_response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("inspection_level", INSPECTION_LEVELS)
+    def test_base_parallel_state_mock_success(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+        inspection_level,
+    ):
+        template = TST.load_sfn_template(TST.BASE_PARALLEL_STATE)
+        definition = json.dumps(template)
+        mock_result = [{"branch1": "result"}, {"branch2": "result"}]
+        mock = {"result": json.dumps(mock_result)}
+
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            inspectionLevel=inspection_level,
+            mock=mock,
+        )
+        sfn_snapshot.match("test_case_response", test_case_response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("inspection_level", INSPECTION_LEVELS)
+    def test_io_parallel_state_mock_success(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+        inspection_level,
+    ):
+        template = TST.load_sfn_template(TST.IO_PARALLEL_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"input": {"key": "value"}})
+        mock_result = [{"branch1": "result"}, {"branch2": "result"}]
+        mock = {"result": json.dumps(mock_result)}
+
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            input=exec_input,
+            inspectionLevel=inspection_level,
             mock=mock,
         )
         sfn_snapshot.match("test_case_response", test_case_response)
