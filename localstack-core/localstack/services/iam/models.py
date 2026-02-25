@@ -17,7 +17,9 @@ from localstack.aws.api.iam import (
     Policy,
     PolicyVersion,
     Role,
+    ServerCertificateMetadata,
     ServiceSpecificCredential,
+    SigningCertificate,
     SSHPublicKey,
     User,
     VirtualMFADevice,
@@ -82,6 +84,9 @@ class UserEntity:
     ssh_public_keys: dict[str, SSHPublicKey] = field(default_factory=dict)  # key_id -> SSHPublicKey
     mfa_devices: list[str] = field(default_factory=list)
     access_keys: dict[str, AccessKeyEntity] = field(default_factory=dict)  # access_key_id -> entity
+    signing_certificates: dict[str, SigningCertificate] = field(
+        default_factory=dict
+    )  # cert_id -> SigningCertificate
 
 
 @dataclasses.dataclass
@@ -131,6 +136,17 @@ class MFADeviceEntity:
     user_name: str | None = None
 
 
+@dataclasses.dataclass
+class ServerCertificateEntity:
+    """Entity for server certificates used with ELB, CloudFront, etc."""
+
+    metadata: ServerCertificateMetadata  # Contains Path, Name, Id, Arn, UploadDate, Expiration
+    certificate_body: str
+    private_key: str  # Stored but never returned in API responses
+    certificate_chain: str | None = None
+    tags: tagListType = field(default_factory=list)
+
+
 class IamStore(BaseStore):
     # Customer-managed policies keyed by ARN
     MANAGED_POLICIES: dict[str, ManagedPolicyEntity] = CrossRegionAttribute(default=dict)
@@ -163,6 +179,10 @@ class IamStore(BaseStore):
     # MFA devices assigned to users: maps serial_number -> list of MFADevice
     # Account-scoped (IAM is global within an account)
     MFA_DEVICES: dict[str, MFADeviceEntity] = CrossRegionAttribute(default=dict)
+
+    # Server certificates: maps certificate_name -> ServerCertificateEntity
+    # Account-scoped (IAM is global within an account)
+    SERVER_CERTIFICATES: dict[str, ServerCertificateEntity] = CrossRegionAttribute(default=dict)
 
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)
