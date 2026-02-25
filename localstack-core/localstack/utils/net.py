@@ -5,6 +5,7 @@ import socket
 import threading
 from collections.abc import MutableMapping
 from contextlib import closing
+from dataclasses import dataclass
 from typing import Any, NamedTuple
 from urllib.parse import urlparse
 
@@ -53,6 +54,65 @@ class Port(NamedTuple):
 IntOrPort = int | Port
 
 
+@dataclass
+class ParsedUrl:
+    host: str
+    protocol: str | None
+    port: int | None
+
+
+def parse_url(url: str) -> ParsedUrl:
+    """Parse a URL or host string into its components.
+
+    Handles full URLs (e.g., ``http://example.com:4566``), bare host strings
+    with or without a port (e.g., ``example.com`` or ``example.com:4566``),
+    and IPv6 addresses in bracketed notation (e.g., ``[::1]:4566`` or
+    ``http://[::1]:4566``).
+
+    :param url: a URL or host string to parse
+    :return: a ParsedUrl with host, port, and protocol fields
+    """
+    parsed = urlparse(url)
+    if parsed.scheme and parsed.netloc:
+        # full URL like http://example.com or http://example.com:4566
+        if parsed.netloc.startswith("["):
+            # IPv6 bracketed address like [::1] or [::1]:4566
+            bracket_end = parsed.netloc.index("]")
+            host = parsed.netloc[1:bracket_end]
+            remainder = parsed.netloc[bracket_end + 1 :]
+            port = int(remainder[1:]) if remainder.startswith(":") else None
+            return ParsedUrl(host=host, port=port, protocol=parsed.scheme)
+        elif ":" in parsed.netloc:
+            host, port = parsed.netloc.split(":", maxsplit=1)
+            return ParsedUrl(host=host, port=int(port), protocol=parsed.scheme)
+        else:
+            return ParsedUrl(host=parsed.netloc, port=None, protocol=parsed.scheme)
+    elif parsed.scheme and not parsed.netloc:
+        # urlparse misinterpreted "host:port" as "scheme:path"
+        host = parsed.scheme
+        port = int(parsed.path) if parsed.path else None
+        return ParsedUrl(host=host, port=port, protocol=None)
+    else:
+        path = parsed.path
+        if path.startswith("["):
+            # bracketed IPv6 like [::1] or [::1]:4566
+            bracket_end = path.index("]")
+            host = path[1:bracket_end]
+            remainder = path[bracket_end + 1 :]
+            port = int(remainder[1:]) if remainder.startswith(":") else None
+            return ParsedUrl(host=host, port=port, protocol=None)
+        elif path.count(":") == 1:
+            # host:port (e.g., 127.0.0.1:4566)
+            host, port_str = path.split(":", maxsplit=1)
+            return ParsedUrl(host=host, port=int(port_str), protocol=None)
+        elif ":" in path:
+            # bare IPv6 without brackets (e.g., ::1) — no port extraction
+            return ParsedUrl(host=path, port=None, protocol=None)
+        else:
+            # bare domain without port
+            return ParsedUrl(host=path, port=None, protocol=None)
+
+
 def is_port_open(
     port_or_url: int | str,
     http_path: str = None,
@@ -70,27 +130,10 @@ def is_port_open(
     protocol = "http"
     protocols = protocols if isinstance(protocols, list) else [protocols]
     if isinstance(port, str):
-        url = urlparse(port)
-
-        # hack: if the port_or_url does not include a scheme, urlparse incorrectly parses the
-        # domain name as the scheme
-        # for example foo.com parses as
-        #     ParseResult(
-        #         scheme='foo.com',
-        #         netloc='',
-        #         path='4566',
-        #         params='',
-        #         query='',
-        #         fragment=''
-        #     )
-        if url.scheme and not url.hostname:
-            port = url.path
-            host = url.scheme
-            protocol = protocols[0]
-        else:
-            port = url.port
-            host = url.hostname
-            protocol = url.scheme
+        parsed = parse_url(port)
+        port = parsed.port
+        host = parsed.host
+        protocol = parsed.protocol or protocols[0]
 
     nw_protocols = []
     nw_protocols += [socket.SOCK_STREAM] if "tcp" in protocols else []
@@ -183,7 +226,7 @@ def wait_for_port_status(
         if bool(status) != (not expect_closed):
             raise Exception(
                 "Port {} (path: {}) was not {}".format(
-                    port, http_path, "closed" if expect_closed else "open"
+                    port_or_url, http_path, "closed" if expect_closed else "open"
                 )
             )
 
