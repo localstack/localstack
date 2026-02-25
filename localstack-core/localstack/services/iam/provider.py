@@ -2878,7 +2878,9 @@ class IamProvider(IamApi):
         context: RequestContext,
         saml_metadata_document: SAMLMetadataDocumentType,
         name: SAMLProviderNameType,
-        tags: tagListType = None,
+        tags: tagListType | None = None,
+        assertion_encryption_mode: assertionEncryptionModeType | None = None,
+        add_private_key: privateKeyType | None = None,
         **kwargs,
     ) -> CreateSAMLProviderResponse:
 
@@ -3948,11 +3950,10 @@ class IamProvider(IamApi):
     def deactivate_mfa_device(
         self,
         context: RequestContext,
-        user_name: existingUserNameType,
         serial_number: serialNumberType,
+        user_name: existingUserNameType | None = None,
         **kwargs,
     ) -> None:
-        # Verify user exists
         store = self._get_store(context)
 
         if serial_number not in store.MFA_DEVICES:
