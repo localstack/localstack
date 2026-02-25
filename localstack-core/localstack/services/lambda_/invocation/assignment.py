@@ -1,5 +1,6 @@
 import contextlib
 import logging
+import threading
 from collections import defaultdict
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -34,9 +35,16 @@ class AssignmentService(OtherServiceEndpoint):
     # Global pool for spawning and killing provisioned Lambda runtime environments
     provisioning_pool: ThreadPoolExecutor
 
+    # Semaphore limiting the number of on-demand containers starting simultaneously.
+    # Concurrent container starts are I/O-heavy (Docker API calls, copying runtime files)
+    # and can exhaust OS file descriptor limits on machines with low ulimits.
+    on_demand_start_semaphore: threading.Semaphore
+
     def __init__(self):
         self.environments = defaultdict(dict)
         self.provisioning_pool = ThreadPoolExecutor(thread_name_prefix="lambda-provisioning-pool")
+        # TODO: make this value configurable; 16 is a conservative default
+        self.on_demand_start_semaphore = threading.Semaphore(16)
 
     @contextlib.contextmanager
     def get_environment(
@@ -45,11 +53,13 @@ class AssignmentService(OtherServiceEndpoint):
         function_version: FunctionVersion,
         provisioning_type: InitializationType,
     ) -> Iterator[ExecutionEnvironment]:
-        applicable_envs = (
+        # Snapshot the values list before iterating to avoid skipped entries
+        # that can be caused by concurrent invocations
+        applicable_envs = [
             env
-            for env in self.environments[version_manager_id].values()
+            for env in list(self.environments[version_manager_id].values())
             if env.initialization_type == provisioning_type
-        )
+        ]
         execution_environment = None
         for environment in applicable_envs:
             try:
@@ -65,7 +75,10 @@ class AssignmentService(OtherServiceEndpoint):
                     "No provisioned concurrency environment available despite lease."
                 )
             elif provisioning_type == InitializationType.on_demand:
-                execution_environment = self.start_environment(version_manager_id, function_version)
+                with self.on_demand_start_semaphore:
+                    execution_environment = self.start_environment(
+                        version_manager_id, function_version
+                    )
                 self.environments[version_manager_id][execution_environment.id] = (
                     execution_environment
                 )
@@ -82,7 +95,16 @@ class AssignmentService(OtherServiceEndpoint):
             LOG.error(
                 "Failed invocation <%s>: %s", type(e), e, exc_info=LOG.isEnabledFor(logging.DEBUG)
             )
-            self.stop_environment(execution_environment)
+            if execution_environment.initialization_type == InitializationType.on_demand:
+                self.stop_environment(execution_environment)
+            else:
+                # Try to restore to READY rather than stopping.
+                # Transient errors (e.g., OS-level connection failures) should not
+                # permanently remove healthy provisioned containers from the pool.
+                try:
+                    execution_environment.release()
+                except InvalidStatusException:
+                    self.stop_environment(execution_environment)
             raise e
 
     def start_environment(
