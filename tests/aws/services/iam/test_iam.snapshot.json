@@ -16,7 +16,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_user_attach_policy": {
-    "recorded-date": "06-03-2025, 12:25:06",
+    "recorded-date": "24-02-2026, 15:23:21",
     "recorded-content": {
       "create_policy_response": {
         "Policy": {
@@ -39,7 +39,7 @@
       "non_existent_malformed_policy_arn": {
         "Error": {
           "Code": "ValidationError",
-          "Message": "Invalid ARN:  Could not be parsed!",
+          "Message": "ARN longpolicynamebutnoarn is not valid.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -50,7 +50,7 @@
       "existing_policy_name_provided": {
         "Error": {
           "Code": "ValidationError",
-          "Message": "Invalid ARN:  Could not be parsed!",
+          "Message": "ARN <policy-name:1> is not valid.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -647,7 +647,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_delete_user_after_service_credential_created": {
-    "recorded-date": "06-03-2025, 16:58:41",
+    "recorded-date": "24-02-2026, 15:27:02",
     "recorded-content": {
       "create-user-response": {
         "User": {

@@ -589,14 +589,6 @@ class TestIAMIntegrations:
                 aws_client.iam.delete_service_linked_role(RoleName=role_name)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Policy.IsAttachable",
-            "$..Policy.PermissionsBoundaryUsageCount",
-            "$..Policy.Tags",
-            "$..Policy.Description",
-        ]
-    )
     def test_user_attach_policy(self, snapshot, aws_client, create_user, create_policy):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
