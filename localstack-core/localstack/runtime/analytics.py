@@ -1,8 +1,6 @@
 import logging
 import os
-import platform
 
-from localstack import config
 from localstack.runtime import hooks
 from localstack.utils.analytics import log
 
@@ -127,4 +125,3 @@ def _publish_config_as_analytics_event():
     present_env_vars = {k: v for k, v in present_env_vars.items() if v is not None}
 
     log.event("config", env_vars=env_vars, set_vars=present_env_vars)
-
