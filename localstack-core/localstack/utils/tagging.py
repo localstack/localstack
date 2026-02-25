@@ -144,3 +144,55 @@ class Tags:
         """
 
         return self._tags.copy()
+
+
+#
+# Tagging operations for various services return tags in one of two formats:
+#
+# - Tag list: A list of dicts, each dict containing the fields 'Key' and 'Value' and appropriate tag key value pairs.
+#   Some services, like S3, use the fields 'key' and 'value'::
+#
+#         [
+#             {
+#                 "Key": "Environment",
+#                 "Value": "Production",
+#             },
+#             {
+#                 "Key": "Owner",
+#                 "Value": "LocalStack",
+#             }
+#         ]
+#
+# - Tag map: a direct mapping of tag keys to tag values.::
+#
+#         {
+#             "Environment": "Production",
+#             "Owner": "LocalStack",
+#         }
+#
+
+
+def tag_list_to_map(
+    tag_list: list[dict[str, str]], key_field: str = "Key", value_field: str = "Value"
+) -> dict[str, str]:
+    """
+    Convert a tag list to a tag map::
+
+        >> tag_list_to_map([{"Key": "temperature", "Value": "warm"}])
+        {"temperature": "warm"}
+
+    """
+    return {tag[key_field]: tag[value_field] for tag in tag_list}
+
+
+def tag_map_to_list(
+    tag_map: dict[str, str], key_field: str = "Key", value_field: str = "Value"
+) -> list[dict[str, str]]:
+    """
+    Convert a tag map to a tag list::
+
+        >> tag_map_to_list({"temperature": "warm"})
+        [{"Key": "temperature", "Value": "warm"}]
+
+    """
+    return [{key_field: key, value_field: value} for key, value in tag_map.items()]
