@@ -435,5 +435,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_mfa_device_already_attached": {
+    "recorded-date": "24-02-2026, 20:56:29",
+    "recorded-content": {
+      "enable-mfa-already-attached-error": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "MFA Device is already in use.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
   }
 }
