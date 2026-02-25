@@ -628,6 +628,14 @@ class CapacityProvider:
 
 
 @dataclasses.dataclass
+class FunctionScalingState:
+    """Tracks both applied and requested scaling configs for async updates."""
+
+    applied: FunctionScalingConfig = dataclasses.field(default_factory=dict)
+    requested: FunctionScalingConfig | None = None
+
+
+@dataclasses.dataclass
 class Function:
     function_name: str
     code_signing_config_arn: str | None = None
@@ -647,7 +655,7 @@ class Function:
     provisioned_concurrency_configs: dict[str, ProvisionedConcurrencyConfiguration] = (
         dataclasses.field(default_factory=dict)
     )
-    function_scaling_configs: dict[str, FunctionScalingConfig] = dataclasses.field(
+    function_scaling_configs: dict[str, FunctionScalingState] = dataclasses.field(
         default_factory=dict
     )
 
