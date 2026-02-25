@@ -172,8 +172,7 @@ class TestStateStaticAnalyser(StaticAnalyser):
         branch_count = len(test_state.branches.programs)
         if len(mock_result) != branch_count:
             raise ValidationException(
-                f"Mocked result must be an array with the same number of elements as the number of branches in the Parallel state. "
-                f"Expected {branch_count} elements, but got {len(mock_result)}."
+                "Mocked result must contain the same number of items as number of Parallel branches."
             )
 
     @staticmethod

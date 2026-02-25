@@ -1496,6 +1496,23 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         state_name = request.get("stateName")
         definition = request["definition"]
 
+        # Pre-validate: detect empty Branches array before ANTLR parsing.
+        # The ANTLR grammar requires at least one branch, but AWS raises a schema
+        # validation error with a specific message. This check catches the case
+        # before the parser produces a generic syntax error.
+        if state_name is None:
+            try:
+                parsed_def = json.loads(definition)
+                if isinstance(parsed_def, dict) and parsed_def.get("Branches") == []:
+                    invalid_def = InvalidDefinition()
+                    invalid_def.message = (
+                        "Invalid State Machine Definition: 'SCHEMA_VALIDATION_FAILED: "
+                        "Value cannot be empty at /States/StateName/Branches'"
+                    )
+                    raise invalid_def
+            except json.JSONDecodeError:
+                pass  # Let _validate_definition handle actual parse errors
+
         StepFunctionsProvider._validate_definition(
             definition=definition,
             static_analysers=[TestStateStaticAnalyser(state_name)],

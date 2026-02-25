@@ -2,7 +2,11 @@ import json
 from datetime import datetime
 
 import pytest
-from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
+from localstack_snapshot.snapshots.transformer import (
+    GenericTransformer,
+    JsonpathTransformer,
+    RegexTransformer,
+)
 
 from localstack.aws.api.stepfunctions import InspectionLevel
 from localstack.testing.pytest import markers
@@ -241,6 +245,29 @@ class TestStateMockScenarios:
         sfn_snapshot,
         inspection_level,
     ):
+        # AWS serializes the 'output' field as compact JSON when it goes through
+        # OutputPath processing, while LocalStack uses Python's default spaced format.
+        # Normalize both to compact JSON arrays for consistent comparison.
+        def _normalize_output_json_arrays(input_data, ctx):
+            def traverse(d):
+                if isinstance(d, dict):
+                    for k in list(d.keys()):
+                        v = d[k]
+                        if k == "output" and isinstance(v, str):
+                            try:
+                                parsed = json.loads(v)
+                                if isinstance(parsed, list):
+                                    d[k] = json.dumps(parsed, separators=(",", ":"))
+                            except (json.JSONDecodeError, ValueError):
+                                pass
+                        elif isinstance(v, dict):
+                            traverse(v)
+                return d
+
+            return traverse(input_data)
+
+        sfn_snapshot.add_transformer(GenericTransformer(_normalize_output_json_arrays))
+
         template = TST.load_sfn_template(TST.IO_PARALLEL_STATE)
         definition = json.dumps(template)
         exec_input = json.dumps({"input": {"key": "value"}})
