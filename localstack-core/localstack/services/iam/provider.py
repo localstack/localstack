@@ -44,6 +44,7 @@ from localstack.aws.api.iam import (
     DeletionTaskIdType,
     DeletionTaskStatusType,
     EntityAlreadyExistsException,
+    EntityType,
     GetAccessKeyLastUsedResponse,
     GetAccountPasswordPolicyResponse,
     GetGroupPolicyResponse,
@@ -70,6 +71,7 @@ from localstack.aws.api.iam import (
     ListAttachedGroupPoliciesResponse,
     ListAttachedRolePoliciesResponse,
     ListAttachedUserPoliciesResponse,
+    ListEntitiesForPolicyResponse,
     ListGroupPoliciesResponse,
     ListGroupsForUserResponse,
     ListGroupsResponse,
@@ -105,7 +107,10 @@ from localstack.aws.api.iam import (
     OpenIDConnectProviderUrlType,
     PasswordPolicy,
     Policy,
+    PolicyGroup,
+    PolicyRole,
     PolicyUsageType,
+    PolicyUser,
     PolicyVersion,
     ResetServiceSpecificCredentialResponse,
     Role,
@@ -1219,6 +1224,106 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             return ListPoliciesResponse(Policies=result, IsTruncated=True, Marker=next_marker)
         else:
             return ListPoliciesResponse(Policies=result, IsTruncated=False)
+
+    def list_entities_for_policy(
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        entity_filter: EntityType | None = None,
+        path_prefix: pathType | None = None,
+        policy_usage_filter: PolicyUsageType | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
+        **kwargs,
+    ) -> ListEntitiesForPolicyResponse:
+        store = self._get_store(context)
+
+        # Validate policy exists
+        self._assert_policy_exists(store, policy_arn)
+
+        # LocalManagedPolicy and AWSManagedPolicy filters always return empty in AWS for some reason
+        if entity_filter in (EntityType.LocalManagedPolicy, EntityType.AWSManagedPolicy):
+            return ListEntitiesForPolicyResponse(
+                PolicyGroups=[], PolicyUsers=[], PolicyRoles=[], IsTruncated=False
+            )
+
+        # Determine which entity types to search based on entity filter
+        search_users = entity_filter in (None, EntityType.User)
+        search_roles = entity_filter in (None, EntityType.Role)
+        search_groups = entity_filter in (None, EntityType.Group)
+
+        # Default policy_usage_filter to PermissionsPolicy if not specified
+        check_permissions_policy = policy_usage_filter in (None, PolicyUsageType.PermissionsPolicy)
+        check_permissions_boundary = policy_usage_filter == PolicyUsageType.PermissionsBoundary
+
+        policy_users: list[PolicyUser] = []
+        policy_roles: list[PolicyRole] = []
+        policy_groups: list[PolicyGroup] = []
+
+        # Search users
+        if search_users:
+            with self._user_lock:
+                for user_entity in store.USERS.values():
+                    user = user_entity.user
+                    user_path = user.get("Path", "/")
+                    if path_prefix and not user_path.startswith(path_prefix):
+                        continue
+
+                    matched = False
+                    if check_permissions_policy and policy_arn in user_entity.attached_policy_arns:
+                        matched = True
+                    if check_permissions_boundary:
+                        pb = user.get("PermissionsBoundary", {})
+                        if pb.get("PermissionsBoundaryArn") == policy_arn:
+                            matched = True
+
+                    if matched:
+                        policy_users.append(
+                            PolicyUser(UserName=user["UserName"], UserId=user["UserId"])
+                        )
+
+        # Search roles
+        if search_roles:
+            with self._role_lock:
+                for role_entity in store.ROLES.values():
+                    role = role_entity.role
+                    role_path = role.get("Path", "/")
+                    if path_prefix and not role_path.startswith(path_prefix):
+                        continue
+
+                    matched = False
+                    if check_permissions_policy and policy_arn in role_entity.attached_policy_arns:
+                        matched = True
+                    if check_permissions_boundary:
+                        pb = role.get("PermissionsBoundary", {})
+                        if pb.get("PermissionsBoundaryArn") == policy_arn:
+                            matched = True
+
+                    if matched:
+                        policy_roles.append(
+                            PolicyRole(RoleName=role["RoleName"], RoleId=role["RoleId"])
+                        )
+
+        # Search groups (groups don't support PermissionsBoundary)
+        if search_groups and check_permissions_policy:
+            with self._group_lock:
+                for group_entity in store.GROUPS.values():
+                    group = group_entity.group
+                    group_path = group.get("Path", "/")
+                    if path_prefix and not group_path.startswith(path_prefix):
+                        continue
+
+                    if policy_arn in group_entity.attached_policy_arns:
+                        policy_groups.append(
+                            PolicyGroup(GroupName=group["GroupName"], GroupId=group["GroupId"])
+                        )
+
+        return ListEntitiesForPolicyResponse(
+            PolicyUsers=policy_users,
+            PolicyRoles=policy_roles,
+            PolicyGroups=policy_groups,
+            IsTruncated=False,
+        )
 
     # ------------------------------ Policy Version Operations ------------------------------ #
 

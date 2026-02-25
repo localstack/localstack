@@ -2085,7 +2085,6 @@ class TestPolicyDocumentValidity:
         snapshot.match("response", response)
 
 
-@pytest.mark.skip(reason="Requires policy attachment implementation")
 class TestListEntitiesForPolicy:
     """Tests for list_entities_for_policy API - migrated from moto test_iam.py."""
 
