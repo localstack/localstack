@@ -146,11 +146,10 @@ class Tags:
         return self._tags.copy()
 
 
-#
 # Tagging operations for various services return tags in one of two formats:
 #
 # - Tag list: A list of dicts, each dict containing the fields 'Key' and 'Value' and appropriate tag key value pairs.
-#   Some services, like S3, use the fields 'key' and 'value'::
+#   Some services, like CodePipeline, use the fields 'key' and 'value'::
 #
 #         [
 #             {
@@ -169,7 +168,6 @@ class Tags:
 #             "Environment": "Production",
 #             "Owner": "LocalStack",
 #         }
-#
 
 
 def tag_list_to_map(
