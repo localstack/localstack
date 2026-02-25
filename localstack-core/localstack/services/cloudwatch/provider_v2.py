@@ -397,7 +397,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         """
         return {"metrics": self.cloudwatch_database.get_all_metric_data() or []}
 
-    # These tagging methods are overwritten in the Pro implementation.
     def _get_resource_tags(
         self, resource_arn: AmazonResourceName, account_id: str, region: str
     ) -> TagList:
