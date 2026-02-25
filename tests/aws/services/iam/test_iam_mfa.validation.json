@@ -1,4 +1,13 @@
 {
+  "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_mfa_device_already_attached": {
+    "last_validated_date": "2026-02-24T20:56:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.38,
+      "call": 1.11,
+      "teardown": 1.47,
+      "total": 2.96
+    }
+  },
   "tests/aws/services/iam/test_iam_mfa.py::TestVirtualMfaDevice::test_enable_mfa_device_errors": {
     "last_validated_date": "2026-02-17T09:45:31+00:00",
     "durations_in_seconds": {
