@@ -17,6 +17,33 @@
       "total": 0.2
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_parallel_state_mock_success[DEBUG]": {
+    "last_validated_date": "2026-02-24T22:49:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.0,
+      "total": 0.19
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_parallel_state_mock_success[INFO]": {
+    "last_validated_date": "2026-02-24T22:49:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 0.6,
+      "teardown": 0.0,
+      "total": 1.08
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_parallel_state_mock_success[TRACE]": {
+    "last_validated_date": "2026-02-24T22:49:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.0,
+      "total": 0.21
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[base]": {
     "last_validated_date": "2025-12-03T00:34:14+00:00",
     "durations_in_seconds": {
@@ -37,6 +64,33 @@
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[io_output_path]": {
     "last_validated_date": "2025-12-03T00:34:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.0,
+      "total": 0.2
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_parallel_state_mock_success[DEBUG]": {
+    "last_validated_date": "2026-02-24T22:49:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.0,
+      "total": 0.19
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_parallel_state_mock_success[INFO]": {
+    "last_validated_date": "2026-02-24T22:49:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.0,
+      "total": 0.2
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_parallel_state_mock_success[TRACE]": {
+    "last_validated_date": "2026-02-24T22:49:13+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 0.2,

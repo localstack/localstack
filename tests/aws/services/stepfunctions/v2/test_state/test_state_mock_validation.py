@@ -45,6 +45,7 @@ class TestStateMockValidation:
     STATES_REQUIRING_MOCKS = [
         pytest.param(TST.BASE_MAP_STATE, id="MapState"),
         pytest.param(TST.MAP_TASK_STATE, id="MapTaskState"),
+        pytest.param(TST.BASE_PARALLEL_STATE, id="ParallelState"),
     ]
 
     @markers.aws.validated
@@ -130,6 +131,63 @@ class TestStateMockValidation:
         template = TST.load_sfn_template(TST.BASE_MAP_STATE_WITH_RESULT_WRITER)
         definition = json.dumps(template)
         mock = {"result": json.dumps(["object is expected but array is provided instead"])}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_mock_result_is_not_array_on_parallel_state(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TST.load_sfn_template(TST.BASE_PARALLEL_STATE)
+        definition = json.dumps(template)
+        mock = {"result": json.dumps({"mock": "array is expected but object is provided instead"})}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_mock_result_array_size_mismatch_on_parallel_state(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TST.load_sfn_template(TST.BASE_PARALLEL_STATE)
+        definition = json.dumps(template)
+        mock = {"result": json.dumps([{"branch1": "result"}])}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    @markers.aws.validated
+    def test_parallel_state_empty_branches(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        definition = json.dumps(
+            {
+                "Type": "Parallel",
+                "Branches": [],
+                "End": True,
+            }
+        )
+        mock = {"result": json.dumps([])}
         with pytest.raises(Exception) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,

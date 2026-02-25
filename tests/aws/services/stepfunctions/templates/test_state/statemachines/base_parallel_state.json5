@@ -1,0 +1,24 @@
+{
+  "Type": "Parallel",
+  "Branches": [
+    {
+      "StartAt": "B1",
+      "States": {
+        "B1": {
+          "Type": "Pass",
+          "End": true
+        }
+      }
+    },
+    {
+      "StartAt": "B2",
+      "States": {
+        "B2": {
+          "Type": "Pass",
+          "End": true
+        }
+      }
+    }
+  ],
+  "End": true
+}

@@ -89,6 +89,13 @@ class TestStateTemplate(TemplateLoader):
 
     MAP_TASK_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_task_state.json5")
 
+    BASE_PARALLEL_STATE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_parallel_state.json5"
+    )
+    IO_PARALLEL_STATE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/io_parallel_state.json5"
+    )
+
 
 class TestStateMachineTemplate(TemplateLoader):
     BASE_MULTI_STATE_MACHINE: Final[str] = os.path.join(
