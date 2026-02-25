@@ -669,7 +669,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_errors": {
-    "recorded-date": "11-02-2026, 10:59:27",
+    "recorded-date": "24-02-2026, 14:43:43",
     "recorded-content": {
       "create-access-key-unknown-user-error": {
         "Error": {
@@ -696,7 +696,7 @@
       "get-last-used-nonexistent-key-error": {
         "Error": {
           "Code": "AccessDenied",
-          "Message": "User: arn:<partition>:sts::111111111111:assumed-role/AWSReservedSSO_AWSAdministratorAccess_2af0fc60fb59da5a/daniel.fangl@localstack.cloud is not authorized to perform iam:GetAccessKeyLastUsed on resource: access key AKIAIOSFODNN7EXAMPLE",
+          "Message": "User: <caller> is not authorized to perform iam:GetAccessKeyLastUsed on resource: access key AKIAIOSFODNN7EXAMPLE",
           "Type": "Sender"
         },
         "ResponseMetadata": {

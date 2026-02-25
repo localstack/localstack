@@ -9,12 +9,12 @@
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_errors": {
-    "last_validated_date": "2026-02-11T10:59:27+00:00",
+    "last_validated_date": "2026-02-24T14:43:43+00:00",
     "durations_in_seconds": {
-      "setup": 0.8,
-      "call": 1.41,
-      "teardown": 1.21,
-      "total": 3.42
+      "setup": 1.25,
+      "call": 1.51,
+      "teardown": 1.33,
+      "total": 4.09
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_last_used": {

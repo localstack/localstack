@@ -279,7 +279,6 @@ class TestUserLoginProfile:
         snapshot.match("delete-login-profile-unknown-user-error", exc.value.response)
 
 
-@pytest.mark.skip(reason="Access keys not yet migrated to native IAM implementation")
 class TestUserAccessKeys:
     """Tests for user access key operations."""
 
@@ -362,6 +361,7 @@ class TestUserAccessKeys:
         snapshot.match("create-third-access-key-error", exc.value.response)
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="LastUsedDate tracking requires integration with auth layer")
     def test_access_key_last_used(
         self, create_user, aws_client, snapshot, aws_client_factory, region_name
     ):
@@ -407,6 +407,8 @@ class TestUserAccessKeys:
     def test_access_key_errors(self, create_user, aws_client, snapshot):
         """Test error cases for access key operations."""
         snapshot.add_transformer(snapshot.transform.key_value("AccessKeyId"))
+        caller_principal = aws_client.sts.get_caller_identity()["Arn"]
+        snapshot.add_transformer(snapshot.transform.regex(caller_principal, "<caller>"))
         user_name = f"user-{short_uid()}"
         create_user(UserName=user_name)
 
@@ -648,7 +650,6 @@ class TestUserTags:
         snapshot.match("list-tags-nonexistent-user-error", exc.value.response)
 
 
-@pytest.mark.skip(reason="Groups not yet migrated to native IAM implementation")
 class TestUserGroups:
     """Tests for user-group membership operations."""
 
