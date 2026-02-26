@@ -2190,8 +2190,8 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                             User=User(
                                 UserId=context.account_id,
                                 Arn=caller_arn,
-                                CreateDate=datetime.now(),
-                                PasswordLastUsed=datetime.now(),
+                                CreateDate=datetime.now(tz=UTC),
+                                PasswordLastUsed=datetime.now(tz=UTC),
                             )
                         )
                     raise
@@ -3087,7 +3087,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         password = self._generate_service_password()
         credential_id = self._generate_credential_id(context)
         return ServiceSpecificCredential(
-            CreateDate=datetime.now(),
+            CreateDate=datetime.now(tz=UTC),
             ServiceName=service_name,
             ServiceUserName=f"{user_name}-at-{context.account_id}",
             ServicePassword=password,
@@ -3547,7 +3547,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 Fingerprint=fingerprint,
                 SSHPublicKeyBody=ssh_public_key_body,
                 Status=statusType.Active,
-                UploadDate=datetime.now(),
+                UploadDate=datetime.now(tz=UTC),
             )
 
             user_entity.ssh_public_keys[ssh_public_key_id] = ssh_key
