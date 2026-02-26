@@ -1,5 +1,3 @@
-import secrets
-import string
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TypedDict
@@ -36,34 +34,6 @@ MIN_SESSION_DURATION = 900  # 15 minutes
 MAX_SESSION_DURATION = 43200  # 12 hours
 MAX_ROLE_SESSION_NAME_LENGTH = 64
 MAX_FEDERATION_TOKEN_POLICY_LENGTH = 2048
-
-
-def generate_access_key_id(prefix: str = "ASIA") -> str:
-    """Generate a temporary access key ID (starts with ASIA for temp credentials)."""
-    chars = string.ascii_uppercase + string.digits
-    suffix = "".join(secrets.choice(chars) for _ in range(16))
-    return f"{prefix}{suffix}"
-
-
-def generate_secret_access_key() -> str:
-    """Generate a secret access key (40 characters)."""
-    chars = string.ascii_letters + string.digits + "+/"
-    return "".join(secrets.choice(chars) for _ in range(40))
-
-
-def generate_session_token() -> str:
-    """Generate a session token."""
-    chars = string.ascii_letters + string.digits + "+/="
-    prefix = "FQoGZXIvYXdzE"
-    body = "".join(secrets.choice(chars) for _ in range(343))
-    return f"{prefix}{body}"
-
-
-def generate_role_id() -> str:
-    """Generate an assumed role ID (starts with AROA)."""
-    chars = string.ascii_uppercase + string.digits
-    suffix = "".join(secrets.choice(chars) for _ in range(17))
-    return f"AROA{suffix}"
 
 
 @dataclass

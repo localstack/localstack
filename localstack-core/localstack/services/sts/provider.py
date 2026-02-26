@@ -46,6 +46,12 @@ from localstack.aws.api.sts import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.services.iam.utils import (
+    generate_role_id,
+    generate_secret_access_key,
+    generate_session_token,
+    generate_temp_access_key_id,
+)
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sts.models import (
     DEFAULT_SESSION_DURATION,
@@ -54,10 +60,6 @@ from localstack.services.sts.models import (
     MIN_SESSION_DURATION,
     SessionConfig,
     TemporaryCredentials,
-    generate_access_key_id,
-    generate_role_id,
-    generate_secret_access_key,
-    generate_session_token,
     sts_stores_v2,
 )
 from localstack.state import StateVisitor
@@ -132,7 +134,7 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         source_identity: str | None = None,
     ) -> TemporaryCredentials:
         """Create and store temporary credentials."""
-        access_key_id = generate_access_key_id()
+        access_key_id = generate_temp_access_key_id(account_id)
         secret_access_key = generate_secret_access_key()
         session_token = generate_session_token()
         expiration = datetime.now(UTC) + timedelta(seconds=duration_seconds)
@@ -379,7 +381,7 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         role_name = role_resource.split("/")[-1] if role_resource else "unknown"
 
         # Generate role ID and assumed role ARN
-        role_id = generate_role_id()
+        role_id = generate_role_id(target_account_id)
         if role := self._get_role_from_arn(role_arn):
             role_id = role["RoleId"]
         assumed_role_id = f"{role_id}:{role_session_name}"
@@ -438,7 +440,7 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         role_name = role_resource.split("/")[-1] if role_resource else "unknown"
 
         # Generate assumed role info
-        role_id = generate_role_id()
+        role_id = generate_role_id(target_account_id)
         if role := self._get_role_from_arn(role_arn):
             role_id = role["RoleId"]
         assumed_role_id = f"{role_id}:{role_session_name}"
@@ -517,7 +519,7 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         role_name = role_resource.split("/")[-1] if role_resource else "unknown"
 
         # Generate assumed role info
-        role_id = generate_role_id()
+        role_id = generate_role_id(target_account_id)
         if role := self._get_role_from_arn(role_arn):
             role_id = role["RoleId"]
         assumed_role_id = f"{role_id}:{session_name}"
