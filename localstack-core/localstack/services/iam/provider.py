@@ -76,6 +76,7 @@ from localstack.aws.api.iam import (
     InvalidInputException,
     LimitExceededException,
     ListAccessKeysResponse,
+    ListAccountAliasesResponse,
     ListAttachedGroupPoliciesResponse,
     ListAttachedRolePoliciesResponse,
     ListAttachedUserPoliciesResponse,
@@ -151,6 +152,7 @@ from localstack.aws.api.iam import (
     UserDetail,
     VirtualMFADevice,
     accessKeyIdType,
+    accountAliasType,
     allUsers,
     arnType,
     assertionEncryptionModeType,
@@ -5006,6 +5008,34 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         }
 
         return GetAccountSummaryResponse(SummaryMap=summary_map)
+
+    # ------------------------------ Account Aliases ------------------------------ #
+
+    @handler("CreateAccountAlias")
+    def create_account_alias(
+        self, context: RequestContext, account_alias: accountAliasType, **kwargs
+    ) -> None:
+        store = self._get_store(context)
+        store.ACCOUNT_ALIAS = account_alias
+
+    @handler("DeleteAccountAlias")
+    def delete_account_alias(
+        self, context: RequestContext, account_alias: accountAliasType, **kwargs
+    ) -> None:
+        store = self._get_store(context)
+        store.ACCOUNT_ALIAS = None
+
+    @handler("ListAccountAliases")
+    def list_account_aliases(
+        self,
+        context: RequestContext,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs,
+    ) -> ListAccountAliasesResponse:
+        store = self._get_store(context)
+        aliases = [store.ACCOUNT_ALIAS] if store.ACCOUNT_ALIAS else []
+        return ListAccountAliasesResponse(AccountAliases=aliases, IsTruncated=False)
 
     # ------------------------------ Account Authorization Details ------------------------------ #
 
