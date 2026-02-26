@@ -200,5 +200,8 @@ class IamStore(BaseStore):
     # Account-scoped (IAM is global within an account)
     CREDENTIAL_REPORT: CredentialReportEntity | None = CrossRegionAttribute(default=None)
 
+    # Account alias (max 1 per account)
+    ACCOUNT_ALIAS: str | None = CrossRegionAttribute(default=None)
+
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)
