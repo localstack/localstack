@@ -30,6 +30,7 @@ from localstack.services.stepfunctions.backend.activity import Activity
 from localstack.services.stepfunctions.backend.execution import (
     BaseExecutionWorkerCommunication,
     Execution,
+    get_exec_worker,
 )
 from localstack.services.stepfunctions.backend.state_machine import StateMachineInstance
 from localstack.services.stepfunctions.backend.test_state.execution_worker import (
@@ -41,7 +42,6 @@ LOG = logging.getLogger(__name__)
 
 
 class TestStateExecution(Execution):
-    exec_worker: TestStateExecutionWorker | None
     next_state: str | None
     state_name: str | None
     mock: TestStateMock | None
@@ -51,10 +51,11 @@ class TestStateExecution(Execution):
         _execution: TestStateExecution
 
         def terminated(self) -> None:
-            exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
+            exec_worker = get_exec_worker(self.execution.exec_arn)
+            exit_program_state: ProgramState = exec_worker.env.program_state()
             if isinstance(exit_program_state, ProgramChoiceSelected):
                 self.execution.exec_status = ExecutionStatus.SUCCEEDED
-                self.execution.output = self.execution.exec_worker.env.states.get_input()
+                self.execution.output = exec_worker.env.states.get_input()
                 self.execution.next_state = exit_program_state.next_state_name
             elif isinstance(exit_program_state, ProgramCaughtError):
                 self.execution.exec_status = ExecutionStatus.SUCCEEDED

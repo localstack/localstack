@@ -14,7 +14,6 @@ from localstack.aws.api.stepfunctions import (
     ExecutionStatus,
     GetExecutionHistoryOutput,
     HistoryEventList,
-    InvalidName,
     SensitiveCause,
     SensitiveError,
     StartExecutionOutput,
@@ -70,11 +69,12 @@ class BaseExecutionWorkerCommunication(ExecutionWorkerCommunication):
         self.execution = execution
 
     def _reflect_execution_status(self):
-        exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
+        exec_worker = get_exec_worker(self.execution.exec_arn)
+        exit_program_state: ProgramState = exec_worker.env.program_state()
         self.execution.stop_date = datetime.datetime.now(tz=datetime.UTC)
         if isinstance(exit_program_state, ProgramEnded):
             self.execution.exec_status = ExecutionStatus.SUCCEEDED
-            self.execution.output = self.execution.exec_worker.env.states.get_input()
+            self.execution.output = exec_worker.env.states.get_input()
         elif isinstance(exit_program_state, ProgramStopped):
             self.execution.exec_status = ExecutionStatus.ABORTED
         elif isinstance(exit_program_state, ProgramError):
@@ -91,6 +91,13 @@ class BaseExecutionWorkerCommunication(ExecutionWorkerCommunication):
     def terminated(self) -> None:
         self._reflect_execution_status()
         self.execution.publish_execution_status_change_event()
+
+
+EXEC_ARN_TO_WORKER: dict[str, ExecutionWorker] = {}
+
+
+def get_exec_worker(arn: str) -> ExecutionWorker | None:
+    return EXEC_ARN_TO_WORKER.get(arn)
 
 
 class Execution:
@@ -123,8 +130,6 @@ class Execution:
 
     error: SensitiveError | None
     cause: SensitiveCause | None
-
-    exec_worker: ExecutionWorker | None
 
     _activity_store: dict[Arn, Activity]
 
@@ -168,7 +173,6 @@ class Execution:
         self.stop_date = None
         self.output = None
         self.output_details = CloudWatchEventsExecutionDataDetails(included=True)
-        self.exec_worker = None
         self.error = None
         self.cause = None
         self._activity_store = activity_store
@@ -256,7 +260,8 @@ class Execution:
         return item
 
     def to_history_output(self) -> GetExecutionHistoryOutput:
-        env = self.exec_worker.env
+        exec_worker = get_exec_worker(self.exec_arn)
+        env = exec_worker.env
         event_history: HistoryEventList = []
         if env is not None:
             # The execution has not started yet.
@@ -305,20 +310,6 @@ class Execution:
             activity_store=self._activity_store,
             local_mock_test_case=self.local_mock_test_case,
         )
-
-    def start(self) -> None:
-        # TODO: checks exec_worker does not exists already?
-        if self.exec_worker:
-            raise InvalidName()  # TODO.
-        self.exec_worker = self._get_start_execution_worker()
-        self.exec_status = ExecutionStatus.RUNNING
-        self.publish_execution_status_change_event()
-        self.exec_worker.start()
-
-    def stop(self, stop_date: datetime.datetime, error: str | None, cause: str | None):
-        exec_worker: ExecutionWorker | None = self.exec_worker
-        if exec_worker:
-            exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
 
     def publish_execution_status_change_event(self):
         input_value = (
