@@ -1841,10 +1841,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 if user_name in group_entity.member_user_names:
                     groups.append(Group(group_entity.group))
 
-        # Sort by group name
-        sorted_groups = sorted(groups, key=lambda g: g.get("GroupName", "").lower())
-
-        return ListGroupsForUserResponse(Groups=sorted_groups, IsTruncated=False)
+        return ListGroupsForUserResponse(Groups=groups, IsTruncated=False)
 
     # ------------------------------ Group Inline Policy Operations ------------------------------ #
 
@@ -1983,9 +1980,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 attached_policies.append(
                     AttachedPolicy(PolicyName=policy_name, PolicyArn=policy_arn)
                 )
-
-        # Sort by policy name
-        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower())
 
         return ListAttachedGroupPoliciesResponse(
             AttachedPolicies=attached_policies, IsTruncated=False
@@ -2585,9 +2579,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                     AttachedPolicy(PolicyName=policy_name, PolicyArn=policy_arn)
                 )
 
-        # Sort by policy name (case-insensitive, as AWS does)
-        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower(), reverse=True)
-
         paginated_list = PaginatedList(attached_policies)
 
         def _token_generator(policy: AttachedPolicy) -> str:
@@ -2700,9 +2691,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 attached_policies.append(
                     AttachedPolicy(PolicyName=policy_name, PolicyArn=policy_arn)
                 )
-
-        # Sort by policy name (case-insensitive, as AWS does)
-        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower())
 
         paginated_list = PaginatedList(attached_policies)
 
