@@ -300,7 +300,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
     def __init__(self):
         apply_iam_patches()
-        self.policy_simulator = BasicIAMPolicySimulator()
+        self.policy_simulator = BasicIAMPolicySimulator(self)
         self._policy_lock = threading.Lock()
         self._role_lock = threading.Lock()
         self._group_lock = threading.Lock()
