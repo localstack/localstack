@@ -46,9 +46,6 @@ ACCOUNT_SPECIFIC_SUMMARY_KEYS = [
     "Users",
 ]
 
-# TODO remove once implemented
-pytestmark = pytest.mark.skip
-
 
 @pytest.fixture
 def snapshot_transformers(snapshot):

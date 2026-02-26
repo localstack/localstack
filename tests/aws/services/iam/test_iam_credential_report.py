@@ -11,9 +11,6 @@ from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
-# TODO remove once implemented
-pytestmark = pytest.mark.skip
-
 
 class TestIAMCredentialReport:
     """Tests for IAM credential report generation and retrieval.
@@ -22,6 +19,7 @@ class TestIAMCredentialReport:
 
     @markers.aws.validated
     def test_get_credential_report_before_generated(self, aws_client, create_user, snapshot):
+        """This test can ONLY be executed once per account. Be careful!"""
         with pytest.raises(ClientError) as exc:
             aws_client.iam.get_credential_report()
         snapshot.match("get-credential-report-without-generate-error", exc.value.response)
