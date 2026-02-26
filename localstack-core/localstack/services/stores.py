@@ -30,11 +30,13 @@ While not recommended, store classes may define member helper functions and prop
 """
 
 import re
+from collections import defaultdict
 from collections.abc import Callable, Iterator
 from threading import RLock
 from typing import Any, TypeVar
 
 from localstack import config
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 
 LOCAL_ATTR_PREFIX = "attr_"
@@ -94,18 +96,20 @@ class CrossRegionAttribute:
     def __get__(self, obj: BaseStoreType, objtype=None) -> Any:
         self._check_region_store_association(obj)
 
-        if self.name not in obj._global:
+        partition = get_partition(obj._region_name)
+        if self.name not in obj._global[partition]:
             if isinstance(self.default, Callable):
-                obj._global[self.name] = self.default()
+                obj._global[partition][self.name] = self.default()
             else:
-                obj._global[self.name] = self.default
+                obj._global[partition][self.name] = self.default
 
-        return obj._global[self.name]
+        return obj._global[partition][self.name]
 
     def __set__(self, obj: BaseStoreType, value: Any):
         self._check_region_store_association(obj)
 
-        obj._global[self.name] = value
+        partition = get_partition(obj._region_name)
+        obj._global[partition][self.name] = value
 
     def _check_region_store_association(self, obj):
         if not hasattr(obj, "_global"):
@@ -135,18 +139,20 @@ class CrossAccountAttribute:
     def __get__(self, obj: BaseStoreType, objtype=None) -> Any:
         self._check_account_store_association(obj)
 
-        if self.name not in obj._universal:
+        partition = get_partition(obj._region_name)
+        if self.name not in obj._universal[partition]:
             if isinstance(self.default, Callable):
-                obj._universal[self.name] = self.default()
+                obj._universal[partition][self.name] = self.default()
             else:
-                obj._universal[self.name] = self.default
+                obj._universal[partition][self.name] = self.default
 
-        return obj._universal[self.name]
+        return obj._universal[partition][self.name]
 
     def __set__(self, obj: BaseStoreType, value: Any):
         self._check_account_store_association(obj)
 
-        obj._universal[self.name] = value
+        partition = get_partition(obj._region_name)
+        obj._universal[partition][self.name] = value
 
     def _check_account_store_association(self, obj):
         if not hasattr(obj, "_universal"):
@@ -169,8 +175,10 @@ class BaseStore:
     _service_name: str
     _account_id: str
     _region_name: str
-    _global: dict
-    _universal: dict
+    # dict partition -> data
+    _global: dict[str, dict]
+    # dict partition -> data
+    _universal: dict[str, dict]
 
     def __repr__(self):
         try:
@@ -215,7 +223,7 @@ class RegionBundle[BaseStoreType](dict):
         # Keeps track of all cross-region attributes. This dict is maintained at
         # a region level (hence in RegionBundle). A ref is passed to every store
         # intialised in this region so that backref is possible.
-        self._global = {}
+        self._global = defaultdict(dict)
 
         # Keeps track of all cross-account attributes. This dict is maintained at
         # the account level (ie. AccountRegionBundle). A ref is passed down from
@@ -300,7 +308,7 @@ class AccountRegionBundle[BaseStoreType](dict):
         # Keeps track of all cross-account attributes. This dict is maintained at
         # the account level (hence in AccountRegionBundle). A ref is passed to
         # every region bundle, which in turn passes it to every store in it.
-        self._universal = {}
+        self._universal = defaultdict(dict)
 
     def __getitem__(self, account_id: str) -> RegionBundle[BaseStoreType]:
         if self.validate and not re.match(r"\d{12}", account_id):
