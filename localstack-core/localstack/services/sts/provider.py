@@ -19,7 +19,6 @@ from localstack.aws.api.sts import (
     tokenCodeType,
     unrestrictedSessionPolicyDocumentType,
 )
-from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sts.models import SessionConfig, sts_stores
@@ -48,9 +47,6 @@ class ValidationError(CommonServiceException):
 
 
 class StsProvider(StsApi, ServiceLifecycleHook):
-    def __init__(self):
-        apply_iam_patches()
-
     def accept_state_visitor(self, visitor: StateVisitor):
         from moto.sts.models import sts_backends
 
