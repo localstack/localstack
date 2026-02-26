@@ -9,8 +9,6 @@ from datetime import UTC, datetime, timedelta
 from xml.etree import ElementTree
 
 from botocore.exceptions import ClientError
-from moto.iam.models import User as MotoUser
-from moto.iam.models import iam_backends
 
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.sts import (
@@ -46,6 +44,8 @@ from localstack.aws.api.sts import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.services.iam.models import UserEntity
+from localstack.services.iam.models import iam_stores as iam_stores
 from localstack.services.iam.utils import (
     generate_role_id,
     generate_secret_access_key,
@@ -58,9 +58,8 @@ from localstack.services.sts.models import (
     MAX_FEDERATION_TOKEN_POLICY_LENGTH,
     MAX_ROLE_SESSION_NAME_LENGTH,
     MIN_SESSION_DURATION,
-    SessionConfig,
     TemporaryCredentials,
-    sts_stores_v2,
+    sts_stores,
 )
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
@@ -102,11 +101,11 @@ class PackedPolicyTooLargeException(ServiceException):
 
 class StsProvider(StsApi, ServiceLifecycleHook):
     def accept_state_visitor(self, visitor: StateVisitor):
-        visitor.visit(sts_stores_v2)
+        visitor.visit(sts_stores)
 
     def _get_store(self, account_id: str, region: str):
         """Get the STS store for the given account and region."""
-        return sts_stores_v2[account_id][region]
+        return sts_stores[account_id][region]
 
     def _get_role_from_arn(self, role_arn: str):
         try:
@@ -130,8 +129,10 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         arn: str,
         user_id: str,
         duration_seconds: int,
-        session_config: SessionConfig | None = None,
         source_identity: str | None = None,
+        tags: dict | None = None,
+        transitive_tags: list[str] | None = None,
+        iam_context: dict | None = None,
     ) -> TemporaryCredentials:
         """Create and store temporary credentials."""
         access_key_id = generate_temp_access_key_id(account_id)
@@ -148,14 +149,14 @@ class StsProvider(StsApi, ServiceLifecycleHook):
             arn=arn,
             user_id=user_id,
             source_identity=source_identity,
+            tags=tags or {},
+            transitive_tags=transitive_tags or [],
+            iam_context=iam_context or {},
         )
 
         # Store credentials globally for lookup
         store = self._get_store(account_id, "us-east-1")
         store.credentials[access_key_id] = creds
-
-        if session_config:
-            store.sessions[access_key_id] = session_config
 
         return creds
 
@@ -178,12 +179,15 @@ class StsProvider(StsApi, ServiceLifecycleHook):
             return None
         return creds
 
-    # TODO use iam stores when service is internalized
     def _lookup_user_by_access_key_id(
-        self, access_key_id: str, account_id, partition
-    ) -> MotoUser | None:
-        backend = iam_backends[account_id][partition]
-        return backend.get_user_from_access_key_id(access_key_id)
+        self, access_key_id: str, account_id: str, region: str
+    ) -> UserEntity | None:
+        """Look up a user by their access key ID from the IAM store."""
+        iam_store = iam_stores[account_id][region]
+        user_name = iam_store.ACCESS_KEY_INDEX.get(access_key_id)
+        if user_name:
+            return iam_store.USERS.get(user_name)
+        return None
 
     def get_caller_identity(self, context: RequestContext, **kwargs) -> GetCallerIdentityResponse:
         """Get the identity of the caller."""
@@ -201,14 +205,14 @@ class StsProvider(StsApi, ServiceLifecycleHook):
                     Arn=temp_creds.arn,
                 )
 
-            user = self._lookup_user_by_access_key_id(
-                access_key_id, context.account_id, context.partition
+            user_entity = self._lookup_user_by_access_key_id(
+                access_key_id, context.account_id, context.region
             )
-            if user:
+            if user_entity:
                 return GetCallerIdentityResponse(
-                    UserId=user.id,
-                    Account=user.account_id,
-                    Arn=user.arn,
+                    UserId=user_entity.user["UserId"],
+                    Account=context.account_id,
+                    Arn=user_entity.user["Arn"],
                 )
 
         # Default: return root identity
@@ -326,13 +330,14 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         # Get target account from role ARN
         target_account_id = extract_account_id_from_arn(role_arn) or context.account_id
 
-        # Get the caller's existing session config for tag propagation
+        # Get the caller's existing credentials for tag propagation
         access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
         store = self._get_store(target_account_id, "us-east-1")
-        existing_session_config = store.sessions.get(access_key_id, {}) if access_key_id else {}
+        existing_creds = store.credentials.get(access_key_id) if access_key_id else None
 
         # Process tags
-        session_config = None
+        transformed_tags = {}
+        transitive_list = []
         if tags:
             tag_keys = {tag["Key"].lower() for tag in tags}
 
@@ -343,8 +348,8 @@ class StsProvider(StsApi, ServiceLifecycleHook):
                 )
 
             # Check if trying to override transitive tags
-            if existing_session_config:
-                existing_transitive = set(existing_session_config.get("transitive_tags", []))
+            if existing_creds:
+                existing_transitive = set(existing_creds.transitive_tags)
                 if existing_transitive.intersection(tag_keys):
                     raise InvalidParameterValueError(
                         "One of the specified transitive tag keys can't be set because it "
@@ -359,22 +364,16 @@ class StsProvider(StsApi, ServiceLifecycleHook):
                         "The specified transitive tag key must be included in the requested tags."
                     )
 
-            # Build session config
+            # Build session tags
             transformed_tags = {tag["Key"].lower(): tag for tag in tags}
             transitive_list = [key.lower() for key in (transitive_tag_keys or [])]
 
             # Propagate transitive tags from existing session
-            if existing_session_config:
-                for tag_key in existing_session_config.get("transitive_tags", []):
-                    if tag_key in existing_session_config.get("tags", {}):
-                        transformed_tags[tag_key] = existing_session_config["tags"][tag_key]
-                transitive_list.extend(existing_session_config.get("transitive_tags", []))
-
-            session_config = SessionConfig(
-                tags=transformed_tags,
-                transitive_tags=transitive_list,
-                iam_context={},
-            )
+            if existing_creds:
+                for tag_key in existing_creds.transitive_tags:
+                    if tag_key in existing_creds.tags:
+                        transformed_tags[tag_key] = existing_creds.tags[tag_key]
+                transitive_list.extend(existing_creds.transitive_tags)
 
         # Extract role name from ARN
         role_resource = extract_resource_from_arn(role_arn)
@@ -396,8 +395,9 @@ class StsProvider(StsApi, ServiceLifecycleHook):
             arn=assumed_role_arn,
             user_id=assumed_role_id,
             duration_seconds=duration,
-            session_config=session_config,
             source_identity=source_identity,
+            tags=transformed_tags if transformed_tags else None,
+            transitive_tags=transitive_list if transitive_list else None,
         )
 
         return AssumeRoleResponse(

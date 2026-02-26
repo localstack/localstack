@@ -129,7 +129,8 @@ def generate_access_key_id(account_id: str) -> str:
 
 def generate_temp_access_key_id(account_id: str) -> str:
     """Generate a temporary access key ID for STS credentials (starts with ASIA)."""
-    return generate_iam_identifier(account_id, prefix="ASIA", total_length=20)
+    prefix = "ASIA" if config.PARITY_AWS_ACCESS_KEY_ID else "LSIA"
+    return generate_iam_identifier(account_id, prefix=prefix, total_length=20)
 
 
 def generate_secret_access_key() -> str:
