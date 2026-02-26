@@ -1875,576 +1875,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm[query]": {
-    "recorded-date": "19-09-2025, 21:08:24",
-    "recorded-content": {
-      "describe-alarm": {
-        "CompositeAlarms": [],
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmDescription": "testing cloudwatch alarms",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [
-              {
-                "Name": "InstanceId",
-                "Value": "abc"
-              }
-            ],
-            "EvaluationPeriods": 1,
-            "InsufficientDataActions": [],
-            "MetricName": "my-metric1",
-            "Namespace": "<namespace:1>",
-            "OKActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "Period": 10,
-            "StateReason": "Unchecked: Initial alarm creation",
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "INSUFFICIENT_DATA",
-            "Statistic": "Average",
-            "Threshold": 21.0,
-            "TreatMissingData": "ignore",
-            "Unit": "Seconds"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "alarm-triggered-sqs-msg": {
-        "AWSAccountId": "111111111111",
-        "AlarmActions": [
-          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-        ],
-        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-        "AlarmConfigurationUpdatedTimestamp": "date",
-        "AlarmDescription": "testing cloudwatch alarms",
-        "AlarmName": "<alarm-name:1>",
-        "InsufficientDataActions": [],
-        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
-        "NewStateValue": "ALARM",
-        "OKActions": [
-          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-        ],
-        "OldStateValue": "INSUFFICIENT_DATA",
-        "Region": "<region-name-full:1>",
-        "StateChangeTime": "date",
-        "Trigger": {
-          "ComparisonOperator": "GreaterThanThreshold",
-          "Dimensions": [
-            {
-              "name": "InstanceId",
-              "value": "abc"
-            }
-          ],
-          "EvaluateLowSampleCountPercentile": "",
-          "EvaluationPeriods": 1,
-          "MetricName": "my-metric1",
-          "Namespace": "<namespace:1>",
-          "Period": 10,
-          "Statistic": "AVERAGE",
-          "StatisticType": "Statistic",
-          "Threshold": 21.0,
-          "TreatMissingData": "ignore",
-          "Unit": "Seconds"
-        }
-      },
-      "describe-alarm-history": {
-        "AlarmHistoryItems": [
-          {
-            "AlarmName": "<alarm-name:1>",
-            "AlarmType": "MetricAlarm",
-            "HistoryData": {
-              "version": "1.0",
-              "oldState": {
-                "stateValue": "INSUFFICIENT_DATA",
-                "stateReason": "Unchecked: Initial alarm creation"
-              },
-              "newState": {
-                "stateValue": "ALARM",
-                "stateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
-                "stateReasonData": {
-                  "version": "1.0",
-                  "queryDate": "date",
-                  "startDate": "date",
-                  "unit": "Seconds",
-                  "statistic": "Average",
-                  "period": 10,
-                  "recentDatapoints": [
-                    21.5
-                  ],
-                  "threshold": 21.0,
-                  "evaluatedDatapoints": [
-                    {
-                      "timestamp": "date",
-                      "sampleCount": 2.0,
-                      "value": 21.5
-                    }
-                  ]
-                }
-              }
-            },
-            "HistoryItemType": "StateUpdate",
-            "HistorySummary": "Alarm updated from INSUFFICIENT_DATA to ALARM",
-            "Timestamp": "timestamp"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-alarms-for-metric": {
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmDescription": "testing cloudwatch alarms",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [
-              {
-                "Name": "InstanceId",
-                "Value": "abc"
-              }
-            ],
-            "EvaluationPeriods": 1,
-            "InsufficientDataActions": [],
-            "MetricName": "my-metric1",
-            "Namespace": "<namespace:1>",
-            "OKActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "Period": 10,
-            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
-            "StateReasonData": {
-              "version": "1.0",
-              "queryDate": "date",
-              "startDate": "date",
-              "unit": "Seconds",
-              "statistic": "Average",
-              "period": 10,
-              "recentDatapoints": [
-                21.5
-              ],
-              "threshold": 21.0,
-              "evaluatedDatapoints": [
-                {
-                  "timestamp": "date",
-                  "sampleCount": 2.0,
-                  "value": 21.5
-                }
-              ]
-            },
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "ALARM",
-            "Statistic": "Average",
-            "Threshold": 21.0,
-            "TreatMissingData": "ignore",
-            "Unit": "Seconds"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm[json]": {
-    "recorded-date": "19-09-2025, 21:08:43",
-    "recorded-content": {
-      "describe-alarm": {
-        "CompositeAlarms": [],
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmDescription": "testing cloudwatch alarms",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [
-              {
-                "Name": "InstanceId",
-                "Value": "abc"
-              }
-            ],
-            "EvaluationPeriods": 1,
-            "InsufficientDataActions": [],
-            "MetricName": "my-metric1",
-            "Namespace": "<namespace:1>",
-            "OKActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "Period": 10,
-            "StateReason": "Unchecked: Initial alarm creation",
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "INSUFFICIENT_DATA",
-            "Statistic": "Average",
-            "Threshold": 21.0,
-            "TreatMissingData": "ignore",
-            "Unit": "Seconds"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "alarm-triggered-sqs-msg": {
-        "AWSAccountId": "111111111111",
-        "AlarmActions": [
-          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-        ],
-        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-        "AlarmConfigurationUpdatedTimestamp": "date",
-        "AlarmDescription": "testing cloudwatch alarms",
-        "AlarmName": "<alarm-name:1>",
-        "InsufficientDataActions": [],
-        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
-        "NewStateValue": "ALARM",
-        "OKActions": [
-          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-        ],
-        "OldStateValue": "INSUFFICIENT_DATA",
-        "Region": "<region-name-full:1>",
-        "StateChangeTime": "date",
-        "Trigger": {
-          "ComparisonOperator": "GreaterThanThreshold",
-          "Dimensions": [
-            {
-              "name": "InstanceId",
-              "value": "abc"
-            }
-          ],
-          "EvaluateLowSampleCountPercentile": "",
-          "EvaluationPeriods": 1,
-          "MetricName": "my-metric1",
-          "Namespace": "<namespace:1>",
-          "Period": 10,
-          "Statistic": "AVERAGE",
-          "StatisticType": "Statistic",
-          "Threshold": 21.0,
-          "TreatMissingData": "ignore",
-          "Unit": "Seconds"
-        }
-      },
-      "describe-alarm-history": {
-        "AlarmHistoryItems": [
-          {
-            "AlarmName": "<alarm-name:1>",
-            "AlarmType": "MetricAlarm",
-            "HistoryData": {
-              "version": "1.0",
-              "oldState": {
-                "stateValue": "INSUFFICIENT_DATA",
-                "stateReason": "Unchecked: Initial alarm creation"
-              },
-              "newState": {
-                "stateValue": "ALARM",
-                "stateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
-                "stateReasonData": {
-                  "version": "1.0",
-                  "queryDate": "date",
-                  "startDate": "date",
-                  "unit": "Seconds",
-                  "statistic": "Average",
-                  "period": 10,
-                  "recentDatapoints": [
-                    21.5
-                  ],
-                  "threshold": 21.0,
-                  "evaluatedDatapoints": [
-                    {
-                      "timestamp": "date",
-                      "sampleCount": 2.0,
-                      "value": 21.5
-                    }
-                  ]
-                }
-              }
-            },
-            "HistoryItemType": "StateUpdate",
-            "HistorySummary": "Alarm updated from INSUFFICIENT_DATA to ALARM",
-            "Timestamp": "timestamp"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-alarms-for-metric": {
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmDescription": "testing cloudwatch alarms",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [
-              {
-                "Name": "InstanceId",
-                "Value": "abc"
-              }
-            ],
-            "EvaluationPeriods": 1,
-            "InsufficientDataActions": [],
-            "MetricName": "my-metric1",
-            "Namespace": "<namespace:1>",
-            "OKActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "Period": 10,
-            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
-            "StateReasonData": {
-              "version": "1.0",
-              "queryDate": "date",
-              "startDate": "date",
-              "unit": "Seconds",
-              "statistic": "Average",
-              "period": 10,
-              "recentDatapoints": [
-                21.5
-              ],
-              "threshold": 21.0,
-              "evaluatedDatapoints": [
-                {
-                  "timestamp": "date",
-                  "sampleCount": 2.0,
-                  "value": 21.5
-                }
-              ]
-            },
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "ALARM",
-            "Statistic": "Average",
-            "Threshold": 21.0,
-            "TreatMissingData": "ignore",
-            "Unit": "Seconds"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm[smithy-rpc-v2-cbor]": {
-    "recorded-date": "19-09-2025, 21:09:02",
-    "recorded-content": {
-      "describe-alarm": {
-        "CompositeAlarms": [],
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmDescription": "testing cloudwatch alarms",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [
-              {
-                "Name": "InstanceId",
-                "Value": "abc"
-              }
-            ],
-            "EvaluationPeriods": 1,
-            "InsufficientDataActions": [],
-            "MetricName": "my-metric1",
-            "Namespace": "<namespace:1>",
-            "OKActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "Period": 10,
-            "StateReason": "Unchecked: Initial alarm creation",
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "INSUFFICIENT_DATA",
-            "Statistic": "Average",
-            "Threshold": 21.0,
-            "TreatMissingData": "ignore",
-            "Unit": "Seconds"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "alarm-triggered-sqs-msg": {
-        "AWSAccountId": "111111111111",
-        "AlarmActions": [
-          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-        ],
-        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-        "AlarmConfigurationUpdatedTimestamp": "date",
-        "AlarmDescription": "testing cloudwatch alarms",
-        "AlarmName": "<alarm-name:1>",
-        "InsufficientDataActions": [],
-        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
-        "NewStateValue": "ALARM",
-        "OKActions": [
-          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-        ],
-        "OldStateValue": "INSUFFICIENT_DATA",
-        "Region": "<region-name-full:1>",
-        "StateChangeTime": "date",
-        "Trigger": {
-          "ComparisonOperator": "GreaterThanThreshold",
-          "Dimensions": [
-            {
-              "name": "InstanceId",
-              "value": "abc"
-            }
-          ],
-          "EvaluateLowSampleCountPercentile": "",
-          "EvaluationPeriods": 1,
-          "MetricName": "my-metric1",
-          "Namespace": "<namespace:1>",
-          "Period": 10,
-          "Statistic": "AVERAGE",
-          "StatisticType": "Statistic",
-          "Threshold": 21.0,
-          "TreatMissingData": "ignore",
-          "Unit": "Seconds"
-        }
-      },
-      "describe-alarm-history": {
-        "AlarmHistoryItems": [
-          {
-            "AlarmName": "<alarm-name:1>",
-            "AlarmType": "MetricAlarm",
-            "HistoryData": {
-              "version": "1.0",
-              "oldState": {
-                "stateValue": "INSUFFICIENT_DATA",
-                "stateReason": "Unchecked: Initial alarm creation"
-              },
-              "newState": {
-                "stateValue": "ALARM",
-                "stateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
-                "stateReasonData": {
-                  "version": "1.0",
-                  "queryDate": "date",
-                  "startDate": "date",
-                  "unit": "Seconds",
-                  "statistic": "Average",
-                  "period": 10,
-                  "recentDatapoints": [
-                    21.5
-                  ],
-                  "threshold": 21.0,
-                  "evaluatedDatapoints": [
-                    {
-                      "timestamp": "date",
-                      "sampleCount": 2.0,
-                      "value": 21.5
-                    }
-                  ]
-                }
-              }
-            },
-            "HistoryItemType": "StateUpdate",
-            "HistorySummary": "Alarm updated from INSUFFICIENT_DATA to ALARM",
-            "Timestamp": "timestamp"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-alarms-for-metric": {
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmDescription": "testing cloudwatch alarms",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [
-              {
-                "Name": "InstanceId",
-                "Value": "abc"
-              }
-            ],
-            "EvaluationPeriods": 1,
-            "InsufficientDataActions": [],
-            "MetricName": "my-metric1",
-            "Namespace": "<namespace:1>",
-            "OKActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
-            ],
-            "Period": 10,
-            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
-            "StateReasonData": {
-              "version": "1.0",
-              "queryDate": "date",
-              "startDate": "date",
-              "unit": "Seconds",
-              "statistic": "Average",
-              "period": 10,
-              "recentDatapoints": [
-                21.5
-              ],
-              "threshold": 21.0,
-              "evaluatedDatapoints": [
-                {
-                  "timestamp": "date",
-                  "sampleCount": 2.0,
-                  "value": 21.5
-                }
-              ]
-            },
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "ALARM",
-            "Statistic": "Average",
-            "Threshold": 21.0,
-            "TreatMissingData": "ignore",
-            "Unit": "Seconds"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_breaching_alarm_actions[query]": {
     "recorded-date": "19-09-2025, 21:11:41",
     "recorded-content": {
@@ -3501,210 +2931,6 @@
             "Threshold": 2.0,
             "TreatMissingData": "ignore",
             "Unit": "Seconds"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_aws_sqs_metrics_created[query]": {
-    "recorded-date": "19-09-2025, 21:27:01",
-    "recorded-content": {
-      "get_metric_data": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "sent",
-            "Label": "NumberOfMessagesSent",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          },
-          {
-            "Id": "sent_size",
-            "Label": "SentMessageSize",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              5.0
-            ]
-          },
-          {
-            "Id": "empty_receives",
-            "Label": "NumberOfEmptyReceives",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_metric_data_2": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "num_msg_received",
-            "Label": "NumberOfMessagesReceived",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          },
-          {
-            "Id": "num_msg_deleted",
-            "Label": "NumberOfMessagesDeleted",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_aws_sqs_metrics_created[json]": {
-    "recorded-date": "19-09-2025, 21:29:00",
-    "recorded-content": {
-      "get_metric_data": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "sent",
-            "Label": "NumberOfMessagesSent",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          },
-          {
-            "Id": "sent_size",
-            "Label": "SentMessageSize",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              5.0
-            ]
-          },
-          {
-            "Id": "empty_receives",
-            "Label": "NumberOfEmptyReceives",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_metric_data_2": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "num_msg_received",
-            "Label": "NumberOfMessagesReceived",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          },
-          {
-            "Id": "num_msg_deleted",
-            "Label": "NumberOfMessagesDeleted",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_aws_sqs_metrics_created[smithy-rpc-v2-cbor]": {
-    "recorded-date": "19-09-2025, 21:31:00",
-    "recorded-content": {
-      "get_metric_data": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "sent",
-            "Label": "NumberOfMessagesSent",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          },
-          {
-            "Id": "sent_size",
-            "Label": "SentMessageSize",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              5.0
-            ]
-          },
-          {
-            "Id": "empty_receives",
-            "Label": "NumberOfEmptyReceives",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_metric_data_2": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "num_msg_received",
-            "Label": "NumberOfMessagesReceived",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          },
-          {
-            "Id": "num_msg_deleted",
-            "Label": "NumberOfMessagesDeleted",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
           }
         ],
         "ResponseMetadata": {
@@ -7019,6 +6245,265 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm": {
+    "recorded-date": "26-02-2026, 10:14:11",
+    "recorded-content": {
+      "describe-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "my-metric1",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "Period": 10,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Average",
+            "Threshold": 21.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Seconds"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "alarm-triggered-sqs-msg": {
+        "AWSAccountId": "111111111111",
+        "ActionExecutedAfterMuteWindow": false,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmConfigurationUpdatedTimestamp": "date",
+        "AlarmDescription": "testing cloudwatch alarms",
+        "AlarmName": "<alarm-name:1>",
+        "InsufficientDataActions": [],
+        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+        "NewStateValue": "ALARM",
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+        ],
+        "OldStateValue": "INSUFFICIENT_DATA",
+        "Region": "<region-name-full:1>",
+        "StateChangeTime": "date",
+        "Trigger": {
+          "ComparisonOperator": "GreaterThanThreshold",
+          "Dimensions": [
+            {
+              "name": "InstanceId",
+              "value": "abc"
+            }
+          ],
+          "EvaluateLowSampleCountPercentile": "",
+          "EvaluationPeriods": 1,
+          "MetricName": "my-metric1",
+          "Namespace": "<namespace:1>",
+          "Period": 10,
+          "Statistic": "AVERAGE",
+          "StatisticType": "Statistic",
+          "Threshold": 21.0,
+          "TreatMissingData": "ignore",
+          "Unit": "Seconds"
+        }
+      },
+      "describe-alarm-history": {
+        "AlarmHistoryItems": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmType": "MetricAlarm",
+            "HistoryData": {
+              "version": "1.0",
+              "oldState": {
+                "stateValue": "INSUFFICIENT_DATA",
+                "stateReason": "Unchecked: Initial alarm creation"
+              },
+              "newState": {
+                "stateValue": "ALARM",
+                "stateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+                "stateReasonData": {
+                  "version": "1.0",
+                  "queryDate": "date",
+                  "startDate": "date",
+                  "unit": "Seconds",
+                  "statistic": "Average",
+                  "period": 10,
+                  "recentDatapoints": [
+                    21.5
+                  ],
+                  "threshold": 21.0,
+                  "evaluatedDatapoints": [
+                    {
+                      "timestamp": "date",
+                      "sampleCount": 2.0,
+                      "value": 21.5
+                    }
+                  ]
+                }
+              }
+            },
+            "HistoryItemType": "StateUpdate",
+            "HistorySummary": "Alarm updated from INSUFFICIENT_DATA to ALARM",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-alarms-for-metric": {
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "my-metric1",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "Period": 10,
+            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+            "StateReasonData": {
+              "version": "1.0",
+              "queryDate": "date",
+              "startDate": "date",
+              "unit": "Seconds",
+              "statistic": "Average",
+              "period": 10,
+              "recentDatapoints": [
+                21.5
+              ],
+              "threshold": 21.0,
+              "evaluatedDatapoints": [
+                {
+                  "timestamp": "date",
+                  "sampleCount": 2.0,
+                  "value": 21.5
+                }
+              ]
+            },
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 21.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Seconds"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_aws_sqs_metrics_created": {
+    "recorded-date": "26-02-2026, 12:06:25",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "sent",
+            "Label": "NumberOfMessagesSent",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          },
+          {
+            "Id": "sent_size",
+            "Label": "SentMessageSize",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              5.0
+            ]
+          },
+          {
+            "Id": "empty_receives",
+            "Label": "NumberOfEmptyReceives",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_metric_data_2": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "num_msg_received",
+            "Label": "NumberOfMessagesReceived",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          },
+          {
+            "Id": "num_msg_deleted",
+            "Label": "NumberOfMessagesDeleted",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

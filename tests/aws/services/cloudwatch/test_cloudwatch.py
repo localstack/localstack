@@ -1352,6 +1352,7 @@ class TestCloudwatch:
             "$..NewStateReason",
             "$..describe-alarms-for-metric..StateReason",  # reason contains datapoint + date
             "$..describe-alarms-for-metric..StateReasonData.evaluatedDatapoints",
+            "$.alarm-triggered-sqs-msg.ActionExecutedAfterMuteWindow",
         ]
     )
     @pytest.mark.skipif(
@@ -1365,7 +1366,6 @@ class TestCloudwatch:
         aws_client,
         cleanups,
         sns_create_sqs_subscription,
-        aws_cloudwatch_client,
     ):
         topic_arn_alarm = sns_create_topic()["TopicArn"]
 
@@ -1408,9 +1408,11 @@ class TestCloudwatch:
                 "Unit": "Seconds",
             },
         ]
+        # by sending two alarms, sometimes the alarm scheduler will trigger right at the time the metrics are being
+        # added, meaning the alarm will not go off instantly
 
         # create alarm with action for "ALARM"
-        aws_cloudwatch_client.put_metric_alarm(
+        aws_client.cloudwatch.put_metric_alarm(
             AlarmName=alarm_name,
             AlarmDescription="testing cloudwatch alarms",
             MetricName=metric_name,
@@ -1428,11 +1430,11 @@ class TestCloudwatch:
             TreatMissingData="ignore",
             # notBreaching had some downsides, as depending on the alarm evaluation interval it would first go into OK
         )
-        cleanups.append(lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=[alarm_name]))
-        response = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
+        cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
+        response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("describe-alarm", response)
 
-        aws_cloudwatch_client.put_metric_data(Namespace=namespace, MetricData=data)
+        aws_client.cloudwatch.put_metric_data(Namespace=namespace, MetricData=data)
         retry(
             _sqs_messages_snapshot,
             retries=60,
@@ -1446,13 +1448,13 @@ class TestCloudwatch:
         )
 
         # describe alarm history
-        history = aws_cloudwatch_client.describe_alarm_history(
+        history = aws_client.cloudwatch.describe_alarm_history(
             AlarmName=alarm_name, HistoryItemType="StateUpdate"
         )
         snapshot.match("describe-alarm-history", history)
 
         # describe alarms for metric
-        alarms = aws_cloudwatch_client.describe_alarms_for_metric(
+        alarms = aws_client.cloudwatch.describe_alarms_for_metric(
             MetricName=metric_name,
             Namespace=namespace,
             Dimensions=dimension,
@@ -1633,9 +1635,7 @@ class TestCloudwatch:
         assert response["MetricAlarms"][0]["ActionsEnabled"]
 
     @markers.aws.validated
-    def test_aws_sqs_metrics_created(
-        self, sqs_create_queue, snapshot, aws_client, aws_cloudwatch_client
-    ):
+    def test_aws_sqs_metrics_created(self, sqs_create_queue, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         sqs_url = sqs_create_queue()
         sqs_arn = aws_client.sqs.get_queue_attributes(
@@ -1671,13 +1671,13 @@ class TestCloudwatch:
         empty["MetricStat"]["Metric"]["MetricName"] = "NumberOfEmptyReceives"
 
         def contains_sent_messages_metrics() -> int:
-            res = aws_cloudwatch_client.list_metrics(Dimensions=dimensions)
+            res = aws_client.cloudwatch.list_metrics(Dimensions=dimensions)
             metrics = [metric["MetricName"] for metric in res["Metrics"]]
             if all(
                 m in metrics
                 for m in ["NumberOfMessagesSent", "SentMessageSize", "NumberOfEmptyReceives"]
             ):
-                res = aws_cloudwatch_client.get_metric_data(
+                res = aws_client.cloudwatch.get_metric_data(
                     MetricDataQueries=[sent, sent_size, empty],
                     StartTime=datetime.now(tz=UTC) - timedelta(hours=1),
                     EndTime=datetime.now(tz=UTC),
@@ -1693,7 +1693,7 @@ class TestCloudwatch:
 
         assert poll_condition(lambda: contains_sent_messages_metrics(), interval=1, timeout=120)
 
-        response = aws_cloudwatch_client.get_metric_data(
+        response = aws_client.cloudwatch.get_metric_data(
             MetricDataQueries=[sent, sent_size, empty],
             StartTime=datetime.now(tz=UTC) - timedelta(hours=1),
             EndTime=datetime.now(tz=UTC),
@@ -1702,7 +1702,9 @@ class TestCloudwatch:
         snapshot.match("get_metric_data", response)
 
         # receive + delete message
-        sqs_messages = aws_client.sqs.receive_message(QueueUrl=sqs_url)["Messages"]
+        sqs_messages = aws_client.sqs.receive_message(QueueUrl=sqs_url, WaitTimeSeconds=5)[
+            "Messages"
+        ]
         assert len(sqs_messages) == 1
         receipt_handle = sqs_messages[0]["ReceiptHandle"]
         aws_client.sqs.delete_message(QueueUrl=sqs_url, ReceiptHandle=receipt_handle)
@@ -1714,10 +1716,10 @@ class TestCloudwatch:
         msg_deleted["MetricStat"]["Metric"]["MetricName"] = "NumberOfMessagesDeleted"
 
         def contains_receive_delete_metrics() -> int:
-            res = aws_cloudwatch_client.list_metrics(Dimensions=dimensions)
+            res = aws_client.cloudwatch.list_metrics(Dimensions=dimensions)
             metrics = [metric["MetricName"] for metric in res["Metrics"]]
             if all(m in metrics for m in ["NumberOfMessagesReceived", "NumberOfMessagesDeleted"]):
-                res = aws_cloudwatch_client.get_metric_data(
+                res = aws_client.cloudwatch.get_metric_data(
                     MetricDataQueries=[msg_received, msg_deleted],
                     StartTime=datetime.now(tz=UTC) - timedelta(hours=1),
                     EndTime=datetime.now(tz=UTC),
@@ -1729,7 +1731,7 @@ class TestCloudwatch:
 
         assert poll_condition(lambda: contains_receive_delete_metrics(), interval=1, timeout=120)
 
-        response = aws_cloudwatch_client.get_metric_data(
+        response = aws_client.cloudwatch.get_metric_data(
             MetricDataQueries=[msg_received, msg_deleted],
             StartTime=datetime.now(tz=UTC) - timedelta(hours=1),
             EndTime=datetime.now(tz=UTC),
@@ -2653,8 +2655,6 @@ class TestCloudwatch:
         retry(assert_results, retries=10, sleep=1.0, sleep_before=2 if is_aws_cloud() else 0.0)
 
     @markers.aws.validated
-    # we're not testing multi protocols for this test because we're not snapshotting any CloudWatch response
-    # and are only testing Lambda logic
     def test_alarm_lambda_target(
         self, aws_client, create_lambda_function, cleanups, account_id, snapshot
     ):
@@ -3247,18 +3247,22 @@ def _check_alarm_triggered(
 def _sqs_messages_snapshot(expected_state, sqs_client, sqs_queue, snapshot, identifier):
     result = sqs_client.receive_message(QueueUrl=sqs_queue, WaitTimeSeconds=2, VisibilityTimeout=0)
     found_msg = None
-    receipt_handle = None
+    other_messages = []
     for msg in result["Messages"]:
         body = json.loads(msg["Body"])
         message = json.loads(body["Message"])
+        receipt_handle = msg["ReceiptHandle"]
+        sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
+
         if message["NewStateValue"] == expected_state:
             found_msg = message
-            receipt_handle = msg["ReceiptHandle"]
             break
+        else:
+            other_messages.append(msg)
+
     assert found_msg, (
-        f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
+        f"no message found for {expected_state}. Got {len(other_messages)} messages.\n{other_messages}"
     )
-    sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
     snapshot.match(f"{identifier}-sqs-msg", found_msg)
 
 
