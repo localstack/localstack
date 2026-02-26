@@ -1,8 +1,7 @@
 import abc
 import json
-
-from moto.iam import iam_backends
-from moto.iam.models import IAMBackend
+from typing import TYPE_CHECKING
+from urllib.parse import unquote
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.iam import (
@@ -13,6 +12,10 @@ from localstack.aws.api.iam import (
     SimulatePolicyResponse,
     SimulatePrincipalPolicyRequest,
 )
+from localstack.services.iam.models import IamStore
+
+if TYPE_CHECKING:
+    from localstack.services.iam.provider import IamProvider
 
 
 class IAMPolicySimulator(abc.ABC):
@@ -30,18 +33,21 @@ class IAMPolicySimulator(abc.ABC):
 
 
 class BasicIAMPolicySimulator(IAMPolicySimulator):
+    def __init__(self, provider: "IamProvider"):
+        self.provider = provider
+
     def simulate_principal_policy(
         self,
         context: RequestContext,
         request: SimulatePrincipalPolicyRequest,
     ) -> SimulatePolicyResponse:
-        backend = self.get_iam_backend(context)
-        policies = self.get_policies_from_principal(backend, request.get("PolicySourceArn"))
+        store = self.provider._get_store(context)
+        policies = self.get_policies_from_principal(store, request.get("PolicySourceArn"))
 
         def _get_statements_from_policy_list(_policies: list[str]):
             statements = []
             for policy_str in _policies:
-                policy_dict = json.loads(policy_str)
+                policy_dict = json.loads(unquote(policy_str))
                 if isinstance(policy_dict["Statement"], list):
                     statements.extend(policy_dict["Statement"])
                 else:
@@ -81,53 +87,37 @@ class BasicIAMPolicySimulator(IAMPolicySimulator):
                 eval_res["MatchedStatements"] = []  # TODO: add support for statement compilation.
         return eval_res
 
-    @staticmethod
-    def get_iam_backend(context: RequestContext) -> IAMBackend:
-        return iam_backends[context.account_id][context.partition]
+    def _get_policy_document(self, store: IamStore, policy_arn: str) -> str:
+        if self.provider._is_managed_policy(policy_arn):
+            policy = self.provider._aws_managed_policy_cache[policy_arn]
+        else:
+            policy = store.MANAGED_POLICIES[policy_arn]
+        default_version = policy.policy["DefaultVersionId"]
+        return policy.versions[default_version]["Document"]
 
-    @staticmethod
-    def get_policies_from_principal(backend: IAMBackend, principal_arn: str) -> list[dict]:
-        policies = []
+    def get_policies_from_principal(self, store: IamStore, principal_arn: str) -> list[str]:
+        policies: list[str] = []
+        entity = None
         if ":role" in principal_arn:
             role_name = principal_arn.split("/")[-1]
+            entity = self.provider._get_role_entity(store, role_name)
 
-            policies.append(backend.get_role(role_name=role_name).assume_role_policy_document)
-
-            policy_names = backend.list_role_policies(role_name=role_name)
-            policies.extend(
-                [
-                    backend.get_role_policy(role_name=role_name, policy_name=policy_name)[1]
-                    for policy_name in policy_names
-                ]
-            )
-
-            attached_policies, _ = backend.list_attached_role_policies(role_name=role_name)
-            policies.extend([policy.document for policy in attached_policies])
+            policies.append(entity.role["AssumeRolePolicyDocument"])
 
         if ":group" in principal_arn:
             group_name = principal_arn.split("/")[-1]
-            policy_names = backend.list_group_policies(group_name=group_name)
-            policies.extend(
-                [
-                    backend.get_group_policy(group_name=group_name, policy_name=policy_name)[1]
-                    for policy_name in policy_names
-                ]
-            )
-
-            attached_policies, _ = backend.list_attached_group_policies(group_name=group_name)
-            policies.extend([policy.document for policy in attached_policies])
+            entity = self.provider._get_group_entity(store, group_name)
 
         if ":user" in principal_arn:
             user_name = principal_arn.split("/")[-1]
-            policy_names = backend.list_user_policies(user_name=user_name)
-            policies.extend(
-                [
-                    backend.get_user_policy(user_name=user_name, policy_name=policy_name)[1]
-                    for policy_name in policy_names
-                ]
-            )
+            entity = self.provider._get_user_entity(store, user_name)
 
-            attached_policies, _ = backend.list_attached_user_policies(user_name=user_name)
-            policies.extend([policy.document for policy in attached_policies])
+        if entity:
+            policies.extend(entity.inline_policies.values())
+
+            attached_policies = entity.attached_policy_arns
+            policies.extend(
+                [self._get_policy_document(store, policy_arn) for policy_arn in attached_policies]
+            )
 
         return policies
