@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Final, NotRequired, TypedDict
+from typing import TYPE_CHECKING, Final, NotRequired, TypedDict
 
-from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
 
@@ -22,6 +21,10 @@ from localstack.utils.aws.arns import (
     ArnData,
     parse_arn,
 )
+
+if TYPE_CHECKING:
+    from mypy_boto3_logs import CloudWatchLogsClient
+
 
 LOG = logging.getLogger(__name__)
 
@@ -207,13 +210,15 @@ class HistoryLog(TypedDict):
 class CloudWatchLoggingSession:
     execution_arn: Final[LongArn]
     configuration: Final[CloudWatchLoggingConfiguration]
-    _logs_client: Final[BaseClient]
     _is_log_stream_available: bool
 
     def __init__(self, execution_arn: LongArn, configuration: CloudWatchLoggingConfiguration):
         self.execution_arn = execution_arn
         self.configuration = configuration
-        self._logs_client = connect_to(
+
+    @property
+    def logs_client(self) -> CloudWatchLogsClient:
+        return connect_to(
             aws_access_key_id=self.configuration.log_account_id,
             region_name=self.configuration.log_region,
         ).logs
@@ -257,7 +262,7 @@ class CloudWatchLoggingSession:
         # Puts the events to the targe log group and stream, and returns false if the LogGroup or LogStream could
         # not be found, true otherwise.
         try:
-            self._logs_client.put_log_events(
+            self.logs_client.put_log_events(
                 logGroupName=self.configuration.log_group_name,
                 logStreamName=self.configuration.log_stream_name,
                 logEvents=log_events,
@@ -278,7 +283,7 @@ class CloudWatchLoggingSession:
         # TODO: enhance the verification logic to match AWS's logic to ensure IAM features work as expected.
         #  https://docs.aws.amazon.com/step-functions/latest/dg/cw-logs.html#cloudwatch-iam-policy
         try:
-            self._logs_client.create_log_stream(
+            self.logs_client.create_log_stream(
                 logGroupName=self.configuration.log_group_name,
                 logStreamName=self.configuration.log_stream_name,
             )

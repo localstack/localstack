@@ -54,6 +54,9 @@ from localstack.services.stepfunctions.backend.execution_worker import (
 from localstack.services.stepfunctions.backend.execution_worker_comm import (
     ExecutionWorkerCommunication,
 )
+from localstack.services.stepfunctions.backend.execution_worker_registry import (
+    get_execution_worker_registry,
+)
 from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
     StateMachineVersion,
@@ -124,8 +127,6 @@ class Execution:
     error: SensitiveError | None
     cause: SensitiveCause | None
 
-    exec_worker: ExecutionWorker | None
-
     _activity_store: dict[Arn, Activity]
 
     def __init__(
@@ -168,7 +169,6 @@ class Execution:
         self.stop_date = None
         self.output = None
         self.output_details = CloudWatchEventsExecutionDataDetails(included=True)
-        self.exec_worker = None
         self.error = None
         self.cause = None
         self._activity_store = activity_store
@@ -306,14 +306,22 @@ class Execution:
             local_mock_test_case=self.local_mock_test_case,
         )
 
+    @property
+    def exec_worker(self) -> ExecutionWorker | None:
+        """Return the worker for this given execution from the registry."""
+        registry = get_execution_worker_registry()
+        return registry.get(self.exec_arn)
+
     def start(self) -> None:
         # TODO: checks exec_worker does not exists already?
         if self.exec_worker:
             raise InvalidName()  # TODO.
-        self.exec_worker = self._get_start_execution_worker()
+        worker = self._get_start_execution_worker()
+        registry = get_execution_worker_registry()
+        registry.register(self.exec_arn, worker)
         self.exec_status = ExecutionStatus.RUNNING
         self.publish_execution_status_change_event()
-        self.exec_worker.start()
+        worker.start()
 
     def stop(self, stop_date: datetime.datetime, error: str | None, cause: str | None):
         exec_worker: ExecutionWorker | None = self.exec_worker
