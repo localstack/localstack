@@ -1,5 +1,8 @@
 import base64
+import dataclasses
 import random
+
+from localstack.services.iam.models import iam_stores
 
 AWS_ROLE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 ACCOUNT_OFFSET = (
@@ -33,3 +36,25 @@ def generate_iam_identifier(account_id: str, prefix: str, total_length: int = 20
     return semi_fixed_part + _random_uppercase_or_digit_sequence(
         total_length - len(semi_fixed_part)
     )
+
+
+@dataclasses.dataclass
+class AccessKeyInfo:
+    access_key_id: str
+    secret_access_key: str
+    session_token: str | None = None
+
+
+def get_access_key_by_id(account_id: str, region: str, access_key_id: str) -> AccessKeyInfo | None:
+    iam_store = iam_stores[account_id][region]
+    # sts_store = sts_stores[account_id][region]
+    if user_name := iam_store.ACCESS_KEY_INDEX.get(access_key_id):
+        user = iam_store.USERS.get(user_name)
+        if user and (access_key := user.access_keys.get(access_key_id)):
+            return AccessKeyInfo(
+                access_key_id=access_key.access_key["AccessKeyId"],
+                secret_access_key=access_key.access_key["SecretAccessKey"],
+            )
+        # store in a non consistent state - maybe access key was deleted in the meantime
+        return None
+    # TODO sts store lookup

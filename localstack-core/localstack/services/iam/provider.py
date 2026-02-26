@@ -18,7 +18,6 @@ from typing import Any, TypeVar
 from urllib.parse import quote
 
 from cryptography import x509
-from moto.iam.models import IAMBackend, iam_backends
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -209,7 +208,6 @@ from localstack.aws.api.iam import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY, TAG_KEY_CUSTOM_ID
-from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.iam.models import (
     AccessKeyEntity,
     AwsManagedPolicy,
@@ -287,10 +285,6 @@ class AccessDeniedError(CommonServiceException):
         super().__init__("AccessDenied", message, 403, True)
 
 
-def get_iam_backend(context: RequestContext) -> IAMBackend:
-    return iam_backends[context.account_id][context.partition]
-
-
 class IamProvider(IamApi, ServiceLifecycleHook):
     policy_simulator: IAMPolicySimulator
     _policy_lock: threading.Lock
@@ -301,7 +295,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     _aws_managed_policy_cache: dict[str, ManagedPolicyEntity] | None
 
     def __init__(self):
-        apply_iam_patches()
         self.policy_simulator = BasicIAMPolicySimulator(self)
         self._policy_lock = threading.Lock()
         self._role_lock = threading.Lock()
@@ -314,7 +307,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         self._aws_managed_policy_cache = self._build_aws_managed_policy_cache()
 
     def accept_state_visitor(self, visitor: StateVisitor):
-        visitor.visit(iam_backends)
         visitor.visit(iam_stores)
 
     @handler("CreateRole")
@@ -1849,10 +1841,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 if user_name in group_entity.member_user_names:
                     groups.append(Group(group_entity.group))
 
-        # Sort by group name
-        sorted_groups = sorted(groups, key=lambda g: g.get("GroupName", "").lower())
-
-        return ListGroupsForUserResponse(Groups=sorted_groups, IsTruncated=False)
+        return ListGroupsForUserResponse(Groups=groups, IsTruncated=False)
 
     # ------------------------------ Group Inline Policy Operations ------------------------------ #
 
@@ -1991,9 +1980,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 attached_policies.append(
                     AttachedPolicy(PolicyName=policy_name, PolicyArn=policy_arn)
                 )
-
-        # Sort by policy name
-        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower())
 
         return ListAttachedGroupPoliciesResponse(
             AttachedPolicies=attached_policies, IsTruncated=False
@@ -2204,8 +2190,8 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                             User=User(
                                 UserId=context.account_id,
                                 Arn=caller_arn,
-                                CreateDate=datetime.now(),
-                                PasswordLastUsed=datetime.now(),
+                                CreateDate=datetime.now(tz=UTC),
+                                PasswordLastUsed=datetime.now(tz=UTC),
                             )
                         )
                     raise
@@ -2593,9 +2579,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                     AttachedPolicy(PolicyName=policy_name, PolicyArn=policy_arn)
                 )
 
-        # Sort by policy name (case-insensitive, as AWS does)
-        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower(), reverse=True)
-
         paginated_list = PaginatedList(attached_policies)
 
         def _token_generator(policy: AttachedPolicy) -> str:
@@ -2708,9 +2691,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 attached_policies.append(
                     AttachedPolicy(PolicyName=policy_name, PolicyArn=policy_arn)
                 )
-
-        # Sort by policy name (case-insensitive, as AWS does)
-        attached_policies.sort(key=lambda p: p.get("PolicyName", "").lower())
 
         paginated_list = PaginatedList(attached_policies)
 
@@ -3107,7 +3087,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         password = self._generate_service_password()
         credential_id = self._generate_credential_id(context)
         return ServiceSpecificCredential(
-            CreateDate=datetime.now(),
+            CreateDate=datetime.now(tz=UTC),
             ServiceName=service_name,
             ServiceUserName=f"{user_name}-at-{context.account_id}",
             ServicePassword=password,
@@ -3567,7 +3547,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 Fingerprint=fingerprint,
                 SSHPublicKeyBody=ssh_public_key_body,
                 Status=statusType.Active,
-                UploadDate=datetime.now(),
+                UploadDate=datetime.now(tz=UTC),
             )
 
             user_entity.ssh_public_keys[ssh_public_key_id] = ssh_key

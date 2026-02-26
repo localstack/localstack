@@ -38,6 +38,7 @@ from localstack.aws.spec import get_service_catalog
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.http import Request, Response
 from localstack.http.request import get_raw_path
+from localstack.services.iam.utils import get_access_key_by_id
 from localstack.services.s3.constants import (
     DEFAULT_PRE_SIGNED_ACCESS_KEY_ID,
     DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY,
@@ -52,7 +53,6 @@ from localstack.services.s3.utils import (
     is_presigned_url_request,
     uses_host_addressing,
 )
-from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import to_bytes
 
@@ -270,19 +270,12 @@ def get_secret_access_key_from_access_key_id(access_key_id: str, region: str) ->
     :param region: the region from the credentials
     :return: the linked secret_access_key to the access_key
     """
-    try:
-        from moto.iam.models import AccessKey, iam_backends
-    except ImportError:
-        return
-
     account_id = get_account_id_from_access_key_id(access_key_id)
-    moto_access_key: AccessKey = iam_backends[account_id][get_partition(region)].access_keys.get(
-        access_key_id
-    )
-    if not moto_access_key:
-        return
+    access_key = get_access_key_by_id(account_id, region, access_key_id)
+    if not access_key:
+        return None
 
-    return moto_access_key.secret_access_key
+    return access_key.secret_access_key
 
 
 def is_expired(expiry_datetime: datetime.datetime):
