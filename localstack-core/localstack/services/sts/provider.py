@@ -443,6 +443,7 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         role_id = generate_role_id(target_account_id)
         if role := self._get_role_from_arn(role_arn):
             role_id = role["RoleId"]
+        role_id = role_id.replace("AROA", "ARO1")
         assumed_role_id = f"{role_id}:{role_session_name}"
         assumed_role_arn = f"arn:{context.partition}:sts::{target_account_id}:assumed-role/{role_name}/{role_session_name}"
 
