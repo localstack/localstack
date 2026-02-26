@@ -27,7 +27,11 @@ from localstack.aws.api.iam import (
     tagListType,
     thumbprintListType,
 )
-from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
+from localstack.services.stores import (
+    AccountRegionBundle,
+    BaseStore,
+    CrossRegionAttribute,
+)
 
 
 @dataclasses.dataclass
@@ -147,6 +151,14 @@ class ServerCertificateEntity:
     tags: tagListType = field(default_factory=list)
 
 
+@dataclasses.dataclass
+class CredentialReportEntity:
+    """Stores generated credential report data."""
+
+    content: bytes  # CSV content
+    generated_at: datetime
+
+
 class IamStore(BaseStore):
     # Customer-managed policies keyed by ARN
     MANAGED_POLICIES: dict[str, ManagedPolicyEntity] = CrossRegionAttribute(default=dict)
@@ -183,6 +195,10 @@ class IamStore(BaseStore):
     # Server certificates: maps certificate_name -> ServerCertificateEntity
     # Account-scoped (IAM is global within an account)
     SERVER_CERTIFICATES: dict[str, ServerCertificateEntity] = CrossRegionAttribute(default=dict)
+
+    # Credential report - generated CSV report for all users
+    # Account-scoped (IAM is global within an account)
+    CREDENTIAL_REPORT: CredentialReportEntity | None = CrossRegionAttribute(default=None)
 
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)

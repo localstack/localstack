@@ -1,7 +1,9 @@
 import base64
 import copy
+import csv
 import hashlib
 import inspect
+import io
 import json
 import logging
 import os
@@ -11,7 +13,7 @@ import string
 import threading
 import uuid
 import xml.etree.ElementTree as ET
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, TypeVar
 from urllib.parse import quote
 
@@ -39,14 +41,19 @@ from localstack.aws.api.iam import (
     CreateServiceSpecificCredentialResponse,
     CreateUserResponse,
     CreateVirtualMFADeviceResponse,
+    CredentialReportNotPresentException,
     DeleteConflictException,
     DeleteServiceLinkedRoleResponse,
     DeletionTaskIdType,
     DeletionTaskStatusType,
     EntityAlreadyExistsException,
     EntityType,
+    GenerateCredentialReportResponse,
     GetAccessKeyLastUsedResponse,
+    GetAccountAuthorizationDetailsResponse,
     GetAccountPasswordPolicyResponse,
+    GetAccountSummaryResponse,
+    GetCredentialReportResponse,
     GetGroupPolicyResponse,
     GetGroupResponse,
     GetInstanceProfileResponse,
@@ -63,6 +70,7 @@ from localstack.aws.api.iam import (
     GetUserPolicyResponse,
     GetUserResponse,
     Group,
+    GroupDetail,
     IamApi,
     InstanceProfile,
     InvalidInputException,
@@ -101,19 +109,24 @@ from localstack.aws.api.iam import (
     LoginProfile,
     MalformedCertificateException,
     MalformedPolicyDocumentException,
+    ManagedPolicyDetail,
     MFADevice,
     NoSuchEntityException,
     OpenIDConnectProviderListEntry,
     OpenIDConnectProviderUrlType,
     PasswordPolicy,
     Policy,
+    PolicyDetail,
     PolicyGroup,
     PolicyRole,
     PolicyUsageType,
     PolicyUser,
     PolicyVersion,
+    ReportFormatType,
+    ReportStateType,
     ResetServiceSpecificCredentialResponse,
     Role,
+    RoleDetail,
     RoleLastUsed,
     SAMLMetadataDocumentType,
     SAMLProviderListEntry,
@@ -135,6 +148,7 @@ from localstack.aws.api.iam import (
     UploadSigningCertificateResponse,
     UploadSSHPublicKeyResponse,
     User,
+    UserDetail,
     VirtualMFADevice,
     accessKeyIdType,
     allUsers,
@@ -152,6 +166,7 @@ from localstack.aws.api.iam import (
     credentialAgeDays,
     customSuffixType,
     encodingType,
+    entityListType,
     existingUserNameType,
     groupNameType,
     instanceProfileNameType,
@@ -196,6 +211,7 @@ from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.iam.models import (
     AccessKeyEntity,
     AwsManagedPolicy,
+    CredentialReportEntity,
     GroupEntity,
     IamStore,
     InstanceProfileEntity,
@@ -4917,4 +4933,539 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         return ListMFADevicesResponse(
             MFADevices=mfa_devices,
             IsTruncated=False,
+        )
+
+    # ------------------------------ Account Summary ------------------------------ #
+
+    def get_account_summary(self, context: RequestContext, **kwargs) -> GetAccountSummaryResponse:
+        """Return summary metrics about IAM entities and quotas."""
+        store = self._get_store(context)
+
+        # Count dynamic values from store
+        users_count = len(store.USERS)
+        groups_count = len(store.GROUPS)
+        roles_count = len(store.ROLES)
+        policies_count = len(store.MANAGED_POLICIES)
+        instance_profiles_count = len(store.INSTANCE_PROFILES)
+        server_certificates_count = len(store.SERVER_CERTIFICATES)
+
+        # Count MFA devices
+        mfa_devices_count = len(store.MFA_DEVICES)
+        mfa_devices_in_use = sum(1 for d in store.MFA_DEVICES.values() if d.user_name is not None)
+
+        # Count providers (SAML + OIDC)
+        providers_count = len(store.SAML_PROVIDERS) + len(store.OIDC_PROVIDERS)
+
+        # Count policy versions in use (each policy has at least 1 version)
+        policy_versions_in_use = sum(
+            len(entity.versions) for entity in store.MANAGED_POLICIES.values()
+        )
+
+        # Account password present is 1 if PASSWORD_POLICY exists
+        account_password_present = 1 if store.PASSWORD_POLICY else 0
+
+        # Build summary map with fixed quotas and dynamic counts
+        summary_map = {
+            # Dynamic counts
+            "Users": users_count,
+            "Groups": groups_count,
+            "Roles": roles_count,
+            "Policies": policies_count,
+            "InstanceProfiles": instance_profiles_count,
+            "ServerCertificates": server_certificates_count,
+            "MFADevices": mfa_devices_count,
+            "MFADevicesInUse": mfa_devices_in_use,
+            "Providers": providers_count,
+            "PolicyVersionsInUse": policy_versions_in_use,
+            "AccountPasswordPresent": account_password_present,
+            # These are typically 0 for standard accounts (not checking root user)
+            "AccountMFAEnabled": 0,
+            "AccountAccessKeysPresent": 0,
+            "AccountSigningCertificatesPresent": 0,
+            # Fixed quotas (AWS defaults)
+            "UsersQuota": 5000,
+            "GroupsQuota": 300,
+            "RolesQuota": 1000,
+            "PoliciesQuota": 1500,
+            "InstanceProfilesQuota": 1000,
+            "ServerCertificatesQuota": 20,
+            "PolicyVersionsInUseQuota": 10000,
+            "PolicySizeQuota": 6144,
+            "VersionsPerPolicyQuota": 5,
+            "GroupsPerUserQuota": 10,
+            "SigningCertificatesPerUserQuota": 2,
+            "AccessKeysPerUserQuota": 2,
+            "AttachedPoliciesPerGroupQuota": 10,
+            "AttachedPoliciesPerRoleQuota": 10,
+            "AttachedPoliciesPerUserQuota": 10,
+            "UserPolicySizeQuota": 2048,
+            "GroupPolicySizeQuota": 5120,
+            "RolePolicySizeQuota": 10240,
+            "AssumeRolePolicySizeQuota": 2048,
+            "GlobalEndpointTokenVersion": 1,
+        }
+
+        return GetAccountSummaryResponse(SummaryMap=summary_map)
+
+    # ------------------------------ Account Authorization Details ------------------------------ #
+
+    def _build_role_detail(self, store: IamStore, role_entity: RoleEntity) -> RoleDetail:
+        """Convert RoleEntity to RoleDetail for authorization details response."""
+        role = role_entity.role
+
+        role_policy_list = [
+            PolicyDetail(
+                PolicyName=name,
+                PolicyDocument=doc,
+            )
+            for name, doc in role_entity.inline_policies.items()
+        ]
+
+        # Build attached managed policies list
+        attached_managed_policies = [
+            AttachedPolicy(
+                PolicyName=arn.split("/")[-1],
+                PolicyArn=arn,
+            )
+            for arn in role_entity.attached_policy_arns
+        ]
+
+        # Get instance profiles for this role
+        instance_profile_list = []
+        for ip_entity in store.INSTANCE_PROFILES.values():
+            if ip_entity.role_name == role.get("RoleName"):
+                # Build the instance profile with the role attached
+                ip = ip_entity.instance_profile.copy()
+                ip["Roles"] = [self._build_role_for_instance_profile(role_entity)]
+                instance_profile_list.append(ip)
+
+        # AssumeRolePolicyDocument should be a JSON string (boto3 decodes it client-side)
+        assume_role_doc = role.get("AssumeRolePolicyDocument", "{}")
+        if assume_role_doc:
+            assume_role_doc = assume_role_doc
+
+        detail = RoleDetail(
+            Path=role.get("Path", "/"),
+            RoleName=role.get("RoleName"),
+            RoleId=role.get("RoleId"),
+            Arn=role.get("Arn"),
+            CreateDate=role.get("CreateDate"),
+            AssumeRolePolicyDocument=assume_role_doc,
+            RolePolicyList=role_policy_list,
+            AttachedManagedPolicies=attached_managed_policies,
+            InstanceProfileList=instance_profile_list,
+            Tags=role.get("Tags", []),
+            RoleLastUsed=role.get("RoleLastUsed", {}),
+        )
+
+        # Add permissions boundary if present
+        if "PermissionsBoundary" in role:
+            detail["PermissionsBoundary"] = role["PermissionsBoundary"]
+
+        return detail
+
+    def _build_user_detail(self, store: IamStore, user_entity: UserEntity) -> UserDetail:
+        """Convert UserEntity to UserDetail for authorization details response."""
+        user = user_entity.user
+
+        # Build inline policies list
+        # PolicyDocument should be a JSON string (boto3 decodes it client-side)
+        user_policy_list = [
+            PolicyDetail(
+                PolicyName=name,
+                PolicyDocument=doc,
+            )
+            for name, doc in user_entity.inline_policies.items()
+        ]
+
+        # Build attached managed policies list
+        attached_managed_policies = [
+            AttachedPolicy(
+                PolicyName=arn.split("/")[-1],
+                PolicyArn=arn,
+            )
+            for arn in user_entity.attached_policy_arns
+        ]
+
+        # Get groups this user belongs to
+        group_list = []
+        for group_entity in store.GROUPS.values():
+            if user.get("UserName") in group_entity.member_user_names:
+                group_list.append(group_entity.group.get("GroupName"))
+
+        detail = UserDetail(
+            Path=user.get("Path", "/"),
+            UserName=user.get("UserName"),
+            UserId=user.get("UserId"),
+            Arn=user.get("Arn"),
+            CreateDate=user.get("CreateDate"),
+            AttachedManagedPolicies=attached_managed_policies,
+            GroupList=group_list,
+            Tags=user.get("Tags", []),
+        )
+
+        # Only include UserPolicyList if there are inline policies (AWS behavior)
+        if user_policy_list:
+            detail["UserPolicyList"] = user_policy_list
+
+        # Add permissions boundary if present
+        if "PermissionsBoundary" in user:
+            detail["PermissionsBoundary"] = user["PermissionsBoundary"]
+
+        return detail
+
+    def _build_group_detail(self, store: IamStore, group_entity: GroupEntity) -> GroupDetail:
+        """Convert GroupEntity to GroupDetail for authorization details response."""
+        group = group_entity.group
+
+        # Build inline policies list
+        # PolicyDocument should be a JSON string (boto3 decodes it client-side)
+        group_policy_list = [
+            PolicyDetail(
+                PolicyName=name,
+                PolicyDocument=doc,
+            )
+            for name, doc in group_entity.inline_policies.items()
+        ]
+
+        # Build attached managed policies list
+        attached_managed_policies = [
+            AttachedPolicy(
+                PolicyName=arn.split("/")[-1],
+                PolicyArn=arn,
+            )
+            for arn in group_entity.attached_policy_arns
+        ]
+
+        return GroupDetail(
+            Path=group.get("Path", "/"),
+            GroupName=group.get("GroupName"),
+            GroupId=group.get("GroupId"),
+            Arn=group.get("Arn"),
+            CreateDate=group.get("CreateDate"),
+            GroupPolicyList=group_policy_list,
+            AttachedManagedPolicies=attached_managed_policies,
+        )
+
+    def _build_managed_policy_detail(
+        self, policy_entity: ManagedPolicyEntity
+    ) -> ManagedPolicyDetail:
+        """Convert ManagedPolicyEntity to ManagedPolicyDetail for authorization details response."""
+        policy = policy_entity.policy
+
+        # Build policy version list with documents
+        # Document should be a JSON string (boto3 decodes it client-side)
+        policy_version_list = []
+        for version_id, version in policy_entity.versions.items():
+            version = PolicyVersion(version)
+            policy_version_list.append(version)
+
+        return ManagedPolicyDetail(
+            PolicyName=policy.get("PolicyName"),
+            PolicyId=policy.get("PolicyId"),
+            Arn=policy.get("Arn"),
+            Path=policy.get("Path", "/"),
+            DefaultVersionId=policy.get("DefaultVersionId"),
+            AttachmentCount=policy.get("AttachmentCount", 0),
+            PermissionsBoundaryUsageCount=policy.get("PermissionsBoundaryUsageCount", 0),
+            IsAttachable=policy.get("IsAttachable", True),
+            Description=policy.get("Description"),
+            CreateDate=policy.get("CreateDate"),
+            UpdateDate=policy.get("UpdateDate"),
+            PolicyVersionList=policy_version_list,
+        )
+
+    def get_account_authorization_details(
+        self,
+        context: RequestContext,
+        filter: entityListType = None,
+        max_items: maxItemsType = None,
+        marker: markerType = None,
+        **kwargs,
+    ) -> GetAccountAuthorizationDetailsResponse:
+        """Return detailed information about all IAM entities for authorization review."""
+        store = self._get_store(context)
+
+        # Determine which entity types to include
+        include_roles = filter is None or EntityType.Role in filter
+        include_users = filter is None or EntityType.User in filter
+        include_groups = filter is None or EntityType.Group in filter
+        include_local_policies = filter is None or EntityType.LocalManagedPolicy in filter
+        include_aws_policies = filter is None or EntityType.AWSManagedPolicy in filter
+
+        # Build role detail list
+        role_detail_list = []
+        if include_roles:
+            for role_entity in store.ROLES.values():
+                role_detail_list.append(self._build_role_detail(store, role_entity))
+
+        # Build user detail list
+        user_detail_list = []
+        if include_users:
+            for user_entity in store.USERS.values():
+                user_detail_list.append(self._build_user_detail(store, user_entity))
+
+        # Build group detail list
+        group_detail_list = []
+        if include_groups:
+            for group_entity in store.GROUPS.values():
+                group_detail_list.append(self._build_group_detail(store, group_entity))
+
+        # Build policies list
+        policies = []
+        if include_local_policies:
+            for policy_entity in store.MANAGED_POLICIES.values():
+                policies.append(self._build_managed_policy_detail(policy_entity))
+
+        if include_aws_policies:
+            # Add AWS managed policies from cache
+            for normalized_arn, policy_entity in self._aws_managed_policy_cache.items():
+                policy_arn = normalized_arn.replace("arn:aws:", f"arn:{context.partition}:")
+                aws_mp = store.AWS_MANAGED_POLICIES.get(policy_arn)
+                attachment_count = aws_mp.attachment_count if aws_mp else 0
+
+                # Build policy version list with documents
+                policy_version_list = []
+                for version_id, version in policy_entity.versions.items():
+                    version_detail = PolicyVersion(version)
+                    policy_version_list.append(version_detail)
+
+                policy = policy_entity.policy
+                detail = ManagedPolicyDetail(
+                    PolicyName=policy.get("PolicyName"),
+                    PolicyId=policy.get("PolicyId"),
+                    Arn=policy_arn,
+                    Path=policy.get("Path", "/"),
+                    DefaultVersionId=policy.get("DefaultVersionId"),
+                    AttachmentCount=attachment_count,
+                    PermissionsBoundaryUsageCount=policy.get("PermissionsBoundaryUsageCount", 0),
+                    IsAttachable=policy.get("IsAttachable", True),
+                    CreateDate=policy.get("CreateDate"),
+                    UpdateDate=policy.get("UpdateDate"),
+                    PolicyVersionList=policy_version_list,
+                )
+                policies.append(detail)
+
+        # TODO: Implement proper pagination
+        return GetAccountAuthorizationDetailsResponse(
+            UserDetailList=user_detail_list,
+            GroupDetailList=group_detail_list,
+            RoleDetailList=role_detail_list,
+            Policies=policies,
+            IsTruncated=False,
+        )
+
+    # ------------------------------ Credential Reports ------------------------------ #
+
+    def _format_datetime_for_report(self, dt: datetime | None) -> str:
+        """Format datetime for credential report CSV."""
+        if dt is None:
+            return "N/A"
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def _generate_credential_report_csv(
+        self, store: IamStore, account_id: str, partition: str
+    ) -> bytes:
+        """Generate the credential report CSV content."""
+        output = io.StringIO()
+        fieldnames = [
+            "user",
+            "arn",
+            "user_creation_time",
+            "password_enabled",
+            "password_last_used",
+            "password_last_changed",
+            "password_next_rotation",
+            "mfa_active",
+            "access_key_1_active",
+            "access_key_1_last_rotated",
+            "access_key_1_last_used_date",
+            "access_key_1_last_used_region",
+            "access_key_1_last_used_service",
+            "access_key_2_active",
+            "access_key_2_last_rotated",
+            "access_key_2_last_used_date",
+            "access_key_2_last_used_region",
+            "access_key_2_last_used_service",
+            "cert_1_active",
+            "cert_1_last_rotated",
+            "cert_2_active",
+            "cert_2_last_rotated",
+        ]
+
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+
+        # Add row for root account
+        root_row = {
+            "user": "<root_account>",
+            "arn": f"arn:{partition}:iam::{account_id}:root",
+            "user_creation_time": "N/A",
+            "password_enabled": "not_supported",
+            "password_last_used": "no_information",
+            "password_last_changed": "not_supported",
+            "password_next_rotation": "not_supported",
+            "mfa_active": "false",
+            "access_key_1_active": "false",
+            "access_key_1_last_rotated": "N/A",
+            "access_key_1_last_used_date": "N/A",
+            "access_key_1_last_used_region": "N/A",
+            "access_key_1_last_used_service": "N/A",
+            "access_key_2_active": "false",
+            "access_key_2_last_rotated": "N/A",
+            "access_key_2_last_used_date": "N/A",
+            "access_key_2_last_used_region": "N/A",
+            "access_key_2_last_used_service": "N/A",
+            "cert_1_active": "false",
+            "cert_1_last_rotated": "N/A",
+            "cert_2_active": "false",
+            "cert_2_last_rotated": "N/A",
+        }
+        writer.writerow(root_row)
+
+        # Add rows for each user
+        with self._user_lock:
+            for user_name, user_entity in store.USERS.items():
+                user = user_entity.user
+
+                # Password info
+                has_password = user_entity.login_profile is not None
+                password_enabled = "true" if has_password else "false"
+                password_last_changed = "N/A"
+                if has_password and user_entity.login_profile:
+                    create_date = user_entity.login_profile.get("CreateDate")
+                    if create_date:
+                        password_last_changed = self._format_datetime_for_report(create_date)
+
+                # MFA info
+                mfa_active = "true" if user_entity.mfa_devices else "false"
+
+                # Access keys - sorted by status (Active first), then by create date for stability
+                # AWS credential reports show Active keys before Inactive ones
+                access_keys = sorted(
+                    user_entity.access_keys.values(),
+                    key=lambda k: (
+                        0 if k.access_key.get("Status") == "Active" else 1,
+                        k.access_key.get("CreateDate") or datetime.min.replace(tzinfo=UTC),
+                    ),
+                )
+
+                # Access key 1
+                ak1_active = "false"
+                ak1_rotated = "N/A"
+                ak1_last_used_date = "N/A"
+                ak1_last_used_region = "N/A"
+                ak1_last_used_service = "N/A"
+                if len(access_keys) >= 1:
+                    ak1 = access_keys[0]
+                    ak1_active = "true" if ak1.access_key.get("Status") == "Active" else "false"
+                    ak1_rotated = self._format_datetime_for_report(ak1.access_key.get("CreateDate"))
+                    if ak1.last_used:
+                        last_used_date = ak1.last_used.get("LastUsedDate")
+                        if last_used_date:
+                            ak1_last_used_date = self._format_datetime_for_report(last_used_date)
+                            ak1_last_used_region = ak1.last_used.get("Region", "N/A")
+                            ak1_last_used_service = ak1.last_used.get("ServiceName", "N/A")
+
+                # Access key 2
+                ak2_active = "false"
+                ak2_rotated = "N/A"
+                ak2_last_used_date = "N/A"
+                ak2_last_used_region = "N/A"
+                ak2_last_used_service = "N/A"
+                if len(access_keys) >= 2:
+                    ak2 = access_keys[1]
+                    ak2_active = "true" if ak2.access_key.get("Status") == "Active" else "false"
+                    ak2_rotated = self._format_datetime_for_report(ak2.access_key.get("CreateDate"))
+                    if ak2.last_used:
+                        last_used_date = ak2.last_used.get("LastUsedDate")
+                        if last_used_date:
+                            ak2_last_used_date = self._format_datetime_for_report(last_used_date)
+                            ak2_last_used_region = ak2.last_used.get("Region", "N/A")
+                            ak2_last_used_service = ak2.last_used.get("ServiceName", "N/A")
+
+                # Signing certificates
+                certs = list(user_entity.signing_certificates.values())
+                cert1_active = "false"
+                cert1_rotated = "N/A"
+                cert2_active = "false"
+                cert2_rotated = "N/A"
+                if len(certs) >= 1:
+                    cert1_active = "true" if certs[0].get("Status") == "Active" else "false"
+                    cert1_rotated = self._format_datetime_for_report(certs[0].get("UploadDate"))
+                if len(certs) >= 2:
+                    cert2_active = "true" if certs[1].get("Status") == "Active" else "false"
+                    cert2_rotated = self._format_datetime_for_report(certs[1].get("UploadDate"))
+
+                row = {
+                    "user": user_name,
+                    "arn": user.get("Arn"),
+                    "user_creation_time": self._format_datetime_for_report(user.get("CreateDate")),
+                    "password_enabled": password_enabled,
+                    "password_last_used": "no_information",  # We don't track actual password usage
+                    "password_last_changed": password_last_changed,
+                    "password_next_rotation": "N/A",  # We don't enforce rotation
+                    "mfa_active": mfa_active,
+                    "access_key_1_active": ak1_active,
+                    "access_key_1_last_rotated": ak1_rotated,
+                    "access_key_1_last_used_date": ak1_last_used_date,
+                    "access_key_1_last_used_region": ak1_last_used_region,
+                    "access_key_1_last_used_service": ak1_last_used_service,
+                    "access_key_2_active": ak2_active,
+                    "access_key_2_last_rotated": ak2_rotated,
+                    "access_key_2_last_used_date": ak2_last_used_date,
+                    "access_key_2_last_used_region": ak2_last_used_region,
+                    "access_key_2_last_used_service": ak2_last_used_service,
+                    "cert_1_active": cert1_active,
+                    "cert_1_last_rotated": cert1_rotated,
+                    "cert_2_active": cert2_active,
+                    "cert_2_last_rotated": cert2_rotated,
+                }
+            writer.writerow(row)
+
+        return output.getvalue().encode("utf-8")
+
+    def generate_credential_report(
+        self, context: RequestContext, **kwargs
+    ) -> GenerateCredentialReportResponse:
+        """Generate a credential report for all users in the account."""
+        store = self._get_store(context)
+
+        # Check if a report already exists and is not older than 4 hours
+        if store.CREDENTIAL_REPORT is not None and datetime.now(
+            UTC
+        ) - store.CREDENTIAL_REPORT.generated_at < timedelta(hours=4):
+            return GenerateCredentialReportResponse(State=ReportStateType.COMPLETE)
+
+        # Generate the report
+        # TODO generate async
+        csv_content = self._generate_credential_report_csv(
+            store, context.account_id, context.partition
+        )
+
+        # Store the report
+        store.CREDENTIAL_REPORT = CredentialReportEntity(
+            content=csv_content,
+            generated_at=datetime.now(UTC),
+        )
+
+        # Return STARTED on first generation
+        return GenerateCredentialReportResponse(
+            State=ReportStateType.STARTED,
+            Description="No report exists. Starting a new report generation task",
+        )
+
+    def get_credential_report(
+        self, context: RequestContext, **kwargs
+    ) -> GetCredentialReportResponse:
+        """Retrieve the generated credential report."""
+        store = self._get_store(context)
+
+        if store.CREDENTIAL_REPORT is None:
+            raise CredentialReportNotPresentException()
+
+        return GetCredentialReportResponse(
+            Content=store.CREDENTIAL_REPORT.content,
+            ReportFormat=ReportFormatType.text_csv,
+            GeneratedTime=store.CREDENTIAL_REPORT.generated_at,
         )
