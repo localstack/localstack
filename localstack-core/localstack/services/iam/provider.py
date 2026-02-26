@@ -18,7 +18,6 @@ from typing import Any, TypeVar
 from urllib.parse import quote
 
 from cryptography import x509
-from moto.iam.models import IAMBackend, iam_backends
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -209,7 +208,6 @@ from localstack.aws.api.iam import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY, TAG_KEY_CUSTOM_ID
-from localstack.services.iam.iam_patches import apply_iam_patches
 from localstack.services.iam.models import (
     AccessKeyEntity,
     AwsManagedPolicy,
@@ -287,10 +285,6 @@ class AccessDeniedError(CommonServiceException):
         super().__init__("AccessDenied", message, 403, True)
 
 
-def get_iam_backend(context: RequestContext) -> IAMBackend:
-    return iam_backends[context.account_id][context.partition]
-
-
 class IamProvider(IamApi, ServiceLifecycleHook):
     policy_simulator: IAMPolicySimulator
     _policy_lock: threading.Lock
@@ -301,7 +295,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     _aws_managed_policy_cache: dict[str, ManagedPolicyEntity] | None
 
     def __init__(self):
-        apply_iam_patches()
         self.policy_simulator = BasicIAMPolicySimulator(self)
         self._policy_lock = threading.Lock()
         self._role_lock = threading.Lock()
@@ -314,7 +307,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         self._aws_managed_policy_cache = self._build_aws_managed_policy_cache()
 
     def accept_state_visitor(self, visitor: StateVisitor):
-        visitor.visit(iam_backends)
         visitor.visit(iam_stores)
 
     @handler("CreateRole")
