@@ -193,6 +193,9 @@ def transform_template(aws_client: ServiceLevelClientFactory, snapshot, cleanups
     def transform(template: str, parameters: dict[str, str] | None = None) -> TransformResult:
         stack_name = f"stack-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(stack_name, "<stack-name>"))
+        snapshot.add_transformer(
+            SortingTransformer("StackResources", lambda res: res["LogicalResourceId"])
+        )
 
         parameters = [
             {"ParameterKey": key, "ParameterValue": value}

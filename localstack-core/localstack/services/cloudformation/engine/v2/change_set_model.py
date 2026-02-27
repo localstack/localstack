@@ -1683,14 +1683,15 @@ class ChangeSetModel:
 
     @staticmethod
     def _safe_keys_of(*objects: Maybe[dict]) -> list[str]:
-        key_set: set[str] = set()
+        keys: list[str] = []
+        seen: set[str] = set()
         for obj in objects:
             # TODO: raise errors if not dict
             if isinstance(obj, dict):
-                key_set.update(obj.keys())
-        # The keys list is sorted to increase reproducibility of the
-        # update graph build process or downstream logics.
-        keys = sorted(key_set)
+                for key in obj.keys():
+                    if key not in seen:
+                        keys.append(key)
+                        seen.add(key)
         return keys
 
     @staticmethod

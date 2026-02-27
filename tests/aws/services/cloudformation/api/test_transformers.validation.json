@@ -1,11 +1,11 @@
 {
   "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach": {
-    "last_validated_date": "2025-07-02T20:00:41+00:00",
+    "last_validated_date": "2025-10-20T22:46:34+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 6.78,
-      "teardown": 0.18,
-      "total": 6.96
+      "setup": 0.87,
+      "call": 6.92,
+      "teardown": 0.17,
+      "total": 7.96
     }
   },
   "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach_multiple_resources": {
