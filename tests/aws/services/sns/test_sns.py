@@ -4763,7 +4763,8 @@ class TestSNSPlatformEndpoint:
 
         # assert that message has been received
         def check_message():
-            assert len(platform_endpoint_msgs[endpoint_arn]) > 0
+            for arn in endpoints_arn.values():
+                assert len(platform_endpoint_msgs[arn]) > 0
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 

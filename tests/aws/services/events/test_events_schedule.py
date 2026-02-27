@@ -416,9 +416,11 @@ class TestScheduleCron:
             "DetailType": "core.update-account-command",
             "Detail": json.dumps({"command": ["update-account"]}),
         }
-        aws_client.events.put_events(Entries=[test_event])
+        for _ in range(3):
+            aws_client.events.put_events(Entries=[test_event])
 
         messages = aws_client.sqs.receive_message(
             QueueUrl=queue_url, WaitTimeSeconds=10 if is_aws_cloud() else 3
         )
-        assert not messages.get("Messages")
+        # we switch the assertion to take into account that the rule might trigger instantly
+        assert len(messages.get("Messages") or []) < 2
