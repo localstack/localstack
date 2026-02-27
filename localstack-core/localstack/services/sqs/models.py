@@ -344,6 +344,7 @@ class SqsQueue:
         if attributes:
             self.validate_queue_attributes(attributes)
             self.attributes.update(attributes)
+            self._reconcile_sse_attributes()
 
         self.purge_in_progress = False
         self.purge_timestamp = None
@@ -366,6 +367,19 @@ class SqsQueue:
             QueueAttributeName.VisibilityTimeout: "30",
             QueueAttributeName.SqsManagedSseEnabled: "true",
         }
+
+    def _reconcile_sse_attributes(self):
+        """Ensure SqsManagedSseEnabled and KmsMasterKeyId are mutually exclusive.
+
+        On AWS, when KmsMasterKeyId is set, SqsManagedSseEnabled is automatically
+        set to false. When KmsMasterKeyId is removed, SqsManagedSseEnabled reverts
+        to true.
+        """
+        kms_key = self.attributes.get(QueueAttributeName.KmsMasterKeyId, "")
+        if kms_key:
+            self.attributes[QueueAttributeName.SqsManagedSseEnabled] = "false"
+        else:
+            self.attributes[QueueAttributeName.SqsManagedSseEnabled] = "true"
 
     def update_delay_seconds(self, value: int):
         """
