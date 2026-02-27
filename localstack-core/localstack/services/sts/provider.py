@@ -1,14 +1,8 @@
-"""
-STS v2 Provider - A moto-independent implementation of AWS STS.
-"""
-
 import base64
 import logging
 import re
 from datetime import UTC, datetime, timedelta
 from xml.etree import ElementTree
-
-from botocore.exceptions import ClientError
 
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.sts import (
@@ -42,8 +36,6 @@ from localstack.aws.api.sts import (
     urlType,
     userNameType,
 )
-from localstack.aws.connect import connect_to
-from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.iam.models import UserEntity
 from localstack.services.iam.models import iam_stores as iam_stores
 from localstack.services.iam.utils import (
@@ -108,20 +100,14 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         return sts_stores[account_id][region]
 
     def _get_role_from_arn(self, role_arn: str):
-        try:
-            target_account_id = extract_account_id_from_arn(role_arn)
-            target_region = extract_region_from_arn(role_arn)
-            role_name = extract_resource_from_arn(role_arn).split("/")[-1]
+        target_account_id = extract_account_id_from_arn(role_arn)
+        target_region = extract_region_from_arn(role_arn)
+        role_name = extract_resource_from_arn(role_arn).split("/")[-1]
+        store = iam_stores[target_account_id][target_region]
 
-            iam_client = connect_to(
-                aws_access_key_id=target_account_id,
-                aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-                region_name=target_region,
-            ).iam.request_metadata(service_principal="sts")
-
-            return iam_client.get_role(RoleName=role_name)["Role"]
-        except ClientError:
-            return None
+        if role_entity := store.ROLES.get(role_name):
+            return role_entity.role
+        return None
 
     def _create_credentials(
         self,
@@ -554,12 +540,6 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         creds = self._lookup_credentials(access_key_id)
         if creds:
             return GetAccessKeyInfoResponse(Account=creds.account_id)
-
-        # For permanent access keys (AKIA prefix), extract account from the key
-        # In LocalStack, we often encode the account ID in the access key
-        if access_key_id.startswith("AKIA"):
-            # Default to context account if we can't determine
-            return GetAccessKeyInfoResponse(Account=context.account_id)
 
         # Default response
         return GetAccessKeyInfoResponse(Account=context.account_id)
