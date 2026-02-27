@@ -317,5 +317,94 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_jsonata_parallel_state_mock_success[INFO]": {
+    "recorded-date": "27-02-2026, 09:29:56",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "parallelInput": {
+            "data": "input_value"
+          },
+          "parallelResult": [
+            {
+              "branch1": "result"
+            },
+            {
+              "branch2": "result"
+            }
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_jsonata_parallel_state_mock_success[DEBUG]": {
+    "recorded-date": "27-02-2026, 09:29:57",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "parallelInput": {
+              "data": "input_value"
+            }
+          }
+        },
+        "output": {
+          "parallelInput": {
+            "data": "input_value"
+          },
+          "parallelResult": [
+            {
+              "branch1": "result"
+            },
+            {
+              "branch2": "result"
+            }
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_jsonata_parallel_state_mock_success[TRACE]": {
+    "recorded-date": "27-02-2026, 09:29:57",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "parallelInput": {
+              "data": "input_value"
+            }
+          }
+        },
+        "output": {
+          "parallelInput": {
+            "data": "input_value"
+          },
+          "parallelResult": [
+            {
+              "branch1": "result"
+            },
+            {
+              "branch2": "result"
+            }
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
