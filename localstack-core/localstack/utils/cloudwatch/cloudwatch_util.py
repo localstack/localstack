@@ -1,11 +1,12 @@
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from itertools import islice
 from typing import TypedDict
 
 from werkzeug import Response as WerkzeugResponse
 
+from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import to_str
@@ -33,7 +34,7 @@ def publish_lambda_metric(
     metric, value, kwargs, account_id: str | None = None, region_name: str | None = None
 ):
     # publish metric only if CloudWatch service is available
-    if not is_api_enabled("cloudwatch"):
+    if not is_api_enabled("cloudwatch") or config.LAMBDA_DISABLE_CLOUDWATCH:
         return
     cw_client = connect_to(aws_access_key_id=account_id, region_name=region_name).cloudwatch
     try:
@@ -43,7 +44,7 @@ def publish_lambda_metric(
                 {
                     "MetricName": metric,
                     "Dimensions": dimension_lambda(kwargs),
-                    "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
+                    "Timestamp": datetime.utcnow().replace(tzinfo=UTC),
                     "Value": value,
                 }
             ],
@@ -67,7 +68,7 @@ def publish_sqs_metric_batch(
 
     cw_client = connect_to(region_name=region, aws_access_key_id=account_id).cloudwatch
     metric_data = []
-    timestamp = datetime.utcnow().replace(tzinfo=timezone.utc)
+    timestamp = datetime.utcnow().replace(tzinfo=UTC)
     # to be on the safe-side: check the size of the data again and only insert up to 1000 data metrics at once
     start = 0
     batch_size = 1000
@@ -124,7 +125,7 @@ def publish_sqs_metric(
                     "MetricName": metric,
                     "Dimensions": [{"Name": "QueueName", "Value": queue_name}],
                     "Unit": unit,
-                    "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
+                    "Timestamp": datetime.utcnow().replace(tzinfo=UTC),
                     "Value": value,
                 }
             ],
