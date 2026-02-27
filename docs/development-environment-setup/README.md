@@ -69,8 +69,7 @@ LocalStack runs its own [DNS server](https://docs.localstack.cloud/user-guide/to
 #### Python Dependencies
 
 * [JPype1](https://pypi.org/project/JPype1/) might require `g++` to fix a compile error on ARM Linux `gcc: fatal error: cannot execute ‘cc1plus’`
-  * Used in EventBridge, EventBridge Pipes, and Lambda Event Source Mapping for a Java-based event ruler via the opt-in configuration `EVENT_RULE_ENGINE=java`
-  * Introduced in [#10615](https://github.com/localstack/localstack/pull/10615)
+  * Used in StepFunctions for JSONata
 
 #### Test Dependencies
 
