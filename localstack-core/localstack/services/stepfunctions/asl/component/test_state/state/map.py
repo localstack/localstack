@@ -1,9 +1,6 @@
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
-from localstack.services.stepfunctions.asl.component.common.query_language import (
-    QueryLanguageMode,
-)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.state_map import (
     StateMap,
 )
@@ -50,7 +47,7 @@ class MockedStateMap(MockedBaseState[StateMap]):
     def _apply_patches(self):
         self._wrapped = MockedStateExecution.wrap(self._wrapped)
 
-        if self._wrapped.query_language.query_language_mode == QueryLanguageMode.JSONPath:
+        if self._wrapped.is_jsonpath_query_language():
             self._eval_with_inspect(self._wrapped.items_path, "afterInputPath")
             self._eval_with_inspect(self._wrapped.item_selector, "afterItemsSelector")
 
