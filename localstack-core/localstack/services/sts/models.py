@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from localstack.aws.api.sts import Tag
 from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
@@ -10,7 +10,7 @@ class SessionConfig(TypedDict):
     # list of lowercase transitive tag keys
     transitive_tags: list[str]
     # other stored context variables
-    iam_context: dict[str, str | list[str]]
+    iam_context: dict[str, Any]
 
 
 class STSStore(BaseStore):
