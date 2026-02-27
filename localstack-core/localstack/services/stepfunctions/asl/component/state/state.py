@@ -134,7 +134,7 @@ class CommonStateField(EvalComponent, ABC):
         else:
             LOG.error("Could not handle ContinueWith type of '%s'.", type(self.continue_with))
 
-    def _is_language_query_jsonpath(self) -> bool:
+    def is_jsonpath_query_language(self) -> bool:
         return self.query_language.query_language_mode == QueryLanguageMode.JSONPath
 
     def _get_state_entered_event_details(self, env: Environment) -> StateEnteredEventDetails:

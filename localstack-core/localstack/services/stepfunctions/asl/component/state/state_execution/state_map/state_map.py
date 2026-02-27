@@ -122,7 +122,7 @@ class StateMap(ExecutionState):
 
     def from_state_props(self, state_props: StateProps) -> None:
         super().from_state_props(state_props)
-        if self._is_language_query_jsonpath():
+        if self.is_jsonpath_query_language():
             self.items = None
             self.items_path = state_props.get(ItemsPath) or ItemsPath(
                 string_sampler=StringJsonPath(JSONPATH_ROOT_PATH)

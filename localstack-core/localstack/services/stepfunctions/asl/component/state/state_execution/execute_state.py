@@ -200,7 +200,7 @@ class ExecutionState(CommonStateField, abc.ABC):
         execution_output = execution_outputs.pop()
         env.stack.append(execution_output)
 
-        if not self._is_language_query_jsonpath():
+        if not self.is_jsonpath_query_language():
             env.states.set_result(execution_output)
 
         if self.assign_decl:

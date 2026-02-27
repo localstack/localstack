@@ -66,7 +66,7 @@ class StateChoice(CommonStateField):
                 self.output.eval(env=env)
 
         # Handle legacy output sequences if in JsonPath mode.
-        if self._is_language_query_jsonpath():
+        if self.is_jsonpath_query_language():
             if self.output_path:
                 self.output_path.eval(env=env)
             else:
