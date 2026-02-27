@@ -19,6 +19,7 @@ from docker.models.containers import Container
 from docker.types import LogConfig as DockerLogConfig
 from docker.utils.socket import STDERR, STDOUT, frames_iter
 
+from localstack import config
 from localstack.config import LS_LOG
 from localstack.constants import TRACE_LOG_LEVELS
 from localstack.utils.collections import ensure_list
@@ -81,12 +82,13 @@ class SdkDockerClient(ContainerClient):
             try:
                 return docker.from_env(timeout=DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS)
             except DockerException as e:
-                LOG.debug(
-                    "Creating Docker SDK client failed: %s. "
-                    "If you want to use Docker as container runtime, make sure to mount the socket at /var/run/docker.sock",
-                    e,
-                    exc_info=LS_LOG in TRACE_LOG_LEVELS,
-                )
+                if config.CONTAINER_RUNTIME == "docker":
+                    LOG.debug(
+                        "Creating Docker SDK client failed: %s. "
+                        "If you want to use Docker as container runtime, make sure to mount the socket at /var/run/docker.sock",
+                        e,
+                        exc_info=LS_LOG in TRACE_LOG_LEVELS,
+                    )
                 if attempt < DOCKER_SDK_DEFAULT_RETRIES:
                     # wait for a second before retrying
                     sleep(1)
