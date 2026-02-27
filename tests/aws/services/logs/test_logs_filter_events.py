@@ -4,6 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.pytest.snapshot import is_aws
 
+from aws.services.logs.conftest import is_legacy_provider
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.testing.pytest import markers
 from localstack.utils.common import now_utc, retry
@@ -155,7 +156,7 @@ class TestFilterLogEvents:
         )
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="TODO Raise error")
+    @pytest.mark.skipif(reason="TODO Raise error", condition=is_legacy_provider())
     def test_filter_log_events_unknown_token(
         self, logs_log_group, logs_log_stream, aws_client, snapshot
     ):

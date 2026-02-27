@@ -230,6 +230,14 @@ def logs():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
+@aws_provider(api="logs", name="v2")
+def logs_v2():
+    from localstack.services.logs.provider_v2 import LogsProviderV2
+
+    provider = LogsProviderV2()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def opensearch():
     from localstack.services.opensearch.provider import OpensearchProvider
