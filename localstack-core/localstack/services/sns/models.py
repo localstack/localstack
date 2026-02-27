@@ -173,7 +173,9 @@ class SnsStore(BaseStore):
     subscriptions: dict[str, SnsSubscription] = LocalAttribute(default=dict)
 
     # filter policy are stored as JSON string in subscriptions, store the decoded result Dict
-    subscription_filter_policy: dict[subscriptionARN, dict[str, Any]] = LocalAttribute(default=dict)
+    subscription_filter_policy: dict[subscriptionARN, dict[str, Any] | None] = LocalAttribute(
+        default=dict
+    )
 
     # maps confirmation token to subscription ARN
     subscription_tokens: dict[str, str] = LocalAttribute(default=dict)
@@ -185,15 +187,13 @@ class SnsStore(BaseStore):
     platform_endpoints: dict[str, PlatformEndpoint] = LocalAttribute(default=dict)
 
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
-    platform_endpoint_messages: dict[str, list[dict[str, str | MessageAttributeMap | None]]] = (
-        LocalAttribute(default=dict)
-    )
+    platform_endpoint_messages: dict[str, list[dict[str, Any]]] = LocalAttribute(default=dict)
 
     # topic/subscription independent default values for sending sms messages
     sms_attributes: dict[str, str] = LocalAttribute(default=dict)
 
     # list of sent SMS messages
-    sms_messages: list[dict[str, str | MessageAttributeMap | None]] = LocalAttribute(default=list)
+    sms_messages: list[dict[str, Any]] = LocalAttribute(default=list)
 
     tags: Tags = CrossRegionAttribute(default=Tags)
 
