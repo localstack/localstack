@@ -14,7 +14,7 @@ endif
 
 # https://hub.docker.com/_/golang/tags
 # Golang EOL overview: https://endoflife.date/go
-DOCKER_GOLANG_IMAGE ?= golang:1.19.6
+DOCKER_GOLANG_IMAGE ?= golang:1.26.0
 
 build:
 	mkdir -p build && \
