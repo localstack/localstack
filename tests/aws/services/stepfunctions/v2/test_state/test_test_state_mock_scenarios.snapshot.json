@@ -147,5 +147,135 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_parallel_state_mock_success[INFO]": {
+    "recorded-date": "25-02-2026, 10:02:13",
+    "recorded-content": {
+      "test_case_response": {
+        "output": "[{\"branch1\": \"result\"}, {\"branch2\": \"result\"}]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_parallel_state_mock_success[DEBUG]": {
+    "recorded-date": "25-02-2026, 10:02:13",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterResultPath": "[{\"branch1\": \"result\"}, {\"branch2\": \"result\"}]",
+          "afterResultSelector": "[{\"branch1\": \"result\"}, {\"branch2\": \"result\"}]",
+          "input": {}
+        },
+        "output": "[{\"branch1\": \"result\"}, {\"branch2\": \"result\"}]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_parallel_state_mock_success[TRACE]": {
+    "recorded-date": "25-02-2026, 10:02:14",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterResultPath": "[{\"branch1\": \"result\"}, {\"branch2\": \"result\"}]",
+          "afterResultSelector": "[{\"branch1\": \"result\"}, {\"branch2\": \"result\"}]",
+          "input": {}
+        },
+        "output": "[{\"branch1\": \"result\"}, {\"branch2\": \"result\"}]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_parallel_state_mock_success[INFO]": {
+    "recorded-date": "25-02-2026, 10:02:14",
+    "recorded-content": {
+      "test_case_response": {
+        "output": "[{\"branch1\":\"result\"},{\"branch2\":\"result\"}]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_parallel_state_mock_success[DEBUG]": {
+    "recorded-date": "25-02-2026, 10:02:14",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterResultPath": {
+            "input": {
+              "key": "value"
+            },
+            "parallelResult": [
+              {
+                "branch1": "result"
+              },
+              {
+                "branch2": "result"
+              }
+            ]
+          },
+          "afterResultSelector": "[{\"branch1\": \"result\"}, {\"branch2\": \"result\"}]",
+          "input": {
+            "input": {
+              "key": "value"
+            }
+          }
+        },
+        "output": "[{\"branch1\":\"result\"},{\"branch2\":\"result\"}]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_parallel_state_mock_success[TRACE]": {
+    "recorded-date": "25-02-2026, 10:02:14",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterResultPath": {
+            "input": {
+              "key": "value"
+            },
+            "parallelResult": [
+              {
+                "branch1": "result"
+              },
+              {
+                "branch2": "result"
+              }
+            ]
+          },
+          "afterResultSelector": "[{\"branch1\": \"result\"}, {\"branch2\": \"result\"}]",
+          "input": {
+            "input": {
+              "key": "value"
+            }
+          }
+        },
+        "output": "[{\"branch1\":\"result\"},{\"branch2\":\"result\"}]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

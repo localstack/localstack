@@ -2,7 +2,11 @@ import json
 from datetime import datetime
 
 import pytest
-from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
+from localstack_snapshot.snapshots.transformer import (
+    GenericTransformer,
+    JsonpathTransformer,
+    RegexTransformer,
+)
 
 from localstack.aws.api.stepfunctions import InspectionLevel
 from localstack.testing.pytest import markers
@@ -11,6 +15,12 @@ from localstack.utils.strings import long_uid, md5, short_uid
 from tests.aws.services.stepfunctions.templates.test_state.test_state_templates import (
     TestStateTemplate as TST,
 )
+
+INSPECTION_LEVELS = [
+    pytest.param(InspectionLevel.INFO, id="INFO"),
+    pytest.param(InspectionLevel.DEBUG, id="DEBUG"),
+    pytest.param(InspectionLevel.TRACE, id="TRACE"),
+]
 
 
 class TestStateMockScenarios:
@@ -203,6 +213,71 @@ class TestStateMockScenarios:
             definition=definition,
             input=exec_input,
             inspectionLevel=InspectionLevel.INFO,
+            mock=mock,
+        )
+        sfn_snapshot.match("test_case_response", test_case_response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("inspection_level", INSPECTION_LEVELS)
+    def test_base_parallel_state_mock_success(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+        inspection_level,
+    ):
+        template = TST.load_sfn_template(TST.BASE_PARALLEL_STATE)
+        definition = json.dumps(template)
+        mock_result = [{"branch1": "result"}, {"branch2": "result"}]
+        mock = {"result": json.dumps(mock_result)}
+
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            inspectionLevel=inspection_level,
+            mock=mock,
+        )
+        sfn_snapshot.match("test_case_response", test_case_response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("inspection_level", INSPECTION_LEVELS)
+    def test_io_parallel_state_mock_success(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+        inspection_level,
+    ):
+        # AWS serializes the 'output' field as compact JSON when it goes through
+        # OutputPath processing, while LocalStack uses Python's default spaced format.
+        # Normalize both to compact JSON arrays for consistent comparison.
+        def _normalize_output_json_arrays(input_data, ctx):
+            def traverse(d):
+                if isinstance(d, dict):
+                    for k in list(d.keys()):
+                        v = d[k]
+                        if k == "output" and isinstance(v, str):
+                            try:
+                                parsed = json.loads(v)
+                                if isinstance(parsed, list):
+                                    d[k] = json.dumps(parsed, separators=(",", ":"))
+                            except (json.JSONDecodeError, ValueError):
+                                pass
+                        elif isinstance(v, dict):
+                            traverse(v)
+                return d
+
+            return traverse(input_data)
+
+        sfn_snapshot.add_transformer(GenericTransformer(_normalize_output_json_arrays))
+
+        template = TST.load_sfn_template(TST.IO_PARALLEL_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"input": {"key": "value"}})
+        mock_result = [{"branch1": "result"}, {"branch2": "result"}]
+        mock = {"result": json.dumps(mock_result)}
+
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            input=exec_input,
+            inspectionLevel=inspection_level,
             mock=mock,
         )
         sfn_snapshot.match("test_case_response", test_case_response)

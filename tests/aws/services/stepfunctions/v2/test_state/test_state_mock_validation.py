@@ -45,6 +45,7 @@ class TestStateMockValidation:
     STATES_REQUIRING_MOCKS = [
         pytest.param(TST.BASE_MAP_STATE, id="MapState"),
         pytest.param(TST.MAP_TASK_STATE, id="MapTaskState"),
+        pytest.param(TST.BASE_PARALLEL_STATE, id="ParallelState"),
     ]
 
     @markers.aws.validated
@@ -137,3 +138,60 @@ class TestStateMockValidation:
                 mock=mock,
             )
         sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_mock_result_is_not_array_on_parallel_state(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TST.load_sfn_template(TST.BASE_PARALLEL_STATE)
+        definition = json.dumps(template)
+        mock = {"result": json.dumps({"key": "object is provided but array is expected"})}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_mock_result_array_size_mismatch_on_parallel_state(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TST.load_sfn_template(TST.BASE_PARALLEL_STATE)
+        definition = json.dumps(template)
+        # base_parallel_state has 2 branches; provide array of size 1
+        mock = {"result": json.dumps([{"branch1": "result"}])}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_parallel_state_empty_branches(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        definition = json.dumps(
+            {
+                "Type": "Parallel",
+                "Branches": [],
+                "End": True,
+            }
+        )
+        mock = {"result": json.dumps([])}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("error", e.value.response)

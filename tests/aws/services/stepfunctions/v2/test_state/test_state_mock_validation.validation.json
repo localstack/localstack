@@ -8,6 +8,15 @@
       "total": 0.2
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_array_size_mismatch_on_parallel_state": {
+    "last_validated_date": "2026-02-25T10:02:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.22,
+      "teardown": 0.0,
+      "total": 0.22
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_is_not_array_on_map_state_without_result_writer": {
     "last_validated_date": "2025-12-10T00:28:10+00:00",
     "durations_in_seconds": {
@@ -17,8 +26,26 @@
       "total": 0.2
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_is_not_array_on_parallel_state": {
+    "last_validated_date": "2026-02-25T10:02:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.25,
+      "teardown": 0.0,
+      "total": 0.25
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_is_not_object_on_map_state_with_result_writer": {
     "last_validated_date": "2025-12-10T00:28:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.22,
+      "teardown": 0.0,
+      "total": 0.22
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_parallel_state_empty_branches": {
+    "last_validated_date": "2026-02-25T10:02:13+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 0.22,
@@ -105,6 +132,15 @@
       "call": 0.21,
       "teardown": 0.0,
       "total": 0.21
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_state_type_requires_mock[ParallelState]": {
+    "last_validated_date": "2026-02-25T10:02:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.58,
+      "call": 0.65,
+      "teardown": 0.0,
+      "total": 1.23
     }
   }
 }
