@@ -1,7 +1,6 @@
 import base64
 import copy
 import csv
-import hashlib
 import inspect
 import io
 import json
@@ -19,7 +18,6 @@ from urllib.parse import quote
 
 from cryptography import x509
 
-from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
     AccessKey,
@@ -207,7 +205,7 @@ from localstack.aws.api.iam import (
     VirtualMFADevice as VirtualMFADeviceModel,
 )
 from localstack.aws.connect import connect_to
-from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY, TAG_KEY_CUSTOM_ID
+from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.iam.models import (
     AccessKeyEntity,
     AwsManagedPolicy,
@@ -230,10 +228,31 @@ from localstack.services.iam.resources.policy_simulator import (
     IAMPolicySimulator,
 )
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
-from localstack.services.iam.utils import generate_iam_identifier
+from localstack.services.iam.utils import (
+    build_group_arn,
+    build_instance_profile_arn,
+    build_policy_arn,
+    build_role_arn,
+    build_server_certificate_arn,
+    build_user_arn,
+    generate_access_key_id,
+    generate_aws_managed_policy_id,
+    generate_credential_id,
+    generate_group_id,
+    generate_instance_profile_id,
+    generate_policy_id,
+    generate_role_id,
+    generate_secret_access_key,
+    generate_server_certificate_id,
+    generate_signing_certificate_id,
+    generate_ssh_key_fingerprint,
+    generate_ssh_public_key_id,
+    generate_user_id,
+    get_custom_id_from_tags,
+)
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
-from localstack.utils.aws.arns import ARN_PARTITION_REGEX, get_partition, parse_arn
+from localstack.utils.aws.arns import ARN_PARTITION_REGEX, parse_arn
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 from localstack.utils.collections import PaginatedList
 
@@ -340,9 +359,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 raise EntityAlreadyExistsException(f"Role with name {role_name} already exists.")
 
             # Generate role ID and ARN
-            role_id = self._generate_role_id(context, tags)
+            role_id = generate_role_id(context.account_id, tags)
             path = path or "/"
-            role_arn = self._build_role_arn(context, path, role_name)
+            role_arn = build_role_arn(context.account_id, context.region, path, role_name)
 
             # Build the Role object
             role = Role(
@@ -743,16 +762,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         """Get the IAM store for the current account and region."""
         return iam_stores[context.account_id][context.region]
 
-    def _generate_policy_id(self) -> str:
-        """Generate a policy ID: 'A' followed by 20 random alphanumeric characters."""
-        return "A" + "".join(random.choices(string.ascii_uppercase + string.digits, k=20))
-
-    def _build_policy_arn(self, context: RequestContext, path: str, policy_name: str) -> str:
-        """Build the ARN for a managed policy."""
-        partition = get_partition(context.region)
-        # Path has a prefix like /my/path/
-        return f"arn:{partition}:iam::{context.account_id}:policy{path}{policy_name}"
-
     def _validate_tags(self, tags: tagListType | None, case_sensitive: bool = True) -> None:
         """
         Validate tags according to AWS rules.
@@ -833,20 +842,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         if errors:
             raise ValidationListError(errors)
 
-    def _get_custom_id_from_tags(self, tags: list[Tag]) -> str | None:
-        """
-        Check an IAM tag list for a custom id tag, and return the value if present.
-
-        :param tags: List of tags
-        :return: Custom Id or None if not present
-        """
-        if not tags:
-            return
-        for tag in tags:
-            if tag["Key"] == TAG_KEY_CUSTOM_ID:
-                return tag["Value"]
-        return None
-
     def _get_policy_entity(self, store: IamStore, policy_arn: str) -> ManagedPolicyEntity:
         """Gets the policy entity and raises the right exception if not found."""
         entity = store.MANAGED_POLICIES.get(policy_arn)
@@ -892,7 +887,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             arn = f"arn:aws:iam::aws:policy{path}{name}"
             policy = Policy(
                 PolicyName=name,
-                PolicyId=self._generate_aws_managed_policy_id(name),
+                PolicyId=generate_aws_managed_policy_id(name),
                 Arn=arn,
                 Path=path,
                 DefaultVersionId=policy_data["DefaultVersionId"],
@@ -924,16 +919,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         TODO we might want to properly store the policies by partition in the future.
         """
         return _AWS_MANAGED_ARN_NORMALIZE_RE.sub("arn:aws:iam::aws:policy/", arn)
-
-    def _generate_aws_managed_policy_id(self, name: str) -> str:
-        """Generate a deterministic, stable PolicyId for an AWS managed policy.
-
-        The format mirrors real AWS IDs (``ANPA`` + 17 upper-hex chars).  The value
-        is derived from a SHA-256 hash of the policy name so it is consistent across
-        restarts without needing to be persisted.
-        """
-        hash_hex = hashlib.sha256(name.encode()).hexdigest()[:17].upper()
-        return f"ANPA{hash_hex}"
 
     def _attach_policy(self, store: IamStore, policy_arn: str) -> None:
         """
@@ -984,20 +969,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
     # ------------------------------ Role Helper Methods ------------------------------ #
 
-    def _generate_role_id(self, context: RequestContext, tags: list[Tag] | None = None) -> str:
-        """Generate a role ID: AROA + 17 random chars, or use custom ID from tags."""
-        custom_id = self._get_custom_id_from_tags(tags)
-        if custom_id:
-            return custom_id
-        return generate_iam_identifier(context.account_id, prefix="AROA", total_length=21)
-
-    def _build_role_arn(
-        self, context: RequestContext, path: str, role_name: str, is_service_linked: bool = False
-    ) -> str:
-        """Build the ARN for a role."""
-        partition = get_partition(context.region)
-        return f"arn:{partition}:iam::{context.account_id}:role{path}{role_name}"
-
     def _get_role_entity(self, store: IamStore, role_name: str) -> RoleEntity:
         """Gets the role entity and raises the right exception if not found."""
         entity = store.ROLES.get(role_name)
@@ -1042,18 +1013,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
     # ------------------------------ User Helper Methods ------------------------------ #
 
-    def _generate_user_id(self, context: RequestContext, tags: list[Tag] | None = None) -> str:
-        """Generate a user ID: AIDA + 17 random chars, or use custom ID from tags."""
-        custom_id = self._get_custom_id_from_tags(tags)
-        if custom_id:
-            return custom_id
-        return generate_iam_identifier(context.account_id, prefix="AIDA", total_length=21)
-
-    def _build_user_arn(self, context: RequestContext, path: str, user_name: str) -> str:
-        """Build the ARN for a user."""
-        partition = get_partition(context.region)
-        return f"arn:{partition}:iam::{context.account_id}:user{path}{user_name}"
-
     def _get_user_entity(self, store: IamStore, user_name: str) -> UserEntity:
         """Gets the user entity and raises the right exception if not found."""
         entity = store.USERS.get(user_name)
@@ -1083,14 +1042,14 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         with self._policy_lock:
             # Build ARN and check for duplicates
-            policy_arn = self._build_policy_arn(context, path, policy_name)
+            policy_arn = build_policy_arn(context.account_id, context.region, path, policy_name)
             if policy_arn in store.MANAGED_POLICIES:
                 raise EntityAlreadyExistsException(
                     f"A policy called {policy_name} already exists. Duplicate names are not allowed."
                 )
 
             # Generate IDs and timestamps
-            policy_id = self._get_custom_id_from_tags(tags) or self._generate_policy_id()
+            policy_id = get_custom_id_from_tags(tags) or generate_policy_id()
             now = datetime.now(UTC)
 
             # Create the initial version (v1)
@@ -1629,21 +1588,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             raise NoSuchEntityException(f"The group with name {group_name} cannot be found.")
         return entity
 
-    def _generate_group_id(self, context: RequestContext) -> str:
-        """Generate a group ID: AGPA + 17 random chars."""
-        return generate_iam_identifier(context.account_id, prefix="AGPA", total_length=21)
-
-    def _build_group_arn(self, context: RequestContext, path: str, group_name: str) -> str:
-        """Build the ARN for a group."""
-        partition = get_partition(context.region)
-        # Path for ARN: /path/ becomes /path/ in the ARN resource portion
-        if path == "/":
-            return f"arn:{partition}:iam::{context.account_id}:group/{group_name}"
-        else:
-            # Remove leading slash for ARN construction
-            path_part = path[1:] if path.startswith("/") else path
-            return f"arn:{partition}:iam::{context.account_id}:group/{path_part}{group_name}"
-
     def create_group(
         self,
         context: RequestContext,
@@ -1660,8 +1604,8 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 raise EntityAlreadyExistsException(f"Group with name {group_name} already exists.")
 
             # Generate group ID and ARN
-            group_id = self._generate_group_id(context)
-            group_arn = self._build_group_arn(context, path, group_name)
+            group_id = generate_group_id(context.account_id)
+            group_arn = build_group_arn(context.account_id, context.region, path, group_name)
 
             # Build the Group object
             group = Group(
@@ -1776,14 +1720,18 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             if new_path is not None:
                 group_entity.group["Path"] = new_path
                 # Update ARN with new path
-                group_entity.group["Arn"] = self._build_group_arn(context, new_path, target_name)
+                group_entity.group["Arn"] = build_group_arn(
+                    context.account_id, context.region, new_path, target_name
+                )
 
             # Update name if provided
             if new_group_name and new_group_name != group_name:
                 group_entity.group["GroupName"] = new_group_name
                 # Update ARN with new name
                 path = group_entity.group.get("Path", "/")
-                group_entity.group["Arn"] = self._build_group_arn(context, path, new_group_name)
+                group_entity.group["Arn"] = build_group_arn(
+                    context.account_id, context.region, path, new_group_name
+                )
                 # Move in store
                 store.GROUPS[new_group_name] = store.GROUPS.pop(group_name)
 
@@ -2028,8 +1976,8 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 )
 
             # Generate role ID and ARN
-            role_id = self._generate_role_id(context)
-            role_arn = self._build_role_arn(context, path, role_name)
+            role_id = generate_role_id(context.account_id)
+            role_arn = build_role_arn(context.account_id, context.region, path, role_name)
 
             # Build the Role object
             role = Role(
@@ -2136,9 +2084,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 raise EntityAlreadyExistsException(f"User with name {user_name} already exists.")
 
             # Generate user ID and ARN
-            user_id = self._generate_user_id(context, tags)
+            user_id = generate_user_id(context.account_id, tags)
             path = path or "/"
-            user_arn = self._build_user_arn(context, path, user_name)
+            user_arn = build_user_arn(context.account_id, context.region, path, user_name)
 
             # Build the User object
             user = User(
@@ -2284,15 +2232,17 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             if new_path is not None:
                 user_entity.user["Path"] = new_path
                 # Update ARN with new path
-                user_entity.user["Arn"] = self._build_user_arn(
-                    context, new_path, new_user_name or user_name
+                user_entity.user["Arn"] = build_user_arn(
+                    context.account_id, context.region, new_path, new_user_name or user_name
                 )
 
             # Update username if provided
             if new_user_name and new_user_name != user_name:
                 # Update ARN with new username
                 path = user_entity.user.get("Path", "/")
-                user_entity.user["Arn"] = self._build_user_arn(context, path, new_user_name)
+                user_entity.user["Arn"] = build_user_arn(
+                    context.account_id, context.region, path, new_user_name
+                )
                 user_entity.user["UserName"] = new_user_name
                 # Move to new key in store
                 del store.USERS[user_name]
@@ -2796,16 +2746,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
     # ------------------------------ User Access Key Operations ------------------------------ #
 
-    def _generate_access_key_id(self, context: RequestContext) -> str:
-        """Generate an access key ID with the appropriate prefix based on config."""
-        prefix = "AKIA" if config.PARITY_AWS_ACCESS_KEY_ID else "LKIA"
-        return generate_iam_identifier(context.account_id, prefix=prefix, total_length=20)
-
-    def _generate_secret_access_key(self) -> str:
-        """Generate a 40-character random secret access key."""
-        charset = string.ascii_letters + string.digits + "+/"
-        return "".join(random.choices(charset, k=40))
-
     def _get_access_key_entity(
         self, user_entity: UserEntity, access_key_id: str
     ) -> AccessKeyEntity:
@@ -2867,8 +2807,8 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 )
 
             # Generate access key
-            access_key_id = self._generate_access_key_id(context)
-            secret_access_key = self._generate_secret_access_key()
+            access_key_id = generate_access_key_id(context.account_id)
+            secret_access_key = generate_secret_access_key()
 
             access_key = AccessKey(
                 UserName=user_name,
@@ -3062,17 +3002,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         # password always ends in = for some reason - but it is not base64
         return "".join(random.choices(password_charset, k=59)) + "="
 
-    def _generate_credential_id(self, context: RequestContext):
-        """
-        Generate a credential ID.
-        Credentials have a similar structure as access key ids, and also contain the account id encoded in them.
-        Example: `ACCAQAAAAAAAPBAFQJI5W` for account `000000000000`
-
-        :param context: Request context (to extract account id)
-        :return: New credential id.
-        """
-        return generate_iam_identifier(context.account_id, prefix="ACCA", total_length=21)
-
     def _new_service_specific_credential(
         self, user_name: str, service_name: str, context: RequestContext
     ) -> ServiceSpecificCredential:
@@ -3085,7 +3014,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         :return: New ServiceSpecificCredential
         """
         password = self._generate_service_password()
-        credential_id = self._generate_credential_id(context)
+        credential_id = generate_credential_id(context.account_id)
         return ServiceSpecificCredential(
             CreateDate=datetime.now(tz=UTC),
             ServiceName=service_name,
@@ -3513,20 +3442,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
     # ------------------------------ SSH Public Keys ------------------------------ #
 
-    def _generate_ssh_public_key_id(self, context: RequestContext) -> str:
-        """
-        Generate an SSH public key ID with APKA prefix.
-        """
-        return generate_iam_identifier(context.account_id, prefix="APKA", total_length=21)
-
-    def _generate_ssh_key_fingerprint(self, ssh_public_key_body: str) -> str:
-        """
-        Generate a fingerprint for an SSH public key.
-        The fingerprint is the MD5 hash of the key body in colon-separated hex format.
-        """
-        md5_hash = hashlib.md5(ssh_public_key_body.encode("utf-8")).hexdigest()
-        return ":".join(md5_hash[i : i + 2] for i in range(0, len(md5_hash), 2))
-
     def upload_ssh_public_key(
         self,
         context: RequestContext,
@@ -3536,8 +3451,8 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     ) -> UploadSSHPublicKeyResponse:
         store = self._get_store(context)
 
-        ssh_public_key_id = self._generate_ssh_public_key_id(context)
-        fingerprint = self._generate_ssh_key_fingerprint(ssh_public_key_body)
+        ssh_public_key_id = generate_ssh_public_key_id(context.account_id)
+        fingerprint = generate_ssh_key_fingerprint(ssh_public_key_body)
         with self._user_lock:
             user_entity = self._get_user_entity(store, user_name)
 
@@ -3643,18 +3558,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
     # ------------------------------ Server Certificates ------------------------------ #
 
-    def _generate_server_certificate_id(self, context: RequestContext) -> str:
-        """Generate a server certificate ID with ASCA prefix."""
-        return generate_iam_identifier(context.account_id, prefix="ASCA", total_length=21)
-
-    def _build_server_certificate_arn(
-        self, context: RequestContext, path: str, cert_name: str
-    ) -> str:
-        """Build the ARN for a server certificate."""
-        return (
-            f"arn:{context.partition}:iam::{context.account_id}:server-certificate{path}{cert_name}"
-        )
-
     def _get_server_certificate_entity(
         self, store: IamStore, cert_name: str
     ) -> ServerCertificateEntity:
@@ -3701,8 +3604,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             pass
 
         # Generate ID and ARN
-        cert_id = self._generate_server_certificate_id(context)
-        cert_arn = self._build_server_certificate_arn(context, path, server_certificate_name)
+        cert_id = generate_server_certificate_id(context.account_id)
+        cert_arn = build_server_certificate_arn(
+            context.account_id, context.partition, path, server_certificate_name
+        )
 
         # Strip trailing whitespace from certificate body (AWS behavior)
         certificate_body = certificate_body.rstrip()
@@ -3836,7 +3741,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         # Update ARN
         path = entity.metadata.get("Path", "/")
-        entity.metadata["Arn"] = self._build_server_certificate_arn(context, path, target_name)
+        entity.metadata["Arn"] = build_server_certificate_arn(
+            context.account_id, context.partition, path, target_name
+        )
 
     def tag_server_certificate(
         self,
@@ -3911,10 +3818,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
     # ------------------------------ Signing Certificates ------------------------------ #
 
-    def _generate_signing_certificate_id(self) -> str:
-        """Generate a 24-character signing certificate ID (uppercase alphanumeric)."""
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=24))
-
     def upload_signing_certificate(
         self,
         context: RequestContext,
@@ -3943,7 +3846,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 raise LimitExceededException("Cannot exceed quota for CertificatesPerUser: 2")
 
             # Generate certificate ID
-            cert_id = self._generate_signing_certificate_id()
+            cert_id = generate_signing_certificate_id()
 
             # Create signing certificate
             signing_cert = SigningCertificate(
@@ -4306,23 +4209,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             )
         return entity
 
-    def _generate_instance_profile_id(self, context: RequestContext) -> str:
-        """Generate an instance profile ID: AIPA + 17 random chars."""
-        return generate_iam_identifier(context.account_id, prefix="AIPA", total_length=21)
-
-    def _build_instance_profile_arn(
-        self, context: RequestContext, path: str, profile_name: str
-    ) -> str:
-        """Build the ARN for an instance profile."""
-        partition = get_partition(context.region)
-        # Remove leading slash from path if present to avoid double slashes
-        path_part = path.rstrip("/")
-        if path_part == "":
-            return f"arn:{partition}:iam::{context.account_id}:instance-profile/{profile_name}"
-        return (
-            f"arn:{partition}:iam::{context.account_id}:instance-profile{path_part}/{profile_name}"
-        )
-
     def _build_role_for_instance_profile(self, role_entity: RoleEntity) -> Role:
         """Build a Role object suitable for inclusion in an InstanceProfile response."""
         role = role_entity.role
@@ -4373,8 +4259,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 )
 
             # Generate ID and ARN
-            profile_id = self._generate_instance_profile_id(context)
-            profile_arn = self._build_instance_profile_arn(context, path, instance_profile_name)
+            profile_id = generate_instance_profile_id(context.account_id)
+            profile_arn = build_instance_profile_arn(
+                context.account_id, context.region, path, instance_profile_name
+            )
 
             # Build the InstanceProfile object
             instance_profile = InstanceProfile(
