@@ -22,6 +22,7 @@ from localstack.aws.api.logs import (
     DescribeLogStreamsRequest,
     DescribeLogStreamsResponse,
     DescribeMetricFiltersResponse,
+    DescribeResourcePoliciesResponse,
     DescribeSubscriptionFiltersResponse,
     DestinationArn,
     Distribution,
@@ -50,11 +51,15 @@ from localstack.aws.api.logs import (
     MetricTransformations,
     NextToken,
     OutputLogEvent,
+    PolicyDocument,
+    PolicyName,
     PutLogEventsRequest,
     PutLogEventsResponse,
+    PutResourcePolicyResponse,
     RejectedLogEventsInfo,
     ResourceAlreadyExistsException,
     ResourceNotFoundException,
+    ResourcePolicy,
     RoleArn,
     TagKeyList,
     TagList,
@@ -934,3 +939,53 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             raise ResourceNotFoundException("The specified log group does not exist.")
 
         store.log_groups[log_group_name].pop("retentionInDays", None)
+
+    def put_resource_policy(
+        self,
+        context: RequestContext,
+        policy_name: PolicyName | None = None,
+        policy_document: PolicyDocument | None = None,
+        **kwargs,
+    ) -> PutResourcePolicyResponse:
+        store = logs_stores[context.account_id][context.region]
+
+        # Check if this is an update or a new policy
+        is_update = policy_name in store.resource_policies
+
+        # Check limit (max 10 resource policies per region) only for new policies
+        if not is_update and len(store.resource_policies) >= 10:
+            raise LimitExceededException("Resource limit exceeded.")
+
+        resource_policy = ResourcePolicy(
+            policyName=policy_name,
+            policyDocument=policy_document,
+            lastUpdatedTime=now_utc(millis=True),
+        )
+
+        store.resource_policies[policy_name] = resource_policy
+
+        return PutResourcePolicyResponse(resourcePolicy=resource_policy)
+
+    def describe_resource_policies(
+        self,
+        context: RequestContext,
+        next_token: NextToken | None = None,
+        limit: DescribeLimit | None = None,
+        **kwargs,
+    ) -> DescribeResourcePoliciesResponse:
+        store = logs_stores[context.account_id][context.region]
+        policies = list(store.resource_policies.values())
+        return DescribeResourcePoliciesResponse(resourcePolicies=policies)
+
+    def delete_resource_policy(
+        self,
+        context: RequestContext,
+        policy_name: PolicyName | None = None,
+        **kwargs,
+    ) -> None:
+        store = logs_stores[context.account_id][context.region]
+
+        if policy_name not in store.resource_policies:
+            raise ResourceNotFoundException(f"Policy with name [{policy_name}] does not exist.")
+
+        del store.resource_policies[policy_name]

@@ -7,6 +7,8 @@ from localstack.aws.api.logs import (
     LogStream,
     LogStreamName,
     MetricFilter,
+    PolicyName,
+    ResourcePolicy,
     SubscriptionFilter,
 )
 from localstack.services.stores import (
@@ -33,6 +35,8 @@ class LogsStore(BaseStore):
         default=dict
     )
     metric_filters: dict[LogGroupName, list[MetricFilter]] = LocalAttribute(default=dict)
+    # Resource policies are per-region (not per log group)
+    resource_policies: dict[PolicyName, ResourcePolicy] = LocalAttribute(default=dict)
 
 
 logs_stores = AccountRegionBundle("logs", LogsStore)
