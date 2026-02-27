@@ -1,7 +1,6 @@
 import copy
 import json
 import logging
-import re
 from collections import defaultdict
 from datetime import UTC, datetime
 from urllib.parse import urlencode
@@ -84,27 +83,11 @@ from localstack.aws.api.cloudformation import (
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
-from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
-from localstack.services.cloudformation.engine.transformers import FailedTransformationException
-from localstack.services.cloudformation.engine.v2.change_set_model import (
-    ChangeSetModel,
-    ChangeType,
-    UpdateModel,
-)
 from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
     ChangeSetModelDescriber,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_executor import (
     ChangeSetModelExecutor,
-)
-from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
-    ChangeSetModelTransform,
-)
-from localstack.services.cloudformation.engine.v2.change_set_model_validator import (
-    ChangeSetModelValidator,
-)
-from localstack.services.cloudformation.engine.v2.change_set_resource_support_checker import (
-    ChangeSetResourceSupportChecker,
 )
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.provider import (
@@ -122,19 +105,15 @@ from localstack.services.cloudformation.v2.entities import (
     Stack,
     StackInstance,
     StackSet,
+    UpdateModelInputs,
 )
-from localstack.services.cloudformation.v2.types import EngineParameter, engine_parameter_value
+from localstack.services.cloudformation.v2.types import EngineParameter
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import select_attributes
-from localstack.utils.numbers import is_number
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
-
-SSM_PARAMETER_TYPE_RE = re.compile(
-    r"^AWS::SSM::Parameter::Value<(?P<listtype>List<)?(?P<innertype>[^>]+)>?>$"
-)
 
 
 def is_stack_arn(stack_name_or_id: str) -> bool:
@@ -250,215 +229,6 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             "If you experience issues, please submit a bug report at this URL: %s",
             issue_url,
         )
-
-    @staticmethod
-    def _resolve_parameters(
-        template: dict | None,
-        parameters: dict | None,
-        account_id: str,
-        region_name: str,
-        before_parameters: dict | None,
-    ) -> dict[str, EngineParameter]:
-        template_parameters = template.get("Parameters", {})
-        resolved_parameters = {}
-        invalid_parameters = []
-        for name, parameter in template_parameters.items():
-            given_value = parameters.get(name)
-            default_value = parameter.get("Default")
-            resolved_parameter = EngineParameter(
-                type_=parameter["Type"],
-                given_value=given_value,
-                default_value=default_value,
-                no_echo=parameter.get("NoEcho"),
-            )
-
-            # validate the type
-            if parameter["Type"] == "Number" and not is_number(
-                engine_parameter_value(resolved_parameter)
-            ):
-                raise ValidationError(f"Parameter '{name}' must be a number.")
-
-            # TODO: support other parameter types
-            if match := SSM_PARAMETER_TYPE_RE.match(parameter["Type"]):
-                inner_type = match.group("innertype")
-                is_list_type = match.group("listtype") is not None
-                if is_list_type or inner_type == "CommaDelimitedList":
-                    # list types
-                    try:
-                        resolved_value = resolve_ssm_parameter(
-                            account_id, region_name, given_value or default_value
-                        )
-                        resolved_parameter["resolved_value"] = resolved_value.split(",")
-                    except Exception:
-                        raise ValidationError(
-                            f"Parameter {name} should either have input value or default value"
-                        )
-                else:
-                    try:
-                        resolved_parameter["resolved_value"] = resolve_ssm_parameter(
-                            account_id, region_name, given_value or default_value
-                        )
-                    except Exception as e:
-                        # we could not find the parameter however CDK provides the resolved value rather than the
-                        # parameter name again so try to look up the value in the previous parameters
-                        if (
-                            before_parameters
-                            and (before_param := before_parameters.get(name))
-                            and isinstance(before_param, dict)
-                            and (resolved_value := before_param.get("resolved_value"))
-                        ):
-                            LOG.debug(
-                                "Parameter %s could not be resolved, using previous value of %s",
-                                name,
-                                resolved_value,
-                            )
-                            resolved_parameter["resolved_value"] = resolved_value
-                        else:
-                            raise ValidationError(
-                                f"Parameter {name} should either have input value or default value"
-                            ) from e
-            elif given_value is None and default_value is None:
-                invalid_parameters.append(name)
-                continue
-
-            resolved_parameters[name] = resolved_parameter
-
-        if invalid_parameters:
-            raise ValidationError(f"Parameters: [{','.join(invalid_parameters)}] must have values")
-
-        for name, parameter in resolved_parameters.items():
-            if (
-                parameter.get("resolved_value") is None
-                and parameter.get("given_value") is None
-                and parameter.get("default_value") is None
-            ):
-                raise ValidationError(
-                    f"Parameter {name} should either have input value or default value"
-                )
-
-        return resolved_parameters
-
-    @classmethod
-    def _setup_change_set_model(
-        cls,
-        change_set: ChangeSet,
-        before_template: dict | None,
-        after_template: dict | None,
-        before_parameters: dict | None,
-        after_parameters: dict | None,
-        previous_update_model: UpdateModel | None = None,
-    ):
-        resolved_parameters = None
-        if after_parameters is not None:
-            resolved_parameters = cls._resolve_parameters(
-                after_template,
-                after_parameters,
-                change_set.stack.account_id,
-                change_set.stack.region_name,
-                before_parameters,
-            )
-
-        change_set.resolved_parameters = resolved_parameters
-
-        # Create and preprocess the update graph for this template update.
-        change_set_model = ChangeSetModel(
-            before_template=before_template,
-            after_template=after_template,
-            before_parameters=before_parameters,
-            after_parameters=resolved_parameters,
-        )
-        raw_update_model: UpdateModel = change_set_model.get_update_model()
-        # If there exists an update model which operated in the 'before' version of this change set,
-        # port the runtime values computed for the before version into this latest update model.
-        if previous_update_model:
-            raw_update_model.before_runtime_cache.clear()
-            raw_update_model.before_runtime_cache.update(previous_update_model.after_runtime_cache)
-        change_set.set_update_model(raw_update_model)
-
-        # Apply global transforms.
-        # TODO: skip this process iff both versions of the template don't specify transform blocks.
-        change_set_model_transform = ChangeSetModelTransform(
-            change_set=change_set,
-            before_parameters=before_parameters,
-            after_parameters=resolved_parameters,
-            before_template=before_template,
-            after_template=after_template,
-        )
-        try:
-            transformed_before_template, transformed_after_template = (
-                change_set_model_transform.transform()
-            )
-        except FailedTransformationException as e:
-            change_set.status = ChangeSetStatus.FAILED
-            change_set.status_reason = e.message
-            change_set.stack.set_stack_status(
-                status=StackStatus.ROLLBACK_IN_PROGRESS, reason=e.message
-            )
-            change_set.stack.set_stack_status(status=StackStatus.CREATE_FAILED)
-            return
-
-        # Remodel the update graph after the applying the global transforms.
-        change_set_model = ChangeSetModel(
-            before_template=transformed_before_template,
-            after_template=transformed_after_template,
-            before_parameters=before_parameters,
-            after_parameters=resolved_parameters,
-        )
-        update_model = change_set_model.get_update_model()
-        # Bring the cache for the previous operations forward in the update graph for this version
-        # of the templates. This enables downstream update graph visitors to access runtime
-        # information computed whilst evaluating the previous version of this template, and during
-        # the transformations.
-        update_model.before_runtime_cache.update(raw_update_model.before_runtime_cache)
-        update_model.after_runtime_cache.update(raw_update_model.after_runtime_cache)
-        change_set.set_update_model(update_model)
-
-        # perform validations
-        validator = ChangeSetModelValidator(
-            change_set=change_set,
-        )
-        validator.validate()
-
-        # hacky
-        if transform := raw_update_model.node_template.transform:
-            if transform.global_transforms:
-                # global transforms should always be considered "MODIFIED"
-                update_model.node_template.change_type = ChangeType.MODIFIED
-        change_set.processed_template = transformed_after_template
-
-        if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
-            support_visitor = ChangeSetResourceSupportChecker(
-                change_set_type=change_set.change_set_type
-            )
-            support_visitor.visit(change_set.update_model.node_template)
-            failure_messages = support_visitor.failure_messages
-            if failure_messages:
-                reason_suffix = ", ".join(failure_messages)
-                status_reason = f"{ChangeSetResourceSupportChecker.TITLE_MESSAGE} {reason_suffix}"
-
-                change_set.status_reason = status_reason
-                change_set.set_change_set_status(ChangeSetStatus.FAILED)
-                failure_transitions = {
-                    ChangeSetType.CREATE: (
-                        StackStatus.ROLLBACK_IN_PROGRESS,
-                        StackStatus.CREATE_FAILED,
-                    ),
-                    ChangeSetType.UPDATE: (
-                        StackStatus.UPDATE_ROLLBACK_IN_PROGRESS,
-                        StackStatus.UPDATE_ROLLBACK_FAILED,
-                    ),
-                    ChangeSetType.IMPORT: (
-                        StackStatus.IMPORT_ROLLBACK_IN_PROGRESS,
-                        StackStatus.IMPORT_ROLLBACK_FAILED,
-                    ),
-                }
-                transitions = failure_transitions.get(change_set.change_set_type)
-                if transitions:
-                    first_status, *remaining_statuses = transitions
-                    change_set.stack.set_stack_status(first_status, status_reason)
-                    for status in remaining_statuses:
-                        change_set.stack.set_stack_status(status)
-                return
 
     @handler("CreateChangeSet", expand=False)
     def create_change_set(
@@ -600,13 +370,14 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template=after_template,
             template_body=template_body,
         )
-        self._setup_change_set_model(
-            change_set=change_set,
-            before_template=before_template,
-            after_template=after_template,
-            before_parameters=before_parameters,
-            after_parameters=after_parameters,
-            previous_update_model=previous_update_model,
+        change_set.compute_update_model(
+            UpdateModelInputs(
+                before_template=before_template,
+                after_template=after_template,
+                before_parameters=before_parameters,
+                after_parameters=after_parameters,
+                previous_update_model=previous_update_model,
+            )
         )
         if change_set.status == ChangeSetStatus.FAILED:
             change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
@@ -958,13 +729,13 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template=after_template,
             template_body=template_body,
         )
-        self._setup_change_set_model(
-            change_set=change_set,
-            before_template=None,
-            after_template=after_template,
-            before_parameters=None,
-            after_parameters=after_parameters,
-            previous_update_model=None,
+        change_set.compute_update_model(
+            UpdateModelInputs(
+                before_template=None,
+                after_template=after_template,
+                before_parameters=None,
+                after_parameters=after_parameters,
+            )
         )
         if change_set.status == ChangeSetStatus.FAILED:
             return CreateStackOutput(StackId=stack.stack_id)
@@ -1623,13 +1394,14 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template_body=template_body,
             template=after_template,
         )
-        self._setup_change_set_model(
-            change_set=change_set,
-            before_template=before_template,
-            after_template=after_template,
-            before_parameters=before_parameters,
-            after_parameters=after_parameters,
-            previous_update_model=previous_update_model,
+        change_set.compute_update_model(
+            UpdateModelInputs(
+                before_template=before_template,
+                after_template=after_template,
+                before_parameters=before_parameters,
+                after_parameters=after_parameters,
+                previous_update_model=previous_update_model,
+            )
         )
 
         # TODO: some changes are only detectable at runtime; consider using
@@ -1721,12 +1493,13 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         change_set = ChangeSet(
             stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"}, template_body=""
         )  # noqa
-        self._setup_change_set_model(
-            change_set=change_set,
-            before_template=stack.processed_template,
-            after_template=None,
-            before_parameters=stack.resolved_parameters,
-            after_parameters=None,
+        change_set.compute_update_model(
+            UpdateModelInputs(
+                before_template=stack.processed_template,
+                after_template=None,
+                before_parameters=stack.resolved_parameters,
+                after_parameters=None,
+            )
         )
 
         change_set_executor = ChangeSetModelExecutor(change_set)
