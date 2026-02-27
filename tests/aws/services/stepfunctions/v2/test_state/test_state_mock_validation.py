@@ -174,6 +174,8 @@ class TestStateMockValidation:
         sfn_snapshot.match("validation_exception", e.value.response)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    # ANTLR parser message has different wording but the same meaning as AWS response. Not investing time now to convert to the exact same wording - relying on error code for test.
+    # TODO match wording and hide implementation details (ANTLR)
     @markers.aws.validated
     def test_parallel_state_empty_branches(
         self,
