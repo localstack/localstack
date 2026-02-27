@@ -29,18 +29,11 @@ class MockedStateParallel(MockedBaseState[StateParallel]):
         if self._wrapped._is_language_query_jsonpath():
             # AWS does not include afterInputPath in inspection data for Parallel states.
             env.inspection_data.pop("afterInputPath", None)
-            # MockedStateExecution.add_inspection_data skips afterResultSelector for list
-            # results (its isinstance check excludes lists). Parallel state results are
-            # lists, so we handle it here. This runs before result_path, so stack[-1] is
-            # the raw branches result (list), which is the correct value.
-            if "afterResultSelector" not in env.inspection_data:
-                env.inspection_data["afterResultSelector"] = to_json_str(env.stack[-1])
             # For the base case (no explicit ResultPath), afterResultPath equals the
             # branches result. For I/O cases with explicit ResultPath, the preprocessor's
             # result_path decoration will overwrite this with the merged value later.
             if "afterResultPath" not in env.inspection_data:
                 env.inspection_data["afterResultPath"] = to_json_str(env.stack[-1])
         else:
-            # For JSONata Parallel states, AWS does not include afterArguments,
-            # afterResultSelector, or afterResultPath in inspection data.
+            # For JSONata Parallel states, AWS does not include afterArguments in inspection data.
             env.inspection_data.pop("afterArguments", None)
