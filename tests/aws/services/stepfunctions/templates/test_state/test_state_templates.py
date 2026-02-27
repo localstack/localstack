@@ -95,6 +95,9 @@ class TestStateTemplate(TemplateLoader):
     IO_PARALLEL_STATE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/io_parallel_state.json5"
     )
+    IO_JSONATA_PARALLEL_STATE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/io_jsonata_parallel_state.json5"
+    )
 
 
 class TestStateMachineTemplate(TemplateLoader):

@@ -71,6 +71,33 @@
       "total": 0.2
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_jsonata_parallel_state_mock_success[DEBUG]": {
+    "last_validated_date": "2026-02-27T09:29:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.18,
+      "teardown": 0.0,
+      "total": 0.18
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_jsonata_parallel_state_mock_success[INFO]": {
+    "last_validated_date": "2026-02-27T09:29:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.58,
+      "call": 0.63,
+      "teardown": 0.0,
+      "total": 1.21
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_jsonata_parallel_state_mock_success[TRACE]": {
+    "last_validated_date": "2026-02-27T09:29:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.0,
+      "total": 0.2
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_parallel_state_mock_success[DEBUG]": {
     "last_validated_date": "2026-02-24T22:49:13+00:00",
     "durations_in_seconds": {
