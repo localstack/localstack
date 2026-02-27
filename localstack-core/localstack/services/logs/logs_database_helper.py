@@ -101,10 +101,9 @@ class LogsDatabaseHelper:
                 query += " AND timestamp <= ?"
                 params.append(end_time)
 
-            if start_from_head:
-                query += " ORDER BY timestamp ASC"
-            else:
-                query += " ORDER BY timestamp DESC"
+            # Always return events in ascending timestamp order
+            # startFromHead only affects which end to start reading from, not the order
+            query += " ORDER BY timestamp ASC"
 
             if limit is not None:
                 query += " LIMIT ?"

@@ -284,34 +284,68 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         if log_stream_name not in store.log_streams.get(log_group_name, {}):
             raise ResourceNotFoundException("The specified log stream does not exist.")
 
-        self.db_helper.put_log_events(
-            log_group_name,
-            log_stream_name,
-            log_events,
-            context.region,
-            context.account_id,
+        # Validate chronological order
+        for i in range(1, len(log_events)):
+            if log_events[i]["timestamp"] < log_events[i - 1]["timestamp"]:
+                raise InvalidParameterException(
+                    "Log events in a single PutLogEvents request must be in chronological order."
+                )
+
+        # Check for too old or too new events
+        current_time = now_utc(millis=True)
+        fourteen_days_ms = 14 * 24 * 60 * 60 * 1000
+        two_hours_ms = 2 * 60 * 60 * 1000
+
+        rejected_info = RejectedLogEventsInfo()
+        events_to_store = []
+
+        for i, event in enumerate(log_events):
+            ts = event["timestamp"]
+            if ts < current_time - fourteen_days_ms:
+                # Track the last index of too-old events
+                rejected_info["tooOldLogEventEndIndex"] = i
+            elif ts > current_time + two_hours_ms:
+                # Track the first index of too-new events
+                if "tooNewLogEventStartIndex" not in rejected_info:
+                    rejected_info["tooNewLogEventStartIndex"] = i
+            else:
+                events_to_store.append(event)
+
+        if events_to_store:
+            self.db_helper.put_log_events(
+                log_group_name,
+                log_stream_name,
+                events_to_store,
+                context.region,
+                context.account_id,
+            )
+
+            def _send_events(*_):
+                self._send_events_to_subscription(
+                    log_group_name,
+                    log_stream_name,
+                    events_to_store,
+                    account_id=context.account_id,
+                    region=context.region,
+                )
+
+                self._send_events_metrics(
+                    log_group_name,
+                    log_stream_name,
+                    events_to_store,
+                    account_id=context.account_id,
+                    region=context.region,
+                )
+
+            start_worker_thread(_send_events)
+
+        # Generate a nextSequenceToken (AWS uses a numeric string)
+        next_sequence_token = str(now_utc(millis=True))
+
+        return PutLogEventsResponse(
+            nextSequenceToken=next_sequence_token,
+            rejectedLogEventsInfo=rejected_info if rejected_info else None,
         )
-
-        def _send_events(*_):
-            self._send_events_to_subscription(
-                log_group_name,
-                log_stream_name,
-                log_events,
-                account_id=context.account_id,
-                region=context.region,
-            )
-
-            self._send_events_metrics(
-                log_group_name,
-                log_stream_name,
-                log_events,
-                account_id=context.account_id,
-                region=context.region,
-            )
-
-        start_worker_thread(_send_events)
-
-        return PutLogEventsResponse(rejectedLogEventsInfo=RejectedLogEventsInfo())
 
     def _send_events_metrics(
         self,
@@ -441,13 +475,39 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         region = context.region
         account_id = context.account_id
         store = logs_stores[context.account_id][context.region]
-        log_group_name = request["logGroupName"]
+
+        log_group_name = request.get("logGroupName")
+        log_group_identifier = request.get("logGroupIdentifier")
         log_stream_name = request["logStreamName"]
 
-        if log_group_name not in store.log_groups:
+        # Handle logGroupIdentifier (can be name or ARN)
+        if log_group_identifier:
+            if log_group_identifier.startswith("arn:"):
+                # Extract log group name from ARN
+                log_group_name = log_group_identifier.split(":")[-1].removeprefix("log-group:")
+            else:
+                log_group_name = log_group_identifier
+
+        if not log_group_name or log_group_name not in store.log_groups:
             raise ResourceNotFoundException("The specified log group does not exist.")
         if log_stream_name not in store.log_streams.get(log_group_name, {}):
             raise ResourceNotFoundException("The specified log stream does not exist.")
+
+        # Validate limit
+        limit = request.get("limit")
+        if limit is not None and limit > 10000:
+            raise InvalidParameterException(
+                f"1 validation error detected: Value '{limit}' at 'limit' failed to satisfy constraint: Member must have value less than or equal to 10000"
+            )
+
+        # Validate nextToken
+        next_token = request.get("nextToken")
+        if next_token is not None:
+            # AWS nextToken for GetLogEvents has a specific format
+            # Simple validation: check if it looks valid (contains forward/backward indicator)
+            if not (next_token.startswith("f/") or next_token.startswith("b/")):
+                raise InvalidParameterException("The specified nextToken is invalid.")
+
         try:
             events_data = self.db_helper.get_log_events(
                 log_group_name,
@@ -456,7 +516,7 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
                 account_id,
                 request.get("startTime"),
                 request.get("endTime"),
-                request.get("limit"),
+                limit,
                 request.get("startFromHead"),
             )
             events = [
@@ -768,7 +828,9 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         emit_system_field_dimensions: EmitSystemFields | None = None,
         **kwargs,
     ) -> None:
-        if self._find_metric_filter(log_group_name, filter_name):
+        if self._find_metric_filter(
+            log_group_name, filter_name, account_id=context.account_id, region_name=context.region
+        ):
             # TODO find correct name
             raise InvalidParameterException(
                 f"Filter with name $'{filter_name}' already exists for '{log_group_name}'"
