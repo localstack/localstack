@@ -23,17 +23,7 @@ class MockedStateParallel(MockedBaseState[StateParallel]):
             post_return_fn=self.add_inspection_data,
         )
 
-        cls = type(self)
-
-        def mocked_branches_eval_body(env: TestStateEnvironment) -> None:
-            if not env.mock.is_mocked():
-                original_branches_eval_body(env)
-                return
-            # Pop the input value just like the original BranchesDecl._eval_body does.
-            env.stack.pop()
-            cls.do_mock(env)
-
-        self._wrapped.branches._eval_body = mocked_branches_eval_body
+        self._wrapped.branches._eval_body = self.wrap_with_mock(original_branches_eval_body)
 
     def add_inspection_data(self, env: TestStateEnvironment):
         if self._wrapped._is_language_query_jsonpath():
