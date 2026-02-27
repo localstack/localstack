@@ -4,6 +4,7 @@ import threading
 import time
 from queue import Queue
 
+from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.bootstrap import is_api_enabled
@@ -86,6 +87,11 @@ class LogHandler:
                 )
 
     def start_subscriber(self) -> None:
+        if config.LAMBDA_DISABLE_CLOUDWATCH:
+            LOG.info(
+                "LAMBDA_DISABLE_CLOUDWATCH is set, skipping CloudWatch log subscriber for lambda executions"
+            )
+            return
         if not is_api_enabled("logs"):
             LOG.debug("Service 'logs' is disabled, not storing any logs for lambda executions")
             return
@@ -93,7 +99,7 @@ class LogHandler:
         self._thread.start()
 
     def add_logs(self, log_item: LogItem) -> None:
-        if not is_api_enabled("logs"):
+        if not is_api_enabled("logs") or config.LAMBDA_DISABLE_CLOUDWATCH:
             return
         self.log_queue.put(log_item)
 
