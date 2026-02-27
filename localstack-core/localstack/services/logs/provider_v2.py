@@ -35,6 +35,7 @@ from localstack.aws.api.logs import (
     GetLogEventsRequest,
     GetLogEventsResponse,
     InvalidParameterException,
+    LimitExceededException,
     ListLogGroupsRequest,
     ListLogGroupsResponse,
     ListTagsForResourceResponse,
@@ -761,17 +762,32 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
             )
 
         previous_filters = store.subscription_filters.get(log_group_name, [])
-        previous_filters.append(
-            SubscriptionFilter(
-                filterName=filter_name,
-                filterPattern=filter_pattern,
-                destinationArn=destination_arn,
-                roleArn=role_arn,
-                logGroupName=log_group_name,
-                distribution=distribution or Distribution.ByLogStream,
-                creationTime=int(unix_time_millis()),
-            )
+
+        # Check if filter with same name exists (update case)
+        existing_filter_index = None
+        for i, f in enumerate(previous_filters):
+            if f["filterName"] == filter_name:
+                existing_filter_index = i
+                break
+
+        new_filter = SubscriptionFilter(
+            filterName=filter_name,
+            filterPattern=filter_pattern,
+            destinationArn=destination_arn,
+            roleArn=role_arn,
+            logGroupName=log_group_name,
+            distribution=distribution or Distribution.ByLogStream,
+            creationTime=int(unix_time_millis()),
         )
+
+        if existing_filter_index is not None:
+            # Update existing filter
+            previous_filters[existing_filter_index] = new_filter
+        else:
+            # Check limit (max 2 subscription filters per log group)
+            if len(previous_filters) >= 2:
+                raise LimitExceededException("Resource limit exceeded.")
+            previous_filters.append(new_filter)
 
         store.subscription_filters.update({log_group_name: previous_filters})
 
@@ -784,6 +800,8 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         limit: DescribeLimit | None = None,
         **kwargs,
     ) -> DescribeSubscriptionFiltersResponse:
+        self._verify_log_group_exists(log_group_name, context.account_id, context.region)
+
         filter_name_prefix = filter_name_prefix or ""
         store = logs_stores[context.account_id][context.region]
         filters = store.subscription_filters.get(log_group_name, [])
@@ -799,10 +817,17 @@ class LogsProviderV2(ServiceLifecycleHook, LogsApi):
         filter_name: FilterName,
         **kwargs,
     ) -> None:
+        self._verify_log_group_exists(log_group_name, context.account_id, context.region)
+
         store = logs_stores[context.account_id][context.region]
         filters = store.subscription_filters.get(log_group_name, [])
-        filters = [_filter for _filter in filters if _filter["filterName"] != filter_name]
 
+        # Check if filter exists
+        filter_exists = any(f["filterName"] == filter_name for f in filters)
+        if not filter_exists:
+            raise ResourceNotFoundException("The specified subscription filter does not exist.")
+
+        filters = [_filter for _filter in filters if _filter["filterName"] != filter_name]
         store.subscription_filters.update({log_group_name: filters})
 
     def _find_metric_filter(
