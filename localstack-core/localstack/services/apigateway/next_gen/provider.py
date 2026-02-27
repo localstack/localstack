@@ -149,10 +149,17 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
             if is_canary := patch_path.startswith("/canarySettings"):
                 skip_moto_apply = True
                 path_valid = is_canary_settings_update_patch_valid(op=patch_op, path=patch_path)
-                # it seems our JSON Patch utility does not handle replace properly if the value does not exists before
+                # it seems our JSON Patch utility does not handle replace properly if the value does not exist before
                 # it seems to maybe be a Stage-only thing, so replacing it here
                 if patch_op == "replace":
                     patch_operation["op"] = "add"
+            elif patch_path.startswith("/accessLogSettings"):
+                validate_access_log_settings_update_patch_valid(
+                    op=patch_op, path=patch_path, value=patch_operation.get("value")
+                )
+                # for AccessLogSettings, Moto does support its patching, but does not support `add`, so we replace it
+                if patch_op == "add":
+                    patch_operation["op"] = "replace"
 
             if patch_op == "copy":
                 copy_from = patch_operation.get("from")
@@ -477,6 +484,26 @@ def is_canary_settings_update_patch_valid(op: str, path: str) -> bool:
         return False
 
     return True
+
+
+def validate_access_log_settings_update_patch_valid(op: str, path: str, value: str | None) -> None:
+    # See https://docs.aws.amazon.com/apigateway/latest/api/patch-operations.html#UpdateStage-Patch
+    # not everything is right on the table, for example no path supports `remove` accept the root path
+    # TODO: validate destinationArn is a valid ARN (does not have to validate it exists)
+    valid_paths = ["/accessLogSettings/destinationArn", "/accessLogSettings/format"]
+    if op == "remove":
+        if path != "/accessLogSettings":
+            stripped_path = path.removeprefix("/")
+            raise BadRequestException(
+                f"Cannot remove method setting {stripped_path} because there is no method setting for this method "
+            )
+    elif op in ("add", "replace"):
+        if path not in valid_paths:
+            raise BadRequestException(
+                "Invalid accessLogSettings path. Must be one of : [/accessLogSettings/destinationArn, /accessLogSettings/format]"
+            )
+        if not value:
+            raise BadRequestException("Access Log value must not be empty")
 
 
 def _get_gateway_response_or_default(
