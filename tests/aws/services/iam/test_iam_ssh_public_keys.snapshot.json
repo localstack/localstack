@@ -1,0 +1,160 @@
+{
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_upload_ssh_public_key": {
+    "recorded-date": "13-02-2026, 19:31:15",
+    "recorded-content": {
+      "upload-response": {
+        "SSHPublicKey": {
+          "Fingerprint": "<fingerprint:1>",
+          "SSHPublicKeyBody": "<ssh-public-key:1>",
+          "SSHPublicKeyId": "<ssh-public-key-id:1>",
+          "Status": "Active",
+          "UploadDate": "<datetime>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_get_ssh_public_key": {
+    "recorded-date": "13-02-2026, 19:31:44",
+    "recorded-content": {
+      "get-response": {
+        "SSHPublicKey": {
+          "Fingerprint": "<fingerprint:1>",
+          "SSHPublicKeyBody": "<ssh-public-key:1>",
+          "SSHPublicKeyId": "<ssh-public-key-id:1>",
+          "Status": "Active",
+          "UploadDate": "<datetime>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_get_ssh_public_key_not_found": {
+    "recorded-date": "13-02-2026, 19:32:19",
+    "recorded-content": {
+      "get-not-found": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Public Key with id APKAXXXXXXXXXXXXXXXXX cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_list_ssh_public_keys": {
+    "recorded-date": "13-02-2026, 19:34:22",
+    "recorded-content": {
+      "list-empty": {
+        "IsTruncated": false,
+        "SSHPublicKeys": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-with-key": {
+        "IsTruncated": false,
+        "SSHPublicKeys": [
+          {
+            "SSHPublicKeyId": "<ssh-public-key-id:1>",
+            "Status": "Active",
+            "UploadDate": "<datetime>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_update_ssh_public_key": {
+    "recorded-date": "13-02-2026, 19:36:46",
+    "recorded-content": {
+      "update-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-after-update": {
+        "SSHPublicKey": {
+          "Fingerprint": "<fingerprint:1>",
+          "SSHPublicKeyBody": "<ssh-public-key:1>",
+          "SSHPublicKeyId": "<ssh-public-key-id:1>",
+          "Status": "Inactive",
+          "UploadDate": "<datetime>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_update_ssh_public_key_not_found": {
+    "recorded-date": "13-02-2026, 19:37:35",
+    "recorded-content": {
+      "update-not-found": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Public Key with id APKAXXXXXXXXXXXXXXXXX cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_delete_ssh_public_key": {
+    "recorded-date": "13-02-2026, 19:38:46",
+    "recorded-content": {
+      "delete-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-delete": {
+        "IsTruncated": false,
+        "SSHPublicKeys": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_delete_ssh_public_key_not_found": {
+    "recorded-date": "13-02-2026, 19:40:03",
+    "recorded-content": {
+      "delete-not-found": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The Public Key with id APKAXXXXXXXXXXXXXXXXX cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  }
+}

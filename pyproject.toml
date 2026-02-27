@@ -113,6 +113,7 @@ test = [
     "httpx[http2]>=0.25",
     "json5>=0.12.1",
     "pluggy>=1.3.0",
+    "pyotp>=2.9.0",
     "pytest>=7.4.2",
     "pytest-split>=0.8.0",
     "pytest-httpserver>=1.1.2",
@@ -178,7 +179,8 @@ exclude = ["tests*"]
     "services/**/resource_providers/**/*.schema.json",
     "utils/kinesis/java/cloud/localstack/*.*",
     "openapi.yaml",
-    "http/resources/swagger/templates/index.html"
+    "http/resources/swagger/templates/index.html",
+    "services/iam/resources/*.json"
 ]
 
 [tool.ruff]

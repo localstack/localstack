@@ -7,7 +7,6 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.iam import Tag
-from localstack.services.iam.iam_patches import ADDITIONAL_MANAGED_POLICIES
 from localstack.testing.aws.util import create_client_with_keys, wait_for_user
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
@@ -372,14 +371,11 @@ class TestIAMIntegrations:
         aws_client.iam.delete_user(UserName=user_name)
 
     @markers.aws.validated
-    def test_attach_detach_role_policy(self, aws_client, region_name):
+    def test_attach_detach_role_policy(self, aws_client, partition):
         role_name = f"s3-role-{short_uid()}"
         policy_name = f"s3-role-policy-{short_uid()}"
 
-        policy_arns = [p["Arn"] for p in ADDITIONAL_MANAGED_POLICIES.values()]
-        policy_arns = [
-            arn.replace("arn:aws:", f"arn:{get_partition(region_name)}:") for arn in policy_arns
-        ]
+        policy_arns = [f"arn:{partition}:iam::aws:policy/AWSLambdaExecute"]
 
         assume_policy_document = {
             "Version": "2012-10-17",
@@ -402,7 +398,7 @@ class TestIAMIntegrations:
                         "s3:ListBucket",
                     ],
                     "Effect": "Allow",
-                    "Resource": [f"arn:{get_partition(region_name)}:s3:::bucket_name"],
+                    "Resource": [f"arn:{partition}:s3:::bucket_name"],
                 }
             ],
         }
@@ -589,181 +585,6 @@ class TestIAMIntegrations:
                 aws_client.iam.delete_service_linked_role(RoleName=role_name)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Role.Tags"]
-    )  # Moto returns an empty list for no tags
-    def test_update_assume_role_policy(self, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.iam_api())
-
-        policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": ["ec2.amazonaws.com"]},
-                    "Action": ["sts:AssumeRole"],
-                }
-            ],
-        }
-
-        role_name = f"role-{short_uid()}"
-        result = aws_client.iam.create_role(
-            RoleName=role_name,
-            AssumeRolePolicyDocument=json.dumps(policy),
-        )
-        snapshot.match("created_role", result)
-        try:
-            result = aws_client.iam.update_assume_role_policy(
-                RoleName=role_name,
-                PolicyDocument=json.dumps(policy),
-            )
-            snapshot.match("updated_policy", result)
-        finally:
-            aws_client.iam.delete_role(RoleName=role_name)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Role.Tags"]
-    )  # Moto returns an empty list for no tags
-    def test_create_describe_role(self, snapshot, aws_client, create_role, cleanups):
-        snapshot.add_transformer(snapshot.transform.iam_api())
-        path_prefix = f"/{short_uid()}/"
-        snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
-
-        trust_policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": "ec2.amazonaws.com"},
-                    "Action": "sts:AssumeRole",
-                }
-            ],
-        }
-
-        role_name = f"role-{short_uid()}"
-        create_role_result = create_role(
-            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Path=path_prefix
-        )
-        snapshot.match("create_role_result", create_role_result)
-        get_role_result = aws_client.iam.get_role(RoleName=role_name)
-        snapshot.match("get_role_result", get_role_result)
-
-        list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
-        snapshot.match("list_roles_result", list_roles_result)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Role.Tags"]
-    )  # Moto returns an empty list for no tags
-    def test_list_roles_with_permission_boundary(
-        self, snapshot, aws_client, create_role, create_policy, cleanups
-    ):
-        snapshot.add_transformer(snapshot.transform.iam_api())
-        path_prefix = f"/{short_uid()}/"
-        snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
-
-        trust_policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": "ec2.amazonaws.com"},
-                    "Action": "sts:AssumeRole",
-                }
-            ],
-        }
-        permission_boundary = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {"Effect": "Allow", "Action": ["lambda:ListFunctions"], "Resource": ["*"]}
-            ],
-        }
-
-        role_name = f"role-{short_uid()}"
-        policy_name = f"policy-{short_uid()}"
-        result = create_role(
-            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Path=path_prefix
-        )
-        snapshot.match("created_role", result)
-        policy_arn = create_policy(
-            PolicyName=policy_name, PolicyDocument=json.dumps(permission_boundary)
-        )["Policy"]["Arn"]
-
-        aws_client.iam.put_role_permissions_boundary(
-            RoleName=role_name, PermissionsBoundary=policy_arn
-        )
-        cleanups.append(lambda: aws_client.iam.delete_role_permissions_boundary(RoleName=role_name))
-
-        list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
-        snapshot.match("list_roles_result", list_roles_result)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Policy.IsAttachable",
-            "$..Policy.PermissionsBoundaryUsageCount",
-            "$..Policy.Tags",
-            "$..Policy.Description",
-        ]
-    )
-    def test_role_attach_policy(self, snapshot, aws_client, create_role, create_policy):
-        snapshot.add_transformer(snapshot.transform.iam_api())
-
-        trust_policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": "ec2.amazonaws.com"},
-                    "Action": "sts:AssumeRole",
-                }
-            ],
-        }
-        policy_document = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {"Effect": "Allow", "Action": ["lambda:ListFunctions"], "Resource": ["*"]}
-            ],
-        }
-
-        role_name = f"test-role-{short_uid()}"
-        policy_name = f"test-policy-{short_uid()}"
-        create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
-        create_policy_response = create_policy(
-            PolicyName=policy_name, PolicyDocument=json.dumps(policy_document)
-        )
-        snapshot.match("create_policy_response", create_policy_response)
-        policy_arn = create_policy_response["Policy"]["Arn"]
-
-        with pytest.raises(ClientError) as e:
-            aws_client.iam.attach_role_policy(
-                RoleName=role_name, PolicyArn="longpolicynamebutnoarn"
-            )
-        snapshot.match("non_existent_malformed_policy_arn", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_name)
-        snapshot.match("existing_policy_name_provided", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=f"{policy_arn}123")
-        snapshot.match("valid_arn_not_existent", e.value.response)
-
-        attach_policy_response = aws_client.iam.attach_role_policy(
-            RoleName=role_name, PolicyArn=policy_arn
-        )
-        snapshot.match("valid_policy_arn", attach_policy_response)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Policy.IsAttachable",
-            "$..Policy.PermissionsBoundaryUsageCount",
-            "$..Policy.Tags",
-            "$..Policy.Description",
-        ]
-    )
     def test_user_attach_policy(self, snapshot, aws_client, create_user, create_policy):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
@@ -833,9 +654,6 @@ class TestIAMPolicyEncoding:
         snapshot.match("get-policy-response", get_policy_response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Role.Tags"]
-    )  # Moto returns an empty list for no tags
     def test_put_role_policy_encoding(self, snapshot, aws_client, create_role, region_name):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
@@ -1477,39 +1295,3 @@ class TestIAMServiceRoles:
         with pytest.raises(ClientError) as e:
             aws_client.iam.create_service_linked_role(AWSServiceName=service_name)
         snapshot.match("role-already-exists-error", e.value.response)
-
-
-class TestRoles:
-    @pytest.fixture(autouse=True)
-    def snapshot_transformers(self, snapshot):
-        snapshot.add_transformer(snapshot.transform.iam_api())
-
-    @markers.aws.validated
-    def test_role_with_tags(self, aws_client, account_id, create_role, snapshot):
-        role_name = f"role-{short_uid()}"
-        path = "/role-with-tags/"
-        trust_policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": "ec2.amazonaws.com"},
-                    "Action": "sts:AssumeRole",
-                }
-            ],
-        }
-        tags = [{"Key": "test", "Value": "value"}]
-
-        create_role_response = create_role(
-            RoleName=role_name,
-            AssumeRolePolicyDocument=json.dumps(trust_policy),
-            Tags=tags,
-            Path=path,
-        )
-        snapshot.match("create-role-response", create_role_response)
-
-        get_role_response = aws_client.iam.get_role(RoleName=role_name)
-        snapshot.match("get-role-response", get_role_response)
-
-        list_role_response = aws_client.iam.list_roles(PathPrefix=path)
-        snapshot.match("list-role-response", list_role_response)

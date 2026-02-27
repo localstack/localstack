@@ -1,0 +1,1298 @@
+{
+  "tests/aws/services/iam/test_iam_policies.py::TestListEntitiesForPolicy::test_list_entities_for_policy": {
+    "last_validated_date": "2026-02-17T17:17:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.71,
+      "call": 2.61,
+      "teardown": 2.8,
+      "total": 6.12
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestListEntitiesForPolicy::test_list_entities_for_policy_errors": {
+    "last_validated_date": "2026-02-17T17:17:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.15,
+      "teardown": 0.0,
+      "total": 0.15
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_errors": {
+    "last_validated_date": "2026-02-10T12:42:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.41,
+      "teardown": 0.49,
+      "total": 0.9
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[/]": {
+    "last_validated_date": "2026-02-10T12:42:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.93,
+      "teardown": 0.0,
+      "total": 0.93
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[/test/path/]": {
+    "last_validated_date": "2026-02-10T12:42:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.75,
+      "call": 1.5,
+      "teardown": 0.0,
+      "total": 2.25
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_lifecycle[None]": {
+    "last_validated_date": "2026-02-10T12:42:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.93,
+      "teardown": 0.0,
+      "total": 0.93
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_errors": {
+    "last_validated_date": "2026-02-10T12:43:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.27,
+      "teardown": 0.41,
+      "total": 2.68
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_lifecycle": {
+    "last_validated_date": "2026-02-10T12:42:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.36,
+      "teardown": 0.67,
+      "total": 2.03
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_limit": {
+    "last_validated_date": "2026-02-10T12:43:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.62,
+      "teardown": 1.1,
+      "total": 2.72
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicies::test_policy_version_set_default": {
+    "last_validated_date": "2026-02-10T12:43:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.22,
+      "teardown": 0.89,
+      "total": 2.11
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-0]": {
+    "last_validated_date": "2026-02-18T14:01:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.85,
+      "call": 0.58,
+      "teardown": 0.03,
+      "total": 1.46
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-10]": {
+    "last_validated_date": "2026-02-18T14:01:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.01,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-11]": {
+    "last_validated_date": "2026-02-18T14:01:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-12]": {
+    "last_validated_date": "2026-02-18T14:01:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.01,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-13]": {
+    "last_validated_date": "2026-02-18T14:01:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-14]": {
+    "last_validated_date": "2026-02-18T14:01:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-15]": {
+    "last_validated_date": "2026-02-18T14:01:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.01,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-16]": {
+    "last_validated_date": "2026-02-18T14:01:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-17]": {
+    "last_validated_date": "2026-02-18T14:01:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.56,
+      "teardown": 0.0,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-18]": {
+    "last_validated_date": "2026-02-18T14:01:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.0,
+      "total": 0.53
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-19]": {
+    "last_validated_date": "2026-02-18T14:01:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.52,
+      "teardown": 0.0,
+      "total": 0.52
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-1]": {
+    "last_validated_date": "2026-02-18T14:01:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-20]": {
+    "last_validated_date": "2026-02-18T14:01:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.0,
+      "total": 0.53
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-21]": {
+    "last_validated_date": "2026-02-18T14:01:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.01,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-22]": {
+    "last_validated_date": "2026-02-18T14:01:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-23]": {
+    "last_validated_date": "2026-02-18T14:01:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-24]": {
+    "last_validated_date": "2026-02-18T14:01:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.0,
+      "total": 0.53
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-25]": {
+    "last_validated_date": "2026-02-18T14:01:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-26]": {
+    "last_validated_date": "2026-02-18T14:01:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.01,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-27]": {
+    "last_validated_date": "2026-02-18T14:01:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-28]": {
+    "last_validated_date": "2026-02-18T14:01:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-29]": {
+    "last_validated_date": "2026-02-18T14:01:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.0,
+      "total": 0.53
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-2]": {
+    "last_validated_date": "2026-02-18T14:01:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-30]": {
+    "last_validated_date": "2026-02-18T14:01:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.01,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-31]": {
+    "last_validated_date": "2026-02-18T14:01:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.01,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-32]": {
+    "last_validated_date": "2026-02-18T14:01:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-33]": {
+    "last_validated_date": "2026-02-18T14:01:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-34]": {
+    "last_validated_date": "2026-02-18T14:01:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-35]": {
+    "last_validated_date": "2026-02-18T14:01:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-36]": {
+    "last_validated_date": "2026-02-18T14:01:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.02,
+      "total": 0.57
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-37]": {
+    "last_validated_date": "2026-02-18T14:01:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-38]": {
+    "last_validated_date": "2026-02-18T14:01:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-39]": {
+    "last_validated_date": "2026-02-18T14:01:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.01,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-3]": {
+    "last_validated_date": "2026-02-18T14:01:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.56,
+      "teardown": 0.0,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-40]": {
+    "last_validated_date": "2026-02-18T14:01:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-41]": {
+    "last_validated_date": "2026-02-18T14:01:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.56,
+      "teardown": 0.01,
+      "total": 0.57
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-42]": {
+    "last_validated_date": "2026-02-18T14:01:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 0.54,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-43]": {
+    "last_validated_date": "2026-02-18T14:01:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-44]": {
+    "last_validated_date": "2026-02-18T14:01:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.56,
+      "teardown": 0.01,
+      "total": 0.57
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-45]": {
+    "last_validated_date": "2026-02-18T14:01:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.01,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-46]": {
+    "last_validated_date": "2026-02-18T14:01:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.01,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-47]": {
+    "last_validated_date": "2026-02-18T14:01:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-48]": {
+    "last_validated_date": "2026-02-18T14:01:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-49]": {
+    "last_validated_date": "2026-02-18T14:01:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-4]": {
+    "last_validated_date": "2026-02-18T14:01:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 0.56,
+      "teardown": 0.0,
+      "total": 0.57
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-50]": {
+    "last_validated_date": "2026-02-18T14:01:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.52,
+      "teardown": 0.0,
+      "total": 0.52
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-51]": {
+    "last_validated_date": "2026-02-18T14:01:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.01,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-52]": {
+    "last_validated_date": "2026-02-18T14:01:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-53]": {
+    "last_validated_date": "2026-02-18T14:01:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.0,
+      "total": 0.53
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-54]": {
+    "last_validated_date": "2026-02-18T14:01:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.56,
+      "teardown": 0.0,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-55]": {
+    "last_validated_date": "2026-02-18T14:01:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-56]": {
+    "last_validated_date": "2026-02-18T14:01:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-57]": {
+    "last_validated_date": "2026-02-18T14:01:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.0,
+      "total": 0.53
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-58]": {
+    "last_validated_date": "2026-02-18T14:01:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-59]": {
+    "last_validated_date": "2026-02-18T14:01:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-5]": {
+    "last_validated_date": "2026-02-18T14:01:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-60]": {
+    "last_validated_date": "2026-02-18T14:02:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.0,
+      "total": 0.53
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-61]": {
+    "last_validated_date": "2026-02-18T14:02:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-62]": {
+    "last_validated_date": "2026-02-18T14:02:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.62,
+      "teardown": 0.0,
+      "total": 0.62
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-63]": {
+    "last_validated_date": "2026-02-18T14:02:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.56,
+      "teardown": 0.01,
+      "total": 0.57
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-64]": {
+    "last_validated_date": "2026-02-18T14:02:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-65]": {
+    "last_validated_date": "2026-02-18T14:02:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-66]": {
+    "last_validated_date": "2026-02-18T14:02:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.0,
+      "total": 0.53
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-67]": {
+    "last_validated_date": "2026-02-18T14:02:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.0,
+      "total": 0.53
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-68]": {
+    "last_validated_date": "2026-02-18T14:02:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-69]": {
+    "last_validated_date": "2026-02-18T14:02:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-6]": {
+    "last_validated_date": "2026-02-18T14:01:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-70]": {
+    "last_validated_date": "2026-02-18T14:02:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-71]": {
+    "last_validated_date": "2026-02-18T14:02:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.52,
+      "teardown": 0.0,
+      "total": 0.52
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-72]": {
+    "last_validated_date": "2026-02-18T14:02:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-73]": {
+    "last_validated_date": "2026-02-18T14:02:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-74]": {
+    "last_validated_date": "2026-02-18T14:02:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.01,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-75]": {
+    "last_validated_date": "2026-02-18T14:02:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-76]": {
+    "last_validated_date": "2026-02-18T14:02:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-77]": {
+    "last_validated_date": "2026-02-18T14:02:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.56,
+      "teardown": 0.01,
+      "total": 0.57
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-7]": {
+    "last_validated_date": "2026-02-18T14:01:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-8]": {
+    "last_validated_date": "2026-02-18T14:01:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_invalid_document[invalid-9]": {
+    "last_validated_date": "2026-02-18T14:01:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.54,
+      "teardown": 0.0,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-0]": {
+    "last_validated_date": "2026-02-10T13:57:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.59,
+      "teardown": 0.47,
+      "total": 1.06
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-10]": {
+    "last_validated_date": "2026-02-10T13:57:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.46,
+      "total": 0.66
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-11]": {
+    "last_validated_date": "2026-02-10T13:57:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.45,
+      "total": 0.66
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-12]": {
+    "last_validated_date": "2026-02-10T13:57:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.46,
+      "total": 0.67
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-13]": {
+    "last_validated_date": "2026-02-10T13:57:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.44,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-14]": {
+    "last_validated_date": "2026-02-10T13:57:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.44,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-15]": {
+    "last_validated_date": "2026-02-10T13:57:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.45,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-16]": {
+    "last_validated_date": "2026-02-10T13:57:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.43,
+      "total": 0.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-17]": {
+    "last_validated_date": "2026-02-10T13:57:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.44,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-18]": {
+    "last_validated_date": "2026-02-10T13:57:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.29,
+      "teardown": 0.45,
+      "total": 0.74
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-19]": {
+    "last_validated_date": "2026-02-10T13:57:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.43,
+      "total": 0.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-1]": {
+    "last_validated_date": "2026-02-10T13:57:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.45,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-20]": {
+    "last_validated_date": "2026-02-10T13:57:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.45,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-21]": {
+    "last_validated_date": "2026-02-10T13:57:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.22,
+      "teardown": 0.42,
+      "total": 0.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-22]": {
+    "last_validated_date": "2026-02-10T13:57:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.22,
+      "teardown": 0.43,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-23]": {
+    "last_validated_date": "2026-02-10T13:57:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.22,
+      "teardown": 0.43,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-24]": {
+    "last_validated_date": "2026-02-10T13:57:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.43,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-25]": {
+    "last_validated_date": "2026-02-10T13:57:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.45,
+      "total": 0.66
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-26]": {
+    "last_validated_date": "2026-02-10T13:57:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.45,
+      "total": 0.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-27]": {
+    "last_validated_date": "2026-02-10T13:57:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.45,
+      "total": 0.66
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-28]": {
+    "last_validated_date": "2026-02-10T13:57:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.43,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-29]": {
+    "last_validated_date": "2026-02-10T13:57:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.48,
+      "total": 0.69
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-2]": {
+    "last_validated_date": "2026-02-10T13:57:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.44,
+      "total": 0.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-30]": {
+    "last_validated_date": "2026-02-10T13:57:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.47,
+      "total": 0.68
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-31]": {
+    "last_validated_date": "2026-02-10T13:57:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.48,
+      "total": 0.69
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-32]": {
+    "last_validated_date": "2026-02-10T13:57:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.48,
+      "total": 0.69
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-33]": {
+    "last_validated_date": "2026-02-10T13:57:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.87,
+      "total": 1.07
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-34]": {
+    "last_validated_date": "2026-02-10T13:57:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.45,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-35]": {
+    "last_validated_date": "2026-02-10T13:57:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.45,
+      "total": 0.66
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-36]": {
+    "last_validated_date": "2026-02-10T13:57:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.45,
+      "total": 0.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-37]": {
+    "last_validated_date": "2026-02-10T13:57:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.45,
+      "total": 0.66
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-38]": {
+    "last_validated_date": "2026-02-10T13:57:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.44,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-39]": {
+    "last_validated_date": "2026-02-10T13:57:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.45,
+      "total": 0.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-3]": {
+    "last_validated_date": "2026-02-10T13:57:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.44,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-40]": {
+    "last_validated_date": "2026-02-10T13:57:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.44,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-41]": {
+    "last_validated_date": "2026-02-10T13:57:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.44,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-42]": {
+    "last_validated_date": "2026-02-10T13:57:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.44,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-43]": {
+    "last_validated_date": "2026-02-10T13:57:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.42,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-44]": {
+    "last_validated_date": "2026-02-10T13:57:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.44,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-45]": {
+    "last_validated_date": "2026-02-10T13:57:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.18,
+      "teardown": 0.39,
+      "total": 0.57
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-46]": {
+    "last_validated_date": "2026-02-10T13:57:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.18,
+      "teardown": 0.38,
+      "total": 0.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-47]": {
+    "last_validated_date": "2026-02-10T13:57:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.18,
+      "teardown": 0.4,
+      "total": 0.58
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-48]": {
+    "last_validated_date": "2026-02-10T13:57:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.27,
+      "teardown": 0.41,
+      "total": 0.68
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-49]": {
+    "last_validated_date": "2026-02-10T13:58:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.18,
+      "teardown": 0.41,
+      "total": 0.59
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-4]": {
+    "last_validated_date": "2026-02-10T13:57:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.2,
+      "teardown": 0.45,
+      "total": 0.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-50]": {
+    "last_validated_date": "2026-02-10T13:58:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.18,
+      "teardown": 0.42,
+      "total": 0.6
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-5]": {
+    "last_validated_date": "2026-02-10T13:57:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.43,
+      "total": 0.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-6]": {
+    "last_validated_date": "2026-02-10T13:57:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.44,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-7]": {
+    "last_validated_date": "2026-02-10T13:57:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 0.45,
+      "total": 0.64
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-8]": {
+    "last_validated_date": "2026-02-10T13:57:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.47,
+      "total": 0.68
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyDocumentValidity::test_create_policy_valid_document[valid-9]": {
+    "last_validated_date": "2026-02-10T13:57:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.42,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_create_errors": {
+    "last_validated_date": "2026-02-10T13:42:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.42,
+      "teardown": 0.0,
+      "total": 2.42
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_lifecycle": {
+    "last_validated_date": "2026-02-10T13:42:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 2.21,
+      "teardown": 1.61,
+      "total": 4.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_operations": {
+    "last_validated_date": "2026-02-10T13:42:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.27,
+      "teardown": 0.4,
+      "total": 3.67
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_order": {
+    "last_validated_date": "2026-02-18T14:50:05+00:00",
+    "durations_in_seconds": {
+      "setup": 1.86,
+      "call": 0.79,
+      "teardown": 0.39,
+      "total": 3.04
+    }
+  },
+  "tests/aws/services/iam/test_iam_policies.py::TestPolicyTags::test_policy_tag_update_errors": {
+    "last_validated_date": "2026-02-10T13:42:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 5.65,
+      "teardown": 0.47,
+      "total": 6.12
+    }
+  }
+}

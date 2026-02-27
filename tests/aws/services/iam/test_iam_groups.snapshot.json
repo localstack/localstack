@@ -1,0 +1,523 @@
+{
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_create_group": {
+    "recorded-date": "12-02-2026, 21:51:36",
+    "recorded-content": {
+      "create-group": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-group-duplicate": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "Group with name <group-name:1> already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_get_group": {
+    "recorded-date": "12-02-2026, 21:51:37",
+    "recorded-content": {
+      "created-group": {
+        "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+        "CreateDate": "<datetime>",
+        "GroupId": "<group-id:1>",
+        "GroupName": "<group-name:1>",
+        "Path": "/"
+      },
+      "get-group": {
+        "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+        "CreateDate": "<datetime>",
+        "GroupId": "<group-id:1>",
+        "GroupName": "<group-name:1>",
+        "Path": "/"
+      },
+      "get-group-not-found": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The group with name non-existent-group cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_get_group_with_path": {
+    "recorded-date": "12-02-2026, 21:51:38",
+    "recorded-content": {
+      "get-group-default-path": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "IsTruncated": false,
+        "Users": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-group-with-path": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/some/location/<group-name:2>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:2>",
+          "GroupName": "<group-name:2>",
+          "Path": "/some/location/"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_list_groups": {
+    "recorded-date": "12-02-2026, 21:51:40",
+    "recorded-content": {
+      "list-groups": [
+        {
+          "Path": "/",
+          "GroupName": "<group-name:1>",
+          "GroupId": "<group-id:1>",
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>"
+        },
+        {
+          "Path": "/",
+          "GroupName": "<group-name:2>",
+          "GroupId": "<group-id:2>",
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:2>",
+          "CreateDate": "<datetime>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_delete_group": {
+    "recorded-date": "12-02-2026, 21:51:41",
+    "recorded-content": {
+      "delete-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_delete_unknown_group": {
+    "recorded-date": "12-02-2026, 21:51:41",
+    "recorded-content": {
+      "delete-unknown-group": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The group with name unknown-group cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_name": {
+    "recorded-date": "12-02-2026, 21:51:42",
+    "recorded-content": {
+      "original_group": {
+        "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+        "CreateDate": "<datetime>",
+        "GroupId": "<group-id:1>",
+        "GroupName": "<group-name:1>",
+        "Path": "/"
+      },
+      "old-group-not-found": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The group with name <group-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "updated-group": {
+        "Arn": "arn:<partition>:iam::111111111111:group/<group-name:2>",
+        "CreateDate": "<datetime>",
+        "GroupId": "<group-id:1>",
+        "GroupName": "<group-name:2>",
+        "Path": "/"
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_path": {
+    "recorded-date": "12-02-2026, 21:51:43",
+    "recorded-content": {
+      "updated-group-with-new-path": {
+        "Arn": "arn:<partition>:iam::111111111111:group/new-path/<group-name:1>",
+        "CreateDate": "<datetime>",
+        "GroupId": "<group-id:1>",
+        "GroupName": "<group-name:1>",
+        "Path": "/new-path/"
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_not_found": {
+    "recorded-date": "12-02-2026, 18:43:08",
+    "recorded-content": {
+      "update-nonexistent-group": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The group with name nonexisting cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsCRUD::test_update_group_duplicate_name": {
+    "recorded-date": "20-02-2026, 15:46:30",
+    "recorded-content": {
+      "update-duplicate-name": {
+        "Error": {
+          "Code": "EntityAlreadyExists",
+          "Message": "Group with name <group-name-2> already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_user_to_group": {
+    "recorded-date": "12-02-2026, 21:55:23",
+    "recorded-content": {
+      "group-with-user": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "IsTruncated": false,
+        "Users": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+            "CreateDate": "<datetime>",
+            "Path": "/",
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_unknown_user_to_group": {
+    "recorded-date": "12-02-2026, 21:55:24",
+    "recorded-content": {
+      "add-unknown-user": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name non-existent-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_user_to_unknown_group": {
+    "recorded-date": "12-02-2026, 21:55:25",
+    "recorded-content": {
+      "add-user-unknown-group": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The group with name non-existent-group cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_remove_user_from_group": {
+    "recorded-date": "12-02-2026, 21:55:26",
+    "recorded-content": {
+      "group-before-remove": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "IsTruncated": false,
+        "Users": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+            "CreateDate": "<datetime>",
+            "Path": "/",
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "group-after-remove": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "IsTruncated": false,
+        "Users": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_remove_user_from_unknown_group": {
+    "recorded-date": "12-02-2026, 21:55:27",
+    "recorded-content": {
+      "remove-from-unknown-group": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name any-user cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_add_user_to_group_idempotent": {
+    "recorded-date": "12-02-2026, 21:55:28",
+    "recorded-content": {
+      "groups-before-remove": [
+        {
+          "Path": "/",
+          "GroupName": "<group-name:1>",
+          "GroupId": "<group-id:1>",
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>"
+        }
+      ],
+      "groups-after-remove": []
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_list_groups_for_user": {
+    "recorded-date": "12-02-2026, 21:55:30",
+    "recorded-content": {
+      "list-groups-for-user": [
+        {
+          "Path": "/",
+          "GroupName": "<group-name:1>",
+          "GroupId": "<group-id:1>",
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>"
+        },
+        {
+          "Path": "/",
+          "GroupName": "<group-name:2>",
+          "GroupId": "<group-id:2>",
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:2>",
+          "CreateDate": "<datetime>"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_put_group_policy": {
+    "recorded-date": "12-02-2026, 21:59:32",
+    "recorded-content": {
+      "put-group-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_get_group_policy": {
+    "recorded-date": "12-02-2026, 21:59:33",
+    "recorded-content": {
+      "get-nonexistent-policy": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The group policy with name <policy-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-group-policy": {
+        "GroupName": "<group-name:1>",
+        "PolicyDocument": {
+          "Statement": {
+            "Action": "s3:ListBucket",
+            "Effect": "Allow",
+            "Resource": [
+              "arn:<partition>:s3:::example_bucket"
+            ]
+          },
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "<policy-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_list_group_policies": {
+    "recorded-date": "12-02-2026, 21:59:34",
+    "recorded-content": {
+      "list-empty-policies": {
+        "IsTruncated": false,
+        "PolicyNames": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-policies-with-one": {
+        "IsTruncated": false,
+        "PolicyNames": [
+          "<policy-name>"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_attach_detach_group_policy": {
+    "recorded-date": "12-02-2026, 21:59:36",
+    "recorded-content": {
+      "no-attached-policies": {
+        "AttachedPolicies": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "one-attached-policy": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::111111111111:policy/<policy-name:1>",
+            "PolicyName": "<policy-name:1>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "after-detach": {
+        "AttachedPolicies": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_detach_unattached_group_policy": {
+    "recorded-date": "12-02-2026, 21:59:37",
+    "recorded-content": {
+      "detach-unattached-error": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "Policy arn:<partition>:iam::111111111111:policy/<policy-name> was not found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_attach_detach_aws_managed_policy_group": {
+    "recorded-date": "13-02-2026, 14:51:22",
+    "recorded-content": {
+      "list-attached-empty": {
+        "AttachedPolicies": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-attached-after-attach": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/AmazonElasticMapReduceforEC2Role",
+            "PolicyName": "AmazonElasticMapReduceforEC2Role"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-attached-after-detach": {
+        "AttachedPolicies": [],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

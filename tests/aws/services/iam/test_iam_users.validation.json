@@ -1,0 +1,209 @@
+{
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_deletion_without_username": {
+    "last_validated_date": "2026-02-11T10:57:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.82,
+      "call": 11.98,
+      "teardown": 1.02,
+      "total": 13.82
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_errors": {
+    "last_validated_date": "2026-02-24T14:43:43+00:00",
+    "durations_in_seconds": {
+      "setup": 1.25,
+      "call": 1.51,
+      "teardown": 1.33,
+      "total": 4.09
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_last_used": {
+    "last_validated_date": "2026-02-11T10:48:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 441.26,
+      "teardown": 1.06,
+      "total": 442.32
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_lifecycle": {
+    "last_validated_date": "2026-02-11T10:40:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.01,
+      "teardown": 0.67,
+      "total": 1.68
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_limit": {
+    "last_validated_date": "2026-02-11T10:40:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.74,
+      "teardown": 1.39,
+      "total": 2.13
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserAccessKeys::test_access_key_update_status": {
+    "last_validated_date": "2026-02-11T10:40:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.04,
+      "teardown": 0.85,
+      "total": 1.89
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserGroups::test_user_group_errors": {
+    "last_validated_date": "2026-02-11T10:48:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.78,
+      "teardown": 1.33,
+      "total": 2.11
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserGroups::test_user_group_membership": {
+    "last_validated_date": "2026-02-11T10:48:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.39,
+      "teardown": 2.73,
+      "total": 5.12
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_delete_user_with_attached_policy": {
+    "last_validated_date": "2026-02-19T18:35:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.95,
+      "teardown": 0.72,
+      "total": 2.67
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_delete_user_with_inline_policy": {
+    "last_validated_date": "2026-02-19T18:35:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.48,
+      "teardown": 0.34,
+      "total": 1.82
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_user_errors": {
+    "last_validated_date": "2026-02-19T18:34:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.11,
+      "teardown": 1.2,
+      "total": 2.31
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_user_lifecycle[/]": {
+    "last_validated_date": "2026-02-19T18:34:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.62,
+      "teardown": 0.0,
+      "total": 1.62
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_user_lifecycle[/test-lifecycle-path/]": {
+    "last_validated_date": "2026-02-19T18:34:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.03,
+      "teardown": 0.0,
+      "total": 2.03
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_user_lifecycle[None]": {
+    "last_validated_date": "2026-02-19T18:34:51+00:00",
+    "durations_in_seconds": {
+      "setup": 1.81,
+      "call": 2.62,
+      "teardown": 0.0,
+      "total": 4.43
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLifecycle::test_user_update": {
+    "last_validated_date": "2026-02-19T18:34:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.43,
+      "teardown": 0.24,
+      "total": 1.67
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLoginProfile::test_login_profile_errors": {
+    "last_validated_date": "2026-02-11T10:40:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.44,
+      "teardown": 0.69,
+      "total": 2.13
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserLoginProfile::test_login_profile_lifecycle": {
+    "last_validated_date": "2026-02-11T10:40:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.62,
+      "teardown": 0.69,
+      "total": 2.31
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserPolicies::test_user_inline_policy_lifecycle": {
+    "last_validated_date": "2026-02-11T10:48:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.17,
+      "teardown": 0.68,
+      "total": 1.85
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserPolicies::test_user_managed_policy_errors": {
+    "last_validated_date": "2026-02-11T10:48:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.73,
+      "teardown": 0.92,
+      "total": 1.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserPolicies::test_user_managed_policy_lifecycle": {
+    "last_validated_date": "2026-02-11T10:48:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.23,
+      "teardown": 0.93,
+      "total": 2.16
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserTags::test_user_tag_errors": {
+    "last_validated_date": "2026-02-11T10:48:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.5,
+      "teardown": 0.0,
+      "total": 0.5
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserTags::test_user_tag_lifecycle": {
+    "last_validated_date": "2026-02-11T10:48:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.47,
+      "teardown": 1.09,
+      "total": 1.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserTags::test_user_tag_operations": {
+    "last_validated_date": "2026-02-11T10:48:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.0,
+      "teardown": 0.69,
+      "total": 1.69
+    }
+  }
+}
