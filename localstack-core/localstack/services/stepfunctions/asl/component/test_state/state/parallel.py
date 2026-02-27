@@ -8,7 +8,6 @@ from localstack.services.stepfunctions.asl.component.test_state.state.execution 
     MockedStateExecution,
 )
 from localstack.services.stepfunctions.asl.eval.test_state.environment import TestStateEnvironment
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
 class MockedStateParallel(MockedBaseState[StateParallel]):
@@ -29,11 +28,6 @@ class MockedStateParallel(MockedBaseState[StateParallel]):
         if self._wrapped._is_language_query_jsonpath():
             # AWS does not include afterInputPath in inspection data for Parallel states.
             env.inspection_data.pop("afterInputPath", None)
-            # For the base case (no explicit ResultPath), afterResultPath equals the
-            # branches result. For I/O cases with explicit ResultPath, the preprocessor's
-            # result_path decoration will overwrite this with the merged value later.
-            if "afterResultPath" not in env.inspection_data:
-                env.inspection_data["afterResultPath"] = to_json_str(env.stack[-1])
         else:
             # For JSONata Parallel states, AWS does not include afterArguments in inspection data.
             env.inspection_data.pop("afterArguments", None)
