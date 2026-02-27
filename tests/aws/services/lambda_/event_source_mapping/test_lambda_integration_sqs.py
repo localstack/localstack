@@ -1728,6 +1728,76 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url)
         assert rs.get("Messages", []) == []
 
+    @pytest.mark.skipif(
+        condition=not is_env_true("LAMBDA_SQS_EVENT_SOURCE_MAPPING_PARALLELISM"),
+        reason=(
+            "Requires opt-in SQS ESM parallelism via LAMBDA_SQS_EVENT_SOURCE_MAPPING_PARALLELISM=1"
+        ),
+    )
+    @markers.aws.only_localstack
+    def test_sqs_event_source_mapping_parallelism_flag_path(
+        self,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        lambda_su_role,
+        cleanups,
+        aws_client,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        mapping_uuid = None
+        sleep_seconds = 2
+        message_count = 8
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=LAMBDA_SLEEP_FILE,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+            timeout=30,
+            envvars={"TEST_SLEEP_S": str(sleep_seconds)},
+        )
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        for i in range(message_count):
+            aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody=json.dumps({"id": i}))
+
+        _await_queue_size(aws_client.sqs, queue_url, message_count)
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=function_name,
+            BatchSize=1,
+        )
+        mapping_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
+
+        retry(
+            check_expected_lambda_log_events_length,
+            retries=5,
+            sleep=1,
+            expected_length=message_count,
+            function_name=function_name,
+            regex_filter="done sleeping",
+            logs_client=aws_client.logs,
+        )
+
+        def _assert_queue_drained():
+            attributes = aws_client.sqs.get_queue_attributes(
+                QueueUrl=queue_url,
+                AttributeNames=[
+                    "ApproximateNumberOfMessages",
+                    "ApproximateNumberOfMessagesNotVisible",
+                ],
+            )["Attributes"]
+            assert int(attributes["ApproximateNumberOfMessages"]) == 0
+            assert int(attributes["ApproximateNumberOfMessagesNotVisible"]) == 0
+
+        retry(_assert_queue_drained, retries=5, sleep=1)
+
 
 def _await_queue_size(sqs_client, queue_url: str, qsize: int, retries=10, sleep=1):
     # wait for all items to appear in the queue
