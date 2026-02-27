@@ -87,6 +87,13 @@ class TestStateTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/base_task_state_catch.json5"
     )
 
+    BASE_PARALLEL_STATE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_parallel_state.json5"
+    )
+    BASE_PARALLEL_STATE_3_BRANCHES: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_parallel_state_3_branches.json5"
+    )
+
     MAP_TASK_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_task_state.json5")
 
 
