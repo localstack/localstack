@@ -107,18 +107,9 @@ class ResourceType(Enum):
     RULE = "rule"
 
 
-class Statement(TypedDict):
-    Sid: str | None
-    Effect: str
-    Principal: str | dict[str, str] | None
-    Action: str | list[str]
-    Resource: str | list[str]
-    Condition: dict[str, Any] | None
-
-
 class ResourcePolicy(TypedDict):
     Version: str
-    Statement: list[Statement]
+    Statement: list[dict[str, Any]]
 
 
 @dataclass

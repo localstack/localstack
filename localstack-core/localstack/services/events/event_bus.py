@@ -1,6 +1,6 @@
 import json
 from datetime import UTC, datetime
-from typing import Self
+from typing import Any, Self
 
 from localstack.aws.api.events import (
     Action,
@@ -12,7 +12,7 @@ from localstack.aws.api.events import (
     StatementId,
     TagList,
 )
-from localstack.services.events.models import EventBus, ResourcePolicy, RuleDict, Statement
+from localstack.services.events.models import EventBus, ResourcePolicy, RuleDict
 from localstack.utils.aws.arns import get_partition
 
 
@@ -111,21 +111,20 @@ class EventBusService:
         principal: Principal,
         resource_arn: Arn,
         condition: Condition,
-    ) -> Statement:
+    ) -> dict[str, Any]:
         # TODO: cover via test
         # if condition and principal != "*":
         #     raise ValueError("Condition can only be set when principal is '*'")
         if principal != "*":
             principal = {"AWS": f"arn:{get_partition(self.event_bus.region)}:iam::{principal}:root"}
-        statement = Statement(
-            Sid=statement_id,
-            Effect="Allow",
-            Principal=principal,
-            Action=action,
-            Resource=resource_arn,
-            Condition=condition,
-        )
-        return statement
+        return {
+            "Sid": statement_id,
+            "Effect": "Allow",
+            "Principal": principal,
+            "Action": action,
+            "Resource": resource_arn,
+            "Condition": condition,
+        }
 
 
 EventBusServiceDict = dict[Arn, EventBusService]
