@@ -102,7 +102,6 @@ class ApiGatewayStageProvider(ResourceProvider[ApiGatewayStageProperties]):
         stage_variables = model.get("Variables")
         # we need to deep copy as several fields are nested dict and arrays
         params = keys_to_lower(copy.deepcopy(model))
-        # TODO: add methodSettings
         # TODO: add custom CfN tags
         param_names = [
             "restApiId",
@@ -123,6 +122,23 @@ class ApiGatewayStageProvider(ResourceProvider[ApiGatewayStageProperties]):
 
         result = apigw.create_stage(**params)
         model["StageName"] = result["stageName"]
+
+        # TODO: add methodSettings with the same principle
+        patch_operations = []
+        if access_log_settings := model.get("AccessLogSetting"):
+            access_patch_ops = [
+                {"op": "replace", "path": f"/accessLogSettings/{key}", "value": value}
+                for key, value in keys_to_lower(copy.deepcopy(access_log_settings)).items()
+                if value
+            ]
+            patch_operations.extend(access_patch_ops)
+
+        if patch_operations:
+            apigw.update_stage(
+                restApiId=params["restApiId"],
+                stageName=stage_name,
+                patchOperations=patch_operations,
+            )
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,

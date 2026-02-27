@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery, MetricStat, StateValue
 from localstack.aws.connect import connect_to
+from localstack.runtime.shutdown import SHUTDOWN_HANDLERS
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.scheduler import Scheduler
 
@@ -38,16 +39,26 @@ class AlarmScheduler:
         """
         super().__init__()
         self.scheduler = Scheduler()
-        self.thread = threading.Thread(target=self.scheduler.run, name="cloudwatch-scheduler")
-        self.thread.start()
         self.scheduled_alarms = {}
+        self.thread: threading.Thread | None = None
 
-    def shutdown_scheduler(self) -> None:
+    def start(self) -> None:
+        if not (self.thread and self.thread.is_alive()):
+            LOG.debug("Starting CloudWatch scheduler")
+            self.thread = threading.Thread(target=self.scheduler.run, name="cloudwatch-scheduler")
+            self.thread.start()
+            SHUTDOWN_HANDLERS.register(self.shutdown)
+
+    def shutdown(self) -> None:
         """
-        Shutsdown the scheduler, must be called before application stops
+        Shutdown the scheduler, must be called before application stops
         """
+        LOG.debug("Stopping CloudWatch scheduler")
         self.scheduler.close()
-        self.thread.join(10)
+        self.scheduled_alarms.clear()
+        SHUTDOWN_HANDLERS.unregister(self.shutdown)
+        if self.thread:
+            self.thread.join(10)
 
     def schedule_metric_alarm(self, alarm_arn: str) -> None:
         """(Re-)schedules the alarm, if the alarm is re-scheduled, the running alarm scheduler will be cancelled before

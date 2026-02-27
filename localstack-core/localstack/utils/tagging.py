@@ -75,7 +75,7 @@ class Tags:
     _tags if the resource has been deleted.
 
     This distinction is important to maintain parity with the Resource Groups Tagging API (RGTA) which will tap into
-    supported service's `Tags` dataclass within it's store.
+    supported service's `Tags` dataclass within its store.
     """
 
     _tags: dict[ResourceARN, TagMap] = field(default_factory=dict)

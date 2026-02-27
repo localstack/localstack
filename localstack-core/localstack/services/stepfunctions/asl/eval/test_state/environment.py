@@ -21,6 +21,7 @@ from localstack.services.stepfunctions.asl.eval.test_state.program_state import 
     ProgramRetriable,
 )
 from localstack.services.stepfunctions.asl.eval.variable_store import VariableStore
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.activity import Activity
 from localstack.services.stepfunctions.backend.test_state.test_state_mock import TestStateMock
 
@@ -50,6 +51,9 @@ class TestStateEnvironment(Environment):
             variable_store=variable_store,
         )
         self.inspection_data = InspectionData()
+        variables = variable_store.to_dict()
+        if variables:
+            self.inspection_data["variables"] = to_json_str(variables)
         self.mock = mock
 
     def is_test_state_mocked_mode(self) -> bool:

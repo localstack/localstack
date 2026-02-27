@@ -12,7 +12,9 @@ from localstack.aws.api.stepfunctions import (
     TestStateOutput,
     Timestamp,
 )
-from localstack.services.stepfunctions.asl.eval.evaluation_details import EvaluationDetails
+from localstack.services.stepfunctions.asl.eval.evaluation_details import (
+    EvaluationDetails,
+)
 from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramEnded,
     ProgramError,
@@ -43,6 +45,7 @@ class TestStateExecution(Execution):
     next_state: str | None
     state_name: str | None
     mock: TestStateMock | None
+    variables: dict | None
 
     class TestCaseExecutionWorkerCommunication(BaseExecutionWorkerCommunication):
         _execution: TestStateExecution
@@ -79,6 +82,7 @@ class TestStateExecution(Execution):
         state_name: str | None = None,
         input_data: dict | None = None,
         mock: TestStateMock | None = None,
+        variables: dict | None = None,
     ):
         super().__init__(
             name=name,
@@ -98,6 +102,7 @@ class TestStateExecution(Execution):
         self.next_state = None
         self.state_name = state_name
         self.mock = mock
+        self.variables = variables
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
         return self.TestCaseExecutionWorkerCommunication(self)
@@ -114,6 +119,7 @@ class TestStateExecution(Execution):
             activity_store=self._activity_store,
             state_name=self.state_name,
             mock=self.mock,
+            variables=self.variables,
         )
 
     def publish_execution_status_change_event(self):

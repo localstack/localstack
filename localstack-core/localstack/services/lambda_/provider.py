@@ -187,6 +187,7 @@ from localstack.services.lambda_.invocation.execution_environment import (
 from localstack.services.lambda_.invocation.lambda_models import (
     AliasRoutingConfig,
     CodeSigningConfig,
+    DesiredCapacityProviderState,
     EventInvokeConfig,
     Function,
     FunctionResourcePolicy,
@@ -319,6 +320,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
                     for fn_version in fn.versions.values():
                         try:
+                            # Skip function versions that were being deleted
+                            if fn_version.config.state.state == State.Deleting:
+                                continue
+
+                            # Skip function versions whose capacity provider has been stopped
+                            if fn_version.config.capacity_provider_config:
+                                cp_arn = fn_version.config.capacity_provider_config[
+                                    "LambdaManagedInstancesCapacityProviderConfig"
+                                ]["CapacityProviderArn"]
+                                cp_name = cp_arn.split(":")[-1]
+                                cp = state.capacity_providers.get(cp_name)
+                                if cp and cp.DesiredState == DesiredCapacityProviderState.Stopped:
+                                    continue
+
                             # $LATEST is not invokable for Lambda functions with a capacity provider
                             # and has a different State (i.e., ActiveNonInvokable)
                             is_capacity_provider_latest = (

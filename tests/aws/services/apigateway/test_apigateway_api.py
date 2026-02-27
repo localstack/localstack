@@ -4462,8 +4462,56 @@ class TestApigatewayMethodResponse:
 
 
 class TestApiGatewayStage:
+    @pytest.fixture
+    def create_api_for_deployment(self, apigw_create_rest_api, aws_client):
+        def _create() -> str:
+            # Create REST API with a MOCK method (required for deployment)
+            response = apigw_create_rest_api(name=f"test-stages-{short_uid()}")
+            api_id = response["id"]
+            root_id = response["rootResourceId"]
+
+            aws_client.apigateway.put_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="GET",
+                authorizationType="NONE",
+            )
+            aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="GET",
+                type="MOCK",
+                requestTemplates={"application/json": '{"statusCode": 200}'},
+            )
+            return api_id
+
+        return _create
+
+    @pytest.fixture
+    def logs_create_log_group(self, aws_client):
+        log_group_names = []
+
+        def _create_log_group(name: str = None) -> str:
+            if not name:
+                name = f"test-log-group-{short_uid()}"
+
+            aws_client.logs.create_log_group(logGroupName=name)
+            log_group_names.append(name)
+            describe_result = aws_client.logs.describe_log_groups(logGroupNamePrefix=name)
+            return describe_result["logGroups"][0]["arn"]
+
+        yield _create_log_group
+
+        for _name in log_group_names:
+            try:
+                aws_client.logs.delete_log_group(logGroupName=_name)
+            except Exception as e:
+                LOG.debug("error cleaning up log group %s: %s", _name, e)
+
     @markers.aws.validated
-    def test_get_stages_filters_by_deployment_id(self, aws_client, apigw_create_rest_api, snapshot):
+    def test_get_stages_filters_by_deployment_id(
+        self, create_api_for_deployment, aws_client, snapshot
+    ):
         """
         Regression test for https://github.com/localstack/localstack/issues/13667
         Verifies that get_stages filters results by deploymentId when provided.
@@ -4471,23 +4519,7 @@ class TestApiGatewayStage:
         snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
 
         # Create REST API with a MOCK method (required for deployment)
-        response = apigw_create_rest_api(name=f"test-stages-{short_uid()}")
-        api_id = response["id"]
-        root_id = response["rootResourceId"]
-
-        aws_client.apigateway.put_method(
-            restApiId=api_id,
-            resourceId=root_id,
-            httpMethod="GET",
-            authorizationType="NONE",
-        )
-        aws_client.apigateway.put_integration(
-            restApiId=api_id,
-            resourceId=root_id,
-            httpMethod="GET",
-            type="MOCK",
-            requestTemplates={"application/json": '{"statusCode": 200}'},
-        )
+        api_id = create_api_for_deployment()
 
         # Create two deployments with different stages
         deploy1 = aws_client.apigateway.create_deployment(restApiId=api_id, stageName="stage1")
@@ -4514,3 +4546,191 @@ class TestApiGatewayStage:
         snapshot.match("stages-deploy2", stages_deploy2)
         assert len(stages_deploy2["item"]) == 1
         assert stages_deploy2["item"][0]["stageName"] == "stage2"
+
+    @markers.aws.validated
+    def test_stage_access_log_settings(
+        self, create_api_for_deployment, aws_client, logs_create_log_group, snapshot
+    ):
+        # see https://docs.aws.amazon.com/apigateway/latest/api/patch-operations.html#UpdateStage-Patch
+        # for list of possible operations
+        api_id = create_api_for_deployment()
+        log_group_arn = logs_create_log_group()
+        # AWS appends ":*" to the ARN which API Gateway doesn't allow
+        log_group_arn = log_group_arn.removesuffix(":*")
+        snapshot.add_transformer(snapshot.transform.regex(log_group_arn, "<log-group-arn>"))
+
+        create_deployment = aws_client.apigateway.create_deployment(restApiId=api_id)
+        snapshot.match("create-deployment", create_deployment)
+        deployment_id = create_deployment["id"]
+
+        stage_name = "dev"
+        create_stage = aws_client.apigateway.create_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            deploymentId=deployment_id,
+            description="dev stage",
+        )
+        snapshot.match("create-stage", create_stage)
+
+        update_stage = aws_client.apigateway.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                {
+                    "op": "add",
+                    "path": "/accessLogSettings/destinationArn",
+                    "value": log_group_arn,
+                },
+            ],
+        )
+        snapshot.match("update-stage-access-log-dest-add", update_stage)
+
+        update_stage = aws_client.apigateway.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                {
+                    "op": "replace",
+                    "path": "/accessLogSettings/destinationArn",
+                    "value": log_group_arn + "a",
+                },
+            ],
+        )
+        snapshot.match("update-stage-access-log-dest-replace", update_stage)
+
+        # $context.extendedRequestId $context.identity.sourceIp
+        update_stage = aws_client.apigateway.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                {
+                    "op": "add",
+                    "path": "/accessLogSettings/format",
+                    "value": "$context.requestId $context.identity.sourceIp",
+                },
+            ],
+        )
+        snapshot.match("update-stage-access-log-format-add", update_stage)
+
+        update_stage = aws_client.apigateway.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                {
+                    "op": "remove",
+                    "path": "/accessLogSettings",
+                },
+            ],
+        )
+        snapshot.match("update-stage-access-log-remove-all", update_stage)
+
+    @markers.aws.validated
+    def test_stage_access_log_settings_validation(
+        self, create_api_for_deployment, aws_client, logs_create_log_group, snapshot
+    ):
+        # see https://docs.aws.amazon.com/apigateway/latest/api/patch-operations.html#UpdateStage-Patch
+        # for list of possible operations
+        api_id = create_api_for_deployment()
+        log_group_arn = logs_create_log_group()
+        # AWS appends ":*" to the ARN which API Gateway doesn't allow
+        log_group_arn = log_group_arn.removesuffix(":*")
+        snapshot.add_transformer(snapshot.transform.regex(log_group_arn, "<log-group-arn>"))
+
+        create_deployment = aws_client.apigateway.create_deployment(restApiId=api_id)
+        snapshot.match("create-deployment", create_deployment)
+        deployment_id = create_deployment["id"]
+
+        stage_name = "dev"
+        create_stage = aws_client.apigateway.create_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            deploymentId=deployment_id,
+            description="dev stage",
+        )
+        snapshot.match("create-stage", create_stage)
+
+        for op in ("add", "remove", "replace"):
+            with pytest.raises(ClientError) as e:
+                aws_client.apigateway.update_stage(
+                    restApiId=api_id,
+                    stageName=stage_name,
+                    patchOperations=[
+                        {
+                            "op": op,
+                            "path": "/accessLogSettings/randomValue",
+                            "value": "updated",
+                        },
+                    ],
+                )
+            snapshot.match(f"invalid-path-{op}", e.value.response)
+
+        for op in ("add", "remove", "replace"):
+            with pytest.raises(ClientError) as e:
+                aws_client.apigateway.update_stage(
+                    restApiId=api_id,
+                    stageName=stage_name,
+                    patchOperations=[
+                        {
+                            "op": op,
+                            "path": "/accessLogSettings/*",
+                            "value": "updated",
+                        },
+                    ],
+                )
+            snapshot.match(f"star-and-{op}", e.value.response)
+
+        for op in ("add", "replace"):
+            with pytest.raises(ClientError) as e:
+                aws_client.apigateway.update_stage(
+                    restApiId=api_id,
+                    stageName=stage_name,
+                    patchOperations=[
+                        {
+                            "op": op,
+                            "path": "/accessLogSettings",
+                            "value": "test",
+                        },
+                    ],
+                )
+            snapshot.match(f"root-and-{op}", e.value.response)
+
+        update_stage = aws_client.apigateway.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                {
+                    "op": "add",
+                    "path": "/accessLogSettings/destinationArn",
+                    "value": log_group_arn,
+                },
+            ],
+        )
+        snapshot.match("update-stage-access-log-dest-add", update_stage)
+
+        for path in ("destinationArn", "format"):
+            with pytest.raises(ClientError) as e:
+                aws_client.apigateway.update_stage(
+                    restApiId=api_id,
+                    stageName=stage_name,
+                    patchOperations=[
+                        {
+                            "op": "replace",
+                            "path": f"/accessLogSettings/{path}",
+                            "value": "",
+                        },
+                    ],
+                )
+            snapshot.match(f"update-stage-access-log-{path}-empty", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_stage(
+                restApiId=api_id,
+                stageName=stage_name,
+                patchOperations=[
+                    {
+                        "op": "remove",
+                        "path": "/accessLogSettings/destinationArn",
+                    },
+                ],
+            )
+        snapshot.match("update-stage-access-log-dest-remove", e.value.response)

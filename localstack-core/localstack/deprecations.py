@@ -319,6 +319,12 @@ DEPRECATIONS = [
         "By default, LocalStack routes Step Functions traffic to its internal runtime. "
         "Use this variable only if you need to redirect traffic to a different local Step Functions runtime.",
     ),
+    EnvVarDeprecation(
+        "ACTIVATE_PRO",
+        "4.14.0",
+        "Starting in March 2026, LocalStack will require an auth token. "
+        "Go to this page for more infos: https://localstack.cloud/2026-updates",
+    ),
 ]
 
 

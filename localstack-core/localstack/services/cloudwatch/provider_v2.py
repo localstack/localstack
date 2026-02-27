@@ -67,6 +67,7 @@ from localstack.aws.api.cloudwatch import (
     Statistic,
     Statistics,
     StrictEntityValidation,
+    Tag,
     TagKeyList,
     TagList,
     TagResourceOutput,
@@ -148,9 +149,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     """
 
     def __init__(self):
-        self.alarm_scheduler: AlarmScheduler = None
         self.store = None
         self.cloudwatch_database = CloudwatchDatabase()
+        self.alarm_scheduler = AlarmScheduler()
 
     @staticmethod
     def get_store(account_id: str, region: str) -> CloudWatchStore:
@@ -164,21 +165,21 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
 
     def on_before_start(self):
-        self.start_alarm_scheduler()
+        self.alarm_scheduler.start()
 
     def on_before_state_reset(self):
-        self.shutdown_alarm_scheduler()
+        self.alarm_scheduler.shutdown()
         self.cloudwatch_database.clear_tables()
 
     def on_after_state_reset(self):
         self.cloudwatch_database = CloudwatchDatabase()
-        self.start_alarm_scheduler()
+        self.alarm_scheduler.start()
 
     def on_before_state_load(self):
-        self.shutdown_alarm_scheduler()
+        self.alarm_scheduler.shutdown()
 
     def on_after_state_load(self):
-        self.start_alarm_scheduler()
+        self.alarm_scheduler.start()
 
         def restart_alarms(*args):
             poll_condition(lambda: SERVICE_PLUGINS.is_running("cloudwatch"))
@@ -187,18 +188,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         start_worker_thread(restart_alarms)
 
     def on_before_stop(self):
-        self.shutdown_alarm_scheduler()
-
-    def start_alarm_scheduler(self):
-        if not self.alarm_scheduler:
-            LOG.debug("starting cloudwatch scheduler")
-            self.alarm_scheduler = AlarmScheduler()
-
-    def shutdown_alarm_scheduler(self):
-        if self.alarm_scheduler:
-            LOG.debug("stopping cloudwatch scheduler")
-            self.alarm_scheduler.shutdown_scheduler()
-            self.alarm_scheduler = None
+        self.alarm_scheduler.shutdown()
 
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames, **kwargs) -> None:
         """
@@ -212,6 +202,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 self.alarm_scheduler.delete_scheduler_for_alarm(alarm_arn)
                 store = self.get_store(context.account_id, context.region)
                 store.alarms.pop(alarm_arn, None)
+                self._remove_all_resource_tags(alarm_arn, context.account_id, context.region)
 
     def put_metric_data(
         self,
@@ -406,6 +397,32 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         """
         return {"metrics": self.cloudwatch_database.get_all_metric_data() or []}
 
+    def _get_resource_tags(
+        self, resource_arn: AmazonResourceName, account_id: str, region: str
+    ) -> TagList:
+        store = self.get_store(account_id, region)
+        return [
+            Tag(Key=key, Value=value) for key, value in store.tags.get_tags(resource_arn).items()
+        ]
+
+    def _set_resource_tags(
+        self, resource_arn: AmazonResourceName, account_id: str, region: str, tags: TagList
+    ) -> None:
+        store = self.get_store(account_id, region)
+        store.tags.update_tags(resource_arn, {tag["Key"]: tag["Value"] for tag in tags})
+
+    def _remove_resource_tags(
+        self, resource_arn: AmazonResourceName, account_id: str, region: str, tag_keys: TagKeyList
+    ) -> None:
+        store = self.get_store(account_id, region)
+        store.tags.delete_tags(resource_arn, tag_keys)
+
+    def _remove_all_resource_tags(
+        self, resource_arn: AmazonResourceName, account_id: str, region: str
+    ):
+        store = self.get_store(account_id, region)
+        store.tags.delete_all_tags(resource_arn)
+
     @handler("PutMetricAlarm", expand=False)
     def put_metric_alarm(self, context: RequestContext, request: PutMetricAlarmInput) -> None:
         # missing will be the default, when not set (but it will not explicitly be set)
@@ -457,6 +474,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             alarm_arn = metric_alarm.alarm["AlarmArn"]
             store.alarms[alarm_arn] = metric_alarm
             self.alarm_scheduler.schedule_metric_alarm(alarm_arn)
+            self._set_resource_tags(
+                alarm_arn, context.account_id, context.region, request.get("Tags", [])
+            )
 
     @handler("PutCompositeAlarm", expand=False)
     def put_composite_alarm(self, context: RequestContext, request: PutCompositeAlarmInput) -> None:
@@ -472,6 +492,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
             alarm_arn = composite_alarm.alarm["AlarmArn"]
             store.alarms[alarm_arn] = composite_alarm
+            self._set_resource_tags(
+                alarm_arn, context.account_id, context.region, request.get("Tags", [])
+            )
 
     def describe_alarms(
         self,
@@ -539,9 +562,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceOutput:
-        store = self.get_store(context.account_id, context.region)
-        tags = store.TAGS.list_tags_for_resource(resource_arn)
-        return ListTagsForResourceOutput(Tags=tags.get("Tags", []))
+        tags = self._get_resource_tags(resource_arn, context.account_id, context.region)
+        return ListTagsForResourceOutput(Tags=tags)
 
     def untag_resource(
         self,
@@ -550,15 +572,13 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         tag_keys: TagKeyList,
         **kwargs,
     ) -> UntagResourceOutput:
-        store = self.get_store(context.account_id, context.region)
-        store.TAGS.untag_resource(resource_arn, tag_keys)
+        self._remove_resource_tags(resource_arn, context.account_id, context.region, tag_keys)
         return UntagResourceOutput()
 
     def tag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
     ) -> TagResourceOutput:
-        store = self.get_store(context.account_id, context.region)
-        store.TAGS.tag_resource(resource_arn, tags)
+        self._set_resource_tags(resource_arn, context.account_id, context.region, tags)
         return TagResourceOutput()
 
     def put_dashboard(
