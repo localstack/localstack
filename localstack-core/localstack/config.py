@@ -987,6 +987,9 @@ BUCKET_MARKER_LOCAL = (
 # https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html
 LAMBDA_DISABLE_AWS_ENDPOINT_URL = is_env_true("LAMBDA_DISABLE_AWS_ENDPOINT_URL")
 
+# Disable CloudWatch logs and metrics publishing for Lambda (useful for isolating memory issues)
+LAMBDA_DISABLE_CLOUDWATCH = is_env_true("LAMBDA_DISABLE_CLOUDWATCH")
+
 # PUBLIC: bridge (Docker default)
 # Docker network driver for the Lambda and ECS containers. https://docs.docker.com/network/
 LAMBDA_DOCKER_NETWORK = os.environ.get("LAMBDA_DOCKER_NETWORK", "").strip()
@@ -1350,6 +1353,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_DEBUG_MODE",
     "LAMBDA_DEBUG_MODE_CONFIG",
     "LAMBDA_DISABLE_AWS_ENDPOINT_URL",
+    "LAMBDA_DISABLE_CLOUDWATCH",
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",
