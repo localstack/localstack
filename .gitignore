@@ -76,3 +76,14 @@ gen/
 
 # setuptools_scm version.py
 */*/version.py
+
+# spec-kit
+# scripts and templates are created locally with spec-kit init
+/.specify/scripts/
+/.specify/templates/
+
+# claude code
+# claude commands depend on locally installed tools
+/.claude/commands/
+# claude local settings
+/.claude/settings.local.json
