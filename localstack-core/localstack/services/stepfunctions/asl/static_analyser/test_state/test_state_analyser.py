@@ -16,6 +16,7 @@ from localstack.aws.api.stepfunctions import (
     MockInput,
     MockResponseValidationMode,
     StateName,
+    TestStateConfiguration,
     TestStateInput,
     ValidationException,
 )
@@ -84,6 +85,15 @@ class TestStateStaticAnalyser(StaticAnalyser):
         test_state = test_program.test_state
         if isinstance(test_state, StateTask) and mock_input is None:
             raise ValidationException("RoleArn must be specified when testing a Task state")
+
+    @staticmethod
+    def validate_state_configuration(state_configuration: TestStateConfiguration, mock_input):
+        if state_configuration is None:
+            return
+        if "mapIterationFailureCount" in state_configuration and not mock_input:
+            raise ValidationException(
+                "TestState does not support MapIterationFailureCount when a mock is not specified."
+            )
 
     @staticmethod
     def validate_mock(test_state_input: TestStateInput) -> None:

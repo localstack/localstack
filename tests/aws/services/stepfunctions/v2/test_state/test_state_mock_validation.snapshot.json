@@ -254,5 +254,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_map_iteration_failure_count_without_mock": {
+    "recorded-date": "01-03-2026, 22:59:26",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "TestState does not support MapIterationFailureCount when a mock is not specified."
+        },
+        "message": "TestState does not support MapIterationFailureCount when a mock is not specified.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

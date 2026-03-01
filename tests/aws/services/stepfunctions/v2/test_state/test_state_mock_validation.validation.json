@@ -8,6 +8,15 @@
       "total": 0.2
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_map_iteration_failure_count_without_mock": {
+    "last_validated_date": "2026-03-01T22:59:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.57,
+      "call": 14.18,
+      "teardown": 1.06,
+      "total": 15.81
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_mock_result_array_size_mismatch_on_parallel_state": {
     "last_validated_date": "2026-02-27T10:02:38+00:00",
     "durations_in_seconds": {
