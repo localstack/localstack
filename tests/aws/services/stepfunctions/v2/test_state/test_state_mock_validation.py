@@ -45,6 +45,7 @@ class TestStateMockValidation:
     STATES_REQUIRING_MOCKS = [
         pytest.param(TST.BASE_MAP_STATE, id="MapState"),
         pytest.param(TST.MAP_TASK_STATE, id="MapTaskState"),
+        pytest.param(TST.BASE_PARALLEL_STATE, id="ParallelState"),
     ]
 
     @markers.aws.validated
@@ -113,6 +114,41 @@ class TestStateMockValidation:
         template = TST.load_sfn_template(TST.BASE_MAP_STATE)
         definition = json.dumps(template)
         mock = {"result": json.dumps({"mock": "array is expected but object is provided instead"})}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_mock_result_is_not_array_on_parallel_state(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TST.load_sfn_template(TST.BASE_PARALLEL_STATE)
+        definition = json.dumps(template)
+        mock = {"result": json.dumps({"mock": "array is expected but object is provided instead"})}
+        with pytest.raises(Exception) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                inspectionLevel=InspectionLevel.TRACE,
+                mock=mock,
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_mock_result_array_size_mismatch_on_parallel_state(
+        self,
+        aws_client_no_sync_prefix,
+        sfn_snapshot,
+    ):
+        template = TST.load_sfn_template(TST.BASE_PARALLEL_STATE)
+        definition = json.dumps(template)
+        # BASE_PARALLEL_STATE has 2 branches, provide array of size 1
+        mock = {"result": json.dumps([{"branch": 1}])}
         with pytest.raises(Exception) as e:
             aws_client_no_sync_prefix.stepfunctions.test_state(
                 definition=definition,
