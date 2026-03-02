@@ -4,5 +4,14 @@
   },
   "tests/aws/services/firehose/test_firehose.py::TestFirehoseIntegration::test_multiple_delivery_streams_with_kinesis_as_source": {
     "last_validated_date": "2024-01-25T10:54:39+00:00"
+  },
+  "tests/aws/services/firehose/test_firehose.py::TestFirehoseResourceTagging::test_resource_tagging": {
+    "last_validated_date": "2026-03-02T13:20:05+00:00",
+    "durations_in_seconds": {
+      "setup": 2.44,
+      "call": 23.89,
+      "teardown": 23.4,
+      "total": 49.73
+    }
   }
 }
