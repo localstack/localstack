@@ -52,7 +52,6 @@ from localstack.aws.api.firehose import (
     ListDeliveryStreamsOutput,
     ListTagsForDeliveryStreamInputLimit,
     ListTagsForDeliveryStreamOutput,
-    ListTagsForDeliveryStreamOutputTagList,
     MSKSourceConfiguration,
     PutRecordBatchOutput,
     PutRecordBatchRequestEntryList,
@@ -118,6 +117,7 @@ from localstack.utils.common import (
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.kinesis.kinesis_connector import KinesisProcessorThread
 from localstack.utils.run import run_for_max_seconds
+from localstack.utils.tagging import tag_list_to_map, tag_map_to_list
 
 LOG = logging.getLogger(__name__)
 
@@ -408,7 +408,9 @@ class FirehoseProvider(FirehoseApi):
 
             run_for_max_seconds(25, _startup)
 
-        store.TAGS.tag_resource(delivery_stream_arn, tags)
+        if tags:
+            tag_map = tag_list_to_map(tags)
+            store.tags.update_tags(delivery_stream_arn, tag_map)
         store.delivery_streams[delivery_stream_name] = stream
 
         return CreateDeliveryStreamOutput(DeliveryStreamARN=stream["DeliveryStreamARN"])
@@ -435,6 +437,8 @@ class FirehoseProvider(FirehoseApi):
         if kinesis_process := self.kinesis_listeners.pop(delivery_stream_arn, None):
             LOG.debug("Stopping kinesis listener for %s", delivery_stream_name)
             kinesis_process.stop()
+
+        store.tags.delete_all_tags(delivery_stream_arn)
 
         return DeleteDeliveryStreamOutput()
 
@@ -508,7 +512,8 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
         )
-        store.TAGS.tag_resource(delivery_stream_description["DeliveryStreamARN"], tags)
+        tag_map = tag_list_to_map(tags)
+        store.tags.update_tags(delivery_stream_description["DeliveryStreamARN"], tag_map)
         return ListTagsForDeliveryStreamOutput()
 
     def list_tags_for_delivery_stream(
@@ -523,12 +528,8 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
         )
-        # The tagging service returns a dictionary with the given root name
-        tags = store.TAGS.list_tags_for_resource(
-            arn=delivery_stream_description["DeliveryStreamARN"], root_name="root"
-        )
-        # Extract the actual list of tags for the typed response
-        tag_list: ListTagsForDeliveryStreamOutputTagList = tags["root"]
+        tag_map = store.tags.get_tags(delivery_stream_description["DeliveryStreamARN"])
+        tag_list = tag_map_to_list(tag_map)
         return ListTagsForDeliveryStreamOutput(Tags=tag_list, HasMoreTags=False)
 
     def untag_delivery_stream(
@@ -542,10 +543,7 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
         )
-        # The tagging service returns a dictionary with the given root name
-        store.TAGS.untag_resource(
-            arn=delivery_stream_description["DeliveryStreamARN"], tag_names=tag_keys
-        )
+        store.tags.delete_tags(delivery_stream_description["DeliveryStreamARN"], tag_keys)
         return UntagDeliveryStreamOutput()
 
     def update_destination(
