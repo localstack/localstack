@@ -1508,11 +1508,10 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             raise ValidationException("State not found in definition")
 
         mock_input = request.get("mock")
-        TestStateStaticAnalyser.validate_mock(test_state_input=request)
+        state_configuration = request.get("stateConfiguration")
 
-        if state_configuration := request.get("stateConfiguration"):
-            # TODO: Add validations for this i.e assert len(input) <= failureCount
-            pass
+        TestStateStaticAnalyser.validate_state_configuration(state_configuration, mock_input)
+        TestStateStaticAnalyser.validate_mock(test_state_input=request)
 
         if state_context := request.get("context"):
             # TODO: Add validation ensuring only present if 'mock' is specified
