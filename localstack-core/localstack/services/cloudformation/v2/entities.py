@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-from typing import NotRequired, TypedDict
 
 from localstack.aws.api.cloudformation import (
     Capability,
@@ -10,6 +9,7 @@ from localstack.aws.api.cloudformation import (
     CreateStackSetInput,
     ExecutionStatus,
     Output,
+    Parameter,
     ResourceStatus,
     StackEvent,
     StackInstanceComprehensiveStatus,
@@ -21,11 +21,9 @@ from localstack.aws.api.cloudformation import (
     StackStatusReason,
     Tag,
 )
-from localstack.aws.api.cloudformation import (
-    Parameter as ApiParameter,
-)
 from localstack.services.cloudformation.engine.entities import (
     StackIdentifierV2,
+    StackTemplate,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
@@ -37,30 +35,37 @@ from localstack.utils.strings import long_uid, short_uid
 
 
 class Stack:
-    stack_name: str
-    description: str | None
-    parameters: list[ApiParameter]
-    change_set_id: str | None
-    change_set_ids: set[str]
+    account_id: str
+    region_name: str
     status: StackStatus
     status_reason: StackStatusReason | None
-    stack_id: str
+    change_set_ids: set[str]
     creation_time: datetime
     deletion_time: datetime | None
-    events: list[StackEvent]
-    capabilities: list[Capability]
+    change_set_id: str | None
     enable_termination_protection: bool
-    template: dict | None
-    processed_template: dict | None
+    template: StackTemplate | None
+    processed_template: StackTemplate | None
     template_body: str | None
     tags: list[Tag]
+
+    stack_name: str
+    parameters: list[Parameter]
+    stack_id: str
+
+    capabilities: list[Capability]
+
+    # V1 compatibility
+    request_payload: CreateChangeSetInput | CreateStackInput
 
     # state after deploy
     resolved_parameters: dict[str, EngineParameter]
     resolved_resources: dict[str, ResolvedResource]
     resolved_outputs: list[Output]
     resource_states: dict[str, StackResource]
+    events: list[StackEvent]
     resolved_exports: dict[str, str]
+    description: str | None
 
     def __init__(
         self,
@@ -185,31 +190,29 @@ class Stack:
         return self.status != StackStatus.DELETE_COMPLETE
 
 
-class ChangeSetRequestPayload(TypedDict, total=False):
-    ChangeSetName: str
-    ChangeSetType: NotRequired[ChangeSetType]
-
-
 class ChangeSet:
-    change_set_name: str
-    change_set_id: str
-    change_set_type: ChangeSetType
-    update_model: UpdateModel | None
+    stack: Stack
+    template_body: str
+    template: StackTemplate | None
     status: ChangeSetStatus
     status_reason: str | None
     execution_status: ExecutionStatus
+    update_model: UpdateModel | None
     creation_time: datetime
-    processed_template: dict | None
     resolved_parameters: dict[str, EngineParameter]
-    description: str | None
     tags: list[Tag]
+    change_set_name: str
+    change_set_type: ChangeSetType
+    change_set_id: str
+    processed_template: StackTemplate | None
+    description: str | None
 
     def __init__(
         self,
         stack: Stack,
-        request_payload: ChangeSetRequestPayload,
+        request_payload: CreateChangeSetInput,
         template_body: str,
-        template: dict | None = None,
+        template: StackTemplate | None = None,
     ):
         self.stack = stack
         self.template_body = template_body
@@ -255,26 +258,45 @@ class ChangeSet:
 
 
 class StackInstance:
+    account_id: str
+    region_name: str
+    stack_set_id: str
+    operation_id: str
+    stack_id: str
+
+    status: StackInstanceStatus
+    stack_instance_status: StackInstanceComprehensiveStatus
+
     def __init__(
         self, account_id: str, region_name: str, stack_set_id: str, operation_id: str, stack_id: str
-    ):
+    ) -> None:
         self.account_id = account_id
         self.region_name = region_name
         self.stack_set_id = stack_set_id
         self.operation_id = operation_id
         self.stack_id = stack_id
 
-        self.status: StackInstanceStatus = StackInstanceStatus.CURRENT
+        self.status = StackInstanceStatus.CURRENT
         self.stack_instance_status = StackInstanceComprehensiveStatus(
             DetailedStatus=StackInstanceDetailedStatus.SUCCEEDED
         )
 
 
 class StackSet:
+    account_id: str
+    region_name: str
+
+    stack_set_name: str
+    stack_set_id: str
+    template_body: str | None
+    template_url: str | None
+
     stack_instances: list[StackInstance]
     operations: dict[str, StackSetOperation]
 
-    def __init__(self, account_id: str, region_name: str, request_payload: CreateStackSetInput):
+    def __init__(
+        self, account_id: str, region_name: str, request_payload: CreateStackSetInput
+    ) -> None:
         self.account_id = account_id
         self.region_name = region_name
 

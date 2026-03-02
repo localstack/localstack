@@ -192,8 +192,8 @@ class UpdateModel:
     # TODO: may be expanded to keep track of other runtime values such as resolved_parameters.
 
     node_template: Final[NodeTemplate]
-    before_runtime_cache: Final[dict]
-    after_runtime_cache: Final[dict]
+    before_runtime_cache: Final[dict[str, Any]]
+    after_runtime_cache: Final[dict[str, Any]]
 
     def __init__(
         self,
@@ -524,7 +524,7 @@ class NodeArray(ChangeSetNode):
 
 
 class TerminalValue(ChangeSetTerminal, abc.ABC):
-    value: Final[Any]
+    value: Final[str | NothingType]
 
     def __init__(self, scope: Scope, change_type: ChangeType, value: Any):
         super().__init__(scope=scope, change_type=change_type)
@@ -532,7 +532,7 @@ class TerminalValue(ChangeSetTerminal, abc.ABC):
 
 
 class TerminalValueModified(TerminalValue):
-    modified_value: Final[Any]
+    modified_value: Final[str | NothingType]
 
     def __init__(self, scope: Scope, value: Any, modified_value: Any):
         super().__init__(scope=scope, change_type=ChangeType.MODIFIED, value=value)

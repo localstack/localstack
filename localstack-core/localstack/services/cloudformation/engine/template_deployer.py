@@ -889,7 +889,7 @@ def evaluate_resource_condition(conditions: dict[str, bool], resource: dict) -> 
 
 
 class TemplateDeployer:
-    def __init__(self, account_id: str, region_name: str, stack):
+    def __init__(self, account_id: str, region_name: str, stack: Stack):
         self.stack = stack
         self.account_id = account_id
         self.region_name = region_name
@@ -1138,7 +1138,7 @@ class TemplateDeployer:
     def apply_changes(
         self,
         existing_stack: Stack,
-        new_stack: StackChangeSet,
+        new_stack: Stack | StackChangeSet,
         change_set_id: str | None = None,
         initialize: bool | None = False,
         action: str | None = None,
