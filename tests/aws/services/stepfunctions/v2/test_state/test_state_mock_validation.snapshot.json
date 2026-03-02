@@ -270,5 +270,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_mock_validation.py::TestStateMockValidation::test_map_iteration_failure_count_exceeds_mock_result_items": {
+    "recorded-date": "02-03-2026, 00:17:09",
+    "recorded-content": {
+      "validation_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Map iteration failure count must be less than or equal to the number of Map iterations"
+        },
+        "message": "Map iteration failure count must be less than or equal to the number of Map iterations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
