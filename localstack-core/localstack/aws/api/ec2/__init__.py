@@ -967,6 +967,12 @@ class DatafeedSubscriptionState(StrEnum):
     Inactive = "Inactive"
 
 
+class DefaultHttpTokensEnforcedState(StrEnum):
+    disabled = "disabled"
+    enabled = "enabled"
+    no_preference = "no-preference"
+
+
 class DefaultInstanceMetadataEndpointState(StrEnum):
     disabled = "disabled"
     enabled = "enabled"
@@ -1367,6 +1373,11 @@ class HostTenancy(StrEnum):
 class HostnameType(StrEnum):
     ip_name = "ip-name"
     resource_name = "resource-name"
+
+
+class HttpTokensEnforcedState(StrEnum):
+    disabled = "disabled"
+    enabled = "enabled"
 
 
 class HttpTokensState(StrEnum):
@@ -2761,6 +2772,33 @@ class InstanceType(StrEnum):
     r8id_96xlarge = "r8id.96xlarge"
     r8id_metal_48xl = "r8id.metal-48xl"
     r8id_metal_96xl = "r8id.metal-96xl"
+    c8id_large = "c8id.large"
+    c8id_xlarge = "c8id.xlarge"
+    c8id_2xlarge = "c8id.2xlarge"
+    c8id_4xlarge = "c8id.4xlarge"
+    c8id_8xlarge = "c8id.8xlarge"
+    c8id_12xlarge = "c8id.12xlarge"
+    c8id_16xlarge = "c8id.16xlarge"
+    c8id_24xlarge = "c8id.24xlarge"
+    c8id_32xlarge = "c8id.32xlarge"
+    c8id_48xlarge = "c8id.48xlarge"
+    c8id_96xlarge = "c8id.96xlarge"
+    c8id_metal_48xl = "c8id.metal-48xl"
+    c8id_metal_96xl = "c8id.metal-96xl"
+    m8id_large = "m8id.large"
+    m8id_xlarge = "m8id.xlarge"
+    m8id_2xlarge = "m8id.2xlarge"
+    m8id_4xlarge = "m8id.4xlarge"
+    m8id_8xlarge = "m8id.8xlarge"
+    m8id_12xlarge = "m8id.12xlarge"
+    m8id_16xlarge = "m8id.16xlarge"
+    m8id_24xlarge = "m8id.24xlarge"
+    m8id_32xlarge = "m8id.32xlarge"
+    m8id_48xlarge = "m8id.48xlarge"
+    m8id_96xlarge = "m8id.96xlarge"
+    m8id_metal_48xl = "m8id.metal-48xl"
+    m8id_metal_96xl = "m8id.metal-96xl"
+    hpc8a_96xlarge = "hpc8a.96xlarge"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -5470,7 +5508,7 @@ class AllocateHostsRequest(ServiceRequest):
     ClientToken: String | None
     InstanceType: String | None
     Quantity: Integer | None
-    AvailabilityZone: String | None
+    AvailabilityZone: AvailabilityZoneName | None
 
 
 ResponseHostIdList = list[String]
@@ -6820,6 +6858,7 @@ class CapacityBlockExtension(TypedDict, total=False):
     CapacityBlockExtensionEndDate: MillisecondDateTime | None
     UpfrontFee: String | None
     CurrencyCode: String | None
+    ZoneType: String | None
 
 
 class CapacityBlockExtensionOffering(TypedDict, total=False):
@@ -6835,6 +6874,7 @@ class CapacityBlockExtensionOffering(TypedDict, total=False):
     UpfrontFee: String | None
     CurrencyCode: String | None
     Tenancy: CapacityReservationTenancy | None
+    ZoneType: String | None
 
 
 CapacityBlockExtensionOfferingSet = list[CapacityBlockExtensionOffering]
@@ -6856,6 +6896,7 @@ class CapacityBlockOffering(TypedDict, total=False):
     UltraserverType: String | None
     UltraserverCount: BoxedInteger | None
     CapacityBlockDurationMinutes: Integer | None
+    ZoneType: String | None
 
 
 CapacityBlockOfferingSet = list[CapacityBlockOffering]
@@ -13180,6 +13221,7 @@ class DescribeCapacityBlockOfferingsRequest(ServiceRequest):
     MaxResults: DescribeCapacityBlockOfferingsMaxResults | None
     UltraserverType: String | None
     UltraserverCount: Integer | None
+    AllAvailabilityZones: Boolean | None
 
 
 class DescribeCapacityBlockOfferingsResult(TypedDict, total=False):
@@ -19446,6 +19488,7 @@ class InstanceMetadataDefaultsResponse(TypedDict, total=False):
     InstanceMetadataTags: InstanceMetadataTagsState | None
     ManagedBy: ManagedBy | None
     ManagedExceptionMessage: String | None
+    HttpTokensEnforced: HttpTokensEnforcedState | None
 
 
 class GetInstanceMetadataDefaultsResult(TypedDict, total=False):
@@ -21210,6 +21253,7 @@ class ModifyInstanceMetadataDefaultsRequest(ServiceRequest):
     HttpEndpoint: DefaultInstanceMetadataEndpointState | None
     InstanceMetadataTags: DefaultInstanceMetadataTagsState | None
     DryRun: Boolean | None
+    HttpTokensEnforced: DefaultHttpTokensEnforcedState | None
 
 
 class ModifyInstanceMetadataDefaultsResult(TypedDict, total=False):
@@ -23370,7 +23414,7 @@ class Ec2Api:
         client_token: String | None = None,
         instance_type: String | None = None,
         quantity: Integer | None = None,
-        availability_zone: String | None = None,
+        availability_zone: AvailabilityZoneName | None = None,
         **kwargs,
     ) -> AllocateHostsResult:
         raise NotImplementedError
@@ -26670,6 +26714,7 @@ class Ec2Api:
         max_results: DescribeCapacityBlockOfferingsMaxResults | None = None,
         ultraserver_type: String | None = None,
         ultraserver_count: Integer | None = None,
+        all_availability_zones: Boolean | None = None,
         **kwargs,
     ) -> DescribeCapacityBlockOfferingsResult:
         raise NotImplementedError
@@ -30824,6 +30869,7 @@ class Ec2Api:
         http_endpoint: DefaultInstanceMetadataEndpointState | None = None,
         instance_metadata_tags: DefaultInstanceMetadataTagsState | None = None,
         dry_run: Boolean | None = None,
+        http_tokens_enforced: DefaultHttpTokensEnforcedState | None = None,
         **kwargs,
     ) -> ModifyInstanceMetadataDefaultsResult:
         raise NotImplementedError

@@ -2322,6 +2322,7 @@ class UpdateTableInput(ServiceRequest):
     GlobalTableWitnessUpdates: GlobalTableWitnessGroupUpdateList | None
     OnDemandThroughput: OnDemandThroughput | None
     WarmThroughput: WarmThroughput | None
+    GlobalTableSettingsReplicationMode: GlobalTableSettingsReplicationMode | None
 
 
 class UpdateTableOutput(TypedDict, total=False):
@@ -2974,6 +2975,7 @@ class DynamodbApi:
         global_table_witness_updates: GlobalTableWitnessGroupUpdateList | None = None,
         on_demand_throughput: OnDemandThroughput | None = None,
         warm_throughput: WarmThroughput | None = None,
+        global_table_settings_replication_mode: GlobalTableSettingsReplicationMode | None = None,
         **kwargs,
     ) -> UpdateTableOutput:
         raise NotImplementedError

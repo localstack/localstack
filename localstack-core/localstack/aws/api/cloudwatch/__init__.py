@@ -16,6 +16,7 @@ AlarmRule = str
 AmazonResourceName = str
 AnomalyDetectorMetricStat = str
 AnomalyDetectorMetricTimezone = str
+Arn = str
 AttributeName = str
 AttributeValue = str
 AwsQueryErrorMessage = str
@@ -30,6 +31,7 @@ DatapointValue = float
 DatapointsToAlarm = int
 DimensionName = str
 DimensionValue = str
+Duration = str
 EntityAttributesMapKeyString = str
 EntityAttributesMapValueString = str
 EntityKeyAttributesMapKeyString = str
@@ -38,6 +40,7 @@ ErrorMessage = str
 EvaluateLowSampleCountPercentile = str
 EvaluationPeriods = int
 ExceptionType = str
+Expression = str
 ExtendedStatistic = str
 FailureCode = str
 FailureDescription = str
@@ -77,6 +80,8 @@ MetricStreamName = str
 MetricStreamState = str
 MetricStreamStatistic = str
 MetricWidget = str
+MuteType = str
+Name = str
 Namespace = str
 NextToken = str
 OutputFormat = str
@@ -96,6 +101,7 @@ TagKey = str
 TagValue = str
 TemplateName = str
 Threshold = float
+Timezone = str
 TreatMissingData = str
 
 
@@ -103,6 +109,12 @@ class ActionsSuppressedBy(StrEnum):
     WaitPeriod = "WaitPeriod"
     ExtensionPeriod = "ExtensionPeriod"
     Alarm = "Alarm"
+
+
+class AlarmMuteRuleStatus(StrEnum):
+    SCHEDULED = "SCHEDULED"
+    ACTIVE = "ACTIVE"
+    EXPIRED = "EXPIRED"
 
 
 class AlarmType(StrEnum):
@@ -332,6 +344,18 @@ class AlarmHistoryItem(TypedDict, total=False):
 
 
 AlarmHistoryItems = list[AlarmHistoryItem]
+AlarmMuteRuleStatuses = list[AlarmMuteRuleStatus]
+
+
+class AlarmMuteRuleSummary(TypedDict, total=False):
+    AlarmMuteRuleArn: Arn | None
+    ExpireDate: Timestamp | None
+    Status: AlarmMuteRuleStatus | None
+    MuteType: MuteType | None
+    LastUpdatedTimestamp: Timestamp | None
+
+
+AlarmMuteRuleSummaries = list[AlarmMuteRuleSummary]
 AlarmNames = list[AlarmName]
 AlarmTypes = list[AlarmType]
 
@@ -479,6 +503,10 @@ class Datapoint(TypedDict, total=False):
 
 DatapointValues = list[DatapointValue]
 Datapoints = list[Datapoint]
+
+
+class DeleteAlarmMuteRuleInput(ServiceRequest):
+    AlarmMuteRuleName: Name
 
 
 class DeleteAlarmsInput(ServiceRequest):
@@ -730,6 +758,40 @@ EntityMetricDataList = list[EntityMetricData]
 ExtendedStatistics = list[ExtendedStatistic]
 
 
+class GetAlarmMuteRuleInput(ServiceRequest):
+    AlarmMuteRuleName: Name
+
+
+MuteTargetAlarmNameList = list[Name]
+
+
+class MuteTargets(TypedDict, total=False):
+    AlarmNames: MuteTargetAlarmNameList
+
+
+class Schedule(TypedDict, total=False):
+    Expression: Expression
+    Duration: Duration
+    Timezone: Timezone | None
+
+
+class Rule(TypedDict, total=False):
+    Schedule: Schedule
+
+
+class GetAlarmMuteRuleOutput(TypedDict, total=False):
+    Name: Name | None
+    AlarmMuteRuleArn: Arn | None
+    Description: AlarmDescription | None
+    Rule: Rule | None
+    MuteTargets: MuteTargets | None
+    StartDate: Timestamp | None
+    ExpireDate: Timestamp | None
+    Status: AlarmMuteRuleStatus | None
+    LastUpdatedTimestamp: Timestamp | None
+    MuteType: MuteType | None
+
+
 class GetDashboardInput(ServiceRequest):
     DashboardName: DashboardName
 
@@ -916,6 +978,18 @@ class GetMetricWidgetImageOutput(TypedDict, total=False):
     MetricWidgetImage: MetricWidgetImage | None
 
 
+class ListAlarmMuteRulesInput(ServiceRequest):
+    AlarmName: Name | None
+    Statuses: AlarmMuteRuleStatuses | None
+    MaxRecords: MaxRecords | None
+    NextToken: NextToken | None
+
+
+class ListAlarmMuteRulesOutput(TypedDict, total=False):
+    AlarmMuteRuleSummaries: AlarmMuteRuleSummaries | None
+    NextToken: NextToken | None
+
+
 class ListDashboardsInput(ServiceRequest):
     DashboardNamePrefix: DashboardNamePrefix | None
     NextToken: NextToken | None
@@ -1018,6 +1092,16 @@ class ManagedRule(TypedDict, total=False):
 
 ManagedRules = list[ManagedRule]
 MetricStreamNames = list[MetricStreamName]
+
+
+class PutAlarmMuteRuleInput(ServiceRequest):
+    Name: Name
+    Description: AlarmDescription | None
+    Rule: Rule
+    MuteTargets: MuteTargets | None
+    Tags: TagList | None
+    StartDate: Timestamp | None
+    ExpireDate: Timestamp | None
 
 
 class PutAnomalyDetectorInput(ServiceRequest):
@@ -1174,6 +1258,12 @@ class CloudwatchApi:
     service: str = "cloudwatch"
     version: str = "2010-08-01"
 
+    @handler("DeleteAlarmMuteRule")
+    def delete_alarm_mute_rule(
+        self, context: RequestContext, alarm_mute_rule_name: Name, **kwargs
+    ) -> None:
+        raise NotImplementedError
+
     @handler("DeleteAlarms")
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames, **kwargs) -> None:
         raise NotImplementedError
@@ -1317,6 +1407,12 @@ class CloudwatchApi:
     ) -> EnableInsightRulesOutput:
         raise NotImplementedError
 
+    @handler("GetAlarmMuteRule")
+    def get_alarm_mute_rule(
+        self, context: RequestContext, alarm_mute_rule_name: Name, **kwargs
+    ) -> GetAlarmMuteRuleOutput:
+        raise NotImplementedError
+
     @handler("GetDashboard")
     def get_dashboard(
         self, context: RequestContext, dashboard_name: DashboardName, **kwargs
@@ -1386,6 +1482,18 @@ class CloudwatchApi:
     ) -> GetMetricWidgetImageOutput:
         raise NotImplementedError
 
+    @handler("ListAlarmMuteRules")
+    def list_alarm_mute_rules(
+        self,
+        context: RequestContext,
+        alarm_name: Name | None = None,
+        statuses: AlarmMuteRuleStatuses | None = None,
+        max_records: MaxRecords | None = None,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> ListAlarmMuteRulesOutput:
+        raise NotImplementedError
+
     @handler("ListDashboards")
     def list_dashboards(
         self,
@@ -1436,6 +1544,21 @@ class CloudwatchApi:
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceOutput:
+        raise NotImplementedError
+
+    @handler("PutAlarmMuteRule")
+    def put_alarm_mute_rule(
+        self,
+        context: RequestContext,
+        name: Name,
+        rule: Rule,
+        description: AlarmDescription | None = None,
+        mute_targets: MuteTargets | None = None,
+        tags: TagList | None = None,
+        start_date: Timestamp | None = None,
+        expire_date: Timestamp | None = None,
+        **kwargs,
+    ) -> None:
         raise NotImplementedError
 
     @handler("PutAnomalyDetector")
