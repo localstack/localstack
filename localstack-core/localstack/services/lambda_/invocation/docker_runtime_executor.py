@@ -103,10 +103,23 @@ def _ensure_runtime_image_present(image: str, platform: DockerPlatform) -> None:
     # use a lock to avoid concurrent pulling of the same image
     with PULL_LOCKS[(image, platform)]:
         if (image, platform) in PULLED_IMAGES:
+            LOG.debug("Image %s for platform %s already pulled, skipping pull", image, platform)
             return
         try:
             CONTAINER_CLIENT.pull_image(image, platform)
             PULLED_IMAGES.add((image, platform))
+            try:
+                image_info = CONTAINER_CLIENT.inspect_image(image, pull=False)
+                size_bytes = image_info.get("Size", 0)
+                size_mb = size_bytes / (1024 * 1024)
+                LOG.debug(
+                    "Pulled Lambda runtime image %s (platform: %s, size: %.1f MB)",
+                    image,
+                    platform,
+                    size_mb,
+                )
+            except Exception:
+                LOG.debug("Pulled Lambda runtime image %s (platform: %s)", image, platform)
         except NoSuchImage as e:
             LOG.debug("Unable to pull image %s for runtime executor preparation.", image)
             raise e
