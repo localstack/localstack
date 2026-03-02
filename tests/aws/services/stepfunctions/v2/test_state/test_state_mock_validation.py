@@ -217,3 +217,25 @@ class TestStateMockValidation:
                 stateConfiguration={"mapIterationFailureCount": 0},
             )
         sfn_snapshot.match("validation_exception", e.value.response)
+
+    @markers.aws.validated
+    def test_map_iteration_failure_count_exceeds_mock_result_items(
+        self,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
+        sfn_snapshot,
+    ):
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        template = TST.load_sfn_template(TST.BASE_MAP_STATE)
+        definition = json.dumps(template)
+
+        with pytest.raises(aws_client.stepfunctions.exceptions.ValidationException) as e:
+            aws_client_no_sync_prefix.stepfunctions.test_state(
+                definition=definition,
+                roleArn=sfn_role_arn,
+                input=json.dumps({"Values": [1, 1, 1]}),
+                stateConfiguration={"mapIterationFailureCount": 4},
+                mock={"result": json.dumps([1, 1, 1])},
+            )
+        sfn_snapshot.match("validation_exception", e.value.response)
