@@ -69,12 +69,12 @@
     "last_validated_date": "2025-01-22T13:22:43+00:00"
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_scheduled_rule_does_not_trigger_on_put_events": {
-    "last_validated_date": "2025-06-04T19:23:59+00:00",
+    "last_validated_date": "2026-02-27T22:37:04+00:00",
     "durations_in_seconds": {
-      "setup": 0.56,
-      "call": 11.78,
-      "teardown": 1.18,
-      "total": 13.52
+      "setup": 0.01,
+      "call": 11.95,
+      "teardown": 0.9,
+      "total": 12.86
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[ rate(10 minutes)]": {
