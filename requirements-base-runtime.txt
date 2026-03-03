@@ -22,11 +22,11 @@ botocore==1.42.59
     #   boto3
     #   localstack-core (pyproject.toml)
     #   s3transfer
-cachetools==7.0.1
+cachetools==7.0.2
     # via localstack-core (pyproject.toml)
 cbor2==5.8.0
     # via localstack-core (pyproject.toml)
-certifi==2026.1.4
+certifi==2026.2.25
     # via requests
 cffi==2.0.0
     # via cryptography
@@ -145,7 +145,7 @@ python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   localstack-core (pyproject.toml)
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via localstack-core (pyproject.toml)
 pyyaml==6.0.3
     # via

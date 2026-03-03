@@ -6,9 +6,9 @@
 #
 asn1crypto==1.5.1
     # via localstack-core (pyproject.toml)
-cachetools==7.0.1
+cachetools==7.0.2
     # via localstack-core (pyproject.toml)
-certifi==2026.1.4
+certifi==2026.2.25
     # via requests
 cffi==2.0.0
     # via cryptography
@@ -36,7 +36,7 @@ pycparser==3.0
     # via cffi
 pygments==2.19.2
     # via rich
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via localstack-core (pyproject.toml)
 pyyaml==6.0.3
     # via localstack-core (pyproject.toml)
