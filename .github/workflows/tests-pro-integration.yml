@@ -327,7 +327,7 @@ jobs:
           make test
 
       - name: Archive Test Durations
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: success() || failure()
         with:
           name: pytest-split-durations-community-${{ matrix.group }}
@@ -336,7 +336,7 @@ jobs:
           retention-days: 5
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: success() || failure()
         with:
           name: test-results-community-${{ matrix.group }}
@@ -362,12 +362,12 @@ jobs:
       )
     steps:
       - name: Download Artifacts 1
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: test-results-community-1
 
       - name: Download Artifacts 2
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: test-results-community-2
 
