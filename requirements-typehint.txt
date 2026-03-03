@@ -219,7 +219,7 @@ jsonpatch==1.33
     # via
     #   cfn-lint
     #   localstack-core
-jsonpath-ng==1.8.0
+jsonpath-ng==1.7.0
     # via
     #   localstack-core
     #   localstack-snapshot
@@ -526,6 +526,7 @@ plux==1.14.0
     #   localstack-core (pyproject.toml)
 ply==3.11
     # via
+    #   jsonpath-ng
     #   jsonpath-rw
     #   pandoc
 pre-commit==4.5.1

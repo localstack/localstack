@@ -150,7 +150,7 @@ jsonpatch==1.33
     # via
     #   cfn-lint
     #   localstack-core
-jsonpath-ng==1.8.0
+jsonpath-ng==1.7.0
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
@@ -226,7 +226,9 @@ plux==1.14.0
     #   localstack-core
     #   localstack-core (pyproject.toml)
 ply==3.11
-    # via jsonpath-rw
+    # via
+    #   jsonpath-ng
+    #   jsonpath-rw
 priority==1.3.0
     # via
     #   hypercorn
