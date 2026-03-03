@@ -31,11 +31,11 @@ attrs==25.4.0
     #   referencing
 aws-cdk-asset-awscli-v1==2.2.263
     # via aws-cdk-lib
-aws-cdk-asset-node-proxy-agent-v6==2.1.0
+aws-cdk-asset-node-proxy-agent-v6==2.1.1
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==50.4.0
+aws-cdk-cloud-assembly-schema==52.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.240.0
+aws-cdk-lib==2.241.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.107.0
     # via
@@ -62,7 +62,7 @@ botocore==1.42.59
     #   localstack-core
     #   moto-ext
     #   s3transfer
-cachetools==7.0.1
+cachetools==7.0.2
     # via
     #   airspeed-ext
     #   localstack-core
@@ -71,7 +71,7 @@ cattrs==25.3.0
     # via jsii
 cbor2==5.8.0
     # via localstack-core
-certifi==2026.1.4
+certifi==2026.2.25
     # via
     #   httpcore
     #   httpx
@@ -79,7 +79,7 @@ certifi==2026.1.4
     #   requests
 cffi==2.0.0
     # via cryptography
-cfn-lint==1.45.0
+cfn-lint==1.46.0
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
@@ -129,7 +129,7 @@ events==0.5
     # via opensearch-py
 graphql-core==3.2.7
     # via moto-ext
-grpcio==1.78.1
+grpcio==1.78.0
     # via opensearch-protobufs
 h11==0.16.0
     # via
@@ -176,11 +176,11 @@ jmespath==1.1.0
     # via
     #   boto3
     #   botocore
-joserfc==1.6.2
+joserfc==1.6.3
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.126.0
+jsii==1.127.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -238,11 +238,11 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.24
+moto-ext==5.1.25
     # via localstack-core
 mpmath==1.3.0
     # via sympy
-multipart==1.3.0
+multipart==1.3.1
     # via moto-ext
 networkx==3.6.1
     # via cfn-lint
@@ -287,7 +287,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-protobuf==6.33.5
+protobuf==7.34.0
     # via opensearch-protobufs
 psutil==7.2.2
     # via
@@ -346,7 +346,7 @@ python-dateutil==2.9.0.post0
     #   localstack-core
     #   moto-ext
     #   opensearch-py
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -366,7 +366,7 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2026.2.19
+regex==2026.2.28
     # via cfn-lint
 requests==2.32.5
     # via

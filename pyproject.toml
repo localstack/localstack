@@ -94,7 +94,7 @@ runtime = [
     "jinja2>=3.1.6",
     # allow Python programs full access to Java class libraries. Used for stepfunctions jsonata support
     "jpype1>=1.6.0",
-    "jsonpath-ng>=1.6.1",
+    "jsonpath-ng==1.7.0",
     "jsonpath-rw>=1.4.0",
     # version that has a built wheel
     "kclpy-ext>=3.0.0",
