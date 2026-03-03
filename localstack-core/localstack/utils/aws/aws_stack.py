@@ -35,8 +35,11 @@ def get_valid_regions():
 def get_valid_regions_for_service(service_name):
     session = boto3.Session()
     regions = list(session.get_available_regions(service_name))
-    regions.extend(session.get_available_regions("cloudwatch", partition_name="aws-us-gov"))
-    regions.extend(session.get_available_regions("cloudwatch", partition_name="aws-cn"))
+    for partition in session.get_available_partitions():
+        # handle default partition separately for now.
+        # We use cloudwatch as service here to avoid missing botocore updates preventing service access for non-default partitions
+        if partition != "aws":
+            regions.extend(session.get_available_regions("cloudwatch", partition_name=partition))
     return regions
 
 
