@@ -195,7 +195,7 @@ jmespath==1.1.0
     # via
     #   boto3
     #   botocore
-joserfc==1.6.2
+joserfc==1.6.3
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
