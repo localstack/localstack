@@ -33,6 +33,6 @@ class ResolvedResource(TypedDict):
     Type: str
     Properties: dict[str, Any]
     LastUpdatedTimestamp: datetime
-    ResourceStatus: NotRequired[ResourceStatus]
-    PhysicalResourceId: NotRequired[str]
-    ResourceStatusReason: NotRequired[str]
+    ResourceStatus: NotRequired[ResourceStatus | None]
+    PhysicalResourceId: NotRequired[str | None]
+    ResourceStatusReason: NotRequired[str | None]
