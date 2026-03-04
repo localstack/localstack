@@ -46,7 +46,7 @@ class StatePass(CommonStateField):
         if self.result:
             self.result.eval(env=env)
 
-        if not self._is_language_query_jsonpath():
+        if not self.is_jsonpath_query_language():
             output_value = env.stack[-1]
             env.states.set_result(output_value)
 

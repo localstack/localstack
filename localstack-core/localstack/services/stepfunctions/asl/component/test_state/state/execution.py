@@ -32,7 +32,7 @@ class MockedStateExecution(MockedBaseState[ExecutionState]):
                 # HACK: A DistributedItemProcessorEvalInput is added to the stack and never popped off
                 # during an error case. So we need to check the inspected value is correct before
                 # adding it to our inspectionData.
-                if isinstance(env.stack[-1], (dict, str, int, float)):
+                if isinstance(env.stack[-1], (dict, str, int, float, list)):
                     env.inspection_data["afterResultSelector"] = to_json_str(env.stack[-1])
 
         if catch := self._wrapped.catch:
