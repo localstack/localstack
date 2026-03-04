@@ -4,13 +4,13 @@ from queue import Queue
 import dateutil.parser
 import pytest
 
-from localstack.utils import analytics
-from localstack.utils.analytics.events import Event
-from localstack.utils.analytics.service_request_aggregator import (
+from localstack.aws.analytics.service_request_aggregator import (
     EVENT_NAME,
     ServiceRequestAggregator,
     ServiceRequestInfo,
 )
+from localstack.utils import analytics
+from localstack.utils.analytics.events import Event
 
 
 def test_whitebox_create_analytics_payload():

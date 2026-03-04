@@ -3,12 +3,12 @@ from unittest.mock import MagicMock, call
 import pytest
 
 from localstack import config
+from localstack.aws.analytics.service_request_aggregator import ServiceRequestInfo
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.handlers.analytics import ServiceRequestCounter
 from localstack.http import Response
-from localstack.utils.analytics.service_request_aggregator import ServiceRequestInfo
 
 
 @pytest.fixture(autouse=True)
