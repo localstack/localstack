@@ -29,17 +29,10 @@ from localstack.aws.api.cloudformation import (
 from localstack.services.cloudformation.engine.entities import (
     StackIdentifierV2,
 )
-from localstack.services.cloudformation.engine.transformers import FailedTransformationException
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     ChangeType,
     UpdateModel,
-)
-from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
-    ChangeSetModelTransform,
-)
-from localstack.services.cloudformation.engine.v2.change_set_model_validator import (
-    ChangeSetModelValidator,
 )
 from localstack.services.cloudformation.engine.v2.change_set_resource_support_checker import (
     ChangeSetResourceSupportChecker,
@@ -277,6 +270,16 @@ class ChangeSet:
         return self.stack.region_name
 
     def compute_update_model(self, inputs: UpdateModelInputs):
+        from localstack.services.cloudformation.engine.transformers import (
+            FailedTransformationException,
+        )
+        from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
+            ChangeSetModelTransform,
+        )
+        from localstack.services.cloudformation.engine.v2.change_set_model_validator import (
+            ChangeSetModelValidator,
+        )
+
         resolved_parameters = None
         if inputs.after_parameters is not None:
             resolved_parameters = resolve_parameters(
