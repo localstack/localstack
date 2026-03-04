@@ -8,6 +8,7 @@ from localstack import config
 from localstack.aws.api.iam import Tag
 from localstack.constants import TAG_KEY_CUSTOM_ID
 from localstack.services.iam.models import iam_stores
+from localstack.services.sts.models import sts_stores
 from localstack.utils.aws.arns import get_partition
 
 AWS_ROLE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
@@ -53,7 +54,7 @@ class AccessKeyInfo:
 
 def get_access_key_by_id(account_id: str, region: str, access_key_id: str) -> AccessKeyInfo | None:
     iam_store = iam_stores[account_id][region]
-    # sts_store = sts_stores[account_id][region]
+    sts_store = sts_stores[account_id][region]
     if user_name := iam_store.ACCESS_KEY_INDEX.get(access_key_id):
         user = iam_store.USERS.get(user_name)
         if user and (access_key := user.access_keys.get(access_key_id)):
@@ -63,7 +64,13 @@ def get_access_key_by_id(account_id: str, region: str, access_key_id: str) -> Ac
             )
         # store in a non consistent state - maybe access key was deleted in the meantime
         return None
-    # TODO sts store lookup
+    elif access_key := sts_store.credentials.get(access_key_id):
+        return AccessKeyInfo(
+            access_key_id=access_key.access_key_id,
+            secret_access_key=access_key.secret_access_key,
+            session_token=access_key.session_token,
+        )
+    return None
 
 
 # ------------------------------ ID Generation Functions ------------------------------ #

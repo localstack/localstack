@@ -14,7 +14,7 @@ import uuid
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 from typing import Any, TypeVar
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from cryptography import x509
 
@@ -4043,6 +4043,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         # Check for duplicate provider
         if arn in store.OIDC_PROVIDERS:
             raise EntityAlreadyExistsException(f"Provider with url {url} already exists.")
+
+        # Stored URL does not have a scheme
+        parsed_url = urlparse(url)
+        url = parsed_url.netloc + parsed_url.path
 
         provider = OIDCProvider(
             arn=arn,
