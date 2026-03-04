@@ -999,7 +999,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     f"[x86_64, arm64], Member must not be null]",
                 )
 
-        if env_vars := (request.get("Environment") or {}).get("Variables"):
+        if env_vars := request.get("Environment", {}).get("Variables"):
             self._verify_env_variables(env_vars)
 
         if layers := request.get("Layers", []):
@@ -1157,7 +1157,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 None
                 if capacity_provider_config
                 else SnapStartResponse(
-                    ApplyOn=(request.get("SnapStart") or {}).get("ApplyOn", SnapStartApplyOn.None_),
+                    ApplyOn=request.get("SnapStart", {}).get("ApplyOn", SnapStartApplyOn.None_),
                     OptimizationStatus=SnapStartOptimizationStatus.Off,
                 )
             )
@@ -1174,7 +1174,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     package_type=package_type,
                     environment=env_vars,
                     architectures=request.get("Architectures") or [Architecture.x86_64],
-                    tracing_config_mode=(request.get("TracingConfig") or {}).get(
+                    tracing_config_mode=request.get("TracingConfig", {}).get(
                         "Mode", TracingMode.PassThrough
                     ),
                     image=image,
@@ -1183,11 +1183,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     layers=self.map_layers(layers),
                     internal_revision=short_uid(),
                     ephemeral_storage=LambdaEphemeralStorage(
-                        size=(request.get("EphemeralStorage") or {}).get("Size", 512)
+                        size=request.get("EphemeralStorage", {}).get("Size", 512)
                     ),
                     snap_start=snap_start,
                     runtime_version_config=runtime_version_config,
-                    dead_letter_arn=(request.get("DeadLetterConfig") or {}).get("TargetArn"),
+                    dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
                     vpc_config=self._build_vpc_config(
                         context_account_id, context_region, request.get("VpcConfig")
                     ),
@@ -1340,7 +1340,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         replace_kwargs = {}
         if "EphemeralStorage" in request:
             replace_kwargs["ephemeral_storage"] = LambdaEphemeralStorage(
-                (request.get("EphemeralStorage") or {}).get("Size", 512)
+                request.get("EphemeralStorage", {}).get("Size", 512)
             )  # TODO: do defaults here apply as well?
 
         if "Role" in request:
@@ -1361,9 +1361,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             replace_kwargs["memory_size"] = request["MemorySize"]
 
         if "DeadLetterConfig" in request:
-            replace_kwargs["dead_letter_arn"] = (request.get("DeadLetterConfig") or {}).get(
-                "TargetArn"
-            )
+            replace_kwargs["dead_letter_arn"] = request.get("DeadLetterConfig", {}).get("TargetArn")
 
         if vpc_config := request.get("VpcConfig"):
             replace_kwargs["vpc_config"] = self._build_vpc_config(account_id, region, vpc_config)
@@ -1398,7 +1396,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         if "Environment" in request:
-            if env_vars := (request.get("Environment") or {}).get("Variables", {}):
+            if env_vars := request.get("Environment", {}).get("Variables", {}):
                 self._verify_env_variables(env_vars)
             replace_kwargs["environment"] = env_vars
 
@@ -1447,7 +1445,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             replace_kwargs["logging_config"] = new_logging_config
 
         if "TracingConfig" in request:
-            new_mode = (request.get("TracingConfig") or {}).get("Mode")
+            new_mode = request.get("TracingConfig", {}).get("Mode")
             if new_mode:
                 replace_kwargs["tracing_config_mode"] = new_mode
 
