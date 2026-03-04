@@ -13,7 +13,7 @@
     }
   },
   "tests/aws/services/firehose/test_firehose.py::TestFirehoseResourceTagging::test_resource_tagging": {
-    "recorded-date": "02-03-2026, 13:20:05",
+    "recorded-date": "04-03-2026, 12:18:13",
     "recorded-content": {
       "list-tags-1": {
         "HasMoreTags": false,
@@ -28,7 +28,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "add-tags": {
+      "remove-tags": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -36,22 +36,13 @@
       },
       "list-tags-2": {
         "HasMoreTags": false,
-        "Tags": [
-          {
-            "Key": "feeling",
-            "Value": "uncomfortable"
-          },
-          {
-            "Key": "subject",
-            "Value": "taboo"
-          }
-        ],
+        "Tags": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
-      "remove-tags": {
+      "add-tags": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

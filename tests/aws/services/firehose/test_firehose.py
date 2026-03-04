@@ -654,18 +654,18 @@ class TestFirehoseResourceTagging:
         response = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         snapshot.match("list-tags-1", response)
 
-        response = aws_client.firehose.tag_delivery_stream(
-            DeliveryStreamName=stream_name, Tags=[{"Key": "feeling", "Value": "uncomfortable"}]
-        )
-        snapshot.match("add-tags", response)
-
-        response = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
-        snapshot.match("list-tags-2", response)
-
         response = aws_client.firehose.untag_delivery_stream(
             DeliveryStreamName=stream_name, TagKeys=["subject", "moment"]
         )
         snapshot.match("remove-tags", response)
+
+        response = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
+        snapshot.match("list-tags-2", response)
+
+        response = aws_client.firehose.tag_delivery_stream(
+            DeliveryStreamName=stream_name, Tags=[{"Key": "feeling", "Value": "uncomfortable"}]
+        )
+        snapshot.match("add-tags", response)
 
         response = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         snapshot.match("list-tags-3", response)
