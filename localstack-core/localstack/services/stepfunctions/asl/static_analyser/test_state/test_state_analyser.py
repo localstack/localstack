@@ -87,7 +87,9 @@ class TestStateStaticAnalyser(StaticAnalyser):
             raise ValidationException("RoleArn must be specified when testing a Task state")
 
     @staticmethod
-    def validate_state_configuration(state_configuration: TestStateConfiguration, mock_input):
+    def validate_state_configuration(
+        state_configuration: TestStateConfiguration | None, mock_input: MockInput
+    ):
         if state_configuration is None:
             return
 
