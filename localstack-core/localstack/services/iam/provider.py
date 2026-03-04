@@ -2244,6 +2244,14 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                     context.account_id, context.region, path, new_user_name
                 )
                 user_entity.user["UserName"] = new_user_name
+
+                # Update group memberships to reflect new username
+                with self._group_lock:
+                    for group_entity in store.GROUPS.values():
+                        if user_name in group_entity.member_user_names:
+                            group_entity.member_user_names.remove(user_name)
+                            group_entity.member_user_names.append(new_user_name)
+
                 # Move to new key in store
                 del store.USERS[user_name]
                 store.USERS[new_user_name] = user_entity

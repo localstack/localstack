@@ -196,8 +196,6 @@ class TestIAMGroupsMembership:
         group_name = f"group-{short_uid()}"
         user_name = f"user-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
-        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
 
         create_group(GroupName=group_name)
         create_user(UserName=user_name)
@@ -240,8 +238,6 @@ class TestIAMGroupsMembership:
         group_name = f"group-{short_uid()}"
         user_name = f"user-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
-        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
 
         create_group(GroupName=group_name)
         create_user(UserName=user_name)
@@ -273,8 +269,6 @@ class TestIAMGroupsMembership:
         group_name = f"group-{short_uid()}"
         user_name = f"user-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
-        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
 
         create_group(GroupName=group_name)
         create_user(UserName=user_name)
@@ -300,8 +294,6 @@ class TestIAMGroupsMembership:
         group_name_3 = f"group-{short_uid()}"
         user_name = f"user-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
-        snapshot.add_transformer(snapshot.transform.key_value("UserName"))
 
         create_group(GroupName=group_name_1)
         create_group(GroupName=group_name_2)
@@ -313,6 +305,49 @@ class TestIAMGroupsMembership:
 
         groups = aws_client.iam.list_groups_for_user(UserName=user_name)["Groups"]
         snapshot.match("list-groups-for-user", groups)
+
+    @markers.aws.validated
+    def test_user_rename_preserves_group_membership(
+        self, create_group, create_user, aws_client, snapshot, cleanups
+    ):
+        """Test that renaming a user preserves their group membership."""
+        snapshot.add_transformer(snapshot.transform.iam_api())
+
+        group_name = f"group-{short_uid()}"
+        user_name = f"user-{short_uid()}"
+        new_user_name = f"user-{short_uid()}"
+
+        # Setup: create user, add to group
+        group_response = create_group(GroupName=group_name)
+        snapshot.match("create-group", group_response)
+
+        user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", user_response)
+
+        # User will be renamed, so cleanup needs the new name
+        cleanups.append(lambda: aws_client.iam.delete_user(UserName=new_user_name))
+
+        aws_client.iam.add_user_to_group(GroupName=group_name, UserName=user_name)
+
+        # Verify initial membership
+        group_before = aws_client.iam.get_group(GroupName=group_name)
+        snapshot.match("group-before-rename", group_before)
+
+        # Rename user
+        aws_client.iam.update_user(UserName=user_name, NewUserName=new_user_name)
+
+        # Verify: get_group returns user with new name
+        group_after = aws_client.iam.get_group(GroupName=group_name)
+        snapshot.match("group-after-rename", group_after)
+
+        # Verify: list_groups_for_user(new_name) returns the group
+        groups_for_new_user = aws_client.iam.list_groups_for_user(UserName=new_user_name)
+        snapshot.match("groups-for-new-user", groups_for_new_user)
+
+        # Verify: list_groups_for_user(old_name) raises NoSuchEntity
+        with pytest.raises(ClientError) as ex:
+            aws_client.iam.list_groups_for_user(UserName=user_name)
+        snapshot.match("old-user-not-found", ex.value.response)
 
 
 class TestIAMGroupsPolicies:

@@ -152,6 +152,15 @@
       "total": 0.12
     }
   },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_user_rename_preserves_group_membership": {
+    "last_validated_date": "2026-03-04T19:29:33+00:00",
+    "durations_in_seconds": {
+      "setup": 1.09,
+      "call": 2.26,
+      "teardown": 1.35,
+      "total": 4.7
+    }
+  },
   "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsPolicies::test_attach_detach_aws_managed_policy_group": {
     "last_validated_date": "2026-02-13T14:51:36+00:00",
     "durations_in_seconds": {
