@@ -236,9 +236,6 @@ class ChangeSet:
         self.resolved_parameters = {}
         self.tags = request_payload.get("Tags") or []
 
-        # non-persisted state
-        self.update_model: UpdateModel | None = None
-
         self.change_set_name = request_payload["ChangeSetName"]
         self.change_set_type = request_payload.get("ChangeSetType", ChangeSetType.UPDATE)
         self.description = request_payload.get("Description")
@@ -259,7 +256,7 @@ class ChangeSet:
     def has_changes(self) -> bool:
         if self.update_model is None:
             raise ValueError("update model has not been computed")
-        return self.update_model.node_template.change_type != ChangeType.UNCHANGED
+        return self._update_model.node_template.change_type != ChangeType.UNCHANGED
 
     @property
     def account_id(self) -> str:
@@ -268,6 +265,12 @@ class ChangeSet:
     @property
     def region_name(self) -> str:
         return self.stack.region_name
+
+    @property
+    def update_model(self) -> UpdateModel | None:
+        # non-persisted state, runtime cache
+        # TODO: maybe move out of the `ChangeSet` class into the provider
+        return getattr(self, "_update_model", None)
 
     def compute_update_model(self, inputs: UpdateModelInputs):
         from localstack.services.cloudformation.engine.transformers import (
@@ -307,7 +310,7 @@ class ChangeSet:
             raw_update_model.before_runtime_cache.update(
                 inputs.previous_update_model.after_runtime_cache
             )
-        self.update_model = raw_update_model
+        self._update_model = raw_update_model
 
         # Apply global transforms.
         # TODO: skip this process iff both versions of the template don't specify transform blocks.
@@ -343,7 +346,7 @@ class ChangeSet:
         # the transformations.
         update_model.before_runtime_cache.update(raw_update_model.before_runtime_cache)
         update_model.after_runtime_cache.update(raw_update_model.after_runtime_cache)
-        self.update_model = update_model
+        self._update_model = update_model
 
         # perform validations
         validator = ChangeSetModelValidator(
@@ -360,7 +363,7 @@ class ChangeSet:
 
         if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
             support_visitor = ChangeSetResourceSupportChecker(change_set_type=self.change_set_type)
-            support_visitor.visit(self.update_model.node_template)
+            support_visitor.visit(self._update_model.node_template)
             failure_messages = support_visitor.failure_messages
             if failure_messages:
                 reason_suffix = ", ".join(failure_messages)
