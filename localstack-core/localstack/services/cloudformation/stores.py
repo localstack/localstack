@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from localstack.aws.api.cloudformation import Export, StackStatus
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet, StackSet
@@ -22,7 +23,7 @@ class CloudFormationStore(BaseStore):
     stack_sets_v2: dict[str, StackSetV2] = LocalAttribute(default=dict)
 
     # maps macro ID to macros
-    macros: dict[str, dict] = LocalAttribute(default=dict)
+    macros: dict[str, dict[str, Any]] = LocalAttribute(default=dict)
 
     @property
     def exports(self) -> dict[str, Export]:

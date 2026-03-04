@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 from localstack import config
 from localstack.aws.api.cloudformation import (
@@ -57,8 +57,8 @@ class Stack:
     events: list[StackEvent]
     capabilities: list[Capability]
     enable_termination_protection: bool
-    template: dict | None
-    processed_template: dict | None
+    template: dict[str, Any] | None
+    processed_template: dict[str, Any] | None
     template_body: str | None
     tags: list[Tag]
 
@@ -214,7 +214,7 @@ class ChangeSet:
     status_reason: str | None
     execution_status: ExecutionStatus
     creation_time: datetime
-    processed_template: dict | None
+    processed_template: dict[str, Any] | None
     resolved_parameters: dict[str, EngineParameter]
     description: str | None
     tags: list[Tag]
@@ -395,6 +395,14 @@ class ChangeSet:
 
 
 class StackInstance:
+    account_id: str
+    region_name: str
+    stack_set_id: str
+    operation_id: str
+    stack_id: str
+    status: StackInstanceStatus
+    stack_instance_status: StackInstanceComprehensiveStatus
+
     def __init__(
         self, account_id: str, region_name: str, stack_set_id: str, operation_id: str, stack_id: str
     ):
@@ -411,6 +419,13 @@ class StackInstance:
 
 
 class StackSet:
+    account_id: str
+    region_name: str
+    stack_set_name: str
+    stack_set_id: str
+    template_body: str | None
+    template_url: str | None
+
     stack_instances: list[StackInstance]
     operations: dict[str, StackSetOperation]
 

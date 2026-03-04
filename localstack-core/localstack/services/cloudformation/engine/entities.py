@@ -1,5 +1,5 @@
 import logging
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from localstack.aws.api.cloudformation import Capability, ChangeSetType, Parameter
 from localstack.services.cloudformation.engine.parameters import (
@@ -30,6 +30,8 @@ LOG = logging.getLogger(__name__)
 
 
 class StackSet:
+    # FIXME: this is a dummy attr for Avro schema
+    metadata: dict[str, Any]
     """A stack set contains multiple stack instances."""
 
     # FIXME: confusing name. metadata is the complete incoming request object
@@ -88,7 +90,9 @@ class StackIdentifierV2(StackIdentifier):
 
 # TODO: remove metadata (flatten into individual fields)
 class Stack:
-    change_sets: list["StackChangeSet"]
+    # FIXME: CFN v1 does not support Avro serialization, so we don't add type annotations except dummy ones
+    account_id: str
+    region_name: str
 
     def __init__(
         self,
@@ -149,7 +153,7 @@ class Stack:
         # list of stack events
         self.events = []
         # list of stack change sets
-        self.change_sets = []
+        self.change_sets: list[StackChangeSet] = []
         # self.evaluated_conditions = {}
 
     def set_resolved_parameters(self, resolved_parameters: dict[str, StackParameter]):
