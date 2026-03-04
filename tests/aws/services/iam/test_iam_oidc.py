@@ -144,11 +144,11 @@ class TestOIDCProviderOperations:
     @markers.snapshot.skip_snapshot_verify(paths=["$..Tags"])
     def test_get_open_id_connect_provider(self, aws_client, snapshot, cleanups):
         """Test retrieving an OIDC provider."""
-        snapshot.add_transformer(snapshot.transform.key_value("Url"))
-
-        url = f"https://oidc-get-{short_uid()}.example.com"
+        url = f"oidc-get-{short_uid()}.example.com/test"
+        snapshot.add_transformer(snapshot.transform.regex(url, "<base-url>"))
+        creation_url = f"https://{url}"
         response = aws_client.iam.create_open_id_connect_provider(
-            Url=url,
+            Url=creation_url,
             ThumbprintList=["b" * 40],
             ClientIDList=["client-id-1"],
         )

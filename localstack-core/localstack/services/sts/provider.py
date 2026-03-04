@@ -354,12 +354,12 @@ class StsProvider(StsApi, ServiceLifecycleHook):
             transformed_tags = {tag["Key"].lower(): tag for tag in tags}
             transitive_list = [key.lower() for key in (transitive_tag_keys or [])]
 
-            # Propagate transitive tags from existing session
-            if existing_creds:
-                for tag_key in existing_creds.transitive_tags:
-                    if tag_key in existing_creds.tags:
-                        transformed_tags[tag_key] = existing_creds.tags[tag_key]
-                transitive_list.extend(existing_creds.transitive_tags)
+        # Propagate transitive tags from existing session
+        if existing_creds:
+            for tag_key in existing_creds.transitive_tags:
+                if tag_key in existing_creds.tags:
+                    transformed_tags[tag_key] = existing_creds.tags[tag_key]
+            transitive_list.extend(existing_creds.transitive_tags)
 
         # Extract role name from ARN
         role_resource = extract_resource_from_arn(role_arn)

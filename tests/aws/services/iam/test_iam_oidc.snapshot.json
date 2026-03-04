@@ -143,7 +143,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/iam/test_iam_oidc.py::TestOIDCProviderOperations::test_get_open_id_connect_provider": {
-    "recorded-date": "17-02-2026, 19:17:34",
+    "recorded-date": "03-03-2026, 17:43:59",
     "recorded-content": {
       "get-response": {
         "ClientIDList": [
@@ -154,7 +154,7 @@
         "ThumbprintList": [
           "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
         ],
-        "Url": "<url:1>",
+        "Url": "<base-url>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
