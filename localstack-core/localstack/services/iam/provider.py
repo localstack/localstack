@@ -255,6 +255,7 @@ from localstack.state import StateVisitor
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX, parse_arn
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 from localstack.utils.collections import PaginatedList
+from localstack.utils.tagging import tag_list_to_map, tag_map_to_list
 
 LOG = logging.getLogger(__name__)
 
@@ -378,8 +379,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
             if description:
                 role["Description"] = description
-            if tags:
-                role["Tags"] = tags
             if permissions_boundary:
                 role["PermissionsBoundary"] = AttachedPermissionsBoundary(
                     PermissionsBoundaryType="Policy",  # noqa the actual types don't have the right values
@@ -390,7 +389,13 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             role_entity = RoleEntity(role=role)
             store.ROLES[role_name] = role_entity
 
+            # Store tags in centralized tag store
+            self._store_initial_tags(store, role_arn, tags, case_sensitive=False)
+
             response_role = Role(role)
+            # Include tags in response (CreateRole returns tags)
+            if tags:
+                response_role["Tags"] = tags
 
         # CreateRole response doesn't include some attributes
         response_role.pop("Description", None)
@@ -429,6 +434,14 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             role_entity = self._get_role_entity(store, role_name)
             # Return a copy of the role
             role = Role(role_entity.role)
+            role_arn = role.get("Arn")
+
+            # Get tags from centralized store
+            tags = self._get_tags(store, role_arn)
+
+        if tags:
+            role["Tags"] = tags
+
         return GetRoleResponse(Role=role)
 
     def delete_role(self, context: RequestContext, role_name: roleNameType, **kwargs) -> None:
@@ -452,8 +465,14 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                     "Cannot delete entity, must remove roles from instance profile first."
                 )
 
+            # Get role ARN before deletion
+            role_arn = role_entity.role.get("Arn")
+
             # Delete the role from native store
             del store.ROLES[role_name]
+
+            # Delete tags from centralized store
+            self._delete_all_tags(store, role_arn)
 
     def list_roles(
         self,
@@ -581,21 +600,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         store = self._get_store(context)
         with self._role_lock:
             role_entity = self._get_role_entity(store, role_name)
+            role_arn = role_entity.role.get("Arn")
 
-            # Initialize tags if not present
-            if "Tags" not in role_entity.role or role_entity.role["Tags"] is None:
-                role_entity.role["Tags"] = []
-
-            # Merge tags - update existing keys, add new ones, case-insensitive
-            existing_keys = {
-                tag["Key"].lower(): i for i, tag in enumerate(role_entity.role["Tags"])
-            }
-            for tag in tags:
-                key = tag["Key"].lower()
-                if key in existing_keys:
-                    role_entity.role["Tags"][existing_keys[key]] = tag
-                else:
-                    role_entity.role["Tags"].append(tag)
+            # Update tags in centralized store (case-insensitive for roles)
+            self._update_tags(store, role_arn, tags, case_sensitive=False)
 
     def untag_role(
         self,
@@ -609,15 +617,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         store = self._get_store(context)
         with self._role_lock:
             role_entity = self._get_role_entity(store, role_name)
+            role_arn = role_entity.role.get("Arn")
 
-            if "Tags" in role_entity.role and role_entity.role["Tags"]:
-                # Remove tags with matching keys (case-sensitive)
-                tag_keys_set = {key.lower() for key in tag_keys}
-                role_entity.role["Tags"] = [
-                    tag
-                    for tag in role_entity.role["Tags"]
-                    if tag["Key"].lower() not in tag_keys_set
-                ]
+            # Delete tags from centralized store (case-insensitive for roles)
+            self._delete_tags(store, role_arn, tag_keys, case_sensitive=False)
 
     def list_role_tags(
         self,
@@ -630,7 +633,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         store = self._get_store(context)
         with self._role_lock:
             role_entity = self._get_role_entity(store, role_name)
-            tags = list(role_entity.role.get("Tags") or [])
+            role_arn = role_entity.role.get("Arn")
+
+            # Get tags from centralized store
+            tags = self._get_tags(store, role_arn)
 
         # Sort alphabetically by key, then by key length
         tags.sort(key=lambda k: k["Key"])
@@ -841,6 +847,107 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 )
         if errors:
             raise ValidationListError(errors)
+
+    # ------------------------------ Centralized Tag Operations ------------------------------ #
+
+    def _get_tags(self, store: IamStore, arn: str) -> list[dict]:
+        """
+        Get tags for a resource from the centralized tag store.
+
+        :param store: IamStore instance
+        :param arn: Resource ARN
+        :param case_sensitive: Not used for get, but kept for API consistency
+        :return: Tags in list format [{"Key": ..., "Value": ...}]
+        """
+        tag_map = store.TAGS.get_tags(arn)
+        return tag_map_to_list(tag_map)
+
+    def _update_tags(
+        self, store: IamStore, arn: str, tags: list[dict], case_sensitive: bool = True
+    ) -> None:
+        """
+        Update tags for a resource in the centralized tag store.
+
+        :param store: IamStore instance
+        :param arn: Resource ARN
+        :param tags: Tags in list format [{"Key": ..., "Value": ...}]
+        :param case_sensitive: Whether to treat keys case-sensitively (True) or case-insensitively (False)
+        """
+        if not tags:
+            return
+
+        if case_sensitive:
+            # Simple case: just merge directly
+            tag_map = tag_list_to_map(tags)
+            store.TAGS.update_tags(arn, tag_map)
+        else:
+            # Case-insensitive: need to check existing keys and potentially replace
+            existing = store.TAGS.get_tags(arn)
+            existing_lower = {k.lower(): k for k in existing}
+
+            for tag in tags:
+                key = tag["Key"]
+                value = tag["Value"]
+                key_lower = key.lower()
+
+                # If there's an existing key with different casing, remove it
+                if key_lower in existing_lower:
+                    old_key = existing_lower[key_lower]
+                    if old_key != key:
+                        existing.pop(old_key, None)
+
+                existing[key] = value
+                existing_lower[key_lower] = key
+
+            # Re-store the updated tags
+            store.TAGS._tags[arn] = existing
+
+    def _delete_tags(
+        self, store: IamStore, arn: str, tag_keys: list[str], case_sensitive: bool = True
+    ) -> None:
+        """
+        Delete specific tags from a resource.
+
+        :param store: IamStore instance
+        :param arn: Resource ARN
+        :param tag_keys: List of tag keys to delete
+        :param case_sensitive: Whether to match keys case-sensitively (True) or case-insensitively (False)
+        """
+        if not tag_keys:
+            return
+
+        if case_sensitive:
+            store.TAGS.delete_tags(arn, tag_keys)
+        else:
+            # Case-insensitive: find actual keys to delete
+            existing = store.TAGS.get_tags(arn)
+            keys_to_delete_lower = {k.lower() for k in tag_keys}
+            actual_keys_to_delete = [k for k in existing if k.lower() in keys_to_delete_lower]
+            if actual_keys_to_delete:
+                store.TAGS.delete_tags(arn, actual_keys_to_delete)
+
+    def _delete_all_tags(self, store: IamStore, arn: str) -> None:
+        """
+        Delete all tags for a resource (used when the resource is deleted).
+
+        :param store: IamStore instance
+        :param arn: Resource ARN
+        """
+        store.TAGS.delete_all_tags(arn)
+
+    def _store_initial_tags(
+        self, store: IamStore, arn: str, tags: list[dict] | None, case_sensitive: bool = True
+    ) -> None:
+        """
+        Store initial tags when creating a resource.
+
+        :param store: IamStore instance
+        :param arn: Resource ARN
+        :param tags: Tags in list format [{"Key": ..., "Value": ...}]
+        :param case_sensitive: Whether to treat keys case-sensitively (True) or case-insensitively (False)
+        """
+        if tags:
+            self._update_tags(store, arn, tags, case_sensitive)
 
     def _get_policy_entity(self, store: IamStore, policy_arn: str) -> ManagedPolicyEntity:
         """Gets the policy entity and raises the right exception if not found."""
@@ -1073,7 +1180,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 IsAttachable=True,
                 CreateDate=now,
                 UpdateDate=now,
-                Tags=tags or [],
             )
             # Store Description in the policy for get_policy to return
             if description:
@@ -1087,11 +1193,14 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             )
             store.MANAGED_POLICIES[policy_arn] = policy_entity
 
+            # Store tags in centralized tag store (case-sensitive for policies)
+            self._store_initial_tags(store, policy_arn, tags, case_sensitive=True)
+
         # AWS create_policy response does NOT include Description (get_policy does)
         response_policy = Policy(policy)
         response_policy.pop("Description", None)
-        if not tags:
-            response_policy.pop("Tags", None)
+        if tags:
+            response_policy["Tags"] = tags
 
         return CreatePolicyResponse(Policy=response_policy)
 
@@ -1106,8 +1215,12 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         with self._policy_lock:
             policy_entity = self._get_policy_entity(store, policy_arn)
 
-            # Return a copy of the policy with current tags (AWS returns empty list if no tags)
+            # Return a copy of the policy
             policy = dict(policy_entity.policy)
+
+            # Get tags from centralized store (AWS returns empty list if no tags)
+            tags = self._get_tags(store, policy_arn)
+        policy["Tags"] = tags
 
         return GetPolicyResponse(Policy=policy)
 
@@ -1121,6 +1234,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             if policy_entity.policy.get("AttachmentCount") > 0:
                 raise DeleteConflictException("Cannot delete a policy attached to entities.")
             store.MANAGED_POLICIES.pop(policy_arn)
+
+            # Delete tags from centralized store
+            self._delete_all_tags(store, policy_arn)
 
     def list_policies(
         self,
@@ -1512,16 +1628,11 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         store = self._get_store(context)
         with self._policy_lock:
-            policy_entity = self._get_policy_entity(store, policy_arn)
+            # Validate policy exists
+            self._get_policy_entity(store, policy_arn)
 
-            # Merge tags - update existing keys, add new ones
-            existing_keys = {tag["Key"]: i for i, tag in enumerate(policy_entity.policy["Tags"])}
-            for tag in tags:
-                key = tag["Key"]
-                if key in existing_keys:
-                    policy_entity.policy["Tags"][existing_keys[key]] = tag
-                else:
-                    policy_entity.policy["Tags"].append(tag)
+            # Update tags in centralized store (case-sensitive for policies)
+            self._update_tags(store, policy_arn, tags, case_sensitive=True)
 
     def untag_policy(
         self,
@@ -1534,13 +1645,11 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         store = self._get_store(context)
         with self._policy_lock:
-            policy_entity = self._get_policy_entity(store, policy_arn)
+            # Validate policy exists
+            self._get_policy_entity(store, policy_arn)
 
-            # Remove tags with matching keys (case-sensitive)
-            tag_keys_set = set(tag_keys)
-            policy_entity.policy["Tags"] = [
-                tag for tag in policy_entity.policy["Tags"] if tag["Key"] not in tag_keys_set
-            ]
+            # Delete tags from centralized store (case-sensitive for policies)
+            self._delete_tags(store, policy_arn, tag_keys, case_sensitive=True)
 
     def list_policy_tags(
         self,
@@ -1552,9 +1661,12 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     ) -> ListPolicyTagsResponse:
         store = self._get_store(context)
         with self._policy_lock:
-            policy_entity = self._get_policy_entity(store, policy_arn)
+            # Validate policy exists
+            self._get_policy_entity(store, policy_arn)
 
-            tags = list(policy_entity.policy.get("Tags") or [])
+            # Get tags from centralized store
+            tags = self._get_tags(store, policy_arn)
+
         # sort alphabetically
         tags.sort(key=lambda k: k["Key"])
         # then by length
@@ -2013,12 +2125,16 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         with self._role_lock:
             role_entity = self._get_role_entity(store, role_name)
             role_path = role_entity.role.get("Path", "/")
+            role_arn = role_entity.role.get("Arn")
 
             # Clear attached policies (service-linked roles don't enforce detach before delete)
             role_entity.attached_policy_arns.clear()
 
             # Delete the role from native store
             del store.ROLES[role_name]
+
+            # Delete tags from centralized store
+            self._delete_all_tags(store, role_arn)
 
         return DeleteServiceLinkedRoleResponse(
             DeletionTaskId=f"task{role_path}{role_name}/{uuid.uuid4()}"
@@ -2097,8 +2213,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 CreateDate=datetime.now(tz=UTC),
             )
 
-            if tags:
-                user["Tags"] = tags
             if permissions_boundary:
                 user["PermissionsBoundary"] = AttachedPermissionsBoundary(
                     PermissionsBoundaryType="Policy",
@@ -2109,7 +2223,14 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             user_entity = UserEntity(user=user)
             store.USERS[user_name] = user_entity
 
-        return CreateUserResponse(User=User(user))
+            # Store tags in centralized tag store (case-insensitive for users)
+            self._store_initial_tags(store, user_arn, tags, case_sensitive=False)
+
+            response_user = User(user)
+        # Include tags in response
+        if tags:
+            response_user["Tags"] = tags
+        return CreateUserResponse(User=response_user)
 
     def get_user(
         self, context: RequestContext, user_name: existingUserNameType = None, **kwargs
@@ -2148,6 +2269,13 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             # Return a copy of the user
             user = User(user_entity.user)
 
+            user_arn = user.get("Arn")
+            # Get tags from centralized store
+            tags = self._get_tags(store, user_arn)
+
+        if tags:
+            user["Tags"] = tags
+
         return GetUserResponse(User=user)
 
     def list_users(
@@ -2167,17 +2295,19 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         def _map_to_response(user_entity: UserEntity) -> User:
             user = user_entity.user
+            user_arn = user["Arn"]
             # ListUsers response includes all user fields
             list_user = User(
                 Path=user["Path"],
                 UserName=user["UserName"],
                 UserId=user["UserId"],
-                Arn=user["Arn"],
+                Arn=user_arn,
                 CreateDate=user["CreateDate"],
             )
             if permissions_boundary := user.get("PermissionsBoundary"):
                 list_user["PermissionsBoundary"] = permissions_boundary
-            if tags := user.get("Tags"):
+            # Get tags from centralized store
+            if tags := self._get_tags(store, user_arn):
                 list_user["Tags"] = tags
             return list_user
 
@@ -2278,8 +2408,14 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                     "Cannot delete entity, must remove referenced objects first."
                 )
 
+            # Get user ARN before deletion
+            user_arn = user_entity.user.get("Arn")
+
             # Delete the user from native store
             del store.USERS[user_name]
+
+            # Delete tags from centralized store
+            self._delete_all_tags(store, user_arn)
 
     # ------------------------------ User Login Profile Operations ------------------------------ #
 
@@ -2674,21 +2810,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         store = self._get_store(context)
         with self._user_lock:
             user_entity = self._get_user_entity(store, user_name)
-
-            # Initialize tags if not present
-            if "Tags" not in user_entity.user or user_entity.user["Tags"] is None:
-                user_entity.user["Tags"] = []
-
-            # Merge tags - update existing keys, add new ones, case-insensitive
-            existing_keys = {
-                tag["Key"].lower(): i for i, tag in enumerate(user_entity.user["Tags"])
-            }
-            for tag in tags:
-                key = tag["Key"].lower()
-                if key in existing_keys:
-                    user_entity.user["Tags"][existing_keys[key]] = tag
-                else:
-                    user_entity.user["Tags"].append(tag)
+            user_arn = user_entity.user.get("Arn")
+            # Update tags in centralized store (case-insensitive for users)
+            self._update_tags(store, user_arn, tags, case_sensitive=False)
 
     def untag_user(
         self,
@@ -2702,15 +2826,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         store = self._get_store(context)
         with self._user_lock:
             user_entity = self._get_user_entity(store, user_name)
-
-            if "Tags" in user_entity.user and user_entity.user["Tags"]:
-                # Remove tags with matching keys (case-insensitive)
-                tag_keys_set = {key.lower() for key in tag_keys}
-                user_entity.user["Tags"] = [
-                    tag
-                    for tag in user_entity.user["Tags"]
-                    if tag["Key"].lower() not in tag_keys_set
-                ]
+            user_arn = user_entity.user.get("Arn")
+            # Delete tags from centralized store (case-insensitive for users)
+            self._delete_tags(store, user_arn, tag_keys, case_sensitive=False)
 
     def list_user_tags(
         self,
@@ -2723,7 +2841,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         store = self._get_store(context)
         with self._user_lock:
             user_entity = self._get_user_entity(store, user_name)
-            tags = list(user_entity.user.get("Tags") or [])
+            user_arn = user_entity.user.get("Arn")
+
+            # Get tags from centralized store
+            tags = self._get_tags(store, user_arn)
 
         paginated_list = PaginatedList(tags)
 
@@ -3335,10 +3456,12 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             saml_metadata_document=saml_metadata_document,
             create_date=datetime.now(UTC),
             valid_until=valid_until,
-            tags=tags or [],
         )
 
         store.SAML_PROVIDERS[arn] = provider
+
+        # Store tags in centralized tag store (case-sensitive for SAML providers)
+        self._store_initial_tags(store, arn, tags, case_sensitive=True)
 
         response = CreateSAMLProviderResponse(SAMLProviderArn=arn)
         if tags:
@@ -3348,13 +3471,17 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     def get_saml_provider(
         self, context: RequestContext, saml_provider_arn: arnType, **kwargs
     ) -> GetSAMLProviderResponse:
+        store = self._get_store(context)
         provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+
+        # Get tags from centralized store
+        tags = self._get_tags(store, saml_provider_arn)
 
         return GetSAMLProviderResponse(
             SAMLMetadataDocument=provider.saml_metadata_document,
             CreateDate=provider.create_date,
             ValidUntil=provider.valid_until,
-            Tags=provider.tags if provider.tags else None,
+            Tags=tags if tags else None,
         )
 
     def list_saml_providers(self, context: RequestContext, **kwargs) -> ListSAMLProvidersResponse:
@@ -3400,6 +3527,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         del store.SAML_PROVIDERS[saml_provider_arn]
 
+        # Delete tags from centralized store
+        self._delete_all_tags(store, saml_provider_arn)
+
     def tag_saml_provider(
         self,
         context: RequestContext,
@@ -3407,16 +3537,12 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         tags: tagListType,
         **kwargs,
     ) -> None:
-        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+        store = self._get_store(context)
+        # Validate provider exists
+        self._get_saml_provider_or_raise(saml_provider_arn, context)
 
-        # Merge tags: update existing keys, add new ones
-        existing_keys = {tag["Key"]: i for i, tag in enumerate(provider.tags)}
-        for tag in tags:
-            key = tag["Key"]
-            if key in existing_keys:
-                provider.tags[existing_keys[key]] = tag
-            else:
-                provider.tags.append(tag)
+        # Update tags in centralized store (case-sensitive for SAML providers)
+        self._update_tags(store, saml_provider_arn, tags, case_sensitive=True)
 
     def untag_saml_provider(
         self,
@@ -3425,8 +3551,12 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         tag_keys: tagKeyListType,
         **kwargs,
     ) -> None:
-        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
-        provider.tags = [tag for tag in provider.tags if tag["Key"] not in tag_keys]
+        store = self._get_store(context)
+        # Validate provider exists
+        self._get_saml_provider_or_raise(saml_provider_arn, context)
+
+        # Delete tags from centralized store (case-sensitive for SAML providers)
+        self._delete_tags(store, saml_provider_arn, tag_keys, case_sensitive=True)
 
     def list_saml_provider_tags(
         self,
@@ -3436,9 +3566,15 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         max_items: maxItemsType | None = None,
         **kwargs,
     ) -> ListSAMLProviderTagsResponse:
-        provider = self._get_saml_provider_or_raise(saml_provider_arn, context)
+        store = self._get_store(context)
+        # Validate provider exists
+        self._get_saml_provider_or_raise(saml_provider_arn, context)
+
+        # Get tags from centralized store
+        tags = self._get_tags(store, saml_provider_arn)
+
         # TODO: Add pagination support with marker and max_items
-        return ListSAMLProviderTagsResponse(Tags=provider.tags)
+        return ListSAMLProviderTagsResponse(Tags=tags)
 
     # ------------------------------ SSH Public Keys ------------------------------ #
 
@@ -3631,9 +3767,11 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             certificate_body=certificate_body,
             private_key=private_key,
             certificate_chain=certificate_chain,
-            tags=tags or [],
         )
         store.SERVER_CERTIFICATES[server_certificate_name] = entity
+
+        # Store tags in centralized tag store (case-insensitive for server certificates)
+        self._store_initial_tags(store, cert_arn, tags, case_sensitive=False)
 
         response = UploadServerCertificateResponse(ServerCertificateMetadata=metadata)
         if tags:
@@ -3645,12 +3783,16 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     ) -> GetServerCertificateResponse:
         store = self._get_store(context)
         entity = self._get_server_certificate_entity(store, server_certificate_name)
+        cert_arn = entity.metadata.get("Arn")
+
+        # Get tags from centralized store (AWS always returns Tags, even when empty)
+        tags = self._get_tags(store, cert_arn)
 
         # Build response - note: private key is NEVER returned
         cert = ServerCertificate(
             ServerCertificateMetadata=entity.metadata,
             CertificateBody=entity.certificate_body,
-            Tags=entity.tags,  # AWS always returns Tags, even when empty
+            Tags=tags,
         )
         if entity.certificate_chain:
             cert["CertificateChain"] = entity.certificate_chain
@@ -3706,8 +3848,13 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     ) -> None:
         store = self._get_store(context)
         # Validate exists (will raise NoSuchEntityException if not)
-        self._get_server_certificate_entity(store, server_certificate_name)
+        entity = self._get_server_certificate_entity(store, server_certificate_name)
+        cert_arn = entity.metadata.get("Arn")
+
         del store.SERVER_CERTIFICATES[server_certificate_name]
+
+        # Delete tags from centralized store
+        self._delete_all_tags(store, cert_arn)
 
     def update_server_certificate(
         self,
@@ -3727,6 +3874,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                     f"The Server Certificate with name {new_server_certificate_name} already exists."
                 )
 
+        # Get old ARN before any updates
+        old_arn = entity.metadata.get("Arn")
+
         # Update path if provided
         if new_path:
             entity.metadata["Path"] = new_path
@@ -3741,9 +3891,17 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         # Update ARN
         path = entity.metadata.get("Path", "/")
-        entity.metadata["Arn"] = build_server_certificate_arn(
+        new_arn = build_server_certificate_arn(
             context.account_id, context.partition, path, target_name
         )
+        entity.metadata["Arn"] = new_arn
+
+        # Migrate tags if ARN changed
+        if old_arn != new_arn:
+            tags = self._get_tags(store, old_arn)
+            self._delete_all_tags(store, old_arn)
+            if tags:
+                self._update_tags(store, new_arn, tags, case_sensitive=False)
 
     def tag_server_certificate(
         self,
@@ -3756,15 +3914,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         store = self._get_store(context)
         entity = self._get_server_certificate_entity(store, server_certificate_name)
+        cert_arn = entity.metadata.get("Arn")
 
-        # Merge tags - update existing keys, add new ones (case-insensitive)
-        existing_keys = {tag["Key"].lower(): i for i, tag in enumerate(entity.tags)}
-        for tag in tags:
-            key = tag["Key"].lower()
-            if key in existing_keys:
-                entity.tags[existing_keys[key]] = tag
-            else:
-                entity.tags.append(tag)
+        # Update tags in centralized store (case-insensitive for server certificates)
+        self._update_tags(store, cert_arn, tags, case_sensitive=False)
 
     def untag_server_certificate(
         self,
@@ -3777,10 +3930,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         store = self._get_store(context)
         entity = self._get_server_certificate_entity(store, server_certificate_name)
+        cert_arn = entity.metadata.get("Arn")
 
-        # Remove tags with matching keys (case-insensitive)
-        tag_keys_set = {key.lower() for key in tag_keys}
-        entity.tags = [tag for tag in entity.tags if tag["Key"].lower() not in tag_keys_set]
+        # Delete tags from centralized store (case-insensitive for server certificates)
+        self._delete_tags(store, cert_arn, tag_keys, case_sensitive=False)
 
     def list_server_certificate_tags(
         self,
@@ -3792,7 +3945,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     ) -> ListServerCertificateTagsResponse:
         store = self._get_store(context)
         entity = self._get_server_certificate_entity(store, server_certificate_name)
-        tags = list(entity.tags)
+        cert_arn = entity.metadata.get("Arn")
+
+        # Get tags from centralized store
+        tags = self._get_tags(store, cert_arn)
 
         # Sort alphabetically by key
         tags.sort(key=lambda k: k["Key"])
@@ -4050,10 +4206,12 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             create_date=datetime.now(UTC),
             client_id_list=client_id_list or [],
             thumbprint_list=thumbprint_list or [],
-            tags=tags or [],
         )
 
         store.OIDC_PROVIDERS[arn] = provider
+
+        # Store tags in centralized tag store (case-sensitive for OIDC providers)
+        self._store_initial_tags(store, arn, tags, case_sensitive=True)
 
         response = CreateOpenIDConnectProviderResponse(OpenIDConnectProviderArn=arn)
         if tags:
@@ -4063,14 +4221,18 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     def get_open_id_connect_provider(
         self, context: RequestContext, open_id_connect_provider_arn: arnType, **kwargs
     ) -> GetOpenIDConnectProviderResponse:
+        store = self._get_store(context)
         provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        # Get tags from centralized store
+        tags = self._get_tags(store, open_id_connect_provider_arn)
 
         return GetOpenIDConnectProviderResponse(
             Url=provider.url,
             ClientIDList=provider.client_id_list if provider.client_id_list else None,
             ThumbprintList=provider.thumbprint_list if provider.thumbprint_list else None,
             CreateDate=provider.create_date,
-            Tags=provider.tags if provider.tags else None,
+            Tags=tags if tags else None,
         )
 
     def list_open_id_connect_providers(
@@ -4096,6 +4258,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             )
 
         del store.OIDC_PROVIDERS[open_id_connect_provider_arn]
+
+        # Delete tags from centralized store
+        self._delete_all_tags(store, open_id_connect_provider_arn)
 
     def add_client_id_to_open_id_connect_provider(
         self,
@@ -4140,23 +4305,21 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         tags: tagListType,
         **kwargs,
     ) -> None:
-        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+        store = self._get_store(context)
+        # Validate provider exists
+        self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
 
-        # Calculate how many new tags would be added
-        existing_keys = {tag["Key"]: i for i, tag in enumerate(provider.tags)}
+        # Get existing tags to check limit
+        existing_tags = self._get_tags(store, open_id_connect_provider_arn)
+        existing_keys = {tag["Key"] for tag in existing_tags}
         new_tag_count = sum(1 for tag in tags if tag["Key"] not in existing_keys)
 
         # Check tag limit (max 50 tags)
-        if len(provider.tags) + new_tag_count > 50:
+        if len(existing_tags) + new_tag_count > 50:
             raise LimitExceededException("The number of tags has reached the maximum limit.")
 
-        # Merge tags: update existing keys, add new ones
-        for tag in tags:
-            key = tag["Key"]
-            if key in existing_keys:
-                provider.tags[existing_keys[key]] = tag
-            else:
-                provider.tags.append(tag)
+        # Update tags in centralized store (case-sensitive for OIDC providers)
+        self._update_tags(store, open_id_connect_provider_arn, tags, case_sensitive=True)
 
     def untag_open_id_connect_provider(
         self,
@@ -4165,8 +4328,12 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         tag_keys: tagKeyListType,
         **kwargs,
     ) -> None:
-        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
-        provider.tags = [tag for tag in provider.tags if tag["Key"] not in tag_keys]
+        store = self._get_store(context)
+        # Validate provider exists
+        self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+
+        # Delete tags from centralized store (case-sensitive for OIDC providers)
+        self._delete_tags(store, open_id_connect_provider_arn, tag_keys, case_sensitive=True)
 
     def list_open_id_connect_provider_tags(
         self,
@@ -4176,9 +4343,14 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         max_items: maxItemsType | None = None,
         **kwargs,
     ) -> ListOpenIDConnectProviderTagsResponse:
-        provider = self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
+        store = self._get_store(context)
+        # Validate provider exists
+        self._get_oidc_provider_or_raise(open_id_connect_provider_arn, context)
 
-        paginated_list = PaginatedList(provider.tags)
+        # Get tags from centralized store
+        tags = self._get_tags(store, open_id_connect_provider_arn)
+
+        paginated_list = PaginatedList(tags)
 
         def _token_generator(tag: Tag) -> str:
             return tag.get("Key")
@@ -4274,15 +4446,18 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 Roles=[],
             )
 
-            # Add tags if provided
-            if tags:
-                instance_profile["Tags"] = tags
-
             # Store the entity
             entity = InstanceProfileEntity(instance_profile=instance_profile)
             store.INSTANCE_PROFILES[instance_profile_name] = entity
 
-        return CreateInstanceProfileResponse(InstanceProfile=instance_profile)
+            # Store tags in centralized tag store (case-sensitive for instance profiles)
+            self._store_initial_tags(store, profile_arn, tags, case_sensitive=True)
+
+            # Include tags in response
+            response_profile = InstanceProfile(instance_profile)
+        if tags:
+            response_profile["Tags"] = tags
+        return CreateInstanceProfileResponse(InstanceProfile=response_profile)
 
     @handler("GetInstanceProfile")
     def get_instance_profile(
@@ -4296,6 +4471,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         with self._instance_profile_lock:
             entity = self._get_instance_profile_entity(store, instance_profile_name)
             profile = entity.instance_profile.copy()
+            profile_arn = profile.get("Arn")
 
             # Add role if attached
             if entity.role_name:
@@ -4307,9 +4483,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             else:
                 profile["Roles"] = []
 
-            # Ensure Tags is present (AWS always returns it)
-            if "Tags" not in profile:
-                profile["Tags"] = []
+            # Get tags from centralized store (AWS always returns Tags, even when empty)
+            tags = self._get_tags(store, profile_arn)
+        profile["Tags"] = tags
 
         return GetInstanceProfileResponse(InstanceProfile=profile)
 
@@ -4331,7 +4507,13 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                     "Cannot delete entity, must remove roles from instance profile first."
                 )
 
+            # Get profile ARN before deletion
+            profile_arn = entity.instance_profile.get("Arn")
+
             del store.INSTANCE_PROFILES[instance_profile_name]
+
+            # Delete tags from centralized store
+            self._delete_all_tags(store, profile_arn)
 
     @handler("ListInstanceProfiles")
     def list_instance_profiles(
@@ -4462,26 +4644,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         with self._instance_profile_lock:
             entity = self._get_instance_profile_entity(store, instance_profile_name)
-            profile = entity.instance_profile
+            profile_arn = entity.instance_profile.get("Arn")
 
-            # Initialize tags if not present
-            if "Tags" not in profile:
-                profile["Tags"] = []
-
-            existing_tags = profile["Tags"]
-
-            # Update or add tags
-            for new_tag in tags:
-                key = new_tag.get("Key")
-                # Check if tag with this key already exists
-                found = False
-                for existing_tag in existing_tags:
-                    if existing_tag.get("Key") == key:
-                        existing_tag["Value"] = new_tag.get("Value")
-                        found = True
-                        break
-                if not found:
-                    existing_tags.append(new_tag)
+            # Update tags in centralized store (case-sensitive for instance profiles)
+            self._update_tags(store, profile_arn, tags, case_sensitive=True)
 
     @handler("UntagInstanceProfile")
     def untag_instance_profile(
@@ -4495,13 +4661,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         with self._instance_profile_lock:
             entity = self._get_instance_profile_entity(store, instance_profile_name)
-            profile = entity.instance_profile
+            profile_arn = entity.instance_profile.get("Arn")
 
-            if "Tags" not in profile:
-                return
-
-            # Remove tags with matching keys
-            profile["Tags"] = [tag for tag in profile["Tags"] if tag.get("Key") not in tag_keys]
+            # Delete tags from centralized store (case-sensitive for instance profiles)
+            self._delete_tags(store, profile_arn, tag_keys, case_sensitive=True)
 
     @handler("ListInstanceProfileTags")
     def list_instance_profile_tags(
@@ -4516,8 +4679,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         with self._instance_profile_lock:
             entity = self._get_instance_profile_entity(store, instance_profile_name)
-            profile = entity.instance_profile
-            tags = profile.get("Tags", [])
+            profile_arn = entity.instance_profile.get("Arn")
+
+            # Get tags from centralized store
+            tags = self._get_tags(store, profile_arn)
 
         # TODO: Add pagination support
         return ListInstanceProfileTagsResponse(Tags=tags, IsTruncated=False)
@@ -4910,6 +5075,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     def _build_role_detail(self, store: IamStore, role_entity: RoleEntity) -> RoleDetail:
         """Convert RoleEntity to RoleDetail for authorization details response."""
         role = role_entity.role
+        role_arn = role.get("Arn")
 
         role_policy_list = [
             PolicyDetail(
@@ -4942,17 +5108,20 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         if assume_role_doc:
             assume_role_doc = assume_role_doc
 
+        # Get tags from centralized store
+        tags = self._get_tags(store, role_arn)
+
         detail = RoleDetail(
             Path=role.get("Path", "/"),
             RoleName=role.get("RoleName"),
             RoleId=role.get("RoleId"),
-            Arn=role.get("Arn"),
+            Arn=role_arn,
             CreateDate=role.get("CreateDate"),
             AssumeRolePolicyDocument=assume_role_doc,
             RolePolicyList=role_policy_list,
             AttachedManagedPolicies=attached_managed_policies,
             InstanceProfileList=instance_profile_list,
-            Tags=role.get("Tags", []),
+            Tags=tags,
             RoleLastUsed=role.get("RoleLastUsed", {}),
         )
 
@@ -4991,15 +5160,20 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             if user.get("UserName") in group_entity.member_user_names:
                 group_list.append(group_entity.group.get("GroupName"))
 
+        user_arn = user.get("Arn")
+
+        # Get tags from centralized store
+        tags = self._get_tags(store, user_arn)
+
         detail = UserDetail(
             Path=user.get("Path", "/"),
             UserName=user.get("UserName"),
             UserId=user.get("UserId"),
-            Arn=user.get("Arn"),
+            Arn=user_arn,
             CreateDate=user.get("CreateDate"),
             AttachedManagedPolicies=attached_managed_policies,
             GroupList=group_list,
-            Tags=user.get("Tags", []),
+            Tags=tags,
         )
 
         # Only include UserPolicyList if there are inline policies (AWS behavior)
