@@ -205,12 +205,6 @@ jobs:
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           path: localstack-pro
 
-      - name: Set up Python
-        id: setup-python
-        uses: actions/setup-python@v6
-        with:
-          python-version-file: 'localstack/.python-version'
-
       - name: Set up Node 22.x
         uses: actions/setup-node@v6
         with:
