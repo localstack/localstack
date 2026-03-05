@@ -179,6 +179,69 @@
       "total": 2.16
     }
   },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_preserves_access_key_identity": {
+    "last_validated_date": "2026-03-05T13:27:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 72.16,
+      "teardown": 1.07,
+      "total": 74.06
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_access_key_metadata": {
+    "last_validated_date": "2026-03-05T13:27:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.04,
+      "teardown": 0.53,
+      "total": 1.57
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_login_profile": {
+    "last_validated_date": "2026-03-05T13:27:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.15,
+      "teardown": 0.5,
+      "total": 1.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_mfa_devices": {
+    "last_validated_date": "2026-03-05T13:27:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.26,
+      "teardown": 0.92,
+      "total": 2.18
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_service_specific_credentials": {
+    "last_validated_date": "2026-03-05T13:27:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.12,
+      "teardown": 0.53,
+      "total": 1.65
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_signing_certificates": {
+    "last_validated_date": "2026-03-05T13:27:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.98,
+      "teardown": 0.5,
+      "total": 1.48
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_ssh_public_keys": {
+    "last_validated_date": "2026-03-05T13:27:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.03,
+      "call": 0.98,
+      "teardown": 0.49,
+      "total": 1.5
+    }
+  },
   "tests/aws/services/iam/test_iam_users.py::TestUserTags::test_user_tag_errors": {
     "last_validated_date": "2026-02-11T10:48:15+00:00",
     "durations_in_seconds": {

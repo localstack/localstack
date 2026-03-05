@@ -2359,6 +2359,44 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                     context.account_id, context.region, path, new_user_name
                 )
                 user_entity.user["UserName"] = new_user_name
+
+                # Update group memberships to reflect new username
+                with self._group_lock:
+                    for group_entity in store.GROUPS.values():
+                        if user_name in group_entity.member_user_names:
+                            group_entity.member_user_names.remove(user_name)
+                            group_entity.member_user_names.append(new_user_name)
+
+                # Update access key index to reflect new username
+                for access_key_id in user_entity.access_keys:
+                    if access_key_id in store.ACCESS_KEY_INDEX:
+                        store.ACCESS_KEY_INDEX[access_key_id] = new_user_name
+
+                # Update UserName fields in access key objects
+                for access_key_entity in user_entity.access_keys.values():
+                    access_key_entity.access_key["UserName"] = new_user_name
+
+                # Update login profile username if exists
+                if user_entity.login_profile:
+                    user_entity.login_profile["UserName"] = new_user_name
+
+                # Update service-specific credentials
+                for credential in user_entity.service_specific_credentials:
+                    credential["UserName"] = new_user_name
+
+                # Update SSH public keys
+                for ssh_key in user_entity.ssh_public_keys.values():
+                    ssh_key["UserName"] = new_user_name
+
+                # Update signing certificates
+                for cert in user_entity.signing_certificates.values():
+                    cert["UserName"] = new_user_name
+
+                # Update MFA device associations
+                for serial in user_entity.mfa_devices:
+                    if serial in store.MFA_DEVICES:
+                        store.MFA_DEVICES[serial].user_name = new_user_name
+
                 # Move to new key in store
                 del store.USERS[user_name]
                 store.USERS[new_user_name] = user_entity
@@ -3211,13 +3249,16 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     ) -> ListServiceSpecificCredentialsResponse:
         # TODO add support for all_users, marker, max_items
         user = self._get_user_or_raise_error(user_name, context)
-        self._validate_service_name(service_name)
+        if service_name:
+            self._validate_service_name(service_name)
         result = [
             self.build_dict_with_only_defined_keys(creds, ServiceSpecificCredentialMetadata)
             for creds in user.service_specific_credentials
-            if creds["ServiceName"] == service_name
+            if not service_name or creds["ServiceName"] == service_name
         ]
-        return ListServiceSpecificCredentialsResponse(ServiceSpecificCredentials=result)
+        return ListServiceSpecificCredentialsResponse(
+            ServiceSpecificCredentials=result, IsTruncated=False
+        )
 
     def update_service_specific_credential(
         self,
@@ -3635,7 +3676,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                 for key in user_entity.ssh_public_keys.values()
             ]
 
-        return ListSSHPublicKeysResponse(SSHPublicKeys=ssh_keys_metadata)
+        return ListSSHPublicKeysResponse(SSHPublicKeys=ssh_keys_metadata, IsTruncated=False)
 
     def update_ssh_public_key(
         self,

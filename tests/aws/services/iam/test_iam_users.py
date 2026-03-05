@@ -6,7 +6,9 @@ Migrated from moto's test suite to LocalStack with snapshot testing for AWS pari
 
 import json
 import logging
+from datetime import UTC, datetime
 
+import pyotp
 import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
@@ -733,3 +735,313 @@ class TestUserGroups:
         with pytest.raises(ClientError) as exc:
             aws_client.iam.remove_user_from_group(GroupName="nonexistent-group", UserName=user_name)
         snapshot.match("remove-user-from-nonexistent-group-error", exc.value.response)
+
+
+class TestUserRename:
+    """Tests for user rename preserving associated resources."""
+
+    @pytest.fixture(autouse=True)
+    def rename_snapshot_transformers(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("SSHPublicKeyId"))
+        snapshot.add_transformer(snapshot.transform.key_value("Fingerprint"))
+        snapshot.add_transformer(snapshot.transform.key_value("CertificateId"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "CertificateBody", value_replacement="<cert>", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("ServiceSpecificCredentialId"))
+        snapshot.add_transformer(snapshot.transform.key_value("ServicePassword"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "Base32StringSeed", value_replacement="<seed>", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "QRCodePNG", value_replacement="<qr>", reference_replacement=False
+            )
+        )
+
+    @markers.aws.validated
+    def test_user_rename_preserves_access_key_identity(
+        self, create_user, aws_client, client_factory_for_user, snapshot, cleanups
+    ):
+        """Test that renaming a user preserves access key functionality."""
+        user_name = f"user-{short_uid()}"
+        new_user_name = f"user-{short_uid()}"
+
+        # Create user
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
+
+        # User will be renamed, need cleanup for new name (access keys first, then user)
+        def cleanup_renamed_user():
+            for key in aws_client.iam.list_access_keys(UserName=new_user_name)["AccessKeyMetadata"]:
+                aws_client.iam.delete_access_key(
+                    UserName=new_user_name, AccessKeyId=key["AccessKeyId"]
+                )
+            aws_client.iam.delete_user(UserName=new_user_name)
+
+        cleanups.append(cleanup_renamed_user)
+
+        # Get client using access key (created internally by fixture)
+        user_client = client_factory_for_user(user_name=user_name)
+
+        # Verify get_caller_identity works before rename
+        identity_before = user_client.sts.get_caller_identity()
+        snapshot.match("identity-before-rename", identity_before)
+
+        # Rename user
+        aws_client.iam.update_user(UserName=user_name, NewUserName=new_user_name)
+
+        # Get user
+        get_user_response = aws_client.iam.get_user(UserName=new_user_name)
+        snapshot.match("get-user-after-update", get_user_response)
+
+        # Wait for IAM eventual consistency - retry until STS reflects the new username
+        def _get_identity_with_new_name():
+            identity = user_client.sts.get_caller_identity()
+            assert new_user_name in identity["Arn"]
+            return identity
+
+        # retry has to be long enough to avoid cache hits on aws
+        identity_after = retry(
+            _get_identity_with_new_name, sleep=60 if is_aws_cloud() else 0.5, retries=30
+        )
+        snapshot.match("identity-after-rename", identity_after)
+
+    @markers.aws.validated
+    def test_user_rename_updates_access_key_metadata(
+        self, create_user, aws_client, snapshot, cleanups
+    ):
+        """Test that renaming a user updates UserName in access key metadata."""
+        user_name = f"user-{short_uid()}"
+        new_user_name = f"user-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.key_value("AccessKeyId"))
+        snapshot.add_transformer(snapshot.transform.key_value("SecretAccessKey"))
+
+        # Create user and access key
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
+
+        create_key_response = aws_client.iam.create_access_key(UserName=user_name)
+        access_key_id = create_key_response["AccessKey"]["AccessKeyId"]
+
+        # Cleanup for renamed user
+        def cleanup_renamed_user():
+            aws_client.iam.delete_access_key(UserName=new_user_name, AccessKeyId=access_key_id)
+            aws_client.iam.delete_user(UserName=new_user_name)
+
+        cleanups.append(cleanup_renamed_user)
+
+        # Verify access key UserName before rename
+        list_before = aws_client.iam.list_access_keys(UserName=user_name)
+        snapshot.match("list-access-keys-before-rename", list_before)
+
+        # Rename user
+        aws_client.iam.update_user(UserName=user_name, NewUserName=new_user_name)
+        get_user_response = aws_client.iam.get_user(UserName=new_user_name)
+        snapshot.match("get-user-after-update", get_user_response)
+
+        # Verify access key UserName after rename
+        list_after = aws_client.iam.list_access_keys(UserName=new_user_name)
+        snapshot.match("list-access-keys-after-rename", list_after)
+
+    @markers.aws.validated
+    def test_user_rename_updates_login_profile(self, create_user, aws_client, snapshot, cleanups):
+        """Test that renaming a user updates UserName in login profile."""
+        user_name = f"user-{short_uid()}"
+        new_user_name = f"user-{short_uid()}"
+
+        # Create user and login profile
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
+
+        aws_client.iam.create_login_profile(
+            UserName=user_name, Password="TestPassword123!", PasswordResetRequired=False
+        )
+
+        # Cleanup for renamed user
+        def cleanup_renamed_user():
+            aws_client.iam.delete_login_profile(UserName=new_user_name)
+            aws_client.iam.delete_user(UserName=new_user_name)
+
+        cleanups.append(cleanup_renamed_user)
+
+        # Verify login profile UserName before rename
+        get_before = aws_client.iam.get_login_profile(UserName=user_name)
+        snapshot.match("get-login-profile-before-rename", get_before)
+
+        # Rename user
+        aws_client.iam.update_user(UserName=user_name, NewUserName=new_user_name)
+        get_user_response = aws_client.iam.get_user(UserName=new_user_name)
+        snapshot.match("get-user-after-update", get_user_response)
+
+        # Verify login profile UserName after rename
+        get_after = aws_client.iam.get_login_profile(UserName=new_user_name)
+        snapshot.match("get-login-profile-after-rename", get_after)
+
+    @markers.aws.validated
+    def test_user_rename_updates_ssh_public_keys(
+        self, create_user, aws_client, snapshot, cleanups, public_key
+    ):
+        """Test that renaming a user updates UserName in SSH public keys."""
+        user_name = f"user-{short_uid()}"
+        new_user_name = f"user-{short_uid()}"
+
+        # Create user and upload SSH public key
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
+
+        upload_response = aws_client.iam.upload_ssh_public_key(
+            UserName=user_name, SSHPublicKeyBody=public_key
+        )
+        ssh_key_id = upload_response["SSHPublicKey"]["SSHPublicKeyId"]
+
+        # Cleanup for renamed user
+        def cleanup_renamed_user():
+            aws_client.iam.delete_ssh_public_key(UserName=new_user_name, SSHPublicKeyId=ssh_key_id)
+            aws_client.iam.delete_user(UserName=new_user_name)
+
+        cleanups.append(cleanup_renamed_user)
+
+        # Verify SSH key UserName before rename
+        list_before = aws_client.iam.list_ssh_public_keys(UserName=user_name)
+        snapshot.match("list-ssh-public-keys-before-rename", list_before)
+
+        # Rename user
+        aws_client.iam.update_user(UserName=user_name, NewUserName=new_user_name)
+        get_user_response = aws_client.iam.get_user(UserName=new_user_name)
+        snapshot.match("get-user-after-update", get_user_response)
+
+        # Verify SSH key UserName after rename
+        list_after = aws_client.iam.list_ssh_public_keys(UserName=new_user_name)
+        snapshot.match("list-ssh-public-keys-after-rename", list_after)
+
+    @markers.aws.validated
+    def test_user_rename_updates_signing_certificates(
+        self, create_user, aws_client, snapshot, cleanups, signing_certificate
+    ):
+        """Test that renaming a user updates UserName in signing certificates."""
+        user_name = f"user-{short_uid()}"
+        new_user_name = f"user-{short_uid()}"
+
+        # Create user and upload signing certificate
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
+
+        cert_body = signing_certificate()
+        upload_response = aws_client.iam.upload_signing_certificate(
+            UserName=user_name, CertificateBody=cert_body
+        )
+        cert_id = upload_response["Certificate"]["CertificateId"]
+
+        # Cleanup for renamed user
+        def cleanup_renamed_user():
+            aws_client.iam.delete_signing_certificate(UserName=new_user_name, CertificateId=cert_id)
+            aws_client.iam.delete_user(UserName=new_user_name)
+
+        cleanups.append(cleanup_renamed_user)
+
+        # Verify certificate UserName before rename
+        list_before = aws_client.iam.list_signing_certificates(UserName=user_name)
+        snapshot.match("list-signing-certificates-before-rename", list_before)
+
+        # Rename user
+        aws_client.iam.update_user(UserName=user_name, NewUserName=new_user_name)
+        get_user_response = aws_client.iam.get_user(UserName=new_user_name)
+        snapshot.match("get-user-after-update", get_user_response)
+
+        # Verify certificate UserName after rename
+        list_after = aws_client.iam.list_signing_certificates(UserName=new_user_name)
+        snapshot.match("list-signing-certificates-after-rename", list_after)
+
+    @markers.aws.validated
+    def test_user_rename_updates_mfa_devices(
+        self, create_user, aws_client, snapshot, cleanups, create_virtual_mfa_device
+    ):
+        """Test that renaming a user updates UserName in MFA devices."""
+        user_name = f"user-{short_uid()}"
+        new_user_name = f"user-{short_uid()}"
+
+        # Create user and virtual MFA device
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
+
+        device_name = f"mfa-{short_uid()}"
+        mfa_response = create_virtual_mfa_device(VirtualMFADeviceName=device_name)
+        snapshot.add_transformer(snapshot.transform.regex(device_name, "<mfa-device-name>"))
+        serial_number = mfa_response["VirtualMFADevice"]["SerialNumber"]
+
+        otp = pyotp.TOTP(mfa_response["VirtualMFADevice"]["Base32StringSeed"])
+        # generate the last and the current auth code at once
+        current_time = datetime.now(tz=UTC)
+        authcode_1 = otp.at(current_time, counter_offset=-1)
+        authcode_2 = otp.at(current_time)
+
+        aws_client.iam.enable_mfa_device(
+            UserName=user_name,
+            SerialNumber=serial_number,
+            AuthenticationCode1=authcode_1,
+            AuthenticationCode2=authcode_2,
+        )
+
+        # Cleanup for renamed user
+        def cleanup_renamed_user():
+            aws_client.iam.deactivate_mfa_device(UserName=new_user_name, SerialNumber=serial_number)
+            aws_client.iam.delete_user(UserName=new_user_name)
+
+        cleanups.append(cleanup_renamed_user)
+
+        # Verify MFA device UserName before rename
+        list_before = aws_client.iam.list_mfa_devices(UserName=user_name)
+        snapshot.match("list-mfa-devices-before-rename", list_before)
+
+        # Rename user
+        aws_client.iam.update_user(UserName=user_name, NewUserName=new_user_name)
+        get_user_response = aws_client.iam.get_user(UserName=new_user_name)
+        snapshot.match("get-user-after-update", get_user_response)
+
+        # Verify MFA device UserName after rename
+        list_after = aws_client.iam.list_mfa_devices(UserName=new_user_name)
+        snapshot.match("list-mfa-devices-after-rename", list_after)
+
+    @markers.aws.validated
+    def test_user_rename_updates_service_specific_credentials(
+        self, create_user, aws_client, snapshot, cleanups
+    ):
+        """Test that renaming a user updates UserName in service-specific credentials."""
+        user_name = f"user-{short_uid()}"
+        new_user_name = f"user-{short_uid()}"
+
+        # Create user and service-specific credential
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
+
+        create_cred_response = aws_client.iam.create_service_specific_credential(
+            UserName=user_name, ServiceName="codecommit.amazonaws.com"
+        )
+        cred_id = create_cred_response["ServiceSpecificCredential"]["ServiceSpecificCredentialId"]
+
+        # Cleanup for renamed user
+        def cleanup_renamed_user():
+            aws_client.iam.delete_service_specific_credential(
+                UserName=new_user_name, ServiceSpecificCredentialId=cred_id
+            )
+            aws_client.iam.delete_user(UserName=new_user_name)
+
+        cleanups.append(cleanup_renamed_user)
+
+        # Verify credential UserName before rename
+        list_before = aws_client.iam.list_service_specific_credentials(UserName=user_name)
+        snapshot.match("list-service-credentials-before-rename", list_before)
+
+        # Rename user
+        aws_client.iam.update_user(UserName=user_name, NewUserName=new_user_name)
+        get_user_response = aws_client.iam.get_user(UserName=new_user_name)
+        snapshot.match("get-user-after-update", get_user_response)
+
+        # Verify credential UserName after rename
+        list_after = aws_client.iam.list_service_specific_credentials(UserName=new_user_name)
+        snapshot.match("list-service-credentials-after-rename", list_after)

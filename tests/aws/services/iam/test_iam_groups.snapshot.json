@@ -519,5 +519,109 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam_groups.py::TestIAMGroupsMembership::test_user_rename_preserves_group_membership": {
+    "recorded-date": "04-03-2026, 19:29:32",
+    "recorded-content": {
+      "create-group": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "group-before-rename": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "IsTruncated": false,
+        "Users": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+            "CreateDate": "<datetime>",
+            "Path": "/",
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "group-after-rename": {
+        "Group": {
+          "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+          "CreateDate": "<datetime>",
+          "GroupId": "<group-id:1>",
+          "GroupName": "<group-name:1>",
+          "Path": "/"
+        },
+        "IsTruncated": false,
+        "Users": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:user/<user-name:2>",
+            "CreateDate": "<datetime>",
+            "Path": "/",
+            "UserId": "<user-id:1>",
+            "UserName": "<user-name:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "groups-for-new-user": {
+        "Groups": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:group/<group-name:1>",
+            "CreateDate": "<datetime>",
+            "GroupId": "<group-id:1>",
+            "GroupName": "<group-name:1>",
+            "Path": "/"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "old-user-not-found": {
+        "Error": {
+          "Code": "NoSuchEntity",
+          "Message": "The user with name <user-name:1> cannot be found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
