@@ -39,6 +39,7 @@ def send_event_to_target(
     source_service: str = None,
     events_source: str = None,  # optional data for publishing to EventBridge
     events_detail_type: str = None,  # optional data for publishing to EventBridge
+    parent_trace_context: str | None = None,  # HACK for fixing parent
 ):
     region = extract_region_from_arn(target_arn)
     account_id = extract_account_id_from_arn(source_arn)
@@ -75,9 +76,14 @@ def send_event_to_target(
         queue_url = sqs_queue_url_for_arn(target_arn)
         msg_group_id = collections.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
+        # HACK: to re-parent the success destination queue (pro import, getting too complicated)
+        # from ../../../../../localstack-pro-core/localstack/pro/core/appinspector/context.py import tracing_ctx_stack
+        # otel_context = tracing_ctx_stack.get_current()
+        # parent = tracing_ctx_stack.pop()
         sqs_client.send_message(
             QueueUrl=queue_url, MessageBody=json.dumps(event, separators=(",", ":")), **kwargs
         )
+        # tracing_ctx_stack.push(otel_context)
 
     elif ":states:" in target_arn:
         account_id = extract_account_id_from_arn(target_arn)

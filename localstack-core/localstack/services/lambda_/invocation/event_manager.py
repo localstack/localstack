@@ -57,7 +57,11 @@ class SQSInvocation:
     def encode(self) -> str:
         # Encode TraceHeader as string
         aws_trace_header = self.invocation.trace_context.get("aws_trace_header")
-        aws_trace_header_str = aws_trace_header.to_header_str()
+        aws_trace_header_str = (
+            aws_trace_header
+            if isinstance(aws_trace_header, str)
+            else aws_trace_header.to_header_str()
+        )
         self.invocation.trace_context["aws_trace_header"] = aws_trace_header_str
         return json.dumps(
             {
@@ -196,7 +200,9 @@ class Poller:
         self._shutdown_event.set()
         self.invoker_pool.shutdown(cancel_futures=True, wait=False)
 
-    def handle_message(self, message: dict) -> None:
+    def handle_message(
+        self, message: dict, original_sqs_invocation: SQSInvocation | None = None
+    ) -> str | None:
         failure_cause = None
         qualifier = self.version_manager.function_version.id.qualifier
         function_config = self.version_manager.function_version.config
@@ -233,10 +239,10 @@ class Poller:
                         sqs_invocation, invocation_result, event_invoke_config, failure_cause
                     )
                     self.process_dead_letter_queue(sqs_invocation, invocation_result)
-                    return
+                    return failure_cause
                 # 3) Otherwise, retry without increasing counter
                 status = self.process_throttles_and_system_errors(sqs_invocation, e)
-                return
+                return failure_cause
             finally:
                 sqs_client = get_sqs_client(self.version_manager.function_version)
                 sqs_client.delete_message(
@@ -280,7 +286,7 @@ class Poller:
                         sqs_invocation, invocation_result, event_invoke_config, failure_cause
                     )
                     self.process_dead_letter_queue(sqs_invocation, invocation_result)
-                    return
+                    return failure_cause
                 else:  # schedule retry
                     sqs_invocation.retries += 1
                     # Assumption: We assume that the internal exception retries counter is reset after
@@ -293,15 +299,25 @@ class Poller:
                     # TODO: max SQS message size limit could break parity with AWS because
                     #  our SQSInvocation contains additional fields! 256kb is max for both Lambda payload + SQS
                     # TODO: write test with max SQS message size
+                    if original_sqs_invocation:
+                        # HACK: adjust trace header to link retries to the correct parent
+                        sqs_invocation.invocation.trace_context = (
+                            original_sqs_invocation.invocation.trace_context
+                        )
                     sqs_client.send_message(
                         QueueUrl=self.event_queue_url,
                         MessageBody=sqs_invocation.encode(),
                         DelaySeconds=delay_seconds,
                     )
-                    return
+                    failure_cause = failure_cause or "FunctionError"
+                    return failure_cause
             else:  # invocation success
+                parent_trace_context = None
+                if original_sqs_invocation:
+                    # HACK: adjust trace header to link retries to the correct parent
+                    parent_trace_context = original_sqs_invocation.invocation.trace_context
                 self.process_success_destination(
-                    sqs_invocation, invocation_result, event_invoke_config
+                    sqs_invocation, invocation_result, event_invoke_config, parent_trace_context
                 )
         except Exception as e:
             LOG.error(
@@ -348,6 +364,7 @@ class Poller:
         sqs_invocation: SQSInvocation,
         invocation_result: InvocationResult,
         event_invoke_config: EventInvokeConfig | None,
+        parent_trace_context: str | None = None,
     ) -> None:
         if event_invoke_config is None:
             return
@@ -386,6 +403,7 @@ class Poller:
                 source_service="lambda",
                 events_source="lambda",
                 events_detail_type="Lambda Function Invocation Result - Success",
+                parent_trace_context=parent_trace_context,
             )
         except Exception as e:
             LOG.warning("Error sending invocation result to %s: %s", target_arn, e)
