@@ -270,6 +270,11 @@ jobs:
             localstack/tests/aws/services/lambda_/functions/common
           key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: ${{ inputs.disableCaching != true }}
+
       - name: Install Python Dependencies for Pro
         working-directory: localstack-pro
         run: make install-ci
