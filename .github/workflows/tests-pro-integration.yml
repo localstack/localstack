@@ -275,7 +275,7 @@ jobs:
           LOCALSTACK_AUTH_TOKEN: "test"
         working-directory: localstack-pro
         run: |
-          source .venv/bin/activate
+          source localstack-pro-core/.venv/bin/activate
           bin/test_localstack_pro.sh
 
       - name: Determine Test Selection
@@ -288,7 +288,7 @@ jobs:
             echo "Do test selection based on Pull Request event"
             SCRIPT_OPTS="--base-commit-sha ${{ github.event.pull_request.base.sha }} --head-commit-sha ${{ github.event.pull_request.head.sha }}"
           fi
-          . ../localstack-pro/.venv/bin/activate
+          . ../localstack-pro/localstack-pro-core/.venv/bin/activate
           python -m localstack.testing.testselection.scripts.generate_test_selection $(pwd) target/testselection/test-selection.txt $SCRIPT_OPTS || (mkdir -p target/testselection && echo "SENTINEL_ALL_TESTS" >> target/testselection/test-selection.txt)
           echo "Resulting Test Selection file:"
           cat target/testselection/test-selection.txt
