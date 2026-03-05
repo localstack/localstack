@@ -24,7 +24,6 @@ from localstack.aws.api.iam import (
     User,
     VirtualMFADevice,
     clientIDListType,
-    tagListType,
     thumbprintListType,
 )
 from localstack.services.stores import (
@@ -32,6 +31,7 @@ from localstack.services.stores import (
     BaseStore,
     CrossRegionAttribute,
 )
+from localstack.utils.tagging import Tags
 
 
 @dataclasses.dataclass
@@ -68,7 +68,6 @@ class SAMLProvider:
     saml_metadata_document: str
     create_date: datetime = field(default_factory=datetime.utcnow)
     valid_until: datetime | None = None
-    tags: tagListType = field(default_factory=list)
 
 
 @dataclasses.dataclass
@@ -121,7 +120,6 @@ class OIDCProvider:
     create_date: datetime = field(default_factory=datetime.utcnow)
     client_id_list: clientIDListType = field(default_factory=list)
     thumbprint_list: thumbprintListType = field(default_factory=list)
-    tags: tagListType = field(default_factory=list)
 
 
 @dataclasses.dataclass
@@ -148,7 +146,6 @@ class ServerCertificateEntity:
     certificate_body: str
     private_key: str  # Stored but never returned in API responses
     certificate_chain: str | None = None
-    tags: tagListType = field(default_factory=list)
 
 
 @dataclasses.dataclass
@@ -202,6 +199,9 @@ class IamStore(BaseStore):
 
     # Account alias (max 1 per account)
     ACCOUNT_ALIAS: str | None = CrossRegionAttribute(default=None)
+
+    # Centralized tag storage for all IAM resources
+    TAGS: Tags = CrossRegionAttribute(default=Tags)
 
 
 iam_stores = AccountRegionBundle("iam", IamStore, validate=False)
