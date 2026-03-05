@@ -180,57 +180,57 @@
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_preserves_access_key_identity": {
-    "last_validated_date": "2026-03-05T12:41:48+00:00",
+    "last_validated_date": "2026-03-05T12:52:42+00:00",
     "durations_in_seconds": {
-      "setup": 0.83,
-      "call": 72.18,
-      "teardown": 1.17,
-      "total": 74.18
+      "setup": 0.85,
+      "call": 71.74,
+      "teardown": 1.06,
+      "total": 73.65
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_access_key_metadata": {
-    "last_validated_date": "2026-03-05T12:41:50+00:00",
+    "last_validated_date": "2026-03-05T12:52:44+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 1.08,
-      "teardown": 0.57,
-      "total": 1.65
+      "call": 0.99,
+      "teardown": 0.54,
+      "total": 1.53
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_login_profile": {
-    "last_validated_date": "2026-03-05T12:41:51+00:00",
+    "last_validated_date": "2026-03-05T12:52:46+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 1.28,
-      "teardown": 0.56,
-      "total": 1.84
+      "call": 1.22,
+      "teardown": 0.52,
+      "total": 1.74
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_mfa_devices": {
-    "last_validated_date": "2026-03-05T12:41:57+00:00",
+    "last_validated_date": "2026-03-05T12:52:51+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 1.45,
-      "teardown": 1.03,
-      "total": 2.48
+      "call": 1.2,
+      "teardown": 0.86,
+      "total": 2.06
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_service_specific_credentials": {
-    "last_validated_date": "2026-03-05T12:41:59+00:00",
+    "last_validated_date": "2026-03-05T12:52:52+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 1.27,
-      "teardown": 0.56,
-      "total": 1.83
+      "call": 1.04,
+      "teardown": 0.46,
+      "total": 1.5
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_ssh_public_keys": {
-    "last_validated_date": "2026-03-05T12:41:53+00:00",
+    "last_validated_date": "2026-03-05T12:52:47+00:00",
     "durations_in_seconds": {
-      "setup": 0.03,
-      "call": 1.06,
-      "teardown": 0.54,
-      "total": 1.63
+      "setup": 0.02,
+      "call": 0.97,
+      "teardown": 0.51,
+      "total": 1.5
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserTags::test_user_tag_errors": {

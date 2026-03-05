@@ -1210,7 +1210,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_preserves_access_key_identity": {
-    "recorded-date": "05-03-2026, 12:41:48",
+    "recorded-date": "05-03-2026, 12:52:42",
     "recorded-content": {
       "create-user": {
         "User": {
@@ -1259,7 +1259,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_access_key_metadata": {
-    "recorded-date": "05-03-2026, 12:41:50",
+    "recorded-date": "05-03-2026, 12:52:44",
     "recorded-content": {
       "create-user": {
         "User": {
@@ -1320,7 +1320,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_login_profile": {
-    "recorded-date": "05-03-2026, 12:41:51",
+    "recorded-date": "05-03-2026, 12:52:46",
     "recorded-content": {
       "create-user": {
         "User": {
@@ -1373,7 +1373,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_ssh_public_keys": {
-    "recorded-date": "05-03-2026, 12:41:53",
+    "recorded-date": "05-03-2026, 12:52:47",
     "recorded-content": {
       "create-user": {
         "User": {
@@ -1434,7 +1434,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_mfa_devices": {
-    "recorded-date": "05-03-2026, 12:41:57",
+    "recorded-date": "05-03-2026, 12:52:51",
     "recorded-content": {
       "create-user": {
         "User": {
@@ -1454,7 +1454,7 @@
         "MFADevices": [
           {
             "EnableDate": "<datetime>",
-            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/mfa-94d721ec",
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>",
             "UserName": "<user-name:1>"
           }
         ],
@@ -1481,7 +1481,7 @@
         "MFADevices": [
           {
             "EnableDate": "<datetime>",
-            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/mfa-94d721ec",
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/<mfa-device-name>",
             "UserName": "<user-name:2>"
           }
         ],
@@ -1493,7 +1493,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_service_specific_credentials": {
-    "recorded-date": "05-03-2026, 12:41:59",
+    "recorded-date": "05-03-2026, 12:52:52",
     "recorded-content": {
       "create-user": {
         "User": {
