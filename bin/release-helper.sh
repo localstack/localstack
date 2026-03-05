@@ -14,10 +14,10 @@ function usage() {
     echo "  release-helper <command> [options]"
     echo ""
     echo "Commands:"
-    echo "  github-outputs <patch|minor|major>"
+    echo "  github-outputs <patch|minor|major|monthly|yearly>"
     echo "      print version number outputs for github actions"
     echo ""
-    echo "  explain-steps <patch|minor|major>"
+    echo "  explain-steps <patch|minor|major|monthly|yearly>"
     echo "      print a list of steps that should be executed for the release type"
     echo ""
     echo "  get-ver"
@@ -70,6 +70,10 @@ function increment_major() {
     awk -F. '{ print $1 + 1 "." 0 "." 0 }'
 }
 
+function increment_yearly() {
+    awk -F. '{ print $1 + 1 ".1.0" }'
+}
+
 function verify_valid_version() {
     read ver
     echo $ver | egrep "^([0-9]+)\.([0-9]+)(\.[0-9]+)?" > /dev/null || { echo "invalid version string '$ver'"; exit 1; }
@@ -85,6 +89,12 @@ function release_env_compute() {
             ;;
         "major")
             RELEASE_VER=$(get_current_version | increment_major)
+            ;;
+        "monthly")
+            RELEASE_VER=$(get_current_version | increment_minor)
+            ;;
+        "yearly")
+            RELEASE_VER=$(get_current_version | increment_yearly)
             ;;
         *)
             echo "unknown release type '$1'"
