@@ -1,56 +1,12 @@
 import logging
-from datetime import UTC, datetime, timedelta
 
 import pytest
 from botocore.exceptions import ClientError
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.x509.oid import NameOID
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
-
-
-def create_certificate() -> str:
-    """
-    Generate a valid X.509 certificate for testing signing certificate upload.
-    Returns the certificate as a PEM-encoded string.
-    """
-    # Generate a private key
-    key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
-        backend=default_backend(),
-    )
-
-    # Create a self-signed certificate
-    subject = issuer = x509.Name(
-        [
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
-            x509.NameAttribute(NameOID.LOCALITY_NAME, "San Francisco"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test Organization"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "Test Certificate"),
-        ]
-    )
-
-    cert = (
-        x509.CertificateBuilder()
-        .subject_name(subject)
-        .issuer_name(issuer)
-        .public_key(key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.now(UTC))
-        .not_valid_after(datetime.now(UTC) + timedelta(days=365))
-        .sign(key, hashes.SHA256(), default_backend())
-    )
-
-    # Return as PEM-encoded string
-    return cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
 
 
 @pytest.fixture(autouse=True)
@@ -69,7 +25,9 @@ class TestSigningCertificate:
     """Tests for signing certificate operations."""
 
     @markers.aws.validated
-    def test_signing_certificate_lifecycle(self, aws_client, snapshot, create_user):
+    def test_signing_certificate_lifecycle(
+        self, aws_client, snapshot, create_user, signing_certificate
+    ):
         """Test upload, list, update status, and delete signing certificate operations."""
         # Create a user
         user_name = f"user-{short_uid()}"
@@ -77,7 +35,7 @@ class TestSigningCertificate:
         snapshot.match("create-user", create_user_response)
 
         # Generate a valid certificate
-        cert_body = create_certificate()
+        cert_body = signing_certificate()
 
         # Upload signing certificate
         upload_response = aws_client.iam.upload_signing_certificate(
@@ -122,7 +80,9 @@ class TestSigningCertificate:
         assert len(list_after_delete["Certificates"]) == 0
 
     @markers.aws.validated
-    def test_signing_certificate_errors(self, aws_client, snapshot, create_user, cleanups):
+    def test_signing_certificate_errors(
+        self, aws_client, snapshot, create_user, cleanups, signing_certificate
+    ):
         """Test error cases for signing certificate operations."""
         # Create a user
         user_name = f"user-{short_uid()}"
@@ -130,9 +90,9 @@ class TestSigningCertificate:
         snapshot.match("create-user", create_user_response)
 
         # Generate valid certificates for testing
-        cert_body_1 = create_certificate()
-        cert_body_2 = create_certificate()
-        cert_body_3 = create_certificate()
+        cert_body_1 = signing_certificate()
+        cert_body_2 = signing_certificate()
+        cert_body_3 = signing_certificate()
 
         # Try to upload certificate for non-existent user
         with pytest.raises(ClientError) as exc:

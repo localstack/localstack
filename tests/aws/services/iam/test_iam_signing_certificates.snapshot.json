@@ -1,6 +1,6 @@
 {
   "tests/aws/services/iam/test_iam_signing_certificates.py::TestSigningCertificate::test_signing_certificate_lifecycle": {
-    "recorded-date": "17-02-2026, 12:48:57",
+    "recorded-date": "05-03-2026, 12:59:27",
     "recorded-content": {
       "create-user": {
         "User": {

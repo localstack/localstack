@@ -1,24 +1,8 @@
 import pytest
 from botocore.exceptions import ClientError
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
 
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
-
-
-@pytest.fixture
-def public_key():
-    """Generate a valid SSH public key for testing."""
-    private_key = rsa.generate_private_key(
-        public_exponent=65537, key_size=2048, backend=default_backend()
-    )
-    public_key_bytes = private_key.public_key().public_bytes(
-        encoding=serialization.Encoding.OpenSSH, format=serialization.PublicFormat.OpenSSH
-    )
-    # IAM expects a string, not bytes
-    return public_key_bytes.decode("utf-8")
 
 
 class TestSSHPublicKeys:
