@@ -17,12 +17,12 @@ MAX_FEDERATION_TOKEN_POLICY_LENGTH = 2048
 
 
 @dataclass
-class SingleValuedContextKey:
+class SingleValuedContextValue:
     value: str
 
 
 @dataclass
-class MultiValuedContextKey:
+class MultiValuedContextValue:
     value: list[str]
 
 
@@ -46,7 +46,7 @@ class TemporaryCredentials:
     # list of lowercase transitive tag keys
     transitive_tags: list[str] = field(default_factory=list)
     # other stored context variables
-    iam_context: dict[str, SingleValuedContextKey | MultiValuedContextKey] = field(
+    iam_context: dict[str, SingleValuedContextValue | MultiValuedContextValue] = field(
         default_factory=dict
     )
 
