@@ -318,7 +318,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_service_specific_credential_lifecycle[codecommit.amazonaws.com]": {
-    "recorded-date": "06-03-2025, 16:58:34",
+    "recorded-date": "05-03-2026, 15:18:15",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -349,6 +349,7 @@
         }
       },
       "list-service-specific-credentials-response-before-update": {
+        "IsTruncated": false,
         "ServiceSpecificCredentials": [
           {
             "CreateDate": "<datetime>",
@@ -371,6 +372,7 @@
         }
       },
       "list-service-specific-credentials-response-after-update": {
+        "IsTruncated": false,
         "ServiceSpecificCredentials": [
           {
             "CreateDate": "<datetime>",
@@ -410,7 +412,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_service_specific_credential_lifecycle[cassandra.amazonaws.com]": {
-    "recorded-date": "06-03-2025, 16:58:36",
+    "recorded-date": "05-03-2026, 15:18:17",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -441,6 +443,7 @@
         }
       },
       "list-service-specific-credentials-response-before-update": {
+        "IsTruncated": false,
         "ServiceSpecificCredentials": [
           {
             "CreateDate": "<datetime>",
@@ -463,6 +466,7 @@
         }
       },
       "list-service-specific-credentials-response-after-update": {
+        "IsTruncated": false,
         "ServiceSpecificCredentials": [
           {
             "CreateDate": "<datetime>",
@@ -596,7 +600,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_list_service_specific_credential_different_service": {
-    "recorded-date": "06-03-2025, 16:58:39",
+    "recorded-date": "05-03-2026, 15:18:51",
     "recorded-content": {
       "create-user-response": {
         "User": {
@@ -638,6 +642,7 @@
         }
       },
       "list-service-specific-credentials-response-wrong-service": {
+        "IsTruncated": false,
         "ServiceSpecificCredentials": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
