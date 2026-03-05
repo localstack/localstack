@@ -227,17 +227,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --allow-downgrades libsnappy-dev jq libvirt-dev
 
-      - name: Cache Pro Dependencies (venv)
-        if: inputs.disableCaching != true
-        uses: actions/cache@v5
-        with:
-          path: |
-            localstack-pro/.venv
-          # include the matrix group (to re-use the venv)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-pro/localstack-pro-core/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
-          restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-pro/localstack-pro-core/requirements-test.txt') }}-refs/heads/main
-
       - name: Cache Pro Dependencies (libs)
         if: inputs.disableCaching != true
         uses: actions/cache@v5
@@ -278,12 +267,6 @@ jobs:
       - name: Install Python Dependencies for Pro
         working-directory: localstack-pro
         run: make install-ci
-
-      - name: Link Community into Pro venv
-        working-directory: localstack-pro
-        run: |
-          source .venv/bin/activate
-          pip install -e ../localstack[runtime,test]
 
       - name: Test Pro Startup
         env:
