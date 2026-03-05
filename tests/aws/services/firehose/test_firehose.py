@@ -595,11 +595,15 @@ class TestFirehoseIntegration:
 class TestFirehoseResourceTagging:
     @pytest.fixture
     def delivery_stream(
-        self, aws_client, s3_bucket, create_iam_role_and_attach_policy, account_id, region_name
+        self,
+        aws_client,
+        s3_bucket,
+        create_iam_role_and_attach_policy,
+        account_id,
+        region_name,
+        firehose_create_delivery_stream,
     ):
-        """Factory fixture to create a delivery stream."""
-
-        stream_names = []
+        """Factory fixture to create a sample delivery stream with required pre-reqs."""
 
         def _delivery_stream(tags: list[dict[str, str]] = None):
             document = {
@@ -633,19 +637,11 @@ class TestFirehoseResourceTagging:
             if tags is not None:
                 kwargs["Tags"] = tags
 
-            aws_client.firehose.create_delivery_stream(**kwargs)
-            stream_names.append(stream_name)
+            firehose_create_delivery_stream(**kwargs)
+
             return stream_name
 
         yield _delivery_stream
-
-        def _assert_delivery_stream_is_active(stream: str) -> None:
-            response = aws_client.firehose.describe_delivery_stream(DeliveryStreamName=stream)
-            assert response["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
-
-        for stream_name in stream_names:
-            retry(lambda: _assert_delivery_stream_is_active(stream_name), retries=10, sleep=5)
-            aws_client.firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
 
     @markers.aws.validated
     def test_resource_tagging(self, aws_client, snapshot, delivery_stream):

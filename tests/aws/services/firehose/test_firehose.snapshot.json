@@ -13,7 +13,7 @@
     }
   },
   "tests/aws/services/firehose/test_firehose.py::TestFirehoseResourceTagging::test_resource_tagging": {
-    "recorded-date": "04-03-2026, 12:18:13",
+    "recorded-date": "05-03-2026, 08:34:26",
     "recorded-content": {
       "list-tags-1": {
         "HasMoreTags": false,
