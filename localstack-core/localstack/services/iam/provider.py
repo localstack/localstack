@@ -390,7 +390,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             store.ROLES[role_name] = role_entity
 
             # Store tags in centralized tag store
-            self._store_initial_tags(store, role_arn, tags, case_sensitive=False)
+            self._update_tags(store, role_arn, tags, case_sensitive=False)
 
             response_role = Role(role)
             # Include tags in response (CreateRole returns tags)
@@ -850,20 +850,19 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
     # ------------------------------ Centralized Tag Operations ------------------------------ #
 
-    def _get_tags(self, store: IamStore, arn: str) -> list[dict]:
+    def _get_tags(self, store: IamStore, arn: str) -> list[dict[str, str]]:
         """
         Get tags for a resource from the centralized tag store.
 
         :param store: IamStore instance
         :param arn: Resource ARN
-        :param case_sensitive: Not used for get, but kept for API consistency
         :return: Tags in list format [{"Key": ..., "Value": ...}]
         """
         tag_map = store.TAGS.get_tags(arn)
         return tag_map_to_list(tag_map)
 
     def _update_tags(
-        self, store: IamStore, arn: str, tags: list[dict], case_sensitive: bool = True
+        self, store: IamStore, arn: str, tags: list[dict[str, str]], case_sensitive: bool = True
     ) -> None:
         """
         Update tags for a resource in the centralized tag store.
@@ -934,20 +933,6 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         :param arn: Resource ARN
         """
         store.TAGS.delete_all_tags(arn)
-
-    def _store_initial_tags(
-        self, store: IamStore, arn: str, tags: list[dict] | None, case_sensitive: bool = True
-    ) -> None:
-        """
-        Store initial tags when creating a resource.
-
-        :param store: IamStore instance
-        :param arn: Resource ARN
-        :param tags: Tags in list format [{"Key": ..., "Value": ...}]
-        :param case_sensitive: Whether to treat keys case-sensitively (True) or case-insensitively (False)
-        """
-        if tags:
-            self._update_tags(store, arn, tags, case_sensitive)
 
     def _get_policy_entity(self, store: IamStore, policy_arn: str) -> ManagedPolicyEntity:
         """Gets the policy entity and raises the right exception if not found."""
@@ -1194,7 +1179,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             store.MANAGED_POLICIES[policy_arn] = policy_entity
 
             # Store tags in centralized tag store (case-sensitive for policies)
-            self._store_initial_tags(store, policy_arn, tags, case_sensitive=True)
+            self._update_tags(store, policy_arn, tags, case_sensitive=True)
 
         # AWS create_policy response does NOT include Description (get_policy does)
         response_policy = Policy(policy)
@@ -2224,7 +2209,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             store.USERS[user_name] = user_entity
 
             # Store tags in centralized tag store (case-insensitive for users)
-            self._store_initial_tags(store, user_arn, tags, case_sensitive=False)
+            self._update_tags(store, user_arn, tags, case_sensitive=False)
 
             response_user = User(user)
         # Include tags in response
@@ -3461,7 +3446,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         store.SAML_PROVIDERS[arn] = provider
 
         # Store tags in centralized tag store (case-sensitive for SAML providers)
-        self._store_initial_tags(store, arn, tags, case_sensitive=True)
+        self._update_tags(store, arn, tags, case_sensitive=True)
 
         response = CreateSAMLProviderResponse(SAMLProviderArn=arn)
         if tags:
@@ -3771,7 +3756,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         store.SERVER_CERTIFICATES[server_certificate_name] = entity
 
         # Store tags in centralized tag store (case-insensitive for server certificates)
-        self._store_initial_tags(store, cert_arn, tags, case_sensitive=False)
+        self._update_tags(store, cert_arn, tags, case_sensitive=False)
 
         response = UploadServerCertificateResponse(ServerCertificateMetadata=metadata)
         if tags:
@@ -4211,7 +4196,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         store.OIDC_PROVIDERS[arn] = provider
 
         # Store tags in centralized tag store (case-sensitive for OIDC providers)
-        self._store_initial_tags(store, arn, tags, case_sensitive=True)
+        self._update_tags(store, arn, tags, case_sensitive=True)
 
         response = CreateOpenIDConnectProviderResponse(OpenIDConnectProviderArn=arn)
         if tags:
@@ -4451,7 +4436,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             store.INSTANCE_PROFILES[instance_profile_name] = entity
 
             # Store tags in centralized tag store (case-sensitive for instance profiles)
-            self._store_initial_tags(store, profile_arn, tags, case_sensitive=True)
+            self._update_tags(store, profile_arn, tags, case_sensitive=True)
 
             # Include tags in response
             response_profile = InstanceProfile(instance_profile)
