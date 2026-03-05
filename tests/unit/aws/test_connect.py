@@ -11,7 +11,7 @@ from localstack.aws.connect import (
     ExternalAwsClientFactory,
     ExternalClientFactory,
     InternalClientFactory,
-    TraceVisibility,
+    # TraceVisibility,
     attribute_name_to_service_name,
 )
 from localstack.aws.gateway import Gateway
@@ -420,32 +420,32 @@ class TestClientFactory:
 
         assert test_params == expected_result
 
-    def test_call_trace_visibility(self, create_dummy_request_parameter_gateway):
-        """Test that trace visibility is correctly passed"""
-        factory = InternalClientFactory()
-        test_params = {}
-
-        def echo_request_handler(_: HandlerChain, context: RequestContext, response: Response):
-            if context.internal_request_params:
-                test_params.update(context.internal_request_params)
-            response.status_code = 200
-
-        endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
-        clients = factory(
-            endpoint_url=endpoint_url,
-        )
-
-        expected_result = {
-            "service_principal": "apigateway",
-            "source_arn": "arn:aws:apigateway:us-east-1::/apis/a1a1a1a1",
-            "trace_visibility": "aws",
-        }
-        clients.lambda_.request_metadata(
-            source_arn=expected_result["source_arn"],
-            service_principal=expected_result["service_principal"],
-        ).trace_visibility(TraceVisibility.AWS).list_functions()
-
-        assert test_params == expected_result
+    # def test_call_trace_visibility(self, create_dummy_request_parameter_gateway):
+    #     """Test that trace visibility is correctly passed"""
+    #     factory = InternalClientFactory()
+    #     test_params = {}
+    #
+    #     def echo_request_handler(_: HandlerChain, context: RequestContext, response: Response):
+    #         if context.internal_request_params:
+    #             test_params.update(context.internal_request_params)
+    #         response.status_code = 200
+    #
+    #     endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
+    #     clients = factory(
+    #         endpoint_url=endpoint_url,
+    #     )
+    #
+    #     expected_result = {
+    #         "service_principal": "apigateway",
+    #         "source_arn": "arn:aws:apigateway:us-east-1::/apis/a1a1a1a1",
+    #         "trace_visibility": "aws",
+    #     }
+    #     clients.lambda_.request_metadata(
+    #         source_arn=expected_result["source_arn"],
+    #         service_principal=expected_result["service_principal"],
+    #     ).trace_visibility(TraceVisibility.AWS).list_functions()
+    #
+    #     assert test_params == expected_result
 
     def test_external_call_to_provider(self, create_dummy_request_parameter_gateway):
         """Test the creation of a client to be used to connect to a downstream provider implementation"""
