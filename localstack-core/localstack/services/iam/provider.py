@@ -214,12 +214,13 @@ from localstack.services.iam.models import (
     IamStore,
     InstanceProfileEntity,
     ManagedPolicyEntity,
-    MFADeviceEntity,
     OIDCProvider,
+    PhysicalMFADeviceEntity,
     RoleEntity,
     SAMLProvider,
     ServerCertificateEntity,
     UserEntity,
+    VirtualMFADeviceEntity,
     iam_stores,
 )
 from localstack.services.iam.policy_validation import IAMPolicyDocumentValidator
@@ -2394,8 +2395,11 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
                 # Update MFA device associations
                 for serial in user_entity.mfa_devices:
-                    if serial in store.MFA_DEVICES:
-                        store.MFA_DEVICES[serial].user_name = new_user_name
+                    device_entity = store.VIRTUAL_MFA_DEVICES.get(
+                        serial
+                    ) or store.PHYSICAL_MFA_DEVICES.get(serial)
+                    if device_entity:
+                        device_entity.user_name = new_user_name
 
                 # Move to new key in store
                 del store.USERS[user_name]
@@ -4792,7 +4796,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         )
 
         # Check for duplicate device
-        if serial_number in store.MFA_DEVICES:
+        if serial_number in store.VIRTUAL_MFA_DEVICES:
             raise EntityAlreadyExistsException("MFA device already exists.")
 
         # Generate TOTP secret and QR code
@@ -4809,8 +4813,8 @@ class IamProvider(IamApi, ServiceLifecycleHook):
             Tags=tags or [],
         )
 
-        store.MFA_DEVICES[serial_number] = MFADeviceEntity(
-            device=device_model, device_name=device_model, path=path
+        store.VIRTUAL_MFA_DEVICES[serial_number] = VirtualMFADeviceEntity(
+            device=device_model, path=path
         )
 
         # Build response
@@ -4830,18 +4834,18 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     ) -> None:
         store = self._get_store(context)
 
-        if serial_number not in store.MFA_DEVICES:
+        if serial_number not in store.VIRTUAL_MFA_DEVICES:
             raise NoSuchEntityException(
                 f"MFA Device with serial number {serial_number} does not exist."
             )
 
         # If device is assigned to a user, remove it from the user's MFA devices
-        device = store.MFA_DEVICES[serial_number]
+        device = store.VIRTUAL_MFA_DEVICES[serial_number]
         if device.user_name:
             user_entity = store.USERS[device.user_name]
             user_entity.mfa_devices.remove(serial_number)
 
-        del store.MFA_DEVICES[serial_number]
+        del store.VIRTUAL_MFA_DEVICES[serial_number]
 
     def list_virtual_mfa_devices(
         self,
@@ -4853,8 +4857,8 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     ) -> ListVirtualMFADevicesResponse:
         store = self._get_store(context)
 
-        # Get all virtual MFA devices (those with QRCodePNG)
-        all_devices = [d for d in store.MFA_DEVICES.values() if "QRCodePNG" in d.device]
+        # Get all virtual MFA devices
+        all_devices = list(store.VIRTUAL_MFA_DEVICES.values())
 
         # Filter by assignment status
         if assignment_status == "Assigned":
@@ -4867,7 +4871,7 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         all_devices.sort(key=lambda d: d.device.get("SerialNumber", ""))
 
         # Convert to response format
-        def _map_to_response(device: MFADeviceEntity) -> VirtualMFADevice:
+        def _map_to_response(device: VirtualMFADeviceEntity) -> VirtualMFADevice:
             vmd = VirtualMFADevice(SerialNumber=device.device.get("SerialNumber"))
             if device.user_name:
                 vmd["User"] = store.USERS[device.user_name].user
@@ -4915,33 +4919,33 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         **kwargs,
     ) -> None:
         # Verify user exists
-        user_entity = self._get_user_or_raise_error(user_name, context)
+        with self._user_lock:
+            user_entity = self._get_user_or_raise_error(user_name, context)
 
-        store = self._get_store(context)
-        enable_date = datetime.now(UTC)
+            store = self._get_store(context)
+            enable_date = datetime.now(UTC)
 
-        if serial_number in store.MFA_DEVICES:
-            # Virtual MFA device - check if already attached to another user
-            device = store.MFA_DEVICES[serial_number]
-            if device.user_name is not None:
-                raise EntityAlreadyExistsException("MFA Device is already in use.")
-            device.device["EnableDate"] = enable_date
-            device.user_name = user_name
-        else:
-            # Physical token MFA - create new entry
-            mfa_device = MFADevice(
-                SerialNumber=serial_number,
-                EnableDate=enable_date,
-            )
-            device = MFADeviceEntity(
-                device_name=serial_number,
-                path="/",
-                device=mfa_device,
-                user_name=user_name,
-            )
-            store.MFA_DEVICES[serial_number] = device
+            if serial_number in store.VIRTUAL_MFA_DEVICES:
+                # Virtual MFA device - check if already attached to another user
+                device = store.VIRTUAL_MFA_DEVICES[serial_number]
+                if device.user_name is not None:
+                    raise EntityAlreadyExistsException("MFA Device is already in use.")
+                device.device["EnableDate"] = enable_date
+                device.user_name = user_name
+            else:
+                # Physical token MFA - create new entry
+                mfa_device = MFADevice(
+                    SerialNumber=serial_number,
+                    EnableDate=enable_date,
+                )
+                device = PhysicalMFADeviceEntity(
+                    path="/",
+                    device=mfa_device,
+                    user_name=user_name,
+                )
+                store.PHYSICAL_MFA_DEVICES[serial_number] = device
 
-        user_entity.mfa_devices.append(serial_number)
+            user_entity.mfa_devices.append(serial_number)
 
     def deactivate_mfa_device(
         self,
@@ -4952,17 +4956,24 @@ class IamProvider(IamApi, ServiceLifecycleHook):
     ) -> None:
         store = self._get_store(context)
 
-        if serial_number not in store.MFA_DEVICES:
+        if (
+            serial_number not in store.VIRTUAL_MFA_DEVICES
+            and serial_number not in store.PHYSICAL_MFA_DEVICES
+        ):
             raise NoSuchEntityException(
                 f"MFA Device with serial number {serial_number} does not exist."
             )
 
-        device = store.MFA_DEVICES[serial_number]
-        device.device["EnableDate"] = None
-        device.user_name = None
+        with self._user_lock:
+            user_name = user_name or self._get_user_name_from_access_key_context(context)
+            user_entity = self._get_user_or_raise_error(user_name, context)
+            user_entity.mfa_devices.remove(serial_number)
 
-        user_entity = self._get_user_or_raise_error(user_name, context)
-        user_entity.mfa_devices.remove(serial_number)
+            if device := store.VIRTUAL_MFA_DEVICES.get(serial_number):
+                device.device["EnableDate"] = None
+                device.user_name = None
+            elif store.PHYSICAL_MFA_DEVICES.get(serial_number):
+                del store.PHYSICAL_MFA_DEVICES[serial_number]
 
     def list_mfa_devices(
         self,
@@ -4979,9 +4990,9 @@ class IamProvider(IamApi, ServiceLifecycleHook):
 
         mfa_serial_numbers = user_entity.mfa_devices
         all_mfa_devices = [
-            store.MFA_DEVICES[serial]
+            store.VIRTUAL_MFA_DEVICES.get(serial) or store.PHYSICAL_MFA_DEVICES.get(serial)
             for serial in mfa_serial_numbers
-            if serial in store.MFA_DEVICES
+            if serial in store.VIRTUAL_MFA_DEVICES or serial in store.PHYSICAL_MFA_DEVICES
         ]
 
         # Convert to response format
@@ -5015,8 +5026,10 @@ class IamProvider(IamApi, ServiceLifecycleHook):
         server_certificates_count = len(store.SERVER_CERTIFICATES)
 
         # Count MFA devices
-        mfa_devices_count = len(store.MFA_DEVICES)
-        mfa_devices_in_use = sum(1 for d in store.MFA_DEVICES.values() if d.user_name is not None)
+        mfa_devices_count = len(store.VIRTUAL_MFA_DEVICES)
+        mfa_devices_in_use = sum(
+            1 for d in store.VIRTUAL_MFA_DEVICES.values() if d.user_name is not None
+        )
 
         # Count providers (SAML + OIDC)
         providers_count = len(store.SAML_PROVIDERS) + len(store.OIDC_PROVIDERS)
