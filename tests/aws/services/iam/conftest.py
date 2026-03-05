@@ -165,3 +165,47 @@ def create_oidc_provider(aws_client):
             aws_client.iam.delete_open_id_connect_provider(OpenIDConnectProviderArn=arn)
         except Exception:
             LOG.debug("Could not delete OIDC provider '%s' during cleanup", arn)
+
+
+@pytest.fixture
+def public_key():
+    """Generate a valid SSH public key for testing."""
+    private_key = rsa.generate_private_key(
+        public_exponent=65537, key_size=2048, backend=default_backend()
+    )
+    public_key_bytes = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.OpenSSH, format=serialization.PublicFormat.OpenSSH
+    )
+    return public_key_bytes.decode("utf-8")
+
+
+@pytest.fixture
+def signing_certificate():
+    """Factory fixture to generate valid X.509 certificates for testing signing certificate upload."""
+
+    def _create_certificate() -> str:
+        key = rsa.generate_private_key(
+            public_exponent=65537, key_size=2048, backend=default_backend()
+        )
+        subject = issuer = x509.Name(
+            [
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+                x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
+                x509.NameAttribute(NameOID.LOCALITY_NAME, "San Francisco"),
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test Organization"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "Test Certificate"),
+            ]
+        )
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.datetime.now(datetime.UTC))
+            .not_valid_after(datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=365))
+            .sign(key, hashes.SHA256(), default_backend())
+        )
+        return cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+
+    return _create_certificate

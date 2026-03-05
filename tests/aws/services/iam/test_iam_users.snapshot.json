@@ -1210,7 +1210,7 @@
     }
   },
   "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_preserves_access_key_identity": {
-    "recorded-date": "05-03-2026, 12:16:04",
+    "recorded-date": "05-03-2026, 12:41:48",
     "recorded-content": {
       "create-user": {
         "User": {
@@ -1251,6 +1251,305 @@
         "Account": "111111111111",
         "Arn": "arn:<partition>:iam::111111111111:user/<user-name:2>",
         "UserId": "<user-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_access_key_metadata": {
+    "recorded-date": "05-03-2026, 12:41:50",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-access-keys-before-rename": {
+        "AccessKeyMetadata": [
+          {
+            "AccessKeyId": "<access-key-id:1>",
+            "CreateDate": "<datetime>",
+            "Status": "Active",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user-after-update": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:2>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-access-keys-after-rename": {
+        "AccessKeyMetadata": [
+          {
+            "AccessKeyId": "<access-key-id:1>",
+            "CreateDate": "<datetime>",
+            "Status": "Active",
+            "UserName": "<user-name:2>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_login_profile": {
+    "recorded-date": "05-03-2026, 12:41:51",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-login-profile-before-rename": {
+        "LoginProfile": {
+          "CreateDate": "<datetime>",
+          "PasswordResetRequired": false,
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user-after-update": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:2>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-login-profile-after-rename": {
+        "LoginProfile": {
+          "CreateDate": "<datetime>",
+          "PasswordResetRequired": false,
+          "UserName": "<user-name:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_ssh_public_keys": {
+    "recorded-date": "05-03-2026, 12:41:53",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-ssh-public-keys-before-rename": {
+        "IsTruncated": false,
+        "SSHPublicKeys": [
+          {
+            "SSHPublicKeyId": "<s-s-h-public-key-id:1>",
+            "Status": "Active",
+            "UploadDate": "<datetime>",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user-after-update": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:2>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-ssh-public-keys-after-rename": {
+        "IsTruncated": false,
+        "SSHPublicKeys": [
+          {
+            "SSHPublicKeyId": "<s-s-h-public-key-id:1>",
+            "Status": "Active",
+            "UploadDate": "<datetime>",
+            "UserName": "<user-name:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_mfa_devices": {
+    "recorded-date": "05-03-2026, 12:41:57",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-mfa-devices-before-rename": {
+        "IsTruncated": false,
+        "MFADevices": [
+          {
+            "EnableDate": "<datetime>",
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/mfa-94d721ec",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user-after-update": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:2>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-mfa-devices-after-rename": {
+        "IsTruncated": false,
+        "MFADevices": [
+          {
+            "EnableDate": "<datetime>",
+            "SerialNumber": "arn:<partition>:iam::111111111111:mfa/mfa-94d721ec",
+            "UserName": "<user-name:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_updates_service_specific_credentials": {
+    "recorded-date": "05-03-2026, 12:41:59",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-service-credentials-before-rename": {
+        "IsTruncated": false,
+        "ServiceSpecificCredentials": [
+          {
+            "CreateDate": "<datetime>",
+            "ServiceName": "codecommit.amazonaws.com",
+            "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+            "ServiceUserName": "<user-name:1>-at-111111111111",
+            "Status": "Active",
+            "UserName": "<user-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user-after-update": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:2>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-service-credentials-after-rename": {
+        "IsTruncated": false,
+        "ServiceSpecificCredentials": [
+          {
+            "CreateDate": "<datetime>",
+            "ServiceName": "codecommit.amazonaws.com",
+            "ServiceSpecificCredentialId": "<service-specific-credential-id:1>",
+            "ServiceUserName": "<user-name:1>-at-111111111111",
+            "Status": "Active",
+            "UserName": "<user-name:2>"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
