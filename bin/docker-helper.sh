@@ -114,6 +114,11 @@ function _set_version_defaults() {
     if [ -z "$MAJOR_VERSION" ]; then MAJOR_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f1); fi
     if [ -z "$MINOR_VERSION" ]; then MINOR_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f2); fi
     if [ -z "$PATCH_VERSION" ]; then PATCH_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f3); fi
+    # for calver (major >= 2026), also compute zero-padded minor version to represent months (01-12)
+    # for calver (major >= 2026), also compute zero-padded minor version to represent months (01-12)
+    if [[ $MAJOR_VERSION -ge 2026 ]]; then
+        PADDED_MINOR_VERSION=$(printf "%02d" $((10#$MINOR_VERSION)))
+    fi
 }
 
 
@@ -221,6 +226,14 @@ function cmd-push() {
       docker push $TARGET_IMAGE_NAME:$MAJOR_VERSION-$PLATFORM
       docker push $TARGET_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION-$PLATFORM
       docker push $TARGET_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION-$PLATFORM
+
+      # for calver (major >= 2026), also push zero-padded minor version tags (month: 01-12)
+      if [[ -n "$PADDED_MINOR_VERSION" && "$PADDED_MINOR_VERSION" != "$MINOR_VERSION" ]]; then
+        docker tag $TARGET_IMAGE_NAME:$DEFAULT_TAG-$PLATFORM $TARGET_IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION-$PLATFORM
+        docker tag $TARGET_IMAGE_NAME:$DEFAULT_TAG-$PLATFORM $TARGET_IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION.$PATCH_VERSION-$PLATFORM
+        docker push $TARGET_IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION-$PLATFORM
+        docker push $TARGET_IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION.$PATCH_VERSION-$PLATFORM
+      fi
     }
 
     if _is_release_commit; then
@@ -285,6 +298,18 @@ function cmd-push-manifests() {
       docker manifest push $IMAGE_NAME:$MAJOR_VERSION
       docker manifest push $IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION
       docker manifest push $IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION
+
+      # for calver (major >= 2026), also push zero-padded minor version manifests (month: 01-12)
+      if [[ -n "$PADDED_MINOR_VERSION" && "$PADDED_MINOR_VERSION" != "$MINOR_VERSION" ]]; then
+        docker manifest create $IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION \
+          --amend $IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION-amd64 \
+          --amend $IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION-arm64
+        docker manifest create $IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION.$PATCH_VERSION \
+          --amend $IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION.$PATCH_VERSION-amd64 \
+          --amend $IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION.$PATCH_VERSION-arm64
+        docker manifest push $IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION
+        docker manifest push $IMAGE_NAME:$MAJOR_VERSION.$PADDED_MINOR_VERSION.$PATCH_VERSION
+      fi
     }
 
     if _is_release_commit; then
