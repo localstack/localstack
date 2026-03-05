@@ -4,7 +4,7 @@ Store and entity definitions for IAM service.
 
 import dataclasses
 from dataclasses import field
-from datetime import datetime
+from datetime import UTC, datetime
 
 from localstack.aws.api.iam import (
     AccessKey,
@@ -66,7 +66,7 @@ class SAMLProvider:
     arn: str
     name: str
     saml_metadata_document: str
-    create_date: datetime = field(default_factory=datetime.utcnow)
+    create_date: datetime = field(default_factory=lambda: datetime.now(tz=UTC))
     valid_until: datetime | None = None
 
 
@@ -117,7 +117,7 @@ class GroupEntity:
 class OIDCProvider:
     arn: str
     url: str
-    create_date: datetime = field(default_factory=datetime.utcnow)
+    create_date: datetime = field(default_factory=lambda: datetime.now(tz=UTC))
     client_id_list: clientIDListType = field(default_factory=list)
     thumbprint_list: thumbprintListType = field(default_factory=list)
 
@@ -131,10 +131,16 @@ class InstanceProfileEntity:
 
 
 @dataclasses.dataclass
-class MFADeviceEntity:
-    device_name: str
+class VirtualMFADeviceEntity:
     path: str
-    device: VirtualMFADevice | MFADevice
+    device: VirtualMFADevice
+    user_name: str | None = None
+
+
+@dataclasses.dataclass
+class PhysicalMFADeviceEntity:
+    path: str
+    device: MFADevice
     user_name: str | None = None
 
 
@@ -185,9 +191,11 @@ class IamStore(BaseStore):
     # Account-scoped (IAM is global within an account)
     OIDC_PROVIDERS: dict[str, OIDCProvider] = CrossRegionAttribute(default=dict)
 
-    # MFA devices assigned to users: maps serial_number -> list of MFADevice
-    # Account-scoped (IAM is global within an account)
-    MFA_DEVICES: dict[str, MFADeviceEntity] = CrossRegionAttribute(default=dict)
+    # Virtual MFA serial_number -> VirtualMFADeviceEntity
+    VIRTUAL_MFA_DEVICES: dict[str, VirtualMFADeviceEntity] = CrossRegionAttribute(default=dict)
+
+    # Physical MFA serial_number -> PhysicalMFADeviceEntity
+    PHYSICAL_MFA_DEVICES: dict[str, PhysicalMFADeviceEntity] = CrossRegionAttribute(default=dict)
 
     # Server certificates: maps certificate_name -> ServerCertificateEntity
     # Account-scoped (IAM is global within an account)

@@ -17,6 +17,16 @@ MAX_FEDERATION_TOKEN_POLICY_LENGTH = 2048
 
 
 @dataclass
+class SingleValuedContextValue:
+    value: str
+
+
+@dataclass
+class MultiValuedContextValue:
+    value: list[str]
+
+
+@dataclass
 class TemporaryCredentials:
     """Represents a set of temporary credentials with session configuration."""
 
@@ -36,7 +46,9 @@ class TemporaryCredentials:
     # list of lowercase transitive tag keys
     transitive_tags: list[str] = field(default_factory=list)
     # other stored context variables
-    iam_context: dict[str, str | list[str]] = field(default_factory=dict)
+    iam_context: dict[str, SingleValuedContextValue | MultiValuedContextValue] = field(
+        default_factory=dict
+    )
 
     def is_expired(self) -> bool:
         """Check if the credentials have expired."""
