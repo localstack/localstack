@@ -733,3 +733,55 @@ class TestUserGroups:
         with pytest.raises(ClientError) as exc:
             aws_client.iam.remove_user_from_group(GroupName="nonexistent-group", UserName=user_name)
         snapshot.match("remove-user-from-nonexistent-group-error", exc.value.response)
+
+
+class TestUserRename:
+    """Tests for user rename preserving associated resources."""
+
+    @markers.aws.validated
+    def test_user_rename_preserves_access_key_identity(
+        self, create_user, aws_client, client_factory_for_user, snapshot, cleanups
+    ):
+        """Test that renaming a user preserves access key functionality."""
+        user_name = f"user-{short_uid()}"
+        new_user_name = f"user-{short_uid()}"
+
+        # Create user
+        create_user_response = create_user(UserName=user_name)
+        snapshot.match("create-user", create_user_response)
+
+        # User will be renamed, need cleanup for new name (access keys first, then user)
+        def cleanup_renamed_user():
+            for key in aws_client.iam.list_access_keys(UserName=new_user_name)["AccessKeyMetadata"]:
+                aws_client.iam.delete_access_key(
+                    UserName=new_user_name, AccessKeyId=key["AccessKeyId"]
+                )
+            aws_client.iam.delete_user(UserName=new_user_name)
+
+        cleanups.append(cleanup_renamed_user)
+
+        # Get client using access key (created internally by fixture)
+        user_client = client_factory_for_user(user_name=user_name)
+
+        # Verify get_caller_identity works before rename
+        identity_before = user_client.sts.get_caller_identity()
+        snapshot.match("identity-before-rename", identity_before)
+
+        # Rename user
+        aws_client.iam.update_user(UserName=user_name, NewUserName=new_user_name)
+
+        # Get user
+        get_user_response = aws_client.iam.get_user(UserName=new_user_name)
+        snapshot.match("get-user-after-update", get_user_response)
+
+        # Wait for IAM eventual consistency - retry until STS reflects the new username
+        def _get_identity_with_new_name():
+            identity = user_client.sts.get_caller_identity()
+            assert new_user_name in identity["Arn"]
+            return identity
+
+        # retry has to be long enough to avoid cache hits on aws
+        identity_after = retry(
+            _get_identity_with_new_name, sleep=60 if is_aws_cloud() else 0.5, retries=30
+        )
+        snapshot.match("identity-after-rename", identity_after)

@@ -179,6 +179,15 @@
       "total": 2.16
     }
   },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_preserves_access_key_identity": {
+    "last_validated_date": "2026-03-05T12:16:04+00:00",
+    "durations_in_seconds": {
+      "setup": 1.14,
+      "call": 72.32,
+      "teardown": 1.18,
+      "total": 74.64
+    }
+  },
   "tests/aws/services/iam/test_iam_users.py::TestUserTags::test_user_tag_errors": {
     "last_validated_date": "2026-02-11T10:48:15+00:00",
     "durations_in_seconds": {

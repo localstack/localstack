@@ -2252,6 +2252,11 @@ class IamProvider(IamApi, ServiceLifecycleHook):
                             group_entity.member_user_names.remove(user_name)
                             group_entity.member_user_names.append(new_user_name)
 
+                # Update access key index to reflect new username
+                for access_key_id in user_entity.access_keys:
+                    if access_key_id in store.ACCESS_KEY_INDEX:
+                        store.ACCESS_KEY_INDEX[access_key_id] = new_user_name
+
                 # Move to new key in store
                 del store.USERS[user_name]
                 store.USERS[new_user_name] = user_entity

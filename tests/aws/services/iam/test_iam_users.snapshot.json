@@ -1208,5 +1208,54 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam_users.py::TestUserRename::test_user_rename_preserves_access_key_identity": {
+    "recorded-date": "05-03-2026, 12:16:04",
+    "recorded-content": {
+      "create-user": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "identity-before-rename": {
+        "Account": "111111111111",
+        "Arn": "arn:<partition>:iam::111111111111:user/<user-name:1>",
+        "UserId": "<user-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-user-after-update": {
+        "User": {
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name:2>",
+          "CreateDate": "<datetime>",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "identity-after-rename": {
+        "Account": "111111111111",
+        "Arn": "arn:<partition>:iam::111111111111:user/<user-name:2>",
+        "UserId": "<user-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
