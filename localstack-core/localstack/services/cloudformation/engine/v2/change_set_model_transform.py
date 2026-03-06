@@ -97,9 +97,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
     def __init__(
         self,
-        change_set: ChangeSet,
-        before_parameters: dict,
-        after_parameters: dict,
+        change_set: "ChangeSet",
+        before_parameters: dict | None,
+        after_parameters: dict | None,
         before_template: dict | None,
         after_template: dict | None,
     ):
