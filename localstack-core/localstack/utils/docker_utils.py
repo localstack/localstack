@@ -94,7 +94,7 @@ def get_default_volume_dir_mount() -> VolumeInfo | None:
     return None
 
 
-def get_host_path_for_path_in_docker(path):
+def get_host_path_for_path_in_docker(path: str) -> str:
     """
     Returns the calculated host location for a given subpath of DEFAULT_VOLUME_DIR inside the localstack container.
     The path **has** to be a subdirectory of DEFAULT_VOLUME_DIR (the dir itself *will not* work).
@@ -141,8 +141,7 @@ def container_ports_can_be_bound(
     :return: True iff all ports can be bound
     """
     port_mappings = PortMappings(bind_host=address or "")
-    ports = ensure_list(ports)
-    for port in ports:
+    for port in ensure_list(ports):
         port = Port.wrap(port)
         port_mappings.add(port.port, port.port, protocol=port.protocol)
     try:
@@ -189,7 +188,7 @@ def is_port_available_for_containers(port: IntOrPort) -> bool:
     return not is_container_port_reserved(port) and container_ports_can_be_bound(port)
 
 
-def reserve_container_port(port: IntOrPort, duration: int = None):
+def reserve_container_port(port: IntOrPort, duration: int | None = None) -> None:
     """Reserve the given container port for a short period of time"""
     reserved_docker_ports.reserve_port(port, duration=duration)
 
@@ -201,10 +200,10 @@ def is_container_port_reserved(port: IntOrPort) -> bool:
 
 
 def reserve_available_container_port(
-    duration: int = None,
-    port_start: int = None,
-    port_end: int = None,
-    protocol: str = None,
+    duration: int | None = None,
+    port_start: int | None = None,
+    port_end: int | None = None,
+    protocol: str | None = None,
 ) -> int:
     """
     Determine a free port within the given port range that can be bound by a Docker container, and reserve
@@ -220,7 +219,7 @@ def reserve_available_container_port(
 
     protocol = protocol or "tcp"
 
-    def _random_port():
+    def _random_port() -> Port:
         port = None
         while not port or reserved_docker_ports.is_port_reserved(port):
             port_number = random.randint(
@@ -263,7 +262,7 @@ def _get_ports_check_docker_image() -> str:
     try:
         # inspect the running container to determine the image
         container = DOCKER_CLIENT.inspect_container(get_current_container_id())
-        return container["Config"]["Image"]
+        return container["Config"]["Image"]  # type: ignore[index]
     except Exception:
         # fall back to using the default Docker image
         return DOCKER_IMAGE_NAME
