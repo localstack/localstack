@@ -5,6 +5,7 @@ This module provides the interface to perform cross-service communication betwee
 LocalStack providers.
 """
 
+import copy
 import json
 import logging
 import os
@@ -12,6 +13,7 @@ import re
 import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from enum import Enum
 from functools import lru_cache, partial
 from random import choice
 from socket import socket
@@ -154,6 +156,9 @@ class InternalRequestParameters(TypedDict):
     service_principal: str | None
     """Service principal making this call"""
 
+    trace_visibility: str | None
+    """Visibility of this call, for tracing purposes"""
+
 
 def dump_dto(data: InternalRequestParameters) -> str:
     # To produce a compact JSON representation of DTO, remove spaces from separators
@@ -166,6 +171,21 @@ def load_dto(data: str) -> InternalRequestParameters:
 
 
 T = TypeVar("T")
+
+
+class TraceVisibility(Enum):
+    """
+    Provides an indication of how visible this API operation should be to the user.
+    """
+
+    # Call is part of LocalStack's internal implementation. Not interesting to users.
+    LOCALSTACK = "localstack"
+
+    # Call is part of an advanced feature of AWS's mechanism (e.g. Lambda ESM)
+    AWS = "aws"
+
+    # Call is an application-level operation. Always interesting to users.
+    APPLICATION = "application"
 
 
 class MetadataRequestInjector(Generic[T]):
@@ -198,13 +218,25 @@ class MetadataRequestInjector(Generic[T]):
         :param service_principal: Service principal on which behalf the calls of this client shall be made
         :return: A new version of the MetadataRequestInjector
         """
-        if self._params is not None:
+        if self._params is not None and (
+            "_SourceArn" in self._params or "_ServicePrincipal" in self._params
+        ):
             raise TypeError("Request_data cannot be called on it's own return value")
         params = {}
         if source_arn:
             params["_SourceArn"] = source_arn
         if service_principal:
             params["_ServicePrincipal"] = service_principal
+        return MetadataRequestInjector(client=self._client, params=params)
+
+    def trace_visibility(self, visibility: TraceVisibility) -> T:
+        """
+        Returns a new client instance preset with the given trace visibility.
+
+        For example: lambda_client.trace_visibility(TraceVisibility.LOCALSTACK).invoke(...)
+        """
+        params = copy.deepcopy(self._params) if self._params is not None else {}
+        params["_TraceVisibility"] = visibility.value
         return MetadataRequestInjector(client=self._client, params=params)
 
 
