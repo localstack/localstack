@@ -148,6 +148,33 @@ class TestStores:
             == id(backend2_eu._universal)
         )
 
+    def test_store_partition_namespacing(self, sample_stores):
+        account1 = "696969696969"
+        account2 = "424242424242"
+        aws_region = "eu-central-1"
+        gov_region = "us-gov-west-1"
+
+        #
+        # For Account 1
+        #
+        # Get backends for same account but different partitions
+        backend1_aws = sample_stores[account1][aws_region]
+        backend1_gov = sample_stores[account1][gov_region]
+        #
+        # For Account 2
+        #
+        # Get backends for same account but different partitions
+        backend2_aws = sample_stores[account2][aws_region]
+        backend2_gov = sample_stores[account2][gov_region]
+
+        backend1_aws.CROSS_REGION_ATTR.extend([1, 2, 3])
+        assert backend1_gov.CROSS_REGION_ATTR == []
+
+        backend1_aws.CROSS_ACCOUNT_ATTR.extend([4, 5, 6])
+        assert backend2_aws.CROSS_ACCOUNT_ATTR == [4, 5, 6]
+        assert backend1_gov.CROSS_ACCOUNT_ATTR == []
+        assert backend2_gov.CROSS_ACCOUNT_ATTR == []
+
     def test_valid_regions(self):
         stores = AccountRegionBundle("sns", SampleStore)
         account1 = "696969696969"
