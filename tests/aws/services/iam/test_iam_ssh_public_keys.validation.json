@@ -1,0 +1,74 @@
+{
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_delete_ssh_public_key": {
+    "last_validated_date": "2026-03-05T12:46:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.05,
+      "call": 0.9,
+      "teardown": 0.61,
+      "total": 1.56
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_delete_ssh_public_key_not_found": {
+    "last_validated_date": "2026-03-05T12:46:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.32,
+      "teardown": 0.64,
+      "total": 0.96
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_get_ssh_public_key": {
+    "last_validated_date": "2026-03-05T12:46:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.04,
+      "call": 0.51,
+      "teardown": 0.84,
+      "total": 1.39
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_get_ssh_public_key_not_found": {
+    "last_validated_date": "2026-03-05T12:46:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.33,
+      "teardown": 0.63,
+      "total": 0.96
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_list_ssh_public_keys": {
+    "last_validated_date": "2026-03-05T12:46:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 0.68,
+      "teardown": 0.79,
+      "total": 1.48
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_update_ssh_public_key": {
+    "last_validated_date": "2026-03-05T12:46:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.05,
+      "call": 0.68,
+      "teardown": 0.84,
+      "total": 1.57
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_update_ssh_public_key_not_found": {
+    "last_validated_date": "2026-03-05T12:46:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.31,
+      "teardown": 0.62,
+      "total": 0.93
+    }
+  },
+  "tests/aws/services/iam/test_iam_ssh_public_keys.py::TestSSHPublicKeys::test_upload_ssh_public_key": {
+    "last_validated_date": "2026-03-05T12:46:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.81,
+      "call": 0.77,
+      "teardown": 0.82,
+      "total": 2.4
+    }
+  }
+}
