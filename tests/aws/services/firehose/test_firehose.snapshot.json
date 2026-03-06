@@ -11,5 +11,56 @@
         }
       }
     }
+  },
+  "tests/aws/services/firehose/test_firehose.py::TestFirehoseResourceTagging::test_resource_tagging": {
+    "recorded-date": "05-03-2026, 08:34:26",
+    "recorded-content": {
+      "list-tags-1": {
+        "HasMoreTags": false,
+        "Tags": [
+          {
+            "Key": "subject",
+            "Value": "taboo"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-2": {
+        "HasMoreTags": false,
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "add-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-tags-3": {
+        "HasMoreTags": false,
+        "Tags": [
+          {
+            "Key": "feeling",
+            "Value": "uncomfortable"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

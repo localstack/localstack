@@ -10,6 +10,7 @@ from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
+from localstack.utils.aws.arns import iam_role_arn, s3_bucket_arn
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 from tests.aws.services.firehose.helper_functions import get_firehose_iam_documents
@@ -589,3 +590,78 @@ class TestFirehoseIntegration:
             retry_options["sleep_before"] = 10
 
         retry(assert_s3_contents, **retry_options)
+
+
+class TestFirehoseResourceTagging:
+    @pytest.fixture
+    def delivery_stream(
+        self,
+        aws_client,
+        s3_bucket,
+        create_iam_role_and_attach_policy,
+        account_id,
+        region_name,
+        firehose_create_delivery_stream,
+    ):
+        """Factory fixture to create a sample delivery stream with required pre-reqs."""
+
+        def _delivery_stream(tags: list[dict[str, str]] = None):
+            document = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": {"Service": "firehose.amazonaws.com"},
+                        "Action": "sts:AssumeRole",
+                    }
+                ],
+            }
+            role_name = f"role-{short_uid()}"
+            create_iam_role_and_attach_policy(
+                RoleName=role_name,
+                RoleDefinition=document,
+                PolicyArn="arn:aws:iam::aws:policy/AmazonS3FullAccess",
+            )
+
+            stream_name = f"stream-{short_uid()}"
+
+            kwargs = {
+                "DeliveryStreamName": stream_name,
+                "DeliveryStreamType": "DirectPut",
+                "S3DestinationConfiguration": {
+                    "RoleARN": iam_role_arn(role_name, account_id, region_name),
+                    "BucketARN": s3_bucket_arn(s3_bucket, region_name),
+                },
+            }
+
+            if tags is not None:
+                kwargs["Tags"] = tags
+
+            firehose_create_delivery_stream(**kwargs)
+
+            return stream_name
+
+        yield _delivery_stream
+
+    @markers.aws.validated
+    def test_resource_tagging(self, aws_client, snapshot, delivery_stream):
+        stream_name = delivery_stream(tags=[{"Key": "subject", "Value": "taboo"}])
+
+        response = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
+        snapshot.match("list-tags-1", response)
+
+        response = aws_client.firehose.untag_delivery_stream(
+            DeliveryStreamName=stream_name, TagKeys=["subject", "moment"]
+        )
+        snapshot.match("remove-tags", response)
+
+        response = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
+        snapshot.match("list-tags-2", response)
+
+        response = aws_client.firehose.tag_delivery_stream(
+            DeliveryStreamName=stream_name, Tags=[{"Key": "feeling", "Value": "uncomfortable"}]
+        )
+        snapshot.match("add-tags", response)
+
+        response = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
+        snapshot.match("list-tags-3", response)
