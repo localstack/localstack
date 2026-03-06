@@ -1,15 +1,31 @@
+"""
+This module provides a response handler that aggregates HTTP response data (service, operation, and status code)
+and periodically emits relevant analytics events.
+
+The `ServiceRequestCounter` class is used as a response handler in the AWS handler chain to collect
+information about service requests, such as service name, operation name, and response status codes.
+The collected data is then used to periodically report analytics events.
+
+Key features and behaviors:
+- Counts service-level requests (service, operation, status code).
+- Periodically emits aggregated analytics events.
+- Does not count internal requests (`context.is_internal_call`).
+- Can be disabled via `config.DISABLE_EVENTS`.
+- Provides error type parsing for failed requests (status code >= 400).
+"""
+
 import logging
 import threading
 
 from localstack import config
+from localstack.aws.analytics.service_request_aggregator import (
+    ServiceRequestAggregator,
+    ServiceRequestInfo,
+)
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.client import parse_response
 from localstack.http import Response
-from localstack.utils.analytics.service_request_aggregator import (
-    ServiceRequestAggregator,
-    ServiceRequestInfo,
-)
 
 LOG = logging.getLogger(__name__)
 

@@ -1,3 +1,17 @@
+"""
+This module provides a handler and data objects for collecting parity metrics during integration tests.
+Metric collection can be enabled for an integration test run by setting the environment variable
+`LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1`.
+
+The collected raw data is stored as CSV files in the folder `target/metric-reports/` (or the path
+specified by the `ENV_INTERNAL_TEST_STORE_METRICS_PATH` environment variable, defaulting to
+`/tmp/localstack-metrics`).
+
+The metrics include information about the service, operation, headers, parameters, response codes,
+and exceptions, which can be used to aggregate data and generate reports on the implementation
+status of various services.
+"""
+
 import csv
 import logging
 import os
