@@ -10,9 +10,9 @@ class EngineParameter(TypedDict):
     """
 
     type_: str
-    given_value: NotRequired[str | int | None]
-    resolved_value: NotRequired[str | int | None]
-    default_value: NotRequired[str | int | None]
+    given_value: NotRequired[str | int | bool | None]
+    resolved_value: NotRequired[str | int | bool | None]
+    default_value: NotRequired[str | int | bool | None]
     no_echo: NotRequired[bool | None]
 
 
