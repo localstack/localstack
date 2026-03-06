@@ -465,7 +465,13 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_lambda_with_context": {
-    "last_validated_date": "2022-09-09T18:19:33+00:00"
+    "last_validated_date": "2026-01-27T11:01:42+00:00",
+    "durations_in_seconds": {
+      "setup": 12.04,
+      "call": 11.93,
+      "teardown": 1.39,
+      "total": 25.36
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_upload_lambda_from_s3": {
     "last_validated_date": "2025-11-24T23:12:31+00:00",
