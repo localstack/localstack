@@ -46,11 +46,11 @@ aws-sam-translator==1.107.0
     #   moto-ext
 aws-xray-sdk==2.15.0
     # via moto-ext
-awscli==1.44.49
+awscli==1.44.53
     # via localstack-core
 awscrt==0.31.2
     # via localstack-core
-boto3==1.42.59
+boto3==1.42.63
     # via
     #   aws-sam-translator
     #   kclpy-ext
@@ -58,7 +58,7 @@ boto3==1.42.59
     #   moto-ext
 boto3-stubs==1.42.59
     # via localstack-core (pyproject.toml)
-botocore==1.42.59
+botocore==1.42.63
     # via
     #   aws-xray-sdk
     #   awscli
@@ -559,7 +559,6 @@ pydantic==2.12.5
     # via
     #   aws-sam-translator
     #   localstack-core
-    #   openapi-spec-validator
 pydantic-core==2.41.5
     # via pydantic
 pygments==2.19.2

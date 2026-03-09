@@ -198,6 +198,11 @@ class DeploymentStatus(StrEnum):
     ELIGIBLE = "ELIGIBLE"
 
 
+class DeploymentStrategy(StrEnum):
+    Default = "Default"
+    CapacityOptimized = "CapacityOptimized"
+
+
 class DescribePackagesFilterName(StrEnum):
     PackageID = "PackageID"
     PackageName = "PackageName"
@@ -1324,6 +1329,10 @@ class CreateApplicationResponse(TypedDict, total=False):
     kmsKeyArn: KmsKeyArn | None
 
 
+class DeploymentStrategyOptions(TypedDict, total=False):
+    DeploymentStrategy: DeploymentStrategy
+
+
 class SoftwareUpdateOptions(TypedDict, total=False):
     AutoSoftwareUpdateEnabled: Boolean | None
 
@@ -1417,6 +1426,7 @@ class CreateDomainRequest(ServiceRequest):
     OffPeakWindowOptions: OffPeakWindowOptions | None
     SoftwareUpdateOptions: SoftwareUpdateOptions | None
     AIMLOptions: AIMLOptionsInput | None
+    DeploymentStrategyOptions: DeploymentStrategyOptions | None
 
 
 class ModifyingProperties(TypedDict, total=False):
@@ -1483,6 +1493,7 @@ class DomainStatus(TypedDict, total=False):
     DomainProcessingStatus: DomainProcessingStatusType | None
     ModifyingProperties: ModifyingPropertiesList | None
     AIMLOptions: AIMLOptionsOutput | None
+    DeploymentStrategyOptions: DeploymentStrategyOptions | None
 
 
 class CreateDomainResponse(TypedDict, total=False):
@@ -1712,6 +1723,11 @@ class DeleteVpcEndpointResponse(TypedDict, total=False):
     VpcEndpointSummary: VpcEndpointSummary
 
 
+class DeploymentStrategyOptionsStatus(TypedDict, total=False):
+    Options: DeploymentStrategyOptions
+    Status: OptionStatus
+
+
 class DescribeDomainAutoTunesRequest(ServiceRequest):
     DomainName: DomainName
     MaxResults: MaxResults | None
@@ -1818,6 +1834,7 @@ class DomainConfig(TypedDict, total=False):
     SoftwareUpdateOptions: SoftwareUpdateOptionsStatus | None
     ModifyingProperties: ModifyingPropertiesList | None
     AIMLOptions: AIMLOptionsStatus | None
+    DeploymentStrategyOptions: DeploymentStrategyOptionsStatus | None
 
 
 class DescribeDomainConfigResponse(TypedDict, total=False):
@@ -2627,6 +2644,7 @@ class UpdateDomainConfigRequest(ServiceRequest):
     OffPeakWindowOptions: OffPeakWindowOptions | None
     SoftwareUpdateOptions: SoftwareUpdateOptions | None
     AIMLOptions: AIMLOptionsInput | None
+    DeploymentStrategyOptions: DeploymentStrategyOptions | None
 
 
 class UpdateDomainConfigResponse(TypedDict, total=False):
@@ -2835,6 +2853,7 @@ class OpensearchApi:
         off_peak_window_options: OffPeakWindowOptions | None = None,
         software_update_options: SoftwareUpdateOptions | None = None,
         aiml_options: AIMLOptionsInput | None = None,
+        deployment_strategy_options: DeploymentStrategyOptions | None = None,
         **kwargs,
     ) -> CreateDomainResponse:
         raise NotImplementedError
@@ -3414,6 +3433,7 @@ class OpensearchApi:
         off_peak_window_options: OffPeakWindowOptions | None = None,
         software_update_options: SoftwareUpdateOptions | None = None,
         aiml_options: AIMLOptionsInput | None = None,
+        deployment_strategy_options: DeploymentStrategyOptions | None = None,
         **kwargs,
     ) -> UpdateDomainConfigResponse:
         raise NotImplementedError

@@ -115,6 +115,11 @@ class DeploymentStatus(StrEnum):
     ELIGIBLE = "ELIGIBLE"
 
 
+class DeploymentStrategy(StrEnum):
+    Default = "Default"
+    CapacityOptimized = "CapacityOptimized"
+
+
 class DescribePackagesFilterName(StrEnum):
     PackageID = "PackageID"
     PackageName = "PackageName"
@@ -755,6 +760,10 @@ class CompatibleVersionsMap(TypedDict, total=False):
 CompatibleElasticsearchVersionsList = list[CompatibleVersionsMap]
 
 
+class DeploymentStrategyOptions(TypedDict, total=False):
+    DeploymentStrategy: DeploymentStrategy
+
+
 class DomainEndpointOptions(TypedDict, total=False):
     EnforceHTTPS: Boolean | None
     TLSSecurityPolicy: TLSSecurityPolicy | None
@@ -832,6 +841,7 @@ class CreateElasticsearchDomainRequest(ServiceRequest):
     AdvancedSecurityOptions: AdvancedSecurityOptionsInput | None
     AutoTuneOptions: AutoTuneOptionsInput | None
     TagList: TagList | None
+    DeploymentStrategyOptions: DeploymentStrategyOptions | None
 
 
 class ModifyingProperties(TypedDict, total=False):
@@ -882,6 +892,7 @@ class ElasticsearchDomainStatus(TypedDict, total=False):
     ChangeProgressDetails: ChangeProgressDetails | None
     DomainProcessingStatus: DomainProcessingStatusType | None
     ModifyingProperties: ModifyingPropertiesList | None
+    DeploymentStrategyOptions: DeploymentStrategyOptions | None
 
 
 class CreateElasticsearchDomainResponse(TypedDict, total=False):
@@ -1012,6 +1023,11 @@ class DeleteVpcEndpointResponse(TypedDict, total=False):
     VpcEndpointSummary: VpcEndpointSummary
 
 
+class DeploymentStrategyOptionsStatus(TypedDict, total=False):
+    Options: DeploymentStrategyOptions
+    Status: OptionStatus
+
+
 class DescribeDomainAutoTunesRequest(ServiceRequest):
     DomainName: DomainName
     MaxResults: MaxResults | None
@@ -1098,6 +1114,7 @@ class ElasticsearchDomainConfig(TypedDict, total=False):
     AutoTuneOptions: AutoTuneOptionsStatus | None
     ChangeProgressDetails: ChangeProgressDetails | None
     ModifyingProperties: ModifyingPropertiesList | None
+    DeploymentStrategyOptions: DeploymentStrategyOptionsStatus | None
 
 
 class DescribeElasticsearchDomainConfigResponse(TypedDict, total=False):
@@ -1569,6 +1586,7 @@ class UpdateElasticsearchDomainConfigRequest(ServiceRequest):
     EncryptionAtRestOptions: EncryptionAtRestOptions | None
     AutoTuneOptions: AutoTuneOptions | None
     DryRun: DryRun | None
+    DeploymentStrategyOptions: DeploymentStrategyOptions | None
 
 
 class UpdateElasticsearchDomainConfigResponse(TypedDict, total=False):
@@ -1674,6 +1692,7 @@ class EsApi:
         advanced_security_options: AdvancedSecurityOptionsInput | None = None,
         auto_tune_options: AutoTuneOptionsInput | None = None,
         tag_list: TagList | None = None,
+        deployment_strategy_options: DeploymentStrategyOptions | None = None,
         **kwargs,
     ) -> CreateElasticsearchDomainResponse:
         raise NotImplementedError
@@ -2040,6 +2059,7 @@ class EsApi:
         encryption_at_rest_options: EncryptionAtRestOptions | None = None,
         auto_tune_options: AutoTuneOptions | None = None,
         dry_run: DryRun | None = None,
+        deployment_strategy_options: DeploymentStrategyOptions | None = None,
         **kwargs,
     ) -> UpdateElasticsearchDomainConfigResponse:
         raise NotImplementedError

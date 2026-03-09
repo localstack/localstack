@@ -16,6 +16,7 @@ ApplyOnTransformedLogs = bool
 Arn = str
 Baseline = bool
 BatchId = str
+BearerTokenAuthenticationEnabled = bool
 Boolean = bool
 ClientToken = str
 CollectionRetentionDays = int
@@ -1345,6 +1346,7 @@ class LogGroup(TypedDict, total=False):
     logGroupClass: LogGroupClass | None
     logGroupArn: Arn | None
     deletionProtectionEnabled: DeletionProtectionEnabled | None
+    bearerTokenAuthenticationEnabled: BearerTokenAuthenticationEnabled | None
 
 
 LogGroups = list[LogGroup]
@@ -2339,6 +2341,11 @@ class PutAccountPolicyRequest(ServiceRequest):
 
 class PutAccountPolicyResponse(TypedDict, total=False):
     accountPolicy: AccountPolicy | None
+
+
+class PutBearerTokenAuthenticationRequest(ServiceRequest):
+    logGroupIdentifier: LogGroupIdentifier
+    bearerTokenAuthenticationEnabled: BearerTokenAuthenticationEnabled
 
 
 class PutDataProtectionPolicyRequest(ServiceRequest):
@@ -3438,6 +3445,16 @@ class LogsApi:
         selection_criteria: SelectionCriteria | None = None,
         **kwargs,
     ) -> PutAccountPolicyResponse:
+        raise NotImplementedError
+
+    @handler("PutBearerTokenAuthentication")
+    def put_bearer_token_authentication(
+        self,
+        context: RequestContext,
+        log_group_identifier: LogGroupIdentifier,
+        bearer_token_authentication_enabled: BearerTokenAuthenticationEnabled,
+        **kwargs,
+    ) -> None:
         raise NotImplementedError
 
     @handler("PutDataProtectionPolicy")

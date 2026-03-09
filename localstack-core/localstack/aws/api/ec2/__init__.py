@@ -6822,9 +6822,18 @@ class CancelSpotInstanceRequestsResult(TypedDict, total=False):
     CancelledSpotInstanceRequests: CancelledSpotInstanceRequestList | None
 
 
+class CapacityAllocationMetadataEntry(TypedDict, total=False):
+    Key: String | None
+    Value: String | None
+
+
+CapacityAllocationMetadataList = list[CapacityAllocationMetadataEntry]
+
+
 class CapacityAllocation(TypedDict, total=False):
     AllocationType: AllocationType | None
     Count: Integer | None
+    AllocationMetadata: CapacityAllocationMetadataList | None
 
 
 CapacityAllocations = list[CapacityAllocation]
