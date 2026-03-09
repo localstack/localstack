@@ -192,9 +192,9 @@
 /tests/aws/services/resourcegroupstaggingapi/ @aidehn
 
 # route53
-/localstack-core/localstack/aws/api/route53/ @giograno
-/localstack-core/localstack/services/route53/ @giograno
-/tests/aws/services/route53/ @giograno
+/localstack-core/localstack/aws/api/route53/ @dfangl @giograno
+/localstack-core/localstack/services/route53/ @dfangl @giograno
+/tests/aws/services/route53/ @dfangl @giograno
 
 # route53resolver
 /localstack-core/localstack/aws/api/route53resolver/ @macnev2013
