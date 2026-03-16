@@ -296,7 +296,7 @@ jobs:
     if: always() && !failure() && !cancelled()
     needs: push
     steps:
-      - uses: geekyeggo/delete-artifact@v5
+      - uses: geekyeggo/delete-artifact@v6
         with:
           # delete the docker images shared within the jobs (storage on GitHub is expensive)
           name: |
