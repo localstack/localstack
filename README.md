@@ -219,7 +219,7 @@ You can also support this project by becoming a sponsor on [Open Collective](htt
 
 ## License
 
-Copyright (c) 2017-2025 LocalStack maintainers and contributors.
+Copyright (c) 2017-2026 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
