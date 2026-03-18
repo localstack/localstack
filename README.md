@@ -1,7 +1,7 @@
 > [!IMPORTANT]
 > **Project Update: Consolidation into the Unified LocalStack Image**
 >
-> To provide a more reliable and streamlined experience, we are consolidating our development into a single, unified image. As part of this transition, this repository is now **archived and read-only.**.
+> To provide a more reliable and streamlined experience, we are consolidating our development into a single, unified image. As part of this transition, this repository is now **archived and read-only**.
 >
 > This decision reflects our commitment to reducing fragmentation and focusing our resources on building the most robust AWS emulation layer possible. We are deeply grateful to the contributors who helped make this project into what it is today–your work remains integral to the future of the LocalStack ecosystem.
 >
