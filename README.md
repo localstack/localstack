@@ -1,6 +1,16 @@
 > [!IMPORTANT]
-> **We’re moving toward a unified LocalStack for AWS image, updating how access works.**
-> **For details on timing and impact please refer [to this blog post](https://localstack.cloud/2026-updates).**
+> **Project Update: Consolidation into the Unified LocalStack Image**
+>
+> To provide a more reliable and streamlined experience, we are consolidating our development into a single, unified image. As part of this transition, this repository is now **archived and read-only.**.
+>
+> This decision reflects our commitment to reducing fragmentation and focusing our resources on building the most robust AWS emulation layer possible. We are deeply grateful to the contributors who helped make this project into what it is today–your work remains integral to the future of the LocalStack ecosystem.
+>
+> What this means for your workflow:
+>
+> - LocalStack for AWS offers a [range of options](https://www.localstack.cloud/pricing) including a free Hobby plan for non-commercial use with the same capabilities as this project.
+> - Your input is still vital to us. Please continue to share [bug reports here](https://github.com/orgs/localstack/discussions/categories/bugs) and [submit feature requests here](https://github.com/orgs/localstack/discussions/categories/feature-requests) or join our [Slack Community](https://slack.localstack.cloud).
+>
+> Thank you for your continued support as we grow together.
 
 <p align="center">
   <img src="docs/localstack-readme-banner.svg" alt="LocalStack - The Leading Platform for Local Cloud Development">
@@ -12,8 +22,6 @@
   <a href="https://pypi.org/project/localstack/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/localstack?color=blue"></a>
   <a href="https://hub.docker.com/r/localstack/localstack"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/localstack/localstack"></a>
   <a href="https://pypi.org/project/localstack"><img alt="PyPi downloads" src="https://static.pepy.tech/badge/localstack"></a>
-  <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/localstack/backers/badge.svg"></a>
-  <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/localstack/sponsors/badge.svg"></a>
   <a href="https://img.shields.io/pypi/l/localstack.svg"><img alt="PyPI License" src="https://img.shields.io/pypi/l/localstack.svg"></a>
   <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
   <a href="https://github.com/astral-sh/ruff"><img alt="Ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json"></a>
@@ -34,7 +42,7 @@
   <a href="#contributing">Contributing</a>
   <br/>
   <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
-  <a href="https://app.localstack.cloud" target="_blank">💻 Pro version</a> •
+  <a href="https://www.localstack.cloud/localstack-for-aws" target="_blank">💻 LocalStack for AWS</a> •
   <a href="https://docs.localstack.cloud/references/coverage/" target="_blank">☑️ LocalStack coverage</a>
 </p>
 
@@ -66,7 +74,7 @@ If Brew is not installed on your machine, you can download the pre-built LocalSt
 
 - Visit [localstack/localstack-cli](https://github.com/localstack/localstack-cli/releases/latest) and download the latest release for your platform.
 - Extract the downloaded archive to a directory included in your `PATH` variable:
-    -   For macOS/Linux, use the command: `sudo tar xvzf ~/Downloads/localstack-cli-*-darwin-*-onefile.tar.gz -C /usr/local/bin`
+  - For macOS/Linux, use the command: `sudo tar xvzf ~/Downloads/localstack-cli-*-darwin-*-onefile.tar.gz -C /usr/local/bin`
 
 ### PyPI (macOS, Linux, Windows)
 
@@ -153,9 +161,9 @@ To start using LocalStack, check out our [documentation](https://docs.localstack
 
 To use LocalStack with a graphical user interface, you can use the following UI clients:
 
-* [LocalStack Web Application](https://app.localstack.cloud)
-* [LocalStack Desktop](https://docs.localstack.cloud/user-guide/tools/localstack-desktop/)
-* [LocalStack Docker Extension](https://docs.localstack.cloud/user-guide/tools/localstack-docker-extension/)
+- [LocalStack Web Application](https://app.localstack.cloud)
+- [LocalStack Desktop](https://docs.localstack.cloud/user-guide/tools/localstack-desktop/)
+- [LocalStack Docker Extension](https://docs.localstack.cloud/user-guide/tools/localstack-docker-extension/)
 
 ## Releases
 
